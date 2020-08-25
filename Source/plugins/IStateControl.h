@@ -22,7 +22,7 @@
 
 #include "IShell.h"
 
-#include <com/com.h>
+#include <com/ICOM.h>
 
 namespace WPEFramework {
 namespace PluginHost {

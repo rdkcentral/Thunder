@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-// @stubgen:skip
+#pragma once
 
-#ifndef CDMI_H_
-#define CDMI_H_
+// @stubgen:skip
 
 // For the support of portable data types such as uint8_t.
 #include <stdint.h>
@@ -25,8 +24,6 @@
 #include <type_traits>
 #include <typeinfo>
 #include <vector>
-
-#include <core/core.h>
 
 #ifdef __GNUC__
 #define WARN_UNUSED_RESULT __attribute__((warn_unused_result))
@@ -505,10 +502,17 @@ private:
 extern "C" {
 #endif
 
+#ifndef EXTERNAL
+#ifdef _MSVC_LANG
+__declspec(dllexport) CDMi::ISystemFactory* GetSystemFactory();
+#else
+__attribute__ ((visibility ("default"))) CDMi::ISystemFactory* GetSystemFactory();
+#endif
+#else
 EXTERNAL CDMi::ISystemFactory* GetSystemFactory();
+#endif
+
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif // CDMI_H_

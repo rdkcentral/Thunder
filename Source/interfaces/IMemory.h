@@ -17,12 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef __IMEMORY_H
-#define __IMEMORY_H
-
-// @stubgen:skip
-
+#pragma once
 #include "Module.h"
+
+ // @stubgen:skip
 
 namespace WPEFramework {
 namespace Exchange {
@@ -31,7 +29,6 @@ namespace Exchange {
     // of the interface
     struct EXTERNAL IMemory : virtual public Core::IUnknown {
         enum { ID = ID_MEMORY };
-        virtual ~IMemory() {}
 
         virtual uint64_t Resident() const = 0;
         virtual uint64_t Allocated() const = 0;
@@ -42,4 +39,3 @@ namespace Exchange {
 }
 }
 
-#endif // __IMEMORY_H

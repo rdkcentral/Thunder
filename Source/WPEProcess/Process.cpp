@@ -381,7 +381,11 @@ public:
         if (_server.IsValid() == true) {
 
             // We are done, close the channel and unregister all shit we added...
+            #ifdef __DEBUG__
+            _server->Close(RPC::CommunicationTimeOut);
+            #else       
             _server->Close(2 * RPC::CommunicationTimeOut);
+            #endif
 
             _proxyStubs.clear();
 
@@ -498,7 +502,10 @@ int main(int argc, char** argv)
 #endif
 {
     // Give the debugger time to attach to this process..
+    // printf("Starting to sleep so you can attach a debugger\n");
     // Sleep(20000);
+    // printf("Continueing, I hope you have attached the debugger\n");
+
     Process::ConsoleOptions options(argc, argv);
 
     if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr) || (options.Exchange == 0)) {

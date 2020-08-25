@@ -18,10 +18,9 @@
  */
 
 #pragma once
+#include "Module.h"
 
 // @stubgen:skip
-
-#include "Module.h"
 
 namespace WPEFramework {
 namespace Exchange {

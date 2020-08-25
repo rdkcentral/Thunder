@@ -1135,14 +1135,14 @@ namespace Crypto {
 
         // Append to the padding the total message's length in bits and transform.
         _context.tot_len += _context.len * 8;
-        _context.block[63] = _context.tot_len;
-        _context.block[62] = _context.tot_len >> 8;
-        _context.block[61] = _context.tot_len >> 16;
-        _context.block[60] = _context.tot_len >> 24;
-        _context.block[59] = _context.tot_len >> 32;
-        _context.block[58] = _context.tot_len >> 40;
-        _context.block[57] = _context.tot_len >> 48;
-        _context.block[56] = _context.tot_len >> 56;
+        _context.block[63] = static_cast<uint8_t>((_context.tot_len) & 0xFF);
+        _context.block[62] = static_cast<uint8_t>((_context.tot_len >> 8) & 0xFF);
+        _context.block[61] = static_cast<uint8_t>((_context.tot_len >> 16) & 0xFF);
+        _context.block[60] = static_cast<uint8_t>((_context.tot_len >> 24) & 0xFF);
+        _context.block[59] = static_cast<uint8_t>((_context.tot_len >> 32) & 0xFF);
+        _context.block[58] = static_cast<uint8_t>((_context.tot_len >> 40) & 0xFF);
+        _context.block[57] = static_cast<uint8_t>((_context.tot_len >> 48) & 0xFF);
+        _context.block[56] = static_cast<uint8_t>((_context.tot_len >> 56) & 0xFF);
         sha256_trans(&_context, _context.block);
 
         // Since this implementation uses little endian byte ordering and SHA uses big endian,
@@ -1302,7 +1302,7 @@ namespace Crypto {
 
         block_nb = (1 + ((SHA224_BLOCK_SIZE - 9) < (_context.len % SHA224_BLOCK_SIZE)));
 
-        len_b = (_context.tot_len + _context.len) << 3;
+        len_b = static_cast<unsigned int>((_context.tot_len + _context.len) << 3);
         pm_len = block_nb << 6;
 
         memset(_context.block + _context.len, 0, pm_len - _context.len);

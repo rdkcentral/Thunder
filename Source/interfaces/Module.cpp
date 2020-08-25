@@ -18,5 +18,6 @@
  */
 
 #include "Module.h"
+#include "definitions.h"
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)

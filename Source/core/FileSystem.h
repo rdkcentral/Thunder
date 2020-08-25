@@ -471,7 +471,8 @@ namespace Core {
             return (LSEEK(_handle, offset, (relative ? SEEK_CUR : SEEK_SET)) != -1);
 #endif
 #ifdef __WINDOWS__
-            return (::SetFilePointer(_handle, offset, nullptr, (relative ? FILE_CURRENT : FILE_BEGIN)) != INVALID_SET_FILE_POINTER);
+            LARGE_INTEGER value; value.QuadPart = offset;
+            return (::SetFilePointerEx(_handle, value, nullptr, (relative ? FILE_CURRENT : FILE_BEGIN)));
 #endif
         }
         int64_t Position() const
@@ -490,12 +491,13 @@ namespace Core {
 
 #endif
 #ifdef __WINDOWS__
-                DWORD newPos = ::SetFilePointer(_handle, 0, nullptr, FILE_CURRENT);
+                LARGE_INTEGER newPos;
+                LARGE_INTEGER startPos; startPos.QuadPart = 0;
 
-                if (newPos != INVALID_SET_FILE_POINTER) {
-                    ASSERT(newPos >= 0);
+                if (::SetFilePointerEx(_handle, startPos, &newPos, FILE_CURRENT)) {
+                    ASSERT(newPos.QuadPart >= 0);
 
-                    result = (static_cast<int64_t>(newPos));
+                    result = newPos.QuadPart;
                 }
 #endif
             }
@@ -757,16 +759,15 @@ namespace Core {
 
     class EXTERNAL Partition {
     private:
+        static constexpr const TCHAR LineSeparator = _T('\n');
+        static constexpr const TCHAR WordSeparator = _T(' ');
+        static constexpr const TCHAR PathSeparator = _T('/');
+
 #ifdef __POSIX__
         typedef struct statvfs StatFS;
 #endif
 #ifdef __LINUX__
 #define PARTITION_BUFFER_SIZE 1024
-
-        static constexpr const TCHAR LineSeparator = _T('\n');
-        static constexpr const TCHAR WordSeparator = _T(' ');
-        static constexpr const TCHAR PathSeparator = _T('/');
-
         static constexpr const TCHAR* MountKey = _T("mounted on ");
         static constexpr const TCHAR* DeviceKey = _T("device ");
         static constexpr const TCHAR* MountStatsFileName = _T("/proc/self/mountstats");

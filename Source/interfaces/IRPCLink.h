@@ -17,9 +17,7 @@
  * limitations under the License.
  */
 
-#ifndef __INTERFACE_RPCLINK_H
-#define __INTERFACE_RPCLINK_H
-
+#pragma once
 #include "Module.h"
 
 namespace WPEFramework {
@@ -32,13 +30,9 @@ namespace Exchange {
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_RPCLINK_NOTIFICATION };
 
-            virtual ~INotification() {}
-
             // Some change happened with respect to the test case ..
             virtual void Completed(const uint32_t id, const string& name) = 0;
         };
-
-        virtual ~IRPCLink() {}
 
         virtual void Register(INotification* notification) = 0;
         virtual void Unregister(INotification* notification) = 0;
@@ -50,5 +44,3 @@ namespace Exchange {
 
 } // namespace Exchange
 } // namespace WPEFramework
-
-#endif // __INTERFACE_RPCLINK_H

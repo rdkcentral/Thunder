@@ -17,12 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef __ICOMMAND_H
-#define __ICOMMAND_H
+#pragma once
+#include "Module.h"
 
 // @stubgen:skip
-
-#include "Module.h"
 
 namespace WPEFramework {
 namespace Exchange {
@@ -31,24 +29,20 @@ namespace Exchange {
     // the CommanderPlugin
     struct EXTERNAL ICommand {
 
-        enum { ID = ID_COMMAND };
-
-        virtual ~ICommand() {}
-
         struct EXTERNAL IFactory {
-            virtual ~IFactory() {}
 
+            virtual ~IFactory() = default;
             virtual Core::ProxyType<ICommand> Create(const string& label, const string& configuration) = 0;
         };
 
         struct EXTERNAL IRegistration {
-            enum { ID = ID_COMMAND_REGISTRATION };
 
-            virtual ~IRegistration() {}
-
+            virtual ~IRegistration() = default;
             virtual void Register(const string& className, IFactory* factory) = 0;
             virtual IFactory* Unregister(const string& className) = 0;
         };
+
+        virtual ~ICommand() = default;
 
         // Identification of the command. ClassName is the name of the class that implements
         // the logic associated with this command.
@@ -73,27 +67,20 @@ namespace Exchange {
         template <typename COMMAND>
         class FactoryType : public Exchange::ICommand::IFactory {
         private:
-            FactoryType(const FactoryType<COMMAND>&) = delete;
-            FactoryType<COMMAND> operator=(const FactoryType<COMMAND>&) = delete;
-
-        private:
             template <typename IMPLEMENTATION>
             class CommandType : public Exchange::ICommand {
-            private:
+            public:
                 CommandType() = delete;
                 CommandType(const CommandType<IMPLEMENTATION>& copy) = delete;
                 CommandType<IMPLEMENTATION>& operator=(const CommandType<IMPLEMENTATION>&) = delete;
 
-            public:
                 CommandType(const string& label, const string& configuration)
                     : _label(label)
                     , _className(Core::ClassNameOnly(typeid(IMPLEMENTATION).name()).Text())
                     , _implementation(configuration)
                 {
                 }
-                virtual ~CommandType()
-                {
-                }
+                ~CommandType() override = default;
 
             public:
                 // Identification of the command. ClassName is the name of the class that implements
@@ -153,12 +140,11 @@ namespace Exchange {
             };
 
         public:
-            FactoryType()
-            {
-            }
-            virtual ~FactoryType()
-            {
-            }
+            FactoryType(const FactoryType<COMMAND>&) = delete;
+            FactoryType<COMMAND> operator=(const FactoryType<COMMAND>&) = delete;
+
+            FactoryType() = default;
+            ~FactoryType() override = default;
 
         public:
             virtual Core::ProxyType<Exchange::ICommand> Create(const string& label, const string& configuration)
@@ -170,4 +156,3 @@ namespace Exchange {
 }
 }
 
-#endif // __ICOMMAND_H

@@ -728,10 +728,14 @@ namespace PluginHost {
             // Update binding address
             if (_interface.empty() == false) {
                 _binder = Plugin::Config::IPV4UnicastNode(_interface);
+
             }
             if (_binder.IsValid() == false) {
                 Core::NodeId binder(_binding.c_str(), _portNumber);
                 _binder = binder;
+            }
+            else {
+                _binder.PortNumber(_portNumber);
             }
             SYSLOG(Logging::Startup, (_T("Binder: [%s:%d]"), _binder.HostAddress().c_str(), _binder.PortNumber()));
         }
