@@ -34,7 +34,6 @@ add_library(${TargetMarshalling} SHARED ${PROXY_STUB_SOURCES})
 
 target_include_directories(${TargetMarshalling} PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 
-file(GLOB JSON_DATA_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/generated/json/JsonData*.h")
 file(GLOB JSON_ENUM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/generated/json/JsonEnum*.cpp")
 file(GLOB JSON_LINK_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/generated/json/J*.h")
 
