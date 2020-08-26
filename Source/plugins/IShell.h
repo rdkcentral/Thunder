@@ -17,7 +17,9 @@
  * limitations under the License.
  */
 
-#pragma once
+#ifndef __ISHELL_H__
+#define __ISHELL_H__
+
 #include "IPlugin.h"
 #include "ISubSystem.h"
 
@@ -320,3 +322,4 @@ namespace Core {
 } // namespace Core
 } // namespace WPEFramework
 
+#endif //__ISHELL_H__
