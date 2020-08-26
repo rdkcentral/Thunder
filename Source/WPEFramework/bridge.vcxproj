@@ -22,6 +22,7 @@
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="BartjensConfig.json" />
     <None Include="ConfigBuildroot.json" />
     <None Include="ExampleConfigAll.json" />
     <None Include="ExampleConfigLinux.json" />
@@ -32,10 +33,12 @@
     <ClCompile Include="ControllerJsonRpc.cpp" />
     <ClCompile Include="PluginHost.cpp" />
     <ClCompile Include="PluginServer.cpp" />
+    <ClCompile Include="PostMortem.cpp" />
     <ClCompile Include="Probe.cpp" />
     <ClCompile Include="SystemInfo.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Config.h" />
     <ClInclude Include="Controller.h" />
     <ClInclude Include="DownloadEngine.h" />
     <ClInclude Include="Module.h" />

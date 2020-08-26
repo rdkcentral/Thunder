@@ -17,9 +17,7 @@
  * limitations under the License.
  */
 
-#ifndef __ISICONTROL_H
-#define __ISICONTROL_H
-
+#pragma once
 #include "Module.h"
 
 namespace WPEFramework {
@@ -32,15 +30,12 @@ namespace Exchange {
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_GUIDE_NOTIFICATION };
 
-            virtual ~INotification() {}
             virtual void EITBroadcast() = 0;
             virtual void EmergencyAlert() = 0;
             virtual void ParentalControlChanged() = 0;
             virtual void ParentalLockChanged(const string&) = 0;
             virtual void TestNotification(const string&) = 0; // XXX: Just for test
         };
-
-        virtual ~IGuide() {}
 
         virtual uint32_t StartParser(PluginHost::IShell*) = 0;
         virtual const string GetChannels() = 0;
@@ -60,4 +55,3 @@ namespace Exchange {
 }
 }
 
-#endif // __ISICONTROL_H

@@ -1375,6 +1375,10 @@ if __name__ == "__main__":
                         os.path.dirname(source_file) if not OUTDIR else OUTDIR,
                         PROXYSTUB_CPP_NAME % CreateName(os.path.basename(source_file)).split(".", 1)[0])
 
+                    out_dir = os.path.dirname(output_file)
+                    if not os.path.exists(out_dir):
+                        os.makedirs(out_dir)
+
                     output = GenerateStubs(
                         output_file, source_file,
                         os.path.join("@" + os.path.dirname(os.path.realpath(__file__)), DEFAULT_DEFINITIONS_FILE),

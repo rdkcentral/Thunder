@@ -17,17 +17,7 @@
  * limitations under the License.
  */
 
-#pragma once
-
-// ---- Include system wide include files ----
-
-// ---- Include local include files ----
 #include "Module.h"
-#include "ICOM.h"
+#include "IUnknown.h"
 
-namespace WPEFramework {
-namespace RPC {
-
-    typedef IteratorType<IStringIterator> StringIterator;
-}
-}
+#include "generated/proxystubs/ProxyStubs_COM.cpp"

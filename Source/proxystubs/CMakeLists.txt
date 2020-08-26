@@ -23,6 +23,7 @@ set(PLUGIN_INCLUDES
         plugins/IShell.h
         plugins/IStateControl.h
         plugins/ISubSystem.h
+        proxystubs/Module.h
         )
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include")

@@ -17,9 +17,7 @@
  * limitations under the License.
  */
 
-#ifndef __ICOMPOSITION_H
-#define __ICOMPOSITION_H
-
+#pragma once
 #include "Module.h"
 
 namespace WPEFramework {
@@ -59,10 +57,7 @@ namespace Exchange {
         };
 
         struct EXTERNAL IClient : virtual public Core::IUnknown {
-
             enum { ID = ID_COMPOSITION_CLIENT };
-
-            virtual ~IClient() {}
 
             virtual string Name() const = 0;
             virtual void Opacity(const uint32_t value) = 0;
@@ -75,13 +70,9 @@ namespace Exchange {
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_COMPOSITION_NOTIFICATION };
 
-            virtual ~INotification() {}
-
             virtual void Attached(const string& name, IClient* client) = 0;
             virtual void Detached(const string& name) = 0;
         };
-
-        virtual ~IComposition() {}
 
         virtual void Register(IComposition::INotification* notification) = 0;
         virtual void Unregister(IComposition::INotification* notification) = 0;
@@ -95,4 +86,3 @@ namespace Exchange {
 }
 }
 
-#endif // __ICOMPOSITION_H

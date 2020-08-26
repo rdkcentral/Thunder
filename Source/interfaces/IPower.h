@@ -17,9 +17,7 @@
  * limitations under the License.
  */
 
-#ifndef _POWER_H
-#define _POWER_H
-
+#pragma once
 #include "Module.h"
 
 namespace WPEFramework {
@@ -40,8 +38,6 @@ namespace Exchange {
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_POWER_NOTIFICATION };
 
-            virtual ~INotification() {}
-
             virtual void StateChange(const PCState) = 0;
         };
 
@@ -55,4 +51,3 @@ namespace Exchange {
 }
 }
 
-#endif // _POWER_H

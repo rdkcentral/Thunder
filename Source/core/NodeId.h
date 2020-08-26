@@ -85,7 +85,11 @@ namespace Core {
         };
 
         union SocketInfo {
+#ifdef __WINDOWS__
+            ADDRESS_FAMILY FamilyType;
+#else
             sa_family_t FamilyType;
+#endif
             struct sockaddr_in IPV4Socket;
             struct sockaddr_in6 IPV6Socket;
 #ifndef __WINDOWS__
@@ -174,6 +178,16 @@ namespace Core {
             return (ntohs(m_structInfo.IPV4Socket.sin_port));
 #endif
         }
+
+#ifndef __WINDOWS__
+        inline uint16_t HardwareType() const {
+            return (m_structInfo.RawSocket.sll_hatype);
+        }
+        inline void HardwareType(const uint16_t type) {
+            m_structInfo.RawSocket.sll_hatype = type;
+        }
+#endif
+
         inline void PortNumber(const uint16_t portNumber)
         {
             m_structInfo.IPV4Socket.sin_port = ntohs(portNumber);

@@ -18,11 +18,7 @@
  */
 
 #pragma once
-
-// ---- Include system wide include files ----
-
-// ---- Include local include files ----
-#include "Module.h"
+#include <core/core.h>
 
 namespace WPEFramework {
 
