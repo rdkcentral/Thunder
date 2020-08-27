@@ -122,6 +122,7 @@ add_library(${TARGET} SHARED
 target_include_directories(${TARGET} 
         PRIVATE 
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/com>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/websocket>
 )
