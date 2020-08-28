@@ -99,6 +99,7 @@ target_include_directories(${TargetDefinitions}
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
           $<INSTALL_INTERFACE:include/${NAMESPACE}>
+          $<INSTALL_INTERFACE:include/${NAMESPACE}/interfaces>
         )
 
 install(
