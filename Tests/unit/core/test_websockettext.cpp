@@ -169,5 +169,6 @@ namespace Tests {
         }
         Core::Singleton::Dispose();
     }
+
 } // Tests
 } // WPEFramework

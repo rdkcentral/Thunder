@@ -232,8 +232,8 @@ namespace {
     {
         std::string connector {"0.0.0.0"};
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<JSONWebServer> _webServer(Core::NodeId(connector.c_str(), 12341));
-            _webServer.Open(Core::infinite);
+            Core::SocketServerType<JSONWebServer> webServer(Core::NodeId(connector.c_str(), 12341));
+            webServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
             testAdmin.Sync("client done");
         };

@@ -182,6 +182,7 @@ namespace Core {
             SleepMs(0);
         }
     }
+
     void CyclicBuffer::Reevaluate()
     {
 

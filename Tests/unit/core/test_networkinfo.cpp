@@ -84,7 +84,8 @@ TEST(test_ipv6addressiterator, simple_ipv6addressiterator)
     ipv6addressiterator1.Reset();
 }
 
-TEST(test_adapteriterator, simple_adapteriterator)
+//Disabled since currently the test is executed only on Wi-Fi network.
+TEST(DISABLED_test_adapteriterator, simple_adapteriterator)
 {
     AdapterIterator adapter("eth0");
     AdapterIterator adapter1 = adapter;

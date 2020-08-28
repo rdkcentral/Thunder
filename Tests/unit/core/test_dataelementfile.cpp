@@ -31,7 +31,7 @@ public:
     DataFile() = delete;
 
     DataFile(File& file)
-        : DataElementFile(file)
+        : DataElementFile(file, File::USER_READ)
     {
     }
 

@@ -298,9 +298,223 @@ namespace Tests {
         }
         testAdmin.Sync("done testing");
     }
-    TEST(Core_IPC, FlashChannel)
+
+    TEST(Core_IPC, ContinuousChannelReversed)
     {
         std::string connector = _T("/tmp/testserver1");
+        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+            Core::NodeId continousNode(connector.c_str());
+            uint32_t error;
+
+            testAdmin.Sync("setup client");
+
+            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+
+            factory->CreateFactory<TripletResponse>(2);
+            factory->CreateFactory<VoidTriplet>(2);
+            factory->CreateFactory<TextText>(2);
+
+            Core::IPCChannelClientType<Core::Void, false, false> continousChannel(continousNode, 32, factory);
+
+            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
+            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
+            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+
+            error = continousChannel.Source().Open(1000); // Wait for 1 Second.
+            EXPECT_EQ(error, Core::ERROR_NONE);
+
+
+            testAdmin.Sync("setup server");
+
+            Core::ProxyType<TripletResponse> tripletResponseData(Core::ProxyType<TripletResponse>::Create(Triplet(1, 2, 3)));
+            Core::ProxyType<VoidTriplet> voidTripletData(Core::ProxyType<VoidTriplet>::Create());
+            string text = "test text";
+            Core::ProxyType<TextText> textTextData(Core::ProxyType<TextText>::Create(Core::IPC::Text<2048>(text)));
+
+            uint16_t display = 1;;
+            uint32_t surface = 2;
+            uint64_t context = 3;
+            uint32_t result = 6;
+
+            error = continousChannel.Invoke(tripletResponseData, 5000);
+            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(tripletResponseData->Response().Result(), result);
+
+            error = continousChannel.Invoke(voidTripletData, 2000);
+            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(voidTripletData->Response().Display(), display);
+            EXPECT_EQ(voidTripletData->Response().Surface(), surface);
+            EXPECT_EQ(voidTripletData->Response().Context(), context);
+
+            error = continousChannel.Invoke(textTextData, 2000);
+            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_STREQ(textTextData->Response().Value(), text.c_str());
+
+            error = continousChannel.Source().Close(1000); // Wait for 1 second
+            EXPECT_EQ(error, Core::ERROR_NONE);
+
+            factory->DestroyFactories();
+            Core::Singleton::Dispose();
+
+            testAdmin.Sync("done testing");
+
+        };
+
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
+        IPTestAdministrator testAdmin(otherSide);
+        {
+            Core::NodeId continousNode(connector.c_str());
+            uint32_t error;
+
+            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+
+            factory->CreateFactory<TripletResponse>(2);
+            factory->CreateFactory<VoidTriplet>(2);
+            factory->CreateFactory<TextText>(2);
+
+            Core::IPCChannelClientType<Core::Void, true, false> continousChannel(continousNode, 32, factory);
+
+            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
+            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
+            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+
+            continousChannel.Register(TripletResponse::Id(), handler1);
+            continousChannel.Register(VoidTriplet::Id(), handler2);
+            continousChannel.Register(TextText::Id(), handler3);
+
+            error = continousChannel.Source().Open(1000); // Wait for 1 Second.
+            EXPECT_EQ(error, Core::ERROR_NONE);
+
+            testAdmin.Sync("setup client");
+
+            testAdmin.Sync("setup server");
+        testAdmin.Sync("done testing");
+        error = continousChannel.Source().Close(1000); // Wait for 1 second
+        EXPECT_EQ(error, Core::ERROR_NONE);
+        continousChannel.Unregister(TripletResponse::Id());
+        continousChannel.Unregister(VoidTriplet::Id());
+        continousChannel.Unregister(TextText::Id());
+
+        factory->DestroyFactories();
+
+        }
+    }
+
+    TEST(Core_IPC, FlashChannel)
+    {
+        std::string connector = _T("/tmp/testserver2");
+        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+            Core::NodeId flashNode(connector.c_str());
+            uint32_t error;
+
+            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+
+            factory->CreateFactory<TripletResponse>(2);
+            factory->CreateFactory<VoidTriplet>(2);
+            factory->CreateFactory<TextText>(2);
+
+            Core::IPCChannelClientType<Core::Void, true, false> flashChannel(flashNode, 512, factory);
+
+            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
+            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
+            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+
+            flashChannel.Register(TripletResponse::Id(), handler1);
+            flashChannel.Register(VoidTriplet::Id(), handler2);
+            flashChannel.Register(TextText::Id(), handler3);
+
+            error = flashChannel.Source().Open(1000); // Wait for 1 Second.
+            EXPECT_EQ(error, Core::ERROR_NONE);
+
+            testAdmin.Sync("setup server");
+            testAdmin.Sync("setup client");
+            testAdmin.Sync("done testing");
+
+            error = flashChannel.Source().Close(1000); // Wait for 1 Second
+            EXPECT_EQ(error, Core::ERROR_NONE);
+            flashChannel.Unregister(TripletResponse::Id());
+            flashChannel.Unregister(VoidTriplet::Id());
+            flashChannel.Unregister(TextText::Id());
+
+            factory->DestroyFactories();
+        };
+
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
+        IPTestAdministrator testAdmin(otherSide);
+        {
+            Core::NodeId flashNode(connector.c_str());
+            uint32_t error;
+
+            sleep(2);
+            sleep(2);
+            sleep(2);
+            testAdmin.Sync("setup server");
+
+            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+
+            factory->CreateFactory<TripletResponse>(2);
+            factory->CreateFactory<VoidTriplet>(2);
+            factory->CreateFactory<TextText>(2);
+
+            Core::IPCChannelClientType<Core::Void, false, false> flashChannel(flashNode, 512, factory);
+
+            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
+            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
+            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+
+            testAdmin.Sync("setup client");
+
+            Core::ProxyType<TripletResponse> tripletResponseData(Core::ProxyType<TripletResponse>::Create(Triplet(1, 2, 3)));
+            Core::ProxyType<VoidTriplet> voidTripletData(Core::ProxyType<VoidTriplet>::Create());
+            string text = "test text";
+            Core::ProxyType<TextText> textTextData(Core::ProxyType<TextText>::Create(Core::IPC::Text<2048>(text)));
+
+            uint16_t display = 1;;
+            uint32_t surface = 2;
+            uint64_t context = 3;
+            uint32_t result = 6;
+
+            error = flashChannel.Source().Open(1000); // Wait for 1 Second.
+            EXPECT_EQ(error, Core::ERROR_NONE);
+            error = flashChannel.Invoke(tripletResponseData, 2000);
+            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(tripletResponseData->Response().Result(), result);
+            error = flashChannel.Source().Close(1000); // Wait for 1 Second
+            EXPECT_EQ(error, Core::ERROR_NONE);
+
+            error = flashChannel.Source().Open(1000); // Wait for 1 Second.
+            EXPECT_EQ(error, Core::ERROR_NONE);
+            error = flashChannel.Invoke(voidTripletData, 2000);
+            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(voidTripletData->Response().Display(), display);
+            EXPECT_EQ(voidTripletData->Response().Surface(), surface);
+            EXPECT_EQ(voidTripletData->Response().Context(), context);
+            error = flashChannel.Source().Close(1000); // Wait for 1 Second
+            EXPECT_EQ(error, Core::ERROR_NONE);
+
+            error = flashChannel.Source().Open(1000); // Wait for 1 Second.
+            EXPECT_EQ(error, Core::ERROR_NONE);
+            error = flashChannel.Invoke(textTextData, 2000);
+            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_STREQ(textTextData->Response().Value(), text.c_str());
+            error = flashChannel.Source().Close(1000); // Wait for 1 Second
+            EXPECT_EQ(error, Core::ERROR_NONE);
+
+            factory->DestroyFactories();
+            Core::Singleton::Dispose();
+        }
+        testAdmin.Sync("done testing");
+    }
+
+    TEST(Core_IPC, FlashChannelReversed)
+    {
+        std::string connector = _T("/tmp/testserver3");
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
             Core::NodeId flashNode(connector.c_str());
             uint32_t error;
@@ -403,9 +617,10 @@ namespace Tests {
         }
         testAdmin.Sync("done testing");
     }
+
     TEST(Core_IPC, MultiChannel)
     {
-        std::string connector = _T("/tmp/testserver2");
+        std::string connector = _T("/tmp/testserver4");
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
             Core::NodeId multiNode(connector.c_str());
             uint32_t error;
@@ -498,6 +713,103 @@ namespace Tests {
             Core::Singleton::Dispose();
         }
         testAdmin.Sync("done testing");
+    }
+
+    TEST(Core_IPC, MultiChannelReversed)
+    {
+        std::string connector = _T("/tmp/testserver5");
+        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+            Core::NodeId multiNode(connector.c_str());
+            uint32_t error;
+
+            testAdmin.Sync("setup client");
+
+            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+
+            factory->CreateFactory<TripletResponse>(2);
+            factory->CreateFactory<VoidTriplet>(2);
+            factory->CreateFactory<TextText>(2);
+
+            Core::IPCChannelClientType<Core::Void, false, false> multiChannel(multiNode, 512, factory);
+
+            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
+            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
+            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+
+            error = multiChannel.Source().Open(1000); // Wait for 1 Second.
+            EXPECT_EQ(error, Core::ERROR_NONE);
+
+            testAdmin.Sync("setup server");
+
+            Core::ProxyType<TripletResponse> tripletResponseData(Core::ProxyType<TripletResponse>::Create(Triplet(1, 2, 3)));
+            Core::ProxyType<VoidTriplet> voidTripletData(Core::ProxyType<VoidTriplet>::Create());
+            string text = "test text";
+            Core::ProxyType<TextText> textTextData(Core::ProxyType<TextText>::Create(Core::IPC::Text<2048>(text)));
+
+            uint16_t display = 1;;
+            uint32_t surface = 2;
+            uint64_t context = 3;
+            uint32_t result = 6;
+
+            error = multiChannel.Invoke(tripletResponseData, 2000);
+            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(tripletResponseData->Response().Result(), result);
+
+            error = multiChannel.Invoke(voidTripletData, 2000);
+            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(voidTripletData->Response().Display(), display);
+            EXPECT_EQ(voidTripletData->Response().Surface(), surface);
+            EXPECT_EQ(voidTripletData->Response().Context(), context);
+
+            error = multiChannel.Invoke(textTextData, 2000);
+            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_STREQ(textTextData->Response().Value(), text.c_str());
+
+            error = multiChannel.Source().Close(1000); // Wait for 1 Second.
+            EXPECT_EQ(error, Core::ERROR_NONE);
+
+            factory->DestroyFactories();
+            Core::Singleton::Dispose();
+            testAdmin.Sync("done testing");
+        };
+
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
+        IPTestAdministrator testAdmin(otherSide);
+        {
+            Core::NodeId multiNode(connector.c_str());
+            uint32_t error;
+
+            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+
+            factory->CreateFactory<TripletResponse>(2);
+            factory->CreateFactory<VoidTriplet>(2);
+            factory->CreateFactory<TextText>(2);
+
+            Core::IPCChannelServerType<Core::Void, false> multiChannel(multiNode, 512, factory);
+
+            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
+            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
+            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+
+            multiChannel.Register(TripletResponse::Id(), handler1);
+            multiChannel.Register(VoidTriplet::Id(), handler2);
+            multiChannel.Register(TextText::Id(), handler3);
+
+            error = multiChannel.Open(1000); // Wait for 1 Second.
+            EXPECT_EQ(error, Core::ERROR_NONE);
+
+            testAdmin.Sync("setup client");
+            testAdmin.Sync("setup server");
+            testAdmin.Sync("done testing");
+
+            error = multiChannel.Close(1000); // Wait for 1 Second.
+            EXPECT_EQ(error, Core::ERROR_NONE);
+
+            factory->DestroyFactories();
+        }
     }
 } // Tests
 } // WPEFramework

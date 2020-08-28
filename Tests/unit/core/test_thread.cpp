@@ -122,18 +122,5 @@ namespace Tests {
         EXPECT_EQ(object.State(), Core::Thread::STOPPING);
         object.Wait(Core::Thread::BLOCKED | Core::Thread::STOPPED | Core::Thread::STOPPING, Core::infinite);
     }
-
-    TEST(Core_Thread, ThreadPool)
-    {
-        Core::ProxyType<Core::IDispatch> job(Core::ProxyType<Job>::Create());
-        Core::ThreadPoolType<Core::Job, 1> executor(0, _T("TestPool"));
-        executor.Submit(Core::Job(job), Core::infinite);
-
-        std::unique_lock<std::mutex> lk(Job::_mutex);
-        while (!Job::GetState()) {
-            Job::_cv.wait(lk);
-        }
-        Core::Singleton::Dispose();
-    }
 } // Tests
 } // WPEFramework

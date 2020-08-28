@@ -228,7 +228,7 @@ namespace Tests {
                 JSONConnector<Core::JSON::IElement>::_cv.wait(lk);
             }
 
-            testAdmin.Sync("server open");
+            testAdmin.Sync("client open");
             testAdmin.Sync("client done");
         };
 
@@ -248,7 +248,7 @@ namespace Tests {
 
             JSONConnector<Core::JSON::IElement> jsonSocketClient(Core::NodeId(connector.c_str()));
             jsonSocketClient.Open(Core::infinite);
-            testAdmin.Sync("server open");
+            testAdmin.Sync("client open");
             jsonSocketClient.Submit(Core::proxy_cast<Core::JSON::IElement>(sendObject));
             jsonSocketClient.Wait();
             string received;
