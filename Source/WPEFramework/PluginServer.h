@@ -1511,6 +1511,11 @@ namespace PluginHost {
                 virtual void Dispatch() override
                 {
                     _parent.Security(SystemInfo::IsActive(ISubSystem::SECURITY));
+
+                    if (SystemInfo::IsCurrent(ISubSystem::NETWORK)) {
+                        _parent.UpdateAccessor();
+                        SystemInfo::ResetCurrent();
+                    }
                     _decoupling->Schedule();
                 }
                 inline void Evaluate()
@@ -1909,6 +1914,10 @@ namespace PluginHost {
             inline Core::WorkerPool& WorkerPool()
             {
                 return (_server.WorkerPool());
+            }
+            inline void UpdateAccessor()
+            {
+                const_cast<PluginHost::Config&>(_server.Configuration()).UpdateAccessor();
             }
 
         private:

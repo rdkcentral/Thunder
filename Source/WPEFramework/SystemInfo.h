@@ -286,6 +286,10 @@ namespace PluginHost {
                 break;
             }
             case NETWORK: {
+                _adminLock.Lock();
+                _type = NETWORK;
+                _adminLock.Unlock();
+
                 SYSLOG(Logging::Startup, (_T("EVENT: Network")));
                 break;
             }
@@ -653,6 +657,20 @@ namespace PluginHost {
         {
             return (_flags);
         }
+        inline bool IsCurrent(const subsystem type)
+        {
+            _adminLock.Lock();
+            bool isCurrent = (_type == type);
+            _adminLock.Unlock();
+
+            return isCurrent;
+        }
+        inline void ResetCurrent()
+        {
+            _adminLock.Lock();
+            _type = END_LIST;
+            _adminLock.Unlock();
+        }
 
         BEGIN_INTERFACE_MAP(SystemInfo)
         INTERFACE_ENTRY(PluginHost::ISubSystem)
@@ -676,6 +694,7 @@ namespace PluginHost {
         Time* _time;
         IProvisioning* _provisioning;
         uint32_t _flags;
+        subsystem _type;
     };
 }
 } // namespace PluginHost
