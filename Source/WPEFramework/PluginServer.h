@@ -795,7 +795,7 @@ namespace PluginHost {
                 return (_administrator.Configuration().Background());
             }
             string Accessor() const override {
-                return (_administrator.Configuration().URL());
+                return (_administrator.Configuration().URL() + "/" + PluginHost::Service::Configuration().Callsign.Value());
             }
             string ProxyStubPath () const override {
                 return (_administrator.Configuration().ProxyStubPath());
