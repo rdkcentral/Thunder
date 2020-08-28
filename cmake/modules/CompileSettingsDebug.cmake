@@ -28,9 +28,14 @@ include(CMakePackageConfigHelpers)
 #
 # Build type specific options
 #
-if("${BUILD_TYPE}" STREQUAL "DebugOptimized")
+if("${BUILD_TYPE}" STREQUAL "Debug")
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR ${CMAKE_COMPILER_IS_GNUCXX} )
-        target_compile_options(CompileSettingsDebug INTERFACE -O0 -g)
+        target_compile_options(CompileSettingsDebug INTERFACE -O0)
+    endif()
+
+elseif("${BUILD_TYPE}" STREQUAL "DebugOptimized")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR ${CMAKE_COMPILER_IS_GNUCXX} )
+        target_compile_options(CompileSettingsDebug INTERFACE -O1 -g)
     endif()
 
 elseif("${BUILD_TYPE}" STREQUAL "ReleaseSymbols")
