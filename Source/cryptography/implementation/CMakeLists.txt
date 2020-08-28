@@ -14,8 +14,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+include(GetExternalCode)
 
 set(CRYPTOGRAPHY_IMPLEMENTATION "None" CACHE STRING "Defines what implementation to use")
+
+if(${CRYPTOGRAPHY_IMPLEMENTATION} STREQUAL "Nexus")
+GetExternalCode(
+    GIT_REPOSITORY "git@github.com:WebPlatformForEmbedded/ICrypto-Nexus.git"
+    GIT_TAG "master"
+    SOURCE_DIR "Nexus"
+)
+endif()
 
 if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/${CRYPTOGRAPHY_IMPLEMENTATION})
     message(FATAL_ERROR "Invalid value \'${CRYPTOGRAPHY_IMPLEMENTATION}\' for CRYPTOGRAPHY_IMPLEMENTATION.")

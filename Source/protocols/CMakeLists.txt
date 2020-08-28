@@ -35,7 +35,7 @@ set(SOURCES_COM
         com/Administrator.cpp
         com/Communicator.cpp
         com/ITracing.cpp
-        com/ProxyStubs.cpp
+        com/ProxyStubs.cpp.in
         com/IValueIterator.h
         com/IUnknown.cpp
         com/IStringIterator.h
@@ -104,6 +104,12 @@ set(PUBLIC_HEADERS
         Module.h
         )
 
+set(PROXYSTUB_COM_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_COM.cpp")
+
+configure_file( "${CMAKE_CURRENT_BINARY_DIR}/com/ProxyStubs.cpp.in"
+                "${CMAKE_CURRENT_BINARY_DIR}/com/ProxyStubs.cpp"
+                @ONLY)
+
 # Construct a library object
 add_library(${TARGET} SHARED
         Module.cpp
@@ -122,6 +128,7 @@ add_library(${TARGET} SHARED
 target_include_directories(${TARGET} 
         PRIVATE 
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/com>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/websocket>
 )
