@@ -43,7 +43,7 @@ namespace Exchange {
             AUDIO_WAV
         };
 
-        typedef RPC::IIteratorType<AudioCodec, ID_PLAYER_PROPERTIES_AUDIO> IAudioCodedIterator;
+        typedef RPC::IIteratorType<AudioCodec, ID_PLAYER_PROPERTIES_AUDIO> IAudioCodecIterator;
 
         enum VideoCodec : uint8_t {
             VIDEO_UNDEFINED,
@@ -59,8 +59,8 @@ namespace Exchange {
 
         typedef RPC::IIteratorType<VideoCodec, ID_PLAYER_PROPERTIES_VIDEO> IVideoCodecIterator;
 
-        virtual uint32_t AudioCodec(IAudioCodedIterator& codec /* @out */) const;
-        virtual uint32_t* VideoCodec(IVideoCodecIterator& codec /* @out */) const;
+        virtual uint32_t AudioCodecs(IAudioCodecIterator*& codec /* @out */) const;
+        virtual uint32_t VideoCodecs(IVideoCodecIterator*& codec /* @out */) const;
 
         enum PlaybackResolution : uint8_t {
             RESOLUTION_UNKNOWN,
