@@ -23,6 +23,56 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="definitions.h" />
+    <ClInclude Include="IAVNClient.h" />
+    <ClInclude Include="IAVSClient.h" />
+    <ClInclude Include="IBluetooth.h" />
+    <ClInclude Include="IBrowser.h" />
+    <ClInclude Include="IButler.h" />
+    <ClInclude Include="ICapture.h" />
+    <ClInclude Include="ICommand.h" />
+    <ClInclude Include="IComposition.h" />
+    <ClInclude Include="IContentDecryption.h" />
+    <ClInclude Include="IDeviceIdentification.h" />
+    <ClInclude Include="IDictionary.h" />
+    <ClInclude Include="IDisplayInfo.h" />
+    <ClInclude Include="IDolby.h" />
+    <ClInclude Include="IDRM.h" />
+    <ClInclude Include="Ids.h" />
+    <ClInclude Include="IDsgccClient.h" />
+    <ClInclude Include="IExternal.h" />
+    <ClInclude Include="IExternalBase.h" />
+    <ClInclude Include="IGuide.h" />
+    <ClInclude Include="IInputPin.h" />
+    <ClInclude Include="IInputSwitch.h" />
+    <ClInclude Include="IIPNetwork.h" />
+    <ClInclude Include="IKeyHandler.h" />
+    <ClInclude Include="IMath.h" />
+    <ClInclude Include="IMemory.h" />
+    <ClInclude Include="IMessenger.h" />
+    <ClInclude Include="INetflix.h" />
+    <ClInclude Include="IPackager.h" />
+    <ClInclude Include="IPerformance.h" />
+    <ClInclude Include="IPlayerInfo.h" />
+    <ClInclude Include="IPlayGiga.h" />
+    <ClInclude Include="IPower.h" />
+    <ClInclude Include="IProvisioning.h" />
+    <ClInclude Include="IRemoteControl.h" />
+    <ClInclude Include="IResourceMonitor.h" />
+    <ClInclude Include="IRPCLink.h" />
+    <ClInclude Include="IRtspClient.h" />
+    <ClInclude Include="ISecureShellServer.h" />
+    <ClInclude Include="IStream.h" />
+    <ClInclude Include="ISwitchBoard.h" />
+    <ClInclude Include="ISystemCommands.h" />
+    <ClInclude Include="ITestController.h" />
+    <ClInclude Include="ITestUtility.h" />
+    <ClInclude Include="ITimeSync.h" />
+    <ClInclude Include="IVoiceHandler.h" />
+    <ClInclude Include="IVolumeControl.h" />
+    <ClInclude Include="IWebDriver.h" />
+    <ClInclude Include="IWebPA.h" />
+    <ClInclude Include="IWebServer.h" />
+    <ClInclude Include="Module.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="json\Browser.json">
@@ -190,15 +240,6 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </CustomBuild>
   </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="json\Butler.json">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
-      <FileType>Document</FileType>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
-    </CustomBuild>
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{577A83B6-66B6-4A98-A3D6-4EBA066A1772}</ProjectGuid>
@@ -266,7 +307,7 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
     <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
-    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
+    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>
     <CustomBuildAfterTargets>
@@ -276,7 +317,7 @@
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
     <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
-    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
+    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>
     <CustomBuildAfterTargets>
@@ -286,7 +327,7 @@
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
     <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
-    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
+    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>
     <CustomBuildAfterTargets>
@@ -313,14 +354,16 @@
       </Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" -c %(Filename)%(Extension)</Command>
+      <Command>
+      </Command>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
+      <Outputs>
+      </Outputs>
     </CustomBuildStep>
     <CustomBuildStep>
-      <TreatOutputAsContent>true</TreatOutputAsContent>
-      <Message>JSONGenerator</Message>
+      <Message>
+      </Message>
     </CustomBuildStep>
     <CustomBuild>
       <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" --keep-empty -c "%(FullPath)"</Command>
@@ -350,20 +393,21 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>python "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" --code "$(ProjectDir)I*.h"</Command>
       <Message>
       </Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" -c %(Filename)%(Extension)</Command>
+      <Command>
+      </Command>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
+      <Outputs>
+      </Outputs>
     </CustomBuildStep>
     <CustomBuildStep>
-      <TreatOutputAsContent>true</TreatOutputAsContent>
-      <Message>JSONGenerator</Message>
+      <Message>
+      </Message>
     </CustomBuildStep>
     <CustomBuild>
       <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" --keep-empty -c "%(FullPath)"</Command>
@@ -397,20 +441,21 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>python "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" --code "$(ProjectDir)I*.h"</Command>
       <Message>
       </Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" -c %(Filename)%(Extension)</Command>
+      <Command>
+      </Command>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
+      <Outputs>
+      </Outputs>
     </CustomBuildStep>
     <CustomBuildStep>
-      <TreatOutputAsContent>true</TreatOutputAsContent>
-      <Message>JSONGenerator</Message>
+      <Message>
+      </Message>
     </CustomBuildStep>
     <CustomBuild>
       <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" --keep-empty -c "%(FullPath)"</Command>
@@ -444,20 +489,21 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>python "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" --code "$(ProjectDir)I*.h"</Command>
       <Message>
       </Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" -c %(Filename)%(Extension)</Command>
+      <Command>
+      </Command>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
+      <Outputs>
+      </Outputs>
     </CustomBuildStep>
     <CustomBuildStep>
-      <TreatOutputAsContent>true</TreatOutputAsContent>
-      <Message>JSONGenerator</Message>
+      <Message>
+      </Message>
     </CustomBuildStep>
     <CustomBuild>
       <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" --keep-empty -c "%(FullPath)"</Command>

@@ -28,6 +28,7 @@ add_executable(${TARGET}
         PluginServer.cpp
         Probe.cpp
         SystemInfo.cpp
+        PostMortem.cpp
         )
 
 target_compile_definitions(${TARGET}

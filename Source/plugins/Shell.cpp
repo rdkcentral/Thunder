@@ -42,6 +42,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::IShell::reason)
     { PluginHost::IShell::STARTUP, _TXT("Startup") },
     { PluginHost::IShell::SHUTDOWN, _TXT("Shutdown") },
     { PluginHost::IShell::CONDITIONS, _TXT("Conditions") },
+    { PluginHost::IShell::WATCHDOG_EXPIRED, _TXT("WatchdogExpired") },
 
 ENUM_CONVERSION_END(PluginHost::IShell::reason)
 
@@ -213,10 +214,10 @@ namespace PluginHost
         void* result = nullptr;
         Object rootObject(this);
 
-        bool inProcessOldConfiguration = ( !rootObject.Mode.IsSet() ) && ( rootObject.OutOfProcess.Value() == false ); //note: when both new and old not set this one will revert to the old default which was true
-        bool inProcessNewConfiguration = ( rootObject.Mode.IsSet() ) && ( rootObject.Mode == Object::ModeType::OFF ); // when both set the Old one is ignored
-
-        if ( (inProcessNewConfiguration == true) || (inProcessOldConfiguration == true) ) {
+        // Note: when both new and old not set this one will revert to the old default which was inprocess 
+        //       when both set the Old one is ignored
+        if ( (( !rootObject.Mode.IsSet() ) && ( rootObject.OutOfProcess.Value() == false )) ||
+             ((  rootObject.Mode.IsSet() ) && ( rootObject.Mode == Object::ModeType::OFF )) ) { 
 
             string locator(rootObject.Locator.Value());
 

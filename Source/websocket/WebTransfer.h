@@ -141,7 +141,7 @@ namespace Web {
                     ASSERT(_request->IsValid() == true);
 
                     BaseClass::Submit(_request);
-                } else if ((_response.IsValid() == true) || (BaseClass::IsClosed() == true)) {
+                } else if ((_response.IsValid() == true) || (BaseClass::IsClosed() == true) || (BaseClass::IsSuspended() == true)) {
                     // Close the link and thus the transfer..
                     _parent.EndTransfer(_response);
                }

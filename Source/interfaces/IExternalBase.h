@@ -18,20 +18,8 @@
  */
 
 #pragma once
-
-// ---- Include system wide include files ----
 #include "Module.h"
 #include "IExternal.h"
-
-// ---- Include local include files ----
-
-// ---- Helper types and constants ----
-
-// ---- Helper functions ----
-
-// ---- Referenced classes and types ----
-
-// ---- Class Definition ----
 
 // @stubgen:skip
 

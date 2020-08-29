@@ -7,6 +7,9 @@
     <Filter Include="Source Files">
       <UniqueIdentifier>{fb199d9a-32f6-4dc3-830b-7b253f93388c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{c56c128b-2525-49c3-8441-a58a9396802c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Administrator.cpp">
@@ -24,9 +27,12 @@
     <ClCompile Include="Module.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ProxyStubs_Communicator.cpp" />
-    <ClCompile Include="ProxyStubs_StringIterator.cpp" />
-    <ClCompile Include="ProxyStubs_ValueIterator.cpp" />
+    <ClCompile Include="ProxyStubs_Com.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IUnknown.h">
@@ -41,9 +47,6 @@
     <ClInclude Include="Administrator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ITracing.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Communicator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -53,8 +56,13 @@
     <ClInclude Include="com.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Ids.h" />
     <ClInclude Include="IValueIterator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Ids.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ICOM.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

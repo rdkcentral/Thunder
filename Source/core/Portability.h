@@ -195,7 +195,7 @@ typedef std::string string;
 #define CS7 7
 #define CS8 8
 
-#define ALLOCA _alloca
+#define ALLOCA _malloca
 
 #define KEY_LEFTSHIFT VK_LSHIFT
 #define KEY_RIGHTSHIFT VK_RSHIFT
@@ -362,12 +362,6 @@ inline void EXTERNAL SleepS(unsigned int a_Time)
     ::SleepMs(a_Time * 1000);
 }
 
-#ifdef __GNUC__
-#define VARIABLE_IS_NOT_USED __attribute__((unused))
-#else
-#define VARIABLE_IS_NOT_USED
-#endif
-
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define LITTLE_ENDIAN_PLATFORM 1
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
@@ -378,12 +372,19 @@ inline void EXTERNAL SleepS(unsigned int a_Time)
 
 #endif
 
+
 #ifdef __GNUC__
 #define DEPRECATED __attribute__((deprecated))
+#define VARIABLE_IS_NOT_USED __attribute__((unused))
+#define WARNING_RESULT_NOT_USED __attribute__((warn_unused_result))
 #elif defined(_MSC_VER)
 #define DEPRECATED __declspec(deprecated)
+#define VARIABLE_IS_NOT_USED
+#define WARNING_RESULT_NOT_USED
 #else
 #define DEPRECATED
+#define VARIABLE_IS_NOT_USED
+#define WARNING_RESULT_NOT_USED
 #endif
 
 #if defined(_THUNDER_DEBUG) || !defined(_THUNDER_NDEBUG)
@@ -616,7 +617,7 @@ namespace Core {
     struct EXTERNAL IUnknown : public IReferenceCounted  {
         enum { ID = 0x00000000 };
 
-        virtual ~IUnknown(){};
+        ~IUnknown() override = default;
 
         virtual void* QueryInterface(const uint32_t interfaceNummer) = 0;
 
@@ -689,7 +690,8 @@ namespace Core {
         ERROR_CODE(ERROR_READ_ERROR, 39) \
         ERROR_CODE(ERROR_WRITE_ERROR, 40) \
         ERROR_CODE(ERROR_INVALID_DESIGNATOR, 41) \
-        ERROR_CODE(ERROR_UNAUTHENTICATED, 42)
+        ERROR_CODE(ERROR_UNAUTHENTICATED, 42) \
+        ERROR_CODE(ERROR_NOT_EXIST, 43)
 
     #define ERROR_CODE(CODE, VALUE) CODE = VALUE,
 

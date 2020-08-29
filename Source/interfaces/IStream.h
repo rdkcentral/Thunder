@@ -18,7 +18,6 @@
  */
 
 #pragma once
-
 #include "Module.h"
 
 #define WPEPLAYER_PROCESS_NODE_ID "/tmp/player"
@@ -59,13 +58,10 @@ namespace Exchange {
         };
 
         struct EXTERNAL IElement : virtual public Core::IUnknown {
-
             enum { ID = ID_STREAM_ELEMENT};
 
             struct EXTERNAL IIterator : virtual public Core::IUnknown {
                 enum { ID = ID_STREAM_ELEMENT_ITERATOR };
-
-                virtual ~IIterator() {}
 
                 virtual void Reset() = 0;
                 virtual bool IsValid() const = 0;
@@ -82,8 +78,6 @@ namespace Exchange {
                 Data
             };
 
-            virtual ~IElement() {}
-
             virtual type Type() const = 0;
         };
 
@@ -92,8 +86,6 @@ namespace Exchange {
 
             struct EXTERNAL IGeometry : virtual public Core::IUnknown {
                 enum { ID = ID_STREAM_CONTROL_GEOMETRY };
-
-                virtual ~IGeometry() {}
 
                 virtual uint32_t X() const = 0;
                 virtual uint32_t Y() const = 0;
@@ -105,13 +97,9 @@ namespace Exchange {
             struct EXTERNAL ICallback : virtual public Core::IUnknown {
                 enum { ID = ID_STREAM_CONTROL_CALLBACK };
 
-                virtual ~ICallback() {}
-
                 virtual void Event(const uint32_t eventid) = 0;
                 virtual void TimeUpdate(const uint64_t position) = 0;
             };
-
-            virtual ~IControl() {}
 
             virtual RPC::IValueIterator* Speeds() const = 0;
             virtual void Speed(const int32_t request) = 0;
@@ -127,14 +115,10 @@ namespace Exchange {
         struct EXTERNAL ICallback : virtual public Core::IUnknown {
             enum { ID = ID_STREAM_CALLBACK };
 
-            virtual ~ICallback() {}
-
             virtual void DRM(const uint32_t state) = 0;
             virtual void StateChange(const state newState) = 0;
             virtual void Event(const uint32_t eventid) = 0;
         };
-
-        virtual ~IStream() {}
 
         virtual string Metadata() const = 0;
         virtual streamtype Type() const = 0;
@@ -151,7 +135,6 @@ namespace Exchange {
     struct EXTERNAL IPlayer : virtual public Core::IUnknown {
         enum { ID = ID_PLAYER };
 
-        virtual ~IPlayer() {}
         virtual IStream* CreateStream(const IStream::streamtype streamType) = 0;
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;
     };
