@@ -21,12 +21,14 @@
 
 #include "Module.h"
 
+// @stubgen:include "IRPCIterator.h"
+
 namespace WPEFramework {
 namespace Exchange {
-    /* @json */
+
+    /* json */
     struct EXTERNAL IPlayerProperties : virtual public Core::IUnknown {
         enum { ID = ID_PLAYER_PROPERTIES };
-        virtual ~IPlayerProperties() {}
 
          enum AudioCodec : uint8_t {
             AUDIO_UNDEFINED,
@@ -43,8 +45,6 @@ namespace Exchange {
             AUDIO_WAV
         };
 
-        typedef RPC::IIteratorType<AudioCodec, ID_PLAYER_PROPERTIES_AUDIO> IAudioCodecIterator;
-
         enum VideoCodec : uint8_t {
             VIDEO_UNDEFINED,
             VIDEO_H263,
@@ -57,10 +57,11 @@ namespace Exchange {
             VIDEO_VP10
         };
 
+        typedef RPC::IIteratorType<AudioCodec, ID_PLAYER_PROPERTIES_AUDIO> IAudioCodecIterator;
         typedef RPC::IIteratorType<VideoCodec, ID_PLAYER_PROPERTIES_VIDEO> IVideoCodecIterator;
 
-        virtual uint32_t AudioCodecs(IAudioCodecIterator*& codec /* @out */) const;
-        virtual uint32_t VideoCodecs(IVideoCodecIterator*& codec /* @out */) const;
+        virtual uint32_t AudioCodecs(IAudioCodecIterator*& codec /* @out */) const = 0;
+        virtual uint32_t VideoCodecs(IVideoCodecIterator*& codec /* @out */) const = 0;
 
         enum PlaybackResolution : uint8_t {
             RESOLUTION_UNKNOWN,
