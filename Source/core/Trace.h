@@ -96,7 +96,7 @@
     do {                                                                                                        \
         if (!(expr)) {                                                                                          \
             ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
-            DumpCallStack();                                                                                    \
+            DumpCallStack(0, nullptr);                                                                          \
             abort();                                                                                            \
         }                                                                                                       \
     } while(0)
@@ -105,7 +105,7 @@
     do {                                                                                                                                             \
         if (!(expr)) {                                                                                                                               \
             ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n         " #format "\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr, ##__VA_ARGS__); \
-            DumpCallStack();                                                                                                                         \
+            DumpCallStack(0, nullptr);                                                                                                               \
             abort();                                                                                                                                 \
         }                                                                                                                                            \
     } while(0)

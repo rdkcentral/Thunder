@@ -24,10 +24,6 @@
 #include <syslog.h>
 #endif
 
-#ifdef __LINUX__
-#include <execinfo.h>
-#endif
-
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 namespace WPEFramework {
@@ -257,34 +253,6 @@ namespace PluginHost {
         }
     }
 #endif
-
-    static void PublishCallstack(const ::ThreadId threadId)
-    {
-#ifndef __WINDOWS__
-        void* callstack[32];
-        uint32_t entries = ::GetCallStack(threadId, callstack, (sizeof(callstack) / sizeof(void*)));
-        char** symbols = backtrace_symbols(callstack, entries);
-
-        for (uint32_t i = 0; i < entries; i++) {
-            Dl_info info;
-            if (dladdr(callstack[i], &info) && info.dli_sname) {
-                char* demangled = NULL;
-                int status = -1;
-                if (info.dli_sname[0] == '_') {
-                    demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
-                }
-                fprintf(stdout, "%-3d %*p %s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i],
-                    status == 0 ? demangled : info.dli_sname == 0 ? symbols[i] : info.dli_sname,
-                    (char*)callstack[i] - (char*)info.dli_saddr);
-                free(demangled);
-            } else {
-                fprintf(stdout, "%-3d %*p %s\n",
-                    i, int(2 + sizeof(void*) * 2), callstack[i], symbols[i]);
-            }
-        }
-        free(symbols);
-#endif
-    }
 
 #ifdef __WINDOWS__
     int _tmain(int argc, _TCHAR* argv[])
@@ -687,12 +655,10 @@ namespace PluginHost {
                     }
                     case 'Q':
                         break;
-
-#if !defined(__WINDOWS__) && !defined(__APPLE__)
                     case 'R': {
                         printf("\nMonitor callstack:\n");
                         printf("============================================================\n");
-                        PublishCallstack(Core::ResourceMonitor::Instance().Id());
+                        ::DumpCallStack(Core::ResourceMonitor::Instance().Id(), stdout);
                         break;
                     }
                     case '0':
@@ -703,20 +669,19 @@ namespace PluginHost {
                     case '5':
                     case '6':
                     case '7':
-                    case '8': {
+                    case '8': 
+                    case '9': {
                         uint32_t threadId = _dispatcher->WorkerPool().Id(keyPress - '0');
-                        printf("\nThreadPool thread[%c,%d] callstack:\n", keyPress, threadId);
+                        printf("\nThreadPool thread[%c] callstack:\n", keyPress);
                         printf("============================================================\n");
                         if (threadId != static_cast<uint32_t>(~0)) {
-                            PublishCallstack(threadId);
+                            ::DumpCallStack(threadId, stdout);
                         } else {
                            printf("The given Thread ID is not in a valid range, please give thread id between 0 and %d\n", THREADPOOL_COUNT);
                         }
 
                         break;
                     }
-#endif
-
                     case '?':
                         printf("\nOptions are: \n");
                         printf("  [P]lugins\n");
