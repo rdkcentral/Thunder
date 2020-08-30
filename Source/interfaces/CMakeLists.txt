@@ -37,7 +37,6 @@ add_library(${TargetMarshalling} SHARED
 
 target_include_directories(${TargetMarshalling} PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 
-file(GLOB JSON_DATA_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/generated/json/JsonData*.h")
 file(GLOB JSON_ENUM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/generated/json/JsonEnum*.cpp")
 file(GLOB JSON_LINK_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/generated/json/J*.h")
 
@@ -100,6 +99,7 @@ target_include_directories(${TargetDefinitions}
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
           $<INSTALL_INTERFACE:include/${NAMESPACE}>
+          $<INSTALL_INTERFACE:include/${NAMESPACE}/interfaces>
         )
 
 install(
@@ -118,13 +118,8 @@ install(
 )
 
 install(
-        FILES ${JSON_DATA_HEADERS}
-        DESTINATION include/${NAMESPACE}/interfaces/json
-)
-
-install(
         FILES ${JSON_LINK_HEADERS}
-        DESTINATION include/${NAMESPACE}/interfaces
+        DESTINATION include/${NAMESPACE}/interfaces/json
 )
 
 InstallPackageConfig(
