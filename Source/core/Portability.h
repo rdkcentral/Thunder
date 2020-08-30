@@ -521,10 +521,10 @@ inline void SleepUs(unsigned int a_Time)
 }
 
 
-extern void EXTERNAL DumpCallStack(const ThreadId threadId = 0);
-}
-
+void EXTERNAL DumpCallStack(const ThreadId threadId, FILE* output);
 uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
+
+}
 
 #if !defined(__DEBUG)
 #define DEBUG_VARIABLE(X) (void)(X)

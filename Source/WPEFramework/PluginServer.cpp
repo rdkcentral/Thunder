@@ -664,7 +664,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     {
         Plugin::Controller* controller;
         if ((_controller.IsValid() == false) || ((controller = (_controller->ClassType<Plugin::Controller>())) == nullptr)) {
-            DumpCallStack();
+            DumpCallStack(0, nullptr);
         } else {
 
             controller->Notification(data);
