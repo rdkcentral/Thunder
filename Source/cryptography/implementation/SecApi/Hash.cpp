@@ -162,9 +162,7 @@ namespace Implementation {
                 else {
                     _size = digestSize;
                     ASSERT(_size != 0);
-
                 }
-
             }
         }
     }
@@ -174,8 +172,8 @@ namespace Implementation {
         : _size(0)
         , _failure(false)
     {
-	IdStore* ids;
-	uint16_t length = 0;
+        IdStore* ids;
+        uint16_t length = 0;
 
         ASSERT(vault != nullptr);
         ASSERT(secretId != 0);
@@ -205,17 +203,17 @@ namespace Implementation {
                         ASSERT(_size != 0);
                     }
                 }
-		else {
-		    TRACE_L1(_T("SEC :Key instance failed retVal = %d \n"),sec_res);
-		}
+                else {
+                    TRACE_L1(_T("SEC :Key instance failed retVal = %d \n"),sec_res);
+                }
             }
-	    else {
-		TRACE_L1(_T("SEC :Unable to get a valid proc handle from vault \n"));
-	    }
+            else {
+                TRACE_L1(_T("SEC :Unable to get a valid proc handle from vault \n"));
+            }
         }
-	else {
-	    TRACE_L1(_T("SEC :Failed to export a valid key from vault at id %d\n"),secretId);
-	}
+        else {
+            TRACE_L1(_T("SEC :Failed to export a valid key from vault at id %d\n"),secretId);
+        }
     }
 
     template<typename OPERATION>
@@ -246,15 +244,15 @@ namespace Implementation {
         ASSERT(data != nullptr);
         if (false == _failure) {
             SEC_BYTE* data_digest = const_cast<SEC_BYTE*>(data);
- 	    Sec_Result retVal = OPERATION::Update(handle, data_digest, length);
+            Sec_Result retVal = OPERATION::Update(handle, data_digest, length);
             if ( SEC_RESULT_SUCCESS == retVal) {
                 return length;
             }
-	    else {
+            else {
                 TRACE_L1(_T("SEC: Update() failed retval = %d"),retVal);
-	    }
+            }
         }
-	return 0;
+        return 0;
 
     }
 
@@ -282,7 +280,7 @@ namespace Implementation {
             }
             else {
                 size_t len = maxLength;
-		Sec_Result res = OPERATION::Final(handle, data, &len);
+                Sec_Result res = OPERATION::Final(handle, data, &len);
                 if (res != SEC_RESULT_SUCCESS) {
                     TRACE_L1(_T("Final() failed retVal = %d"),res);
                     _failure = true;
@@ -294,7 +292,6 @@ namespace Implementation {
                 }
             }
         }
-
         return (result);
 
     }

@@ -43,9 +43,9 @@ namespace Implementation {
         const uint16_t modulusSize, const uint8_t modulus[],uint32_t& privateKeyId, uint32_t& publicKeyId)
     {
         uint32_t result = -1;
-        SEC_SIZE            bytesWritten = 0;
-        Sec_SocKeyHandle    keyPublic;
-        Sec_SocKeyHandle    keyPrivate;
+        SEC_SIZE bytesWritten = 0;
+        Sec_SocKeyHandle keyPublic;
+        Sec_SocKeyHandle keyPrivate;
         uint8_t base_buf[sizeof(uint32_t)] = { 0 };
 
         ASSERT(generator >= 1);
@@ -66,9 +66,9 @@ namespace Implementation {
             publicKeyId = _vault->AddKey(keyPublic);
             result = RET_OK;
         }
-	else {
-	    TRACE_L1(_T("SEC :SecNetflix_GenerateDHKeyPair failed,retVal = %d \n"),result_sec);
-	}
+        else {
+            TRACE_L1(_T("SEC :SecNetflix_GenerateDHKeyPair failed,retVal = %d \n"),result_sec);
+        }
 
         return (result);
     }
@@ -82,11 +82,11 @@ namespace Implementation {
          *
          * @param[in] _vault - VaultNetflix object
          * @param[in] privateKeyId -id of private key 
-	 * @param[in] peerPublicKeyId - id of peer public key 
-	 * @param[in] derivationKeyId -derivation key id
+         * @param[in] peerPublicKeyId - id of peer public key 
+         * @param[in] derivationKeyId -derivation key id
          * @param[out] encryptionKeyId -generated AES-128-CBC encryption key id
-	 * @param[out] hmacKeyId - generated HMAC-SHA256 hmac key id
-	 * @param[out] wrappingKeyId - generated AES-128  wrapping key id
+         * @param[out] hmacKeyId - generated HMAC-SHA256 hmac key id
+         * @param[out] wrappingKeyId - generated AES-128  wrapping key id
          *
          * @return status success(0) or otherwise 
          *
@@ -96,16 +96,14 @@ namespace Implementation {
             uint32_t& encryptionKeyId, uint32_t& hmacKeyId, uint32_t& wrappingKeyId)
         {
             uint32_t result = -1;
-
             Sec_SocKeyHandle* pKeyBase = NULL;
             Sec_SocKeyHandle* pKeyDerive = NULL;
             Sec_SocKeyHandle* pKeyPublic = NULL;
-            Sec_SocKeyHandle    hKeyEnc;
-            Sec_SocKeyHandle    hKeyHMAC;
-            Sec_SocKeyHandle    hKeyWrap;
+            Sec_SocKeyHandle  hKeyEnc;
+            Sec_SocKeyHandle  hKeyHMAC;
+            Sec_SocKeyHandle  hKeyWrap;
             uint8_t* peerKey = NULL;
             uint16_t pSize;
-
 
             //addkey function to coverto normal ids to seckey ids
             int retVal = ((_vault->FindKey(privateKeyId, &pKeyBase)) || (_vault->FindKey(derivationKeyId, &pKeyDerive)));
@@ -116,7 +114,6 @@ namespace Implementation {
             ASSERT(peerKey != NULL);
 
             //Need to export publickey data
-
             Sec_Result  result_sec = SEC_RESULT_FAILURE;
             result_sec = SecNetflix_NetflixDHDerive(_vault->getNetflixHandle(),pKeyBase,peerKey,pSize,pKeyDerive,
                         &hKeyEnc,&hKeyHMAC,&hKeyWrap);
@@ -129,9 +126,9 @@ namespace Implementation {
                 result = RET_OK;
                 TRACE_L2(_T("SEC:Netflix Derive  enc %d  hmac %d  wrapping handle %d \n", encryptionKeyId, hmacKeyId, wrappingKeyId));
             }
-	    else {
-		TRACE_L1(_T("SEC:SecNetflix_NetflixDHDerive failed ,retval = %d \n"),result_sec);
-	    }
+            else {
+                TRACE_L1(_T("SEC:SecNetflix_NetflixDHDerive failed ,retval = %d \n"),result_sec);
+            }
 
             return (result);
         }

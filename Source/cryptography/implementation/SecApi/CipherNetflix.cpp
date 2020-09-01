@@ -110,11 +110,9 @@ namespace Implementation {
     {
 
         uint32_t keyHandle;
-
         uint32_t retVal = -1;
         Sec_SocKeyHandle* pKey = NULL;
         SEC_SIZE            bytesWritten = 0;
-
         std::string outputbuf;
 
         if (inputLength % AES_128_BLOCK_SIZE != 0) {

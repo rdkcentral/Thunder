@@ -77,7 +77,7 @@ namespace Implementation {
             esn();
             // Named  Keys 
             namedKeys();
-	    retVal = true;
+            retVal = true;
         }
         else {
             TRACE_L1(_T("SecNetflix_LoadBoundKeys FAILED : retVal = %d\n"), result);
@@ -413,7 +413,7 @@ namespace Implementation {
             uint32_t outAlgo = 0;
             uint32_t outUsage = 0;
             uint32_t keyInfo =  getKeyInfo(id, outKeyType, outAlgo, outUsage);
-	    if (keyInfo == RET_OK) {
+            if (keyInfo == RET_OK) {
                 TRACE_L2(_T("SEC: the getinfo values keyid %d :  outKeyType %d outAlgo %d outUsage %d \n"), id, outKeyType, outAlgo, outUsage);
                 if ((outKeyType == KEY_PUBLIC) && (outAlgo == NFLX_DH_ALG)) {
                     uint8_t keybuf[DH_PUBLIC_KEY_MAX] = {0};
@@ -421,14 +421,14 @@ namespace Implementation {
                     size = bytesWritten;
                 } 
                 else {
-		    TRACE_L1(_T("SEC: key of id %d is sealed \n"),id);
+                    TRACE_L1(_T("SEC: key of id %d is sealed \n"),id);
                     size = USHRT_MAX;
                 }
             }
-	}
-	else {
-	    TRACE_L1(_T("SEC:Could not find id  %d \n"),id);
-	}
+        }
+        else {
+            TRACE_L1(_T("SEC:Could not find id  %d \n"),id);
+        }
         return size;
     }
 
@@ -436,7 +436,7 @@ namespace Implementation {
     /*********************************************************************
      * @function Import
      *
-     * @brief	Store the key(DH public key)  used for DH operations
+     * @brief   Store the key(DH public key)  used for DH operations
      *
      * @param[in] size - size of key
      * @param[in] blob - key to be stored
@@ -454,15 +454,15 @@ namespace Implementation {
             memcpy(_pubKeyStore, blob, size);
             _peerPubSize = size;
             TRACE_L2(_T("SEC :DH  pub key import and size  %d \n"), size);
-	    id =1;
+            id =1;
         }
-	return id;
+        return id;
     }
 
     /*********************************************************************
      * @function Export
      *
-     * @brief	Export the key
+     * @brief   Export the key
      *
      * @param[in] id - id of the key
      * @param[in] size - size of the key
@@ -594,11 +594,11 @@ extern "C" {
         length = esnVal.size();
         TRACE_L2(_T("SEC: the esnval size is %d \n"), length);
         if (data != nullptr) {
-        uint8_t* esn_data = reinterpret_cast<uint8_t*>(&esnVal[0]);
-        memcpy(data, esn_data, length);
+            uint8_t* esn_data = reinterpret_cast<uint8_t*>(&esnVal[0]);
+            memcpy(data, esn_data, length);
         }
         else { 
-        TRACE_L1(_T("esn buffer null\n"));
+            TRACE_L1(_T("esn buffer null\n"));
         }
         return (length);
     }
