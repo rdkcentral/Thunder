@@ -1519,7 +1519,7 @@ namespace PluginHost {
                     }
 
                     if ((changedFlags & (1 << ISubSystem::SECURITY)) != 0) {
-                        _parent.Security(true);
+                        _parent.Security(SystemInfo::IsActive(ISubSystem::SECURITY));
                     }
 
                     _decoupling->Schedule();
