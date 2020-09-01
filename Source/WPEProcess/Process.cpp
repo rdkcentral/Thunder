@@ -468,7 +468,7 @@ private:
             ProcessFlow::Abort();
 
         } else if (signo == SIGSEGV) {
-            DumpCallStack();
+            DumpCallStack(0, nullptr);
             // now invoke the default segfault handler
             signal(signo, SIG_DFL);
             kill(getpid(), signo);
