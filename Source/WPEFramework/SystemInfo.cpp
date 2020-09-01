@@ -35,7 +35,6 @@ namespace PluginHost {
         , _time(nullptr)
         , _provisioning(nullptr)
         , _flags(0)
-        , _type(END_LIST)
     {
         ASSERT(callback != nullptr);
     }

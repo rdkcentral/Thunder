@@ -1510,12 +1510,15 @@ namespace PluginHost {
             private:
                 virtual void Dispatch() override
                 {
+                    static uint32_t previousState = 0;
+                    uint32_t changedFlags = (previousState ^ Value());
+                    previousState = Value();
+
+                    if ((changedFlags & (1 << ISubSystem::NETWORK)) != 0) {
+                         const_cast<PluginHost::Config&>(_parent.Configuration()).UpdateAccessor();
+                    }
                     _parent.Security(SystemInfo::IsActive(ISubSystem::SECURITY));
 
-                    if (SystemInfo::IsCurrent(ISubSystem::NETWORK)) {
-                        _parent.UpdateAccessor();
-                        SystemInfo::ResetCurrent();
-                    }
                     _decoupling->Schedule();
                 }
                 inline void Evaluate()
@@ -1914,10 +1917,6 @@ namespace PluginHost {
             inline Core::WorkerPool& WorkerPool()
             {
                 return (_server.WorkerPool());
-            }
-            inline void UpdateAccessor()
-            {
-                const_cast<PluginHost::Config&>(_server.Configuration()).UpdateAccessor();
             }
 
         private:
