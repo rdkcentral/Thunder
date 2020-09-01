@@ -125,8 +125,10 @@ namespace Core {
         NodeId(const struct sockaddr_un& rInfo, const uint16_t access = ~0);
         NodeId(const uint32_t destination, const pid_t pid, const uint32_t groups);
         NodeId(const struct sockaddr_ll& rInfo);
-        NodeId(const int32_t interfaceIndex, const uint16_t protocolFilter, const uint16_t hardwareAddressLength, const uint8_t* hardwareAddress);
+        NodeId(const uint16_t interfaceIndex, const uint16_t protocol, const uint8_t type, const uint8_t length, const uint8_t* address);
+        NodeId(const TCHAR interfaceName[], const uint16_t protocol, const uint8_t type, const uint8_t length, const uint8_t* address);
 #endif
+
 #ifdef CORE_BLUETOOTH
         NodeId(const uint16_t device, const uint16_t channel);
         NodeId(const bdaddr_t& address, const uint8_t addressType, const uint16_t cid, const uint16_t psm);
