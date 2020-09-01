@@ -35,7 +35,7 @@ namespace Implementation {
         Sec_Result sec_res = SecProcessor_GetInstance_Directories(&_secProcHandle, globalDir, appDir);
         if (sec_res != SEC_RESULT_SUCCESS) {
             TRACE_L1(_T("SEC : proccesor instance failed retval= %d\n"),sec_res);
-	    _secProcHandle = NULL;
+            _secProcHandle = NULL;
         }
         _lastHandle = 0x80000000;
     }
@@ -43,8 +43,11 @@ namespace Implementation {
     /* Destructor */
     Vault::~Vault()
     {
-        if (_secProcHandle != NULL)
+        if (_secProcHandle != NULL) {
             SecProcessor_Release(_secProcHandle);
+            _secProcHandle = NULL;
+        }
+	
     }
 
     /*********************************************************************
@@ -73,9 +76,8 @@ namespace Implementation {
                 if (sec_res == SEC_RESULT_SUCCESS) {
                     size = SecKey_GetKeyLen(sec_key_hmac);
                     TRACE_L2(_T("SEC:key size is %d \n"), size);
-		    SecKey_Release(sec_key_hmac);
+                    SecKey_Release(sec_key_hmac);
                 }
-
             }
             else {
                 TRACE_L1(_T("SEC : blob id 0x%08x is sealed \n"), id);
@@ -93,7 +95,7 @@ namespace Implementation {
     /*********************************************************************
      * @function Import
      *
-     * @brief	Store the key/data blob
+     * @brief   Store the key/data blob
      *
      * @param[in] size - size of input blob
      * @param[in] blob - input blob of data to be stored
@@ -156,17 +158,17 @@ namespace Implementation {
                 }
                 else if((sec_res_aes != SEC_RESULT_SUCCESS) || (sec_res_hmac != SEC_RESULT_SUCCESS))  {
                     if (sec_res_hmac == SEC_RESULT_SUCCESS) {
-	                SecKey_Delete(_secProcHandle, ids.idHmac);
-		    }
-	 	    if ((sec_res_aes == SEC_RESULT_SUCCESS) && (ids.idAes != 0)) {
-		        SecKey_Delete(_secProcHandle, ids.idAes);
-		    }
-		    TRACE_L1(_T("SEC :cannot provision key, result for key provision Aes:%d and Hmac:%d "),sec_res_aes,sec_res_hmac);
+                        SecKey_Delete(_secProcHandle, ids.idHmac);
+                    }
+                    if ((sec_res_aes == SEC_RESULT_SUCCESS) && (ids.idAes != 0)) {
+                        SecKey_Delete(_secProcHandle, ids.idAes);
+                    }
+                    TRACE_L1(_T("SEC :cannot provision key, result for key provision Aes:%d and Hmac:%d "),sec_res_aes,sec_res_hmac);
                 }
             }
-	    else {
-	        TRACE_L1(_T("SEC : id assigned is zero \n"));
-	    }
+            else {
+                TRACE_L1(_T("SEC : id assigned is zero \n"));
+            }
             _lock.Unlock();
         }
         TRACE_L2(_T("SEC : import ends the id assigned is 0x%08x \n"), id);
@@ -176,7 +178,7 @@ namespace Implementation {
     /*********************************************************************
      * @function Export
      *
-     * @brief	Export the stored blob's secobject id 
+     * @brief   Export the stored blob's secobject id 
      *
      * @param[in] id - id of the blob
      * @param[in] size - size of the blob
@@ -304,7 +306,7 @@ namespace Implementation {
                     TRACE_L1(_T("SEC:Failed at sec_retrieve for id 0x%08x and retVal = %d\n"), id,sec_res);
                 }
             }
-	    else {
+            else {
                 TRACE_L1(_T("SEC : Failed to look up blob id 0x%08x"), id);
             }
             _lock.Unlock();
@@ -336,7 +338,6 @@ namespace Implementation {
             if (ids->idHmac != 0) {
                 SecKey_Delete(_secProcHandle, ids->idHmac);
             }
-
             _items.erase(it);
             result = true;
         }

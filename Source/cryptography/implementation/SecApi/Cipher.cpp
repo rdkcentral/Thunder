@@ -175,16 +175,15 @@ namespace Implementation {
                         SecCipher_Release(cipher_handle);
                         SecKey_Release(sec_key);
                     }
-		    else {
-			TRACE_L1(_T("SEC: Key instance failed ,retVal = %d \n"),sec_result);
-		    }
+                    else {
+                        TRACE_L1(_T("SEC: Key instance failed ,retVal = %d \n"),sec_result);
+                    }
                 }
-		else { 
-		    TRACE_L1(_T("SEC: Unable to have a valid secproc handle from vault \n"));
-		}
+                else { 
+                    TRACE_L1(_T("SEC: Unable to have a valid secproc handle from vault \n"));
+                }
             }
         }
-
 
         return (OutputLength);
 
@@ -268,6 +267,7 @@ extern "C" {
         }
         return (implementation);
     }
+
     void cipher_destroy(struct CipherImplementation* cipher)
     {
         ASSERT(cipher != nullptr);

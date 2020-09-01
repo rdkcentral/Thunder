@@ -53,7 +53,7 @@ uint32_t Implementation::HashTypeNetflix::Ingest(const uint32_t length, const ui
         _buffer.append(reinterpret_cast<const char*>(data), length);
     }
     else {
-	TRACE_L1(_T("SEC :hash Ingest Failure \n"));
+        TRACE_L1(_T("SEC :hash Ingest Failure \n"));
     }
     return (_failure ? 0 : length);
 }
@@ -91,9 +91,9 @@ uint8_t Implementation::HashTypeNetflix::Calculate(const uint8_t maxLength, uint
                 result = bytesWritten;
                 TRACE_L2(_T("SEC:HMAC signature calculated  bytes written is %d and maxLength is %d  \n"), bytesWritten, maxLength);
             }
-	    else { 
-		TRACE_L1(_T("SEC :Hmac calculation by Secnetflix_Hmac failed ,retVal =%d \n"),result_sec);
-	    }
+            else { 
+                TRACE_L1(_T("SEC :Hmac calculation by Secnetflix_Hmac failed ,retVal =%d \n"),result_sec);
+            }
         }
     }
     return (result);
