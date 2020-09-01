@@ -1517,7 +1517,10 @@ namespace PluginHost {
                     if ((changedFlags & (1 << ISubSystem::NETWORK)) != 0) {
                          const_cast<PluginHost::Config&>(_parent.Configuration()).UpdateAccessor();
                     }
-                    _parent.Security(SystemInfo::IsActive(ISubSystem::SECURITY));
+
+                    if ((changedFlags & (1 << ISubSystem::SECURITY)) != 0) {
+                        _parent.Security(true);
+                    }
 
                     _decoupling->Schedule();
                 }
