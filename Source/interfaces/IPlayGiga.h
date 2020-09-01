@@ -17,9 +17,7 @@
  * limitations under the License.
  */
 
-#ifndef _PLAYGIGA_H
-#define _PLAYGIGA_H
-
+#pragma once
 #include "Module.h"
 
 namespace WPEFramework {
@@ -33,4 +31,3 @@ namespace Exchange {
 }
 }
 
-#endif // _PLAYGIGA_H

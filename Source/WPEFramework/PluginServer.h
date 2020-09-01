@@ -795,7 +795,7 @@ namespace PluginHost {
                 return (_administrator.Configuration().Background());
             }
             string Accessor() const override {
-                return (_administrator.Configuration().URL());
+                return (_administrator.Configuration().URL() + "/" + PluginHost::Service::Configuration().Callsign.Value());
             }
             string ProxyStubPath () const override {
                 return (_administrator.Configuration().ProxyStubPath());
@@ -1510,7 +1510,18 @@ namespace PluginHost {
             private:
                 virtual void Dispatch() override
                 {
-                    _parent.Security(SystemInfo::IsActive(ISubSystem::SECURITY));
+                    static uint32_t previousState = 0;
+                    uint32_t changedFlags = (previousState ^ Value());
+                    previousState = Value();
+
+                    if ((changedFlags & (1 << ISubSystem::NETWORK)) != 0) {
+                         const_cast<PluginHost::Config&>(_parent.Configuration()).UpdateAccessor();
+                    }
+
+                    if ((changedFlags & (1 << ISubSystem::SECURITY)) != 0) {
+                        _parent.Security(SystemInfo::IsActive(ISubSystem::SECURITY));
+                    }
+
                     _decoupling->Schedule();
                 }
                 inline void Evaluate()

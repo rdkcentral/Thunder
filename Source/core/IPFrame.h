@@ -24,6 +24,7 @@
 #include "NodeId.h"
 
 #ifdef __WINDOWS__
+#include <net/ipheaders.h>
 #else
 #include<netinet/ip.h>
 #include<netinet/udp.h>
