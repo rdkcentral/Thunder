@@ -713,12 +713,9 @@ def LoadSchema(file, include_path, cpp_include_path):
         return jsonref.loads(jsonPre, object_pairs_hook=OrderedDict)
 
 
-def LoadInterface(file):
-    tree = ProxyStubGenerator.CppParser.ParseFiles(
-        [os.path.join(os.path.dirname(os.path.realpath(__file__)), posixpath.normpath(DEFAULT_DEFINITIONS_FILE)), file])
-    interfaces = [
-        i for i in ProxyStubGenerator.Interface.FindInterfaceClasses(tree, INTERFACE_NAMESPACE, file) if i.obj.is_json
-    ]
+def LoadInterface(file, includePaths = []):
+    tree = ProxyStubGenerator.CppParser.ParseFiles([os.path.join(os.path.dirname(os.path.realpath(__file__)), posixpath.normpath(DEFAULT_DEFINITIONS_FILE)), file], includePaths)
+    interfaces = [i for i in ProxyStubGenerator.Interface.FindInterfaceClasses(tree, INTERFACE_NAMESPACE, file) if i.obj.is_json]
 
     def Build(face):
         schema = OrderedDict()
@@ -2239,7 +2236,10 @@ def CreateDocument(schema, path):
         MdBr()
 
         def mergedict(d1, d2, prop):
-            return dict((d1[prop] if prop in d1 else dict()).items() + (d2[prop] if prop in d2 else dict()).items())
+            if sys.version_info >= (3, 5):
+                return {**(d1[prop] if prop in d1 else dict()), **(d2[prop] if prop in d2 else dict())}
+            else:
+                return dict((d1[prop] if prop in d1 else dict()).items() + (d2[prop] if prop in d2 else dict()).items())
 
         MdHeader("Introduction")
         MdHeader("Scope", 2)
@@ -2552,8 +2552,11 @@ if __name__ == "__main__":
                            default=INTERFACE_NAMESPACE,
                            help="for C++ source: set namespace to look for interfaces in (default: %s)" %
                            INTERFACE_NAMESPACE)
+    argparser.add_argument('-I', dest="includePaths", metavar="INCLUDE_DIR", action='append', default=[], type=str, 
+                           help='for C++ source: add an include path (can be used multiple times)')
 
     args = argparser.parse_args(sys.argv[1:])
+
     VERIFY = not args.no_warnings
     INDENT_SIZE = args.indent_size
     ALWAYS_COPYCTOR = args.copy_ctor
@@ -2591,7 +2594,7 @@ if __name__ == "__main__":
             try:
                 trace.Header("\nProcessing file '%s'" % path)
                 if path.endswith(".h"):
-                    schemas = LoadInterface(path)
+                    schemas = LoadInterface(path, args.includePaths)
                 else:
                     schemas = [LoadSchema(path, args.if_dir, args.cppif_dir)]
                 for schema in schemas:
@@ -2608,8 +2611,9 @@ if __name__ == "__main__":
                         if generateCode or generateStubs or generateRpc:
                             CreateCode(schema, output_path, generateCode, generateStubs, generateRpc)
                         if generateDocs:
-                            title = schema["info"]["title"] if "title" in schema else schema["info"][
-                                "class"] if "class" in schema else os.path.basename(output_path)
+                            title = schema["info"]["title"] if "title" in schema["info"] \
+                                    else schema["info"]["class"] if "class" in schema["info"] \
+                                    else os.path.basename(output_path)
                             CreateDocument(schema, os.path.join(os.path.dirname(output_path), title.replace(" ", "")))
             except JsonParseError as err:
                 trace.Error(str(err))

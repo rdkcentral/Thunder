@@ -31,6 +31,11 @@ class ParserError(RuntimeError):
         msg = "%s(%s): parse error: %s" % (CurrentFile(), CurrentLine(), msg)
         super(ParserError, self).__init__(msg)
 
+class LoaderError(RuntimeError):
+    def __init__(self, file, msg):
+        msg = "%s: load error: %s" % (file, msg)
+        super(LoaderError, self).__init__(msg)
+
 
 # Checks if identifier is valid.
 def is_valid(token):
@@ -1410,7 +1415,7 @@ def Parse(contents):
     while i < len(tokens):
         # Handle special tokens
         if not isinstance(tokens[i], str):
-            i = i + 1
+            i += 1
             continue
 
         if tokens[i] == "@OMIT":
@@ -1439,6 +1444,7 @@ def Parse(contents):
             json_next = False
             event_next = False
             in_typedef = False
+            tokens[i] = ";"
             i += 1
 
         # Swallow template definitions
@@ -1799,47 +1805,71 @@ def Parse(contents):
 # -------------------------------------------------------------------------
 
 
-def ReadFile(source_file, quiet=False, initial=""):
+def ReadFile(source_file, includePaths, quiet=False, initial=""):
     contents = initial
     global current_file
     try:
         with open(source_file) as file:
             file_content = file.read()
-            idx = file_content.find("@stubgen:include")
-            if idx == -1:
-                idx = file_content.find("@encompass")
-            if idx != -1:
-                match = re.search(r'\"(.+?)\"', file_content[idx:])
-                if match:
-                    if match.group(1) != os.path.basename(os.path.realpath(source_file)):
-                        prev = current_file
-                        current_file = source_file
-                        contents += ReadFile(
-                            os.path.dirname(os.path.realpath(source_file)) + os.sep + match.group(1), contents)
-                        current_file = prev
+            pos = 0
+            while True:
+                idx = file_content.find("@stubgen:include", pos)
+                if idx == -1:
+                    idx = file_content.find("@insert", pos)
+                if idx != -1:
+                    pos = idx + 1
+                    match = re.search(r' \"(.+?)\"', file_content[idx:])
+                    if match:
+                        if match.group(1) != os.path.basename(os.path.realpath(source_file)):
+                            tryPath = os.path.join(os.path.dirname(os.path.realpath(source_file)), match.group(1))
+                            if os.path.isfile(tryPath):
+                                prev = current_file
+                                current_file = source_file
+                                contents += ReadFile(tryPath, includePaths, False, contents)
+                                current_file = prev
+                            else:
+                                raise LoaderError(source_file, "can't include '%s', file does not exist" % tryPath)
+                        else:
+                            raise LoaderError(source_file, "can't recursively include self")
                     else:
-                        raise ParserError("can't recursively include file '%s'" % source_file)
+                        match = re.search(r' <(.+?)>', file_content[idx:])
+                        if match:
+                            found = False
+                            for ipath in includePaths:
+                                tryPath = os.path.join(ipath, match.group(1))
+                                if os.path.isfile(tryPath):
+                                    prev = current_file
+                                    current_file = source_file
+                                    contents += ReadFile(tryPath, includePaths, True, contents)
+                                    current_file = prev
+                                    found = True
+                            if not found:
+                                raise LoaderError(source_file, "can't find '%s' in any of the include paths" % match.group(1))
+                        else:
+                            raise LoaderError(source_file, "syntax error at '%s'" % source_file)
+                else:
+                    break
 
             contents += "// @_file:%s\n" % source_file
             contents += file_content
             return contents
     except FileNotFoundError:
         if not quiet:
-            raise ParserError("failed to open file '%s'" % source_file)
+            raise LoaderError(source_file, "failed to open file")
         return ""
 
 
-def ParseFile(source_file):
-    contents = ReadFile(source_file)
+def ParseFile(source_file, includePaths = []):
+    contents = ReadFile(source_file, includePaths)
     return Parse(contents)
 
 
-def ParseFiles(source_files):
+def ParseFiles(source_files, includePaths = []):
     contents = ""
     for source_file in source_files:
         if source_file:
             quiet = (source_file[0] == "@")
-            contents += ReadFile((source_file[1:] if quiet else source_file), quiet, "")
+            contents += ReadFile((source_file[1:] if quiet else source_file), includePaths, quiet, "")
     return Parse(contents)
 
 
@@ -1880,7 +1910,7 @@ def DumpTree(tree, ind=0):
 # entry point
 
 if __name__ == "__main__":
-    tree = ParseFile(sys.argv[1])
+    tree = ParseFile(sys.argv[1], sys.argv[2:])
     if isinstance(tree, Namespace):
         DumpTree(tree)
     else:
