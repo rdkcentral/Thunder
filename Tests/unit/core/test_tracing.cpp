@@ -54,11 +54,11 @@ struct TraceData
     }
 };
 
-class ServerCyclicBuffer01 : public Core::CyclicBuffer
+class ServerCyclicBuffer01 : public CyclicBuffer
 {
 public:
     ServerCyclicBuffer01(const string& fileName, uint32_t size)
-        : CyclicBuffer(fileName, Core::File::USER_WRITE|Core::File::USER_READ|Core::File::SHAREABLE, size, true)
+        : CyclicBuffer(fileName, File::USER_WRITE|File::USER_READ|File::SHAREABLE, size, true)
     {
     }
 
@@ -148,7 +148,7 @@ bool ParseTraceData(const uint8_t buffer[], uint32_t length, uint32_t& offset, T
     return true;
 }
 
-void DebugCheckIfConsistent(const uint8_t * buffer, int length, Core::CyclicBuffer& cycBuffer, uint32_t bufferSize)
+void DebugCheckIfConsistent(const uint8_t * buffer, int length, CyclicBuffer& cycBuffer, uint32_t bufferSize)
 {
     uint entryCount = 0;
 
@@ -184,12 +184,12 @@ TEST(Core_tracing, simpleTracing)
         string cycBufferName = (tracePath + "/tracebuffer");
 
         testAdmin.Sync("client start");
-        Core::DoorBell doorBell(db.c_str());
-        constexpr uint32_t bufferSize = ((8 * 1024) - (sizeof(struct Core::CyclicBuffer::control))); /* 8Kb */
+        DoorBell doorBell(db.c_str());
+        constexpr uint32_t bufferSize = ((8 * 1024) - (sizeof(struct CyclicBuffer::control))); /* 8Kb */
         ServerCyclicBuffer01 cycBuffer(cycBufferName, bufferSize);
 
         // TODO: maximum running time?
-        if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
+        if (doorBell.Wait(infinite) == ERROR_NONE) {
             doorBell.Acknowledge();
             uint32_t bufferLength = bufferSize;
             uint8_t buffer[bufferLength];
@@ -205,7 +205,7 @@ TEST(Core_tracing, simpleTracing)
             while (offset < actuallyRead) {
                 TraceData traceData;
                 EXPECT_TRUE(ParseTraceData(buffer, actuallyRead, offset, traceData, bufferSize));
-                string time(Core::Time::Now().ToRFC1123(true));
+                string time(Time::Now().ToRFC1123(true));
 
                 EXPECT_STREQ(traceData._File.c_str(), "test_tracing.cpp");
                 EXPECT_STREQ(traceData._Class.c_str(), "TestBody");
@@ -229,7 +229,7 @@ TEST(Core_tracing, simpleTracing)
         Trace::TraceUnit::Instance().Open(tracePath);
         testAdmin.Sync("client start");
         sleep(2);
-        Trace::TraceType<Trace::Information, &Core::System::MODULE_NAME>::Enable(true);
+        Trace::TraceType<Trace::Information, &System::MODULE_NAME>::Enable(true);
 
         TRACE_GLOBAL(Trace::Information, (_T("Trace Log")));
         testAdmin.Sync("server done");
@@ -245,26 +245,24 @@ TEST(Core_tracing, simpleTracing)
 
         bool enabled = false;
         Trace::TraceUnit::Instance().IsDefaultCategory("Tracing", reinterpret_cast<const char*>("Information"), enabled);
-
         TRACE(Trace::Information,(Trace::Format(_T("Checking the Format() with 1 parameter"))));
         std::string text = "Hello";
         TRACE(Trace::Information,(Trace::Format(text.c_str(), _T("Checking the Format() with 2 parameter"))));
         Trace::TraceUnit::Instance().Close();
         Trace::TraceUnit::Instance().Open(1);
    }
-
-   Core::Singleton::Dispose();
+   Singleton::Dispose();
 }
 
 TEST(Core_tracing, simpleTracingReversed)
 {
     std::string tracePath = "/tmp/tracebuffer02";
-    auto lambdaFunc = [tracePath](IPTestAdministrator & testAdmin) {
+    auto lambdaFunc = [&](IPTestAdministrator & testAdmin) {
         CreateTraceBuffer(tracePath);
         Trace::TraceUnit::Instance().Open(tracePath);
         testAdmin.Sync("client start");
         sleep(2);
-        Trace::TraceType<Trace::Information, &Core::System::MODULE_NAME>::Enable(true);
+        Trace::TraceType<Trace::Information, &System::MODULE_NAME>::Enable(true);
 
         TRACE_GLOBAL(Trace::Information, (_T("Trace Log")));
         testAdmin.Sync("server done");
@@ -280,12 +278,13 @@ TEST(Core_tracing, simpleTracingReversed)
 
         bool enabled = false;
         Trace::TraceUnit::Instance().IsDefaultCategory("Tracing", reinterpret_cast<const char*>("Information"), enabled);
-
+        TRACE(Trace::Information,(Trace::Format(_T("Checking the Format() with 1 parameter"))));
         std::string text = "Hello";
+        TRACE(Trace::Information,(Trace::Format(text.c_str(), _T("Checking the Format() with 2 parameter"))));
         Trace::TraceUnit::Instance().Close();
         Trace::TraceUnit::Instance().Open(1);
 
-        Core::Singleton::Dispose();
+        Singleton::Dispose();
     };
 
     static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
@@ -299,12 +298,12 @@ TEST(Core_tracing, simpleTracingReversed)
         string cycBufferName = (tracePath + "/tracebuffer");
 
         testAdmin.Sync("server start");
-        Core::DoorBell doorBell(db.c_str());
-        constexpr uint32_t bufferSize = ((8 * 1024) - (sizeof(struct Core::CyclicBuffer::control))); /* 8Kb */
+        DoorBell doorBell(db.c_str());
+        constexpr uint32_t bufferSize = ((8 * 1024) - (sizeof(struct CyclicBuffer::control))); /* 8Kb */
         ServerCyclicBuffer01 cycBuffer(cycBufferName, bufferSize);
 
         // TODO: maximum running time?
-        if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
+        if (doorBell.Wait(infinite) == ERROR_NONE) {
             doorBell.Acknowledge();
             uint32_t bufferLength = bufferSize;
             uint8_t buffer[bufferLength];
@@ -320,16 +319,17 @@ TEST(Core_tracing, simpleTracingReversed)
             while (offset < actuallyRead) {
                 TraceData traceData;
                 EXPECT_TRUE(ParseTraceData(buffer, actuallyRead, offset, traceData, bufferSize));
-                string time(Core::Time::Now().ToRFC1123(true));
+                string time(Time::Now().ToRFC1123(true));
 
                 EXPECT_STREQ(traceData._File.c_str(), "test_tracing.cpp");
-                EXPECT_STREQ(traceData._Class.c_str(), "TestBody");
+                EXPECT_STREQ(traceData._Class.c_str(), "operator()");
                 EXPECT_STREQ(traceData._Category.c_str(), "Information");
                 EXPECT_STREQ(traceData._Text.c_str(), "Trace Log");
 
                 traceCount++;
             }
         }
-    doorBell.Relinquish();
+        doorBell.Relinquish();
     }
+    Singleton::Dispose();
 }

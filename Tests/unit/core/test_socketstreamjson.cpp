@@ -259,6 +259,7 @@ namespace Tests {
        }
        Core::Singleton::Dispose();
     }
+
 } // Tests
 
 ENUM_CONVERSION_BEGIN(Tests::CommandType)

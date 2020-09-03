@@ -11,11 +11,14 @@ namespace Tests {
         std::string fileName {"/tmp/doorbell01"};
         auto lambdaFunc = [fileName] (IPTestAdministrator & testAdmin) {
             Core::DoorBell doorBell(fileName.c_str());
+
+            EXPECT_EQ(doorBell.Wait(Core::infinite), Core::ERROR_NONE);
             if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
                 doorBell.Acknowledge();
                 testAdmin.Sync("First ring");
             }
 
+            EXPECT_EQ(doorBell.Wait(Core::infinite), Core::ERROR_NONE);
             if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
                 doorBell.Acknowledge();
                 testAdmin.Sync("Second ring");
@@ -58,17 +61,20 @@ namespace Tests {
         IPTestAdministrator testAdmin(otherSide);
         {
             Core::DoorBell doorBell(fileName.c_str());
+            EXPECT_EQ(doorBell.Wait(Core::infinite), Core::ERROR_NONE);
             if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
                 doorBell.Acknowledge();
                 testAdmin.Sync("First ring");
             }
 
+            EXPECT_EQ(doorBell.Wait(Core::infinite), Core::ERROR_NONE);
             if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
                 doorBell.Acknowledge();
                 testAdmin.Sync("Second ring");
             }
             doorBell.Relinquish();
         }
+        Core::Singleton::Dispose();
     }
 
 } // Tests
