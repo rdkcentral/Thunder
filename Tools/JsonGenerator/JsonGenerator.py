@@ -815,12 +815,11 @@ def LoadInterface(file):
                 required = []
                 for var in vars:
                     if var.meta.input or not var.meta.output:
-                        if not var.type.IsConst():
-                            if (var.type.IsReference() or var.type.IsPointer()) and not var.type.IsConst():
-                                raise CppParseError(var, "non-const pointer/reference parameters require @in/@out tag")
-                            else:
-                                trace.Warn("non-const parameter assumed to be input (forgot 'const'?)")
+                        if not var.type.IsConst() and not var.meta.input:
+                            trace.Warn("non-const parameter assumed to be input (forgot 'const'?)")
                         var_name = var.name.lower()
+                        if var_name.startswith("__unnamed"):
+                            raise CppParseError(var, "unnamed parameter, can't deduce parameter name")
                         properties[var_name] = ConvertParameter(var)
                         required.append(var_name)
                 params["properties"] = properties
