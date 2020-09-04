@@ -745,26 +745,32 @@ def LoadInterface(file, includePaths = []):
 
             def ConvertType(var):
                 cppType = var.type.Type()
-                if isinstance(cppType, ProxyStubGenerator.CppParser.String):
-                    return "string", None, None
-                elif isinstance(cppType, ProxyStubGenerator.CppParser.Bool):
-                    return "boolean", None, None
-                elif isinstance(cppType, ProxyStubGenerator.CppParser.Integer):
-                    return "integer", 8 if cppType.size == "char" else 16 if cppType.size == "short" else \
-                        32 if cppType.size == "int" or cppType.size == "long" else 64 if cppType.size == "long long" else 32, cppType.signed
-                elif isinstance(cppType, ProxyStubGenerator.CppParser.Float):
-                    return "float", 32 if CppType.type == "float" else 64 if CppType.type == "double" else 128, None
-                elif isinstance(cppType, ProxyStubGenerator.CppParser.Void):
-                    return "null", None, None
-                elif isinstance(cppType, ProxyStubGenerator.CppParser.Enum):
-                    if len(cppType.items) > 1:
-                        enumValues = [e.autoValue for e in cppType.items]
-                        for i, e in enumerate(cppType.items, 0):
-                            if enumValues[i - 1] != enumValues[i]:
-                                raise CppParseError(var, "enumerator values in an enum must all be explicit or all be implied")
-                    return "string", [e.name for e in cppType.items], [e.value for e in cppType.items] if not cppType.items[0].autoValue else None
+                if var.type.IsPointer():
+                    if isinstance(cppType, ProxyStubGenerator.CppParser.Integer) and cppType.size == "char":
+                        return "string",(" ".join(var.meta.maxlength) if var.meta.maxlength else " ".join(var.meta.length) if var.meta.length else None), True
+                    else:
+                        raise CppParseError(var, "unable to convert C++ type to JSON type")
                 else:
-                    raise CppParseError(var, "unable to convert C++ type to JSON type")
+                    if isinstance(cppType, ProxyStubGenerator.CppParser.String):
+                        return "string", None, None
+                    elif isinstance(cppType, ProxyStubGenerator.CppParser.Bool):
+                        return "boolean", None, None
+                    elif isinstance(cppType, ProxyStubGenerator.CppParser.Integer):
+                        return "integer", 8 if cppType.size == "char" else 16 if cppType.size == "short" else \
+                            32 if cppType.size == "int" or cppType.size == "long" else 64 if cppType.size == "long long" else 32, cppType.signed
+                    elif isinstance(cppType, ProxyStubGenerator.CppParser.Float):
+                        return "float", 32 if CppType.type == "float" else 64 if CppType.type == "double" else 128, None
+                    elif isinstance(cppType, ProxyStubGenerator.CppParser.Void):
+                        return "null", None, None
+                    elif isinstance(cppType, ProxyStubGenerator.CppParser.Enum):
+                        if len(cppType.items) > 1:
+                            enumValues = [e.autoValue for e in cppType.items]
+                            for i, e in enumerate(cppType.items, 0):
+                                if enumValues[i - 1] != enumValues[i]:
+                                    raise CppParseError(var, "enumerator values in an enum must all be explicit or all be implied")
+                        return "string", [e.name for e in cppType.items], [e.value for e in cppType.items] if not cppType.items[0].autoValue else None
+                    else:
+                        raise CppParseError(var, "unable to convert C++ type to JSON type")
 
             def ConvertParameter(var):
                 jsonType, size, signed = ConvertType(var)
@@ -776,6 +782,8 @@ def LoadInterface(file, includePaths = []):
                         properties["enumtyped"] = var.type.Type().scoped
                         if isinstance(signed, list):
                             properties["enumvalues"] = signed
+                    elif isinstance(size, str):
+                        properties["length"] = size
                     else:
                         properties["size"] = size
                 if signed:
@@ -790,7 +798,6 @@ def LoadInterface(file, includePaths = []):
             def EventParameters(vars):
                 events = []
                 for var in vars:
-
                     def ResolveTypedef(resolved, events, type):
                         if isinstance(type.Type(), ProxyStubGenerator.CppParser.Typedef):
                             if type.Type().is_event:
@@ -1226,6 +1233,8 @@ def EmitRpcCode(root, emit, header_file, source_file):
     struct = "J" + root.JsonName()
     face = "I" + root.JsonName()
 
+    emit.Line("// Generated automatically from '%s'. DO NOT EDIT." % os.path.basename(source_file))
+    emit.Line()
     emit.Line("#pragma once")
     emit.Line()
     emit.Line("#include \"Module.h\"")
@@ -1280,35 +1289,45 @@ def EmitRpcCode(root, emit, header_file, source_file):
             emit.Line("uint32_t errorCode;")
 
             def Invoke(params, response, const_cast=False):
+                vars = OrderedDict()
+
+                if params.CppType() != "void":
+                    if isinstance(params, JsonObject):
+                        for p in params.Properties():
+                            if not isinstance(p, (JsonObject, JsonArray)):
+                                vars[p.JsonName()] = [p, 0]
+                    else:
+                        vars[params.JsonName()] = [params, 0]
+
                 if response.CppType() != "void":
                     if isinstance(response, JsonObject):
                         for p in response.Properties():
                             if not isinstance(p, (JsonObject, JsonArray)):
-                                emit.Line("%s %s{};" % (p.CppStdClass(), p.JsonName()))
+                                if p.JsonName() not in vars:
+                                    vars[p.JsonName()] = [p, 2]
+                                else:
+                                    vars[p.JsonName()][1] = 1
                     else:
-                        emit.Line("%s %s{};" % (response.CppStdClass(), response.JsonName()))
+                        vars[response.JsonName()] = [response, 2]
+
+                for v, t in vars.items():
+                    if isinstance(t[0], JsonString) and "length" in t[0].schema:
+                        emit.Line("char* %s = reinterpret_cast<char*>(ALLOCA(%s));" % (v, t[0].schema["length"]))
+                        emit.Line("ASSERT(%s != nullptr);" % v)
+                    else:
+                        emit.Line("%s%s %s{%s};" % ("const " if t[1] == 0 else "", t[0].CppStdClass(), v, "params.%s.Value()" % t[0].CppName() if t[1] <= 1 else ""))
 
                 if const_cast:
                     line = "errorCode = (const_cast<const %s*>(destination))->%s(" % (face, m.TrueName())
                 else:
                     line = "errorCode = destination->%s(" % m.TrueName()
-                if params.CppType() != "void":
-                    line = "errorCode = destination->%s(" % m.TrueName()
-                    if isinstance(params, JsonObject):
-                        for p in params.Properties():
-                            if not isinstance(p, (JsonObject, JsonArray)):
-                                line = line + "params.%s.Value(), " % p.CppName()
-                    else:
-                        line = line + "params.Value(), "
-                if response.CppType() != "void":
-                    if isinstance(response, JsonObject):
-                        for p in response.Properties():
-                            if not isinstance(p, (JsonObject, JsonArray)):
-                                line = line + p.JsonName() + ", "
-                    else:
-                        line = line + response.JsonName() + ", "
+
+                for v, t in vars.items():
+                    line = line + ("%s, " % (v))
+
                 if line.endswith(", "):
                     line = line[:-2]
+
                 line = line + ");"
                 emit.Line(line)
 
@@ -1318,7 +1337,12 @@ def EmitRpcCode(root, emit, header_file, source_file):
                     if isinstance(response, JsonObject):
                         for p in response.Properties():
                             if not isinstance(p, (JsonObject, JsonArray)):
-                                emit.Line("response.%s = %s;" % (p.CppName(), p.JsonName()))
+                                if isinstance(p, JsonString) and "length" in p.schema:
+                                    emit.Line("%s %sEncoded;" % (p.CppStdClass(), p.JsonName()))
+                                    emit.Line("Core::ToString(%s, %s, %sEncoded);" % (p.JsonName(), p.schema["length"], p.JsonName()))
+                                    emit.Line("response.%s = %sEncoded;" % (p.CppName(), p.JsonName()))
+                                else:
+                                    emit.Line("response.%s = %s;" % (p.CppName(), p.JsonName()))
                     elif isinstance(response, JsonEnum):
                         emit.Line("response = static_cast<%s>(%s);" %(response.CppClass(), response.JsonName()))
                     else:
@@ -1848,7 +1872,7 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
                 emitter.Line("// C++ classes for %s JSON-RPC API." % rpcObj.info["title"].replace("Plugin", "").strip())
-                emitter.Line("// Generated automatically from '%s'." % os.path.basename(path))
+                emitter.Line("// Generated automatically from '%s'. DO NOT EDIT." % os.path.basename(path))
                 emitter.Line()
                 emitter.Line(
                     "// Note: This code is inherently not thread safe. If required, proper synchronisation must be added."
@@ -2552,7 +2576,7 @@ if __name__ == "__main__":
                            default=INTERFACE_NAMESPACE,
                            help="for C++ source: set namespace to look for interfaces in (default: %s)" %
                            INTERFACE_NAMESPACE)
-    argparser.add_argument('-I', dest="includePaths", metavar="INCLUDE_DIR", action='append', default=[], type=str, 
+    argparser.add_argument('-I', dest="includePaths", metavar="INCLUDE_DIR", action='append', default=[], type=str,
                            help='for C++ source: add an include path (can be used multiple times)')
 
     args = argparser.parse_args(sys.argv[1:])
