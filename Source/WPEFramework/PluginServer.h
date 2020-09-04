@@ -1053,9 +1053,6 @@ namespace PluginHost {
                                     _object.Locator(),
                                     _object.ClassName(),
                                     _object.Callsign(),
-                                    _config.DataPath(),
-                                    _config.PersistentPath(),
-                                    _config.VolatilePath(),
                                     _object.Interface(),
                                     _object.Version(),
                                     _object.User(),
@@ -1238,9 +1235,6 @@ namespace PluginHost {
                     const string& libraryName,
                     const string& className,
                     const string& callsign,
-                    const string& dataPath,
-                    const string& persistentPath,
-                    const string& volatilePath,
                     const uint32_t interfaceId,
                     const uint32_t version,
                     const string& user,
@@ -1249,6 +1243,16 @@ namespace PluginHost {
                     const int8_t priority,
                     const string configuration) override
                 {
+                    string persistentPath(_comms.PersistentPath());
+                    string dataPath(_comms.DataPath());
+                    string volatilePath(_comms.VolatilePath());
+
+                    if (callsign.empty() == false) {
+                        dataPath += callsign + '/';
+                        persistentPath += callsign + '/';
+                        volatilePath += callsign + '/';
+                    }
+
                     uint32_t id;
                     RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath());
                     RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, _T(""), configuration);
