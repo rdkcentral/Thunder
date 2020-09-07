@@ -82,27 +82,28 @@ TEST(test_portability, simple_lower)
 
 TEST(test_portability, simple_generic)
 {
-   SleepS(1);
-   SleepMs(1);
-   EXPECT_EQ(htonll(12345),ntohll(12345));
-   DumpCallStack();
+    SleepS(1);
+    SleepMs(1);
+    EXPECT_EQ(htonll(12345),ntohll(12345));
+    DumpCallStack();
 
-   std::thread::id parentId;
-   ThreadClass object(parentId);
-   object.Run();
+    std::thread::id parentId;
+    ThreadClass object(parentId);
+    object.Run();
 
-   DumpCallStack(object.Id());  
-   object.Stop();
+    DumpCallStack(object.Id());
+    object.Stop();
    
-   std::string s1 = "Hello";
-   uint8_t dest_buffer[5];
-   memrcpy((void*)dest_buffer,(void*)s1.c_str(),  static_cast<size_t>(5));
-   EXPECT_STREQ((const char*)(dest_buffer),s1.c_str());
+    std::string s1 = "Hello";
+    uint8_t dest_buffer[6];
+    memrcpy((void*)dest_buffer,(void*)s1.c_str(),  static_cast<size_t>(5));
+    dest_buffer[5] = '\0';
+    EXPECT_STREQ((const char*)(dest_buffer),s1.c_str());
 }
 
 TEST(test_error, simple_error)
 {
-   EXPECT_STREQ(ErrorToString(ERROR_NONE),"ERROR_NONE");
+    EXPECT_STREQ(ErrorToString(ERROR_NONE),"ERROR_NONE");
 }
 
 TEST(test_void, simple_void)

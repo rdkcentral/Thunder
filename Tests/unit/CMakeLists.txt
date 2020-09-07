@@ -18,15 +18,14 @@
 find_package(GTest REQUIRED)
 
 # TODO: coverage causes attempt to write on invalid location, -keep-static-functions is not recognized by buildroot compiler
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fkeep-static-functions -fkeep-inline-functions")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fkeep-static-functions -fkeep-inline-functions -fno-inline-small-functions")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
-include_directories(${GTEST_INCLUDE_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../Source)
+set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} --coverage -fno-inline -fno-inline-small-functions -fno-default-inline -I${PARENT_DIR}/Source")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fkeep-static-functions -fkeep-inline-functions")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fkeep-static-functions -fkeep-inline-functions -fno-inline-small-functions")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
+include_directories(${GTEST_INCLUDE_DIR})
+
+SET(BASEPATH "${CMAKE_SOURCE_DIR}")
+include_directories(${BASEPATH}/Source)
+
 set(CMAKE_CXX_STANDARD 11)
 
 enable_testing()
