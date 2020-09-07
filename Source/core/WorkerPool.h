@@ -69,7 +69,6 @@ namespace Core {
             }
             bool Reschedule(const Core::Time& time)
             {
-                bool result = false;
                 Core::ProxyType<Core::IDispatch> job(ThreadPool::JobType<IMPLEMENTATION>::Forced());
 
                 ASSERT(job.IsValid() == true);
