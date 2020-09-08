@@ -32,7 +32,7 @@ function(JsonGenerator)
 
     set(optionsArgs CODE STUBS DOCS NO_WARNINGS COPY_CTOR NO_REF_NAMES)
     set(oneValueArgs OUTPUT IFDIR INDENT DEF_STRING DEF_INT_SIZE PATH)
-    set(multiValueArgs INPUT)
+    set(multiValueArgs INPUT INCLUDE_PATH)
 
     cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -92,6 +92,10 @@ function(JsonGenerator)
     if (Argument_DEF_INT_SIZE)
         list(APPEND _execute_command  "--def-int-size" "${Argument_DEF_INT_SIZE}")
     endif()
+
+    foreach(_include_path ${Argument_INCLUDE_PATH})
+        list(APPEND _execute_command  "-I" "${Argument_INCLUDE_PATH}")
+    endforeach(_include_path)
 
     foreach(_input ${Argument_INPUT})
         execute_process(COMMAND ${PYTHON_EXECUTABLE} ${_execute_command} ${_input} RESULT_VARIABLE rv)
