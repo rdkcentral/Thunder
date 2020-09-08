@@ -1385,13 +1385,16 @@ def Parse(contents):
             current_line = int(token[6:].split()[0])
         elif isinstance(token, str) and token.startswith("@FILE:"):
             current_file = token[6:]
-            append = False
+            tokens.append("@GLOBAL")
+            line_numbers.append(current_line)
+            files.append(current_file)
         else:
             tokens.append(token)
             line_numbers.append(current_line)
             files.append(current_file)
 
     global_namespace = Namespace(None)
+
     current_block = [global_namespace]
     next_block = None
     last_template_def = []
@@ -1401,6 +1404,7 @@ def Parse(contents):
     json_next = False
     event_next = False
     in_typedef = False
+
 
     # Main loop.
     while i < len(tokens):
@@ -1424,6 +1428,17 @@ def Parse(contents):
         elif tokens[i] == "@EVENT":
             event_next = True
             tokens[i] = ";"
+            i += 1
+        elif tokens[i] == "@GLOBAL":
+            current_block = [global_namespace]
+            next_block = None
+            last_template_def = []
+            min_index = 0
+            omit_next = False
+            stub_next = False
+            json_next = False
+            event_next = False
+            in_typedef = False
             i += 1
 
         # Swallow template definitions
