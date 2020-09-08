@@ -103,8 +103,11 @@ class Undefined(BaseType):
 
     def Proto(self):
         if isinstance(self.type, list):
-            return self.comment + " ".join(self.type).replace(" < ", "<").replace(" :: ", "::").replace(
-                " >", ">").replace(" *", "*").replace(" &", "&").replace(" &&", "&&")
+            if (type(self.type[0]) is str):
+                return self.comment + " ".join(self.type).replace(" < ", "<").replace(" :: ", "::").replace(
+                    " >", ">").replace(" *", "*").replace(" &", "&").replace(" &&", "&&")
+            else:
+                return self.comment + " ".join([str(x) for x in self.type])
         else:
             return self.comment + str(self.type)
 
@@ -468,7 +471,7 @@ class Identifier():
                         found = found[-1]
                         if isinstance(found, TemplateClass):
                             # if we're pointing to a class template, then let's instantiate it!
-                            self.type[i] = Type(found.Instantiate(self.type[i + 1]))
+                            self.type[i] = Type(found.Instantiate(self.type[i + 1], parent))
                             del self.type[i + 1]
                         else:
                             self.type[i] = found if isinstance(found, TemplateTypeParameter) else Type(found)
@@ -719,6 +722,7 @@ class Typedef(Identifier, Name):
         self.parent = parent_block
         self.parent.typedefs.append(self)
         self.is_event = False
+        self.is_iterator = self.parent.is_iterator if isinstance(self.parent, (Class, Typedef)) else False
 
     def Proto(self):
         return self.full_name
@@ -745,6 +749,7 @@ class Class(Identifier, Block):
         self.stub = False
         self.is_json = False
         self.is_event = False
+        self.is_iterator = False
         self.type_name = name
         self.parent.classes.append(self)
 
@@ -1017,10 +1022,11 @@ class InstantiatedTemplateClass(Class):
         self.baseName = Name(parent_block, name)
         self.params = params
         self.args = args
+        self.resolvedArgs = [Identifier(parent_block, self, [x], []) for x in args]
         self.type = self.TypeName()
 
     def TypeName(self):
-        return "%s<%s>" % (self.baseName.full_name, ", ".join([str(p) for p in self.args]))
+        return "%s<%s>" % (self.baseName.full_name, ", ".join([str("".join(p.type) if isinstance(p.type, list) else p.type) for p in self.resolvedArgs]))
 
     def Proto(self):
         return self.TypeName()
@@ -1062,7 +1068,7 @@ class TemplateClass(Class):
                 param = TemplateNonTypeParameter(self, p.split(), index=paramList.index(p))
             self.paramList.append(param)
 
-    def Instantiate(self, arguments):
+    def Instantiate(self, arguments, parent):
         def _Substitute(identifier):
             if isinstance(identifier.type, list):
                 for i, v in enumerate(identifier.type):
@@ -1086,6 +1092,7 @@ class TemplateClass(Class):
         instance.specifiers = self.specifiers
         instance.is_json = self.is_json
         instance.is_event = self.is_event
+        instance.is_iterator = self.is_iterator
 
         for t in self.typedefs:
             newTypedef = copy.copy(t)
@@ -1278,6 +1285,8 @@ def __Tokenize(contents):
                     tagtokens.append("@JSON")
                 if _find("@event", token):
                     tagtokens.append("@EVENT")
+                if _find("@iterator", token):
+                    tagtokens.append("@ITERATOR")
                 if _find("@length", token):
                     tagtokens.append(__ParseLength(token, "@length"))
                 if _find("@maxlength", token):
@@ -1408,6 +1417,7 @@ def Parse(contents):
     stub_next = False
     json_next = False
     event_next = False
+    iterator_next = False
     in_typedef = False
 
 
@@ -1434,6 +1444,10 @@ def Parse(contents):
             event_next = True
             tokens[i] = ";"
             i += 1
+        elif tokens[i] == "@ITERATOR":
+            iterator_next = True
+            tokens[i] = ";"
+            i += 1
         elif tokens[i] == "@GLOBAL":
             current_block = [global_namespace]
             next_block = None
@@ -1443,6 +1457,7 @@ def Parse(contents):
             stub_next = False
             json_next = False
             event_next = False
+            iterator_next = False
             in_typedef = False
             tokens[i] = ";"
             i += 1
@@ -1551,6 +1566,9 @@ def Parse(contents):
                 json_next = False
             if event_next:
                 new_class.is_event = True
+                event_next = False
+            if iterator_next:
+                new_class.is_iterator = True
                 event_next = False
 
             if last_template_def:
