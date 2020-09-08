@@ -117,7 +117,7 @@ def CreateName(ns):
     return ns.replace("::I", "").replace("::", "")[1 if ns[0] == "I" else 0:]
 
 
-def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
+def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan_only=False):
     class Interface():
         def __init__(self, obj, iid, file):
             self.obj = obj
@@ -170,7 +170,7 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
 
     ids = os.path.join("@" + os.path.dirname(source_file), IDS_DEFINITIONS_FILE)
 
-    tree = CppParser.ParseFiles([defaults, ids, source_file])
+    tree = CppParser.ParseFiles([defaults, ids, source_file], includePaths)
     if not isinstance(tree, CppParser.Namespace):
         raise SkipFileError(source_file)
 
@@ -1313,6 +1313,9 @@ if __name__ == "__main__":
                            action="store_true",
                            default=False,
                            help="enable verbose output (default: verbose output disabled)")
+    argparser.add_argument('-I', dest="includePaths", metavar="INCLUDE_DIR", action='append', default=[], type=str, 
+                           help='add an include path (can be used multiple times)')
+
     args = argparser.parse_args(sys.argv[1:])
     DEFAULT_DEFINITIONS_FILE = args.extra_include
     INDENT_SIZE = args.indent_size if (args.indent_size > 0 and args.indent_size < 32) else INDENT_SIZE
@@ -1381,6 +1384,7 @@ if __name__ == "__main__":
 
                     output = GenerateStubs(
                         output_file, source_file,
+                        args.includePaths,
                         os.path.join("@" + os.path.dirname(os.path.realpath(__file__)), DEFAULT_DEFINITIONS_FILE),
                         scan_only)
                     faces += output
@@ -1401,8 +1405,8 @@ if __name__ == "__main__":
                     log.Error(err)
                     if not keep_incomplete and os.path.isfile(output_file):
                         os.remove(output_file)
-                except CppParser.ParserError as err:
-                    log.Error(err)
+                except (CppParser.ParserError, CppParser.LoaderError) as err:
+                  log.Error(err)
 
             if scan_only:
                 print("\nInterface dump:")

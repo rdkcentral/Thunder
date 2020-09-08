@@ -818,7 +818,7 @@ namespace PluginHost {
             {
                 ASSERT(_connection == nullptr);
 
-                void* result(_administrator.Instantiate(object, waitTime, sessionId, className, callsign));
+                void* result(_administrator.Instantiate(object, waitTime, sessionId, className, callsign, DataPath(), PersistentPath(), VolatilePath()));
 
                 _connection = _administrator.RemoteConnection(sessionId);
 
@@ -1020,10 +1020,10 @@ namespace PluginHost {
                     RemoteHost& operator=(const RemoteHost&) = delete;
 
                 public:
-                    RemoteHost(const RPC::Object& instance, const string& connector)
+                    RemoteHost(const RPC::Object& instance, const RPC::Config& config)
                         : RemoteConnection()
-                        , _connector(connector)
                         , _object(instance)
+                        , _config(config)
                     {
                     }
                     virtual ~RemoteHost()
@@ -1043,7 +1043,7 @@ namespace PluginHost {
                                 Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, engine));
 
                             // Oke we have ou selves a COMClient link. Lets see if we can get the proepr interface...
-                            IRemoteInstantiation* instantiation = client->Open<IRemoteInstantiation>(_connector, ~0, 3000);
+                            IRemoteInstantiation* instantiation = client->Open<IRemoteInstantiation>(_config.Connector(), ~0, 3000);
 
                             if (instantiation == nullptr) {
                                 result = Core::ERROR_ILLEGAL_STATE;
@@ -1069,8 +1069,8 @@ namespace PluginHost {
                     }
 
                 private:
-                    const string _connector;
                     RPC::Object _object;
+                    const RPC::Config& _config;
                 };
 
             public:
@@ -1120,18 +1120,8 @@ namespace PluginHost {
                 }
 
             public:
-                void* Create(uint32_t& connectionId, const RPC::Object& instance, const string& classname, const string& callsign, const uint32_t waitTime)
+                void* Create(uint32_t& connectionId, const RPC::Object& instance, const string& classname, const string& callsign, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath)
                 {
-                    string persistentPath(_persistentPath);
-                    string dataPath(_dataPath);
-                    string volatilePath(_volatilePath);
-
-                    if (callsign.empty() == false) {
-                        dataPath += callsign + '/';
-                        persistentPath += callsign + '/';
-                        volatilePath += callsign + '/';
-                    }
-
                     return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, volatilePath, _appPath, _proxyStubPath, _postMortemPath), waitTime));
                 }
                 const string& PersistentPath() const
@@ -1173,7 +1163,7 @@ namespace PluginHost {
                     RPC::Communicator::RemoteConnection* result = nullptr;
 
                     if (instance.Type() == RPC::Object::HostType::DISTRIBUTED) {
-                        result = Core::Service<RemoteHost>::Create<RPC::Communicator::RemoteConnection>(instance, config.Connector());
+                        result = Core::Service<RemoteHost>::Create<RPC::Communicator::RemoteConnection>(instance, config);
                     } else {
                         result = RPC::Communicator::CreateStarter(config, instance);
                     }
@@ -1510,7 +1500,18 @@ namespace PluginHost {
             private:
                 virtual void Dispatch() override
                 {
-                    _parent.Security(SystemInfo::IsActive(ISubSystem::SECURITY));
+                    static uint32_t previousState = 0;
+                    uint32_t changedFlags = (previousState ^ Value());
+                    previousState = Value();
+
+                    if ((changedFlags & (1 << ISubSystem::NETWORK)) != 0) {
+                         const_cast<PluginHost::Config&>(_parent.Configuration()).UpdateAccessor();
+                    }
+
+                    if ((changedFlags & (1 << ISubSystem::SECURITY)) != 0) {
+                        _parent.Security(SystemInfo::IsActive(ISubSystem::SECURITY));
+                    }
+
                     _decoupling->Schedule();
                 }
                 inline void Evaluate()
@@ -1679,9 +1680,9 @@ namespace PluginHost {
                 return (result);
             }
 
-            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign)
+            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign, const string& dataPath, const string& persistentPath, const string& volatilePath)
             {
-                return (_processAdministrator.Create(sessionId, object, className, callsign, waitTime));
+                return (_processAdministrator.Create(sessionId, object, className, callsign, waitTime, dataPath, persistentPath, volatilePath));
             }
             void Register(RPC::IRemoteConnection::INotification* sink)
             {

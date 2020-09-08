@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "Module.h"
+
 #include <algorithm>
 #include <cassert>
 #include <list>
@@ -115,7 +117,7 @@ namespace Nexus {
                 // If in the future this leads to issues with other stacks, the suggestion is
                 // to use the Client ID here to determine the zOrder. For now we are not 
                 // expecting any issues form this patch.
-                windowInfo.zOrder = 100;
+                windowInfo.zOrder = 1;
 #endif
                 windowInfo.clientID = display.NexusClientId();
                 _nativeWindow = NXPL_CreateNativeWindowEXT(&windowInfo);
@@ -183,7 +185,8 @@ namespace Nexus {
 
     private:
         Display(const std::string& name)
-            : _displayName(name)
+            : _refCount(0)
+            , _displayName(name)
             , _nxplHandle(nullptr)
             , _virtualkeyboard(nullptr)
             , _nexusClientId(0)
@@ -228,18 +231,13 @@ namespace Nexus {
                fprintf(stderr, "[LibinputServer] Initialization of virtual keyboard failed!!!\n");
            }
 
-           printf("Constructed the Display: %p - %s\n", this, _displayName.c_str());
+           TRACE_L1("Constructed the Display: %p - %s", this, _displayName.c_str());
         }
 
         uint32_t NexusClientId() const { return _nexusClientId; }
 
     public:
-        static Compositor::IDisplay* Instance(const std::string& displayName)
-        {
-            static Display myDisplay(displayName);
-
-            return (&myDisplay);
-        }
+        typedef std::map<const string, Display*> DisplayMap;
 
         virtual ~Display()
         {
@@ -258,25 +256,62 @@ namespace Nexus {
                 virtualinput_close(_virtualkeyboard);
             }
 
-            printf("Destructed the Display: %p - %s", this, _displayName.c_str());
-        }
+            close(g_pipefd[0]);
+            close(g_pipefd[1]);
 
+            ASSERT(_refCount == 0);
+
+            TRACE_L1("Destructed the Display: %p - %s", this, _displayName.c_str());
+        }
     public:
-        // Lifetime management
-        void AddRef() const override
-        {
+    
+    static Display& Instance(const string& displayName){
+        Display* result(nullptr);
+
+        _adminLock.Lock();
+
+        DisplayMap::iterator index(_displays.find(displayName));
+
+        if (index == _displays.end()) {
+            result = new Display(displayName);
+            _displays.insert(std::pair<const std::string, Display*>(displayName, result));
+        } else {
+            result = index->second;
         }
+        result->AddRef();
+        _adminLock.Unlock();
 
-        uint32_t Release() const override
-        {               
-            // Display can not be destructed, so who cares :-)
+        assert(result != nullptr);
 
-            // We should take care of a possible blocked read() call in Process().
-            Message msg({0, KEY_DESTRUCT});
-            write(g_pipefd[1], &msg, sizeof(msg));
+        return (*result);
+    } 
 
-            return (0);
+    // Lifetime management
+    virtual void AddRef() const
+    {
+        Core::InterlockedIncrement(_refCount);
+        return;
+    }
+
+    virtual uint32_t Release() const
+    {
+        if (Core::InterlockedDecrement(_refCount) == 0) {
+            _adminLock.Lock();
+
+            DisplayMap::iterator display = _displays.find(_displayName);
+
+            if (display != _displays.end()){
+                _displays.erase(display);
+            }
+
+            _adminLock.Unlock();
+            
+            delete const_cast<Display*>(this);
+
+            return (Core::ERROR_CONNECTION_CLOSED);
         }
+        return (Core::ERROR_NONE);
+    }
 
         // Methods
         EGLNativeDisplayType Native() const override
@@ -293,10 +328,7 @@ namespace Nexus {
         {
             
             Message message;
-            if ((data != 0) && (g_pipefd[0] != -1) && (read(g_pipefd[0], &message, sizeof(message)) > 0)) {
-                
-                if(message.type != KEY_DESTRUCT){
-                 
+            if ((data != 0) && (g_pipefd[0] != -1) && (read(g_pipefd[0], &message, sizeof(message)) > 0)) {                
                     std::list<SurfaceImplementation*>::iterator index(_surfaces.begin());
 
                     while (index != _surfaces.end()) {
@@ -306,8 +338,6 @@ namespace Nexus {
                         (*index)->SendKey(message.code, ((message.type == KEY_RELEASED) ? IDisplay::IKeyboard::released : ((message.type == KEY_REPEAT)? IDisplay::IKeyboard::repeated : IDisplay::IKeyboard::pressed)), time(nullptr));
                         index++;
                     }
-                    
-                }
             }
 
             return (0);
@@ -339,7 +369,11 @@ namespace Nexus {
             }
         }
 
-    private: 
+    private:
+        static DisplayMap _displays; 
+        static Core::CriticalSection _adminLock;
+
+        mutable uint32_t _refCount;
         const std::string _displayName;
         NXPL_PlatformHandle _nxplHandle;
         void* _virtualkeyboard;
@@ -348,10 +382,12 @@ namespace Nexus {
 
     };
 
+    Display::DisplayMap Display::_displays;
+    Core::CriticalSection Display::_adminLock;
 } // Nexus
 
 Compositor::IDisplay* Compositor::IDisplay::Instance(const std::string& displayName)
 {
-    return (Nexus::Display::Instance(displayName));
+    return (&(Nexus::Display::Instance(displayName)));
 }
 } // WPEFramework
