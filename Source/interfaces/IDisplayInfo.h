@@ -52,7 +52,7 @@ namespace Exchange {
                 HDCP_CHANGE,
             };
 
-            virtual void Updated(const Source) = 0;
+            virtual void Updated(const Source event) = 0;
         };
 
         virtual uint32_t Register(INotification*) = 0;

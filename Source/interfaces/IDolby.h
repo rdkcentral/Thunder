@@ -52,7 +52,7 @@ namespace Exchange {
                 enum { ID = ID_DOLBY_OUTPUT_NOTIFICATION };
 
                 virtual ~INotification() {}
-                virtual void AudioModeChanged(const Dolby::IOutput::SoundModes, const bool) = 0;
+                virtual void AudioModeChanged(const Dolby::IOutput::SoundModes mode, const bool enabled) = 0;
             };
 
             virtual uint32_t Register(INotification*) = 0;
