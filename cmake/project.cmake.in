@@ -119,6 +119,10 @@ macro(write_config)
                 map_append(${plugin_config} autostart ${autostart})
             endif()
 
+            if (NOT ${resumed} STREQUAL "")
+                map_append(${plugin_config} resumed ${resumed})
+            endif()
+
             if (NOT ${configuration} STREQUAL "")
                 map_append(${plugin_config} configuration ${configuration})
             endif()
