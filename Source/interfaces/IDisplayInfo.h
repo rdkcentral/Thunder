@@ -20,7 +20,7 @@
 #pragma once
 #include "Module.h"
 
-// @stubgen:include "IRPCIterator.h"
+// @stubgen:include <com/IRPCIterator.h>
 
 namespace WPEFramework {
 namespace Exchange {
@@ -118,12 +118,12 @@ namespace Exchange {
         // @property
         // @brief HDR formats supported by TV
         // @return HDRType: array of HDR formats
-        virtual uint32_t TVCapabilities(IHDRIterator* type /* out */) const = 0;
+        virtual uint32_t TVCapabilities(IHDRIterator*& type /* @out */) const = 0;
 
         // @property
         // @brief HDR formats supported by STB
         // @return HDRType: array of HDR formats
-        virtual uint32_t STBCapabilities(IHDRIterator* type /* out */) const = 0;
+        virtual uint32_t STBCapabilities(IHDRIterator*& type /* @out */) const = 0;
 
         // @property
         // @brief HDR format in use
