@@ -124,7 +124,9 @@ namespace Exchange {
         virtual streamtype Type() const = 0;
         virtual drmtype DRM() const = 0;
         virtual IControl* Control() = 0;
-        virtual void Callback(IStream::ICallback* callback) = 0;
+        DEPRECATED virtual void Callback(IStream::ICallback* callback) {};
+        virtual void Attach(IStream::ICallback* callback) = 0;
+        virtual uint32_t Detach(IStream::ICallback* callback) = 0;
         virtual state State() const = 0;
         virtual uint32_t Load(const string& configuration) = 0;
         virtual uint32_t Error() const = 0;

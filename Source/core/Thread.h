@@ -325,6 +325,16 @@ namespace Core {
                 return (_implementation);
             }
 
+        protected:
+             Core::ProxyType<Core::IDispatch> Forced() {
+
+                state expected = IDLE;
+                _state.compare_exchange_strong(expected, SUBMITTED);
+
+                return (Core::ProxyType<Core::IDispatch>(&_job, &_job));
+            }
+            
+
         private:
             void Dispatch()
             {
