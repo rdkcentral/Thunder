@@ -574,7 +574,7 @@ namespace Core {
             //  - domain socket datagram client
             //  - IPV4 or IPV6 UDP server
             //  - IPV4 or IPV6 TCP server with port set
-            if ( ((localNode.Type() != NodeId::TYPE_IPV4) && (localNode.Type() != NodeId::TYPE_IPV6)) || (localNode.PortNumber() != 0) ) {
+            if ((SocketMode() != SOCK_STREAM) || (m_SocketType == SocketPort::LISTEN) || (((localNode.Type() == NodeId::TYPE_IPV4) || (localNode.Type() == NodeId::TYPE_IPV6)) && (localNode.PortNumber() != 0))) {
                   
                 if (::bind(l_Result, static_cast<const NodeId&>(localNode), localNode.Size()) != SOCKET_ERROR) {
 
