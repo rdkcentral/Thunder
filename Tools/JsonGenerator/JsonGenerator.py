@@ -37,6 +37,8 @@ VERSION = "1.6.1"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
+VERBOSE = False
+NO_DUP_WARNINGS = False
 
 
 class Trace:
@@ -44,17 +46,22 @@ class Trace:
         self.errors = 0
 
     def __Print(self, text):
-        print(text)
+        print("JsonGenerator: " + text)
+
+    def Log(self, text):
+        if VERBOSE:
+            self.__Print(text)
 
     def Header(self, text):
-        self.__Print(text)
+        self.Log("Processing file %s..." % text)
+        self.file = text
 
     def Warn(self, text):
-        self.__Print("Warning: {}".format(text))
+        self.__Print("%s: Warning: %s" % (self.file, text))
 
     def Error(self, text):
         self.errors += 1
-        self.__Print("Error: {}".format(text))
+        self.__Print("%s: Error: %s" % (self.file, text))
 
     def Success(self, text):
         self.__Print("Success: {}".format(text))
@@ -734,6 +741,7 @@ def LoadInterface(file, includePaths = []):
         schema["$schema"] = "interface.json.schema"
         schema["jsonrpc"] = "2.0"
         schema["dorpc"] = True
+        schema["no_dup_warnings"] = True
         schema["interfaceonly"] = True
         schema["configuration"] = { "nodefault" : True }
 
@@ -1075,7 +1083,7 @@ class ObjectTracker:
             props = newObj.Schema()["properties"]
             for obj in self.Objects()[:-1]:
                 if __Compare(obj.Schema()["properties"], props):
-                    if not is_ref or not IsInRef(obj):
+                    if not NO_DUP_WARNINGS and (not is_ref or not IsInRef(obj)):
                         trace.Warn("Duplicate object '%s' (same as '%s') - consider using $ref" %
                                    (newObj.OrigName(), obj.OrigName()))
                     return obj
@@ -1117,7 +1125,7 @@ class EnumTracker(ObjectTracker):
             is_ref = IsInRef(newObj)
             for obj in self.Objects()[:-1]:
                 if __Compare(obj.Schema(), newObj.Schema()):
-                    if not is_ref or not IsInRef(obj):
+                    if not NO_DUP_WARNINGS and (not is_ref or not IsInRef(obj)):
                         trace.Warn("Duplicate enums '%s' (same as '%s') - consider using $ref" %
                                    (newObj.OrigName(), obj.OrigName()))
                     return obj
@@ -1529,7 +1537,7 @@ def EmitHelperCode(root, emit, header_file):
                 has_statuslistener = True
                 break
 
-        print("Emitting registration code...")
+        trace.Log("Emitting registration code...")
         emit.Line("/*")
         emit.Indent()
         emit.Line("// Copy the code below to %s class definition" % root.JsonName())
@@ -1652,13 +1660,13 @@ def EmitHelperCode(root, emit, header_file):
         emit.Line()
 
         # Method/property/event stubs
-        print("Emitting stubs...")
+        trace.Log("Emitting stubs...")
         emit.Line("// API implementation")
         emit.Line("//")
         emit.Line()
         for method in root.Properties():
             if not isinstance(method, JsonNotification) and not isinstance(method, JsonProperty):
-                print("Emitting method '{}'".format(method.JsonName()))
+                trace.Log("Emitting method '{}'".format(method.JsonName()))
                 params = method.Properties()[0].CppType()
                 if method.Summary():
                     emit.Line("// Method: %s - %s" % (method.JsonName(), method.Summary().split(".", 1)[0]))
@@ -1734,7 +1742,7 @@ def EmitHelperCode(root, emit, header_file):
                     emit.Line()
 
                 propType = ' (write-only)' if method.writeonly else (' (read-only)' if method.readonly else '')
-                print("Emitting property '{}' {}".format(method.JsonName(), propType))
+                trace.Log("Emitting property '{}' {}".format(method.JsonName(), propType))
                 if not method.writeonly:
                     EmitPropertyFc(method, method.GetMethodName(), True)
                 if not method.readonly:
@@ -1742,7 +1750,7 @@ def EmitHelperCode(root, emit, header_file):
 
         for method in root.Properties():
             if isinstance(method, JsonNotification):
-                print("Emitting notification '{}'".format(method.JsonName()))
+                trace.Log("Emitting notification '{}'".format(method.JsonName()))
                 EmitEvent(emit, root, method)
 
         emit.Unindent()
@@ -1768,7 +1776,7 @@ def EmitObjects(root, emit, emitCommon=False):
     def EmitEnum(enum):
         global emittedItems
         emittedItems += 1
-        print("Emitting enum {}".format(enum.CppClass()))
+        trace.Log("Emitting enum {}".format(enum.CppClass()))
         root = enum.parent.parent
         while root.parent:
             root = root.parent
@@ -1817,7 +1825,7 @@ def EmitObjects(root, emit, emitCommon=False):
         if jsonObj.IsDuplicate() or (not allowDup and jsonObj.RefCount() > 1):
             return
         if not isinstance(jsonObj, (JsonRpcSchema, JsonMethod)):
-            print("Emitting class '{}' (source: '{}')".format(jsonObj.CppClass(), jsonObj.OrigName()))
+            trace.Log("Emitting class '{}' (source: '{}')".format(jsonObj.CppClass(), jsonObj.OrigName()))
             emit.Line("class %s : public %s {" % (jsonObj.CppClass(), TypePrefix("Container")))
             emit.Line("public:")
             if jsonObj.Enums():
@@ -1900,7 +1908,7 @@ def EmitObjects(root, emit, emitCommon=False):
     emit.Indent()
     emit.Line()
     if emitCommon and enumTracker.CommonObjects():
-        print("Emitting common enums...")
+        trace.Log("Emitting common enums...")
         emit.Line("// Common enums")
         emit.Line("//")
         emit.Line()
@@ -1908,7 +1916,7 @@ def EmitObjects(root, emit, emitCommon=False):
             if not obj.IsDuplicate() and not obj.included_from:
                 EmitEnum(obj)
     if emitCommon and objTracker.CommonObjects():
-        print("Emitting common classes...")
+        trace.Log("Emitting common classes...")
         emit.Line("// Common classes")
         emit.Line("//")
         emit.Line()
@@ -1916,7 +1924,7 @@ def EmitObjects(root, emit, emitCommon=False):
             if not obj.included_from:
                 EmitClass(obj, True)
     if root.Objects():
-        print("Emitting params/result classes...")
+        trace.Log("Emitting params/result classes...")
         emit.Line("// Method params/result classes")
         emit.Line("//")
         emit.Line()
@@ -2504,9 +2512,9 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
                 emitter.Line()
                 emitted = EmitObjects(rpcObj, emitter, True)
                 if emitted:
-                    trace.Success("JSON data classes generated in '%s'." % output_file.name)
+                    trace.Success("JSON data classes generated in '%s'." % os.path.basename(output_file.name))
                 else:
-                    trace.Success("No JSON data classes generated for '%s'." % filename)
+                    trace.Log("No JSON data classes generated for '%s'." % os.path.basename(filename))
             if not emitted and not KEEP_EMPTY:
                 try:
                     os.remove(header_file)
@@ -2522,9 +2530,9 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
                 emitter.Line()
                 emitted = EmitEnumRegs(rpcObj, emitter, filename)
                 if emitted:
-                    trace.Success("JSON enumeration code generated in '%s'." % output_file.name)
+                    trace.Success("JSON enumeration code generated in '%s'." % os.path.basename(output_file.name))
                 else:
-                    trace.Success("No JSON enumeration code generated for '%s'." % filename)
+                    trace.Log("No JSON enumeration code generated for '%s'." % os.path.basename(filename))
             if not emitted and not KEEP_EMPTY:
                 try:
                     os.remove(enum_file)
@@ -2536,14 +2544,14 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
                 EmitHelperCode(rpcObj, emitter, os.path.basename(header_file))
-                trace.Success("JSON-RPC stubs generated in '%s'." % output_file.name)
+                trace.Success("JSON-RPC stubs generated in '%s'." % os.path.basename(output_file.name))
 
         if generateRpc and "dorpc" in rpcObj.schema and rpcObj.schema["dorpc"] == True:
             with open(os.path.join(directory, "J" + filename + ".h"), "w") as output_file:
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
                 EmitRpcCode(rpcObj, emitter, filename, os.path.basename(path))
-                trace.Success("JSON-RPC implementation generated in '%s'." % output_file.name)
+                trace.Success("JSON-RPC implementation generated in '%s'." % os.path.basename(output_file.name))
 
     else:
         trace.Success("No code to generate.")
@@ -2558,6 +2566,7 @@ if __name__ == "__main__":
         formatter_class=argparse.RawTextHelpFormatter)
     argparser.add_argument('path', nargs="*", help="JSON file(s), wildcards are allowed")
     argparser.add_argument("--version", dest="version", action="store_true", default=False, help="display version")
+    argparser.add_argument("--verbose", dest="verbose", action="store_true", default=False, help="be verbose")
     argparser.add_argument("-d",
                            "--docs",
                            dest="docs",
@@ -2681,6 +2690,7 @@ if __name__ == "__main__":
 
     args = argparser.parse_args(sys.argv[1:])
 
+    VERBOSE = args.verbose
     VERIFY = not args.no_warnings
     INDENT_SIZE = args.indent_size
     ALWAYS_COPYCTOR = args.copy_ctor
@@ -2716,13 +2726,15 @@ if __name__ == "__main__":
             files.extend(glob.glob(p))
         for path in files:
             try:
-                trace.Header("\nProcessing file '%s'" % path)
+                trace.Header(path)
                 if path.endswith(".h"):
                     schemas = LoadInterface(path, args.includePaths)
                 else:
                     schemas = [LoadSchema(path, args.if_dir, args.cppif_dir)]
                 for schema in schemas:
                     if schema:
+                        warnings = NO_DUP_WARNINGS
+                        NO_DUP_WARNINGS = "no_dup_warnings" in schema
                         output_path = path
                         if args.output_dir:
                             if (args.output_dir[0]) == '/':
@@ -2739,15 +2751,16 @@ if __name__ == "__main__":
                                     else schema["info"]["class"] if "class" in schema["info"] \
                                     else os.path.basename(output_path)
                             CreateDocument(schema, os.path.join(os.path.dirname(output_path), title.replace(" ", "")))
+                        NO_DUP_WARNINGS = warnings
             except JsonParseError as err:
                 trace.Error(str(err))
-           except RuntimeError as err:
+            except RuntimeError as err:
                 trace.Error(str(err))
-           except IOError as err:
+            except IOError as err:
                 trace.Error(str(err))
-           except ValueError as err:
+            except ValueError as err:
                 trace.Error(str(err))
-        print("\nJsonGenerator: All done. {} error{}.".format(trace.errors if trace.errors else 'No',
+        trace.Log("JsonGenerator: All done, {} files parsed, {} error{}.".format(len(files), trace.errors if trace.errors else 'no',
                                                               '' if trace.errors == 1 else 's'))
         if trace.errors:
             sys.exit(1)
