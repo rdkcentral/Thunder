@@ -671,10 +671,10 @@ namespace PluginHost {
                     case '7':
                     case '8': 
                     case '9': {
-                        uint32_t threadId = _dispatcher->WorkerPool().Id(keyPress - '0');
+                        ThreadId threadId = _dispatcher->WorkerPool().Id(keyPress - '0');
                         printf("\nThreadPool thread[%c] callstack:\n", keyPress);
                         printf("============================================================\n");
-                        if (threadId != static_cast<uint32_t>(~0)) {
+                        if (threadId != (ThreadId)(~0)) {
                             ::DumpCallStack(threadId, stdout);
                         } else {
                            printf("The given Thread ID is not in a valid range, please give thread id between 0 and %d\n", THREADPOOL_COUNT);

@@ -24,6 +24,7 @@
 #include "IAVSClient.h"
 #include "IBluetooth.h"
 #include "IBrowser.h"
+#include "IButler.h"
 #include "ICapture.h"
 #include "ICommand.h"
 #include "IComposition.h"
