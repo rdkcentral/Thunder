@@ -6,19 +6,33 @@
     "class": "NetworkControl",
     "description": "Network Control JSON-RPC interface"
   },
+  "definitions": {
+    "device": {
+      "description": "Network interface name",
+      "type": "string",
+      "example": "eth0"
+    },
+    "dns": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "DNS addresses",
+        "example": "192.168.1.1"
+      }
+    }
+  },
   "common": {
     "$ref": "common.json"
   },
   "methods": {
     "reload": {
-      "summary": "Reloads a static and non-static network interface adapter",
+      "summary": "Reloads a static or non-static network interface adapter",
       "params": {
         "type": "object",
         "properties": {
           "device": {
-            "description": "Network interface",
-            "type": "string",
-            "example": "eth0"
+            "description": "Network interface name",
+            "$ref": "#/definitions/device"
           }
         }
       },
@@ -41,9 +55,8 @@
         "type": "object",
         "properties": {
           "device": {
-            "description": "Network interface",
-            "type": "string",
-            "example": "eth0"
+            "description": "Network interface name",
+            "$ref": "#/definitions/device"
           }
         }
       },
@@ -63,9 +76,8 @@
         "type": "object",
         "properties": {
           "device": {
-            "description": "Network interface",
-            "type": "string",
-            "example": "eth0"
+            "description": "Network interface name",
+            "$ref": "#/definitions/device"
           }
         }
       },
@@ -80,14 +92,13 @@
       ]
     },
     "flush": {
-      "summary": "Flushes a network interface adapter",
+      "summary": "Flush network interface adapter",
       "params": {
         "type": "object",
         "properties": {
           "device": {
-            "description": "Network interface",
-            "type": "string",
-            "example": "eth0"
+            "description": "Network interface name",
+            "$ref": "#/definitions/device"
           }
         }
       },
@@ -104,17 +115,15 @@
   },
   "properties": {
     "network": {
-      "summary": "Current network information",
-      "readonly": true,
+      "summary": "Network information",
       "params": {
         "type": "array",
         "items": {
           "type": "object",
           "properties": {
             "interface": {
-              "description": "Interface name",
-              "type": "string",
-              "example": "eth0"
+             "description": "Network interface name",
+             "$ref": "#/definitions/device"
             },
             "mode": {
               "description": "Mode",
@@ -147,6 +156,10 @@
               "description": "Broadcast IP",
               "type": "string",
               "example": "192.168.1.255"
+            },
+            "dns": {
+              "description": "DNS addresses",
+              "$ref": "#/definitions/dns"
             }
           }
         }
@@ -162,6 +175,12 @@
           "$ref": "#/common/errors/unavailable"
         }
       ]
+    },
+    "dns": {
+      "summary": "DNS addresses",
+      "params": {
+        "$ref": "#/definitions/dns"
+      }
     },
     "up": {
       "summary": "Interface up status",
@@ -190,9 +209,8 @@
         "type": "object",
         "properties": {
           "name": {
-            "type": "string",
-            "description": "Name of network interface",
-            "example": "eth0"
+            "description": "Network interface name",
+            "$ref": "#/definitions/device"
           },
           "address": {
             "type": "string",
