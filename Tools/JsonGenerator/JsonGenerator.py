@@ -33,7 +33,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pard
 import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 
-VERSION = "1.6"
+VERSION = "1.6.1"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
@@ -1344,8 +1344,13 @@ def EmitRpcCode(root, emit, header_file, source_file):
                 for v, t in vars.items():
                     # C-style buffers
                     if isinstance(t[0], JsonString) and "length" in t[0].schema:
-                        emit.Line("char* %s = reinterpret_cast<char*>(ALLOCA(%s));" % (t[0].JsonName(), t[0].schema["length"]))
+                        emit.Line("char* %s = nullptr;" % t[0].JsonName())
+                        emit.Line("if (%s != 0) {" % t[0].schema["length"])
+                        emit.Indent()
+                        emit.Line("%s = reinterpret_cast<char*>(ALLOCA(%s));" % (t[0].JsonName(), t[0].schema["length"]))
                         emit.Line("ASSERT(%s != nullptr);" % t[0].JsonName())
+                        emit.Unindent()
+                        emit.Line("}")
                     # Iterators
                     elif isinstance(t[0], JsonArray):
                         if "iterator" in t[0].schema:
@@ -1377,15 +1382,20 @@ def EmitRpcCode(root, emit, header_file, source_file):
                                 EmitResponse(p, elem.CppName() + ".")
                         # C-style buffers disguised as base64-encoded strings
                         elif isinstance(elem, JsonString) and "length" in elem.schema:
+                                emit.Line("if (%s != 0) {" % elem.schema["length"])
+                                emit.Indent();
                                 emit.Line("// Convert the C-style buffer to a base64-encoded JSON string")
                                 emit.Line("%s %sEncoded;" % (elem.CppStdClass(), elem.JsonName()))
                                 emit.Line("Core::ToString(%s, %s, %sEncoded);" % (elem.JsonName(), elem.schema["length"], elem.JsonName()))
                                 emit.Line("%s%s = %sEncoded;" % (parent if parent else "", elem.CppName(), elem.JsonName()))
+                                emit.Unindent()
+                                emit.Line("}")
                         # Iterators disguised as arrays
                         elif isinstance(elem, JsonArray):
                             if "iterator" in elem.schema:
+                                emit.Line("if (%s != nullptr) {" % elem.JsonName())
+                                emit.Indent()
                                 emit.Line("// Convert the iterator to a JSON array")
-                                emit.Line("ASSERT(%s != nullptr);" % elem.JsonName())
                                 emit.Line("%s %s{};" % (elem.items.CppStdClass(), elem.items.JsonName()))
                                 emit.Line("while (%s->Next(%s) == true) {" % (elem.JsonName(), elem.items.JsonName()))
                                 emit.Indent()
@@ -1394,6 +1404,8 @@ def EmitRpcCode(root, emit, header_file, source_file):
                                 emit.Unindent()
                                 emit.Line("}")
                                 emit.Line("%s->Release();" % elem.JsonName())
+                                emit.Unindent()
+                                emit.Line("}")
                             else:
                                 raise RuntimeError("internal error: unable to serialize a non-iterator array: %s" % elem.JsonName())
                         # Enums
@@ -2729,12 +2741,12 @@ if __name__ == "__main__":
                             CreateDocument(schema, os.path.join(os.path.dirname(output_path), title.replace(" ", "")))
             except JsonParseError as err:
                 trace.Error(str(err))
-#            except RuntimeError as err:
-#                trace.Error(str(err))
-#            except IOError as err:
-#                trace.Error(str(err))
-#            except ValueError as err:
-#                trace.Error(str(err))
+           except RuntimeError as err:
+                trace.Error(str(err))
+           except IOError as err:
+                trace.Error(str(err))
+           except ValueError as err:
+                trace.Error(str(err))
         print("\nJsonGenerator: All done. {} error{}.".format(trace.errors if trace.errors else 'No',
                                                               '' if trace.errors == 1 else 's'))
         if trace.errors:
