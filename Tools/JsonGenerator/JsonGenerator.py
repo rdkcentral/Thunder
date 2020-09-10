@@ -2554,7 +2554,7 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
                 trace.Success("JSON-RPC implementation generated in '%s'." % os.path.basename(output_file.name))
 
     else:
-        trace.Success("No code to generate.")
+        trace.Log("No code to generate.")
 
 
 objTracker = ObjectTracker()
@@ -2723,7 +2723,10 @@ if __name__ == "__main__":
     else:
         files = []
         for p in args.path:
-            files.extend(glob.glob(p))
+            if "*" in p or "?" in p:
+                files.extend(glob.glob(p))
+            else:
+                files.append(p)
         for path in files:
             try:
                 trace.Header(path)
