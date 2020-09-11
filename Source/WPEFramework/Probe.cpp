@@ -23,7 +23,7 @@ namespace WPEFramework {
 namespace Plugin {
 
     /* static */ const string Probe::SearchTarget(_T("urn:metrological-com:service:wpe:1"));
-    /* static */ const Core::NodeId Probe::Interface(_T("239.255.255.250"), 1900, Core::NodeId::TYPE_IPV4);
+    /* static  const Core::NodeId Probe::Interface(_T("239.255.255.250"), 1900, Core::NodeId::TYPE_IPV4); */
 
     static Core::ProxyPoolType<Web::TextBody> _textResponseFactory(2);
 
@@ -120,9 +120,9 @@ namespace Plugin {
         return (index);
     }
 
-    Probe::Listener::Listener(const string& baseURL, const string& model)
-        : BaseClass(5, false, Core::NodeId(Interface.AnyInterface(), Interface.PortNumber()), Interface.AnyInterface(), 1024, 1024)
-        , _applicationURL(baseURL)
+    Probe::Listener::Listener(const Core::NodeId& node, const PluginHost::IShell* service, const string& model)
+        : BaseClass(5, false, node, node.AnyInterface(), 1024, 1024)
+        , _service(service)
         , _model(model)
         , _destinations()
     {
@@ -131,12 +131,12 @@ namespace Plugin {
             ASSERT(false && "Seems we can not open the discovery port");
         }
 
-        Link().Join(Interface);
+        Link().Join(node);
     }
 
     /* virtual */ Probe::Listener::~Listener()
     {
-        Link().Leave(Interface);
+        Link().Leave(Link().LocalNode());
         Link().Close(Core::infinite);
     }
 
@@ -154,7 +154,7 @@ namespace Plugin {
         Core::NodeId sourceNode(Link().ReceivedNode());
 
         if ((request->Verb == Web::Request::HTTP_MSEARCH) && (request->ST.IsSet() == true)) {
-            if ((Core::NodeId(sourceNode, Interface.PortNumber()) != Link().LocalNode()) && (request->ST.Value() == Probe::SearchTarget) && (request->HasBody() == true) && (ValidRequest(*request) == true)) {
+            if ((request->ST.Value() == Probe::SearchTarget) && (request->HasBody() == true) && (ValidRequest(*request) == true)) {
                 string body(*(request->Body<Web::TextBody>()));
                 Destination newEntry;
                 newEntry._destination = sourceNode;
@@ -255,7 +255,7 @@ namespace Plugin {
         response->Body(body);
         response->ErrorCode = Web::STATUS_OK;
         response->Message = _T("OK");
-        response->ApplicationURL = Core::URL(_applicationURL);
+        response->ApplicationURL = Core::URL(_service->Accessor());
 
         TRACE(Discovery, (response, Link().RemoteNode()));
 
