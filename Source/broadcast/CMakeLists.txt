@@ -55,7 +55,17 @@ target_link_libraries(${TARGET}
 if(NXCLIENT_FOUND)
     find_package(NEXUS REQUIRED)
 
-     target_sources(${TARGET} PRIVATE Implementation/Nexus/Tuner.cpp)
+    if (CODE_FROM_EXTERNAL_REPOSITORY)
+        include(GetExternalCode)
+        GetExternalCode(
+            GIT_REPOSITORY "https://code.rdkcentral.com/r/soc/broadcom/components/rdkcentral/thunder/broadcast"
+            GIT_TAG "master"
+            SOURCE_DIR "Implementation/NexusExt"
+        )
+        target_sources(${TARGET} PRIVATE Implementation/NexusExt/Tuner.cpp)
+    else()
+        target_sources(${TARGET} PRIVATE Implementation/Nexus/Tuner.cpp)
+    endif()
 
      target_link_libraries(${TARGET}
         PRIVATE

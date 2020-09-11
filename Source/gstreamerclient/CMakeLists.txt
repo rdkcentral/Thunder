@@ -27,7 +27,21 @@ if (NOT "${GSTREAMER_CLIENT_IMPLEMENTATION}" STREQUAL "None")
 	find_package(GSTREAMER REQUIRED)
 	find_package(GSTREAMER_BASE REQUIRED)
 
-	add_subdirectory (${GSTREAMER_CLIENT_IMPLEMENTATION})
+    if("${GSTREAMER_CLIENT_IMPLEMENTATION}" STREQUAL "Nexus")
+        if (CODE_FROM_EXTERNAL_REPOSITORY)
+            include(GetExternalCode)
+            GetExternalCode(
+                GIT_REPOSITORY "https://code.rdkcentral.com/r/soc/broadcom/components/rdkcentral/thunder/gstreamerclient"
+                GIT_TAG "master"
+                SOURCE_DIR "NexusExt"
+            )
+            add_subdirectory(NexusExt)
+        else()
+            add_subdirectory(Nexus)
+        endif()
+    else()
+        add_subdirectory (${GSTREAMER_CLIENT_IMPLEMENTATION})
+    endif()
 endif()
 
 install(
