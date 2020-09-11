@@ -130,6 +130,11 @@ elseif (PROCESSCONTAINERS_DOBBY)
 
                 ${SYSTEMD_LIBRARIES}
                 )
+
+        target_include_directories( ${TARGET}
+                PRIVATE
+                ${JSONCPP_INCLUDE_DIRS}
+        )
 endif()
 
 install(
