@@ -130,17 +130,6 @@ elseif (PROCESSCONTAINERS_DOBBY)
 
                 ${SYSTEMD_LIBRARIES}
                 )
-
-        target_include_directories( ${TARGET}
-                PRIVATE
-                # Dobby includes
-                $<TARGET_PROPERTY:DobbyClientLib,INTERFACE_INCLUDE_DIRECTORIES>
-                $<TARGET_PROPERTY:IpcService,INTERFACE_INCLUDE_DIRECTORIES>
-                $<TARGET_PROPERTY:AppInfraCommon,INTERFACE_INCLUDE_DIRECTORIES>
-                $<TARGET_PROPERTY:AppInfraLogging,INTERFACE_INCLUDE_DIRECTORIES>
-                ${DOBBY_INCLUDE_DIRS}
-                ${JSONCPP_INCLUDE_DIRS}
-        )
 endif()
 
 install(
@@ -157,5 +146,5 @@ InstallCMakeConfig(
         TARGETS ${TARGET})
 
 InstallPackageConfig(
-        TARGETS ${TARGET} 
+        TARGETS ${TARGET}
         DESCRIPTION "Enable ease of development for Process Container support." )
