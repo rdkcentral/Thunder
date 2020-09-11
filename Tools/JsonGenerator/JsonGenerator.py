@@ -140,6 +140,10 @@ class JsonType():
         self.description = None
         self.default = None
         self.included_from = included
+        self.create = "typename" not in schema
+        if not self.create:
+            self.cpptype = schema["typename"]
+            self.enumName = schema["typename"]
 
         if "description" in schema:
             self.description = schema["description"]
@@ -160,6 +164,9 @@ class JsonType():
                                (self.name, self.description))
         if "default" in schema:
             self.default = schema["default"]
+
+    def Create(self):
+        return self.create
 
     def IsDuplicate(self): # Whether this object is a duplicate of another
         return self.duplicate
@@ -271,10 +278,7 @@ class JsonEnum(JsonType):
         if enumType != "string":
             raise JsonParseError("Only strings are supported in enums")
         self.type = enumType
-        if "typename" in schema:
-            self.cpptype = schema["typename"]
-            self.enumName = MakeEnum(self.cpptype.split("::")[-1].capitalize())
-        else:
+        if self.Create():
             self.enumName = MakeEnum(self.name.capitalize())
         self.enumerators = schema["enum"]
         self.values = schema["enumvalues"] if "enumvalues" in schema else []
@@ -302,7 +306,10 @@ class JsonEnum(JsonType):
             return self.origRef.CppClass()
         else:
             classname = ""
-            if "class" in self.schema:
+            if not self.Create():
+                # Override with real class name, this is likely comming from C++ header
+                classname = self.cpptype
+            elif "class" in self.schema:
                 # Override class name if "class" property present
                 classname = self.schema["class"].capitalize()
             elif CLASSNAME_FROM_REF and isinstance(self.schema, jsonref.JsonRef):
@@ -315,7 +322,16 @@ class JsonEnum(JsonType):
             return classname
 
     def CppEnumerators(self):
-        return list(map(lambda x: ("E" if x[0].isdigit() else "") + x.upper(), self.enumerators))
+        if self.Create():
+            return list(map(lambda x: ("E" if x[0].isdigit() else "") + x.upper(), self.enumerators))
+        else:
+            return self.enumerators
+
+    def StringEnumerators(self):
+        if self.Create():
+            return self.enumerators
+        else:
+            return list(map(lambda x: x.replace("_"," ").title().replace(" ",""), self.enumerators))
 
     def CppEnumeratorValues(self):
         return self.values
@@ -430,7 +446,7 @@ class JsonObject(JsonType):
         return self.properties
 
     def NeedsCopyCtor(self):
-        # Check if a copy constructory is needed by scanning all duplicate classes
+        # Check if a copy constructor is needed by scanning all duplicate classes
         filteredClasses = filter(lambda obj: obj.parent.NeedsCopyCtor() if self != obj else False, self.refs)
         foundInDuplicate = next(filteredClasses, None)
         return ALWAYS_COPYCTOR or self.parent.NeedsCopyCtor() or foundInDuplicate is not None
@@ -765,7 +781,10 @@ def LoadInterface(file, includePaths = []):
                 else:
                     return type
 
-            def StripNamespace(identifier):
+            def StripFrameworkNamespace(identifier):
+                return str(identifier).replace("::" + FRAMEWORK_NAMESPACE + "::", "")
+
+            def StripInterfaceNamespace(identifier):
                 return str(identifier).replace(INTERFACE_NAMESPACE + "::", "").replace("::" + FRAMEWORK_NAMESPACE + "::", "")
 
             def ConvertType(var):
@@ -774,14 +793,21 @@ def LoadInterface(file, includePaths = []):
                 if var.type.IsPointer():
                     # Special case for serializing C-style buffers, that will be converted to base64 encvoded strings
                     if isinstance(cppType, ProxyStubGenerator.CppParser.Integer) and cppType.size == "char":
-                        return "string", { "length" : " ".join(var.meta.maxlength) } if var.meta.maxlength else { "length": " ".join(var.meta.length) } if var.meta.length else None
+                        props = dict()
+                        if var.meta.maxlength:
+                            props["length"] = " ".join(var.meta.maxlength)
+                        elif var.meta.length:
+                            props["length"] = " ".join(var.meta.length)
+                        if "length" in props:
+                            props["cpptype"] = cppType.type
+                        return "string", props if props else None
                     # Special case for iterators, that will be converted to JSON arrays
                     elif isinstance(cppType, ProxyStubGenerator.CppParser.Class) and cppType.is_iterator and len(cppType.args) == 2:
                         # Take element type from return value of the Current() method
                         currentMethod = next((x for x in cppType.methods if x.name == "Current"), None)
                         if currentMethod == None:
                             raise CppParseError(var, "%s does not appear to a be an @iterator type" % cppType.type)
-                        return "array", { "items": ConvertParameter(currentMethod.retval), "iterator": StripNamespace(cppType.type) }
+                        return "array", { "items": ConvertParameter(currentMethod.retval), "iterator": StripInterfaceNamespace(cppType.type) }
                     # All other pointer types are not supported
                     else:
                         raise CppParseError(var, "unable to convert C++ type to JSON type: %s" % cppType.type)
@@ -812,7 +838,6 @@ def LoadInterface(file, includePaths = []):
                                 if enumValues[i - 1] != enumValues[i]:
                                     raise CppParseError(var, "enumerator values in an enum must all be explicit or all be implied")
                         enumSpec = { "enum": [e.name for e in cppType.items], "enumtyped": var.type.Type().scoped  }
-                        enumSpec["typename"] = StripNamespace(var.type.Type().full_name)
                         enumSpec["class"] = var.type.Type().name
                         if not cppType.items[0].autoValue:
                             enumSpec["enumvalues"] = [e.value for e in cppType.items]
@@ -834,6 +859,10 @@ def LoadInterface(file, includePaths = []):
                         properties = { **properties, **args }
                     else:
                         properties = dict(properties.items() + args.items())
+                    try:
+                        properties["typename"] = StripFrameworkNamespace(var.type.Type().full_name)
+                    except:
+                        pass
                 if var.meta.brief:
                     # Also attempt to craft some description
                     egidx = var.meta.brief.index("(e.g.") if "(e.g." in var.meta.brief else None
@@ -1169,7 +1198,7 @@ class Emitter():
 
 def GetNamespace(root, obj, full=True):
     namespace = ""
-    if isinstance(obj, (JsonObject, JsonEnum, JsonArray)):
+    if obj.Create() and isinstance(obj, (JsonObject, JsonEnum, JsonArray)):
         if isinstance(obj, JsonObject) and not obj.properties:
             return namespace
         fullname = ""
@@ -1186,19 +1215,21 @@ def GetNamespace(root, obj, full=True):
     return namespace
 
 
-def EmitEnumRegs(root, emit, header_file):
+def EmitEnumRegs(root, emit, header_file, if_file):
     def EmitEnumRegistration(root, enum, full=True):
         fullname = (GetNamespace(root, enum) if full else "%s::%s::" %
                     (DATA_NAMESPACE, root.CppClass())) + enum.CppClass()
         emit.Line("ENUM_CONVERSION_BEGIN(%s)" % fullname)
         emit.Indent()
         for c, item in enumerate(enum.enumerators):
-            emit.Line("{ %s::%s, _TXT(\"%s\") }," % (fullname, enum.CppEnumerators()[c], item))
+            emit.Line("{ %s::%s, _TXT(\"%s\") }," % (fullname, enum.CppEnumerators()[c], enum.StringEnumerators()[c]))
         emit.Unindent()
         emit.Line("ENUM_CONVERSION_END(%s);" % fullname)
 
     # Enumeration conversion code
     emit.Line("#include <interfaces/definitions.h>")
+    if if_file.endswith(".h"):
+        emit.Line("#include <%s%s>" % (CPP_IF_PATH, if_file))
     emit.Line("#include <core/Enumerate.h>")
     emit.Line("#include \"%s_%s.h\"" % (DATA_NAMESPACE, header_file))
     emit.Line()
@@ -1207,12 +1238,9 @@ def EmitEnumRegs(root, emit, header_file):
     if enumTracker.Objects():
         for obj in enumTracker.Objects():
             if not obj.IsDuplicate() and not obj.included_from:
+                emit.Line()
+                EmitEnumRegistration(root, obj, obj.RefCount() == 1 or not obj.Create())
                 count += 1
-        if count:
-            for obj in enumTracker.Objects():
-                if not obj.IsDuplicate() and not obj.included_from:
-                    emit.Line()
-                    EmitEnumRegistration(root, obj, obj.RefCount() == 1)
     emit.Line()
     emit.Line("}")
     return count
@@ -1348,15 +1376,26 @@ def EmitRpcCode(root, emit, header_file, source_file):
                     else:
                         vars[response.JsonName()] = [response, 2]
 
+                # Correct length variables not to be const anymore
+                for v, t in vars.items():
+                    if isinstance(t[0], JsonString) and "length" in t[0].schema:
+                        for w, q in vars.items():
+                            if w == t[0].schema["length"] and t[1] == 0:
+                                q[1] = 1
+                                break
+
                 # Emit temporary variables and deserializing of JSON data
                 for v, t in vars.items():
                     # C-style buffers
                     if isinstance(t[0], JsonString) and "length" in t[0].schema:
-                        emit.Line("char* %s = nullptr;" % t[0].JsonName())
+                        emit.Line("%s* %s = nullptr;" % (t[0].schema["cpptype"], t[0].JsonName()))
                         emit.Line("if (%s != 0) {" % t[0].schema["length"])
                         emit.Indent()
-                        emit.Line("%s = reinterpret_cast<char*>(ALLOCA(%s));" % (t[0].JsonName(), t[0].schema["length"]))
+                        emit.Line("%s = reinterpret_cast<%s*>(ALLOCA(%s));" % (t[0].JsonName(), t[0].schema["cpptype"], t[0].schema["length"]))
                         emit.Line("ASSERT(%s != nullptr);" % t[0].JsonName())
+                        if t[1] <= 1:
+                            emit.Line("// Decode base64-encoded JSON string")
+                            emit.Line("Core::FromString(%s%s.Value(), %s, %s, nullptr);" % (parent if parent else "", t[0].CppName(), t[0].JsonName(), t[0].schema["length"]))
                         emit.Unindent()
                         emit.Line("}")
                     # Iterators
@@ -1394,7 +1433,7 @@ def EmitRpcCode(root, emit, header_file, source_file):
                                 emit.Indent();
                                 emit.Line("// Convert the C-style buffer to a base64-encoded JSON string")
                                 emit.Line("%s %sEncoded;" % (elem.CppStdClass(), elem.JsonName()))
-                                emit.Line("Core::ToString(%s, %s, %sEncoded);" % (elem.JsonName(), elem.schema["length"], elem.JsonName()))
+                                emit.Line("Core::ToString(%s, %s, true, %sEncoded);" % (elem.JsonName(), elem.schema["length"], elem.JsonName()))
                                 emit.Line("%s%s = %sEncoded;" % (parent if parent else "", elem.CppName(), elem.JsonName()))
                                 emit.Unindent()
                                 emit.Line("}")
@@ -1418,7 +1457,10 @@ def EmitRpcCode(root, emit, header_file, source_file):
                                 raise RuntimeError("internal error: unable to serialize a non-iterator array: %s" % elem.JsonName())
                         # Enums
                         elif isinstance(elem, JsonEnum):
-                            emit.Line("%s%s = static_cast<%s>(%s);" % (parent if parent else "", elem.CppName(), elem.CppClass(), elem.JsonName()))
+                            if elem.Create():
+                                emit.Line("%s%s = static_cast<%s>(%s);" % (parent if parent else "", elem.CppName(), elem.CppClass(), elem.JsonName()))
+                            else:
+                                emit.Line("%s%s = %s;" % (parent if parent else "", elem.CppName(), elem.JsonName()))
                         # All other primitives
                         else:
                             emit.Line("%s%s = %s;" % (parent if parent else "", elem.CppName(), elem.JsonName()))
@@ -1765,7 +1807,7 @@ def EmitHelperCode(root, emit, header_file):
 # C++ OBJECT GENERATOR
 #
 
-def EmitObjects(root, emit, emitCommon=False):
+def EmitObjects(root, emit, if_file, emitCommon=False):
     global emittedItems
     emittedItems = 0
 
@@ -1822,7 +1864,7 @@ def EmitObjects(root, emit, emitCommon=False):
         # Bail out if a duplicated class!
         if isinstance(jsonObj, JsonObject) and not jsonObj.properties:
             return
-        if jsonObj.IsDuplicate() or (not allowDup and jsonObj.RefCount() > 1):
+        if not jsonObj.Create() or jsonObj.IsDuplicate() or (not allowDup and jsonObj.RefCount() > 1):
             return
         if not isinstance(jsonObj, (JsonRpcSchema, JsonMethod)):
             trace.Log("Emitting class '{}' (source: '{}')".format(jsonObj.CppClass(), jsonObj.OrigName()))
@@ -1830,7 +1872,7 @@ def EmitObjects(root, emit, emitCommon=False):
             emit.Line("public:")
             if jsonObj.Enums():
                 for enum in jsonObj.Enums():
-                    if not enum.IsDuplicate() and enum.RefCount() == 1:
+                    if enum.Create() and not enum.IsDuplicate() and enum.RefCount() == 1:
                         emit.Indent()
                         EmitEnum(enum)
                         emit.Unindent()
@@ -1890,12 +1932,14 @@ def EmitObjects(root, emit, emitCommon=False):
     if enumTracker.Objects():
         count = 0
         for obj in enumTracker.Objects():
-            if not obj.IsDuplicate() and not obj.included_from:
+            if obj.Create() and not obj.IsDuplicate() and not obj.included_from:
                 count += 1
 
     emit.Line("#pragma once")
     emit.Line()
     emit.Line("#include <core/JSON.h>")
+    if if_file.endswith(".h"):
+        emit.Line("#include <%s%s>" % (CPP_IF_PATH, if_file))
     if count:
         emit.Line("#include <core/Enumerate.h>")
     emit.Line()
@@ -1908,20 +1952,26 @@ def EmitObjects(root, emit, emitCommon=False):
     emit.Indent()
     emit.Line()
     if emitCommon and enumTracker.CommonObjects():
-        trace.Log("Emitting common enums...")
-        emit.Line("// Common enums")
-        emit.Line("//")
-        emit.Line()
+        emittedPrologue = False
         for obj in enumTracker.CommonObjects():
-            if not obj.IsDuplicate() and not obj.included_from:
+            if obj.Create() and not obj.IsDuplicate() and not obj.included_from:
+                if not emittedPrologue:
+                    trace.Log("Emitting common enums...")
+                    emit.Line("// Common enums")
+                    emit.Line("//")
+                    emit.Line()
+                    emittedPrologue = True
                 EmitEnum(obj)
     if emitCommon and objTracker.CommonObjects():
         trace.Log("Emitting common classes...")
-        emit.Line("// Common classes")
-        emit.Line("//")
-        emit.Line()
+        emittedPrologue = False
         for obj in objTracker.CommonObjects():
             if not obj.included_from:
+                if not emittedPrologue:
+                    emit.Line("// Common classes")
+                    emit.Line("//")
+                    emit.Line()
+                    emittedPrologue = True
                 EmitClass(obj, True)
     if root.Objects():
         trace.Log("Emitting params/result classes...")
@@ -1935,12 +1985,15 @@ def EmitObjects(root, emit, emitCommon=False):
     emit.Line()
     emit.Line("} // namespace %s" % DATA_NAMESPACE)
     emit.Line()
-    if count:
-        emit.Line("// Enum conversion handlers")
-        for obj in enumTracker.Objects():
-            if not obj.IsDuplicate() and not obj.included_from:
-                EmitEnumConversionHandler(root, obj)
-        emit.Line()
+    emittedPrologue = False
+    for obj in enumTracker.Objects():
+        if not obj.IsDuplicate() and not obj.included_from:
+            if not emittedPrologue:
+                emit.Line("// Enum conversion handlers")
+                emittedPrologue = True
+            EmitEnumConversionHandler(root, obj)
+            emittedItems += 1
+    emit.Line()
     emit.Line("}")
     emit.Line()
     return emittedItems
@@ -2510,7 +2563,7 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
                     "// Note: This code is inherently not thread safe. If required, proper synchronisation must be added."
                 )
                 emitter.Line()
-                emitted = EmitObjects(rpcObj, emitter, True)
+                emitted = EmitObjects(rpcObj, emitter, os.path.basename(path), True)
                 if emitted:
                     trace.Success("JSON data classes generated in '%s'." % os.path.basename(output_file.name))
                 else:
@@ -2528,7 +2581,7 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
                              rpcObj.info["title"].replace("Plugin", "").strip())
                 emitter.Line("// Generated automatically from '%s'." % os.path.basename(path))
                 emitter.Line()
-                emitted = EmitEnumRegs(rpcObj, emitter, filename)
+                emitted = EmitEnumRegs(rpcObj, emitter, filename, os.path.basename(path))
                 if emitted:
                     trace.Success("JSON enumeration code generated in '%s'." % os.path.basename(output_file.name))
                 else:
