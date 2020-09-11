@@ -7,7 +7,7 @@
     "description": "Network Control JSON-RPC interface"
   },
   "definitions": {
-    "device": {
+    "interface": {
       "description": "Network interface name",
       "type": "string",
       "example": "eth0"
@@ -17,7 +17,7 @@
       "items": {
         "type": "string",
         "description": "DNS addresses",
-        "example": "192.168.1.1"
+        "example": ["192.168.1.1","www.google.com","8.8.8.8"]
       }
     }
   },
@@ -30,9 +30,9 @@
       "params": {
         "type": "object",
         "properties": {
-          "device": {
+          "interface": {
             "description": "Network interface name",
-            "$ref": "#/definitions/device"
+            "$ref": "#/definitions/interface"
           }
         }
       },
@@ -54,9 +54,9 @@
       "params": {
         "type": "object",
         "properties": {
-          "device": {
+          "interface": {
             "description": "Network interface name",
-            "$ref": "#/definitions/device"
+            "$ref": "#/definitions/interface"
           }
         }
       },
@@ -75,9 +75,9 @@
       "params": {
         "type": "object",
         "properties": {
-          "device": {
+          "interface": {
             "description": "Network interface name",
-            "$ref": "#/definitions/device"
+            "$ref": "#/definitions/interface"
           }
         }
       },
@@ -92,13 +92,13 @@
       ]
     },
     "flush": {
-      "summary": "Flush network interface adapter",
+      "summary": "Flushes a network interface adapter",
       "params": {
         "type": "object",
         "properties": {
-          "device": {
+          "interface": {
             "description": "Network interface name",
-            "$ref": "#/definitions/device"
+            "$ref": "#/definitions/interface"
           }
         }
       },
@@ -123,7 +123,7 @@
           "properties": {
             "interface": {
              "description": "Network interface name",
-             "$ref": "#/definitions/device"
+             "$ref": "#/definitions/interface"
             },
             "mode": {
               "description": "Mode",
@@ -210,7 +210,7 @@
         "properties": {
           "name": {
             "description": "Network interface name",
-            "$ref": "#/definitions/device"
+            "$ref": "#/definitions/interface"
           },
           "address": {
             "type": "string",
