@@ -30,7 +30,6 @@ namespace Plugin {
 
     class Probe {
     private:
-        static const Core::NodeId Interface;
         static const string SearchTarget;
 
         class WebTransform {
@@ -69,7 +68,7 @@ namespace Plugin {
             };
 
         public:
-            Listener(const string& responseURL, const string& model);
+            Listener(const Core::NodeId& address, const PluginHost::IShell* service, const string& model);
             virtual ~Listener();
 
         public:
@@ -91,7 +90,7 @@ namespace Plugin {
 
         private:
             // This should be the "Response" as depicted by the parent/DIALserver.
-            const string _applicationURL;
+            const PluginHost::IShell* _service;
             const string _model;
             std::list<Destination> _destinations;
         };
@@ -108,8 +107,8 @@ namespace Plugin {
             };
 
         public:
-            Broadcaster(Probe& parent, const uint8_t timeToLive)
-                : Core::SocketDatagram(false, Core::NodeId(Interface.AnyInterface(), 0), Interface, 1024, 1024)
+            Broadcaster(Probe& parent, const Core::NodeId address,  const uint8_t timeToLive)
+                : Core::SocketDatagram(false, address.AnyInterface(), address, 1024, 1024)
                 , _parent(parent)
                 , _adminLock()
                 , _request()
@@ -123,7 +122,7 @@ namespace Plugin {
 
                 if (Open(1000) == Core::ERROR_NONE) {
                     Destination newEntry;
-                    newEntry._destination = Interface;
+                    newEntry._destination = address;
                     newEntry._timeToLive = timeToLive;
                     _destinations.push_back(newEntry);
                     Core::SocketDatagram::Trigger();
@@ -137,11 +136,11 @@ namespace Plugin {
             }
 
         public:
-            void Ping(const Core::NodeId& destination, const uint8_t timeToLive)
+            void Ping(const uint8_t timeToLive)
             {
                 if (IsOpen()) {
                     Destination newEntry;
-                    newEntry._destination = destination;
+                    newEntry._destination = RemoteNode();
                     newEntry._timeToLive = timeToLive;
 
                     _adminLock.Lock();
@@ -306,11 +305,11 @@ namespace Plugin {
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
-        Probe(const string& responseURL, const uint8_t timeToLive, const string& model)
+        Probe(const Core::NodeId& source, const PluginHost::IShell* service, const uint8_t timeToLive, const string& model)
             : _adminLock()
             , _partners()
-            , _probe(responseURL, model)
-            , _broadcast(*this, timeToLive)
+            , _probe(source, service, model)
+            , _broadcast(*this, source, timeToLive)
             , _timeToLive(timeToLive)
         {
 
@@ -326,7 +325,7 @@ namespace Plugin {
     public:
         inline void Ping(const uint8_t timeToLive = 0)
         {
-            _broadcast.Ping(Interface, timeToLive == 0 ? _timeToLive : timeToLive);
+            _broadcast.Ping(timeToLive == 0 ? _timeToLive : timeToLive);
         }
         inline Iterator Instances() const
         {
