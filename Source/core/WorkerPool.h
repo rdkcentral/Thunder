@@ -67,6 +67,14 @@ namespace Core {
                 }
                 return (result);
             }
+            bool Reschedule(const Core::Time& time)
+            {
+                Core::ProxyType<Core::IDispatch> job(ThreadPool::JobType<IMPLEMENTATION>::Forced());
+
+                ASSERT(job.IsValid() == true);
+
+                return (Core::IWorkerPool::Instance().Reschedule(time, job));
+            }
             void Revoke()
             {
                 Core::IWorkerPool::Instance().Revoke(ThreadPool::JobType<IMPLEMENTATION>::Reset());
@@ -87,6 +95,7 @@ namespace Core {
         virtual ::ThreadId Id(const uint8_t index) const = 0;
         virtual void Submit(const Core::ProxyType<Core::IDispatch>& job) = 0;
         virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) = 0;
+        virtual bool Reschedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) = 0;
         virtual uint32_t Revoke(const Core::ProxyType<Core::IDispatch>& job, const uint32_t waitTime = Core::infinite) = 0;
         virtual void Join() = 0;
         virtual const Metadata& Snapshot() const = 0;
@@ -170,6 +179,20 @@ namespace Core {
         void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) override
         {
             _timer.Schedule(time, Timer(this, job));
+        }
+        bool Reschedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) override
+        {
+            bool rescheduled = false;
+            if (_timer.Revoke(Timer(this, job)) == true) {
+                rescheduled = true;
+                if (time > Core::Time::Now()) {
+                    _timer.Schedule(time, Timer(this, job));
+                }
+                else {
+                    _threadPool.Submit(job, Core::infinite);
+                }
+            }
+            return (rescheduled);
         }
         uint32_t Revoke(const Core::ProxyType<Core::IDispatch>& job, const uint32_t waitTime = Core::infinite) override
         {

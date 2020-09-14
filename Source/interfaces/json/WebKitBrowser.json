@@ -6,7 +6,18 @@
     "class": "WebKitBrowser",
     "description": "WebKitBrowser JSON-RPC interface"
   },
-  "properties": {
+    "common": {
+      "$ref": "common.json"  
+    },
+    "include": {
+      "browser": {
+        "$ref": "Browser.json#"
+      },
+      "statecontrol": {
+        "$ref": "StateControl.json#"
+      }
+    },
+    "properties": {
     "useragent": {
       "summary": "UserAgent string used by browser",
         "params": {
@@ -71,7 +82,7 @@
       }
     }
   },
-  "methods": {
+    "methods": {
     "bridgereply": {
       "summary": "A response for legacy $badger",
       "params": {

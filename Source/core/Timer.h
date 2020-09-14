@@ -244,9 +244,7 @@ namespace Core {
             // Since we have the admin lock, we are pretty sure that there is not any
             // context running, so we can be pretty sure that if it was scheduled, it
             // is gone !!!
-            if (RemoveEntry(index, info) == true) {
-
-                foundElement = true;
+            if (RemoveEntry(index, info, foundElement) == true) {
 
                 // If we added the new time up front, retrigger the scheduler.
                 m_TimerThread.Run();
@@ -350,13 +348,16 @@ namespace Core {
 
             return (reevaluate);
         }
-        bool RemoveEntry(typename SubscriberList::iterator& index, const CONTENT& info)
+        bool RemoveEntry(typename SubscriberList::iterator& index, const CONTENT& info, bool& found)
         {
             bool changedHead = false;
 
+            found = false;
+
             while (index != m_PendingQueue.end()) {
                 if (index->Content() == info) {
-                    changedHead = (index == m_PendingQueue.begin());
+                    changedHead |= (index == m_PendingQueue.begin());
+                    found = true;
 
                     // Remove this... Found it, remove it.
                     index = m_PendingQueue.erase(index);

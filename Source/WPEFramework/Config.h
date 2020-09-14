@@ -545,16 +545,6 @@ namespace PluginHost {
                     }
                 }
 
-                UpdateBinder();
-
-                if (UpdateAccessor() == false) {
-                    SYSLOG(Logging::Startup, ("Invalid config information could not resolve to a proper IP set to: (%s:%d)", _accessor.HostAddress().c_str(), _accessor.PortNumber()));
-                }
-                else {
-                    SYSLOG(Logging::Startup, (_T("Accessor: %s"), _URL.c_str()));
-                    SYSLOG(Logging::Startup, (_T("Interface IP: %s"), _accessor.HostAddress().c_str()));
-                }
-
                 bool status = true;
                 Core::JSON::ArrayType<JSONConfig::Environment>::ConstIterator index(static_cast<const JSONConfig&>(config).Environments.Elements());
                 while (index.Next() == true) {
@@ -570,6 +560,8 @@ namespace PluginHost {
                         }
                     }
                 }
+
+                UpdateBinder();
 
                 // Get all in the config configure Plugins..
                 _plugins = config.Plugins;
@@ -720,26 +712,7 @@ namespace PluginHost {
             }
             return (added);
         }
-
-    private:
-        friend class Server;
-
-        inline void UpdateBinder() {
-            // Update binding address
-            if (_interface.empty() == false) {
-                _binder = Plugin::Config::IPV4UnicastNode(_interface);
-
-            }
-            if (_binder.IsValid() == false) {
-                Core::NodeId binder(_binding.c_str(), _portNumber);
-                _binder = binder;
-            }
-            else {
-                _binder.PortNumber(_portNumber);
-            }
-            SYSLOG(Logging::Startup, (_T("Binder: [%s:%d]"), _binder.HostAddress().c_str(), _binder.PortNumber()));
-        }
-        bool UpdateAccessor() {
+        void UpdateAccessor() {
             bool validAccessor = true;
             Core::NodeId result(_binding.c_str());
 
@@ -783,8 +756,36 @@ namespace PluginHost {
                 _accessor.PortNumber(_portNumber);
             }
 
-            return (validAccessor);
+            if (validAccessor == false) {
+                SYSLOG(Logging::Startup, ("Invalid config information could not resolve to a proper IP set to: (%s:%d)", _accessor.HostAddress().c_str(), _accessor.PortNumber()));
+            }
+            else {
+                SYSLOG(Logging::Startup, (_T("Accessor: %s"), _URL.c_str()));
+                SYSLOG(Logging::Startup, (_T("Interface IP: %s"), _accessor.HostAddress().c_str()));
+            }
+
+            return;
         }
+
+    private:
+        friend class Server;
+
+        inline void UpdateBinder() {
+            // Update binding address
+            if (_interface.empty() == false) {
+                _binder = Plugin::Config::IPV4UnicastNode(_interface);
+
+            }
+            if (_binder.IsValid() == false) {
+                Core::NodeId binder(_binding.c_str(), _portNumber);
+                _binder = binder;
+            }
+            else {
+                _binder.PortNumber(_portNumber);
+            }
+            SYSLOG(Logging::Startup, (_T("Binder: [%s:%d]"), _binder.HostAddress().c_str(), _binder.PortNumber()));
+        }
+
         inline void Security(ISecurity* security)
         {
             ASSERT((_security == nullptr) && (security != nullptr));
