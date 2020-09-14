@@ -86,7 +86,7 @@ namespace Exchange {
         // @brief TV's Extended Display Identification Data
         // @param edid: edid byte string
         // TODO: @sebas, I need to make the length parameter const. Why ?
-        virtual uint32_t EDID (const uint16_t& length /* @inout */, uint8_t data[] /* @out @length:length */) const = 0;
+        virtual uint32_t EDID (uint16_t& length /* @inout */, uint8_t data[] /* @out @length:length */) const = 0;
 
         // @property
         // @brief HDCP protocol used for transmission
