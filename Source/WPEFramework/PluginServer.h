@@ -98,6 +98,23 @@ namespace PluginHost {
         };
 
     private:
+        #ifdef PERFORMANCE 
+	class PerformanceAdministrator {
+	    static PerformanceAdministrator& Instance() {
+                static PerformanceAdministrator singleton;
+                return (singleton);
+            }
+	public:
+	    void Serialization(const uint64_t& time, const uint32_t packageSize) {
+            }
+
+	    void Deserialization(const uint64_t& time, const uint32_t packageSize) {
+            }
+
+        private:
+        }
+	#endif
+
         class WorkerPoolImplementation : public Core::WorkerPool {
         public:
             WorkerPoolImplementation() = delete;
@@ -115,10 +132,40 @@ namespace PluginHost {
 
         class FactoriesImplementation : public IFactories {
         private:
+            #ifdef PERFORMANCE 
+            class JSONRPCMessage : public Web::JSONBodyType<Core::JSONRPC::Message> {
+	    public:
+		JSONRPCMessage(const JSONRPCMessage&) = delete;
+		JSONRPCMessage& operator= (const JSONRPCMessage&) = delete;
+
+                JSONRPCMessage() = default;
+                ~JSONRPCMessage() override = default;
+
+	    pubic:
+		void Acquire() {
+		    _stamp = Core::Time::Now().Ticks();
+		}
+		uint64_t Time() {
+		    retrn (Core::Time::Now().Ticks() - _stamp);
+                }
+		void Reset() {
+		    _stamp = Core::Time::Now().Ticks();
+		}
+		void Relinquish() {
+		    uint64_t timeStamp = Core::Time::Now().Ticks() - _stamp;
+                    PerformanceAdministrator::Instance().Serialization(itimeStamp, 0);
+		}
+
+		uint64_t _stamp;
+            };
+            #else 
+            using JSONRPCMessage = Web::JSONBodyType<Core::JSONRPC::Message>;
+	    #endif
+
+        public:
             FactoriesImplementation(const FactoriesImplementation&) = delete;
             FactoriesImplementation& operator=(const FactoriesImplementation&) = delete;
 
-        public:
             FactoriesImplementation()
                 : _requestFactory(5)
                 , _responseFactory(5)
@@ -126,9 +173,7 @@ namespace PluginHost {
                 , _jsonRPCFactory(5)
             {
             }
-            ~FactoriesImplementation() override
-            {
-            }
+            ~FactoriesImplementation() override = default;
 
         public:
             Core::ProxyType<Web::Request> Request() override
@@ -145,14 +190,14 @@ namespace PluginHost {
             }
             Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> JSONRPC() override
             {
-                return (_jsonRPCFactory.Element());
+                return (proxy_cast< Web::JSONBodyType<Core::JSONRPC::Message> >(_jsonRPCFactory.Element()));
             }
 
         private:
             Core::ProxyPoolType<Web::Request> _requestFactory;
             Core::ProxyPoolType<Web::Response> _responseFactory;
             Core::ProxyPoolType<Web::FileBody> _fileBodyFactory;
-            Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> _jsonRPCFactory;
+            Core::ProxyPoolType<JSONRPCMessage> _jsonRPCFactory;
         };
 
         class ServiceMap;

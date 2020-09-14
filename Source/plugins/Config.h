@@ -32,4 +32,6 @@
 
 #define RESTFULL_API 1
 
+#define PERFORMANCE 1
+
 #endif

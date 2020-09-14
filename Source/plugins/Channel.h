@@ -31,12 +31,11 @@ namespace PluginHost {
         typedef Web::WebSocketLinkType<Core::SocketStream, Request, Web::Response, RequestPool&> BaseClass;
 
         class EXTERNAL Package {
-        private:
+        public:
             Package() = delete;
             Package(const Package&) = delete;
             Package& operator=(const Package&) = delete;
 
-        public:
             explicit Package(const Core::ProxyType<Core::JSON::IElement>& json)
                 : _json(true)
                 , _info(json)
