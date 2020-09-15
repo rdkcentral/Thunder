@@ -81,6 +81,205 @@ namespace PluginHost {
         Core::ProxyType<PluginHost::Service> _service;
     };
 
+#ifdef THUNDER_PERFORMANCE
+        class PerformanceAdministrator {
+        public:
+                class Statistics {
+                public:
+                        class Tuple{
+                        public:
+                                Tuple(const Tuple&) = delete;
+                                Tuple& operator= (const Tuple&) = delete;
+                                Tuple() {
+                                        Clear();
+                                }
+                                ~Tuple() = default;
+
+                        public:
+                                void Clear() {
+                                        _minimum = ~0;
+                                        _maximum = 0;
+                                        _averag = 0;
+                                        _count = 0;
+                                }
+                                void Measurement(const uint32_t data) {
+                                        if (data < _minimum) { _minimum = data; }
+                                        if (data > _maximum) { _maximum = data; }
+                                        _avarage = ((_count * _avarage) + data) / (_count + 1);
+                                        _count++;
+                                }
+
+                        private:
+                                uint32_t _minimum;
+                                uint32_t _maximum;
+                                uint32_t _average;
+                                uint32_t  _count;
+                        }
+
+                public:
+                        Statistics(const Statistics&) = delete;
+                        Statistics& operator= (const Statistics&) = delete;
+                        Statistics()
+                                : _deserialization()
+                                , _execution()
+                                , _serialization()
+                                , _total() {
+                        }
+                        ~Statistics()  = default;
+
+                public:
+                        void Clear() {
+                                _deserialization.Clear();
+                                _execution.Clear();
+                                _serialization.Clear();
+                                _total.Clear();
+                        }
+                        void Deserialization(const uint32_t data) {
+                                _deserialization.Measurement(data);
+                        }
+                        void Execution(const uint32_t data) {
+                                _execution.Measurement(data);
+                        }
+                        void Serialization(const uint32_t data) {
+                                _serialization.Measurement(data);
+                        }
+                        void Total(const uint32_t data) {
+                                _total.Measurement(data);
+                        }
+
+                private:
+                        Tuple _deserialization;
+                        Tuple _execution;
+                        Tuple _serialization;
+                        Tuple _total;
+                };
+
+                using StatisticsList = std::list< std::pair<const uint32_t, Statistics> >;
+
+        private:
+            PerformanceAdministrator()
+                : _statistics() {
+                _statistics.emplace_back(std::pair<const uint32_t, Statistics>(100,  Statistics()))
+                _statistics.emplace_back(std::pair<const uint32_t, Statistics>(200,  Statistics()))
+                _statistics.emplace_back(std::pair<const uint32_t, Statistics>(400,  Statistics()))
+                _statistics.emplace_back(std::pair<const uint32_t, Statistics>(800,  Statistics()))
+                _statistics.emplace_back(std::pair<const uint32_t, Statistics>(1600, Statistics()))
+                _statistics.emplace_back(std::pair<const uint32_t, Statistics>(3200, Statistics()))
+                _statistics.emplace_back(std::pair<const uint32_t, Statistics>(6400, Statistics()))
+            }
+
+
+        public:
+            PerformanceAdministrator(const PerformanceAdministrator&) = delete;
+            PerformanceAdministrator& operator= (const PerformanceAdministrator&) = delete;
+
+            static PerformanceAdministrator& Instance() {
+                static PerformanceAdministrator singleton;
+                return (singleton);
+            }
+            void Serialization(const uint64_t& time, const uint32_t packageSize) {
+                _serializeTime = time;
+            }
+            void Serialization(uint64_t& time, uint32_t& packageSize) {
+                time = _serializeTime;
+            }
+
+            void Deserialization(const uint64_t& time, const uint32_t packageSize) {
+                _deserializeTime = time;
+            }
+            void Deserialization(uint64_t& time, uint32_t& packageSize) {
+                time = _deserializeTime;
+            }
+            void ExecutionTime(const uint64_t& time) {
+                _execTime = time - _deserializeTime;
+            }
+            uint64_t ExecutionTime() const {
+                return _execTime;
+            }
+
+        private:
+            uint64_t _execTime;
+            uint64_t _serializeTime;
+            uint64_t _deserializeTime;
+            StatisticsList _statistics;
+        };
+
+    class TrackingJSONRPC : public Web::JSONBodyType<Core::JSONRPC::Message> {
+    public:
+        TrackingJSON(const TrackingJSONRPC&) = delete;
+        TrackingJSON& operator= (const TrackingJSONRPC&) = delete;
+
+        TrackingJSONRPC() = default;
+        ~TrackingJSONRPC() override = default;
+
+    public:
+        void Clear() {
+            _in = 0;
+            _out = 0;
+        }
+	void In(const uint32_t data) {
+            if (data == 0) {
+                uint64_t now = Core::Time::Now().Ticks();
+                _deserialization = static_cast<uint32_t>(now - _stamp);
+		_stamp = now;
+            }
+            _in += data;
+        }
+	void Out(const uint32_t data) {
+            if (out == 0) {
+                uint64_t now = Core::Time::Now().Ticks();
+                _communicatorWait = static_cast<uint32_t>(now - _stamp);
+                _stamp = now;
+            }
+            _out += data;
+        }
+        void Dispatch() {
+            uint64_t now = Core::Time::Now().Ticks();
+            _threadPoolWait = static_cast<uint32_t>(now - _stamp);
+            _stamp = now;
+        }
+	void Execution() {
+            uint64_t now = Core::Time::Now().Ticks();
+            _execution = static_cast<uint32_t>(now - _stamp);
+            _stamp = now;
+        }
+
+        void Acquire() {
+            _stamp = Core::Time::Now().Ticks();
+	    _begin = _stamp;
+        }
+        void Relinquish() {
+            uint64_t now = Core::Time::Now().Ticks();
+            uint32_t total = static_cast<uint32_t>(now - _begin);
+            _serialization = static_cast<uint32_t>(now - _stamp);
+
+            // Time to register all data...We are completed, we got:
+            // _deserialisationTime = Time it took to receive the full message till completion and its size in _in (bytes)
+            // _threadPoolWait = Time it took for the deserialized message to be picked up by the workerpool to be executed.
+            // _execution = Time it took for the request to reach completion. Actual execution time of the request.
+            // _communicatorWait = Time it took after the response message was dropped for the resource monitor to pick it up for sending.
+            // _serializationTime = Time it took for the response to be fully serialized and send over the line. size is in _out (bytes)
+            // total = Time it took from entering the system and leaving the system. This should pretty mucch be the sum of all times.
+            PerformanceAdministrator::Instance().Total(timeStamp, 0);
+        }
+
+    private:
+        uint32_t _in;
+        uint32_t _out;
+        uint64_t _begin;
+        uint64_t _stamp;
+	uint32_t _size;
+	uint32_t _deserialization;
+	uint32_t _execution;
+	uint32_t _serialization;
+        uint32_t _threadPoolWait;
+        uint32_t _communicatorWait;
+    };
+    using JSONRPCMessage = TrackingJSONRPC;
+#else
+    using JSONRPCMessage = Web::JSONBodyType<Core::JSONRPC::Message>;
+#endif
+
     typedef Core::ProxyPoolType<PluginHost::Request> RequestPool;
 }
 }

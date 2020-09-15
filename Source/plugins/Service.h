@@ -150,13 +150,13 @@ namespace PluginHost {
     public:
         Service(const Plugin::Config& plugin, const string& webPrefix, const string& persistentPath, const string& dataPath, const string& volatilePath)
             : _adminLock()
-#ifdef RUNTIME_STATISTICS
+#ifdef THUNDER_RUNTIME_STATISTICS
             , _processedRequests(0)
             , _processedObjects(0)
 #endif
             , _state(DEACTIVATED)
             , _config(plugin, webPrefix, persistentPath, dataPath, volatilePath)
-#ifdef RESTFULL_API
+#ifdef THUNDER_RESTFULL_API
             , _notifiers()
 #endif
         {
@@ -168,7 +168,7 @@ namespace PluginHost {
     public:
         bool IsWebServerRequest(const string& segment) const;
 
-#ifdef RESTFULL_API
+#ifdef THUNDER_RESTFULL_API
         void Notification(const string& message);
 #endif
         virtual string Versions() const
@@ -242,7 +242,7 @@ namespace PluginHost {
         inline void GetMetaData(MetaData::Service& metaData) const
         {
             metaData = _config.Configuration();
-#ifdef RESTFULL_API
+#ifdef THUNDER_RESTFULL_API
             metaData.Observers = static_cast<uint32_t>(_notifiers.size());
 #endif
             // When we do this, we need to make sure that the Service does not change state, otherwise it might
@@ -254,7 +254,7 @@ namespace PluginHost {
 
             Unlock();
 
-#ifdef RUNTIME_STATISTICS
+#ifdef THUNDER_RUNTIME_STATISTICS
             metaData.ProcessedRequests = _processedRequests;
             metaData.ProcessedObjects = _processedObjects;
 #endif
@@ -359,7 +359,7 @@ namespace PluginHost {
         {
             _errorMessage = message;
         }
-#ifdef RESTFULL_API
+#ifdef THUNDER_RESTFULL_API
         inline bool Subscribe(Channel& channel)
         {
             _notifierLock.Lock();
@@ -390,7 +390,7 @@ namespace PluginHost {
             _notifierLock.Unlock();
         }
 #endif
-#ifdef RUNTIME_STATISTICS
+#ifdef THUNDER_RUNTIME_STATISTICS
         inline void IncrementProcessedRequests()
         {
             _processedRequests++;
@@ -404,11 +404,11 @@ namespace PluginHost {
 
     private:
         mutable Core::CriticalSection _adminLock;
-#ifdef RESTFULL_API
+#ifdef THUNDER_RESTFULL_API
         Core::CriticalSection _notifierLock;
 #endif
 
-#ifdef RUNTIME_STATISTICS
+#ifdef THUNDER_RUNTIME_STATISTICS
         uint32_t _processedRequests;
         uint32_t _processedObjects;
 #endif
@@ -422,7 +422,7 @@ namespace PluginHost {
         string _webURLPath;
         string _webServerFilePath;
 
-#ifdef RESTFULL_API
+#ifdef THUNDER_RESTFULL_API
         // Keep track of people who want to be notified of changes.
         std::list<Channel*> _notifiers;
 #endif

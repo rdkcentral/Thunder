@@ -98,40 +98,6 @@ namespace PluginHost {
         };
 
     private:
-#ifdef PERFORMANCE
-	class PerformanceAdministrator {
-	public:
-	    static PerformanceAdministrator& Instance() {
-                static PerformanceAdministrator singleton;
-                return (singleton);
-            }
-	    void Serialization(const uint64_t& time, const uint32_t packageSize) {
-                _serializeTime = time;
-            }
-            void Serialization(uint64_t& time, uint32_t& packageSize) {
-                time = _serializeTime;
-            }
-
-	    void Deserialization(const uint64_t& time, const uint32_t packageSize) {
-                _deserializeTime = time;
-            }
-            void Deserialization(uint64_t& time, uint32_t& packageSize) {
-                time = _deserializeTime;
-            }
-            void ExecutionTime(const uint64_t& time) {
-                _execTime = time - _deserializeTime;
-            }
-            uint64_t ExecutionTime() const {
-                return _execTime;
-            }
-
-        private:
-            uint64_t _execTime;
-            uint64_t _serializeTime;
-            uint64_t _deserializeTime;
-        };
-#endif
-
         class WorkerPoolImplementation : public Core::WorkerPool {
         public:
             WorkerPoolImplementation() = delete;
@@ -148,37 +114,6 @@ namespace PluginHost {
         };
 
         class FactoriesImplementation : public IFactories {
-        public:
-#ifdef PERFORMANCE
-            class JSONRPCMessage : public Web::JSONBodyType<Core::JSONRPC::Message> {
-	    public:
-		JSONRPCMessage(const JSONRPCMessage&) = delete;
-		JSONRPCMessage& operator= (const JSONRPCMessage&) = delete;
-
-                JSONRPCMessage() = default;
-                ~JSONRPCMessage() override = default;
-
-	    public:
-		void Acquire() {
-		    _stamp = Core::Time::Now().Ticks();
-		}
-		uint64_t Time() {
-		    return (Core::Time::Now().Ticks() - _stamp);
-                }
-		void Reset() {
-		    _stamp = Core::Time::Now().Ticks();
-		}
-		void Relinquish() {
-		    uint64_t timeStamp = Core::Time::Now().Ticks() - _stamp;
-                    PerformanceAdministrator::Instance().Serialization(timeStamp, 0);
-		}
-
-		uint64_t _stamp;
-            };
-#else
-            using JSONRPCMessage = Web::JSONBodyType<Core::JSONRPC::Message>;
-#endif
-
         public:
             FactoriesImplementation(const FactoriesImplementation&) = delete;
             FactoriesImplementation& operator=(const FactoriesImplementation&) = delete;
@@ -214,7 +149,7 @@ namespace PluginHost {
             Core::ProxyPoolType<Web::Request> _requestFactory;
             Core::ProxyPoolType<Web::Response> _responseFactory;
             Core::ProxyPoolType<Web::FileBody> _fileBodyFactory;
-            Core::ProxyPoolType<JSONRPCMessage> _jsonRPCFactory;
+            Core::ProxyPoolType<PluginHost::JSONRPCMessage> _jsonRPCFactory;
         };
 
         class ServiceMap;
@@ -539,7 +474,7 @@ namespace PluginHost {
             }
             inline bool Subscribe(Channel& channel)
             {
-#ifdef RESTFULL_API
+#ifdef THUNDER_RESTFULL_API
                 bool result = PluginHost::Service::Subscribe(channel);
 
                 if ((result == true) && (_extended != nullptr)) {
@@ -557,7 +492,7 @@ namespace PluginHost {
             }
             inline void Unsubscribe(Channel& channel)
             {
-#ifdef RESTFULL_API
+#ifdef THUNDER_RESTFULL_API
                 PluginHost::Service::Unsubscribe(channel);
 #endif
                 if (_extended != nullptr) {
@@ -681,7 +616,7 @@ namespace PluginHost {
                     service->AddRef();
                     Unlock();
 
-#ifdef RUNTIME_STATISTICS
+#ifdef THUNDER_RUNTIME_STATISTICS
                     IncrementProcessedRequests();
 #endif
                     Core::InterlockedIncrement(_activity);
@@ -706,7 +641,7 @@ namespace PluginHost {
                     service->AddRef();
                     Unlock();
 
-#ifdef RUNTIME_STATISTICS
+#ifdef THUNDER_RUNTIME_STATISTICS
                     IncrementProcessedRequests();
 #endif
                     Core::InterlockedIncrement(_activity);
@@ -731,7 +666,7 @@ namespace PluginHost {
                     service->AddRef();
                     Unlock();
 
-#ifdef RUNTIME_STATISTICS
+#ifdef THUNDER_RUNTIME_STATISTICS
                     IncrementProcessedObjects();
 #endif
                     Core::InterlockedIncrement(_activity);
@@ -1837,7 +1772,7 @@ namespace PluginHost {
             {
                 _server.Notification(message);
             }
-#ifdef RESTFULL_API
+#ifdef THUNDER_RESTFULL_API
             inline void Notification(const string& message)
             {
                 _server.Controller()->Notification(message);
@@ -2207,16 +2142,22 @@ namespace PluginHost {
                     ASSERT(Job::HasService() == true);
                     ASSERT(_element.IsValid() == true);
 
-#ifdef PERFORMANCE
-                    const Core::ProxyType<FactoriesImplementation::JSONRPCMessage>& jsonRPCFactory = (Core::ProxyType<FactoriesImplementation::JSONRPCMessage>(_element));
-#endif
                     if (_jsonrpc == true) {
-                        Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(_element));
+#ifdef THUNDER_PERFORMANCE
+                        Core::ProxyType<TrackingJSONRPC> tracking (Core::proxy_cast<TrackingJSONRPC>(_element));
+                        ASSERT (tracking.IsValid() == true);
+			tracking->Dispatch();
 
+                        Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(tracking));
+#else
+                        Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(_element));
                         ASSERT(message.IsValid() == true);
+#endif
+
                         _element = Core::ProxyType<Core::JSON::IElement>(Job::Process(_token, message));
-#ifdef PERFORMANCE
-                        PerformanceAdministrator::Instance().ExecutionTime(jsonRPCFactory->Time());
+
+#ifdef THUNDER_PERFORMANCE
+			tracking->Execution();
 #endif
 
                     } else {
@@ -2224,9 +2165,6 @@ namespace PluginHost {
                     }
 
                     if (_element.IsValid()) {
-#ifdef PERFORMANCE
-                        jsonRPCFactory->Reset();
-#endif
                         // Fire and forget, We are done !!!
                         Job::Submit(_element);
                         _element.Release();

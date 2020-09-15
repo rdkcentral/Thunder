@@ -30,6 +30,7 @@ namespace PluginHost {
     private:
         typedef Web::WebSocketLinkType<Core::SocketStream, Request, Web::Response, RequestPool&> BaseClass;
 
+
         class EXTERNAL Package {
         public:
             Package() = delete;
@@ -115,6 +116,13 @@ namespace PluginHost {
                     if ( (_offset == 0) || (loaded != length) ) {
                         _current.Release();
                     }
+		    #ifdef THUNDER_PERFORMANCE
+                    else {
+			Core::ProxyType<TrackingJSONRPC> tracking (Core::proxy_cast<TrackingJSONRPC>(_current));
+                        ASSERT (tracking.IsValid() == true);
+                        tracking->Out(loaded);
+                    }
+		    #endif
                 }
 
                 return (loaded);
@@ -148,7 +156,7 @@ namespace PluginHost {
             }
             inline uint16_t Deserialize(const char* stream, const uint16_t length)
             {
-			    uint16_t loaded = 0;
+	        uint16_t loaded = 0;
 
                 if (_current.IsValid() == false) {
                     if (_parent.IsOpen() == true) {
@@ -156,9 +164,19 @@ namespace PluginHost {
                         _offset = 0;
                     }
                 } 
-				if (_current.IsValid() == true) {
+		if (_current.IsValid() == true) {
                     loaded = _current->Deserialize(stream, length, _offset);
+		    #ifdef THUNDER_PERFORMANCE
+		    Core::ProxyType<TrackingJSONRPC> tracking (Core::proxy_cast<TrackingJSONRPC>(_current));
+                    ASSERT (tracking.IsValid() == true);
+                    if(loaded > 0) {
+                        tracking->In(loaded);
+                    }
+		    #endif
                     if ( (_offset == 0) || (loaded != length)) {
+		        #ifdef THUNDER_PERFORMANCE
+                        tracking->In(0);
+		        #endif
                         _parent.Received(_current);
                         _current.Release();
                     }

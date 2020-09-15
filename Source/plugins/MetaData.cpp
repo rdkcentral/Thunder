@@ -100,11 +100,11 @@ ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Channel::state)
         : Plugin::Config()
     {
         Add(_T("state"), &JSONState);
-#ifdef RUNTIME_STATISTICS
+#ifdef THUNDER_RUNTIME_STATISTICS
         Add(_T("processedrequests"), &ProcessedRequests);
         Add(_T("processedobjects"), &ProcessedObjects);
 #endif
-#ifdef RESTFULL_API
+#ifdef THUNDER_RESTFULL_API
         Add(_T("observers"), &Observers);
 #endif
         Add(_T("module"), &Module);
@@ -113,22 +113,22 @@ ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Channel::state)
     MetaData::Service::Service(const MetaData::Service& copy)
         : Plugin::Config(copy)
         , JSONState(copy.JSONState)
-#ifdef RUNTIME_STATISTICS
+#ifdef THUNDER_RUNTIME_STATISTICS
         , ProcessedRequests(copy.ProcessedRequests)
         , ProcessedObjects(copy.ProcessedObjects)
 #endif
-#ifdef RESTFULL_API
+#ifdef THUNDER_RESTFULL_API
         , Observers(copy.Observers)
 #endif
         , Module(copy.Module)
         , Hash(copy.Hash)
     {
         Add(_T("state"), &JSONState);
-#ifdef RUNTIME_STATISTICS
+#ifdef THUNDER_RUNTIME_STATISTICS
         Add(_T("processedrequests"), &ProcessedRequests);
         Add(_T("processedobjects"), &ProcessedObjects);
 #endif
-#ifdef RESTFULL_API
+#ifdef THUNDER_RESTFULL_API
         Add(_T("observers"), &Observers);
 #endif
         Add(_T("module"), &Module);

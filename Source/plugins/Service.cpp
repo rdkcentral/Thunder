@@ -67,7 +67,7 @@ namespace PluginHost {
         return (Core::proxy_cast<Core::IDispatch>(Core::ProxyType<IShell::Job>::Create(shell, toState, why)));
     }
 
-#ifdef RESTFULL_API
+#ifdef THUNDER_RESTFULL_API
     void Service::Notification(const string& message)
     {
         _notifierLock.Lock();
