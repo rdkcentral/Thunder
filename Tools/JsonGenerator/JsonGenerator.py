@@ -33,7 +33,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pard
 import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 
-VERSION = "1.6.1"
+VERSION = "1.6.2"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
@@ -58,6 +58,9 @@ class Trace:
 
     def Warn(self, text):
         self.__Print("%s: Warning: %s" % (self.file, text))
+
+    def Smell(self, text):
+        self.__Print("%s: CodeSmell: %s" % (self.file, text))
 
     def Error(self, text):
         self.errors += 1
@@ -132,7 +135,7 @@ def MakeEnum(type):
 
 class JsonType():
     def __init__(self, name, parent, schema, included=None):
-        self.name = name
+        self.name = schema["original"] if "original" in schema else name
         self.true_name = name
         self.schema = schema
         self.duplicate = False
@@ -322,16 +325,13 @@ class JsonEnum(JsonType):
             return classname
 
     def CppEnumerators(self):
-        if self.Create():
+        if self.Create() and "enumids" not in self.schema:
             return list(map(lambda x: ("E" if x[0].isdigit() else "") + x.upper(), self.enumerators))
         else:
-            return self.enumerators
+            return self.schema["enumids"]
 
     def StringEnumerators(self):
-        if self.Create():
-            return self.enumerators
-        else:
-            return list(map(lambda x: x.replace("_"," ").title().replace(" ",""), self.enumerators))
+        return self.enumerators
 
     def CppEnumeratorValues(self):
         return self.values
@@ -392,7 +392,7 @@ class JsonObject(JsonType):
                 elif isinstance(newObject, JsonEnum):
                     self.enums.append(newObject)
         if not self.Properties():
-            trace.Warn("No properties in object %s" % self.origName)
+            trace.Smell("No properties in object %s" % self.origName)
 
     def CppName(self):
         # NOTE: Special cases for names for Methods and Arrays
@@ -762,6 +762,8 @@ def LoadInterface(file, includePaths = []):
         schema["configuration"] = { "nodefault" : True }
 
         info = dict()
+        if not face.obj.parent.full_name.endswith(INTERFACE_NAMESPACE):
+            info["namespace"] = face.obj.parent.name
         info["class"] = face.obj.name[1:] if face.obj.name[0] == "I" else face.obj.name
         info["title"] = info["class"] + " API"
         info["description"] = info["class"] + " JSON-RPC interface"
@@ -800,6 +802,7 @@ def LoadInterface(file, includePaths = []):
                             props["length"] = " ".join(var.meta.length)
                         if "length" in props:
                             props["cpptype"] = cppType.type
+                        props["encode"] = cppType.type != "char"
                         return "string", props if props else None
                     # Special case for iterators, that will be converted to JSON arrays
                     elif isinstance(cppType, ProxyStubGenerator.CppParser.Class) and cppType.is_iterator and len(cppType.args) == 2:
@@ -837,7 +840,8 @@ def LoadInterface(file, includePaths = []):
                             for i, e in enumerate(cppType.items, 0):
                                 if enumValues[i - 1] != enumValues[i]:
                                     raise CppParseError(var, "enumerator values in an enum must all be explicit or all be implied")
-                        enumSpec = { "enum": [e.name for e in cppType.items], "enumtyped": var.type.Type().scoped  }
+                        enumSpec = { "enum": [e.meta.text if e.meta.text else e.name.replace("_"," ").title().replace(" ","") for e in cppType.items], "enumtyped": var.type.Type().scoped  }
+                        enumSpec["enumids"] = [e.name for e in cppType.items]
                         enumSpec["class"] = var.type.Type().name
                         if not cppType.items[0].autoValue:
                             enumSpec["enumvalues"] = [e.value for e in cppType.items]
@@ -895,9 +899,12 @@ def LoadInterface(file, includePaths = []):
                 required = []
                 for var in vars:
                     if var.meta.input or not var.meta.output:
-                        if not var.type.IsConst() and not var.meta.input:
-                            trace.Warn("non-const parameter assumed to be input (forgot 'const'?)")
-                        var_name = var.name.lower()
+                        if not var.type.IsConst():
+                            if not var.meta.input:
+                                trace.Smell("%s: non-const parameter assumed to be input (forgot 'const'?)" % var.name)
+                            elif not var.meta.output:
+                                trace.Smell("%s: non-const parameter marked with @in tag (forgot 'const'?)" % var.name)
+                        var_name = var.meta.text if var.meta.text else var.name.lower()
                         if var_name.startswith("__unnamed"):
                             raise CppParseError(var, "unnamed parameter, can't deduce parameter name")
                         properties[var_name] = ConvertParameter(var)
@@ -923,8 +930,13 @@ def LoadInterface(file, includePaths = []):
                     if var.meta.output:
                         if var.type.IsValue():
                             raise CppParseError(var, "parameter marked with @out tag must be either a reference or a pointer")
-                        var_name = var.name.lower()
+                        if var.type.IsConst():
+                            raise CppParseError(var, "parameter marked with @out tag must not be const")
+                        var_name = var.meta.text if var.meta.text else var.name.lower()
+                        if var_name.startswith("__unnamed") and len(vars) > 1:
+                            raise CppParseError(var, "unnamed parameter, can't deduce parameter name")
                         properties[var_name] = ConvertParameter(var)
+                        properties[var_name]["original"] = var.name
                         required.append(var_name)
                 params["properties"] = properties
                 if len(properties) == 1:
@@ -1039,6 +1051,8 @@ def LoadInterface(file, includePaths = []):
             schema = Build(face)
             if schema:
                 schemas.append(schema)
+    else:
+        trace.Warn("No interfaces found")
 
     return schemas
 
@@ -1294,7 +1308,7 @@ def EmitEvent(emit, root, event, static=False):
     emit.Line()
 
 def EmitRpcCode(root, emit, header_file, source_file):
-    namespace = DATA_NAMESPACE + "::" + root.JsonName()
+
     struct = "J" + root.JsonName()
     face = "I" + root.JsonName()
 
@@ -1311,6 +1325,13 @@ def EmitRpcCode(root, emit, header_file, source_file):
     emit.Line("namespace %s {" % "Exchange")
     emit.Indent()
     emit.Line()
+    namespace = root.JsonName()
+    if "info" in root.schema and "namespace" in root.schema["info"]:
+        namespace = root.schema["info"]["namespace"] + "::" + namespace
+        emit.Line("namespace %s {" % root.schema["info"]["namespace"])
+        emit.Indent()
+        emit.Line()
+    namespace = DATA_NAMESPACE + "::" + namespace
     emit.Line("using namespace %s;" % namespace)
     emit.Line()
     emit.Line("struct %s {" % struct)
@@ -1374,30 +1395,40 @@ def EmitRpcCode(root, emit, header_file, source_file):
                             else:
                                 vars[p.JsonName()][1] = 1
                     else:
-                        vars[response.JsonName()] = [response, 2]
+                        if response.JsonName() not in vars:
+                            vars[response.JsonName()] = [response, 2]
+                        else:
+                            vars[response.JsonName()] = [response, 1]
 
-                # Correct length variables not to be const anymore
                 for v, t in vars.items():
                     if isinstance(t[0], JsonString) and "length" in t[0].schema:
                         for w, q in vars.items():
-                            if w == t[0].schema["length"] and t[1] == 0:
-                                q[1] = 1
-                                break
+                            if w == t[0].schema["length"] and q[1] == 2:
+                                trace.Smell("%s: parameter marked pointed to by @length is output only" % q[0].name)
 
-                # Emit temporary variables and deserializing of JSON data
+                # Emit temporary variables and deserializing off JSON data
                 for v, t in vars.items():
                     # C-style buffers
                     if isinstance(t[0], JsonString) and "length" in t[0].schema:
-                        emit.Line("%s* %s = nullptr;" % (t[0].schema["cpptype"], t[0].JsonName()))
-                        emit.Line("if (%s != 0) {" % t[0].schema["length"])
-                        emit.Indent()
-                        emit.Line("%s = reinterpret_cast<%s*>(ALLOCA(%s));" % (t[0].JsonName(), t[0].schema["cpptype"], t[0].schema["length"]))
-                        emit.Line("ASSERT(%s != nullptr);" % t[0].JsonName())
+                        encode = "encode" in t[0].schema and t[0].schema["encode"]
+                        if t[1] == 0 and not encode:
+                            emit.Line("const %s* %s{%s%s.Value().data()};" % (t[0].schema["cpptype"], t[0].JsonName(),  parent if parent else "", t[0].CppName()))
+                        else:
+                            emit.Line("%s* %s = nullptr;" % (t[0].schema["cpptype"], t[0].JsonName()))
+                            emit.Line("if (%s != 0) {" % t[0].schema["length"])
+                            emit.Indent()
+                            emit.Line("%s = reinterpret_cast<%s*>(ALLOCA(%s));" % (t[0].JsonName(), t[0].schema["cpptype"], t[0].schema["length"]))
+                            emit.Line("ASSERT(%s != nullptr);" % t[0].JsonName())
+
                         if t[1] <= 1:
-                            emit.Line("// Decode base64-encoded JSON string")
-                            emit.Line("Core::FromString(%s%s.Value(), %s, %s, nullptr);" % (parent if parent else "", t[0].CppName(), t[0].JsonName(), t[0].schema["length"]))
-                        emit.Unindent()
-                        emit.Line("}")
+                            if encode:
+                                emit.Line("// Decode base64-encoded JSON string")
+                                emit.Line("Core::FromString(%s%s.Value(), %s, %s, nullptr);" % (parent if parent else "", t[0].CppName(), t[0].JsonName(), t[0].schema["length"]))
+                            elif t[1] != 0:
+                                emit.Line("::memcpy(%s, %s%s.Value().data(), %s);" % (t[0].JsonName(), parent if parent else "", t[0].CppName(), t[0].schema["length"]))
+                        if t[1] != 0 or encode:
+                            emit.Unindent()
+                            emit.Line("}")
                     # Iterators
                     elif isinstance(t[0], JsonArray):
                         if "iterator" in t[0].schema:
@@ -1430,11 +1461,14 @@ def EmitRpcCode(root, emit, header_file, source_file):
                         # C-style buffers disguised as base64-encoded strings
                         elif isinstance(elem, JsonString) and "length" in elem.schema:
                                 emit.Line("if (%s != 0) {" % elem.schema["length"])
-                                emit.Indent();
-                                emit.Line("// Convert the C-style buffer to a base64-encoded JSON string")
-                                emit.Line("%s %sEncoded;" % (elem.CppStdClass(), elem.JsonName()))
-                                emit.Line("Core::ToString(%s, %s, true, %sEncoded);" % (elem.JsonName(), elem.schema["length"], elem.JsonName()))
-                                emit.Line("%s%s = %sEncoded;" % (parent if parent else "", elem.CppName(), elem.JsonName()))
+                                emit.Indent()
+                                if "encode" in elem.schema and elem.schema["encode"]:
+                                    emit.Line("// Convert the C-style buffer to a base64-encoded JSON string")
+                                    emit.Line("%s %sEncoded;" % (elem.CppStdClass(), elem.JsonName()))
+                                    emit.Line("Core::ToString(%s, %s, true, %sEncoded);" % (elem.JsonName(), elem.schema["length"], elem.JsonName()))
+                                    emit.Line("%s%s = %sEncoded;" % (parent if parent else "", elem.CppName(), elem.JsonName()))
+                                else:
+                                    emit.Line("%s%s = string(%s, %s);" % (parent if parent else "", elem.CppName(), elem.JsonName(), elem.schema["length"]))
                                 emit.Unindent()
                                 emit.Line("}")
                         # Iterators disguised as arrays
@@ -1535,6 +1569,10 @@ def EmitRpcCode(root, emit, header_file, source_file):
     emit.Unindent()
     emit.Line("}; // struct %s" % struct)
     emit.Line()
+    if "info" in root.schema and "namespace" in root.schema["info"]:
+        emit.Unindent()
+        emit.Line("// namespace %s" % root.schema["info"]["namespace"])
+        emit.Line()
     emit.Unindent()
     emit.Line("} // namespace %s" % "Exchange")
     emit.Line()
@@ -1948,6 +1986,10 @@ def EmitObjects(root, emit, if_file, emitCommon=False):
     emit.Line("namespace %s {" % DATA_NAMESPACE)
     emit.Indent()
     emit.Line()
+    if "info" in root.schema and "namespace" in root.schema["info"]:
+        emit.Line("namespace %s {" % root.schema["info"]["namespace"])
+        emit.Indent()
+        emit.Line()
     emit.Line("namespace %s {" % root.JsonName())
     emit.Indent()
     emit.Line()
@@ -1981,8 +2023,12 @@ def EmitObjects(root, emit, if_file, emitCommon=False):
         EmitClass(root)
     emit.Unindent()
     emit.Line("} // namespace %s" % root.JsonName())
-    emit.Unindent()
     emit.Line()
+    if "info" in root.schema and "namespace" in root.schema["info"]:
+        emit.Unindent()
+        emit.Line("} // namespace %s" % root.schema["info"]["namespace"])
+        emit.Line()
+    emit.Unindent()
     emit.Line("} // namespace %s" % DATA_NAMESPACE)
     emit.Line()
     emittedPrologue = False
@@ -2083,7 +2129,7 @@ def CreateDocument(schema, path):
                     MdRow([prefix, obj["type"], row])
                 if obj["type"] == "object":
                     if "required" not in obj and name and len(obj["properties"]) > 1:
-                        trace.Warn('No "required" field for object "%s"' % name)
+                        trace.Smell('No "required" field for object "%s"' % name)
                     for pname, props in obj["properties"].items():
                         __TableObj(pname, props, parentName + "/" + name, obj, prefix, False)
                 elif obj["type"] == "array":
@@ -2544,8 +2590,10 @@ def ParseJsonRpcSchema(schema):
 
 def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
     directory = os.path.dirname(path)
-    filename = (schema["info"]["class"]) if "info" in schema and "class" in schema["info"] else os.path.basename(
-        path.replace("Plugin", "").replace(".json", "").replace(".h", ""))
+    filename = (schema["info"]["namespace"]) if "info" in schema and "namespace" in schema["info"] else ""
+    filename += (schema["info"]["class"]) if "info" in schema and "class" in schema["info"] else ""
+    if len(filename) == 0:
+        filename = os.path.basename(path.replace("Plugin", "").replace(".json", "").replace(".h", ""))
     rpcObj = ParseJsonRpcSchema(schema)
     if rpcObj:
         header_file = os.path.join(directory, DATA_NAMESPACE + "_" + filename + ".h")
