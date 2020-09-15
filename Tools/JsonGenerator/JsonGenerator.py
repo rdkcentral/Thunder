@@ -762,6 +762,8 @@ def LoadInterface(file, includePaths = []):
         schema["configuration"] = { "nodefault" : True }
 
         info = dict()
+        if not face.obj.parent.full_name.endswith(INTERFACE_NAMESPACE):
+            info["namespace"] = face.obj.parent.name
         info["class"] = face.obj.name[1:] if face.obj.name[0] == "I" else face.obj.name
         info["title"] = info["class"] + " API"
         info["description"] = info["class"] + " JSON-RPC interface"
@@ -1050,7 +1052,7 @@ def LoadInterface(file, includePaths = []):
             if schema:
                 schemas.append(schema)
     else:
-        trace.Smell("No interfaces found")
+        trace.Warn("No interfaces found")
 
     return schemas
 
@@ -1306,7 +1308,7 @@ def EmitEvent(emit, root, event, static=False):
     emit.Line()
 
 def EmitRpcCode(root, emit, header_file, source_file):
-    namespace = DATA_NAMESPACE + "::" + root.JsonName()
+
     struct = "J" + root.JsonName()
     face = "I" + root.JsonName()
 
@@ -1323,6 +1325,13 @@ def EmitRpcCode(root, emit, header_file, source_file):
     emit.Line("namespace %s {" % "Exchange")
     emit.Indent()
     emit.Line()
+    namespace = root.JsonName()
+    if "info" in root.schema and "namespace" in root.schema["info"]:
+        namespace = root.schema["info"]["namespace"] + "::" + namespace
+        emit.Line("namespace %s {" % root.schema["info"]["namespace"])
+        emit.Indent()
+        emit.Line()
+    namespace = DATA_NAMESPACE + "::" + namespace
     emit.Line("using namespace %s;" % namespace)
     emit.Line()
     emit.Line("struct %s {" % struct)
@@ -1401,8 +1410,9 @@ def EmitRpcCode(root, emit, header_file, source_file):
                 for v, t in vars.items():
                     # C-style buffers
                     if isinstance(t[0], JsonString) and "length" in t[0].schema:
-                        if t[1] == 0:
-                            emit.Line("const %s* %s{%s%s.Value.c_str()};" % (t[0].schema["cpptype"], t[0].JsonName(),  parent if parent else "", t[0].CppName()))
+                        encode = "encode" in t[0].schema and t[0].schema["encode"]
+                        if t[1] == 0 and not encode:
+                            emit.Line("const %s* %s{%s%s.Value().data()};" % (t[0].schema["cpptype"], t[0].JsonName(),  parent if parent else "", t[0].CppName()))
                         else:
                             emit.Line("%s* %s = nullptr;" % (t[0].schema["cpptype"], t[0].JsonName()))
                             emit.Line("if (%s != 0) {" % t[0].schema["length"])
@@ -1410,13 +1420,13 @@ def EmitRpcCode(root, emit, header_file, source_file):
                             emit.Line("%s = reinterpret_cast<%s*>(ALLOCA(%s));" % (t[0].JsonName(), t[0].schema["cpptype"], t[0].schema["length"]))
                             emit.Line("ASSERT(%s != nullptr);" % t[0].JsonName())
 
-                        if t[1] == 1:
-                            if "encode" in t[0].schema and t[0].schema["encode"]:
+                        if t[1] <= 1:
+                            if encode:
                                 emit.Line("// Decode base64-encoded JSON string")
                                 emit.Line("Core::FromString(%s%s.Value(), %s, %s, nullptr);" % (parent if parent else "", t[0].CppName(), t[0].JsonName(), t[0].schema["length"]))
-                            else:
+                            elif t[1] != 0:
                                 emit.Line("::memcpy(%s, %s%s.Value().data(), %s);" % (t[0].JsonName(), parent if parent else "", t[0].CppName(), t[0].schema["length"]))
-                        if t[1] != 0:
+                        if t[1] != 0 or encode:
                             emit.Unindent()
                             emit.Line("}")
                     # Iterators
@@ -1559,6 +1569,10 @@ def EmitRpcCode(root, emit, header_file, source_file):
     emit.Unindent()
     emit.Line("}; // struct %s" % struct)
     emit.Line()
+    if "info" in root.schema and "namespace" in root.schema["info"]:
+        emit.Unindent()
+        emit.Line("// namespace %s" % root.schema["info"]["namespace"])
+        emit.Line()
     emit.Unindent()
     emit.Line("} // namespace %s" % "Exchange")
     emit.Line()
@@ -1972,6 +1986,10 @@ def EmitObjects(root, emit, if_file, emitCommon=False):
     emit.Line("namespace %s {" % DATA_NAMESPACE)
     emit.Indent()
     emit.Line()
+    if "info" in root.schema and "namespace" in root.schema["info"]:
+        emit.Line("namespace %s {" % root.schema["info"]["namespace"])
+        emit.Indent()
+        emit.Line()
     emit.Line("namespace %s {" % root.JsonName())
     emit.Indent()
     emit.Line()
@@ -2005,8 +2023,12 @@ def EmitObjects(root, emit, if_file, emitCommon=False):
         EmitClass(root)
     emit.Unindent()
     emit.Line("} // namespace %s" % root.JsonName())
-    emit.Unindent()
     emit.Line()
+    if "info" in root.schema and "namespace" in root.schema["info"]:
+        emit.Unindent()
+        emit.Line("} // namespace %s" % root.schema["info"]["namespace"])
+        emit.Line()
+    emit.Unindent()
     emit.Line("} // namespace %s" % DATA_NAMESPACE)
     emit.Line()
     emittedPrologue = False
@@ -2568,8 +2590,10 @@ def ParseJsonRpcSchema(schema):
 
 def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
     directory = os.path.dirname(path)
-    filename = (schema["info"]["class"]) if "info" in schema and "class" in schema["info"] else os.path.basename(
-        path.replace("Plugin", "").replace(".json", "").replace(".h", ""))
+    filename = (schema["info"]["namespace"]) if "info" in schema and "namespace" in schema["info"] else ""
+    filename += (schema["info"]["class"]) if "info" in schema and "class" in schema["info"] else ""
+    if len(filename) == 0:
+        filename = os.path.basename(path.replace("Plugin", "").replace(".json", "").replace(".h", ""))
     rpcObj = ParseJsonRpcSchema(schema)
     if rpcObj:
         header_file = os.path.join(directory, DATA_NAMESPACE + "_" + filename + ".h")
