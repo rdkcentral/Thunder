@@ -116,13 +116,13 @@ namespace PluginHost {
                     if ( (_offset == 0) || (loaded != length) ) {
                         _current.Release();
                     }
-		    #ifdef THUNDER_PERFORMANCE
+#ifdef THUNDER_PERFORMANCE
                     else {
-			Core::ProxyType<TrackingJSONRPC> tracking (Core::proxy_cast<TrackingJSONRPC>(_current));
+			Core::ProxyType<const TrackingJSONRPC> tracking(Core::proxy_cast<const TrackingJSONRPC>(_current));
                         ASSERT (tracking.IsValid() == true);
-                        tracking->Out(loaded);
+                        const_cast<TrackingJSONRPC&>(*tracking).Out(loaded);
                     }
-		    #endif
+#endif
                 }
 
                 return (loaded);
@@ -166,17 +166,17 @@ namespace PluginHost {
                 } 
 		if (_current.IsValid() == true) {
                     loaded = _current->Deserialize(stream, length, _offset);
-		    #ifdef THUNDER_PERFORMANCE
+#ifdef THUNDER_PERFORMANCE
 		    Core::ProxyType<TrackingJSONRPC> tracking (Core::proxy_cast<TrackingJSONRPC>(_current));
                     ASSERT (tracking.IsValid() == true);
                     if(loaded > 0) {
                         tracking->In(loaded);
                     }
-		    #endif
+#endif
                     if ( (_offset == 0) || (loaded != length)) {
-		        #ifdef THUNDER_PERFORMANCE
+#ifdef THUNDER_PERFORMANCE
                         tracking->In(0);
-		        #endif
+#endif
                         _parent.Received(_current);
                         _current.Release();
                     }
