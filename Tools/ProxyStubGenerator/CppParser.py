@@ -86,6 +86,7 @@ class Metadata:
         self.length = None
         self.maxlength = None
         self.interface = None
+        self.text = None
         self.param = OrderedDict()
         self.retval = OrderedDict()
 
@@ -201,6 +202,8 @@ class Identifier():
         nest2 = 0
         array = False
         skip = 0
+        value_next = False
+        self.value = []
 
         if string.count("*") > 1:
             raise ParserError("pointers to pointers are not supported: '%s'" % (" ".join(string)))
@@ -288,6 +291,9 @@ class Identifier():
                 elif token[1:] == "RETVAL":
                     self.meta.retval[string[i + 1]] = string[i + 2]
                     skip = 2
+                elif token[1:] == "TEXT":
+                    self.meta.text = "".join(string[i + 1])
+                    skip = 1
                 else:
                     raise ParserError("invalid tag: " + token)
 
@@ -296,6 +302,11 @@ class Identifier():
                 continue
             elif token in ["export"]: # skip
                 continue
+
+            elif token == "=":
+                value_next = True
+            elif value_next:
+                self.value.append(token)
 
             # keep identifers with scope operator together
             elif token == "::":
@@ -967,13 +978,13 @@ class Attribute(Variable):
 
 # Holds enumeration items
 class Enumerator(Identifier, Name):
-    def __init__(self, parent_block, name, value=None, type=["int"]):
+    def __init__(self, parent_block, name, type=["int"]):
         parent_enum = parent_block if parent_block.scoped else parent_block.parent
-        Identifier.__init__(self, parent_enum, self, [type, name], [])
+        Identifier.__init__(self, parent_enum, self, [type, *name], [])
         Name.__init__(self, parent_enum, self.name)
         self.parent = parent_block
-        self.value = parent_block.GetValue() if value == None else Evaluate(value)
-        self.autoValue = (value == None)
+        self.value = parent_block.GetValue() if not self.value else Evaluate(self.value)
+        self.autoValue = (self.value == None)
         if isinstance(self.value, (int)):
             self.parent.SetValue(self.value)
         self.parent.items.append(self)
@@ -1287,6 +1298,8 @@ def __Tokenize(contents):
                     tagtokens.append("@EVENT")
                 if _find("@iterator", token):
                     tagtokens.append("@ITERATOR")
+                if _find("@text", token):
+                    tagtokens.append(__ParseLength(token, "@text"))
                 if _find("@length", token):
                     tagtokens.append(__ParseLength(token, "@length"))
                 if _find("@maxlength", token):
@@ -1330,7 +1343,7 @@ def __Tokenize(contents):
                     current_file = token[idx:]
                 if _find("@_line", token):
                     idx = token.index("@_line:") + 7
-                    if len(tagtokens) and tagtokens[-1].startswith("@LINE:"):
+                    if len(tagtokens) and not isinstance(tagtokens[-1],list) and tagtokens[-1].startswith("@LINE:"):
                         del tagtokens[-1]
                     current_line = int(token[idx:].split()[0])
                     tagtokens.append("@LINE:" + token[idx:])
@@ -1493,7 +1506,7 @@ def Parse(contents):
             j = i + 1
             while tokens[j] != ";":
                 j += 1
-            typedef = Typedef(current_block[-1], tokens[i + 1:j])
+            typedef = Typedef(current_block[-1], [tokens[i + 1], tokens[j - 1]] if tokens[j - 2] == "}" else tokens[i + 1:j])
             if event_next:
                 typedef.is_event = True
                 event_next = False
@@ -1802,7 +1815,7 @@ def Parse(contents):
             j = i
             while True:
                 if tokens[i] in ['}', ',']:
-                    Enumerator(enum, tokens[j], tokens[j + 2:i] if tokens[j + 1] == '=' else None, enum.type)
+                    Enumerator(enum, tokens[j:i], enum.type)
                     if tokens[i + 1] == '}':
                         i += 1 # handle ,} situation
                         break
