@@ -20,9 +20,8 @@
 #pragma once
 
 #include "Thread.h"
+#include "ThreadPool.h"
 #include "Timer.h"
-#include <atomic>
-#include <functional>
 
 namespace WPEFramework {
 
