@@ -1,0 +1,75 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Performance Monitor API",
+    "class": "PerformanceMonitor",
+    "description": "Performance Monitor JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "definitions": {
+    "time": {
+      "type": "number",
+      "size": 32
+    }
+  },
+  "properties": {
+    "measurement": {
+      "summary": "Retrieve the performance measurement against given package size. Measurements will be provided in milliseconds",
+      "readonly": true,
+      "params": {
+        "type": "object",
+        "properties": {
+          "serialization": {
+            "description": "Average time taken to complete serialization",
+            "example": 3,
+            "$ref": "#/definitions/time"
+          },
+          "deserialization": {
+            "description": "Average time taken to complete Deserialization",
+            "example": 2,
+            "$ref": "#/definitions/time"
+          },
+          "execution": {
+            "description": "Average time taken to complete Execution",
+            "example": 5,
+            "$ref": "#/definitions/time"
+          },
+          "threadpool": {
+            "description": "Average time taken to complete ThreadPool Wait",
+            "example": 2,
+            "$ref": "#/definitions/time"
+          },
+          "communication": {
+            "description": "Average time taken to complete Communicator Wait",
+            "example": 8,
+            "$ref": "#/definitions/time"
+          },
+          "total": {
+            "description": "Average time taken to complete whole jsonrpc process",
+            "$ref": "#/definitions/time",
+            "example": 22
+          }
+        },
+        "required": [
+          "serialization",
+          "deserialization",
+          "execution",
+          "threadpool",
+          "communication",
+          "total"
+        ]
+      },
+      "index": {
+        "name": "Package size",
+        "description": "Size of package whose statistics info has to be retrieved",
+        "example": "1000"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    }
+  }
+}
