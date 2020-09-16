@@ -13,6 +13,27 @@
     "time": {
       "type": "number",
       "size": 32
+    },
+    "statistics": {
+      "type": "object",
+      "properties": {
+        "minimum": {
+          "$ref": "#/definitions/time",
+          "example": 1
+        },
+        "maximum": {
+          "$ref": "#/definitions/time",
+          "example": 4
+        },
+        "average": {
+          "$ref": "#/definitions/time",
+          "example": 2
+        },
+        "count": {
+          "$ref": "#/definitions/time",
+          "example": 5
+        }
+      }
     }
   },
   "properties": {
@@ -23,34 +44,28 @@
         "type": "object",
         "properties": {
           "serialization": {
-            "description": "Average time taken to complete serialization",
-            "example": 3,
-            "$ref": "#/definitions/time"
+            "description": "Time taken to complete serialization",
+            "$ref": "#/definitions/statistics"
           },
           "deserialization": {
-            "description": "Average time taken to complete Deserialization",
-            "example": 2,
-            "$ref": "#/definitions/time"
+            "description": "Time taken to complete deserialization",
+            "$ref": "#/definitions/statistics"
           },
           "execution": {
-            "description": "Average time taken to complete Execution",
-            "example": 5,
-            "$ref": "#/definitions/time"
+            "description": "Time taken to complete execution",
+            "$ref": "#/definitions/statistics"
           },
           "threadpool": {
-            "description": "Average time taken to complete ThreadPool Wait",
-            "example": 2,
-            "$ref": "#/definitions/time"
+            "description": "Time taken to complete threadpool wait",
+            "$ref": "#/definitions/statistics"
           },
           "communication": {
-            "description": "Average time taken to complete Communicator Wait",
-            "example": 8,
-            "$ref": "#/definitions/time"
+            "description": "Time taken to complete communication",
+            "$ref": "#/definitions/statistics"
           },
           "total": {
-            "description": "Average time taken to complete whole jsonrpc process",
-            "$ref": "#/definitions/time",
-            "example": 22
+            "description": "Time taken to complete whole jsonrpc process",
+            "$ref": "#/definitions/statistics"
           }
         },
         "required": [

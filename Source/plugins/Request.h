@@ -131,11 +131,11 @@ namespace PluginHost {
                 uint32_t Minimum() const {
                     return _minimum;
                 }
-                uint32_t Measurement() const {
+                uint32_t Average() const {
                     return _average;
                 }
                 uint32_t Maximum() const {
-                    return _minimum;
+                    return _maximum;
                 }
                 uint32_t Count() const {
                     return _count;
