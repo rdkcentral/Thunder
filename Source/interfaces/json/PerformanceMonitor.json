@@ -86,5 +86,13 @@
         "$ref": "#/common/results/void"
       }
     }
+  },
+  "methods": {
+    "clear": {
+      "summary": "Clear all performance data collected",
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    }
   }
 }

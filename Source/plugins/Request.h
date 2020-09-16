@@ -247,8 +247,16 @@ namespace PluginHost {
             return (singleton);
         }
 
+        void Clear() {
+            StatisticsList::iterator index(_statistics.begin());
+            while (index != _statistics.end()) {
+                index->Clear();
+                index++;
+            }
+        }
+
         void Store(const uint32_t packageSize, const Statistics::DataSet& statistics) {
-            StatisticsList::iterator index (_statistics.begin());
+            StatisticsList::iterator index(_statistics.begin());
             while ( (index != _statistics.end()) && (packageSize > index->Limit()) ) {
                 index++;
             }
