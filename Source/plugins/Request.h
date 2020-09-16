@@ -84,16 +84,6 @@ namespace PluginHost {
 #ifdef THUNDER_PERFORMANCE
     class PerformanceAdministrator {
     public:
-        enum StoreType : uint8_t {
-            Serialization,
-            Deserialization,
-            Execution,
-            ThreadPoolWait,
-            CommunicatorWait,
-            Total,
-            Invalid
-         };
-    public:
         class Statistics {
         public:
             class Tuple {
@@ -254,75 +244,40 @@ namespace PluginHost {
             return (singleton);
         }
 
-        void Store(StoreType type, const uint32_t packageSize, const uint32_t time) {
-            StatisticsList::iterator index(std::lower_bound(_statistics.begin(), _statistics.end(), std::pair<const uint32_t, Statistics>(packageSize, Statistics())));
+        void Store(const uint32_t packageSize, const Statistics statistics) {
+            StatisticsList::iterator index = _statistics.begin();
+            std::advance(index, std::distance<StatisticsList::const_iterator>(index, FindPackage(packageSize)));
             if (index != _statistics.end()) {
-                switch (type) {
-                case Serialization: {
-                    index->second.Serialization(time);
-                    break;
-                }
-                case Deserialization: {
-                    index->second.Serialization(time);
-                    break;
-                }
-                case Execution: {
-                    index->second.Execution(time);
-                    break;
-                }
-                case ThreadPoolWait: {
-                    index->second.ThreadPoolWait(time);
-                    break;
-                }
-                case CommunicatorWait: {
-                    index->second.CommunicatorWait(time);
-                    break;
-                }
-                case Total: {
-                    index->second.Total(time);
-                    break;
-                }
-                default:
-                    ASSERT(true);
-                }
+                index->second = statistics;
             }
         }
 
-        bool Retrieve(StoreType type, const uint32_t packageSize, uint32_t& time) const {
-            StatisticsList::const_iterator index(std::lower_bound(_statistics.begin(), _statistics.end(), std::pair<const uint32_t, Statistics>(packageSize, Statistics())));
+        bool Retrieve(const uint32_t packageSize, Statistics& statistics) const {
+            StatisticsList::const_iterator index(FindPackage(packageSize));
             if (index != _statistics.end()) {
-                switch (type) {
-                case Serialization: {
-                    time = index->second.Serialization();
-                    break;
-                }
-                case Deserialization: {
-                    time = index->second.Serialization();
-                    break;
-                }
-                case Execution: {
-                    time = index->second.Execution();
-                    break;
-                }
-                case ThreadPoolWait: {
-                    time = index->second.ThreadPoolWait();
-                    break;
-                }
-                case CommunicatorWait: {
-                    time = index->second.CommunicatorWait();
-                    break;
-                }
-                case Total: {
-                    time = index->second.Total();
-                    break;
-                }
-                default:
-                    ASSERT(true);
-                }
+                statistics = index->second;
             }
             return (index != _statistics.end());
         }
 
+    private:
+        inline StatisticsList::const_iterator FindPackage(const uint32_t packageSize) const {
+            StatisticsList::const_iterator index = _statistics.begin();
+            StatisticsList::const_iterator id = _statistics.begin();
+            while (id != _statistics.end()) {
+                if (id->first >= packageSize) {
+                    if (index != _statistics.end()) {
+                        if (id->first < index->first) {
+                            index = id;
+                        }
+                    } else {
+                        index = id;
+                    }
+                }
+                id++;
+            }
+            return index;
+        }
     private:
         StatisticsList _statistics;
     };
@@ -343,32 +298,28 @@ namespace PluginHost {
 	void In(const uint32_t data) {
             if (data == 0) {
                 uint64_t now = Core::Time::Now().Ticks();
-                _deserialization = static_cast<uint32_t>(now - _stamp);
+                _statistics.Deserialization(static_cast<uint32_t>(now - _stamp));
 		_stamp = now;
-                PerformanceAdministrator::Instance().Store(PerformanceAdministrator::Deserialization, _in, _deserialization);
             }
             _in += data;
         }
 	void Out(const uint32_t data) {
             if (data == 0) {
                 uint64_t now = Core::Time::Now().Ticks();
-                _communicatorWait = static_cast<uint32_t>(now - _stamp);
+                _statistics.CommunicatorWait(static_cast<uint32_t>(now - _stamp));
                 _stamp = now;
-                PerformanceAdministrator::Instance().Store(PerformanceAdministrator::CommunicatorWait, _in, _communicatorWait);
             }
             _out += data;
         }
         void Dispatch() {
             uint64_t now = Core::Time::Now().Ticks();
-            _threadPoolWait = static_cast<uint32_t>(now - _stamp);
+            _statistics.ThreadPoolWait(static_cast<uint32_t>(now - _stamp));
             _stamp = now;
-            PerformanceAdministrator::Instance().Store(PerformanceAdministrator::ThreadPoolWait, _in, _threadPoolWait);
         }
 	void Execution() {
             uint64_t now = Core::Time::Now().Ticks();
-            _execution = static_cast<uint32_t>(now - _stamp);
+            _statistics.Execution(static_cast<uint32_t>(now - _stamp));
             _stamp = now;
-            PerformanceAdministrator::Instance().Store(PerformanceAdministrator::Execution, _in, _execution);
         }
         void Acquire() {
             _stamp = Core::Time::Now().Ticks();
@@ -376,9 +327,8 @@ namespace PluginHost {
         }
         void Relinquish() {
             uint64_t now = Core::Time::Now().Ticks();
-            uint32_t total = static_cast<uint32_t>(now - _begin);
-            _serialization = static_cast<uint32_t>(now - _stamp);
-            PerformanceAdministrator::Instance().Store(PerformanceAdministrator::Serialization, _in, _serialization);
+            _statistics.Total(static_cast<uint32_t>(now - _begin));
+            _statistics.Serialization(static_cast<uint32_t>(now - _stamp));
 
             // Time to register all data...We are completed, we got:
             // _deserialisationTime = Time it took to receive the full message till completion and its size in _in (bytes)
@@ -387,7 +337,7 @@ namespace PluginHost {
             // _communicatorWait = Time it took after the response message was dropped for the resource monitor to pick it up for sending.
             // _serializationTime = Time it took for the response to be fully serialized and send over the line. size is in _out (bytes)
             // total = Time it took from entering the system and leaving the system. This should pretty mucch be the sum of all times.
-            PerformanceAdministrator::Instance().Store(PerformanceAdministrator::Total, _in, total);
+            PerformanceAdministrator::Instance().Store(_in, _statistics);
         }
 
     private:
@@ -395,12 +345,8 @@ namespace PluginHost {
         uint32_t _out;
         uint64_t _begin;
         uint64_t _stamp;
-	uint32_t _size;
-	uint32_t _deserialization;
-	uint32_t _execution;
-	uint32_t _serialization;
-        uint32_t _threadPoolWait;
-        uint32_t _communicatorWait;
+        uint32_t _size;
+        PerformanceAdministrator::Statistics _statistics;
     };
     using JSONRPCMessage = TrackingJSONRPC;
 #else
