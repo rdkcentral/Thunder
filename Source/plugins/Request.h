@@ -84,14 +84,36 @@ namespace PluginHost {
 #ifdef THUNDER_PERFORMANCE
     class PerformanceAdministrator {
     public:
+        enum StoreType : uint8_t {
+            Serialization,
+            Deserialization,
+            Execution,
+            ThreadPoolWait,
+            CommunicatorWait,
+            Total,
+            Invalid
+         };
+    public:
         class Statistics {
         public:
             class Tuple {
             public:
-                Tuple(const Tuple&) = delete;
-                Tuple& operator= (const Tuple&) = delete;
                 Tuple() {
                     Clear();
+                }
+                Tuple(const Tuple& copy) {
+                    _minimum = copy._minimum;
+                    _maximum = copy._maximum;
+                    _average = copy._average;
+                    _count = copy._count;
+                }
+                Tuple& operator= (const Tuple& rhs) {
+                    _minimum = rhs._minimum;
+                    _maximum = rhs._maximum;
+                    _average = rhs._average;
+                    _count = rhs._count;
+
+                    return (*this);
                 }
                 ~Tuple() = default;
 
@@ -108,6 +130,12 @@ namespace PluginHost {
                     _average = ((_count * _average) + data) / (_count + 1);
                     _count++;
                 }
+                uint32_t Measurement() const {
+                    return _average;
+                }
+                uint32_t Count() const {
+                    return _count;
+                }
 
             private:
                 uint32_t _minimum;
@@ -117,40 +145,89 @@ namespace PluginHost {
             };
 
         public:
-            Statistics(const Statistics&) = delete;
-            Statistics& operator= (const Statistics&) = delete;
             Statistics()
-                : _deserialization()
+                : _serialization()
+                , _deserialization()
                 , _execution()
-                , _serialization()
+                , _threadPoolWait()
+                , _communicatorWait()
                 , _total() {
             }
+            Statistics(const Statistics& copy) {
+                _deserialization = copy._deserialization;
+                _serialization = copy._serialization;
+                _execution = copy._execution;
+                _threadPoolWait = copy._threadPoolWait;
+                _communicatorWait = copy._communicatorWait;
+                _total = copy._total;
+            }
+            Statistics& operator= (const Statistics& rhs) {
+                _deserialization = rhs._deserialization;
+                _serialization = rhs._serialization;
+                _execution = rhs._execution;
+                _threadPoolWait = rhs._threadPoolWait;
+                _communicatorWait = rhs._communicatorWait;
+                _total = rhs._total;
+                return (*this);
+            }
+            inline bool operator<(const Statistics& rhs) const
+            {
+                return true;
+            }
+
             ~Statistics()  = default;
 
         public:
             void Clear() {
+                _serialization.Clear();
                 _deserialization.Clear();
                 _execution.Clear();
-                _serialization.Clear();
+                _threadPoolWait.Clear();
                 _total.Clear();
-            }
-            void Deserialization(const uint32_t data) {
-                _deserialization.Measurement(data);
-            }
-            void Execution(const uint32_t data) {
-                _execution.Measurement(data);
             }
             void Serialization(const uint32_t data) {
                 _serialization.Measurement(data);
             }
+            uint32_t Serialization() const {
+                return _serialization.Measurement();
+            }
+            void Deserialization(const uint32_t data) {
+                _deserialization.Measurement(data);
+            }
+            uint32_t Deserialization() const {
+                return _deserialization.Measurement();
+            }
+            void Execution(const uint32_t data) {
+                _execution.Measurement(data);
+            }
+            uint32_t Execution() const {
+                return _execution.Measurement();
+            }
+            void ThreadPoolWait(const uint32_t data) {
+                _threadPoolWait.Measurement(data);
+            }
+            uint32_t ThreadPoolWait() const {
+                return _threadPoolWait.Measurement();
+            }
+            void CommunicatorWait(const uint32_t data) {
+                _communicatorWait.Measurement(data);
+            }
+            uint32_t CommunicatorWait() const {
+                return _communicatorWait.Measurement();
+            }
             void Total(const uint32_t data) {
                 _total.Measurement(data);
             }
+            uint32_t Total() const {
+                return _total.Measurement();
+            }
 
         private:
+            Tuple _serialization;
             Tuple _deserialization;
             Tuple _execution;
-            Tuple _serialization;
+            Tuple _threadPoolWait;
+            Tuple _communicatorWait;
             Tuple _total;
         };
 
@@ -177,22 +254,73 @@ namespace PluginHost {
             return (singleton);
         }
 
-        void Serialization(const uint32_t time, const uint32_t packageSize) {
-            //auto it = _statistics.lower_bound(packageSize);
-            //if (it != _statistics.end()) {
-            //    it->second.Serialization(time);
-            //}
+        void Store(StoreType type, const uint32_t packageSize, const uint32_t time) {
+            StatisticsList::iterator index(std::lower_bound(_statistics.begin(), _statistics.end(), std::pair<const uint32_t, Statistics>(packageSize, Statistics())));
+            if (index != _statistics.end()) {
+                switch (type) {
+                case Serialization: {
+                    index->second.Serialization(time);
+                    break;
+                }
+                case Deserialization: {
+                    index->second.Serialization(time);
+                    break;
+                }
+                case Execution: {
+                    index->second.Execution(time);
+                    break;
+                }
+                case ThreadPoolWait: {
+                    index->second.ThreadPoolWait(time);
+                    break;
+                }
+                case CommunicatorWait: {
+                    index->second.CommunicatorWait(time);
+                    break;
+                }
+                case Total: {
+                    index->second.Total(time);
+                    break;
+                }
+                default:
+                    ASSERT(true);
+                }
+            }
         }
 
-        void Deserialization(const uint32_t time, const uint32_t packageSize) {
-            //auto it = _statistics.lower_bound(packageSize);
-            //if (it != _statistics.end()) {
-            //    it->second.Deserialization(time);
-            //}
-        }
-        void Execution(const uint32_t time) {
-        }
-        void Total(const uint32_t time, const uint32_t packageSize) {
+        bool Retrieve(StoreType type, const uint32_t packageSize, uint32_t& time) const {
+            StatisticsList::const_iterator index(std::lower_bound(_statistics.begin(), _statistics.end(), std::pair<const uint32_t, Statistics>(packageSize, Statistics())));
+            if (index != _statistics.end()) {
+                switch (type) {
+                case Serialization: {
+                    time = index->second.Serialization();
+                    break;
+                }
+                case Deserialization: {
+                    time = index->second.Serialization();
+                    break;
+                }
+                case Execution: {
+                    time = index->second.Execution();
+                    break;
+                }
+                case ThreadPoolWait: {
+                    time = index->second.ThreadPoolWait();
+                    break;
+                }
+                case CommunicatorWait: {
+                    time = index->second.CommunicatorWait();
+                    break;
+                }
+                case Total: {
+                    time = index->second.Total();
+                    break;
+                }
+                default:
+                    ASSERT(true);
+                }
+            }
+            return (index != _statistics.end());
         }
 
     private:
@@ -216,8 +344,8 @@ namespace PluginHost {
             if (data == 0) {
                 uint64_t now = Core::Time::Now().Ticks();
                 _deserialization = static_cast<uint32_t>(now - _stamp);
-                PerformanceAdministrator::Instance().Deserialization(_deserialization, _in);
 		_stamp = now;
+                PerformanceAdministrator::Instance().Store(PerformanceAdministrator::Deserialization, _in, _deserialization);
             }
             _in += data;
         }
@@ -226,6 +354,7 @@ namespace PluginHost {
                 uint64_t now = Core::Time::Now().Ticks();
                 _communicatorWait = static_cast<uint32_t>(now - _stamp);
                 _stamp = now;
+                PerformanceAdministrator::Instance().Store(PerformanceAdministrator::CommunicatorWait, _in, _communicatorWait);
             }
             _out += data;
         }
@@ -233,12 +362,13 @@ namespace PluginHost {
             uint64_t now = Core::Time::Now().Ticks();
             _threadPoolWait = static_cast<uint32_t>(now - _stamp);
             _stamp = now;
+            PerformanceAdministrator::Instance().Store(PerformanceAdministrator::ThreadPoolWait, _in, _threadPoolWait);
         }
 	void Execution() {
             uint64_t now = Core::Time::Now().Ticks();
             _execution = static_cast<uint32_t>(now - _stamp);
-            PerformanceAdministrator::Instance().Execution(_execution);
             _stamp = now;
+            PerformanceAdministrator::Instance().Store(PerformanceAdministrator::Execution, _in, _execution);
         }
         void Acquire() {
             _stamp = Core::Time::Now().Ticks();
@@ -248,7 +378,7 @@ namespace PluginHost {
             uint64_t now = Core::Time::Now().Ticks();
             uint32_t total = static_cast<uint32_t>(now - _begin);
             _serialization = static_cast<uint32_t>(now - _stamp);
-            PerformanceAdministrator::Instance().Deserialization(_serialization, _out);
+            PerformanceAdministrator::Instance().Store(PerformanceAdministrator::Serialization, _in, _serialization);
 
             // Time to register all data...We are completed, we got:
             // _deserialisationTime = Time it took to receive the full message till completion and its size in _in (bytes)
@@ -257,7 +387,7 @@ namespace PluginHost {
             // _communicatorWait = Time it took after the response message was dropped for the resource monitor to pick it up for sending.
             // _serializationTime = Time it took for the response to be fully serialized and send over the line. size is in _out (bytes)
             // total = Time it took from entering the system and leaving the system. This should pretty mucch be the sum of all times.
-            PerformanceAdministrator::Instance().Total(total, 0);
+            PerformanceAdministrator::Instance().Store(PerformanceAdministrator::Total, _in, total);
         }
 
     private:
