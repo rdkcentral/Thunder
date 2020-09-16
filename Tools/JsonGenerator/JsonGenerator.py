@@ -1352,6 +1352,7 @@ def EmitRpcCode(root, emit, header_file, source_file):
             if isinstance(m, JsonProperty):
                 void = m.Properties()[1]
                 params = m.Properties()[0] if not m.readonly else void
+                params.name = "params"
                 response = copy.deepcopy(m.Properties()[0]) if not m.writeonly else void
                 response.name = "result"
                 emit.Line(
@@ -1516,18 +1517,17 @@ def EmitRpcCode(root, emit, header_file, source_file):
             else:
                 Invoke(params, response, False, params.CppName() + '.')
 
-            if isinstance(m, JsonProperty):
-                if not m.readonly and not m.writeonly:
+            if isinstance(m, JsonProperty) and not m.readonly:
+                if not m.writeonly:
                     emit.Unindent()
                     emit.Line("} else {")
                     emit.Indent()
                     emit.Line("// property set")
-                if not m.readonly:
-                    if m.writeonly:
-                        emit.Line("// write-only property set")
-                    Invoke(params, void)
+                if m.writeonly:
+                    emit.Line("// write-only property set")
+                Invoke(params, void)
+                if not m.writeonly:
                     emit.Line("%s.Null(true);" % response.CppName())
-                if not m.readonly and not m.writeonly:
                     emit.Unindent()
                     emit.Line("}")
 
