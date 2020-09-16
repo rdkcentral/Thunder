@@ -26,7 +26,7 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    /* json */
+    /* @json */
     struct EXTERNAL IPlayerProperties : virtual public Core::IUnknown {
         enum { ID = ID_PLAYER_PROPERTIES };
 
