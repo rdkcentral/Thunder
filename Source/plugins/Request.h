@@ -86,6 +86,14 @@ namespace PluginHost {
     public:
         class Statistics {
         public:
+            struct DataSet {
+                uint32_t Deserialization;
+                uint32_t ThreadPool;
+                uint32_t Execution;
+                uint32_t Communication;
+                uint32_t Serialization;
+                uint32_t Total;
+            };
             class Tuple {
             public:
                 Tuple() {
@@ -120,8 +128,14 @@ namespace PluginHost {
                     _average = ((_count * _average) + data) / (_count + 1);
                     _count++;
                 }
+                uint32_t Minimum() const {
+                    return _minimum;
+                }
                 uint32_t Measurement() const {
                     return _average;
+                }
+                uint32_t Maximum() const {
+                    return _minimum;
                 }
                 uint32_t Count() const {
                     return _count;
@@ -135,104 +149,93 @@ namespace PluginHost {
             };
 
         public:
-            Statistics()
-                : _serialization()
-                , _deserialization()
+            Statistics() = delete;
+            Statistics(const Statistics& copy) = delete;
+            Statistics& operator= (const Statistics& rhs) = delete;
+
+            Statistics(const uint32_t uptill)
+                : _adminLock()
+                , _limit(uptill)
+		, _deserialization()
+                , _threadPool()
                 , _execution()
-                , _threadPoolWait()
-                , _communicatorWait()
+                , _communication()
+                , _serialization()
                 , _total() {
             }
-            Statistics(const Statistics& copy) {
-                _deserialization = copy._deserialization;
-                _serialization = copy._serialization;
-                _execution = copy._execution;
-                _threadPoolWait = copy._threadPoolWait;
-                _communicatorWait = copy._communicatorWait;
-                _total = copy._total;
-            }
-            Statistics& operator= (const Statistics& rhs) {
-                _deserialization = rhs._deserialization;
-                _serialization = rhs._serialization;
-                _execution = rhs._execution;
-                _threadPoolWait = rhs._threadPoolWait;
-                _communicatorWait = rhs._communicatorWait;
-                _total = rhs._total;
-                return (*this);
-            }
-            inline bool operator<(const Statistics& rhs) const
-            {
-                return true;
-            }
-
-            ~Statistics()  = default;
+            ~Statistics() = default;
 
         public:
             void Clear() {
-                _serialization.Clear();
                 _deserialization.Clear();
+                _threadPool.Clear();
                 _execution.Clear();
-                _threadPoolWait.Clear();
+                _communication.Clear();
+                _serialization.Clear();
                 _total.Clear();
             }
-            void Serialization(const uint32_t data) {
-                _serialization.Measurement(data);
+            void Add(const DataSet& data) {
+		_adminLock.Lock();
+                _deserialization.Measurement(data.Deserialization);
+                _threadPool.Measurement(data.ThreadPool);
+                _execution.Measurement(data.Execution);
+                _communication.Measurement(data.Communication);
+                _serialization.Measurement(data.Serialization);
+                _total.Measurement(data.Total);
+		_adminLock.Unlock();
             }
-            uint32_t Serialization() const {
-                return _serialization.Measurement();
+            uint32_t Limit() const {
+                return (_limit);
             }
-            void Deserialization(const uint32_t data) {
-                _deserialization.Measurement(data);
+            Tuple Deserialization() const {
+		Core::SafeSyncType<Core::CriticalSection> lock (_adminLock);
+                return _deserialization;
             }
-            uint32_t Deserialization() const {
-                return _deserialization.Measurement();
+            Tuple ThreadPool() const {
+		Core::SafeSyncType<Core::CriticalSection> lock (_adminLock);
+                return _threadPool;
             }
-            void Execution(const uint32_t data) {
-                _execution.Measurement(data);
+            Tuple Execution() const {
+		Core::SafeSyncType<Core::CriticalSection> lock (_adminLock);
+                return _execution;
             }
-            uint32_t Execution() const {
-                return _execution.Measurement();
+            Tuple Communication() const {
+		Core::SafeSyncType<Core::CriticalSection> lock (_adminLock);
+                return _communication;
             }
-            void ThreadPoolWait(const uint32_t data) {
-                _threadPoolWait.Measurement(data);
+            Tuple Serialization() const {
+		Core::SafeSyncType<Core::CriticalSection> lock (_adminLock);
+                return _serialization;
             }
-            uint32_t ThreadPoolWait() const {
-                return _threadPoolWait.Measurement();
-            }
-            void CommunicatorWait(const uint32_t data) {
-                _communicatorWait.Measurement(data);
-            }
-            uint32_t CommunicatorWait() const {
-                return _communicatorWait.Measurement();
-            }
-            void Total(const uint32_t data) {
-                _total.Measurement(data);
-            }
-            uint32_t Total() const {
-                return _total.Measurement();
+            Tuple Total() const {
+		Core::SafeSyncType<Core::CriticalSection> lock (_adminLock);
+                return _total;
             }
 
         private:
-            Tuple _serialization;
+            mutable Core::CriticalSection _adminLock;
+            uint32_t _limit;
             Tuple _deserialization;
+            Tuple _threadPool;
             Tuple _execution;
-            Tuple _threadPoolWait;
-            Tuple _communicatorWait;
+            Tuple _communication;
+            Tuple _serialization;
             Tuple _total;
         };
 
-        using StatisticsList = std::list< std::pair<const uint32_t, Statistics> >;
+        using StatisticsList = std::list< Statistics >;
 
     private:
         PerformanceAdministrator()
             : _statistics() {
-            _statistics.emplace_back(std::pair<const uint32_t, Statistics>(100,  Statistics()));
-            _statistics.emplace_back(std::pair<const uint32_t, Statistics>(200,  Statistics()));
-            _statistics.emplace_back(std::pair<const uint32_t, Statistics>(400,  Statistics()));
-            _statistics.emplace_back(std::pair<const uint32_t, Statistics>(800,  Statistics()));
-            _statistics.emplace_back(std::pair<const uint32_t, Statistics>(1600, Statistics()));
-            _statistics.emplace_back(std::pair<const uint32_t, Statistics>(3200, Statistics()));
-            _statistics.emplace_back(std::pair<const uint32_t, Statistics>(6400, Statistics()));
+            _statistics.emplace_back(100);
+            _statistics.emplace_back(200);
+            _statistics.emplace_back(400);
+            _statistics.emplace_back(800);
+            _statistics.emplace_back(1600);
+            _statistics.emplace_back(3200);
+            _statistics.emplace_back(6400);
+            _statistics.emplace_back(Core::NumberType<uint32_t>::Max());
         }
 
     public:
@@ -240,44 +243,28 @@ namespace PluginHost {
         PerformanceAdministrator& operator= (const PerformanceAdministrator&) = delete;
 
         static PerformanceAdministrator& Instance() {
-        static PerformanceAdministrator singleton;
+            static PerformanceAdministrator singleton;
             return (singleton);
         }
 
-        void Store(const uint32_t packageSize, const Statistics statistics) {
-            StatisticsList::iterator index = _statistics.begin();
-            std::advance(index, std::distance<StatisticsList::const_iterator>(index, FindPackage(packageSize)));
-            if (index != _statistics.end()) {
-                index->second = statistics;
+        void Store(const uint32_t packageSize, const Statistics::DataSet& statistics) {
+            StatisticsList::iterator index (_statistics.begin());
+            while ( (index != _statistics.end()) && (packageSize > index->Limit()) ) {
+                index++;
             }
+            ASSERT (index != _statistics.end());
+            index->Add(statistics);
         }
 
-        bool Retrieve(const uint32_t packageSize, Statistics& statistics) const {
-            StatisticsList::const_iterator index(FindPackage(packageSize));
-            if (index != _statistics.end()) {
-                statistics = index->second;
+        const Statistics& Retrieve(const uint32_t packageSize) const {
+            StatisticsList::const_iterator index (_statistics.cbegin());
+            while ( (index != _statistics.cend()) && (packageSize > index->Limit()) ) {
+                index++;
             }
-            return (index != _statistics.end());
+            ASSERT (index != _statistics.end());
+            return (*index);
         }
 
-    private:
-        inline StatisticsList::const_iterator FindPackage(const uint32_t packageSize) const {
-            StatisticsList::const_iterator index = _statistics.begin();
-            StatisticsList::const_iterator id = _statistics.begin();
-            while (id != _statistics.end()) {
-                if (id->first >= packageSize) {
-                    if (index != _statistics.end()) {
-                        if (id->first < index->first) {
-                            index = id;
-                        }
-                    } else {
-                        index = id;
-                    }
-                }
-                id++;
-            }
-            return index;
-        }
     private:
         StatisticsList _statistics;
     };
@@ -298,7 +285,7 @@ namespace PluginHost {
 	void In(const uint32_t data) {
             if (data == 0) {
                 uint64_t now = Core::Time::Now().Ticks();
-                _statistics.Deserialization(static_cast<uint32_t>(now - _stamp));
+                _statistics.Deserialization = static_cast<uint32_t>(now - _stamp);
 		_stamp = now;
             }
             _in += data;
@@ -306,19 +293,19 @@ namespace PluginHost {
 	void Out(const uint32_t data) {
             if (data == 0) {
                 uint64_t now = Core::Time::Now().Ticks();
-                _statistics.CommunicatorWait(static_cast<uint32_t>(now - _stamp));
+                _statistics.Communication = static_cast<uint32_t>(now - _stamp);
                 _stamp = now;
             }
             _out += data;
         }
         void Dispatch() {
             uint64_t now = Core::Time::Now().Ticks();
-            _statistics.ThreadPoolWait(static_cast<uint32_t>(now - _stamp));
+            _statistics.ThreadPool = static_cast<uint32_t>(now - _stamp);
             _stamp = now;
         }
 	void Execution() {
             uint64_t now = Core::Time::Now().Ticks();
-            _statistics.Execution(static_cast<uint32_t>(now - _stamp));
+            _statistics.Execution = static_cast<uint32_t>(now - _stamp);
             _stamp = now;
         }
         void Acquire() {
@@ -327,8 +314,8 @@ namespace PluginHost {
         }
         void Relinquish() {
             uint64_t now = Core::Time::Now().Ticks();
-            _statistics.Total(static_cast<uint32_t>(now - _begin));
-            _statistics.Serialization(static_cast<uint32_t>(now - _stamp));
+            _statistics.Total = static_cast<uint32_t>(now - _begin);
+            _statistics.Serialization = static_cast<uint32_t>(now - _stamp);
 
             // Time to register all data...We are completed, we got:
             // _deserialisationTime = Time it took to receive the full message till completion and its size in _in (bytes)
@@ -345,8 +332,7 @@ namespace PluginHost {
         uint32_t _out;
         uint64_t _begin;
         uint64_t _stamp;
-        uint32_t _size;
-        PerformanceAdministrator::Statistics _statistics;
+        PerformanceAdministrator::Statistics::DataSet _statistics;
     };
     using JSONRPCMessage = TrackingJSONRPC;
 #else
