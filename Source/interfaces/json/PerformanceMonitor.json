@@ -23,7 +23,7 @@
       "properties": {
         "data": {
           "type": "string",
-          "description": "any string data upto the size specified in the length",
+          "description": "Any string data upto the size specified in the length",
           "example": "abababababab"
         },
         "length": {
@@ -123,13 +123,13 @@
       },
       "result": {
         "$ref": "#/definitions/datasize",
-        "description": "size of data received by the jsonrpc interface"
+        "description": "Size of data received by the jsonrpc interface"
       }
     },
     "receive": {
       "params": {
         "$ref": "#/definitions/datasize",
-        "description": "size of data to be provided by the jsonrpc interface"
+        "description": "Size of data to be provided by the jsonrpc interface"
       },
       "result": {
         "$ref": "#/definitions/buffer"
