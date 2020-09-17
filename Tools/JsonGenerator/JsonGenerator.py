@@ -998,6 +998,8 @@ def LoadInterface(file, includePaths = []):
                     obj = OrderedDict()
                     params = BuildParameters(method.vars)
                     if "properties" in params and params["properties"]:
+                        if method.name.lower() in [x.lower() for x in params["required"]]:
+                            raise CppParseError(method, "parameters must not use the same name as the method")
                         obj["params"] = params
                     obj["result"] = BuildResult(method.vars)
                     methods[method_name] = obj
@@ -1052,7 +1054,7 @@ def LoadInterface(file, includePaths = []):
             if schema:
                 schemas.append(schema)
     else:
-        trace.Warn("No interfaces found")
+        trace.Log("No interfaces found")
 
     return schemas
 
@@ -1352,6 +1354,7 @@ def EmitRpcCode(root, emit, header_file, source_file):
             if isinstance(m, JsonProperty):
                 void = m.Properties()[1]
                 params = m.Properties()[0] if not m.readonly else void
+                params.name = "params"
                 response = copy.deepcopy(m.Properties()[0]) if not m.writeonly else void
                 response.name = "result"
                 emit.Line(
@@ -1516,18 +1519,17 @@ def EmitRpcCode(root, emit, header_file, source_file):
             else:
                 Invoke(params, response, False, params.CppName() + '.')
 
-            if isinstance(m, JsonProperty):
-                if not m.readonly and not m.writeonly:
+            if isinstance(m, JsonProperty) and not m.readonly:
+                if not m.writeonly:
                     emit.Unindent()
                     emit.Line("} else {")
                     emit.Indent()
                     emit.Line("// property set")
-                if not m.readonly:
-                    if m.writeonly:
-                        emit.Line("// write-only property set")
-                    Invoke(params, void)
+                if m.writeonly:
+                    emit.Line("// write-only property set")
+                Invoke(params, void)
+                if not m.writeonly:
                     emit.Line("%s.Null(true);" % response.CppName())
-                if not m.readonly and not m.writeonly:
                     emit.Unindent()
                     emit.Line("}")
 
@@ -1571,7 +1573,7 @@ def EmitRpcCode(root, emit, header_file, source_file):
     emit.Line()
     if "info" in root.schema and "namespace" in root.schema["info"]:
         emit.Unindent()
-        emit.Line("// namespace %s" % root.schema["info"]["namespace"])
+        emit.Line("} // namespace %s" % root.schema["info"]["namespace"])
         emit.Line()
     emit.Unindent()
     emit.Line("} // namespace %s" % "Exchange")

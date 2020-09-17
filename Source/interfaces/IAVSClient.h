@@ -50,12 +50,12 @@ namespace Exchange {
         /// @brief Mutes the audio output of AVS
         /// @param mute Mute or umute (e.g. true)
         /// @retval ERROR_GENERAL when there is a fatal error or authorisation is not possible
-        virtual uint32_t Mute(const bool mute) = 0;
+        virtual uint32_t Mute(const bool muted) = 0;
 
         /// @brief Starts or stops the voice recording, skipping keyword detection
         /// @param start Start or stop voice recording (e.g. true)
         /// @retval ERROR_GENERAL when there is a fatal error or authorisation is not possible
-        virtual uint32_t Record(const bool start) = 0;
+        virtual uint32_t Record(const bool started) = 0;
     };
 
     struct EXTERNAL IAVSClient : virtual public Core::IUnknown {
