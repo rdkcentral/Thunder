@@ -1934,19 +1934,19 @@ namespace Core {
                 char replacement = current;
                 switch (current) {
                 case 'n':
-                    replacement = '\\n';
+                    replacement = 'n';
                     break;
                 case 'r':
-                    replacement = '\\r';
+                    replacement = '\r';
                     break;
                 case 't':
-                    replacement = '\\t';
+                    replacement = '\t';
                     break;
                 case 'f':
-                    replacement = '\\f';
+                    replacement = '\f';
                     break;
                 case 'b':
-                    replacement = '\\b';
+                    replacement = '\b';
                     break;
                 }
                 return replacement;
