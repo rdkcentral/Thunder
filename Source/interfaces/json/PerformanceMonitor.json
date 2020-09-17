@@ -14,6 +14,28 @@
       "type": "number",
       "size": 32
     },
+    "datasize": {
+      "type": "number",
+      "size": 32
+    },
+    "buffer": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string",
+          "description": "any string data upto the size specified in the length",
+          "example": "abababababab"
+        },
+        "length": {
+          "type": "number",
+          "size": 16
+        },
+        "duration": {
+          "type": "number",
+          "size": 16
+        }
+      }
+    },
     "statistics": {
       "type": "object",
       "properties": {
@@ -92,6 +114,33 @@
       "summary": "Clear all performance data collected",
       "result": {
         "$ref": "#/common/results/void"
+      }
+    },
+    "send": {
+      "summary": "Interface to test sending data",
+      "params": {
+        "$ref": "#/definitions/buffer"
+      },
+      "result": {
+        "$ref": "#/definitions/datasize",
+        "description": "size of data received by the jsonrpc interface"
+      }
+    },
+    "receive": {
+      "params": {
+        "$ref": "#/definitions/datasize",
+        "description": "size of data to be provided by the jsonrpc interface"
+      },
+      "result": {
+        "$ref": "#/definitions/buffer"
+      }
+    },
+    "exchange": {
+      "params": {
+        "$ref": "#/definitions/buffer"
+      },
+      "result": {
+        "$ref": "#/definitions/buffer"
       }
     }
   }
