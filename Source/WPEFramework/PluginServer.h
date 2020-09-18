@@ -2470,11 +2470,6 @@ namespace PluginHost {
                 TRACE(SocketFlow, (element));
 
                 if  (securityClearance == false) {
-#ifdef PERFORMANCE
-                    const Core::ProxyType<FactoriesImplementation::JSONRPCMessage>& jsonRPCFactory = (Core::ProxyType<FactoriesImplementation::JSONRPCMessage>(element));
-                    PerformanceAdministrator::Instance().Deserialization(jsonRPCFactory->Time(), 0);
-#endif
-                    Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(element));
                     if (message.IsValid()) {
                         PluginHost::Channel::Lock();
                         securityClearance = _security->Allowed(*message);
