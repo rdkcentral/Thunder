@@ -81,7 +81,7 @@ namespace PluginHost {
         Core::ProxyType<PluginHost::Service> _service;
     };
 
-#ifdef THUNDER_PERFORMANCE
+#if THUNDER_PERFORMANCE
     class PerformanceAdministrator {
     public:
         class Statistics {

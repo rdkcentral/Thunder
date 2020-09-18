@@ -2143,20 +2143,17 @@ namespace PluginHost {
                     ASSERT(_element.IsValid() == true);
 
                     if (_jsonrpc == true) {
-#ifdef THUNDER_PERFORMANCE
+#if THUNDER_PERFORMANCE
                         Core::ProxyType<TrackingJSONRPC> tracking (Core::proxy_cast<TrackingJSONRPC>(_element));
                         ASSERT (tracking.IsValid() == true);
 			tracking->Dispatch();
-
-                        Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(tracking));
-#else
+#endif
                         Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(_element));
                         ASSERT(message.IsValid() == true);
-#endif
 
                         _element = Core::ProxyType<Core::JSON::IElement>(Job::Process(_token, message));
 
-#ifdef THUNDER_PERFORMANCE
+#if THUNDER_PERFORMANCE
 			tracking->Execution();
 #endif
 
@@ -2469,7 +2466,8 @@ namespace PluginHost {
 
                 TRACE(SocketFlow, (element));
 
-                if  (securityClearance == false) {
+                if (securityClearance == false) {
+                    Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(element));
                     if (message.IsValid()) {
                         PluginHost::Channel::Lock();
                         securityClearance = _security->Allowed(*message);
