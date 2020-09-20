@@ -639,7 +639,15 @@ namespace PluginHost {
 
                 Lock();
 
-                if ((_jsonrpc != nullptr) && (IsActive() == true)) {
+                if ( (_jsonrpc == nullptr) || (IsActive() == false) ) {
+                    Unlock();
+
+                    result = Core::proxy_cast<Core::JSONRPC::Message>(Factories::Instance().JSONRPC());
+                    result->Error.SetError(Core::ERROR_BAD_REQUEST);
+                    result->Error.Text = _T("Service is not active");
+                    result->Id = message.Id;
+                }
+                else {
                     IDispatcher* service(_jsonrpc);
                     service->AddRef();
                     Unlock();
@@ -652,9 +660,7 @@ namespace PluginHost {
                     Core::InterlockedDecrement(_activity);
 
                     service->Release();
-                } else {
-                    Unlock();
-                }
+                } 
 
                 return (result);
             }
