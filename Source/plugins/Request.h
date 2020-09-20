@@ -21,6 +21,7 @@
 #define __PLUGIN_FRAMEWORK_REQUEST_H
 
 #include "Module.h"
+#include "Config.h"
 
 namespace WPEFramework {
 namespace PluginHost {
@@ -289,6 +290,8 @@ namespace PluginHost {
         void Clear() {
             _in = 0;
             _out = 0;
+            Web::JSONBodyType<Core::JSONRPC::Message>::Clear();
+
         }
 	void In(const uint32_t data) {
             if (data == 0) {
