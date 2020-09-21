@@ -132,9 +132,6 @@ namespace PluginHost {
                    fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closed down.\n");
                 }
 
-#ifndef __WINDOWS__
-                closelog();
-#endif
                 // Now clear all singeltons we created.
                 Core::Singleton::Dispose();
             }
@@ -263,7 +260,7 @@ namespace PluginHost {
 #ifndef __WINDOWS__
         //Set our Logging Mask and open the Log
         setlogmask(LOG_UPTO(LOG_NOTICE));
-        openlog(argv[0], LOG_PID, LOG_USER);
+        openlog(nullptr, LOG_PID, LOG_USER);
 
         setsid();
 #endif
