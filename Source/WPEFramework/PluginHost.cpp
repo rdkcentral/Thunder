@@ -486,8 +486,11 @@ namespace PluginHost {
 
                             printf("Observers:  %d\n", index.Current().Observers.Value());
 #endif
+
+#if THUNDER_RUNTIME_STATISTICS
                             printf("Requests:   %d\n", index.Current().ProcessedRequests.Value());
                             printf("JSON:       %d\n\n", index.Current().ProcessedObjects.Value());
+#endif
                         }
                         break;
                     }
