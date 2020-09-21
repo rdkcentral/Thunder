@@ -73,6 +73,9 @@ namespace Exchange {
             // @param enable: enable/disable
             virtual uint32_t EnableAtmosOutput(const bool& enable /* @in */) = 0;
 
+            // @property
+            // @brief Dolby Mode
+            // @param mode: dolby mode type
             virtual uint32_t Mode(const Dolby::IOutput::Type& mode) = 0;
             virtual uint32_t Mode(Dolby::IOutput::Type& mode /* @out */) const = 0;
 
