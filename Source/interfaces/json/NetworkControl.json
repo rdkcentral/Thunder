@@ -204,7 +204,7 @@
   },
   "events": {
     "connectionchange": {
-      "summary": "Notifies about connection status (created, updated, removed, connected and connectionfailed)",
+      "summary": "Notifies about connection status (created, updated, removed, connected, ipassigned and connectionfailed)",
       "params": {
         "type": "object",
         "properties": {
@@ -224,6 +224,7 @@
                 "updated",
                 "removed",
                 "connected",
+                "ipassigned",
                 "connectionfailed"
               ],
             "description": "Status of the interface, update, connected or not",
