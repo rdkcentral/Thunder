@@ -482,7 +482,7 @@ namespace PluginHost {
                             printf("Locator:    %s\n", index.Current().Locator.Value().c_str());
                             printf("Classname:  %s\n", index.Current().ClassName.Value().c_str());
                             printf("Autostart:  %s\n", (index.Current().AutoStart.Value() == true ? _T("true") : _T("false")));
-#ifdef THUNDER_RESTFULL_API
+#if THUNDER_RESTFULL_API
 
                             printf("Observers:  %d\n", index.Current().Observers.Value());
 #endif

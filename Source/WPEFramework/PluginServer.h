@@ -474,7 +474,7 @@ namespace PluginHost {
             }
             inline bool Subscribe(Channel& channel)
             {
-#ifdef THUNDER_RESTFULL_API
+#if THUNDER_RESTFULL_API
                 bool result = PluginHost::Service::Subscribe(channel);
 
                 if ((result == true) && (_extended != nullptr)) {
@@ -492,7 +492,7 @@ namespace PluginHost {
             }
             inline void Unsubscribe(Channel& channel)
             {
-#ifdef THUNDER_RESTFULL_API
+#if THUNDER_RESTFULL_API
                 PluginHost::Service::Unsubscribe(channel);
 #endif
                 if (_extended != nullptr) {
@@ -616,7 +616,7 @@ namespace PluginHost {
                     service->AddRef();
                     Unlock();
 
-#ifdef THUNDER_RUNTIME_STATISTICS
+#if THUNDER_RUNTIME_STATISTICS
                     IncrementProcessedRequests();
 #endif
                     Core::InterlockedIncrement(_activity);
@@ -641,7 +641,7 @@ namespace PluginHost {
                     service->AddRef();
                     Unlock();
 
-#ifdef THUNDER_RUNTIME_STATISTICS
+#if THUNDER_RUNTIME_STATISTICS
                     IncrementProcessedRequests();
 #endif
                     Core::InterlockedIncrement(_activity);
@@ -666,7 +666,7 @@ namespace PluginHost {
                     service->AddRef();
                     Unlock();
 
-#ifdef THUNDER_RUNTIME_STATISTICS
+#if THUNDER_RUNTIME_STATISTICS
                     IncrementProcessedObjects();
 #endif
                     Core::InterlockedIncrement(_activity);
@@ -1772,7 +1772,7 @@ namespace PluginHost {
             {
                 _server.Notification(message);
             }
-#ifdef THUNDER_RESTFULL_API
+#if THUNDER_RESTFULL_API
             inline void Notification(const string& message)
             {
                 _server.Controller()->Notification(message);
