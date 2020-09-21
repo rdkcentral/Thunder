@@ -57,8 +57,12 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
         )
 
-# target_include_directories(${TARGET} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
-        
+if(PERFORMANCE_TEST)
+    target_compile_definitions(${TARGET}
+        PUBLIC
+            THUNDER_PERFORMANCE=1)
+endif(PERFORMANCE_TEST)
+
 if(PROCESSCONTAINERS)
     target_link_libraries(${TARGET}
         PUBLIC
