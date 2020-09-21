@@ -117,7 +117,7 @@
       }
     },
     "send": {
-      "summary": "Interface to test sending data",
+      "summary": "Interface to test send data",
       "params": {
         "$ref": "#/definitions/buffer"
       },
@@ -127,6 +127,7 @@
       }
     },
     "receive": {
+      "summary": "Interface to test receive data",
       "params": {
         "$ref": "#/definitions/datasize",
         "description": "Size of data to be provided by the jsonrpc interface"
@@ -136,6 +137,7 @@
       }
     },
     "exchange": {
+      "summary": "Interface to test exchange data",
       "params": {
         "$ref": "#/definitions/buffer"
       },
