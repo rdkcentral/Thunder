@@ -57,12 +57,6 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
         )
 
-if(PERFORMANCE_MONITOR)
-    target_compile_definitions(${TARGET}
-        PUBLIC
-            THUNDER_PERFORMANCE=1)
-endif(PERFORMANCE_MONITOR)
-
 if(PROCESSCONTAINERS)
     target_link_libraries(${TARGET}
         PUBLIC
