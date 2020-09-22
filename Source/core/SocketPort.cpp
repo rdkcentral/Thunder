@@ -891,9 +891,15 @@ namespace Core {
             }
 
             if (l_Size == 0) {
+                uint32_t l_Result = __ERRORRESULT__;
+
                 if ((m_State & SocketPort::LINK) != 0) {
                     // The otherside has closed the connection !!!
-                    m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::EXCEPTION);
+                    if (l_Result == __ERROR_AGAIN__) {
+                        m_State |= SocketPort::EXCEPTION;
+                    } else {
+                        m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::EXCEPTION);
+                    }
                 }
             } else if (l_Size != static_cast<uint32_t>(SOCKET_ERROR)) {
                 m_ReadBytes += l_Size;

@@ -1754,7 +1754,8 @@ namespace Web
                 // Empty line means we are starting the BODY
                 if (chunked || ((_current->ContentLength.IsSet() == true) && (_current->ContentLength.Value() > 0))) {
                     // Allow the Deserializer to "instantiate"/link the right Body to the response:
-                    if (LinkBody(*_current) == true) {
+                    bool hasBody = LinkBody(*_current);
+                    if (hasBody == true) {
                         _current->Body<Web::IBody>()->Deserialize();
                     }
 
@@ -1771,11 +1772,15 @@ namespace Web
                         _zlibResult = static_cast<uint32_t>(~0);
                     }
 
-                    if (chunked == false) {
-                        _parser.PassThrough(_current->ContentLength.Value());
+                    if (hasBody == true) {
+                        if (chunked == false) {
+                            _parser.PassThrough(_current->ContentLength.Value());
+                        } else {
+                            _parser.CollectLine();
+                            _state = CHUNK_INIT;
+                        }
                     } else {
-                        _parser.CollectLine();
-                        _state = CHUNK_INIT;
+                        _state = BODY_END;
                     }
                 } else {
                     // There is no body following this according to the length.
