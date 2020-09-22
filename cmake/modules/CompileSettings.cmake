@@ -21,6 +21,7 @@ compiler for all sources of the Framework and its Plugins
 #]]
 option(POSITION_INDEPENDENT_CODE "Create position independent code on all targets including static libs" ON)
 option(EXCEPTIONS_ENABLE "Enable exception handling" OFF)
+option(PERFORMANCE_MONITOR "Include Performance Monitoring" OFF)
 
 add_library(CompileSettings INTERFACE)
 add_library(CompileSettings::CompileSettings ALIAS CompileSettings)
@@ -47,6 +48,10 @@ if(EXCEPTIONS_ENABLE)
 else()
     target_compile_options(CompileSettings INTERFACE -fno-exceptions)
     message(STATUS "Exception handling is disabled")
+endif()
+
+if(PERFORMANCE_MONITOR)
+    target_compile_definitions(CompileSettings INTERFACE -DTHUNDER_PERFORMANCE=1)
 endif()
 
 if(NOT BUILD_TYPE)

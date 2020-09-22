@@ -48,8 +48,6 @@ option(PROTOCOLS
         "Include Protocols lib." ON)
 option(CDMI
         "Include OpenCDM interface." OFF)
-option(PERFORMANCE_MONITOR
-        "Include Performance Tests." OFF)
 option(PROCESS
         "Include the COM hosting process executable." ON)
 option(PROXY_STUB
