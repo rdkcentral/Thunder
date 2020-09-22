@@ -1916,12 +1916,12 @@ namespace Core {
             EscapeSequenceAction GetEscapeSequenceAction(char current) const
             {
                 EscapeSequenceAction action = EscapeSequenceAction::COLLAPSE;
-                if (current == 'u') {
+                if (current == 'u' || current == 'n' || current == 't' || current == 'r') {
                     action = EscapeSequenceAction::NOTHING;
                 } else if((current == '\"') && (_scopeCount & DepthCountMask)) {
                     action = EscapeSequenceAction::NOTHING;
                 } else {
-                    if (current == 'n' || current == 'r' || current == 't' || current == 'f' || current == 'b')
+                    if (current == 'f' || current == 'b')
                         action = EscapeSequenceAction::REPLACE;
                 }
 
@@ -1933,15 +1933,6 @@ namespace Core {
                 ASSERT(GetEscapeSequenceAction(current) == EscapeSequenceAction::REPLACE);
                 char replacement = current;
                 switch (current) {
-                case 'n':
-                    replacement = 'n';
-                    break;
-                case 'r':
-                    replacement = '\r';
-                    break;
-                case 't':
-                    replacement = '\t';
-                    break;
                 case 'f':
                     replacement = '\f';
                     break;
