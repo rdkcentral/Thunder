@@ -33,7 +33,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pard
 import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 
-VERSION = "1.6.2"
+VERSION = "1.6.3"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
@@ -196,7 +196,7 @@ class JsonType():
         raise RuntimeError("can't instantiate %s" % self.name)
 
     def CppName(self): # C++ name of the object
-        return self.name[0].upper() + self.name[1:]
+        return self.TrueName().capitalize()
 
     def CppDefValue(self): # Value to instantiate with in C++
         return ""
@@ -528,6 +528,7 @@ class JsonMethod(JsonObject):
         props["result"] = schema["result"] if "result" in schema else {"type": "null"}
         newschema["properties"] = props
         JsonObject.__init__(self, objName, parent, newschema, included=included)
+        self.true_name = schema["cppname"] if "cppname" in schema else objName
         self.summary = None
         self.tags = []
         if "summary" in schema:
@@ -672,8 +673,8 @@ def JsonItem(name, parent, schema, origName=None, included=None):
         raise JsonParseError("undefined type for item: %s" % name)
 
 
-def LoadSchema(file, include_path, cpp_include_path):
-    def PreprocessJson(file, string, include_path=None, cpp_include_path=None):
+def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
+    def PreprocessJson(file, string, include_path=None, cpp_include_path=None, header_include_paths = []):
         def __Tokenize(contents):
             # Tokenize the JSON first to be able to preprocess it easier
             formula = (
@@ -723,7 +724,7 @@ def LoadSchema(file, include_path, cpp_include_path):
                         ref_tok[0] = os.path.join(path, ref_tok[0])
                 if not os.path.isfile(ref_tok[0]):
                     raise RuntimeError("$cppref file '%s' not found" % ref_tok[0])
-                cppif = LoadInterface(ref_tok[0])
+                cppif = LoadInterface(ref_tok[0], header_include_paths)
                 if cppif:
                     tokens[c] = json.dumps(cppif[0])[1:-1]
                     tokens[c + 1] = ""
@@ -734,7 +735,7 @@ def LoadSchema(file, include_path, cpp_include_path):
         return " ".join(tokens)
 
     with open(file, "r") as json_file:
-        jsonPre = PreprocessJson(file, json_file.read(), include_path, cpp_include_path)
+        jsonPre = PreprocessJson(file, json_file.read(), include_path, cpp_include_path, header_include_paths)
         return jsonref.loads(jsonPre, object_pairs_hook=OrderedDict)
 
 
@@ -776,7 +777,6 @@ def LoadInterface(file, includePaths = []):
         event_interfaces = set()
 
         for method in face.obj.methods:
-
             def ResolveTypedef(type):
                 if isinstance(type.Type(), ProxyStubGenerator.CppParser.Typedef):
                     return ResolveTypedef(type.Type().type)
@@ -859,10 +859,7 @@ def LoadInterface(file, includePaths = []):
                 jsonType, args = ConvertType(var)
                 properties = {"type": jsonType}
                 if args != None:
-                    if sys.version_info >= (3, 5):
-                        properties = { **properties, **args }
-                    else:
-                        properties = dict(properties.items() + args.items())
+                    properties.update(args)
                     try:
                         properties["typename"] = StripFrameworkNamespace(var.type.Type().full_name)
                     except:
@@ -951,6 +948,7 @@ def LoadInterface(file, includePaths = []):
                 else:
                     return None
 
+            prefix = (face.obj.parent.name.lower() + "_") if face.obj.parent.full_name != INTERFACE_NAMESPACE else ""
             method_name = method.name
 
             event_params = EventParameters(method.vars)
@@ -959,12 +957,15 @@ def LoadInterface(file, includePaths = []):
 
             obj = None
 
-            if method.retval.meta.is_property or method_name in properties:
+            if method.retval.meta.is_property or (prefix + method_name) in properties:
                 try:
-                    obj = properties[method_name]
+                    obj = properties[prefix + method_name]
+                    obj["cppname"] = method_name
                 except:
                     obj = OrderedDict()
-                    properties[method_name] = obj
+                    obj["cppname"] = method_name
+                    properties[prefix + method_name] = obj
+
                 if len(method.vars) == 1:
                     if "const" in method.qualifiers:
                         if method.vars[0].type.IsConst():
@@ -1002,7 +1003,8 @@ def LoadInterface(file, includePaths = []):
                             raise CppParseError(method, "parameters must not use the same name as the method")
                         obj["params"] = params
                     obj["result"] = BuildResult(method.vars)
-                    methods[method_name] = obj
+                    obj["cppname"] = method_name
+                    methods[prefix + method_name] = obj
                 else:
                     raise CppParseError(method, "method return type must be uint32_t (error code) or void (i.e. pass other return values by reference)")
 
@@ -1025,6 +1027,7 @@ def LoadInterface(file, includePaths = []):
             for method in f.obj.methods:
                 if method.IsPureVirtual() and method.omit == False:
                     obj = OrderedDict()
+                    obj["cppname"] = method.name
                     params = BuildParameters(method.vars)
                     if method.retval.meta.brief:
                         obj["summary"] = method.retval.meta.brief
@@ -1032,7 +1035,7 @@ def LoadInterface(file, includePaths = []):
                         obj["description"] = method.retval.meta.details
                     if "properties" in params and params["properties"]:
                         obj["params"] = params
-                    events[method.name] = obj
+                    events[prefix + method.name] = obj
 
         if methods:
             schema["methods"] = methods
@@ -1226,7 +1229,7 @@ def GetNamespace(root, obj, full=True):
                 break
             e = e.parent
         if full:
-            namespace = "%s::%s::" % (DATA_NAMESPACE, root.CppClass())
+            namespace = "%s::%s::" % (DATA_NAMESPACE, root.TrueName())
         namespace = namespace + "%s" % fullname
     return namespace
 
@@ -1234,7 +1237,7 @@ def GetNamespace(root, obj, full=True):
 def EmitEnumRegs(root, emit, header_file, if_file):
     def EmitEnumRegistration(root, enum, full=True):
         fullname = (GetNamespace(root, enum) if full else "%s::%s::" %
-                    (DATA_NAMESPACE, root.CppClass())) + enum.CppClass()
+                    (DATA_NAMESPACE, root.TrueName())) + enum.CppClass()
         emit.Line("ENUM_CONVERSION_BEGIN(%s)" % fullname)
         emit.Indent()
         for c, item in enumerate(enum.enumerators):
@@ -2184,7 +2187,9 @@ def CreateDocument(schema, path):
 
         def MethodDump(method, props, classname, is_notification=False, is_property=False, include=None):
             method = (method.rsplit(".", 1)[1] if "." in method else method).lower()
-            MdHeader(method, 2, "property" if is_property else "event" if is_notification else "method", include)
+            type =  "property" if is_property else "event" if is_notification else "method"
+            trace.Log("Emitting documentation for %s '%s'..." % (type, method))
+            MdHeader(method, 2, type, include)
             readonly = False
             writeonly = False
             if "summary" in props:
@@ -2212,7 +2217,8 @@ def CreateDocument(schema, path):
             if is_property:
                 MdHeader("Value", 3)
                 if not "description" in props["params"]:
-                    props["params"]["description"] = props["summary"]
+                    if "summary" in props:
+                        props["params"]["description"] = props["summary"]
                 ParamTable("(property)", props["params"])
                 if "index" in props:
                     if "name" not in props["index"] or "example" not in props["index"]:
@@ -2355,7 +2361,9 @@ def CreateDocument(schema, path):
         MdParagraph(bold("Status: " + rating * ":black_circle:" + (3 - rating) * ":white_circle:"))
 
         plugin_class = None
-        if "class" in info:
+        if "callsign" in info:
+            plugin_class = info["callsign"]
+        elif "class" in info:
             plugin_class = info["class"]
         elif "info" in interface and "class" in interface["info"]:
             plugin_class = interface["info"]["class"]
@@ -2383,10 +2391,12 @@ def CreateDocument(schema, path):
         MdBr()
 
         def mergedict(d1, d2, prop):
-            if sys.version_info >= (3, 5):
-                return {**(d1[prop] if prop in d1 else dict()), **(d2[prop] if prop in d2 else dict())}
-            else:
-                return dict((d1[prop] if prop in d1 else dict()).items() + (d2[prop] if prop in d2 else dict()).items())
+            tmp = dict()
+            if prop in d1:
+                tmp.update(d1[prop])
+            if prop in d2:
+                tmp.update(d2[prop])
+            return tmp
 
         MdHeader("Introduction")
         MdHeader("Scope", 2)
@@ -2493,8 +2503,9 @@ def CreateDocument(schema, path):
                 if section in interface:
                     for method, contents in interface[section].items():
                         if contents and method not in skip_list:
+                            ns = interface["info"]["namespace"] if "namespace" in interface["info"] else ""
                             if not head:
-                                MdParagraph("%s interface %s:" % (interface["info"]["class"], section))
+                                MdParagraph("%s interface %s:" % (((ns + " ") if ns else "") + interface["info"]["class"], section))
                                 MdTableHeader([header.capitalize(), "Description"])
                                 head = True
                             access = ""
@@ -2512,11 +2523,8 @@ def CreateDocument(schema, path):
                                 if "i.e" in descr:
                                     descr = descr[0:descr.index("i.e") - 1]
                                 descr = descr.split(".", 1)[0] if "." in descr else descr
-                            MdRow([
-                                link(header + "." + (method.rsplit(".", 1)[1] if "." in method else method)) + access,
-                                descr
-                            ])
-                        skip_list.append(method)
+                            MdRow([link(header + "." + (method.rsplit(".", 1)[1] if "." in method else method).lower()) + access, descr])
+                        skip_list.append(method.lower())
 
             MdHeader(section_name)
             if description:
@@ -2836,7 +2844,7 @@ if __name__ == "__main__":
                 if path.endswith(".h"):
                     schemas = LoadInterface(path, args.includePaths)
                 else:
-                    schemas = [LoadSchema(path, args.if_dir, args.cppif_dir)]
+                    schemas = [LoadSchema(path, args.if_dir, args.cppif_dir, args.includePaths)]
                 for schema in schemas:
                     if schema:
                         warnings = NO_DUP_WARNINGS
