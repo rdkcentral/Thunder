@@ -24,6 +24,7 @@ namespace WPEFramework {
 
 namespace RPC {
 
+    // @iterator
     template<typename ELEMENT, const uint32_t INTERFACE_ID>
     struct IIteratorType : virtual public Core::IUnknown {
 

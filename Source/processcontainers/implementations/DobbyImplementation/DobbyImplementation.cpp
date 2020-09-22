@@ -19,8 +19,8 @@
 
 #include "DobbyImplementation.h"
 #include <thread>
-#include "IpcFactory.h"
-#include "DobbyProxy.h"
+#include <Dobby/IpcService/IpcFactory.h>
+#include <Dobby/DobbyProxy.h>
 #include <fstream>
 
 namespace WPEFramework {

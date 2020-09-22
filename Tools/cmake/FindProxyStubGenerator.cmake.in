@@ -32,7 +32,7 @@ function(ProxyStubGenerator)
 
     set(optionsArgs SCAN_IDS TRACES OLD_CPP NO_WARNINGS KEEP VERBOSE)
     set(oneValueArgs INCLUDE NAMESPACE INDENT OUTDIR)
-    set(multiValueArgs INPUT)
+    set(multiValueArgs INPUT INCLUDE_PATH)
 
     cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -85,12 +85,18 @@ function(ProxyStubGenerator)
         list(APPEND _execute_command  "--outdir" "${Argument_OUTDIR}")
     endif()
 
+    foreach(_include_path ${Argument_INCLUDE_PATH})
+        list(APPEND _execute_command  "-I" "${Argument_INCLUDE_PATH}")
+    endforeach(_include_path)
+
     foreach(_input ${Argument_INPUT})
         execute_process(COMMAND ${PYTHON_EXECUTABLE} ${_execute_command} ${_input} RESULT_VARIABLE rv)
         if(NOT ${rv} EQUAL 0)
             message(FATAL_ERROR "ProxyStubGenerator generator failed.")
         endif()
     endforeach(_input)
+
+
 endfunction(ProxyStubGenerator)
 
 message(STATUS "ProxyStubGenerator ready ${PROXYSTUB_GENERATOR}")

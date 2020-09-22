@@ -69,6 +69,7 @@ namespace Core {
         inline void Reset()
         {
             _state = SKIP_WHITESPACE | WORD_CAPTURE;
+            _byteCounter = 0;
         }
         inline void CollectWord()
         {
@@ -128,6 +129,7 @@ namespace Core {
                     } else {
                         _parent.EndOfPassThrough();
                         _state = PARSESTOP;
+                        _byteCounter = 0;
                         break;
                     }
                 }
@@ -186,6 +188,7 @@ namespace Core {
                             _parent.Parse(_buffer);
                             _buffer.clear();
                             _state |= SKIP_WHITESPACE;
+                            _byteCounter = 0;
                         } else {
                             _buffer += character;
                             _byteCounter++;
@@ -204,7 +207,8 @@ namespace Core {
 
                         if ((terminated & 0x80) == 0x80) {
                             if (_byteCounter != 0) {
-                                _buffer.erase(_buffer.end() - _byteCounter);
+                                ASSERT(_byteCounter <= _buffer.size());
+                                _buffer.erase(_buffer.size() - _byteCounter);
                                 _byteCounter = 0;
                             }
 

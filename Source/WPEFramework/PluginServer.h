@@ -114,11 +114,10 @@ namespace PluginHost {
         };
 
         class FactoriesImplementation : public IFactories {
-        private:
+        public:
             FactoriesImplementation(const FactoriesImplementation&) = delete;
             FactoriesImplementation& operator=(const FactoriesImplementation&) = delete;
 
-        public:
             FactoriesImplementation()
                 : _requestFactory(5)
                 , _responseFactory(5)
@@ -126,9 +125,7 @@ namespace PluginHost {
                 , _jsonRPCFactory(5)
             {
             }
-            ~FactoriesImplementation() override
-            {
-            }
+            ~FactoriesImplementation() override = default;
 
         public:
             Core::ProxyType<Web::Request> Request() override
@@ -145,14 +142,14 @@ namespace PluginHost {
             }
             Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> JSONRPC() override
             {
-                return (_jsonRPCFactory.Element());
+                return (Core::proxy_cast< Web::JSONBodyType<Core::JSONRPC::Message> >(_jsonRPCFactory.Element()));
             }
 
         private:
             Core::ProxyPoolType<Web::Request> _requestFactory;
             Core::ProxyPoolType<Web::Response> _responseFactory;
             Core::ProxyPoolType<Web::FileBody> _fileBodyFactory;
-            Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> _jsonRPCFactory;
+            Core::ProxyPoolType<PluginHost::JSONRPCMessage> _jsonRPCFactory;
         };
 
         class ServiceMap;
@@ -477,7 +474,7 @@ namespace PluginHost {
             }
             inline bool Subscribe(Channel& channel)
             {
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
                 bool result = PluginHost::Service::Subscribe(channel);
 
                 if ((result == true) && (_extended != nullptr)) {
@@ -495,7 +492,7 @@ namespace PluginHost {
             }
             inline void Unsubscribe(Channel& channel)
             {
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
                 PluginHost::Service::Unsubscribe(channel);
 #endif
                 if (_extended != nullptr) {
@@ -619,7 +616,7 @@ namespace PluginHost {
                     service->AddRef();
                     Unlock();
 
-#ifdef RUNTIME_STATISTICS
+#if THUNDER_RUNTIME_STATISTICS
                     IncrementProcessedRequests();
 #endif
                     Core::InterlockedIncrement(_activity);
@@ -639,12 +636,20 @@ namespace PluginHost {
 
                 Lock();
 
-                if ((_jsonrpc != nullptr) && (IsActive() == true)) {
+                if ( (_jsonrpc == nullptr) || (IsActive() == false) ) {
+                    Unlock();
+
+                    result = Core::proxy_cast<Core::JSONRPC::Message>(Factories::Instance().JSONRPC());
+                    result->Error.SetError(Core::ERROR_BAD_REQUEST);
+                    result->Error.Text = _T("Service is not active");
+                    result->Id = message.Id;
+                }
+                else {
                     IDispatcher* service(_jsonrpc);
                     service->AddRef();
                     Unlock();
 
-#ifdef RUNTIME_STATISTICS
+#if THUNDER_RUNTIME_STATISTICS
                     IncrementProcessedRequests();
 #endif
                     Core::InterlockedIncrement(_activity);
@@ -652,9 +657,7 @@ namespace PluginHost {
                     Core::InterlockedDecrement(_activity);
 
                     service->Release();
-                } else {
-                    Unlock();
-                }
+                } 
 
                 return (result);
             }
@@ -669,7 +672,7 @@ namespace PluginHost {
                     service->AddRef();
                     Unlock();
 
-#ifdef RUNTIME_STATISTICS
+#if THUNDER_RUNTIME_STATISTICS
                     IncrementProcessedObjects();
 #endif
                     Core::InterlockedIncrement(_activity);
@@ -818,7 +821,7 @@ namespace PluginHost {
             {
                 ASSERT(_connection == nullptr);
 
-                void* result(_administrator.Instantiate(object, waitTime, sessionId, className, callsign));
+                void* result(_administrator.Instantiate(object, waitTime, sessionId, className, callsign, DataPath(), PersistentPath(), VolatilePath()));
 
                 _connection = _administrator.RemoteConnection(sessionId);
 
@@ -1020,10 +1023,10 @@ namespace PluginHost {
                     RemoteHost& operator=(const RemoteHost&) = delete;
 
                 public:
-                    RemoteHost(const RPC::Object& instance, const string& connector)
+                    RemoteHost(const RPC::Object& instance, const RPC::Config& config)
                         : RemoteConnection()
-                        , _connector(connector)
                         , _object(instance)
+                        , _config(config)
                     {
                     }
                     virtual ~RemoteHost()
@@ -1043,7 +1046,7 @@ namespace PluginHost {
                                 Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, engine));
 
                             // Oke we have ou selves a COMClient link. Lets see if we can get the proepr interface...
-                            IRemoteInstantiation* instantiation = client->Open<IRemoteInstantiation>(_connector, ~0, 3000);
+                            IRemoteInstantiation* instantiation = client->Open<IRemoteInstantiation>(_config.Connector(), ~0, 3000);
 
                             if (instantiation == nullptr) {
                                 result = Core::ERROR_ILLEGAL_STATE;
@@ -1069,8 +1072,8 @@ namespace PluginHost {
                     }
 
                 private:
-                    const string _connector;
                     RPC::Object _object;
+                    const RPC::Config& _config;
                 };
 
             public:
@@ -1120,18 +1123,8 @@ namespace PluginHost {
                 }
 
             public:
-                void* Create(uint32_t& connectionId, const RPC::Object& instance, const string& classname, const string& callsign, const uint32_t waitTime)
+                void* Create(uint32_t& connectionId, const RPC::Object& instance, const string& classname, const string& callsign, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath)
                 {
-                    string persistentPath(_persistentPath);
-                    string dataPath(_dataPath);
-                    string volatilePath(_volatilePath);
-
-                    if (callsign.empty() == false) {
-                        dataPath += callsign + '/';
-                        persistentPath += callsign + '/';
-                        volatilePath += callsign + '/';
-                    }
-
                     return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, volatilePath, _appPath, _proxyStubPath, _postMortemPath), waitTime));
                 }
                 const string& PersistentPath() const
@@ -1173,7 +1166,7 @@ namespace PluginHost {
                     RPC::Communicator::RemoteConnection* result = nullptr;
 
                     if (instance.Type() == RPC::Object::HostType::DISTRIBUTED) {
-                        result = Core::Service<RemoteHost>::Create<RPC::Communicator::RemoteConnection>(instance, config.Connector());
+                        result = Core::Service<RemoteHost>::Create<RPC::Communicator::RemoteConnection>(instance, config);
                     } else {
                         result = RPC::Communicator::CreateStarter(config, instance);
                     }
@@ -1690,9 +1683,9 @@ namespace PluginHost {
                 return (result);
             }
 
-            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign)
+            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign, const string& dataPath, const string& persistentPath, const string& volatilePath)
             {
-                return (_processAdministrator.Create(sessionId, object, className, callsign, waitTime));
+                return (_processAdministrator.Create(sessionId, object, className, callsign, waitTime, dataPath, persistentPath, volatilePath));
             }
             void Register(RPC::IRemoteConnection::INotification* sink)
             {
@@ -1785,7 +1778,7 @@ namespace PluginHost {
             {
                 _server.Notification(message);
             }
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
             inline void Notification(const string& message)
             {
                 _server.Controller()->Notification(message);
@@ -2156,11 +2149,20 @@ namespace PluginHost {
                     ASSERT(_element.IsValid() == true);
 
                     if (_jsonrpc == true) {
+#if THUNDER_PERFORMANCE
+                        Core::ProxyType<TrackingJSONRPC> tracking (Core::proxy_cast<TrackingJSONRPC>(_element));
+                        ASSERT (tracking.IsValid() == true);
+			tracking->Dispatch();
+#endif
                         Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(_element));
-
                         ASSERT(message.IsValid() == true);
 
                         _element = Core::ProxyType<Core::JSON::IElement>(Job::Process(_token, message));
+
+#if THUNDER_PERFORMANCE
+			tracking->Execution();
+#endif
+
                     } else {
                         _element = Job::Process(_element);
                     }
@@ -2470,7 +2472,7 @@ namespace PluginHost {
 
                 TRACE(SocketFlow, (element));
 
-                if  (securityClearance == false) {
+                if (securityClearance == false) {
                     Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(element));
                     if (message.IsValid()) {
                         PluginHost::Channel::Lock();
@@ -2569,8 +2571,7 @@ namespace PluginHost {
                         AbortUpgrade(Web::STATUS_SERVICE_UNAVAILABLE, _T("Could not find a correct service for this socket."));
                     } else if (Allowed(Path(), Query()) == false) {
                         AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Security prohibites this connection."));
-                    }
-                    if (serviceCall == true) {
+                    } else if (serviceCall == true) {
                         const string& serviceHeader(_parent._config.WebPrefix());
 
                         if (Protocol() == _T("notification")) {

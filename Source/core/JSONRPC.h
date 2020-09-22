@@ -115,13 +115,7 @@ namespace Core {
             static constexpr TCHAR DefaultVersion[] = _T("2.0");
 
             Message()
-                : Core::JSON::Container()
-                , JSONRPC(DefaultVersion)
-                , Id(~0)
-                , Designator()
-                , Parameters(false)
-                , Result(false)
-                , Error()
+                : Core::JSON::Container() 
             {
                 Add(_T("jsonrpc"), &JSONRPC);
                 Add(_T("id"), &Id);
@@ -129,6 +123,8 @@ namespace Core {
                 Add(_T("params"), &Parameters);
                 Add(_T("result"), &Result);
                 Add(_T("error"), &Error);
+
+                Clear();
             }
             ~Message()
             {
@@ -214,7 +210,7 @@ namespace Core {
             }
             void Clear()
             {
-                JSONRPC.Clear();
+                JSONRPC = DefaultVersion;
                 Id.Clear();
                 Designator.Clear();
                 Parameters.Clear();
