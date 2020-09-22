@@ -284,10 +284,8 @@ namespace Web {
 
     public:
         Response()
-            : ErrorCode(Web::STATUS_OK)
-            , MajorVersion(Web::MajorVersion)
-            , MinorVersion(Web::MinorVersion)
         {
+          Clear();
         }
         ~Response()
         {

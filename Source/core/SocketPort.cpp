@@ -593,7 +593,8 @@ namespace Core {
                         return (l_Result);
                     }
                 } else {
-                    TRACE_L1("Error on port socket BIND. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
+                    TRACE_L1("Error binding socket to port %u. BIND. Error %d: %s",
+                        localNode.PortNumber(), __ERRORRESULT__, strerror(__ERRORRESULT__));
                 }
             } else {
                 BufferAlignment(l_Result);
