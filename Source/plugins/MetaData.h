@@ -79,11 +79,11 @@ namespace PluginHost {
             Service& operator=(const Plugin::Config& RHS);
 
             State JSONState;
-#ifdef RUNTIME_STATISTICS
+#if THUNDER_RUNTIME_STATISTICS
             Core::JSON::DecUInt32 ProcessedRequests;
             Core::JSON::DecUInt32 ProcessedObjects;
 #endif
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
             Core::JSON::DecUInt32 Observers;
 #endif
             Core::JSON::String Module;
