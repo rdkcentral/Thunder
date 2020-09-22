@@ -32,6 +32,4 @@
 
 #define THUNDER_RESTFULL_API 1
 
-#define THUNDER_PERFORMANCE 0
-
 #endif
