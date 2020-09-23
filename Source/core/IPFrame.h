@@ -195,7 +195,7 @@ namespace Core {
     public:
         inline NodeId Source() const {
             const tcphdr* tcpHeader = reinterpret_cast<const tcphdr*>(Base::Frame());
-            const NodeId result (Base::Source());
+            NodeId result (Base::Source());
             return (result.IsValid() ? NodeId(result, ntohs(tcpHeader->source)) : result);
         }
         inline void Source(const NodeId& node) {
