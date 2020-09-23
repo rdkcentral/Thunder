@@ -613,6 +613,7 @@ namespace Web {
         Core::OptionalType<EncodingTypes> ContentEncoding;
         Core::OptionalType<TransferTypes> TransferEncoding;
         Core::OptionalType<string> Host;
+        Core::OptionalType<string> Range;
         Core::OptionalType<connection> Connection;
         Core::OptionalType<string> Accept;
         Core::OptionalType<EncodingTypes> AcceptEncoding;

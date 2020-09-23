@@ -259,7 +259,7 @@ namespace Web {
 
             return (result);
         }
-        uint32_t Download(const Core::URL& source, Core::File& destination)
+        uint32_t Download(const Core::URL& source, Core::File& destination, const uint64_t position)
         {
             uint32_t result = Core::ERROR_INPROGRESS;
 
@@ -279,12 +279,13 @@ namespace Web {
 
                         // See if we can create a file to store the download in
                         static_cast<FILEBODY&>(_fileBody) = destination;
-                        _fileBody.Position(false, 0);
+                        _fileBody.Position(false, position);
 
                         _state = TRANSFER_DOWNLOAD;
                         _request.Verb = Web::Request::HTTP_GET;
                         _request.Path = '/' + source.Path().Value();
                         _request.Host = source.Host().Value();
+                        _request.Range = "bytes=" + std::to_string(position) + '-';
 
                         // Prepare the request for processing
                         result = _channel.StartTransfer(Core::ProxyType<Web::Request>(_request));
@@ -308,8 +309,8 @@ namespace Web {
         }
 
         virtual bool Setup(const Core::URL& remote) = 0;
-        virtual void InfoCollected(const uint32_t result, const Core::ProxyType<Web::Response> info) = 0;
-        virtual void Transfered(const uint32_t result, const FILEBODY& file) = 0;
+        virtual void InfoCollected(const uint32_t result, const Core::ProxyType<Web::Response>& info) = 0;
+        virtual void Transferred(const uint32_t result, const FILEBODY& file) = 0;
 
     protected:
         inline LINK& Link()
@@ -329,7 +330,6 @@ namespace Web {
         inline void EndTransfer(const Core::ProxyType<Web::Response>& response)
         {
             uint32_t errorCode = Core::ERROR_NONE;
-            const Core::ProxyType<Web::Response> Info(response);
 
             // We are done, change state
             _adminLock.Lock();
@@ -347,18 +347,18 @@ namespace Web {
                           ((_state == TRANSFER_DOWNLOAD) && (_ValidateHash<LINK, FILEBODY>(response->ContentSignature) == false))) {
                     errorCode = Core::ERROR_INCORRECT_HASH;
                 }
-                response.Release();
             } else {
                 errorCode = Core::ERROR_UNAVAILABLE;
             }
 
             if (_state == TRANSFER_INFO) {
-                InfoCollected(errorCode, Info);
+                InfoCollected(errorCode, response);
             } else {
-                Transfered(errorCode, (static_cast<FILEBODY&>(_fileBody)));
+                Transferred(errorCode, (static_cast<FILEBODY&>(_fileBody)));
             }
 
             _state = TRANSFER_IDLE;
+            response.Release();
             _channel.Clear();
 
             _adminLock.Unlock();
@@ -367,12 +367,6 @@ namespace Web {
         inline void LinkBody(Core::ProxyType<Web::Response>& element)
         {
             if (_fileBody.Exists() == true) {
-                // oke, now we should now all sizes... for Downloading and receving...
-                if ( (_state == TRANSFER_DOWNLOAD) && (element->ContentLength.IsSet() == true)) {
-
-                    // Now we have a content length that we are going to receive, time to set it...
-                    _fileBody.Position(false, 0);
-                }
 
                 element->Body(Core::ProxyType<FILEBODY>(_fileBody));
                 _fileBody.Release();
