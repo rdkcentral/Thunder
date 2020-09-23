@@ -100,8 +100,8 @@ namespace Exchange {
         // @param fps Current FPS
         virtual uint32_t FPS(uint8_t& fps /* @out */) const = 0;
 
-        virtual uint32_t Headers(string& headers /* @out */) const = 0;
-        virtual uint32_t Headers(const string& headers) = 0;
+        virtual uint32_t Headers(string& header /* @out */) const = 0;
+        virtual uint32_t Headers(const string& header) = 0;
 
         virtual uint32_t UserAgent(string& ua /* @out */) const = 0;
         virtual uint32_t UserAgent(const string& ua) = 0;

@@ -2571,8 +2571,7 @@ namespace PluginHost {
                         AbortUpgrade(Web::STATUS_SERVICE_UNAVAILABLE, _T("Could not find a correct service for this socket."));
                     } else if (Allowed(Path(), Query()) == false) {
                         AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Security prohibites this connection."));
-                    }
-                    if (serviceCall == true) {
+                    } else if (serviceCall == true) {
                         const string& serviceHeader(_parent._config.WebPrefix());
 
                         if (Protocol() == _T("notification")) {
