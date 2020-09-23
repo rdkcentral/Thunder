@@ -285,7 +285,10 @@ namespace Web {
                         _request.Verb = Web::Request::HTTP_GET;
                         _request.Path = '/' + source.Path().Value();
                         _request.Host = source.Host().Value();
-                        _request.Range = "bytes=" + std::to_string(position) + '-';
+
+                        if (position) {
+                            _request.Range = "bytes=" + std::to_string(position) + '-';
+                        }
 
                         // Prepare the request for processing
                         result = _channel.StartTransfer(Core::ProxyType<Web::Request>(_request));
