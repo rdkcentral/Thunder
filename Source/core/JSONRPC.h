@@ -115,7 +115,13 @@ namespace Core {
             static constexpr TCHAR DefaultVersion[] = _T("2.0");
 
             Message()
-                : Core::JSON::Container() 
+                : Core::JSON::Container()
+                 , JSONRPC(DefaultVersion)
+                 , Id(~0)
+                 , Designator()
+                 , Parameters(false)
+                 , Result(false)
+                 , Error()
             {
                 Add(_T("jsonrpc"), &JSONRPC);
                 Add(_T("id"), &Id);
