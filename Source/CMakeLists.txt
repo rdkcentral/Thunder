@@ -162,10 +162,6 @@ if(PLUGINS)
     add_subdirectory(plugins)
 endif()
 
-if(VIRTUALINPUT)
-    add_subdirectory(virtualinput)
-endif()
-
 if(PROCESS)
     add_subdirectory(WPEProcess)
 endif()
