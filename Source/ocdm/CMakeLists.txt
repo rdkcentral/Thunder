@@ -66,7 +66,8 @@ else()
 endif ()
 
 if("${CDMI_ADAPTER_IMPLEMENTATION}" STREQUAL "broadcom-svp")
-    if (CODE_FROM_EXTERNAL_REPOSITORY)
+    option(OCDM_EXTERNAL_REPOSITORY "Include code from External Repository" ON)
+    if (OCDM_EXTERNAL_REPOSITORY)
         include(GetExternalCode)
         GetExternalCode(
             GIT_REPOSITORY "https://code.rdkcentral.com/r/soc/broadcom/components/rdkcentral/thunder/ocdmadapter"

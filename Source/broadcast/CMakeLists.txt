@@ -55,7 +55,8 @@ target_link_libraries(${TARGET}
 if(NXCLIENT_FOUND)
     find_package(NEXUS REQUIRED)
 
-    if (CODE_FROM_EXTERNAL_REPOSITORY)
+    option(BROADCAST_EXTERNAL_REPOSITORY "Include code from External Repository" ON)
+    if (BROADCAST_EXTERNAL_REPOSITORY)
         include(GetExternalCode)
         GetExternalCode(
             GIT_REPOSITORY "https://code.rdkcentral.com/r/soc/broadcom/components/rdkcentral/thunder/broadcast"

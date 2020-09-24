@@ -43,7 +43,6 @@ find_package(ExecInfo)
 set(PLATFORM "PC_UNIX" CACHE STRING
         "Defines on what platform the application will run")
 
-option(CODE_FROM_EXTERNAL_REPOSITORY "Include code from External Repository" ON)
 option(INSTALL_LOCALLY "Install this project locally" OFF)
 
 set(NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")

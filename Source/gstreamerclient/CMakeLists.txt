@@ -28,7 +28,8 @@ if (NOT "${GSTREAMER_CLIENT_IMPLEMENTATION}" STREQUAL "None")
 	find_package(GSTREAMER_BASE REQUIRED)
 
     if("${GSTREAMER_CLIENT_IMPLEMENTATION}" STREQUAL "Nexus")
-        if (CODE_FROM_EXTERNAL_REPOSITORY)
+        option(GSTREAMERCLIENT_EXTERNAL_REPOSITORY "Include code from External Repository" ON)
+        if (GSTREAMERCLIENT_EXTERNAL_REPOSITORY)
             include(GetExternalCode)
             GetExternalCode(
                 GIT_REPOSITORY "https://code.rdkcentral.com/r/soc/broadcom/components/rdkcentral/thunder/gstreamerclient"
