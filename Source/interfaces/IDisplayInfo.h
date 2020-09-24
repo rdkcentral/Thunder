@@ -93,7 +93,7 @@ namespace Exchange {
         // @brief HDCP protocol used for transmission
         // @param value: protocol
         virtual uint32_t HDCPProtection (HDCPProtectionType& value /* @out */) const = 0;
-        virtual uint32_t HDCPProtection (const HDCPProtectionType value) = 0;
+        virtual uint32_t HDCPProtection (const HDCPProtectionType& value) = 0;
 
         // @property
         // @brief Video output port on the STB used for connection to TV
