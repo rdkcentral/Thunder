@@ -33,7 +33,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pard
 import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 
-VERSION = "1.6.3"
+VERSION = "1.6.4"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
@@ -1357,9 +1357,11 @@ def EmitRpcCode(root, emit, header_file, source_file):
             if isinstance(m, JsonProperty):
                 void = m.Properties()[1]
                 params = m.Properties()[0] if not m.readonly else void
-                params.name = "params"
+                params.true_name = "params"
+                params.name = params.true_name
                 response = copy.deepcopy(m.Properties()[0]) if not m.writeonly else void
-                response.name = "result"
+                response.true_name = "result"
+                response.name = response.true_name
                 emit.Line(
                     "// Property: '%s'%s%s%s" %
                     (m.JsonName(), " (r/o)" if m.readonly else
