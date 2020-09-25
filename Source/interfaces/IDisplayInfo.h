@@ -49,6 +49,7 @@ namespace Exchange {
             enum Source : uint8_t {
                 PRE_RESOLUTION_CHANGE,
                 POST_RESOLUTION_CHANGE,
+                HDMI_CHANGE,
                 HDCP_CHANGE,
             };
 
