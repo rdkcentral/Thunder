@@ -482,12 +482,15 @@ namespace PluginHost {
                             printf("Locator:    %s\n", index.Current().Locator.Value().c_str());
                             printf("Classname:  %s\n", index.Current().ClassName.Value().c_str());
                             printf("Autostart:  %s\n", (index.Current().AutoStart.Value() == true ? _T("true") : _T("false")));
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
 
                             printf("Observers:  %d\n", index.Current().Observers.Value());
 #endif
+
+#if THUNDER_RUNTIME_STATISTICS
                             printf("Requests:   %d\n", index.Current().ProcessedRequests.Value());
                             printf("JSON:       %d\n\n", index.Current().ProcessedObjects.Value());
+#endif
                         }
                         break;
                     }
@@ -671,10 +674,10 @@ namespace PluginHost {
                     case '7':
                     case '8': 
                     case '9': {
-                        uint32_t threadId = _dispatcher->WorkerPool().Id(keyPress - '0');
+                        ThreadId threadId = _dispatcher->WorkerPool().Id(keyPress - '0');
                         printf("\nThreadPool thread[%c] callstack:\n", keyPress);
                         printf("============================================================\n");
-                        if (threadId != static_cast<uint32_t>(~0)) {
+                        if (threadId != (ThreadId)(~0)) {
                             ::DumpCallStack(threadId, stdout);
                         } else {
                            printf("The given Thread ID is not in a valid range, please give thread id between 0 and %d\n", THREADPOOL_COUNT);

@@ -83,8 +83,8 @@ namespace Plugin {
             Add(_T("precondition"), &Precondition);
             Add(_T("termination"), &Termination);
             Add(_T("configuration"), &Configuration);
-            Add(_T("persistentpostfix"), &PersistentPathPostfix);
-            Add(_T("volatilepostfix"), &VolatilePathPostfix);
+            Add(_T("persistentpathpostfix"), &PersistentPathPostfix);
+            Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
         }
         ~Config()
         {

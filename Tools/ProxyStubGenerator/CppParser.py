@@ -31,6 +31,11 @@ class ParserError(RuntimeError):
         msg = "%s(%s): parse error: %s" % (CurrentFile(), CurrentLine(), msg)
         super(ParserError, self).__init__(msg)
 
+class LoaderError(RuntimeError):
+    def __init__(self, file, msg):
+        msg = "%s: load error: %s" % (file, msg)
+        super(LoaderError, self).__init__(msg)
+
 
 # Checks if identifier is valid.
 def is_valid(token):
@@ -81,6 +86,7 @@ class Metadata:
         self.length = None
         self.maxlength = None
         self.interface = None
+        self.text = None
         self.param = OrderedDict()
         self.retval = OrderedDict()
 
@@ -98,8 +104,11 @@ class Undefined(BaseType):
 
     def Proto(self):
         if isinstance(self.type, list):
-            return self.comment + " ".join(self.type).replace(" < ", "<").replace(" :: ", "::").replace(
-                " >", ">").replace(" *", "*").replace(" &", "&").replace(" &&", "&&")
+            if (type(self.type[0]) is str):
+                return self.comment + " ".join(self.type).replace(" < ", "<").replace(" :: ", "::").replace(
+                    " >", ">").replace(" *", "*").replace(" &", "&").replace(" &&", "&&")
+            else:
+                return self.comment + " ".join([str(x) for x in self.type])
         else:
             return self.comment + str(self.type)
 
@@ -193,6 +202,8 @@ class Identifier():
         nest2 = 0
         array = False
         skip = 0
+        value_next = False
+        self.value = []
 
         if string.count("*") > 1:
             raise ParserError("pointers to pointers are not supported: '%s'" % (" ".join(string)))
@@ -280,6 +291,9 @@ class Identifier():
                 elif token[1:] == "RETVAL":
                     self.meta.retval[string[i + 1]] = string[i + 2]
                     skip = 2
+                elif token[1:] == "TEXT":
+                    self.meta.text = "".join(string[i + 1])
+                    skip = 1
                 else:
                     raise ParserError("invalid tag: " + token)
 
@@ -288,6 +302,11 @@ class Identifier():
                 continue
             elif token in ["export"]: # skip
                 continue
+
+            elif token == "=":
+                value_next = True
+            elif value_next:
+                self.value.append(token)
 
             # keep identifers with scope operator together
             elif token == "::":
@@ -463,7 +482,7 @@ class Identifier():
                         found = found[-1]
                         if isinstance(found, TemplateClass):
                             # if we're pointing to a class template, then let's instantiate it!
-                            self.type[i] = Type(found.Instantiate(self.type[i + 1]))
+                            self.type[i] = Type(found.Instantiate(self.type[i + 1], parent))
                             del self.type[i + 1]
                         else:
                             self.type[i] = found if isinstance(found, TemplateTypeParameter) else Type(found)
@@ -714,6 +733,7 @@ class Typedef(Identifier, Name):
         self.parent = parent_block
         self.parent.typedefs.append(self)
         self.is_event = False
+        self.is_iterator = self.parent.is_iterator if isinstance(self.parent, (Class, Typedef)) else False
 
     def Proto(self):
         return self.full_name
@@ -740,6 +760,7 @@ class Class(Identifier, Block):
         self.stub = False
         self.is_json = False
         self.is_event = False
+        self.is_iterator = False
         self.type_name = name
         self.parent.classes.append(self)
 
@@ -957,13 +978,13 @@ class Attribute(Variable):
 
 # Holds enumeration items
 class Enumerator(Identifier, Name):
-    def __init__(self, parent_block, name, value=None, type=["int"]):
+    def __init__(self, parent_block, name, type=["int"]):
         parent_enum = parent_block if parent_block.scoped else parent_block.parent
-        Identifier.__init__(self, parent_enum, self, [type, name], [])
+        Identifier.__init__(self, parent_enum, self, [type, *name], [])
         Name.__init__(self, parent_enum, self.name)
         self.parent = parent_block
-        self.value = parent_block.GetValue() if value == None else Evaluate(value)
-        self.autoValue = (value == None)
+        self.value = parent_block.GetValue() if not self.value else Evaluate(self.value)
+        self.autoValue = (self.value == None)
         if isinstance(self.value, (int)):
             self.parent.SetValue(self.value)
         self.parent.items.append(self)
@@ -1012,10 +1033,11 @@ class InstantiatedTemplateClass(Class):
         self.baseName = Name(parent_block, name)
         self.params = params
         self.args = args
+        self.resolvedArgs = [Identifier(parent_block, self, [x], []) for x in args]
         self.type = self.TypeName()
 
     def TypeName(self):
-        return "%s<%s>" % (self.baseName.full_name, ", ".join([str(p) for p in self.args]))
+        return "%s<%s>" % (self.baseName.full_name, ", ".join([str("".join(p.type) if isinstance(p.type, list) else p.type) for p in self.resolvedArgs]))
 
     def Proto(self):
         return self.TypeName()
@@ -1057,7 +1079,7 @@ class TemplateClass(Class):
                 param = TemplateNonTypeParameter(self, p.split(), index=paramList.index(p))
             self.paramList.append(param)
 
-    def Instantiate(self, arguments):
+    def Instantiate(self, arguments, parent):
         def _Substitute(identifier):
             if isinstance(identifier.type, list):
                 for i, v in enumerate(identifier.type):
@@ -1081,6 +1103,7 @@ class TemplateClass(Class):
         instance.specifiers = self.specifiers
         instance.is_json = self.is_json
         instance.is_event = self.is_event
+        instance.is_iterator = self.is_iterator
 
         for t in self.typedefs:
             newTypedef = copy.copy(t)
@@ -1273,6 +1296,10 @@ def __Tokenize(contents):
                     tagtokens.append("@JSON")
                 if _find("@event", token):
                     tagtokens.append("@EVENT")
+                if _find("@iterator", token):
+                    tagtokens.append("@ITERATOR")
+                if _find("@text", token):
+                    tagtokens.append(__ParseLength(token, "@text"))
                 if _find("@length", token):
                     tagtokens.append(__ParseLength(token, "@length"))
                 if _find("@maxlength", token):
@@ -1316,7 +1343,7 @@ def __Tokenize(contents):
                     current_file = token[idx:]
                 if _find("@_line", token):
                     idx = token.index("@_line:") + 7
-                    if len(tagtokens) and tagtokens[-1].startswith("@LINE:"):
+                    if len(tagtokens) and not isinstance(tagtokens[-1],list) and tagtokens[-1].startswith("@LINE:"):
                         del tagtokens[-1]
                     current_line = int(token[idx:].split()[0])
                     tagtokens.append("@LINE:" + token[idx:])
@@ -1403,6 +1430,7 @@ def Parse(contents):
     stub_next = False
     json_next = False
     event_next = False
+    iterator_next = False
     in_typedef = False
 
 
@@ -1410,7 +1438,7 @@ def Parse(contents):
     while i < len(tokens):
         # Handle special tokens
         if not isinstance(tokens[i], str):
-            i = i + 1
+            i += 1
             continue
 
         if tokens[i] == "@OMIT":
@@ -1429,6 +1457,10 @@ def Parse(contents):
             event_next = True
             tokens[i] = ";"
             i += 1
+        elif tokens[i] == "@ITERATOR":
+            iterator_next = True
+            tokens[i] = ";"
+            i += 1
         elif tokens[i] == "@GLOBAL":
             current_block = [global_namespace]
             next_block = None
@@ -1438,7 +1470,9 @@ def Parse(contents):
             stub_next = False
             json_next = False
             event_next = False
+            iterator_next = False
             in_typedef = False
+            tokens[i] = ";"
             i += 1
 
         # Swallow template definitions
@@ -1472,7 +1506,7 @@ def Parse(contents):
             j = i + 1
             while tokens[j] != ";":
                 j += 1
-            typedef = Typedef(current_block[-1], tokens[i + 1:j])
+            typedef = Typedef(current_block[-1], [tokens[i + 1], tokens[j - 1]] if tokens[j - 2] == "}" else tokens[i + 1:j])
             if event_next:
                 typedef.is_event = True
                 event_next = False
@@ -1545,6 +1579,9 @@ def Parse(contents):
                 json_next = False
             if event_next:
                 new_class.is_event = True
+                event_next = False
+            if iterator_next:
+                new_class.is_iterator = True
                 event_next = False
 
             if last_template_def:
@@ -1778,7 +1815,7 @@ def Parse(contents):
             j = i
             while True:
                 if tokens[i] in ['}', ',']:
-                    Enumerator(enum, tokens[j], tokens[j + 2:i] if tokens[j + 1] == '=' else None, enum.type)
+                    Enumerator(enum, tokens[j:i], enum.type)
                     if tokens[i + 1] == '}':
                         i += 1 # handle ,} situation
                         break
@@ -1799,47 +1836,71 @@ def Parse(contents):
 # -------------------------------------------------------------------------
 
 
-def ReadFile(source_file, quiet=False, initial=""):
+def ReadFile(source_file, includePaths, quiet=False, initial=""):
     contents = initial
     global current_file
     try:
         with open(source_file) as file:
             file_content = file.read()
-            idx = file_content.find("@stubgen:include")
-            if idx == -1:
-                idx = file_content.find("@encompass")
-            if idx != -1:
-                match = re.search(r'\"(.+?)\"', file_content[idx:])
-                if match:
-                    if match.group(1) != os.path.basename(os.path.realpath(source_file)):
-                        prev = current_file
-                        current_file = source_file
-                        contents += ReadFile(
-                            os.path.dirname(os.path.realpath(source_file)) + os.sep + match.group(1), contents)
-                        current_file = prev
+            pos = 0
+            while True:
+                idx = file_content.find("@stubgen:include", pos)
+                if idx == -1:
+                    idx = file_content.find("@insert", pos)
+                if idx != -1:
+                    pos = idx + 1
+                    match = re.search(r' \"(.+?)\"', file_content[idx:])
+                    if match:
+                        if match.group(1) != os.path.basename(os.path.realpath(source_file)):
+                            tryPath = os.path.join(os.path.dirname(os.path.realpath(source_file)), match.group(1))
+                            if os.path.isfile(tryPath):
+                                prev = current_file
+                                current_file = source_file
+                                contents += ReadFile(tryPath, includePaths, False, contents)
+                                current_file = prev
+                            else:
+                                raise LoaderError(source_file, "can't include '%s', file does not exist" % tryPath)
+                        else:
+                            raise LoaderError(source_file, "can't recursively include self")
                     else:
-                        raise ParserError("can't recursively include file '%s'" % source_file)
+                        match = re.search(r' <(.+?)>', file_content[idx:])
+                        if match:
+                            found = False
+                            for ipath in includePaths:
+                                tryPath = os.path.join(ipath, match.group(1))
+                                if os.path.isfile(tryPath):
+                                    prev = current_file
+                                    current_file = source_file
+                                    contents += ReadFile(tryPath, includePaths, True, contents)
+                                    current_file = prev
+                                    found = True
+                            if not found:
+                                raise LoaderError(source_file, "can't find '%s' in any of the include paths" % match.group(1))
+                        else:
+                            raise LoaderError(source_file, "syntax error at '%s'" % source_file)
+                else:
+                    break
 
             contents += "// @_file:%s\n" % source_file
             contents += file_content
             return contents
     except FileNotFoundError:
         if not quiet:
-            raise ParserError("failed to open file '%s'" % source_file)
+            raise LoaderError(source_file, "failed to open file")
         return ""
 
 
-def ParseFile(source_file):
-    contents = ReadFile(source_file)
+def ParseFile(source_file, includePaths = []):
+    contents = ReadFile(source_file, includePaths)
     return Parse(contents)
 
 
-def ParseFiles(source_files):
+def ParseFiles(source_files, includePaths = []):
     contents = ""
     for source_file in source_files:
         if source_file:
             quiet = (source_file[0] == "@")
-            contents += ReadFile((source_file[1:] if quiet else source_file), quiet, "")
+            contents += ReadFile((source_file[1:] if quiet else source_file), includePaths, quiet, "")
     return Parse(contents)
 
 
@@ -1880,7 +1941,7 @@ def DumpTree(tree, ind=0):
 # entry point
 
 if __name__ == "__main__":
-    tree = ParseFile(sys.argv[1])
+    tree = ParseFile(sys.argv[1], sys.argv[2:])
     if isinstance(tree, Namespace):
         DumpTree(tree)
     else:

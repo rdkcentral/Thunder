@@ -26,8 +26,8 @@
 #include "processcontainers/common/Lockable.h"
 #include "processcontainers/common/NetworkInfoUnimplemented.h"
 
-#include <Dobby/IDobbyProxy.h>
-#include "DobbyProtocol.h"
+#include <Dobby/Public/Dobby/IDobbyProxy.h>
+#include <Dobby/DobbyProtocol.h>
 
 namespace WPEFramework {
 namespace ProcessContainers {

@@ -94,6 +94,7 @@
 #include "TextFragment.h"
 #include "TextReader.h"
 #include "Thread.h"
+#include "ThreadPool.h"
 #include "Time.h"
 #include "Timer.h"
 #include "Trace.h"
