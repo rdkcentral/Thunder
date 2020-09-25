@@ -25,11 +25,19 @@
 namespace WPEFramework {
 namespace Exchange {
 
+    /* @json */
     struct EXTERNAL IGraphicsProperties : virtual public Core::IUnknown {
         enum { ID = ID_GRAPHICS_PROPERTIES };
 
-        virtual uint64_t TotalGpuRam() const = 0;
-        virtual uint64_t FreeGpuRam() const = 0;
+        // @property
+        // @brief Total GPU DRAM memory (in bytes)
+        // @return total: Total GPU RAM
+        virtual uint32_t TotalGpuRam(uint64_t& total /* @out */) const = 0;
+
+        // @property
+        // @brief Free GPU DRAM memory (in bytes)
+        // @return free: Free GPU RAM
+        virtual uint32_t FreeGpuRam(uint64_t& free /* @out */) const = 0;
     };
 
     /* @json */
@@ -93,7 +101,7 @@ namespace Exchange {
         // @brief HDCP protocol used for transmission
         // @param value: protocol
         virtual uint32_t HDCPProtection (HDCPProtectionType& value /* @out */) const = 0;
-        virtual uint32_t HDCPProtection (const HDCPProtectionType& value) = 0;
+        virtual uint32_t HDCPProtection (const HDCPProtectionType value) = 0;
 
         // @property
         // @brief Video output port on the STB used for connection to TV
