@@ -1312,7 +1312,7 @@ def EmitEvent(emit, root, event, static=False):
     emit.Line("}")
     emit.Line()
 
-def EmitRpcCode(root, emit, header_file, source_file):
+def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
 
     struct = "J" + root.JsonName()
     face = "I" + root.JsonName()
@@ -1322,7 +1322,8 @@ def EmitRpcCode(root, emit, header_file, source_file):
     emit.Line("#pragma once")
     emit.Line()
     emit.Line("#include \"Module.h\"")
-    emit.Line("#include \"%s_%s.h\"" % (DATA_NAMESPACE, header_file))
+    if data_emitted:
+        emit.Line("#include \"%s_%s.h\"" % (DATA_NAMESPACE, header_file))
     emit.Line("#include <%s%s>" % (CPP_IF_PATH, source_file))
     emit.Line()
     emit.Line("namespace %s {" % FRAMEWORK_NAMESPACE)
@@ -1337,8 +1338,9 @@ def EmitRpcCode(root, emit, header_file, source_file):
         emit.Indent()
         emit.Line()
     namespace = DATA_NAMESPACE + "::" + namespace
-    emit.Line("using namespace %s;" % namespace)
-    emit.Line()
+    if data_emitted:
+        emit.Line("using namespace %s;" % namespace)
+        emit.Line()
     emit.Line("struct %s {" % struct)
     emit.Indent()
     emit.Line()
@@ -2612,7 +2614,7 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
         enum_file = os.path.join(directory, "JsonEnum_" + filename + ".cpp")
 
         if generateClasses:
-            emitted = 0
+            data_emitted = 0
             with open(header_file, "w") as output_file:
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
@@ -2623,17 +2625,18 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
                     "// Note: This code is inherently not thread safe. If required, proper synchronisation must be added."
                 )
                 emitter.Line()
-                emitted = EmitObjects(rpcObj, emitter, os.path.basename(path), True)
-                if emitted:
+                data_emitted = EmitObjects(rpcObj, emitter, os.path.basename(path), True)
+                if data_emitted:
                     trace.Success("JSON data classes generated in '%s'." % os.path.basename(output_file.name))
                 else:
                     trace.Log("No JSON data classes generated for '%s'." % os.path.basename(filename))
-            if not emitted and not KEEP_EMPTY:
+            if not data_emitted and not KEEP_EMPTY:
                 try:
                     os.remove(header_file)
                 except:
                     pass
 
+            enum_emitted = 0
             with open(enum_file, "w") as output_file:
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
@@ -2641,12 +2644,12 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
                              rpcObj.info["title"].replace("Plugin", "").strip())
                 emitter.Line("// Generated automatically from '%s'." % os.path.basename(path))
                 emitter.Line()
-                emitted = EmitEnumRegs(rpcObj, emitter, filename, os.path.basename(path))
-                if emitted:
+                enum_emitted = EmitEnumRegs(rpcObj, emitter, filename, os.path.basename(path))
+                if enum_emitted:
                     trace.Success("JSON enumeration code generated in '%s'." % os.path.basename(output_file.name))
                 else:
                     trace.Log("No JSON enumeration code generated for '%s'." % os.path.basename(filename))
-            if not emitted and not KEEP_EMPTY:
+            if not enum_emitted and not KEEP_EMPTY:
                 try:
                     os.remove(enum_file)
                 except:
@@ -2663,7 +2666,7 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
             with open(os.path.join(directory, "J" + filename + ".h"), "w") as output_file:
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
-                EmitRpcCode(rpcObj, emitter, filename, os.path.basename(path))
+                EmitRpcCode(rpcObj, emitter, filename, os.path.basename(path), data_emitted)
                 trace.Success("JSON-RPC implementation generated in '%s'." % os.path.basename(output_file.name))
 
     else:
