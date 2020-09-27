@@ -55,7 +55,9 @@ target_link_libraries(${TARGET}
 if(NXCLIENT_FOUND)
     find_package(NEXUS REQUIRED)
 
-    if (CODE_FROM_EXTERNAL_REPOSITORY)
+    if (BROADCAST_IMPLEMENTATION_PATH)
+        target_sources(${TARGET} PRIVATE ${BROADCAST_IMPLEMENTATION_PATH}/Tuner.cpp)
+    elseif (CODE_FROM_EXTERNAL_REPOSITORY)
         include(GetExternalCode)
         GetExternalCode(
             GIT_REPOSITORY "https://code.rdkcentral.com/r/soc/broadcom/components/rdkcentral/thunder/broadcast"
