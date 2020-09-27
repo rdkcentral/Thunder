@@ -22,8 +22,7 @@ option(PLUGIN_COMPOSITOR_IMPLEMENTATION "Defines which implementation is used." 
 message("Setup ${TARGET} v${VERSION}...")
 
 if("${PLUGIN_COMPOSITOR_IMPLEMENTATION}" STREQUAL "Nexus")
-    option(COMPOSITORCLIENT_EXTERNAL_REPOSITORY "Include code from External Repository" ON)
-    if (COMPOSITORCLIENT_EXTERNAL_REPOSITORY)
+    if (CODE_FROM_EXTERNAL_REPOSITORY)
         include(GetExternalCode)
         GetExternalCode(
             GIT_REPOSITORY "https://code.rdkcentral.com/r/soc/broadcom/components/rdkcentral/thunder/compositorclient"

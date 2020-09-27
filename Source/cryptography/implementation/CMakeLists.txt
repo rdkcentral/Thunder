@@ -19,8 +19,7 @@ include(GetExternalCode)
 set(CRYPTOGRAPHY_IMPLEMENTATION "None" CACHE STRING "Defines what implementation to use")
 
 if(${CRYPTOGRAPHY_IMPLEMENTATION} STREQUAL "Nexus")
-    option(CRYPTOGRAPHY_EXTERNAL_REPOSITORY "Include code from External Repository" ON)
-    if (CRYPTOGRAPHY_EXTERNAL_REPOSITORY)
+    if (CODE_FROM_EXTERNAL_REPOSITORY)
         include(GetExternalCode)
         GetExternalCode(
             GIT_REPOSITORY "https://code.rdkcentral.com/r/soc/broadcom/components/rdkcentral/thunder/Icrypto-nexus"
