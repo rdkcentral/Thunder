@@ -33,7 +33,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pard
 import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 
-VERSION = "1.6.4"
+VERSION = "1.6.5"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
@@ -44,6 +44,16 @@ NO_DUP_WARNINGS = False
 class Trace:
     def __init__(self):
         self.errors = 0
+        if os.name == "posix":
+            self.cwarn = "\033[33mWARNING"
+            self.cerror = "\033[31mERROR"
+            self.cstyle = "\033[37mSTYLE"
+            self.creset = "\033[0m"
+        else:
+            self.cwarn = "WARNING:"
+            self.cerror = "ERROR:"
+            self.cstyle = "STYLE:"
+            self.creset = ""
 
     def __Print(self, text):
         print("JsonGenerator: " + text)
@@ -57,14 +67,15 @@ class Trace:
         self.file = text
 
     def Warn(self, text):
-        self.__Print("%s: Warning: %s" % (self.file, text))
+        self.__Print("%s: %s%s %s" % (self.file, self.cwarn, self.creset, text))
 
-    def Smell(self, text):
-        self.__Print("%s: CodeSmell: %s" % (self.file, text))
+    def Style(self, text):
+        if VERIFY and VERBOSE:
+            self.__Print("%s: %s%s %s" % (self.file, self.cstyle, self.creset, text))
 
     def Error(self, text):
         self.errors += 1
-        self.__Print("%s: Error: %s" % (self.file, text))
+        self.__Print("%s: %s%s %s" % (self.file, self.cerror, self.creset, text))
 
     def Success(self, text):
         self.__Print("Success: {}".format(text))
@@ -154,17 +165,16 @@ class JsonType():
         if isinstance(schema, jsonref.JsonRef) and "description" in schema.__reference__:
             self.description = schema.__reference__["description"]
         # do some sanity check on the description text
-        if VERIFY:
-            if self.name.endswith(" "):
-                trace.Warn("Item '%s' name ends with a whitespace" % self.name)
-            if self.description and not isinstance(self, JsonMethod):
-                if self.description.endswith("."):
-                    trace.Warn("Item '%s' description ends with a dot (\"%s\")" % (self.name, self.description))
-                if self.description.endswith(" "):
-                    trace.Warn("Item '%s' description ends with a whitespace" % self.name)
-                if not self.description[0].isupper() and self.description[0].isalpha():
-                    trace.Warn("Item '%s' description does not start with a capital letter (\"%s\")" %
-                               (self.name, self.description))
+        if self.name.endswith(" "):
+            trace.Style("Item '%s' name ends with a whitespace" % self.name)
+        if self.description and not isinstance(self, JsonMethod):
+            if self.description.endswith("."):
+                trace.Style("Item '%s' description ends with a dot (\"%s\")" % (self.name, self.description))
+            if self.description.endswith(" "):
+                trace.Style("Item '%s' description ends with a whitespace" % self.name)
+            if not self.description[0].isupper() and self.description[0].isalpha():
+                trace.Style("Item '%s' description does not start with a capital letter (\"%s\")" %
+                            (self.name, self.description))
         if "default" in schema:
             self.default = schema["default"]
 
@@ -392,7 +402,7 @@ class JsonObject(JsonType):
                 elif isinstance(newObject, JsonEnum):
                     self.enums.append(newObject)
         if not self.Properties():
-            trace.Smell("No properties in object %s" % self.origName)
+            trace.Log("No properties in object %s" % self.origName)
 
     def CppName(self):
         # NOTE: Special cases for names for Methods and Arrays
@@ -726,7 +736,12 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
                     raise RuntimeError("$cppref file '%s' not found" % ref_tok[0])
                 cppif = LoadInterface(ref_tok[0], header_include_paths)
                 if cppif:
-                    tokens[c] = json.dumps(cppif[0])[1:-1]
+                    if isinstance(cppif, list):
+                        tokens[c-1] = ""
+                        tokens[c+3] = ""
+                        tokens[c] = json.dumps(cppif)
+                    else:
+                        tokens[c] = json.dumps(cppif)[1:-1]
                     tokens[c + 1] = ""
                     tokens[c + 2] = ""
                 else:
@@ -898,9 +913,9 @@ def LoadInterface(file, includePaths = []):
                     if var.meta.input or not var.meta.output:
                         if not var.type.IsConst():
                             if not var.meta.input:
-                                trace.Smell("%s: non-const parameter assumed to be input (forgot 'const'?)" % var.name)
+                                trace.Warn("%s: non-const parameter assumed to be input (forgot 'const'?)" % var.name)
                             elif not var.meta.output:
-                                trace.Smell("%s: non-const parameter marked with @in tag (forgot 'const'?)" % var.name)
+                                trace.Warn("%s: non-const parameter marked with @in tag (forgot 'const'?)" % var.name)
                         var_name = var.meta.text if var.meta.text else var.name.lower()
                         if var_name.startswith("__unnamed"):
                             raise CppParseError(var, "unnamed parameter, can't deduce parameter name")
@@ -1414,7 +1429,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                     if isinstance(t[0], JsonString) and "length" in t[0].schema:
                         for w, q in vars.items():
                             if w == t[0].schema["length"] and q[1] == 2:
-                                trace.Smell("%s: parameter marked pointed to by @length is output only" % q[0].name)
+                                trace.Warn("%s: parameter marked pointed to by @length is output only" % q[0].name)
 
                 # Emit temporary variables and deserializing off JSON data
                 for v, t in vars.items():
@@ -2138,7 +2153,7 @@ def CreateDocument(schema, path):
                     MdRow([prefix, obj["type"], row])
                 if obj["type"] == "object":
                     if "required" not in obj and name and len(obj["properties"]) > 1:
-                        trace.Smell('No "required" field for object "%s"' % name)
+                        trace.Warn('No "required" field for object "%s"' % name)
                     for pname, props in obj["properties"].items():
                         __TableObj(pname, props, parentName + "/" + name, obj, prefix, False)
                 elif obj["type"] == "array":
@@ -2325,25 +2340,29 @@ def CreateDocument(schema, path):
         method_count = 0
         property_count = 0
         event_count = 0
-        interface = dict()
+        interfaces = dict()
 
-        interface = schema
+        interfaces = schema
         if "interface" in schema:
-            interface = schema["interface"]
-        if "methods" in interface:
-            method_count = len(interface["methods"])
-        if "properties" in interface:
-            property_count = len(interface["properties"])
-        if "events" in interface:
-            event_count = len(interface["events"])
-        if "include" in interface:
-            for _, iface in interface["include"].items():
-                if "methods" in iface:
-                    method_count += len(iface["methods"])
-                if "properties" in iface:
-                    property_count += len(iface["properties"])
-                if "events" in iface:
-                    event_count += len(iface["events"])
+            interfaces = schema["interface"]
+            if not isinstance(interfaces, list):
+                interfaces = [interfaces]
+
+        for interface in interfaces:
+            if "methods" in interface:
+                method_count = len(interface["methods"])
+            if "properties" in interface:
+                property_count = len(interface["properties"])
+            if "events" in interface:
+                event_count = len(interface["events"])
+            if "include" in interface:
+                for _, iface in interface["include"].items():
+                    if "methods" in iface:
+                        method_count += len(iface["methods"])
+                    if "properties" in iface:
+                        property_count += len(iface["properties"])
+                    if "events" in iface:
+                        event_count += len(iface["events"])
 
         if "title" in info:
             MdHeader(info["title"])
@@ -2369,8 +2388,8 @@ def CreateDocument(schema, path):
             plugin_class = info["callsign"]
         elif "class" in info:
             plugin_class = info["class"]
-        elif "info" in interface and "class" in interface["info"]:
-            plugin_class = interface["info"]["class"]
+        elif "info" in interfaces[0] and "class" in interfaces[0]["info"]:
+            plugin_class = interfaces[0]["info"]["class"]
         else:
             raise RuntimeError("missing class in info or interface/info")
 
@@ -2428,7 +2447,7 @@ def CreateDocument(schema, path):
 
         MdHeader("Case Sensitivity", 2)
         MdParagraph((
-            "All identifiers on the interface described in this document are case-sensitive. "
+            "All identifiers on the interfaces described in this document are case-sensitive. "
             "Thus, unless stated otherwise, all keywords, entities, properties, relations and actions should be treated as such."
         ))
         if "acronyms" in info or "acronyms" in commons or "terms" in info or "terms" in commons:
@@ -2535,13 +2554,16 @@ def CreateDocument(schema, path):
                 MdParagraph(description)
 
             MdParagraph("The following %s are provided by the %s %s:" % (section, plugin_class, noun))
-            InterfaceDump(interface, section, header)
-            if "include" in interface:
-                for _, s in interface["include"].items():
-                    if s:
-                        if section in s:
-                            MdBr()
-                            InterfaceDump(s, section, header)
+
+            for interface in interfaces:
+                InterfaceDump(interface, section, header)
+                if "include" in interface:
+                    for _, s in interface["include"].items():
+                        if s:
+                            if section in s:
+                                MdBr()
+                                InterfaceDump(s, section, header)
+
             MdBr()
             if description2:
                 MdParagraph(description2)
@@ -2549,20 +2571,21 @@ def CreateDocument(schema, path):
 
             skip_list = []
 
-            if section in interface:
-                for method, props in interface[section].items():
-                    if props:
-                        MethodDump(method, props, plugin_class, event, prop)
-                    skip_list.append(method)
+            for interface in interfaces:
+                if section in interface:
+                    for method, props in interface[section].items():
+                        if props:
+                            MethodDump(method, props, plugin_class, event, prop)
+                        skip_list.append(method)
 
-            if "include" in interface:
-                for _, s in interface["include"].items():
-                    if s:
-                        cl = s["info"]["class"]
-                        if section in s:
-                            for method, props in s[section].items():
-                                if props and method not in skip_list:
-                                    MethodDump(method, props, plugin_class, event, prop, cl)
+                if "include" in interface:
+                    for _, s in interface["include"].items():
+                        if s:
+                            cl = s["info"]["class"]
+                            if section in s:
+                                for method, props in s[section].items():
+                                    if props and method not in skip_list:
+                                        MethodDump(method, props, plugin_class, event, prop, cl)
 
         if method_count:
             SectionDump("Methods", "methods", "method")
@@ -2575,7 +2598,7 @@ def CreateDocument(schema, path):
                         "events",
                         "event",
                         ("Notifications are autonomous events, triggered by the internals of the implementation, "
-                         "and broadcasted via JSON-RPC to all registered observers."
+                         "and broadcasted via JSON-RPC to all registered observers. "
                          "Refer to [[Thunder](#ref.Thunder)] for information on how to register for a notification."),
                         event=True)
 
@@ -2781,8 +2804,8 @@ if __name__ == "__main__":
                            action="store",
                            default=DEFAULT_INT_SIZE,
                            help="default integer size in bits (default: %i)" % DEFAULT_INT_SIZE)
-    argparser.add_argument("--no-warnings",
-                           dest="no_warnings",
+    argparser.add_argument("--no-style-warnings",
+                           dest="no_style_warnings",
                            action="store_true",
                            default=False,
                            help="suppress style/wording warnings (default: show all warnings)")
@@ -2807,7 +2830,7 @@ if __name__ == "__main__":
     args = argparser.parse_args(sys.argv[1:])
 
     VERBOSE = args.verbose
-    VERIFY = not args.no_warnings
+    VERIFY = not args.no_style_warnings
     INDENT_SIZE = args.indent_size
     ALWAYS_COPYCTOR = args.copy_ctor
     KEEP_EMPTY = args.keep_empty
