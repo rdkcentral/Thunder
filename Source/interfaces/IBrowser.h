@@ -100,8 +100,8 @@ namespace Exchange {
         // @param fps Current FPS
         virtual uint32_t FPS(uint8_t& fps /* @out */) const = 0;
 
-        virtual uint32_t Headers(string& headers /* @out */) const = 0;
-        virtual uint32_t Headers(const string& headers) = 0;
+        virtual uint32_t Headers(string& header /* @out */) const = 0;
+        virtual uint32_t Headers(const string& header) = 0;
 
         virtual uint32_t UserAgent(string& ua /* @out */) const = 0;
         virtual uint32_t UserAgent(const string& ua) = 0;
@@ -115,8 +115,8 @@ namespace Exchange {
         virtual uint32_t HTTPCookieAcceptPolicy(HTTPCookieAcceptPolicyType& policy /* @out */) const = 0;
         virtual uint32_t HTTPCookieAcceptPolicy(const HTTPCookieAcceptPolicyType policy) = 0;
 
-        virtual void BridgeReply(const string& payload) = 0;
-        virtual void BridgeEvent(const string& payload) = 0;
+        virtual uint32_t BridgeReply(const string& payload) = 0;
+        virtual uint32_t BridgeEvent(const string& payload) = 0;
 
     };
 

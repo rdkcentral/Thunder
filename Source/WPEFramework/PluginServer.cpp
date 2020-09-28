@@ -368,7 +368,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                     State(ACTIVATED);
                     _administrator.StateChange(this);
 
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
                     _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
 #endif
 
@@ -454,7 +454,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
             _administrator.StateChange(this);
 
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
             _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
 #endif
 
@@ -484,7 +484,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     {
         const ForwardMessage forwarder(PluginHost::Service::Callsign(), message);
 
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
         // Notify the base class and the subscribers
         PluginHost::Service::Notification(message);
 #endif
@@ -669,7 +669,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
             controller->Notification(data);
 
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
             string result;
             data.ToString(result);
             _controller->Notification(result);

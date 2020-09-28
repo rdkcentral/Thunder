@@ -206,7 +206,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" -I $(SolutionDir)src/base "$(ProjectDir)."</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" -I $(SolutionDir) "$(ProjectDir)."</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Create ProxyStub code</Message>
@@ -236,7 +236,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" -I $(SolutionDir)src/base "$(ProjectDir)."</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" -I $(SolutionDir) "$(ProjectDir)."</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Create ProxyStub code</Message>
@@ -266,7 +266,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" -I $(SolutionDir)src/base "$(ProjectDir)."</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" -I $(SolutionDir) "$(ProjectDir)."</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Create ProxyStub code</Message>
@@ -300,7 +300,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" -I $(SolutionDir)src/base "$(ProjectDir)."</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" -I $(SolutionDir) "$(ProjectDir)."</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Create ProxyStub code</Message>

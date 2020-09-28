@@ -1,3 +1,4 @@
+
 /*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
@@ -17,19 +18,7 @@
  * limitations under the License.
  */
 
-#ifndef __CONFIG_FRAMEWORKSUPPORT_H
-#define __CONFIG_FRAMEWORKSUPPORT_H
+#include "IUnknown.h"
+#include "Module.h"
 
-// This header file should be used to turn on and off non-functional code.
-// Non-functional code is considered to be code that the application can
-// do without. Examples are performance counter code, in the framework
-// the number of request being processed are being counted. For the product
-// this has no added value, other then gathering statistics on its use,
-// mainly intersting for the developper to take the proper optimization
-// decisions for the code.
-
-#define THUNDER_RUNTIME_STATISTICS 0
-
-#define THUNDER_RESTFULL_API 1
-
-#endif
+#include "generated/proxystubs/ProxyStubs_COM.cpp"

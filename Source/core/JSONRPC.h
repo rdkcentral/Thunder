@@ -116,12 +116,12 @@ namespace Core {
 
             Message()
                 : Core::JSON::Container()
-                , JSONRPC(DefaultVersion)
-                , Id(~0)
-                , Designator()
-                , Parameters(false)
-                , Result(false)
-                , Error()
+                 , JSONRPC(DefaultVersion)
+                 , Id(~0)
+                 , Designator()
+                 , Parameters(false)
+                 , Result(false)
+                 , Error()
             {
                 Add(_T("jsonrpc"), &JSONRPC);
                 Add(_T("id"), &Id);
@@ -129,6 +129,8 @@ namespace Core {
                 Add(_T("params"), &Parameters);
                 Add(_T("result"), &Result);
                 Add(_T("error"), &Error);
+
+                Clear();
             }
             ~Message()
             {
@@ -214,7 +216,7 @@ namespace Core {
             }
             void Clear()
             {
-                JSONRPC.Clear();
+                JSONRPC = DefaultVersion;
                 Id.Clear();
                 Designator.Clear();
                 Parameters.Clear();
