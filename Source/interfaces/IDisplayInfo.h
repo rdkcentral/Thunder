@@ -68,12 +68,12 @@ namespace Exchange {
         virtual uint32_t Unregister(INotification*) = 0;
 
         // @property
-        // @brief Is audioPassthrough on HDMI
+        // @brief Current audio passthrough status on HDMI
         // @param passthru: enabled/disabled
         virtual uint32_t IsAudioPassthrough (bool& passthru /* @out */) const = 0;
 
         // @property
-        // @brief Is HDMI connected
+        // @brief Current HDMI connection status
         // @param isconnected: connected/disconnected
         virtual uint32_t Connected(bool& isconnected /* @out */) const = 0;
 
