@@ -115,8 +115,8 @@ namespace Exchange {
         virtual uint32_t HTTPCookieAcceptPolicy(HTTPCookieAcceptPolicyType& policy /* @out */) const = 0;
         virtual uint32_t HTTPCookieAcceptPolicy(const HTTPCookieAcceptPolicyType policy) = 0;
 
-        virtual void BridgeReply(const string& payload) = 0;
-        virtual void BridgeEvent(const string& payload) = 0;
+        virtual uint32_t BridgeReply(const string& payload) = 0;
+        virtual uint32_t BridgeEvent(const string& payload) = 0;
 
     };
 
