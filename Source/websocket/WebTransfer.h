@@ -361,9 +361,10 @@ namespace Web {
             }
 
             _state = TRANSFER_IDLE;
-            response.Release();
+            if (response.IsValid() == true) {
+                response.Release();
+            }
             _channel.Clear();
-
             _adminLock.Unlock();
         }
         // Notification of a Partial Request received, time to attach a body..

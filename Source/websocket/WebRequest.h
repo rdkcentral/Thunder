@@ -570,6 +570,7 @@ namespace Web {
             Origin.Clear();
             Upgrade.Clear();
             Host.Clear();
+            Range.Clear();
             Connection.Clear();
             Accept.Clear();
             AcceptEncoding.Clear();

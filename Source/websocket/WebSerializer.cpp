@@ -68,6 +68,7 @@ static const TCHAR __DATE[] = _T("DATE:");
 static const TCHAR __SERVER[] = _T("SERVER:");
 static const TCHAR __MODIFIED[] = _T("LAST-MODIFIED:");
 static const TCHAR __ACCEPT_RANGE[] = _T("ACCEPT-RANGES:");
+static const TCHAR __RANGE[] = _T("RANGE:");
 static const TCHAR __ETAG[] = _T("ETAG:");
 static const TCHAR __ALLOW[] = _T("ALLOW:");
 static const TCHAR __WEBSOCKET_KEY[] = _T("SEC-WEBSOCKET-KEY:");
@@ -819,6 +820,11 @@ namespace Web
                             _keyIndex = 24;
                             _buffer = (_current->Mode() == MARSHAL_UPPERCASE ? __CONTENT_SIGNATURE : _T("Content-HMAC:"));
                             FromSignature(_current->ContentSignature.Value(), _value);
+                            _offset = 0;
+                        } else if ((_keyIndex <= 24) && (_current->Range.IsSet() == true)) {
+                            _keyIndex = 25;
+                            _buffer = (_current->Mode() == MARSHAL_UPPERCASE ? __RANGE : _T("Range:"));
+                            _value = _current->Range.Value();
                             _offset = 0;
                         }
                     }
