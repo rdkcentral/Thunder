@@ -111,6 +111,14 @@ static constexpr uint8_t MAX_ESN_SIZE = 64;
     return (instance);
 }
 
+/* static */ Vault& Vault::PlatformInstance()
+{
+    static const uint8_t key[] = { 0x42, 0x71, 0x7b, 0x85, 0x98, 0x61, 0xe3, 0x19, 0x16, 0xd1, 0xc7, 0x28, 0x02, 0x9a, 0xc4, 0x07 };
+
+    static Vault instance(string(reinterpret_cast<const char*>(key), sizeof(key)));
+    return (instance);
+}
+
 Vault::Vault(const string key, const Callback& ctor, const Callback& dtor)
     : _lock()
     , _items()
@@ -320,6 +328,9 @@ VaultImplementation* vault_instance(const cryptographyvault id)
     switch(id) {
         case CRYPTOGRAPHY_VAULT_NETFLIX:
             vault = &Implementation::Vault::NetflixInstance();
+            break;
+        case CRYPTOGRAPHY_VAULT_PLATFORM:
+            vault = &Implementation::Vault::PlatformInstance();
             break;
         default:
             TRACE_L1(_T("Vault not supported: %d"), static_cast<uint32_t>(id));
