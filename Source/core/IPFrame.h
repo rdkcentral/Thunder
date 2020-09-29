@@ -170,6 +170,9 @@ namespace Core {
         uint16_t _length;
     };
 
+
+#ifndef __WINDOWS__
+
     template <uint16_t SIZE = 0>
     class TCPFrameType : public IPFrameType<IPPROTO_TCP, SIZE + sizeof(tcphdr)> {
     private:
@@ -229,7 +232,7 @@ namespace Core {
             return (SIZE > 0 ? &(Frame()[sizeof(tcphdr)]) : nullptr);   
         }
     };
-
+	
     template <uint16_t SIZE = 0>
     class UDPFrameType : public IPFrameType<IPPROTO_UDP, SIZE + sizeof(udphdr)> {
     private:
@@ -289,5 +292,5 @@ namespace Core {
             return (SIZE > 0 ? &(Frame()[sizeof(udphdr)]) : nullptr);   
         }
     };
-
+#endif
 } } // namespace WPEFramework::Core

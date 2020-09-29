@@ -25,11 +25,19 @@
 namespace WPEFramework {
 namespace Exchange {
 
+    /* @json */
     struct EXTERNAL IGraphicsProperties : virtual public Core::IUnknown {
         enum { ID = ID_GRAPHICS_PROPERTIES };
 
-        virtual uint64_t TotalGpuRam() const = 0;
-        virtual uint64_t FreeGpuRam() const = 0;
+        // @property
+        // @brief Total GPU DRAM memory (in bytes)
+        // @return total: Total GPU RAM
+        virtual uint32_t TotalGpuRam(uint64_t& total /* @out */) const = 0;
+
+        // @property
+        // @brief Free GPU DRAM memory (in bytes)
+        // @return free: Free GPU RAM
+        virtual uint32_t FreeGpuRam(uint64_t& free /* @out */) const = 0;
     };
 
     /* @json */
@@ -49,6 +57,7 @@ namespace Exchange {
             enum Source : uint8_t {
                 PRE_RESOLUTION_CHANGE,
                 POST_RESOLUTION_CHANGE,
+                HDMI_CHANGE,
                 HDCP_CHANGE,
             };
 
@@ -59,12 +68,12 @@ namespace Exchange {
         virtual uint32_t Unregister(INotification*) = 0;
 
         // @property
-        // @brief Is audioPassthrough on HDMI
+        // @brief Current audio passthrough status on HDMI
         // @param passthru: enabled/disabled
         virtual uint32_t IsAudioPassthrough (bool& passthru /* @out */) const = 0;
 
         // @property
-        // @brief Is HDMI connected
+        // @brief Current HDMI connection status
         // @param isconnected: connected/disconnected
         virtual uint32_t Connected(bool& isconnected /* @out */) const = 0;
 
@@ -92,7 +101,7 @@ namespace Exchange {
         // @brief HDCP protocol used for transmission
         // @param value: protocol
         virtual uint32_t HDCPProtection (HDCPProtectionType& value /* @out */) const = 0;
-        virtual uint32_t HDCPProtection (const HDCPProtectionType& value) = 0;
+        virtual uint32_t HDCPProtection (const HDCPProtectionType value) = 0;
 
         // @property
         // @brief Video output port on the STB used for connection to TV
