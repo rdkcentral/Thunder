@@ -19,15 +19,23 @@ include(GetExternalCode)
 set(CRYPTOGRAPHY_IMPLEMENTATION "None" CACHE STRING "Defines what implementation to use")
 
 if(${CRYPTOGRAPHY_IMPLEMENTATION} STREQUAL "Nexus")
-GetExternalCode(
-    GIT_REPOSITORY "git@github.com:WebPlatformForEmbedded/ICrypto-Nexus.git"
-    GIT_TAG "master"
-    SOURCE_DIR "Nexus"
-)
+    if (CRYPTOGRAPHY_IMPLEMENTATION_PATH)
+        add_subdirectory(${CRYPTOGRAPHY_IMPLEMENTATION_PATH})
+    elseif (CODE_FROM_EXTERNAL_REPOSITORY)
+        include(GetExternalCode)
+        GetExternalCode(
+            GIT_REPOSITORY "https://code.rdkcentral.com/r/soc/broadcom/components/rdkcentral/thunder/Icrypto-nexus"
+            GIT_TAG "master"
+            SOURCE_DIR "Nexus"
+        )
+        add_subdirectory(Nexus)
+    else()
+        include(GetExternalCode)
+        GetExternalCode(
+            GIT_REPOSITORY "git@github.com:WebPlatformForEmbedded/ICrypto-Nexus.git"
+            GIT_TAG "master"
+            SOURCE_DIR "Nexus"
+        )
+        add_subdirectory(Nexus)
+    endif()
 endif()
-
-if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/${CRYPTOGRAPHY_IMPLEMENTATION})
-    message(FATAL_ERROR "Invalid value \'${CRYPTOGRAPHY_IMPLEMENTATION}\' for CRYPTOGRAPHY_IMPLEMENTATION.")
-endif()
-
-add_subdirectory(${CRYPTOGRAPHY_IMPLEMENTATION})
