@@ -33,7 +33,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pard
 import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 
-VERSION = "1.6.2"
+VERSION = "1.6.5"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
@@ -44,6 +44,16 @@ NO_DUP_WARNINGS = False
 class Trace:
     def __init__(self):
         self.errors = 0
+        if os.name == "posix":
+            self.cwarn = "\033[33mWARNING"
+            self.cerror = "\033[31mERROR"
+            self.cstyle = "\033[37mSTYLE"
+            self.creset = "\033[0m"
+        else:
+            self.cwarn = "WARNING:"
+            self.cerror = "ERROR:"
+            self.cstyle = "STYLE:"
+            self.creset = ""
 
     def __Print(self, text):
         print("JsonGenerator: " + text)
@@ -57,14 +67,15 @@ class Trace:
         self.file = text
 
     def Warn(self, text):
-        self.__Print("%s: Warning: %s" % (self.file, text))
+        self.__Print("%s: %s%s %s" % (self.file, self.cwarn, self.creset, text))
 
-    def Smell(self, text):
-        self.__Print("%s: CodeSmell: %s" % (self.file, text))
+    def Style(self, text):
+        if VERIFY and VERBOSE:
+            self.__Print("%s: %s%s %s" % (self.file, self.cstyle, self.creset, text))
 
     def Error(self, text):
         self.errors += 1
-        self.__Print("%s: Error: %s" % (self.file, text))
+        self.__Print("%s: %s%s %s" % (self.file, self.cerror, self.creset, text))
 
     def Success(self, text):
         self.__Print("Success: {}".format(text))
@@ -154,17 +165,16 @@ class JsonType():
         if isinstance(schema, jsonref.JsonRef) and "description" in schema.__reference__:
             self.description = schema.__reference__["description"]
         # do some sanity check on the description text
-        if VERIFY:
-            if self.name.endswith(" "):
-                trace.Warn("Item '%s' name ends with a whitespace" % self.name)
-            if self.description and not isinstance(self, JsonMethod):
-                if self.description.endswith("."):
-                    trace.Warn("Item '%s' description ends with a dot (\"%s\")" % (self.name, self.description))
-                if self.description.endswith(" "):
-                    trace.Warn("Item '%s' description ends with a whitespace" % self.name)
-                if not self.description[0].isupper() and self.description[0].isalpha():
-                    trace.Warn("Item '%s' description does not start with a capital letter (\"%s\")" %
-                               (self.name, self.description))
+        if self.name.endswith(" "):
+            trace.Style("Item '%s' name ends with a whitespace" % self.name)
+        if self.description and not isinstance(self, JsonMethod):
+            if self.description.endswith("."):
+                trace.Style("Item '%s' description ends with a dot (\"%s\")" % (self.name, self.description))
+            if self.description.endswith(" "):
+                trace.Style("Item '%s' description ends with a whitespace" % self.name)
+            if not self.description[0].isupper() and self.description[0].isalpha():
+                trace.Style("Item '%s' description does not start with a capital letter (\"%s\")" %
+                            (self.name, self.description))
         if "default" in schema:
             self.default = schema["default"]
 
@@ -196,7 +206,7 @@ class JsonType():
         raise RuntimeError("can't instantiate %s" % self.name)
 
     def CppName(self): # C++ name of the object
-        return self.name[0].upper() + self.name[1:]
+        return self.TrueName().capitalize()
 
     def CppDefValue(self): # Value to instantiate with in C++
         return ""
@@ -392,7 +402,7 @@ class JsonObject(JsonType):
                 elif isinstance(newObject, JsonEnum):
                     self.enums.append(newObject)
         if not self.Properties():
-            trace.Smell("No properties in object %s" % self.origName)
+            trace.Log("No properties in object %s" % self.origName)
 
     def CppName(self):
         # NOTE: Special cases for names for Methods and Arrays
@@ -528,6 +538,7 @@ class JsonMethod(JsonObject):
         props["result"] = schema["result"] if "result" in schema else {"type": "null"}
         newschema["properties"] = props
         JsonObject.__init__(self, objName, parent, newschema, included=included)
+        self.true_name = schema["cppname"] if "cppname" in schema else objName
         self.summary = None
         self.tags = []
         if "summary" in schema:
@@ -672,8 +683,8 @@ def JsonItem(name, parent, schema, origName=None, included=None):
         raise JsonParseError("undefined type for item: %s" % name)
 
 
-def LoadSchema(file, include_path, cpp_include_path):
-    def PreprocessJson(file, string, include_path=None, cpp_include_path=None):
+def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
+    def PreprocessJson(file, string, include_path=None, cpp_include_path=None, header_include_paths = []):
         def __Tokenize(contents):
             # Tokenize the JSON first to be able to preprocess it easier
             formula = (
@@ -723,9 +734,14 @@ def LoadSchema(file, include_path, cpp_include_path):
                         ref_tok[0] = os.path.join(path, ref_tok[0])
                 if not os.path.isfile(ref_tok[0]):
                     raise RuntimeError("$cppref file '%s' not found" % ref_tok[0])
-                cppif = LoadInterface(ref_tok[0])
+                cppif = LoadInterface(ref_tok[0], header_include_paths)
                 if cppif:
-                    tokens[c] = json.dumps(cppif[0])[1:-1]
+                    if isinstance(cppif, list):
+                        tokens[c-1] = ""
+                        tokens[c+3] = ""
+                        tokens[c] = json.dumps(cppif)
+                    else:
+                        tokens[c] = json.dumps(cppif)[1:-1]
                     tokens[c + 1] = ""
                     tokens[c + 2] = ""
                 else:
@@ -734,7 +750,7 @@ def LoadSchema(file, include_path, cpp_include_path):
         return " ".join(tokens)
 
     with open(file, "r") as json_file:
-        jsonPre = PreprocessJson(file, json_file.read(), include_path, cpp_include_path)
+        jsonPre = PreprocessJson(file, json_file.read(), include_path, cpp_include_path, header_include_paths)
         return jsonref.loads(jsonPre, object_pairs_hook=OrderedDict)
 
 
@@ -776,7 +792,6 @@ def LoadInterface(file, includePaths = []):
         event_interfaces = set()
 
         for method in face.obj.methods:
-
             def ResolveTypedef(type):
                 if isinstance(type.Type(), ProxyStubGenerator.CppParser.Typedef):
                     return ResolveTypedef(type.Type().type)
@@ -859,10 +874,7 @@ def LoadInterface(file, includePaths = []):
                 jsonType, args = ConvertType(var)
                 properties = {"type": jsonType}
                 if args != None:
-                    if sys.version_info >= (3, 5):
-                        properties = { **properties, **args }
-                    else:
-                        properties = dict(properties.items() + args.items())
+                    properties.update(args)
                     try:
                         properties["typename"] = StripFrameworkNamespace(var.type.Type().full_name)
                     except:
@@ -901,9 +913,9 @@ def LoadInterface(file, includePaths = []):
                     if var.meta.input or not var.meta.output:
                         if not var.type.IsConst():
                             if not var.meta.input:
-                                trace.Smell("%s: non-const parameter assumed to be input (forgot 'const'?)" % var.name)
+                                trace.Warn("%s: non-const parameter assumed to be input (forgot 'const'?)" % var.name)
                             elif not var.meta.output:
-                                trace.Smell("%s: non-const parameter marked with @in tag (forgot 'const'?)" % var.name)
+                                trace.Warn("%s: non-const parameter marked with @in tag (forgot 'const'?)" % var.name)
                         var_name = var.meta.text if var.meta.text else var.name.lower()
                         if var_name.startswith("__unnamed"):
                             raise CppParseError(var, "unnamed parameter, can't deduce parameter name")
@@ -951,6 +963,7 @@ def LoadInterface(file, includePaths = []):
                 else:
                     return None
 
+            prefix = (face.obj.parent.name.lower() + "_") if face.obj.parent.full_name != INTERFACE_NAMESPACE else ""
             method_name = method.name
 
             event_params = EventParameters(method.vars)
@@ -959,12 +972,15 @@ def LoadInterface(file, includePaths = []):
 
             obj = None
 
-            if method.retval.meta.is_property or method_name in properties:
+            if method.retval.meta.is_property or (prefix + method_name) in properties:
                 try:
-                    obj = properties[method_name]
+                    obj = properties[prefix + method_name]
+                    obj["cppname"] = method_name
                 except:
                     obj = OrderedDict()
-                    properties[method_name] = obj
+                    obj["cppname"] = method_name
+                    properties[prefix + method_name] = obj
+
                 if len(method.vars) == 1:
                     if "const" in method.qualifiers:
                         if method.vars[0].type.IsConst():
@@ -1002,7 +1018,8 @@ def LoadInterface(file, includePaths = []):
                             raise CppParseError(method, "parameters must not use the same name as the method")
                         obj["params"] = params
                     obj["result"] = BuildResult(method.vars)
-                    methods[method_name] = obj
+                    obj["cppname"] = method_name
+                    methods[prefix + method_name] = obj
                 else:
                     raise CppParseError(method, "method return type must be uint32_t (error code) or void (i.e. pass other return values by reference)")
 
@@ -1025,6 +1042,7 @@ def LoadInterface(file, includePaths = []):
             for method in f.obj.methods:
                 if method.IsPureVirtual() and method.omit == False:
                     obj = OrderedDict()
+                    obj["cppname"] = method.name
                     params = BuildParameters(method.vars)
                     if method.retval.meta.brief:
                         obj["summary"] = method.retval.meta.brief
@@ -1032,7 +1050,7 @@ def LoadInterface(file, includePaths = []):
                         obj["description"] = method.retval.meta.details
                     if "properties" in params and params["properties"]:
                         obj["params"] = params
-                    events[method.name] = obj
+                    events[prefix + method.name] = obj
 
         if methods:
             schema["methods"] = methods
@@ -1226,7 +1244,7 @@ def GetNamespace(root, obj, full=True):
                 break
             e = e.parent
         if full:
-            namespace = "%s::%s::" % (DATA_NAMESPACE, root.CppClass())
+            namespace = "%s::%s::" % (DATA_NAMESPACE, root.TrueName())
         namespace = namespace + "%s" % fullname
     return namespace
 
@@ -1234,7 +1252,7 @@ def GetNamespace(root, obj, full=True):
 def EmitEnumRegs(root, emit, header_file, if_file):
     def EmitEnumRegistration(root, enum, full=True):
         fullname = (GetNamespace(root, enum) if full else "%s::%s::" %
-                    (DATA_NAMESPACE, root.CppClass())) + enum.CppClass()
+                    (DATA_NAMESPACE, root.TrueName())) + enum.CppClass()
         emit.Line("ENUM_CONVERSION_BEGIN(%s)" % fullname)
         emit.Indent()
         for c, item in enumerate(enum.enumerators):
@@ -1309,7 +1327,7 @@ def EmitEvent(emit, root, event, static=False):
     emit.Line("}")
     emit.Line()
 
-def EmitRpcCode(root, emit, header_file, source_file):
+def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
 
     struct = "J" + root.JsonName()
     face = "I" + root.JsonName()
@@ -1319,7 +1337,8 @@ def EmitRpcCode(root, emit, header_file, source_file):
     emit.Line("#pragma once")
     emit.Line()
     emit.Line("#include \"Module.h\"")
-    emit.Line("#include \"%s_%s.h\"" % (DATA_NAMESPACE, header_file))
+    if data_emitted:
+        emit.Line("#include \"%s_%s.h\"" % (DATA_NAMESPACE, header_file))
     emit.Line("#include <%s%s>" % (CPP_IF_PATH, source_file))
     emit.Line()
     emit.Line("namespace %s {" % FRAMEWORK_NAMESPACE)
@@ -1334,8 +1353,9 @@ def EmitRpcCode(root, emit, header_file, source_file):
         emit.Indent()
         emit.Line()
     namespace = DATA_NAMESPACE + "::" + namespace
-    emit.Line("using namespace %s;" % namespace)
-    emit.Line()
+    if data_emitted:
+        emit.Line("using namespace %s;" % namespace)
+        emit.Line()
     emit.Line("struct %s {" % struct)
     emit.Indent()
     emit.Line()
@@ -1354,9 +1374,11 @@ def EmitRpcCode(root, emit, header_file, source_file):
             if isinstance(m, JsonProperty):
                 void = m.Properties()[1]
                 params = m.Properties()[0] if not m.readonly else void
-                params.name = "params"
+                params.true_name = "params"
+                params.name = params.true_name
                 response = copy.deepcopy(m.Properties()[0]) if not m.writeonly else void
-                response.name = "result"
+                response.true_name = "result"
+                response.name = response.true_name
                 emit.Line(
                     "// Property: '%s'%s%s%s" %
                     (m.JsonName(), " (r/o)" if m.readonly else
@@ -1407,7 +1429,7 @@ def EmitRpcCode(root, emit, header_file, source_file):
                     if isinstance(t[0], JsonString) and "length" in t[0].schema:
                         for w, q in vars.items():
                             if w == t[0].schema["length"] and q[1] == 2:
-                                trace.Smell("%s: parameter marked pointed to by @length is output only" % q[0].name)
+                                trace.Warn("%s: parameter marked pointed to by @length is output only" % q[0].name)
 
                 # Emit temporary variables and deserializing off JSON data
                 for v, t in vars.items():
@@ -2131,7 +2153,7 @@ def CreateDocument(schema, path):
                     MdRow([prefix, obj["type"], row])
                 if obj["type"] == "object":
                     if "required" not in obj and name and len(obj["properties"]) > 1:
-                        trace.Smell('No "required" field for object "%s"' % name)
+                        trace.Warn('No "required" field for object "%s"' % name)
                     for pname, props in obj["properties"].items():
                         __TableObj(pname, props, parentName + "/" + name, obj, prefix, False)
                 elif obj["type"] == "array":
@@ -2184,7 +2206,9 @@ def CreateDocument(schema, path):
 
         def MethodDump(method, props, classname, is_notification=False, is_property=False, include=None):
             method = (method.rsplit(".", 1)[1] if "." in method else method).lower()
-            MdHeader(method, 2, "property" if is_property else "event" if is_notification else "method", include)
+            type =  "property" if is_property else "event" if is_notification else "method"
+            trace.Log("Emitting documentation for %s '%s'..." % (type, method))
+            MdHeader(method, 2, type, include)
             readonly = False
             writeonly = False
             if "summary" in props:
@@ -2212,7 +2236,8 @@ def CreateDocument(schema, path):
             if is_property:
                 MdHeader("Value", 3)
                 if not "description" in props["params"]:
-                    props["params"]["description"] = props["summary"]
+                    if "summary" in props:
+                        props["params"]["description"] = props["summary"]
                 ParamTable("(property)", props["params"])
                 if "index" in props:
                     if "name" not in props["index"] or "example" not in props["index"]:
@@ -2315,25 +2340,29 @@ def CreateDocument(schema, path):
         method_count = 0
         property_count = 0
         event_count = 0
-        interface = dict()
+        interfaces = dict()
 
-        interface = schema
+        interfaces = schema
         if "interface" in schema:
-            interface = schema["interface"]
-        if "methods" in interface:
-            method_count = len(interface["methods"])
-        if "properties" in interface:
-            property_count = len(interface["properties"])
-        if "events" in interface:
-            event_count = len(interface["events"])
-        if "include" in interface:
-            for _, iface in interface["include"].items():
-                if "methods" in iface:
-                    method_count += len(iface["methods"])
-                if "properties" in iface:
-                    property_count += len(iface["properties"])
-                if "events" in iface:
-                    event_count += len(iface["events"])
+            interfaces = schema["interface"]
+            if not isinstance(interfaces, list):
+                interfaces = [interfaces]
+
+        for interface in interfaces:
+            if "methods" in interface:
+                method_count = len(interface["methods"])
+            if "properties" in interface:
+                property_count = len(interface["properties"])
+            if "events" in interface:
+                event_count = len(interface["events"])
+            if "include" in interface:
+                for _, iface in interface["include"].items():
+                    if "methods" in iface:
+                        method_count += len(iface["methods"])
+                    if "properties" in iface:
+                        property_count += len(iface["properties"])
+                    if "events" in iface:
+                        event_count += len(iface["events"])
 
         if "title" in info:
             MdHeader(info["title"])
@@ -2355,10 +2384,12 @@ def CreateDocument(schema, path):
         MdParagraph(bold("Status: " + rating * ":black_circle:" + (3 - rating) * ":white_circle:"))
 
         plugin_class = None
-        if "class" in info:
+        if "callsign" in info:
+            plugin_class = info["callsign"]
+        elif "class" in info:
             plugin_class = info["class"]
-        elif "info" in interface and "class" in interface["info"]:
-            plugin_class = interface["info"]["class"]
+        elif "info" in interfaces[0] and "class" in interfaces[0]["info"]:
+            plugin_class = interfaces[0]["info"]["class"]
         else:
             raise RuntimeError("missing class in info or interface/info")
 
@@ -2383,10 +2414,12 @@ def CreateDocument(schema, path):
         MdBr()
 
         def mergedict(d1, d2, prop):
-            if sys.version_info >= (3, 5):
-                return {**(d1[prop] if prop in d1 else dict()), **(d2[prop] if prop in d2 else dict())}
-            else:
-                return dict((d1[prop] if prop in d1 else dict()).items() + (d2[prop] if prop in d2 else dict()).items())
+            tmp = dict()
+            if prop in d1:
+                tmp.update(d1[prop])
+            if prop in d2:
+                tmp.update(d2[prop])
+            return tmp
 
         MdHeader("Introduction")
         MdHeader("Scope", 2)
@@ -2414,7 +2447,7 @@ def CreateDocument(schema, path):
 
         MdHeader("Case Sensitivity", 2)
         MdParagraph((
-            "All identifiers on the interface described in this document are case-sensitive. "
+            "All identifiers on the interfaces described in this document are case-sensitive. "
             "Thus, unless stated otherwise, all keywords, entities, properties, relations and actions should be treated as such."
         ))
         if "acronyms" in info or "acronyms" in commons or "terms" in info or "terms" in commons:
@@ -2493,8 +2526,9 @@ def CreateDocument(schema, path):
                 if section in interface:
                     for method, contents in interface[section].items():
                         if contents and method not in skip_list:
+                            ns = interface["info"]["namespace"] if "namespace" in interface["info"] else ""
                             if not head:
-                                MdParagraph("%s interface %s:" % (interface["info"]["class"], section))
+                                MdParagraph("%s interface %s:" % (((ns + " ") if ns else "") + interface["info"]["class"], section))
                                 MdTableHeader([header.capitalize(), "Description"])
                                 head = True
                             access = ""
@@ -2512,24 +2546,24 @@ def CreateDocument(schema, path):
                                 if "i.e" in descr:
                                     descr = descr[0:descr.index("i.e") - 1]
                                 descr = descr.split(".", 1)[0] if "." in descr else descr
-                            MdRow([
-                                link(header + "." + (method.rsplit(".", 1)[1] if "." in method else method)) + access,
-                                descr
-                            ])
-                        skip_list.append(method)
+                            MdRow([link(header + "." + (method.rsplit(".", 1)[1] if "." in method else method).lower()) + access, descr])
+                        skip_list.append(method.lower())
 
             MdHeader(section_name)
             if description:
                 MdParagraph(description)
 
             MdParagraph("The following %s are provided by the %s %s:" % (section, plugin_class, noun))
-            InterfaceDump(interface, section, header)
-            if "include" in interface:
-                for _, s in interface["include"].items():
-                    if s:
-                        if section in s:
-                            MdBr()
-                            InterfaceDump(s, section, header)
+
+            for interface in interfaces:
+                InterfaceDump(interface, section, header)
+                if "include" in interface:
+                    for _, s in interface["include"].items():
+                        if s:
+                            if section in s:
+                                MdBr()
+                                InterfaceDump(s, section, header)
+
             MdBr()
             if description2:
                 MdParagraph(description2)
@@ -2537,20 +2571,21 @@ def CreateDocument(schema, path):
 
             skip_list = []
 
-            if section in interface:
-                for method, props in interface[section].items():
-                    if props:
-                        MethodDump(method, props, plugin_class, event, prop)
-                    skip_list.append(method)
+            for interface in interfaces:
+                if section in interface:
+                    for method, props in interface[section].items():
+                        if props:
+                            MethodDump(method, props, plugin_class, event, prop)
+                        skip_list.append(method)
 
-            if "include" in interface:
-                for _, s in interface["include"].items():
-                    if s:
-                        cl = s["info"]["class"]
-                        if section in s:
-                            for method, props in s[section].items():
-                                if props and method not in skip_list:
-                                    MethodDump(method, props, plugin_class, event, prop, cl)
+                if "include" in interface:
+                    for _, s in interface["include"].items():
+                        if s:
+                            cl = s["info"]["class"]
+                            if section in s:
+                                for method, props in s[section].items():
+                                    if props and method not in skip_list:
+                                        MethodDump(method, props, plugin_class, event, prop, cl)
 
         if method_count:
             SectionDump("Methods", "methods", "method")
@@ -2563,7 +2598,7 @@ def CreateDocument(schema, path):
                         "events",
                         "event",
                         ("Notifications are autonomous events, triggered by the internals of the implementation, "
-                         "and broadcasted via JSON-RPC to all registered observers."
+                         "and broadcasted via JSON-RPC to all registered observers. "
                          "Refer to [[Thunder](#ref.Thunder)] for information on how to register for a notification."),
                         event=True)
 
@@ -2602,7 +2637,7 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
         enum_file = os.path.join(directory, "JsonEnum_" + filename + ".cpp")
 
         if generateClasses:
-            emitted = 0
+            data_emitted = 0
             with open(header_file, "w") as output_file:
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
@@ -2613,17 +2648,18 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
                     "// Note: This code is inherently not thread safe. If required, proper synchronisation must be added."
                 )
                 emitter.Line()
-                emitted = EmitObjects(rpcObj, emitter, os.path.basename(path), True)
-                if emitted:
+                data_emitted = EmitObjects(rpcObj, emitter, os.path.basename(path), True)
+                if data_emitted:
                     trace.Success("JSON data classes generated in '%s'." % os.path.basename(output_file.name))
                 else:
                     trace.Log("No JSON data classes generated for '%s'." % os.path.basename(filename))
-            if not emitted and not KEEP_EMPTY:
+            if not data_emitted and not KEEP_EMPTY:
                 try:
                     os.remove(header_file)
                 except:
                     pass
 
+            enum_emitted = 0
             with open(enum_file, "w") as output_file:
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
@@ -2631,12 +2667,12 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
                              rpcObj.info["title"].replace("Plugin", "").strip())
                 emitter.Line("// Generated automatically from '%s'." % os.path.basename(path))
                 emitter.Line()
-                emitted = EmitEnumRegs(rpcObj, emitter, filename, os.path.basename(path))
-                if emitted:
+                enum_emitted = EmitEnumRegs(rpcObj, emitter, filename, os.path.basename(path))
+                if enum_emitted:
                     trace.Success("JSON enumeration code generated in '%s'." % os.path.basename(output_file.name))
                 else:
                     trace.Log("No JSON enumeration code generated for '%s'." % os.path.basename(filename))
-            if not emitted and not KEEP_EMPTY:
+            if not enum_emitted and not KEEP_EMPTY:
                 try:
                     os.remove(enum_file)
                 except:
@@ -2653,7 +2689,7 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
             with open(os.path.join(directory, "J" + filename + ".h"), "w") as output_file:
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
-                EmitRpcCode(rpcObj, emitter, filename, os.path.basename(path))
+                EmitRpcCode(rpcObj, emitter, filename, os.path.basename(path), data_emitted)
                 trace.Success("JSON-RPC implementation generated in '%s'." % os.path.basename(output_file.name))
 
     else:
@@ -2768,8 +2804,8 @@ if __name__ == "__main__":
                            action="store",
                            default=DEFAULT_INT_SIZE,
                            help="default integer size in bits (default: %i)" % DEFAULT_INT_SIZE)
-    argparser.add_argument("--no-warnings",
-                           dest="no_warnings",
+    argparser.add_argument("--no-style-warnings",
+                           dest="no_style_warnings",
                            action="store_true",
                            default=False,
                            help="suppress style/wording warnings (default: show all warnings)")
@@ -2794,7 +2830,7 @@ if __name__ == "__main__":
     args = argparser.parse_args(sys.argv[1:])
 
     VERBOSE = args.verbose
-    VERIFY = not args.no_warnings
+    VERIFY = not args.no_style_warnings
     INDENT_SIZE = args.indent_size
     ALWAYS_COPYCTOR = args.copy_ctor
     KEEP_EMPTY = args.keep_empty
@@ -2836,7 +2872,7 @@ if __name__ == "__main__":
                 if path.endswith(".h"):
                     schemas = LoadInterface(path, args.includePaths)
                 else:
-                    schemas = [LoadSchema(path, args.if_dir, args.cppif_dir)]
+                    schemas = [LoadSchema(path, args.if_dir, args.cppif_dir, args.includePaths)]
                 for schema in schemas:
                     if schema:
                         warnings = NO_DUP_WARNINGS
