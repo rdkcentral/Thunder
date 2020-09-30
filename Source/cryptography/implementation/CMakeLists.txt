@@ -39,3 +39,9 @@ if(${CRYPTOGRAPHY_IMPLEMENTATION} STREQUAL "Nexus")
         add_subdirectory(Nexus)
     endif()
 endif()
+
+if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/${CRYPTOGRAPHY_IMPLEMENTATION})
+    message(FATAL_ERROR "Invalid value \'${CRYPTOGRAPHY_IMPLEMENTATION}\' for CRYPTOGRAPHY_IMPLEMENTATION.")
+endif()
+
+add_subdirectory(${CRYPTOGRAPHY_IMPLEMENTATION})
