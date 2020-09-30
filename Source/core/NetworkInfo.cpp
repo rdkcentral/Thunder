@@ -1353,13 +1353,16 @@ namespace Core {
 
     string AdapterIterator::Name() const
     {
-        ASSERT(IsValid());
+        string name;
+        if (IsValid()) {
 
-        IPNetworks::Network& network(networkController.Index(_index));
+            IPNetworks::Network& network(networkController.Index(_index));
 
-        ASSERT(network.IsValid());
-
-        return (network.Name());
+            if(network.IsValid()) {
+               name = network.Name();
+            }
+        }
+        return name;
     }
 
     string AdapterIterator::MACAddress(const char delimiter) const
@@ -1426,12 +1429,14 @@ namespace Core {
 
             ::memset(&ifr, 0, sizeof ifr);
 
-            ::strncpy(ifr.ifr_name, Name().c_str(), IFNAMSIZ);
+            if (Name().c_str()) {
+                ::strncpy(ifr.ifr_name, Name().c_str(), IFNAMSIZ);
 
-            ::ioctl(sockfd, SIOCGIFFLAGS, &ifr);
+                ::ioctl(sockfd, SIOCGIFFLAGS, &ifr);
 
-            result = ((ifr.ifr_flags & IFF_UP) == IFF_UP);
-            ::close(sockfd);
+                result = ((ifr.ifr_flags & IFF_UP) == IFF_UP);
+                ::close(sockfd);
+            }
         }
 
         return (result);
