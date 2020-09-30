@@ -44,6 +44,7 @@
         "timedout",
         "downloaddirectorynotexist",
         "resumenotsupported",
+        "invalidrange",
         "unkown"
       ],
       "example": "operationotsupported"

@@ -349,6 +349,8 @@ namespace Web {
                 } else if ((response->ErrorCode == Web::STATUS_UNAUTHORIZED) || 
                           ((_state == TRANSFER_DOWNLOAD) && (_ValidateHash<LINK, FILEBODY>(response->ContentSignature) == false))) {
                     errorCode = Core::ERROR_INCORRECT_HASH;
+                } else if (response->ErrorCode == Web::STATUS_REQUEST_RANGE_NOT_SATISFIABLE) {
+                    errorCode = Core::ERROR_INVALID_RANGE;
                 }
             } else {
                 errorCode = Core::ERROR_UNAVAILABLE;

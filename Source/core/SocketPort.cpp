@@ -894,12 +894,7 @@ namespace Core {
                 uint32_t l_Result = __ERRORRESULT__;
 
                 if ((m_State & SocketPort::LINK) != 0) {
-                    // The otherside has closed the connection !!!
-                    if (l_Result == __ERROR_AGAIN__) {
-                        m_State |= SocketPort::EXCEPTION;
-                    } else {
-                        m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::EXCEPTION);
-                    }
+                    m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::EXCEPTION);
                 }
             } else if (l_Size != static_cast<uint32_t>(SOCKET_ERROR)) {
                 m_ReadBytes += l_Size;
@@ -913,7 +908,6 @@ namespace Core {
                 } else if (l_Result != 0) {
                     m_State |= SocketPort::EXCEPTION;
                     StateChange();
-                    printf("Read exception. %d\n", l_Result);
                 }
             }
 
