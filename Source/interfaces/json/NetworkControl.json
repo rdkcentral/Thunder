@@ -1,0 +1,242 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Network Control API",
+    "class": "NetworkControl",
+    "description": "Network Control JSON-RPC interface"
+  },
+  "definitions": {
+    "interface": {
+      "description": "Network interface name",
+      "type": "string",
+      "example": "eth0"
+    },
+    "dns": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "DNS addresses",
+        "example": ["192.168.1.1","www.google.com","8.8.8.8"]
+      }
+    }
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "methods": {
+    "reload": {
+      "summary": "Reloads a static or non-static network interface adapter",
+      "params": {
+        "type": "object",
+        "properties": {
+          "interface": {
+            "description": "Network interface name",
+            "$ref": "#/definitions/interface"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unavailable network interface",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "request": {
+      "events": [
+        "connectionchange"
+      ],
+      "summary": "Reloads a non-static network interface adapter",
+      "params": {
+        "type": "object",
+        "properties": {
+          "interface": {
+            "description": "Network interface name",
+            "$ref": "#/definitions/interface"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unavaliable network interface",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "assign": {
+      "summary": "Reloads a static network interface adapter",
+      "params": {
+        "type": "object",
+        "properties": {
+          "interface": {
+            "description": "Network interface name",
+            "$ref": "#/definitions/interface"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unavaliable network interface",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "flush": {
+      "summary": "Flushes a network interface adapter",
+      "params": {
+        "type": "object",
+        "properties": {
+          "interface": {
+            "description": "Network interface name",
+            "$ref": "#/definitions/interface"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unavaliable network interface",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "network": {
+      "summary": "Network information",
+      "params": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "interface": {
+             "description": "Network interface name",
+             "$ref": "#/definitions/interface"
+            },
+            "mode": {
+              "description": "Mode",
+              "type": "string",
+              "enum": [
+                "Manual",
+                "Static",
+                "Dynamic"
+              ],
+              "enumtyped": false,
+              "example": "dynamic"
+            },
+            "address": {
+              "description": "IP address",
+              "type": "string",
+              "example": "192.168.1.158"
+            },
+            "mask": {
+              "description": "Network interface mask",
+              "type": "number",
+              "size": 8,
+              "example": "24"
+            },
+            "gateway": {
+              "description": "Gateway address",
+              "type": "string",
+              "example": "192.168.1.1"
+            },
+            "broadcast": {
+              "description": "Broadcast IP",
+              "type": "string",
+              "example": "192.168.1.255"
+            },
+            "dns": {
+              "description": "DNS addresses",
+              "$ref": "#/definitions/dns"
+            }
+          }
+        }
+      },
+      "index": {
+        "name": "Interface",
+        "description": "If network interface is not given, all network interfaces are returned.",
+        "example": "eth0"
+      },
+      "errors": [
+        {
+          "description": "Unavailable network interface",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "dns": {
+      "summary": "DNS addresses",
+      "params": {
+        "$ref": "#/definitions/dns"
+      }
+    },
+    "up": {
+      "summary": "Interface up status",
+      "params": {
+        "type": "boolean"
+      },
+      "index": {
+        "name": "Interface",
+        "example": "eth0"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unavailable network interface",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    }
+  },
+  "events": {
+    "connectionchange": {
+      "summary": "Notifies about connection status (created, updated, removed, connected, ipassigned and connectionfailed)",
+      "params": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Network interface name",
+            "$ref": "#/definitions/interface"
+          },
+          "address": {
+            "type": "string",
+            "description": "IP Address of network interface, if it is connected",
+            "example": "192.168.1.10"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+                "created",
+                "updated",
+                "removed",
+                "connected",
+                "ipassigned",
+                "connectionfailed"
+              ],
+            "description": "Status of the interface, update, connected or not",
+            "example": "connected"
+          }
+        },
+        "required": [
+          "name",
+          "address",
+          "status"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "System Commands API",
+    "class": "SystemCommands",
+    "description": "System Commands JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "methods": {
+    "usbreset": {
+      "summary": "Resets a USB device",
+      "description": "With this method a USB device can be reset using USBFS_RESET ioctl command.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "description": "USB device to reset",
+            "type": "string",
+            "default": "/dev/usb/001"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Failed to reset the USB device",
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "description": "Unknown USB device",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    }
+  }
+}

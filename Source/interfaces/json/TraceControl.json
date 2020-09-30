@@ -1,0 +1,125 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Trace Control API",
+    "class": "TraceControl",
+    "description": "TraceControl JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "definitions": {
+    "module": {
+      "description": "Module name",
+      "type": "string",
+      "example": "Plugin_Monitor"
+    },
+    "category": {
+      "description": "Category name",
+      "type": "string",
+      "example": "Information"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "enabled",
+        "disabled",
+        "tristated"
+      ],
+      "description": "State value",
+      "example": "disabled"
+    },
+    "trace": {
+      "type": "object",
+      "properties": {
+        "module": {
+          "$ref": "#/definitions/module"
+        },
+        "category": {
+          "$ref": "#/definitions/category"
+        },
+        "state": {
+          "$ref": "#/definitions/state"
+        }
+      },
+      "required": [
+        "module",
+        "category",
+        "state"
+      ]
+    }
+  },
+  "methods": {
+    "status": {
+      "summary": "Retrieves general information",
+      "description": "Retrieves the actual trace status information for targeted module and category, if either category nor module is given, all information is returned. It will retrieves the details about console status and remote address(port and binding address), if these are configured.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "module": {
+            "$ref": "#/definitions/module"
+          },
+          "category": {
+            "$ref": "#/definitions/category"
+          }
+        },
+        "required": [
+          "module",
+          "category"
+        ]
+      },
+      "result": {
+        "type": "object",
+        "properties": {
+          "console": {
+            "description": "Config attribute (Console)",
+            "type": "boolean",
+            "example": false
+          },
+          "remote": {
+            "type": "object",
+            "properties": {
+              "port": {
+                "description": "Config attribute (port)",
+                "size": 16,
+                "type": "number",
+                "example": 2200
+              },
+              "binding": {
+                "description": "Config attribute (binding)",
+                "type": "string",
+                "example": "0.0.0.0"
+              }
+            },
+            "required": [
+              "port",
+              "binding"
+            ]
+          },
+          "settings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/trace"
+            }
+          }
+        },
+        "required": [
+          "console",
+          "remote",
+          "settings"
+        ]
+      }
+    },
+    "set": {
+      "summary": "Sets traces",
+      "description": "Disables/enables all/select category traces for particular module.",
+      "params": {
+        "$ref": "#/definitions/trace"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    }
+  }
+}

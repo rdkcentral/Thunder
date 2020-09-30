@@ -1,0 +1,115 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Netflix API",
+    "class": "Netflix",
+    "description": "Netflix JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "include": {
+    "statecontrol": {
+      "$ref": "StateControl.json#"
+    }
+  },
+  "properties": {
+    "esn": {
+      "summary": "ESN value",
+      "readonly": true,
+      "params": {
+        "type": "string",
+        "example": "DADDAUFV2=00000000000000000000000000000001"
+      },
+      "errors": [
+        {
+          "description": "Netflix is unavailable",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]      
+    },
+    "visibility": {
+      "summary": "Current Netflix visibility",
+      "writeonly":true,
+      "events": [
+        "visibilitychange"
+      ],
+      "params": {
+        "type": "string",
+        "enum": [
+          "visible",
+          "hidden"
+        ]
+      }
+    }
+  },
+  "methods": {
+    "factoryreset": {
+      "summary": "Does Netflix factory reset",
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Netflix is unavailable",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "systemcommand": {
+      "summary": "Does Netflix system command",
+      "params": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "description": "Command to send to Netflix",
+            "type": "string",
+            "example": "config"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Netflix is unavailable",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Command is not set",
+          "$ref": "#/common/errors/unknownkey"
+        }        
+      ]
+    }
+  },
+  "events": {
+    "visibilitychange": {
+      "summary": "Signals a visibility change of the Netflix",
+      "params": {
+        "type": "object",
+        "properties": {
+          "hidden": {
+            "description": "Determines if the Netflix has been hidden (true) or made visible (false)",
+            "type": "boolean",
+            "example": false
+          }
+        }
+      }
+    },
+    "playbackchange": {
+      "summary": "Signals a playback change of the Netflix",
+      "params": {
+        "type": "object",
+        "properties": {
+          "playing": {
+            "description": "Determines if the Netflix is in playing mode (true) or not playing (false)",
+            "type": "boolean",
+            "example": true
+          }
+        }
+      }
+    }
+  }
+}

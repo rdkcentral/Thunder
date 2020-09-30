@@ -1,0 +1,362 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "WiFi Control API",
+    "class": "WifiControl",
+    "description": "WifiControl JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "definitions": {
+    "ssid": {
+      "type": "string",
+      "example": "MyCorporateNetwork",
+      "description": "Identifier of a network"
+    },
+    "key": {
+      "type": "string",
+      "example": "psk",
+      "description": "Type of a supported key"
+    },
+    "pairs": {
+      "type": "object",
+      "properties": {
+        "method": {
+          "description": "Encryption method used by the network",
+          "example": "WPA",
+          "type": "string"
+        },
+        "keys": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/key",
+            "example": "psk",
+            "description": "Types of supported keys"
+          }
+        }
+      },
+      "required": [
+        "method",
+        "keys"
+      ]
+    },
+    "network": {
+      "type": "object",
+      "properties": {
+        "ssid": {
+          "$ref": "#/definitions/ssid"
+        },
+        "pairs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/pairs"
+          }
+        },
+        "bssid": {
+          "type": "string",
+          "example": "94:b4:0f:77:cc:71",
+          "description": "48-bits long BSS identifier (might be MAC format)"
+        },
+        "frequency": {
+          "type": "number",
+          "example": 5180,
+          "description": "Network's frequency in MHz"
+        },
+        "signal": {
+          "type": "number",
+          "example": -44,
+          "description": "Network's signal level in dBm"
+        }
+      },
+      "required": [
+        "ssid",
+        "pairs",
+        "frequency",
+        "signal"
+      ]
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "ssid": {
+          "$ref": "#/definitions/ssid"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "Unknown",
+            "Unsecure",
+            "WPA",
+            "WPA2",
+            "WPA_WPA2",
+            "Enterprise"
+          ],
+          "example": "WPA_WPA2",
+          "description": "Type of protection. WPA_WPA2 means WPA, WPA2 and mixed types are allowed"
+        },
+        "hidden": {
+          "type": "boolean",
+          "example": false,
+          "description": "Indicates whether a network is hidden"
+        },
+        "accesspoint": {
+          "type": "boolean",
+          "example": true,
+          "description": "Indicates if the network operates in AP mode"
+        },
+        "psk": {
+          "type": "string",
+          "example": "secretpresharedkey",
+          "description": "Network's PSK in plaintext (irrelevant if hash is provided)"
+        },
+        "hash": {
+          "type": "string",
+          "example": "59e0d07fa4c7741797a4e394f38a5c321e3bed51d54ad5fcbd3f84bc7415d73d",
+          "description": "Network's PSK as a hash"
+        },
+        "identity": {
+          "type": "string",
+          "example": "user",
+          "description": "User credentials (username part) for EAP"
+        },
+        "password": {
+          "type": "string",
+          "example": "password",
+          "description": "User credentials (password part) for EAP"
+        }
+      },
+      "required": [
+        "ssid",
+        "security",
+        "hidden",
+        "accesspoint",
+        "identity",
+        "password"
+      ]
+    }
+  },
+  "methods": {
+    "delete": {
+      "summary": "Forgets the configuration of a network",
+      "params": {
+        "type": "object",
+        "properties": {
+          "ssid": {
+            "$ref": "#/definitions/ssid"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    },
+    "store": {
+      "summary": "Stores the configurations in persistent storage",
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Returned when the operation failed",
+          "$ref": "#/common/errors/writeerror"
+        }
+      ]
+    },
+    "scan": {
+      "summary": "Searches for available networks",
+      "events": [
+        "scanresults"
+      ],
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Returned when scan is already in progress",
+          "$ref": "#/common/errors/inprogress"
+        },
+        {
+          "description": "Returned when scanning is not available for some reason",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "connect": {
+      "summary": "Attempts connection to a network",
+      "events": [
+        "connectionchange"
+      ],
+      "params": {
+        "type": "object",
+        "properties": {
+          "ssid": {
+            "$ref": "#/definitions/ssid"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Returned when the network with a the given SSID doesn't exists",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Returned when connection fails if there is no associated bssid to connect and not defined as AccessPoint. Rescan and try to connect",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Returned when connection is attempted with wrong password",
+          "$ref": "#/common/errors/invalidsignature"
+        },
+        {
+          "description": "Returned when connection already exists",
+          "$ref": "#/common/errors/alreadyconnected"
+        },
+        {
+          "description": "Returned when connection attempt fails for other reasons",
+          "$ref": "#/common/errors/asyncaborted"
+        }
+      ]
+    },
+    "disconnect": {
+      "summary": "Disconnects from a network",
+      "events": [
+        "connectionchange"
+      ],
+      "params": {
+        "type": "object",
+        "properties": {
+          "ssid": {
+            "$ref": "#/definitions/ssid"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Returned when the network with a the given SSID doesn't exists",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Returned when disconnection attempt fails for other reasons",
+          "$ref": "#/common/errors/asyncaborted"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "status": {
+      "summary": "Network status",
+      "readonly": true,
+      "params": {
+        "type": "object",
+        "properties": {
+          "connected": {
+            "example": "MyCorporateNetwork",
+            "type": "string",
+            "description": "Identifier of the connected network"
+          },
+          "scanning": {
+            "example": false,
+            "type": "boolean",
+            "description": "Indicates whether a scanning for available network is in progress"
+          }
+        },
+        "required": [
+          "connected",
+          "scanning"
+        ]
+      }
+    },
+    "networks": {
+      "readonly": true,
+      "summary": "Available networks",
+      "params": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/network"
+        }
+      }
+    },
+    "configs": {
+      "summary": "All WiFi configurations",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/config"
+        }
+      },
+      "errors": [
+        {
+          "description": "Configuration does not exist",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    },
+    "config": {
+      "summary": "Single WiFi configuration",
+      "params": {
+        "$ref": "#/definitions/config"
+      },
+      "index": {
+        "name": "SSID",
+        "example": "MyCorporateNetwork",
+        "description": "If not specified all configurations are returned."
+      },
+      "errors": [
+        {
+          "description": "Configuration does not exist",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Passed in configuration is invalid",
+          "$ref": "#/common/errors/incompleteconfig"
+        }
+      ]
+    },
+    "debug": {
+      "summary": "Sets debug level",
+      "writeonly": true,
+      "params": {
+        "type": "number",
+        "example": 0,
+        "description": "Debug level"
+      },
+      "errors": [
+        {
+          "description": "Returned when the operation is unavailable",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    }
+  },
+  "events": {
+    "scanresults": {
+      "summary": "Signals that the scan operation has finished",
+      "params": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/network"
+        }
+      }
+    },
+    "networkchange": {
+      "summary": "Signals that a network property has changed. e.g. frequency"
+    },
+    "connectionchange": {
+      "summary": "Notifies about connection state change. i.e. connected/disconnected",
+      "params": {
+        "type": "string",
+        "description": "SSID of the connected network in case of connect or empty in case of disconnect",
+        "$ref": "#/definitions/ssid"
+      }
+    }
+  }
+}

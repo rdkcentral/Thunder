@@ -47,7 +47,6 @@ set(PUBLIC_HEADERS
         Service.h
         System.h
         VirtualInput.h
-        IVirtualInput.h
         Module.h
         )
 

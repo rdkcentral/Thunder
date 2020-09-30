@@ -1,0 +1,92 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Power API",
+    "class": "Power",
+    "description": "Power JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "definitions": {
+    "state":{
+        "type": "string",
+        "enum": [
+          "on",
+          "activestandby",
+          "passivestandby",
+          "suspendtoram",
+          "hibernate",
+          "poweroff"
+        ],
+        "enumvalues": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "enumtyped": false,
+        "description": "Power state",
+        "example": "on"
+    },
+    "power":{
+        "type": "object",
+        "properties": {
+            "powerstate": {
+              "$ref": "#/definitions/state"
+            },
+            "timeout": {
+              "description": "Time to wait for power state change",
+              "type": "number",
+              "size": 32,
+              "example": 0
+            }
+      },
+      "required": [
+        "powerstate",
+        "timeout"
+      ]    
+    }   
+  },
+  "properties": {
+    "state": {
+      "summary": "Power state",
+      "readonly": true,
+      "params": {
+        "$ref": "#/definitions/state"
+      }
+    }
+  },
+  "methods": {
+    "set": {
+      "summary": "Sets power state",
+      "params": {
+        "$ref": "#/definitions/power"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "General failure",
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "description": "Trying to set the same power mode",
+          "$ref": "#/common/errors/duplicatekey"
+        },
+        {
+          "description": "Power state is not supported",
+          "$ref": "#/common/errors/illegalstate"
+        },
+        {
+          "description": "Invalid Power state or Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        }
+      ]
+    }
+  }
+}

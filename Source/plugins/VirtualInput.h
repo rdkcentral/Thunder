@@ -23,7 +23,7 @@
 #define __VIRTUAL_INPUT__
 
 #include "Module.h"
-#include "IVirtualInput.h"
+#include "../virtualinput/IVirtualInput.h"
 
 namespace WPEFramework {
 namespace PluginHost {

@@ -1,0 +1,167 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "DHCP Server API",
+    "class": "DHCPServer",
+    "description": "DHCP Server JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "definitions":
+  {
+    "interface": {
+      "description": "Network interface name",
+      "type": "string",
+      "example": "eth0"
+    },
+    "lease": {
+      "type": "object",
+      "description": "Lease description",
+      "properties": {
+        "name": {
+          "description": "Client identifier (or client hardware address if identifier is absent)",
+          "type": "string",
+          "example": "00e04c326c56"
+        },
+        "ip": {
+          "description": "Client IP address",
+          "type": "string",
+          "example": "192.168.0.10"
+        },
+        "expires": {
+          "description": "Client IP expiration time (in ISO8601 format, empty: never expires)",
+          "type": "string",
+          "example": "2019-05-07T07:20:26Z"
+        }
+      },
+      "required": [
+        "name",
+        "ip"
+      ]
+    },
+    "server": {
+      "type": "object",
+      "properties": {
+        "interface": {
+          "$ref": "#/definitions/interface"
+        },
+        "active": {
+          "description": "Denotes if server is currently active",
+          "type": "boolean",
+          "example": true
+        },
+        "begin": {
+          "description": "IP address pool start",
+          "type": "string",
+          "example": "192.168.0.10"
+        },
+        "end": {
+          "description": "IP address pool end",
+          "type": "string",
+          "example": "192.168.0.100"
+        },
+        "router": {
+          "description": "Router IP address",
+          "type": "string",
+          "example": "192.168.0.1"
+        },
+        "leases": {
+          "description": "List of IP address leases",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/lease"
+          }
+        }
+      },
+      "required": [
+        "interface",
+        "active"
+      ]
+    }
+  },
+  "methods": {
+    "activate": {
+      "summary": "Activates a DHCP server",
+      "params": {
+        "type": "object",
+        "properties": {
+          "interface": {
+            "$ref": "#/definitions/interface"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/general",
+          "description": "Failed to activate server"
+        },
+        {
+          "$ref": "#/common/errors/unknownkey",
+          "description": "Invalid interface name given"
+        },
+        {
+          "$ref": "#/common/errors/illegalstate",
+          "description": "Server is already activated"
+        }
+      ]
+    },
+    "deactivate": {
+      "summary": "Deactivates a DHCP server",
+      "params": {
+        "type": "object",
+        "properties": {
+          "interface": {
+            "$ref": "#/definitions/interface"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/general",
+          "description": "Failed to deactivate server"
+        },
+        {
+          "$ref": "#/common/errors/unknownkey",
+          "description": "Invalid interface name given"
+        },
+        {
+          "$ref": "#/common/errors/illegalstate",
+          "description": "Server is not activated"
+        }
+      ]
+    }
+  },
+  "properties": {
+      "status": {
+      "summary": "Server status",
+      "readonly": true,
+      "index": {
+        "description": "If omitted, status of all configured servers is returned",
+        "name": "server",
+        "example": "eth0"
+      },
+      "params": {
+        "type": "array",
+        "description": "List of configured servers",
+        "items": {
+          "$ref": "#/definitions/server"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/unknownkey",
+          "description": "Invalid server name given"
+        }
+      ]
+    }
+  }
+}
+

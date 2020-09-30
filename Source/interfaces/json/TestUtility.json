@@ -1,0 +1,259 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Test Utility API",
+    "class": "TestUtility",
+    "description": "TestUtility JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "methods": {
+    "runmemory": {
+      "summary": "Runs a memory test command",
+      "params": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "description": "Test command name",
+            "type": "string",
+            "example": "Malloc"
+          },
+          "size": {
+            "description": "The amount of memory in KB for allocation (applicable for *Malloc* commands)",
+            "type": "number",
+            "example": 0
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "result": {
+        "type": "object",
+        "properties": {
+          "allocated": {
+            "description": "Already allocated memory in KB",
+            "type": "number",
+            "example": 0
+          },
+          "size": {
+            "description": "Current allocation in KB",
+            "type": "number",
+            "example": 0
+          },
+          "resident": {
+            "description": "Resident memory in KB",
+            "type": "number",
+            "example": 0
+          }
+        },
+        "required": [
+          "allocated",
+          "size",
+          "resident"
+        ]
+      },
+      "errors": [
+        {
+          "description": "Unknown category",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        }
+      ]
+    },
+    "runcrash": {
+      "summary": "Runs a crash test command",
+      "params": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "description": "Test command name",
+            "type": "string",
+            "example": "Crash"
+          },
+          "delay": {
+            "description": "Delay (in seconds) before the crash attempt (applicable for *Crash* command)",
+            "type": "number",
+            "size": 8,
+            "example": 1
+          },
+          "count": {
+            "description": "How many times a Crash command will be executed consecutively (applicable for *CrashNTimes* command)",
+            "type": "number",
+            "size": 8,
+            "example": 1
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown category",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "commands": {
+      "summary": "List of test commands",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "description": "Available test commands",
+          "example": "Malloc"
+        }
+      }
+    },
+    "description": {
+      "summary": "Description of a test command",
+      "readonly": true,
+      "params": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Test command description",
+            "example": "Allocates desired amount of memory (in KB) and holds it"
+          }
+        },
+        "required": [
+          "description"
+        ]
+      },
+      "index": {
+        "name": "Command",
+        "example": "Malloc"
+      },
+      "errors": [
+        {
+          "description": "Unknown category",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        }
+      ]
+    },
+    "parameters": {
+      "summary": "Parameters of a test command",
+      "readonly": true,
+      "params": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Test command input parameter",
+                  "example": "memory"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "Number",
+                    "String",
+                    "Boolean",
+                    "Object",
+                    "Symbol"
+                  ],
+                  "description": "Test command input parameter type",
+                  "example": "Number"
+                },
+                "comment": {
+                  "type": "string",
+                  "description": "Test command input parameter description",
+                  "example": "Memory statistics in KB"
+                }
+              },
+              "required": [
+                "name",
+                "type",
+                "comment"
+              ]
+            }
+          },
+          "output": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Test command output parameter",
+                "example": "memory"
+              },
+              "type": {
+                "type": "string",
+                "description": "Test command output parameter type",
+                "enum": [
+                  "Number",
+                  "String",
+                  "Boolean",
+                  "Object",
+                  "Symbol"
+                ],
+                "example": "Number"
+              },
+              "comment": {
+                "type": "string",
+                "description": "Test command output parameter description",
+                "example": "Memory statistics in KB"
+              }
+            },
+            "required": [
+              "name",
+              "type",
+              "comment"
+            ]
+          }
+        },
+        "required": [
+          "output"
+        ]
+      },
+      "index": {
+        "name": "Command",
+        "example": "Malloc"
+      },
+      "errors": [
+        {
+          "description": "Unknown category",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        }
+      ]
+    },
+    "shutdowntimeout": {
+     "summary": "Timeout to be waited before deactivating the plugin",
+     "writeonly":true,
+     "params": {
+       "description": "Timeout in milli seconds",
+       "type": "number",
+       "example": 5000,
+       "size": 32
+     }
+    }
+  }
+}

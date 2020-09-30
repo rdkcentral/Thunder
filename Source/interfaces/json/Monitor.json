@@ -1,0 +1,223 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Monitor API",
+    "class": "Monitor",
+    "description": "Monitor JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "definitions": {
+    "restart": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "number",
+          "size": 8,
+          "signed": false,
+          "example": 3,
+          "description": "Maximum number or restarts to be attempted"
+        },
+        "window": {
+          "type": "number",
+          "size": 16,
+          "signed": false,
+          "example": 60,
+          "description": "Time period (in seconds) within which failures must happen for the limit to be considered crossed"
+        }
+      },
+      "required": [
+        "limit",
+        "window"
+      ]
+    },
+    "measurement": {
+      "type": "object",
+      "properties": {
+        "min": {
+          "type": "number",
+          "size": 64,
+          "example": 0,
+          "description": "Minimal value measured"
+        },
+        "max": {
+          "type": "number",
+          "size": 64,
+          "example": 100,
+          "description": "Maximal value measured"
+        },
+        "average": {
+          "type": "number",
+          "size": 64,
+          "example": 50,
+          "description": "Average of all measurements"
+        },
+        "last": {
+          "type": "number",
+          "size": 64,
+          "example": 100,
+          "description": "Last measured value"
+        }
+      },
+      "required": [
+        "min",
+        "max",
+        "average",
+        "last"
+      ]
+    },
+    "measurements": {
+      "type": "object",
+      "properties": {
+        "resident": {
+          "$ref": "#/definitions/measurement",
+          "description": "Resident memory measurement"
+        },
+        "allocated": {
+          "$ref": "#/definitions/measurement",
+          "description": "Allocated memory measurement"
+        },
+        "shared": {
+          "$ref": "#/definitions/measurement",
+          "description": "Shared memory measurement"
+        },
+        "process": {
+          "$ref": "#/definitions/measurement",
+          "description": "Processes measurement"
+        },
+        "operational": {
+          "type": "boolean",
+          "example": true,
+          "description": "Whether the service is up and running"
+        },
+        "count": {
+          "type": "number",
+          "example": 100,
+          "description": "Number of measurements"
+        }
+      },
+      "required": [
+        "resident",
+        "allocated",
+        "shared",
+        "process",
+        "operational",
+        "count"
+      ]
+    },
+    "info": {
+      "type": "object",
+      "properties": {
+        "measurements": {
+          "description": "Measurements for the service",
+          "$ref": "#/definitions/measurements"
+        },
+        "observable": {
+          "description": "A callsign of the watched service",
+          "example": "callsign",
+          "type": "string"
+        },
+        "restart": {
+          "$ref": "#/definitions/restart",
+          "description": "Restart limits for failures applying to the service"
+        }
+      },
+      "required": [
+        "measurements",
+        "observable",
+        "restart"
+      ]
+    }
+  },
+  "methods": {
+    "restartlimits": {
+      "summary": "Sets new restart limits for a service",
+      "params": {
+        "type": "object",
+        "properties": {
+          "callsign": {
+            "description": "The callsign of a service to reset measurements snapshot of",
+            "type": "string",
+            "example": "WebServer"
+          },
+          "restart": {
+            "$ref": "#/definitions/restart"
+          }
+        },
+        "required": [
+          "callsign",
+          "restart"
+        ]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    },
+    "resetstats": {
+      "summary": "Resets memory and process statistics for a single service watched by the Monitor",
+      "params": {
+        "type": "object",
+        "properties": {
+          "callsign": {
+            "description": "The callsign of a service to reset statistics of",
+            "type": "string",
+            "example": "WebServer"
+          }
+        }
+      },
+      "result": {
+        "description": "Measurements for the service before reset",
+        "$ref": "#/definitions/info"
+      }
+    }
+  },
+  "properties": {
+    "status": {
+      "summary": "Service statistics",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/info"
+        }
+      },
+      "index": {
+        "name": "Callsign",
+        "example": "WebServer",
+        "description": "If omitted then all observed objects will be returned on read."
+      }
+    }
+  },
+  "events": {
+    "action": {
+      "summary": "Signals an action taken by the Monitor",
+      "params": {
+        "type": "object",
+        "properties": {
+          "callsign": {
+            "description": "Callsign of the service the Monitor acted upon",
+            "type": "string",
+            "example": "WebServer"
+          },
+          "action": {
+            "description": "The action executed by the Monitor on a service. One of: \"Activate\", \"Deactivate\", \"StoppedRestarting\"",
+            "type": "string",
+            "example": "Deactivate"
+          },
+          "reason": {
+            "description": "A message describing the reason the action was taken",
+            "type": "string",
+            "example": "EXCEEDED_MEMORY"
+          }
+        },
+        "required": [
+          "callsign",
+          "action",
+          "reason"
+        ]
+      }
+    }
+  }
+}

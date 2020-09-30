@@ -1,0 +1,185 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Firmware Control API",
+    "class": "FirmwareControl",
+    "description": "Firmware Control JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "definitions": {
+    "status": {
+      "description": "upgrade status",
+      "type": "string",
+      "enum": [
+        "none",
+        "upgradestarted",
+        "downloadstarted",
+        "downloadaborted",
+        "downloadcompleted",
+        "installinitiated",
+        "installnotstarted",
+        "installaborted",
+        "installstarted",
+        "upgradecompleted",
+        "upgradecancelled"
+      ],
+      "example": "completed"
+    },
+    "error": {
+      "description": "reason of error",
+      "type": "string",
+      "enum": [
+        "none",
+        "generic",
+        "invalidparameters",
+        "invalidstate",
+        "noenoughspace",
+        "operationotsupported",
+        "incorrecthash",
+        "unauthenticated",
+        "unavailable",
+        "timedout",
+        "downloaddirectorynotexist",
+        "unkown"
+      ],
+      "example": "operationotsupported"
+    },
+    "type": {
+      "description": "type of the firmware",
+      "type": "string",
+      "enum": [
+        "CDL",
+        "RCDL"
+      ],
+      "example": "CDL"
+    }
+  },
+  "properties": {
+  "status": {
+      "readonly": true,
+      "summary": "Current status of a upgrade",
+      "events": [
+        "upgradeprogress"
+      ],
+      "params": {
+        "$ref": "#/definitions/status"
+      }
+    },
+    "downloadsize": {
+      "readonly": true,
+      "summary": "Max free space available to download image",
+      "params": {
+        "description": "available free space in bytes",
+        "type": "number",
+        "size": 64,
+        "example": 315576
+      }
+    }
+  },
+  "methods": {
+    "upgrade": {
+      "summary": "Upgrade the device to the given firmware. (Note: Ensure size of firmware image should be < 500MB)",
+      "events": "upgradeprogress",
+      "params": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "name of the firmware",
+            "type": "string",
+            "example": "firmware_v.0"
+          },
+          "location": {
+            "description": "location/url of the firmware to be upgraded",
+            "type": "string",
+            "example": "http://my.site.com/images"
+          },
+          "type": {
+            "$ref": "#/definitions/type"
+          },
+          "progressinterval": {
+            "description": "number of seconds between progress update events (5 seconds, 10 seconds etc). 0 means invoking callback only once to report final upgrade result",
+            "type": "number",
+            "size": 16,
+            "example": "10"
+          },
+          "hmac": {
+            "type": "string",
+            "example": "2834e6d07fa4c7778ef7a4e394f38a5c321afbed51d54ad512bd3fffbc7aa5debc",
+            "description": "HMAC value of firmare"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Operation in progress",
+          "$ref": "#/common/errors/inprogress"
+        },
+        {
+          "description": "Invalid location given",
+          "$ref": "#/common/errors/incorrecturl"
+        },
+        {
+          "description": "Error in download",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Bad file name given",
+          "$ref": "#/common/errors/badrequest"
+        },
+        {
+          "description": "Bad hash value given",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Invalid state of device",
+          "$ref": "#/common/errors/illegalstate"
+        },
+        {
+          "description": "Incorrect hash given",
+          "$ref": "#/common/errors/incorrecthash"
+        },
+        {
+          "description": "Authentication failure",
+          "$ref": "#/common/errors/unauthenticated"
+        }
+      ]
+    }
+  },
+  "events": {
+    "upgradeprogress": {
+      "summary": "Notifies progress of upgrade",
+      "example": "1.*",
+      "params": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/definitions/status"
+          },
+          "error": {
+            "$ref": "#/definitions/error"
+          },
+          "progress": {
+            "type": "number",
+            "description": "Progress of upgrade (number of bytes transferred during download or percentage of completion during install",
+            "size": 32,
+            "example": 89
+          }
+        },
+        "required": [
+          "status",
+          "error",
+          "progress"
+        ]
+      }
+    }
+  }
+}

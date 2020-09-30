@@ -1,0 +1,61 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Packager API",
+    "class": "Packager",
+    "description": "Packager JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "methods": {
+    "Packager.1.install": {
+      "summary": "Installs a package given by a name, an URL or a file path",
+      "params": {
+        "type": "object",
+        "properties": {
+          "package": {
+            "description": "A name, an URL or a file path of the package to install",
+            "type": "string",
+            "example": "wpeframework-plugin-netflix"
+          },
+          "version": {
+            "description": "Version of the package to install",
+            "type": "string",
+            "example": "1.0"
+          },
+          "architecture": {
+            "description": "Architecture of the package to install",
+            "type": "string",
+            "example": "arm"
+          }
+        },
+        "required": [
+          "package"
+        ]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Returned when the function is called while other installation/synchronization is already in progress.",
+          "$ref": "#/common/errors/inprogress"
+        }
+      ]
+    },
+    "Packager.1.synchronize": {
+      "summary": "Synchronizes repository manifest with a repository",
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Returned when the function is called while other installation/synchronization is already in progress.",
+          "$ref": "#/common/errors/inprogress"
+        }
+      ]
+    }
+  }
+}
