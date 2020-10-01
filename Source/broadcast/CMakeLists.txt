@@ -59,9 +59,10 @@ if(NXCLIENT_FOUND)
         target_sources(${TARGET} PRIVATE ${BROADCAST_IMPLEMENTATION_PATH}/Tuner.cpp)
     elseif (CODE_FROM_EXTERNAL_REPOSITORY)
         include(GetExternalCode)
+        set(BROADCAST_IMPLEMENTATION_VERSION "master" CACHE STRING "broadcast implementation version")
         GetExternalCode(
             GIT_REPOSITORY "https://code.rdkcentral.com/r/soc/broadcom/components/rdkcentral/thunder/broadcast"
-            GIT_TAG "master"
+            GIT_TAG ${BROADCAST_IMPLEMENTATION_VERSION}
             SOURCE_DIR "Implementation/NexusExt"
         )
         target_sources(${TARGET} PRIVATE Implementation/NexusExt/Tuner.cpp)
