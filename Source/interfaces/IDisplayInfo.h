@@ -47,7 +47,8 @@ namespace Exchange {
         enum HDCPProtectionType : uint8_t {
             HDCP_Unencrypted,
             HDCP_1X,
-            HDCP_2X
+            HDCP_2X,
+            HDCP_AUTO
         };
 
         /* @event */

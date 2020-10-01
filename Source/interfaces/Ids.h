@@ -178,6 +178,9 @@ namespace Exchange {
         ID_DOLBY_OUTPUT_NOTIFICATION,
 
         ID_WEBKITBROWSER_NOTIFICATION,
+
+        ID_AMAZONPRIME,
+        ID_AMAZONPRIME_NOTIFICATION
     };
 }
 }
