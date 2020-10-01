@@ -642,10 +642,9 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         _controller = _services.Insert(metaDataConfig);
 
 #ifdef PROCESSCONTAINERS_ENABLED
-
         // turn on ProcessContainer logging
         ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
-        admin.Logging(config.VolatilePath(), configuration.ProcessContainers.Logging.Value());
+        admin.Logging(_config.VolatilePath(), configuration.ProcessContainersLogging());
 #endif
     }
 
