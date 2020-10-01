@@ -891,8 +891,6 @@ namespace Core {
             }
 
             if (l_Size == 0) {
-                uint32_t l_Result = __ERRORRESULT__;
-
                 if ((m_State & SocketPort::LINK) != 0) {
                     m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::EXCEPTION);
                 }
