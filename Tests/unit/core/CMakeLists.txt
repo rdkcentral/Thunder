@@ -35,3 +35,4 @@ target_link_libraries(${TEST_RUNNER_NAME}
     WPEFrameworkProtocols
 )
 
+gtest_discover_tests(${TEST_RUNNER_NAME})

@@ -81,5 +81,19 @@ if(APPLE)
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 
+if (ENABLE_CODE_COVERAGE)
+  include (CodeCoverage)
+  append_coverage_compiler_flags()
+  set(COVERAGE_EXCLUDES
+    "${CMAKE_CURRENT_BINARY_DIR}/Tests/unit*"
+    "${CMAKE_CURRENT_BINARY_DIR}/Tests/unit/core/*")
+  setup_target_for_coverage_gcovr_html(NAME "coverage")
+  setup_target_for_coverage_gcovr_xml(NAME "coverage-report")
+endif()
+
+if(BUILD_TESTS)
+  enable_testing()
+endif()
+
 add_subdirectory(Source)
 add_subdirectory(Tests)
