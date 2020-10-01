@@ -197,6 +197,22 @@ EXTERNAL displayinfo_hdr_t displayinfo_hdr(struct displayinfo_type* instance);
  **/
 EXTERNAL displayinfo_hdcp_protection_t displayinfo_hdcp_protection(struct displayinfo_type* instance);
 
+/**
+ * \brief Get the total available GPU RAM space in bytes.
+ * 
+ * \param instance Instance of \ref displayinfo_type.
+ * \return The total amount of GPU RAM available on the device.
+ */
+EXTERNAL uint64_t displayinfo_total_gpu_ram(struct displayinfo_type* instance);
+
+/**
+ * \brief Get the currently available GPU RAM in bytes.
+ * 
+ * \param instance Instance of \ref displayinfo_type.
+ * \return The current amount of available GPU RAM memory.
+ */
+EXTERNAL uint64_t displayinfo_free_gpu_ram(struct displayinfo_type* instance);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
