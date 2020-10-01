@@ -82,13 +82,11 @@ TEST(test_event, simple_event)
     Event event(false,true);
     uint64_t timeOut(Core::Time::Now().Add(3).Ticks());
     uint64_t now(Core::Time::Now().Ticks());
-    do
-    {
-        if (now < timeOut) {
-            event.Lock(static_cast<uint32_t>((timeOut - now) / Core::Time::TicksPerMillisecond));
-            EXPECT_FALSE(event.IsSet());
-        }
-    } while (timeOut < Core::Time::Now().Ticks());
+
+    if (now < timeOut) {
+        event.Lock(static_cast<uint32_t>((timeOut - now) / Core::Time::TicksPerMillisecond));
+        EXPECT_FALSE(event.IsSet());
+    }
 }
 
 TEST(test_event, unlock_event)

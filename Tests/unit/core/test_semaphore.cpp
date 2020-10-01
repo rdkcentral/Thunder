@@ -84,13 +84,11 @@ TEST(test_binairysemaphore, simple_binairysemaphore_timeout)
     BinairySemaphore bsem(true);
     uint64_t timeOut(Core::Time::Now().Add(3).Ticks());
     uint64_t now(Core::Time::Now().Ticks());
-    do
-    {
-        if (now < timeOut) {
-            bsem.Lock(static_cast<uint32_t>((timeOut - now) / Core::Time::TicksPerMillisecond));
-            g_shared++;
-        }
-    } while (timeOut < Core::Time::Now().Ticks());
+
+    if (now < timeOut) {
+        bsem.Lock(static_cast<uint32_t>((timeOut - now) / Core::Time::TicksPerMillisecond));
+        g_shared++;
+    }
     EXPECT_EQ(g_shared,3);
 }
 
