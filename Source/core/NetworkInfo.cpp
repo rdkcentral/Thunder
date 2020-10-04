@@ -71,11 +71,79 @@ namespace WPEFramework {
 
 namespace Core {
 
+    AdapterObserver::AdapterObserver(INotification* callback)
+        : _callback(callback)
+    {
+#ifdef __WINDOWS__
+        //IoWMIOpenBlock(&GUID_NDIS_STATUS_LINK_STATE, WMIGUID_NOTIFICATION, . . .);
+        //IoWMISetNotificationCallback(. . ., Callback, . . .);
+
+        //void Callback(PWNODE_HEADER wnode, . . .)
+        //{
+        //	auto instance = (PWNODE_SINGLE_INSTANCE)wnode;
+        //	auto header = (PNDIS_WMI_EVENT_HEADER)((PUCHAR)instance +
+        //		instance->DataBlockOffset + sizeof(ULONG));
+        //	auto linkState = (PNDIS_LINK_STATE)(header + 1);
+
+        //	switch (linkState->MediaConnectState)
+        //	{
+        //	case MediaConnectStateConnected:
+        //		. . .
+        //	}
+        //}
+
+#endif
+    }
+
+    AdapterObserver::~AdapterObserver()
+    {
+        Close();
+    }
+
+    uint32_t AdapterObserver::Open() {
+        #ifndef __WINDOWS__
+        networkController.Instance().Register(_callback);
+        #endif
+        return (Core::ERROR_NONE);
+    }
+
+    uint32_t AdapterObserver::Close() {
+        #ifndef __WINDOWS__
+        networkController.Instance().Unregister(_callback);
+        #endif
+        return (Core::ERROR_NONE);
+    }
+
+    bool AdapterIterator::HasMAC() const
+    {
+        uint8_t index = 0;
+        uint8_t mac[6];
+        MACAddress(mac, sizeof(mac));
+
+        while ((index < sizeof(mac)) && (mac[index] == 0)) {
+            index++;
+        }
+
+        return (index < sizeof(mac));
+    }
+
 #ifdef __WINDOWS__
 
 /* Note: could also use malloc() and free() */
 #define MALLOC(x) HeapAlloc(GetProcessHeap(), 0, (x))
-#define FREE(x) HeapFree(GetProcessHeap(), 0, (x))
+#definebool AdapterIterator::HasMAC() const
+{
+    uint8_t index = 0;
+    uint8_t mac[6];
+    MACAddress(mac, sizeof(mac));
+
+    while ((index < sizeof(mac)) && (mac[index] == 0)) {
+        index++;
+    }
+
+    return (index < sizeof(mac));
+}
+ FREE(x) HeapFree(GetProcessHeap(), 0, (x))
 
     static uint16_t AdapterCount = 0;
     static PIP_ADAPTER_ADDRESSES _interfaceInfo = nullptr;
@@ -542,15 +610,442 @@ namespace Core {
 
 #elif defined(__POSIX__)
 
-    class IPNetworks {
+    static IPNode ToIPNode(const bool IPV6, const struct rtattr* rtatp, const uint8_t prefixlen) {
+
+        IPNode result;
+
+        /* Here we hit the fist chunk of the message. Time to validate the    *
+        * the type. For more info on the different types see man(7) rtnetlink*
+        * The table below is taken from man pages.                           *
+        * Attributes                                                         *
+        * rta_type        value type             description                 *
+        * -------------------------------------------------------------      *
+        * IFA_UNSPEC      -                      unspecified.                *
+        * IFA_ADDRESS     raw protocol address   interface address           *
+        * IFA_LOCAL       raw protocol address   local address               *
+        * IFA_LABEL       asciiz string          name of the interface       *
+        * IFA_BROADCAST   raw protocol address   broadcast address.          *
+        * IFA_ANYCAST     raw protocol address   anycast address             *
+        * IFA_CACHEINFO   struct ifa_cacheinfo   Address information.        */
+        if ( ((RTA_PAYLOAD(rtatp) == 4) && (IPV6 == false)) || ((RTA_PAYLOAD(rtatp) == 6) && (IPV6 == true)) ) {
+            switch (rtatp->rta_type) {
+            case IFA_CACHEINFO: {
+                // const struct ifa_cacheinfo* cache_info = reinterpret_cast<const struct ifa_cacheinfo *>(RTA_DATA(rtatp));
+                // cache_info->ifa_valid == InfiniteLifeTime)
+
+                // cache_info->ifa_prefered == InfiniteLifeTime)
+                break;
+            }
+            case IFA_ADDRESS: /* POINT-TO-POINT destination address */
+                if (IPV6 == false)
+                    result = IPNode(*reinterpret_cast<const struct in_addr *>(RTA_DATA(rtatp)), prefixlen);
+                else 
+                    result = IPNode(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rtatp)), prefixlen);
+                break;
+            case IFA_LOCAL:
+                if (IPV6 == false)
+                    result = IPNode(*reinterpret_cast<const struct in_addr *>(RTA_DATA(rtatp)), prefixlen);
+                else 
+                    result = IPNode(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rtatp)), prefixlen);
+                break;
+            case IFA_BROADCAST:
+                if (IPV6 == false)
+                    result = IPNode(*reinterpret_cast<const struct in_addr *>(RTA_DATA(rtatp)), prefixlen);
+                else 
+                    result = IPNode(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rtatp)), prefixlen);
+                break;
+            case IFA_ANYCAST:
+                if (IPV6 == false)
+                    result = IPNode(*reinterpret_cast<const struct in_addr *>(RTA_DATA(rtatp)), prefixlen);
+                else 
+                    result = IPNode(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rtatp)), prefixlen);
+                break;
+            case IFA_MULTICAST:
+                if (IPV6 == false)
+                    result = IPNode(*reinterpret_cast<const struct in_addr *>(RTA_DATA(rtatp)), prefixlen);
+                else 
+                    result = IPNode(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rtatp)), prefixlen);
+                break;
+            case IFA_LABEL:
+                //   _name = string(reinterpret_cast<const char*>(RTA_DATA(rtatp)), (RTA_PAYLOAD(rtatp) - 1));
+                break;
+                /* Only RPI newer kernels work with this flag. Skip it for now, it is not used. Yet!!!! 
+                case IFA_FLAGS: 
+                printf("Flags: %X\n", *reinterpret_cast<const uint32_t*>(RTA_DATA(rtatp)));
+                break;
+                */
+            default:
+                // TRACE_L1("Not handling: %d\n", rtatp->rta_type);
+                break;
+            }
+        }
+
+        return (result);
+    }
+
+    template <const bool IPV6>
+    class IPAddressFetchType : public Netlink {
     public:
-        class Network;
+        IPAddressFetchType() = delete;
+        IPAddressFetchType(const IPAddressFetchType<IPV6>&) = delete;
+        IPAddressFetchType<IPV6>& operator=(const IPAddressFetchType<IPV6>&) = delete;
+
+        IPAddressFetchType(Network& parent)
+            : _parent(parent)
+        {
+        }
+        ~IPAddressFetchType() override = default;
 
     private:
-        IPNetworks(const IPNetworks&) = delete;
-        IPNetworks& operator=(const IPNetworks&) = delete;
+        uint16_t Write(uint8_t stream[], const uint16_t length) const override
+        {
+            uint16_t result = sizeof(struct ifaddrmsg) + RTA_LENGTH(IPV6 ? 16 : 4);
+
+            ASSERT(length >= result);
+            ::memset(stream, 0, result);
+
+            Flags(NLM_F_REQUEST | NLM_F_ROOT | NLM_F_ACK);
+            Type(RTM_GETADDR);
+
+            struct ifaddrmsg* message(reinterpret_cast<struct ifaddrmsg*>(stream));
+            message->ifa_family = (IPV6 ? AF_INET6 : AF_INET);
+            message->ifa_index = _parent.Id();
+
+            struct rtattr* attribs(reinterpret_cast<struct rtattr*>(stream + sizeof(struct ifaddrmsg)));
+            attribs->rta_len = (IPV6 ? RTA_LENGTH(16) : RTA_LENGTH(4));
+            attribs->rta_type = 0;
+
+            return (result);
+        }
+        uint16_t Read(const uint8_t stream[], const uint16_t length) override
+        {
+            if (Type() == RTM_GETADDR) {
+                const struct ifaddrmsg* rtmp = reinterpret_cast<const struct ifaddrmsg*>(stream);
+                
+                ASSERT(_network == rtmp->ifa_index);
+
+                const struct rtattr* rtatp = reinterpret_cast<const struct rtattr*>(IFA_RTA(rtmp));
+                const uint8_t prefixlen = static_cast<uint8_t>(rtmp->ifa_prefixlen);
+                uint16_t rtattrlen = length - sizeof(struct ifaddrmsg);
+
+                for (; RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
+
+                    IPNode result (ToIPNode(IPV6, rtatp, prefixlen));
+
+                    if (result.IsValid() == true) {
+                        _parent.Added(result);
+                    }
+                }
+            } else if (Type() == NLMSG_ERROR) {
+                const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
+
+                if (error->error != 0) {
+                    TRACE_L1("IPAddressFetchType request failed with code %d", error->error);
+                } 
+            }
+            else {
+                TRACE_L1("IPAddressFetchType: Read unexpected type: %d", Type());
+            }
+
+            return (length);
+        }
 
     private:
+        uint32_t _network;
+        Network& _parent;
+    };
+
+    template <const bool ADD>
+    class IPAddressModifyType : public Netlink {
+    public:
+        IPAddressModifyType() = delete;
+        IPAddressModifyType(const IPAddressModifyType<ADD>&) = delete;
+        IPAddressModifyType<ADD>& operator=(const IPAddressModifyType<ADD>&) = delete;
+
+        IPAddressModifyType(Network& network, const IPNode& address)
+            : _network(network)
+            , _node(address)
+        {
+        }
+        ~IPAddressModifyType() override = default;
+
+    private:
+        uint16_t Write(uint8_t stream[], const uint16_t length) const override
+        {
+            uint16_t result = sizeof(struct ifaddrmsg) + 2 * (RTA_LENGTH(_node.Type() == NodeId::TYPE_IPV6 ? 16 : 4));
+
+            ASSERT(length >= result);
+            ::memset(stream, 0, result);
+
+            Flags(ADD == true ? NLM_F_REQUEST | NLM_F_CREATE | NLM_F_EXCL | NLM_F_ACK : NLM_F_REQUEST | NLM_F_ACK);
+            Type(ADD == true ? RTM_NEWADDR : RTM_DELADDR);
+
+            struct ifaddrmsg* message(reinterpret_cast<struct ifaddrmsg*>(stream));
+            message->ifa_family = (_node.Type() == NodeId::TYPE_IPV6 ? AF_INET6 : AF_INET);
+            message->ifa_prefixlen = _node.Mask();
+            message->ifa_index = _network.Id();
+            message->ifa_flags = IFA_F_PERMANENT;
+            message->ifa_scope = RT_SCOPE_UNIVERSE;
+
+            const uint8_t* data = reinterpret_cast<const uint8_t*>(&static_cast<const struct sockaddr*>(_node)->sa_data[2]);
+
+            struct rtattr* attribs(reinterpret_cast<struct rtattr*>(stream + sizeof(struct ifaddrmsg)));
+            attribs->rta_type = IFA_LOCAL;
+            attribs->rta_len = (_node.Type() == NodeId::TYPE_IPV6 ? RTA_LENGTH(16) : RTA_LENGTH(4));
+            memcpy(RTA_DATA(attribs), data, _node.Type() == NodeId::TYPE_IPV6 ? 16 : 4);
+
+            attribs = reinterpret_cast<struct rtattr*>(stream + sizeof(struct ifaddrmsg) + (RTA_LENGTH(_node.Type() == NodeId::TYPE_IPV6 ? 16 : 4)));
+            attribs->rta_type = IFA_ADDRESS;
+            attribs->rta_len = (_node.Type() == NodeId::TYPE_IPV6 ? RTA_LENGTH(16) : RTA_LENGTH(4));
+            memcpy(RTA_DATA(attribs), data, _node.Type() == NodeId::TYPE_IPV6 ? 16 : 4);
+
+            return (result);
+        }
+        uint16_t Read(const uint8_t stream[], const uint16_t length) override
+        {
+            if ((ADD === true) && (Type() == RTM_NEWADDR)) {
+
+                const struct ifaddrmsg* rtmp = reinterpret_cast<const struct ifaddrmsg*>(stream);
+
+                ASSERT(_network.Id() == rtmp->ifa_index);
+
+                const struct rtattr* rtatp = reinterpret_cast<const struct rtattr*>(IFA_RTA(rtmp));
+                const uint8_t prefixlen = static_cast<uint8_t>(rtmp->ifa_prefixlen);
+                uint16_t rtattrlen = length - sizeof(struct ifaddrmsg);
+
+                for (; RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
+
+                    IPNode result (ToIPNode(IPV6, rtatp, prefixlen));
+
+                    if (result.IsValid() == true) {
+                        _network.Added(result);
+                    }
+                }
+
+            } else if ((ADD === false) && (Type() == RTM_DELADDR)) {
+
+                const struct ifaddrmsg* rtmp = reinterpret_cast<const struct ifaddrmsg*>(stream);
+
+                ASSERT(_network.Id() == rtmp->ifa_index);
+
+                const struct rtattr* rtatp = reinterpret_cast<const struct rtattr*>(IFA_RTA(rtmp));
+                const uint8_t prefixlen = static_cast<uint8_t>(rtmp->ifa_prefixlen);
+                uint16_t rtattrlen = length - sizeof(struct ifaddrmsg);
+
+                for (; RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
+
+                    IPNode result (ToIPNode(IPV6, rtatp, prefixlen));
+
+                    if (result.IsValid() == true) {
+                        _network.Removed(result);
+                    }
+                }
+
+            } else if (Type() == NLMSG_ERROR) {
+                const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
+
+                if (error->error != 0) {
+                    TRACE_L1("IPAddressModify request failed with code %d", error->error);
+                } 
+            }
+            else {
+                TRACE_L1("IPAddressModifyType: Read unexpected type: %d", Type());
+            }
+
+            return (length);
+        }
+
+    private:
+        Network& _network;
+        IPNode _node;
+    };
+
+    template <const bool ADD>
+    class IPRouteModifyType : public Netlink {
+    public:
+        IPRouteModifyType() = delete;
+        IPRouteModifyType(const IPRouteModifyType<ADD>&) = delete;
+        IPRouteModifyType<ADD>& operator=(const IPRouteModifyType<ADD>&) = delete;
+
+        IPRouteModifyType(Network& targetInterface, const IPNode& network, const NodeId& gateway)
+            : _interface(targetInterface)
+            , _network(network)
+            , _gateway(gateway)
+        {
+        }
+        ~IPRouteModifyType() override = default;
+
+    private:
+        uint16_t Write(uint8_t stream[], const uint16_t length) const override
+        {
+            Flags(ADD == true ? NLM_F_REQUEST | NLM_F_CREATE | NLM_F_ACK | NLM_F_REPLACE : NLM_F_REQUEST | NLM_F_ACK);
+            Type(ADD == true ? RTM_NEWROUTE : RTM_DELROUTE);
+
+            struct rtmsg message;
+
+            ::memset(&message, 0, sizeof(message));
+
+            message.rtm_family = (_network.Type() == NodeId::TYPE_IPV6 ? AF_INET6 : AF_INET);
+            message.rtm_dst_len = _network.Mask();
+            message.rtm_src_len = 0;
+            message.rtm_tos = 0;
+            message.rtm_table = RT_TABLE_MAIN;
+            message.rtm_protocol = RTPROT_BOOT;
+            message.rtm_scope = RT_SCOPE_UNIVERSE;
+            message.rtm_type = RTN_UNICAST;
+            message.rtm_flags = 0;
+
+            // Some send a gateway address that is outside
+            // the local subnet. Kernel needs to be
+            // explicitly told to use this route on the
+            // interface specified by RTA_OID
+            // if ((gateway.s_addr & netmask) != (address.s_addr & netmask.s_addr))
+            // message->rtm_flags |= RTNH_F_ONLINK;
+
+            Netlink::Parameters<struct rtmsg> parameters(message, stream, length);
+
+            if (_network.Type() == NodeId::TYPE_IPV4) {
+                ASSERT(_gateway.Type() == NodeId::TYPE_IPV4);
+                const struct sockaddr_in* gateway = reinterpret_cast<const struct sockaddr_in*>(static_cast<const struct sockaddr*>(_gateway));
+                const struct sockaddr_in* network = reinterpret_cast<const struct sockaddr_in*>(static_cast<const struct sockaddr*>(_network));
+                parameters.Add(RTA_DST, network->sin_addr.s_addr);
+                parameters.Add(RTA_GATEWAY, gateway->sin_addr.s_addr);
+            } else if (_network.Type() == Core::NodeId::TYPE_IPV6) {
+                ASSERT(_gateway.Type() == NodeId::TYPE_IPV6);
+                const struct sockaddr_in6* gateway = reinterpret_cast<const struct sockaddr_in6*>(static_cast<const struct sockaddr*>(_gateway));
+                const struct sockaddr_in6* network = reinterpret_cast<const struct sockaddr_in6*>(static_cast<const struct sockaddr*>(_network));
+                parameters.Add(RTA_DST, network->sin6_addr.s6_addr);
+                parameters.Add(RTA_GATEWAY, gateway->sin6_addr.s6_addr);
+            } else {
+                // What kind of network is this ???
+                ASSERT(false);
+            }
+
+            parameters.Add(RTA_OIF, _interface.Id());
+
+            TRACE_L1("Gateway: %s, Network: %s, Interface %d, result %d", _gateway.HostAddress().c_str(), _network.HostAddress().c_str(), _interfac->.Id(), parameters.Size());
+
+            /*
+                for (uint8_t teller = 0; teller < parameters.Size(); teller++) {
+                    fprintf (stderr, "%02X:", stream[teller]);
+
+                    if ((teller % 8) == 7) {
+                        fprintf(stderr, "\n");
+                    }
+                }
+
+                fprintf(stderr, "\n <<< ---- Tabel before this line\n"); fflush (stderr);
+            */
+
+            return (parameters.Size());
+        }
+        uint16_t Read(const uint8_t stream[], const uint16_t length) override
+        {
+            if ( (ADD == true) && (Type() == RTM_NEWROUTE) ) {
+
+                ASSERT(_interface.Id() == reinterpret_cast<const struct ifaddrmsg*>(stream)->ifa_index);
+
+            } else if ( (ADD == false) && (Type() == RTM_DELROUTE) ) {
+
+                ASSERT(_interface.Id() == reinterpret_cast<const struct ifaddrmsg*>(stream)->ifa_index);
+
+            } else if (Type() == NLMSG_ERROR) {
+                const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
+
+                if (error->error != 0) {
+                    TRACE_L1("IPRouteModifyType request failed with code %d", error->error);
+                } 
+            }
+            else {
+                TRACE_L1("IPRouteModifyType: Read unexpected type: %d", Type());
+            }
+
+            return (length);
+        }
+
+    private:
+        Network& _interface;
+        IPNode _network;
+        NodeId _gateway;
+    };
+
+    class IPNetworks {
+    private:        
+        using Map = std::map<uint32_t, Core::ProxyType<Network> >;
+        using Element = std::pair<uint32_t, Core::ProxyType<Network> >;
+        using Iterator = IteratorMapType<Map, const Core::ProxyType<const Network>&, uint32_t>;
+
+        class Observer : public SocketDatagram {
+        private:
+            class Message : public Netlink {
+            public:
+                Message() = delete;
+                Message(const Message&) = delete;
+                Message& operator=(const Message&) = delete;
+
+                Message(IPNetworks& parent)
+                    : _parent(parent) {
+                }
+                ~Message() override = default;
+
+            public:
+                uint16_t Write(uint8_t stream[], const uint16_t length) const override
+                {
+                    return (0);
+                }
+                uint16_t Read(const uint8_t stream[], const uint16_t length) override
+                {
+                    const struct ifinfomsg* ifi = reinterpret_cast<const struct ifinfomsg*>(stream);
+
+                    if (Type() == RTM_NEWLINK) {
+                        _parent.Add(ifi->ifi_index, reinterpret_cast<const struct rtattr*>(IFLA_RTA(ifi)), length - sizeof(struct ifinfomsg));
+                    } else if (Type() == RTM_DELLINK) {
+                        _parent.Remove(ifi->ifi_index);
+                    }
+
+                    return (length);
+                }
+
+            private:
+                IPNetworks& _parent;
+            };
+
+        public:
+            Observer() = delete;
+            Observer(const Observer&) = delete;
+            Observer& operator=(const Observer&) = delete;
+
+            Observer(IPNetworks& parent)
+                : SocketDatagram(
+                    true,
+                    NodeId(NETLINK_ROUTE, 0, RTMGRP_LINK),
+                    NodeId(),
+                    64,
+                    4000)
+                , _parser(parent) {
+                SocketDatagram::Open(Core::infinite);
+            }
+            ~Observer() override {
+                Close(Core::infinite);
+            }
+
+        public:
+            uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) override
+            {
+                return (0);
+            }
+            uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize) override
+            {
+                return (_parser.Deserialize(dataFrame, receivedSize));
+            }
+            void StateChange() override
+            {
+            }
+
+        private:
+            Message _parser;
+        };
+
         class Channel {
         private:
             Channel(const Channel&) = delete;
@@ -621,19 +1116,18 @@ namespace Core {
             CriticalSection _adminLock;
             int _fd;
         };
-
-        class InterfacesFetchType : public Netlink {
+ 
+        class InterfacesFetch : public Netlink {
         public:
-            InterfacesFetchType() = delete;
-            InterfacesFetchType(const InterfacesFetchType&) = delete;
-            InterfacesFetchType& operator=(const InterfacesFetchType&) = delete;
+            InterfacesFetch() = delete;
+            InterfacesFetch(const InterfacesFetch&) = delete;
+            InterfacesFetch& operator=(const InterfacesFetch&) = delete;
 
-            InterfacesFetchType(std::map<uint32_t, Network>& interfaces, const uint32_t interfaceIndex = 0)
-                : _interfaces(interfaces)
-                , _index(interfaceIndex)
+            InterfacesFetch(IPNetworks& parent)
+                : _parent(parent)
             {
             }
-            ~InterfacesFetchType() override = default;
+            ~InterfacesFetch() override = default;
 
         private:
             uint16_t Write(uint8_t stream[], const uint16_t length) const override
@@ -653,17 +1147,9 @@ namespace Core {
             }
             uint16_t Read(const uint8_t stream[], const uint16_t length) override
             {
-                if ((Type() == RTM_NEWLINK) || (Type() == RTM_DELLINK) || (Type() == RTM_GETLINK) || (Type() == RTM_SETLINK)) {
+                if (Type() == RTM_GETLINK) {
                     const struct ifinfomsg* iface = reinterpret_cast<const struct ifinfomsg*>(stream);
-                    std::map<uint32_t, Network>::iterator index(_interfaces.find(iface->ifi_index));
-
-                    if (index == _interfaces.end()) {
-                        _interfaces.emplace(std::piecewise_construct,
-                            std::forward_as_tuple(iface->ifi_index),
-                            std::forward_as_tuple(iface->ifi_index, reinterpret_cast<const struct rtattr*>(IFLA_RTA(iface)), length - sizeof(struct ifinfomsg)));
-                    } else {
-                        index->second.Update(reinterpret_cast<const struct rtattr*>(IFLA_RTA(iface)), length - sizeof(struct ifinfomsg));
-                    }
+                    _parent.Add(iface->ifi_index, reinterpret_cast<const struct rtattr*>(IFLA_RTA(iface)), length - sizeof(struct ifinfomsg));
                 } else if (Type() == NLMSG_ERROR) {
                     const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
 
@@ -671,727 +1157,282 @@ namespace Core {
                         TRACE_L1("Interfaces fetch request failed with code %d", error->error);
                     } 
                 } 
+                else {
+                    TRACE_L1("InterfacesFetch: Read unexpected type: %d", Type());
+                }
                 return (length);
             }
 
         private:
-            std::map<uint32_t, Network>& _interfaces;
-            uint32_t _index;
-        };
-
-        template <const bool IPV6>
-        class IPAddressFetchType : public Netlink {
-        public:
-            IPAddressFetchType() = delete;
-            IPAddressFetchType(const IPAddressFetchType<IPV6>&) = delete;
-            IPAddressFetchType<IPV6>& operator=(const IPAddressFetchType<IPV6>&) = delete;
-
-            IPAddressFetchType(std::map<uint32_t, Network>& interfaces, const uint32_t interfaceIndex = 0)
-                : _interfaces(interfaces)
-                , _index(interfaceIndex)
-            {
-            }
-            ~IPAddressFetchType() override = default;
-
-        private:
-            uint16_t Write(uint8_t stream[], const uint16_t length) const override
-            {
-                uint16_t result = sizeof(struct ifaddrmsg) + RTA_LENGTH(IPV6 ? 16 : 4);
-
-                ASSERT(length >= result);
-                ::memset(stream, 0, result);
-
-                Flags(NLM_F_REQUEST | NLM_F_ROOT | NLM_F_ACK);
-                Type(RTM_GETADDR);
-
-                struct ifaddrmsg* message(reinterpret_cast<struct ifaddrmsg*>(stream));
-                message->ifa_family = (IPV6 ? AF_INET6 : AF_INET);
-                message->ifa_index = _index;
-
-                struct rtattr* attribs(reinterpret_cast<struct rtattr*>(stream + sizeof(struct ifaddrmsg)));
-                attribs->rta_len = (IPV6 ? RTA_LENGTH(16) : RTA_LENGTH(4));
-                attribs->rta_type = 0;
-
-                return (result);
-            }
-            uint16_t Read(const uint8_t stream[], const uint16_t length) override
-            {
-                if ((Type() == RTM_NEWADDR) || (Type() == RTM_DELADDR) || (Type() == RTM_GETADDR)) {
-                    const struct ifaddrmsg* rtmp = reinterpret_cast<const struct ifaddrmsg*>(stream);
-                    std::map<uint32_t, Network>::iterator index(_interfaces.find(rtmp->ifa_index));
-
-                    if (index != _interfaces.end()) {
-                        index->second.Update(reinterpret_cast<const struct rtattr*>(IFA_RTA(rtmp)), length - sizeof(struct ifaddrmsg), static_cast<uint8_t>(rtmp->ifa_prefixlen));
-                    } else {
-                        TRACE_L1("Could not find this interface. Just came up ? [%d]", rtmp->ifa_index);
-                    }
-                } else if (Type() == NLMSG_ERROR) {
-                    const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
-
-                    if (error->error != 0) {
-                        TRACE_L1("IPAddressFetchType request failed with code %d", error->error);
-                    } 
-                }
-
-                return (length);
-            }
-
-        private:
-            std::map<uint32_t, Network>& _interfaces;
-            uint32_t _index;
-        };
-
-        template <const bool ADD>
-        class IPAddressModifyType : public Netlink {
-        public:
-            IPAddressModifyType() = delete;
-            IPAddressModifyType(const IPAddressModifyType<ADD>&) = delete;
-            IPAddressModifyType<ADD>& operator=(const IPAddressModifyType<ADD>&) = delete;
-
-            IPAddressModifyType(Network& targetInterface, const IPNode& address)
-                : _interface(targetInterface)
-                , _node(address)
-            {
-            }
-            ~IPAddressModifyType() override = default;
-
-        private:
-            uint16_t Write(uint8_t stream[], const uint16_t length) const override
-            {
-                uint16_t result = sizeof(struct ifaddrmsg) + 2 * (RTA_LENGTH(_node.Type() == NodeId::TYPE_IPV6 ? 16 : 4));
-
-                ASSERT(length >= result);
-                ::memset(stream, 0, result);
-
-                Flags(ADD == true ? NLM_F_REQUEST | NLM_F_CREATE | NLM_F_EXCL | NLM_F_ACK : NLM_F_REQUEST | NLM_F_ACK);
-                Type(ADD == true ? RTM_NEWADDR : RTM_DELADDR);
-
-                struct ifaddrmsg* message(reinterpret_cast<struct ifaddrmsg*>(stream));
-                message->ifa_family = (_node.Type() == NodeId::TYPE_IPV6 ? AF_INET6 : AF_INET);
-                message->ifa_prefixlen = _node.Mask();
-                message->ifa_index = _interface.Id();
-                message->ifa_flags = IFA_F_PERMANENT;
-                message->ifa_scope = RT_SCOPE_UNIVERSE;
-
-                const uint8_t* data = reinterpret_cast<const uint8_t*>(&static_cast<const struct sockaddr*>(_node)->sa_data[2]);
-
-                struct rtattr* attribs(reinterpret_cast<struct rtattr*>(stream + sizeof(struct ifaddrmsg)));
-                attribs->rta_type = IFA_LOCAL;
-                attribs->rta_len = (_node.Type() == NodeId::TYPE_IPV6 ? RTA_LENGTH(16) : RTA_LENGTH(4));
-                memcpy(RTA_DATA(attribs), data, _node.Type() == NodeId::TYPE_IPV6 ? 16 : 4);
-
-                attribs = reinterpret_cast<struct rtattr*>(stream + sizeof(struct ifaddrmsg) + (RTA_LENGTH(_node.Type() == NodeId::TYPE_IPV6 ? 16 : 4)));
-                attribs->rta_type = IFA_ADDRESS;
-                attribs->rta_len = (_node.Type() == NodeId::TYPE_IPV6 ? RTA_LENGTH(16) : RTA_LENGTH(4));
-                memcpy(RTA_DATA(attribs), data, _node.Type() == NodeId::TYPE_IPV6 ? 16 : 4);
-
-                return (result);
-            }
-            uint16_t Read(const uint8_t stream[], const uint16_t length) override
-            {
-                if ((Type() == RTM_NEWADDR) || (Type() == RTM_DELADDR) || (Type() == RTM_GETADDR)) {
-
-                    const struct ifaddrmsg* rtmp = reinterpret_cast<const struct ifaddrmsg*>(stream);
-
-                    ASSERT(_interface.Id() == rtmp->ifa_index);
-
-                    _interface.Update(reinterpret_cast<const struct rtattr*>(IFA_RTA(rtmp)), length - sizeof(struct ifaddrmsg), static_cast<uint8_t>(rtmp->ifa_prefixlen));
-
-                } else if (Type() == NLMSG_ERROR) {
-                    const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
-
-                    if (error->error != 0) {
-                        TRACE_L1("IPAddressModify request failed with code %d", error->error);
-                    } 
-                }
-
-                return (length);
-            }
-
-        private:
-            Network& _interface;
-            IPNode _node;
-        };
-
-        template <const bool ADD>
-        class IPRouteModifyType : public Netlink {
-        public:
-            IPRouteModifyType() = delete;
-            IPRouteModifyType(const IPRouteModifyType<ADD>&) = delete;
-            IPRouteModifyType<ADD>& operator=(const IPRouteModifyType<ADD>&) = delete;
-
-            IPRouteModifyType(Network& targetInterface, const IPNode& network, const NodeId& gateway)
-                : _interface(targetInterface)
-                , _network(network)
-                , _gateway(gateway)
-            {
-            }
-            ~IPRouteModifyType() override = default;
-
-        private:
-            uint16_t Write(uint8_t stream[], const uint16_t length) const override
-            {
-                Flags(ADD == true ? NLM_F_REQUEST | NLM_F_CREATE | NLM_F_ACK | NLM_F_REPLACE : NLM_F_REQUEST | NLM_F_ACK);
-                Type(ADD == true ? RTM_NEWROUTE : RTM_DELROUTE);
-
-                struct rtmsg message;
-
-                ::memset(&message, 0, sizeof(message));
-
-                message.rtm_family = (_network.Type() == NodeId::TYPE_IPV6 ? AF_INET6 : AF_INET);
-                message.rtm_dst_len = _network.Mask();
-                message.rtm_src_len = 0;
-                message.rtm_tos = 0;
-                message.rtm_table = RT_TABLE_MAIN;
-                message.rtm_protocol = RTPROT_BOOT;
-                message.rtm_scope = RT_SCOPE_UNIVERSE;
-                message.rtm_type = RTN_UNICAST;
-                message.rtm_flags = 0;
-
-                // Some send a gateway address that is outside
-                // the local subnet. Kernel needs to be
-                // explicitly told to use this route on the
-                // interface specified by RTA_OID
-                // if ((gateway.s_addr & netmask) != (address.s_addr & netmask.s_addr))
-                // message->rtm_flags |= RTNH_F_ONLINK;
-
-                Netlink::Parameters<struct rtmsg> parameters(message, stream, length);
-
-                if (_network.Type() == NodeId::TYPE_IPV4) {
-                    ASSERT(_gateway.Type() == NodeId::TYPE_IPV4);
-                    const struct sockaddr_in* gateway = reinterpret_cast<const struct sockaddr_in*>(static_cast<const struct sockaddr*>(_gateway));
-                    const struct sockaddr_in* network = reinterpret_cast<const struct sockaddr_in*>(static_cast<const struct sockaddr*>(_network));
-                    parameters.Add(RTA_DST, network->sin_addr.s_addr);
-                    parameters.Add(RTA_GATEWAY, gateway->sin_addr.s_addr);
-                } else if (_network.Type() == Core::NodeId::TYPE_IPV6) {
-                    ASSERT(_gateway.Type() == NodeId::TYPE_IPV6);
-                    const struct sockaddr_in6* gateway = reinterpret_cast<const struct sockaddr_in6*>(static_cast<const struct sockaddr*>(_gateway));
-                    const struct sockaddr_in6* network = reinterpret_cast<const struct sockaddr_in6*>(static_cast<const struct sockaddr*>(_network));
-                    parameters.Add(RTA_DST, network->sin6_addr.s6_addr);
-                    parameters.Add(RTA_GATEWAY, gateway->sin6_addr.s6_addr);
-                } else {
-                    // What kind of network is this ???
-                    ASSERT(false);
-                }
-
-                parameters.Add(RTA_OIF, _interface.Id());
-
-                TRACE_L1("Gateway: %s, Network: %s, Interface %d, result %d", _gateway.HostAddress().c_str(), _network.HostAddress().c_str(), _interface.Id(), parameters.Size());
-
-                /*
-        for (uint8_t teller = 0; teller < parameters.Size(); teller++) {
-            fprintf (stderr, "%02X:", stream[teller]);
-
-            if ((teller % 8) == 7) {
-                fprintf(stderr, "\n");
-            }
-        }
-
-        fprintf(stderr, "\n <<< ---- Tabel before this line\n"); fflush (stderr);
-        */
-
-                return (parameters.Size());
-            }
-            uint16_t Read(const uint8_t stream[], const uint16_t length) override
-            {
-                TRACE_L1("Feedback: %d", Type());
-
-                if ((Type() == RTM_NEWADDR) || (Type() == RTM_DELADDR) || (Type() == RTM_GETADDR)) {
-
-                    const struct ifaddrmsg* rtmp = reinterpret_cast<const struct ifaddrmsg*>(stream);
-
-                    ASSERT(_interface.Id() == rtmp->ifa_index);
-
-                    _interface.Update(reinterpret_cast<const struct rtattr*>(IFA_RTA(rtmp)), length - sizeof(struct ifaddrmsg), static_cast<uint8_t>(rtmp->ifa_prefixlen));
-
-                } else if (Type() == NLMSG_ERROR) {
-                    const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
-
-                    if (error->error != 0) {
-                        TRACE_L1("IPRouteModifyType request failed with code %d", error->error);
-                    } 
-                }
-
-                return (length);
-            }
-
-        private:
-            Network& _interface;
-            IPNode _network;
-            NodeId _gateway;
+            IPNetworks& _parent;
         };
 
     public:
-        class Network {
-        private:
-            Network(const Network&) = delete;
-            Network& operator=(const Network&) = delete;
+        IPNetworks(const IPNetworks&) = delete;
+        IPNetworks& operator=(const IPNetworks&) = delete;
 
-        public:
-            Network()
-                : _index(0)
-                , _name()
-                , _ipv4Nodes()
-                , _ipv6Nodes()
-                , _channel()
-            {
-            }
-            Network(const uint32_t index, const struct rtattr* iface, const uint32_t length)
-                : _index(index)
-                , _name()
-                , _ipv4Nodes()
-                , _ipv6Nodes()
-                , _channel()
-            {
-
-                Update(iface, length);
-            }
-
-            typedef IteratorType<std::list<IPNode>, const IPNode&, std::list<IPNode>::const_iterator> Iterator;
-
-        public:
-            inline bool IsValid() const
-            {
-                return (_index != 0);
-            }
-            inline uint32_t Id() const
-            {
-                return (_index);
-            }
-            inline const string& Name() const
-            {
-                return (_name);
-            }
-            inline void MAC(uint8_t buffer[], const uint8_t length) const
-            {
-                ASSERT(length >= sizeof(_MAC));
-
-                ::memcpy(buffer, _MAC, (length >= sizeof(_MAC) ? sizeof(_MAC) : length));
-
-                if (length > sizeof(_MAC)) {
-                    ::memset(&buffer[sizeof(_MAC)], 0, length - sizeof(_MAC));
-                }
-            }
-            inline Iterator IPv4Nodes()
-            {
-                return (Iterator(_ipv4Nodes));
-            }
-            inline Iterator IPv6Nodes()
-            {
-                return (Iterator(_ipv6Nodes));
-            }
-            uint32_t Add(const IPNode& address);
-            uint32_t Delete(const IPNode& address);
-            uint32_t Gateway(const IPNode& network, const NodeId& gateway);
-            void Update(const struct rtattr* rtatp, const uint16_t length)
-            {
-
-                uint16_t rtattrlen = length;
-
-                for (; (rtattrlen <= length) && RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
-
-                    /* Here we hit the fist chunk of the message. Time to validate the    *
-             * the type. For more info on the different types see man(7) rtnetlink*
-             * The table below is taken from man pages.                           *
-             * Attributes                                                         *
-             * rta_type        value type             description                 *
-             * -------------------------------------------------------------      *
-             * IFLA_UNSPEC     -                      unspecified.                *
-             * IFLA_ADDRESS    hardware address       interface L2 address        *
-             * IFLA_BROADCAST  hardware address       L2 broadcast address.       *
-             * IFLA_IFNAME     asciiz string          Device name.                *
-             * IFLA_MTU        unsigned int           MTU of the device.          *
-             * IFLA_LINK       int                    Link type.                  *
-             * IFLA_QDISC      asciiz string          Queueing discipline.        *
-             * IFLA_STATS      see below              Interface Statistics.       */
-
-                    switch (rtatp->rta_type) {
-                    case IFLA_ADDRESS: {
-                        ::memcpy(_MAC, RTA_DATA(rtatp), sizeof(_MAC));
-                        break;
-                    }
-                    case IFLA_IFNAME: {
-                        _name = string(reinterpret_cast<const char*>(RTA_DATA(rtatp)), (RTA_PAYLOAD(rtatp) - 1));
-                        break;
-                    }
-                    case IFLA_BROADCAST:
-                    case IFLA_MTU:
-                    case IFLA_LINK:
-                    case IFLA_QDISC:
-                    case IFLA_STATS:
-                    case IFLA_COST:
-                    case IFLA_PRIORITY:
-                    case IFLA_MASTER:
-                    case IFLA_WIRELESS:
-                    case IFLA_PROTINFO:
-                    case IFLA_TXQLEN:
-                    case IFLA_MAP:
-                    case IFLA_WEIGHT:
-                    case IFLA_OPERSTATE:
-                    case IFLA_LINKMODE:
-                    case IFLA_LINKINFO:
-                    case IFLA_NET_NS_PID:
-                    case IFLA_IFALIAS:
-                    case IFLA_NUM_VF: /* Number of VFs if device is SR-IOV PF */
-                    case IFLA_VFINFO_LIST:
-                    case IFLA_STATS64:
-                    case IFLA_VF_PORTS:
-                    case IFLA_PORT_SELF:
-                        /* Next options are available on newer kernels but as these options are no used at
-              the moment, will keep them out to support all kernels from 3.3 and higher !!!
-
-             case IFLA_AF_SPEC:
-             case IFLA_GROUP:             / * Group the device belongs to * /
-             case IFLA_NET_NS_FD:
-             case IFLA_EXT_MASK:          / * Extended info mask, VFs, etc * /
-
-             case IFLA_PROMISCUITY:       Promiscuity count: > 0 means acts PROMISC 
-             case IFLA_NUM_TX_QUEUES:
-             case IFLA_NUM_RX_QUEUES:
-             case IFLA_CARRIER:
-             case IFLA_PHYS_PORT_ID:
-             case IFLA_CARRIER_CHANGES:
-             case IFLA_PHYS_SWITCH_ID:
-             case IFLA_LINK_NETNSID:
-             case IFLA_PHYS_PORT_NAME:
-             case IFLA_PROTO_DOWN:
-	     */
-
-                        {
-                            break;
-                        }
-                    default:
-                        // TRACE_L1("Not handling: %d\n", rtatp->rta_type);
-                        break;
-                    }
-                }
-            }
-            void Update(const struct rtattr* rtatp, const uint16_t length, const uint8_t prefixlen)
-            {
-
-                uint16_t rtattrlen = length;
-
-                for (; RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
-
-                    /* Here we hit the fist chunk of the message. Time to validate the    *
-             * the type. For more info on the different types see man(7) rtnetlink*
-             * The table below is taken from man pages.                           *
-             * Attributes                                                         *
-             * rta_type        value type             description                 *
-             * -------------------------------------------------------------      *
-             * IFA_UNSPEC      -                      unspecified.                *
-             * IFA_ADDRESS     raw protocol address   interface address           *
-             * IFA_LOCAL       raw protocol address   local address               *
-             * IFA_LABEL       asciiz string          name of the interface       *
-             * IFA_BROADCAST   raw protocol address   broadcast address.          *
-             * IFA_ANYCAST     raw protocol address   anycast address             *
-             * IFA_CACHEINFO   struct ifa_cacheinfo   Address information.        */
-
-                    switch (rtatp->rta_type) {
-                    case IFA_CACHEINFO: {
-                        // const struct ifa_cacheinfo* cache_info = reinterpret_cast<const struct ifa_cacheinfo *>(RTA_DATA(rtatp));
-                        // cache_info->ifa_valid == InfiniteLifeTime)
-
-                        // cache_info->ifa_prefered == InfiniteLifeTime)
-                        break;
-                    }
-                    case IFA_ADDRESS: /* POINT-TO-POINT destination address */
-                        /*
-                 if ((IPV6 == false) && (RTA_PAYLOAD(rtatp) == 4))
-                     _ipv4Nodes.push_back(IPNode(*reinterpret_cast<const struct in_addr *>(RTA_DATA(rtatp)), prefixlen));
-                 else */
-                        if (RTA_PAYLOAD(rtatp) == 16)
-                            _ipv6Nodes.push_back(IPNode(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rtatp)), prefixlen));
-                        break;
-                    case IFA_LOCAL:
-                        if (RTA_PAYLOAD(rtatp) == 4)
-                            _ipv4Nodes.push_back(IPNode(*reinterpret_cast<const struct in_addr*>(RTA_DATA(rtatp)), prefixlen));
-                        else if (RTA_PAYLOAD(rtatp) == 16)
-                            _ipv6Nodes.push_back(IPNode(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rtatp)), prefixlen));
-                        break;
-                    case IFA_BROADCAST:
-                        if (RTA_PAYLOAD(rtatp) == 4)
-                            _ipv4Nodes.push_back(IPNode(*reinterpret_cast<const struct in_addr*>(RTA_DATA(rtatp)), prefixlen));
-                        else if (RTA_PAYLOAD(rtatp) == 16)
-                            _ipv6Nodes.push_back(IPNode(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rtatp)), prefixlen));
-                        break;
-                    case IFA_ANYCAST:
-                        if (RTA_PAYLOAD(rtatp) == 4)
-                            _ipv4Nodes.push_back(IPNode(*reinterpret_cast<const struct in_addr*>(RTA_DATA(rtatp)), prefixlen));
-                        else if (RTA_PAYLOAD(rtatp) == 16)
-                            _ipv6Nodes.push_back(IPNode(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rtatp)), prefixlen));
-                        break;
-                    case IFA_MULTICAST:
-                        if (RTA_PAYLOAD(rtatp) == 4)
-                            _ipv4Nodes.push_back(IPNode(*reinterpret_cast<const struct in_addr*>(RTA_DATA(rtatp)), prefixlen));
-                        else if (RTA_PAYLOAD(rtatp) == 16)
-                            _ipv6Nodes.push_back(IPNode(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rtatp)), prefixlen));
-                        break;
-                    case IFA_LABEL:
-                        //   _name = string(reinterpret_cast<const char*>(RTA_DATA(rtatp)), (RTA_PAYLOAD(rtatp) - 1));
-                        break;
-                    /* Only RPI newer kernels work with this flag. Skip it for now, it is not used. Yet!!!! 
-                case IFA_FLAGS: 
-                printf("Flags: %X\n", *reinterpret_cast<const uint32_t*>(RTA_DATA(rtatp)));
-		break;
-	     */
-                    default:
-                        // TRACE_L1("Not handling: %d\n", rtatp->rta_type);
-                        break;
-                    }
-                }
-            }
-
-        private:
-            friend class IPNetworks;
-            inline void Info(const ProxyType<Channel>& channel)
-            {
-                _channel = channel;
-            }
-
-        private:
-            uint8_t _MAC[6];
-            uint32_t _index;
-            string _name;
-            std::list<IPNode> _ipv4Nodes;
-            std::list<IPNode> _ipv6Nodes;
-            ProxyType<Channel> _channel;
-        };
-
-    public:
-        typedef IteratorMapType<std::map<uint32_t, Network>, Network&, uint32_t> Iterator;
-
-    public:
         IPNetworks()
-            : _channel(ProxyType<Channel>::Create())
+            : _adminLock()
+            , _channel(ProxyType<Channel>::Create())
             , _networks()
+            , _observer(*this)
+            , _observers()
         {
-
             ASSERT(IsValid());
 
-            Reload();
+            // See if we have a communication path to get info...
+            InterfacesFetch ifInfo(*this);
+
+            if (_channel->Exchange(ifInfo, ifInfo) != ERROR_NONE) {
+                TRACE_L1("Could not load the base set of interfaces.");
+            }
+            else {
+                for (const Element& element : _networks) {
+                    element.second->Addresses();
+                }
+            }
         }
-        ~IPNetworks()
-        {
-        }
+        ~IPNetworks() = default;
 
     public:
-        inline uint16_t Count()
-        {
-            return static_cast<uint16_t>(_networks.size());
-        }
         inline bool IsValid() const
         {
             return ((_channel.IsValid()) && (_channel->IsValid() == true));
         }
-        Network& operator[](const uint32_t networkId)
-        {
-            std::map<uint32_t, Network>::iterator index(_networks.find(networkId));
-            return (index != _networks.end() ? index->second : _invalidNetwork);
+        void Load (std::list<Core::ProxyType<Network> >& list) {
+            _adminLock.Lock();
+            for (const Element& element : _networks) {
+                list.push_back(element.second);
+            }
+            _adminLock.Unlock();
         }
-        Network& Index(const uint16_t offset)
-        {
-            uint16_t count = offset;
-            std::map<uint32_t, Network>::iterator index(_networks.begin());
-
-            while ((count != 0) && (index != _networks.end())) {
-                index++;
-                count--;
+        void Register(AdapterObserver::INotification* client) {
+            _adminLock.Lock();
+            std::list<AdapterObserver::INotification*>::iterator index (std::find(_observers.begin(), _observers.end(), client));
+            if (index == _observers.end()) {
+                _observers.push_back(client);
+            }
+            _adminLock.Unlock();
+        }
+        void Unregister(AdapterObserver::INotification* client) {
+            _adminLock.Lock();
+            std::list<AdapterObserver::INotification*>::iterator index (std::find(_observers.begin(), _observers.end(), client));
+            if (index != _observers.end()) {
+                _observers.erase(index);
+            }
+            _adminLock.Unlock();            
+        }
+        void Add(const uint32_t id, const struct rtattr* data, const uint16_t length) {
+            string interfaceName;
+            _adminLock.Lock();
+            Map::iterator index (_networks.find(id));
+            if (index == _networks.end()) {
+                _networks.emplace(std::piecewise_construct,
+                    std::forward_as_tuple(id),
+                    std::forward_as_tuple(Core::ProxyType<Network>::Create(id, data, length)));
+            }
+            else {
+                index->second->Update(data, length);
+                interfaceName = index->second->Name();
             }
 
-            return (index != _networks.end() ? index->second : _invalidNetwork);
+            Notify(interfaceName);
+
+            _adminLock.Unlock();            
         }
-        inline void Reload()
-        {
+        void Remove(const uint32_t id) {
+            _adminLock.Lock();
+            Map::iterator index (_networks.find(id));
+            if (index != _networks.end()) {
+                string interfaceName(index->second->Name());
+                _networks.erase(index);
+                Notify(interfaceName);
+            }
+            _adminLock.Unlock();            
+        }
+        inline uint32_t Exchange(const Netlink& outbound, Netlink& inbound) {
+            return(_channel->Exchange(outbound, inbound));
+        }
 
-            if (IsValid() == true) {
-
-                _networks.clear();
-
-                InterfacesFetchType ifInfo(_networks);
-
-                if (_channel->Exchange(ifInfo, ifInfo) == ERROR_NONE) {
-
-                    IPAddressFetchType<false> ipv4(_networks);
-
-                    if (_channel->Exchange(ipv4, ipv4) == ERROR_NONE) {
-
-                        IPAddressFetchType<true> ipv6(_networks);
-
-                        if (_channel->Exchange(ipv6, ipv6) == ERROR_NONE) {
-
-                            // Fill in the channel for all networks.
-                            std::map<uint32_t, Network>::iterator index(_networks.begin());
-
-                            while (index != _networks.end()) {
-                                index->second.Info(_channel);
-                                index++;
-                            }
-                        }
-                    }
-                }
+    private:
+        void Notify(const string& name) {
+            for (AdapterObserver::INotification* callback : _observers) {
+                callback->Event(name);
             }
         }
 
     private:
+        CriticalSection _adminLock;
         ProxyType<Channel> _channel;
-        std::map<uint32_t, Network> _networks;
-        Network _invalidNetwork;
+        Map _networks;
+        Observer _observer;
+        std::list<AdapterObserver::INotification*> _observers;
     };
 
-    uint32_t IPNetworks::Network::Add(const IPNode& address)
+    static SingletonType<IPNetworks> networkController;
+
+    Network::Network(const uint32_t index, const struct rtattr* iface, const uint32_t length)
+        : _adminLock()
+        , _index(index)
+        , _name()
+        , _ipv4Nodes()
+        , _ipv6Nodes()
+    {
+        Update(iface, length);
+    }
+
+    bool Network::IsUp() const {
+
+        bool result = false;
+        int sockfd;
+
+        sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+
+        if (sockfd >= 0) {
+
+            struct ifreq ifr;
+
+            result = Core::ERROR_NONE;
+
+            ::memset(&ifr, 0, sizeof ifr);
+
+            _adminLock.Lock();
+
+            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ);
+
+            _adminLock.Unlock();
+
+            ::ioctl(sockfd, SIOCGIFFLAGS, &ifr);
+
+            result = ((ifr.ifr_flags & IFF_UP) == IFF_UP);
+            ::close(sockfd);
+        }
+
+        return (result);
+    }
+
+    bool Network::IsRunning() const {
+
+        bool result = false;
+        int sockfd;
+
+        sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+
+        if (sockfd >= 0) {
+
+            struct ifreq ifr;
+
+            result = Core::ERROR_NONE;
+
+            ::memset(&ifr, 0, sizeof ifr);
+
+            _adminLock.Lock();
+
+            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ);
+
+            _adminLock.Unlock();
+
+            ::ioctl(sockfd, SIOCGIFFLAGS, &ifr);
+
+            result = ((ifr.ifr_flags & (IFF_UP | IFF_RUNNING)) == (IFF_UP | IFF_RUNNING));
+            ::close(sockfd);
+        }
+
+        return (result);
+    }
+
+    uint32_t Network::Up(const bool enabled)
+    {
+        uint32_t result = Core::ERROR_GENERAL;
+        int sockfd;
+
+        sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+
+        if (sockfd >= 0) {
+
+            struct ifreq ifr;
+
+            result = Core::ERROR_NONE;
+
+            ::memset(&ifr, 0, sizeof ifr);
+
+            _adminLock.Lock();
+
+            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ);
+
+            _adminLock.Unlock();
+
+            ::ioctl(sockfd, SIOCGIFFLAGS, &ifr);
+
+            if ((enabled == true) && ((ifr.ifr_flags & (IFF_UP | IFF_RUNNING)) != (IFF_UP | IFF_RUNNING))) {
+                ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
+                ::ioctl(sockfd, SIOCSIFFLAGS, &ifr);
+            } else if ((enabled == false) && ((ifr.ifr_flags & (IFF_UP | IFF_RUNNING)) != 0)) {
+                ifr.ifr_flags &= ~(IFF_UP | IFF_RUNNING);
+                ::ioctl(sockfd, SIOCSIFFLAGS, &ifr);
+            }
+
+            ::close(sockfd);
+        }
+
+        return (result);
+    }
+
+    uint32_t Network::Broadcast(const Core::NodeId& address)
+    {
+        uint32_t result = Core::ERROR_GENERAL;
+        int sockfd;
+        struct ifreq ifr;
+
+        sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+
+        if (sockfd >= 0) {
+
+            result = Core::ERROR_NONE;
+
+            ::memset(&ifr, 0, sizeof ifr);
+
+            _adminLock.Lock();
+
+            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ);
+
+            _adminLock.Unlock();
+
+            ifr.ifr_flags = IFF_BROADCAST;
+            ::memcpy(&ifr.ifr_broadaddr, static_cast<const struct sockaddr*>(address), sizeof(struct sockaddr));
+
+            if (ioctl(sockfd, SIOCSIFBRDADDR, &ifr) >= 0) {
+                result = Core::ERROR_NONE;
+            }
+
+            ::close(sockfd);
+        }
+
+        return (result);
+    }
+
+    uint32_t Network::Add(const IPNode& address)
     {
         IPAddressModifyType<true> modifier(*this, address);
 
-        return (_channel->Exchange(modifier, modifier));
+        return (networkController.Instance().Exchange(modifier, modifier));
     }
 
-    uint32_t IPNetworks::Network::Delete(const IPNode& address)
+    uint32_t Network::Delete(const IPNode& address)
     {
         IPAddressModifyType<false> modifier(*this, address);
 
-        return (_channel->Exchange(modifier, modifier));
+        return (networkController.Instance().Exchange(modifier, modifier));
     }
 
-    uint32_t IPNetworks::Network::Gateway(const IPNode& network, const NodeId& gateway)
+    uint32_t Network::Gateway(const IPNode& network, const NodeId& gateway)
     {
         IPRouteModifyType<true> modifier(*this, network, gateway);
 
-        return (_channel->Exchange(modifier, modifier));
+        return (networkController.Instance().Exchange(modifier, modifier));
     }
 
-    static IPNetworks networkController;
-
-    IPV4AddressIterator::IPV4AddressIterator(const uint16_t adapter)
-        : _adapter(0)
-        , _index(static_cast<uint16_t>(~0))
-        , _count(0)
-    {
-        // Just a dummy load so we have the info
-        IPNetworks::Network& network(networkController.Index(adapter));
-
-        if (network.IsValid() == true) {
-
-            _adapter = network.Id();
-
-            // Best case, linux attaches 1 IPV4 to 1 adapter.
-            _count = network.IPv4Nodes().Count();
-        }
-    }
-    IPNode IPV4AddressIterator::Address() const
-    {
-        IPNode result;
-
-        IPNetworks::Network& network(networkController[_adapter]);
-
-        if (network.IsValid() == true) {
-
-            uint16_t count = _index;
-            IPNetworks::Network::Iterator index(network.IPv4Nodes());
-
-            while ((index.Next() == true) && (count != 0)) {
-                count--;
-            }
-
-            ASSERT(index.IsValid());
-
-            result = (*index);
-        }
-
-        return (result);
-    }
-
-    IPV6AddressIterator::IPV6AddressIterator(const uint16_t adapter)
-        : _adapter(0)
-        , _index(static_cast<uint16_t>(~0))
-        , _count(0)
-    {
-        IPNetworks::Network& network(networkController.Index(adapter));
-
-        if (network.IsValid() == true) {
-
-            _adapter = network.Id();
-
-            // Best case, linux attaches 1 IPV4 to 1 adapter.
-            _count = network.IPv6Nodes().Count();
-        }
-    }
-
-    IPNode IPV6AddressIterator::Address() const
-    {
-        IPNode result;
-
-        IPNetworks::Network& network(networkController[_adapter]);
-
-        if (network.IsValid() == true) {
-
-            uint16_t count = _index;
-            IPNetworks::Network::Iterator index(network.IPv6Nodes());
-
-            while ((index.Next() == true) && (count != 0)) {
-                count--;
-            }
-
-            ASSERT(index.IsValid());
-
-            result = (*index);
-        }
-
-        return (result);
-    }
-
-    /* static */ void AdapterIterator::Flush()
-    {
-        networkController.Reload();
-    }
-
-    uint16_t AdapterIterator::Count() const
-    {
-        // Just a dummy load so we have the info
-        return (networkController.Count());
-    }
-
-    string AdapterIterator::Name() const
-    {
-        ASSERT(IsValid());
-
-        IPNetworks::Network& network(networkController.Index(_index));
-
-        ASSERT(network.IsValid());
-
-        return (network.Name());
-    }
-
-    string AdapterIterator::MACAddress(const char delimiter) const
-    {
-        uint8_t MAC[6];
-        string result;
-
-        ASSERT(IsValid());
-
-        IPNetworks::Network& network(networkController.Index(_index));
-
-        ASSERT(network.IsValid());
-
-        network.MAC(MAC, sizeof(MAC));
-
-        ConvertMACToString(MAC, sizeof(MAC), delimiter, result);
-
-        return (result);
-    }
-
-    void AdapterIterator::MACAddress(uint8_t buffer[], const uint8_t length) const
-    {
-        ASSERT(IsValid());
-
-        IPNetworks::Network& network(networkController.Index(_index));
-
-        ASSERT(network.IsValid());
-
-        network.MAC(buffer, length);
-    }
-
-    NodeId AdapterIterator::Broadcast() const
+    NodeId Network::Broadcast() const
     {
         Core::NodeId result;
 
@@ -1410,284 +1451,143 @@ namespace Core {
 
         return NodeId(target);
     }
-
-    bool AdapterIterator::IsUp() const
+            
+    void Network::Update(const struct rtattr* rtatp, const uint16_t length)
     {
-        bool result = false;
-        int sockfd;
+        uint16_t rtattrlen = length;
 
-        sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+        for (; (rtattrlen <= length) && RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
 
-        if (sockfd >= 0) {
+            /* Here we hit the fist chunk of the message. Time to validate the    *
+                * the type. For more info on the different types see man(7) rtnetlink*
+                * The table below is taken from man pages.                           *
+                * Attributes                                                         *
+                * rta_type        value type             description                 *
+                * -------------------------------------------------------------      *
+                * IFLA_UNSPEC     -                      unspecified.                *
+                * IFLA_ADDRESS    hardware address       interface L2 address        *
+                * IFLA_BROADCAST  hardware address       L2 broadcast address.       *
+                * IFLA_IFNAME     asciiz string          Device name.                *
+                * IFLA_MTU        unsigned int           MTU of the device.          *
+                * IFLA_LINK       int                    Link type.                  *
+                * IFLA_QDISC      asciiz string          Queueing discipline.        *
+                * IFLA_STATS      see below              Interface Statistics.       */
 
-            struct ifreq ifr;
-
-            result = Core::ERROR_NONE;
-
-            ::memset(&ifr, 0, sizeof ifr);
-
-            ::strncpy(ifr.ifr_name, Name().c_str(), IFNAMSIZ);
-
-            ::ioctl(sockfd, SIOCGIFFLAGS, &ifr);
-
-            result = ((ifr.ifr_flags & IFF_UP) == IFF_UP);
-            ::close(sockfd);
-        }
-
-        return (result);
-    }
-
-    bool AdapterIterator::IsRunning() const
-    {
-        bool result = false;
-        int sockfd;
-
-        sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
-
-        if (sockfd >= 0) {
-
-            struct ifreq ifr;
-
-            result = Core::ERROR_NONE;
-
-            ::memset(&ifr, 0, sizeof ifr);
-
-            ::strncpy(ifr.ifr_name, Name().c_str(), IFNAMSIZ);
-
-            ::ioctl(sockfd, SIOCGIFFLAGS, &ifr);
-
-            result = ((ifr.ifr_flags & (IFF_UP | IFF_RUNNING)) == (IFF_UP | IFF_RUNNING));
-            ::close(sockfd);
-        }
-
-        return (result);
-    }
-
-    uint32_t AdapterIterator::Up(const bool enabled)
-    {
-        uint32_t result = Core::ERROR_GENERAL;
-        int sockfd;
-
-        sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
-
-        if (sockfd >= 0) {
-
-            struct ifreq ifr;
-
-            result = Core::ERROR_NONE;
-
-            ::memset(&ifr, 0, sizeof ifr);
-
-            ::strncpy(ifr.ifr_name, Name().c_str(), IFNAMSIZ);
-
-            ::ioctl(sockfd, SIOCGIFFLAGS, &ifr);
-
-            if ((enabled == true) && ((ifr.ifr_flags & (IFF_UP | IFF_RUNNING)) != (IFF_UP | IFF_RUNNING))) {
-                ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
-                ::ioctl(sockfd, SIOCSIFFLAGS, &ifr);
-            } else if ((enabled == false) && ((ifr.ifr_flags & (IFF_UP | IFF_RUNNING)) != 0)) {
-                ifr.ifr_flags &= ~(IFF_UP | IFF_RUNNING);
-                ::ioctl(sockfd, SIOCSIFFLAGS, &ifr);
+            switch (rtatp->rta_type) {
+            case IFLA_ADDRESS: {
+                _adminLock.Lock();
+                ::memcpy(_MAC, RTA_DATA(rtatp), sizeof(_MAC));
+                _adminLock.Unlock();
+                break;
             }
-
-            ::close(sockfd);
-        }
-
-        return (result);
-    }
-
-    uint32_t AdapterIterator::Broadcast(const Core::NodeId& address)
-    {
-        uint32_t result = Core::ERROR_GENERAL;
-        int sockfd;
-        struct ifreq ifr;
-
-        sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
-
-        if (sockfd >= 0) {
-
-            result = Core::ERROR_NONE;
-
-            ::memset(&ifr, 0, sizeof ifr);
-
-            ::strncpy(ifr.ifr_name, Name().c_str(), IFNAMSIZ);
-
-            ifr.ifr_flags = IFF_BROADCAST;
-            ::memcpy(&ifr.ifr_broadaddr, static_cast<const struct sockaddr*>(address), sizeof(struct sockaddr));
-
-            if (ioctl(sockfd, SIOCSIFBRDADDR, &ifr) >= 0) {
-                result = Core::ERROR_NONE;
-            }
-
-            ::close(sockfd);
-        }
-
-        return (result);
-    }
-
-    uint32_t AdapterIterator::Add(const IPNode& address)
-    {
-
-        ASSERT(IsValid());
-
-        IPNetworks::Network& network(networkController.Index(_index));
-
-        ASSERT(network.IsValid());
-
-        return (network.Add(address));
-    }
-
-    uint32_t AdapterIterator::Delete(const IPNode& address)
-    {
-
-        ASSERT(IsValid());
-
-        IPNetworks::Network& network(networkController.Index(_index));
-
-        ASSERT(network.IsValid());
-
-        return (network.Delete(address));
-    }
-
-    uint32_t AdapterIterator::Gateway(const IPNode& network, const NodeId& gateway)
-    {
-
-        ASSERT(IsValid());
-
-        IPNetworks::Network& adapter(networkController.Index(_index));
-
-        ASSERT(adapter.IsValid());
-
-        return (adapter.Gateway(network, gateway));
-    }
-
-#endif
-
-    bool AdapterIterator::HasMAC() const
-    {
-        uint8_t index = 0;
-        uint8_t mac[6];
-        MACAddress(mac, sizeof(mac));
-
-        while ((index < sizeof(mac)) && (mac[index] == 0)) {
-            index++;
-        }
-
-        return (index < sizeof(mac));
-    }
-
-#ifndef __WINDOWS__
-    /* virtual */ uint16_t AdapterObserver::Observer::Message::Write(uint8_t stream[], const uint16_t length) const
-    {
-        return (0);
-    }
-    /* virtual */ uint16_t AdapterObserver::Observer::Message::Read(const uint8_t stream[], const uint16_t length)
-    {
-        uint16_t result = 0;
-        const struct ifinfomsg* ifi = reinterpret_cast<const struct ifinfomsg*>(stream);
-        string interfaceName;
-
-        if (Type() == RTM_NEWLINK) {
-            const IPNetworks::Network& network(networkController[ifi->ifi_index]);
-            if (network.IsValid() == false) {
-                AdapterIterator::Flush();
-                const IPNetworks::Network& network(networkController[ifi->ifi_index]);
-                if (network.IsValid() == true) {
-                    interfaceName = network.Name();
+            case IFLA_IFNAME: {
+                _adminLock.Lock();
+                string newName(reinterpret_cast<const char*>(RTA_DATA(rtatp)), (RTA_PAYLOAD(rtatp) - 1));
+                if (newName != _name) {
+                    _name = newName;
                 }
-            } else {
-                interfaceName = network.Name();
+                _adminLock.Unlock();
+                break;
             }
+            case IFLA_BROADCAST:
+            case IFLA_MTU:
+            case IFLA_LINK:
+            case IFLA_QDISC:
+            case IFLA_STATS:
+            case IFLA_COST:
+            case IFLA_PRIORITY:
+            case IFLA_MASTER:
+            case IFLA_WIRELESS:
+            case IFLA_PROTINFO:
+            case IFLA_TXQLEN:
+            case IFLA_MAP:
+            case IFLA_WEIGHT:
+            case IFLA_OPERSTATE:
+            case IFLA_LINKMODE:
+            case IFLA_LINKINFO:
+            case IFLA_NET_NS_PID:
+            case IFLA_IFALIAS:
+            case IFLA_NUM_VF: /* Number of VFs if device is SR-IOV PF */
+            case IFLA_VFINFO_LIST:
+            case IFLA_STATS64:
+            case IFLA_VF_PORTS:
+            case IFLA_PORT_SELF:
+                /* Next options are available on newer kernels but as these options are no used at
+                    the moment, will keep them out to support all kernels from 3.3 and higher !!!
 
-        } else if (Type() == RTM_DELLINK) {
-            const IPNetworks::Network& network(networkController[ifi->ifi_index]);
+                    case IFLA_AF_SPEC:
+                    case IFLA_GROUP:             / * Group the device belongs to * /
+                    case IFLA_NET_NS_FD:
+                    case IFLA_EXT_MASK:          / * Extended info mask, VFs, etc * /
 
-            if (network.IsValid() == true) {
-
-                interfaceName = network.Name();
-                AdapterIterator::Flush();
+                    case IFLA_PROMISCUITY:       Promiscuity count: > 0 means acts PROMISC 
+                    case IFLA_NUM_TX_QUEUES:
+                    case IFLA_NUM_RX_QUEUES:
+                    case IFLA_CARRIER:
+                    case IFLA_PHYS_PORT_ID:
+                    case IFLA_CARRIER_CHANGES:
+                    case IFLA_PHYS_SWITCH_ID:
+                    case IFLA_LINK_NETNSID:
+                    case IFLA_PHYS_PORT_NAME:
+                    case IFLA_PROTO_DOWN:
+                */
+                {
+                    break;
+                }
+            default:
+                // TRACE_L1("Not handling: %d\n", rtatp->rta_type);
+                break;
             }
         }
+    }
 
-        if ((Type() == RTM_NEWLINK) || (Type() == RTM_DELLINK) || (Type() == RTM_GETLINK) || (Type() == RTM_SETLINK)) {
-            const IPNetworks::Network& network(networkController[ifi->ifi_index]);
+    void Network::Addresses() {
+        IPAddressFetchType<false> ipv4(_index, _ipv4Nodes);
 
-            if (network.IsValid()) {
-                networkController[ifi->ifi_index].Update(reinterpret_cast<const struct rtattr*>(IFLA_RTA(ifi)), length - sizeof(struct ifinfomsg));
+        if (networkController.Exchange(ipv4, ipv4) != ERROR_NONE) {
+            TRACE_L1("Network::Network(): Could not read ipv4 Nodes");
+        }
+        else {
+            IPAddressFetchType<true> ipv6(_index, _ipv6Nodes);
+
+            if (networkController.Exchange(ipv6, ipv6) != ERROR_NONE) {
+                TRACE_L1("Network::Network(): Could not read ipv6 Nodes");
             }
         }
+    }
 
-        if (interfaceName.empty() == false) {
-            _callback->Event(interfaceName.c_str());
-            result = length;
+    AdapterIterator::AdapterIterator()
+        : _reset(true)
+        , _list()
+        , _index() {
+        // Time to get the current set of networks..
+        networkController.Instance().Load(_list);
+        _index = _list.begin();
+    }
+
+    AdapterIterator::AdapterIterator(const string& name) 
+        : AdapterIterator() {
+        while ( (Next() == true) && (Name() != name) ) { /* Intentionally left empty */ }
+    }
+
+    AdapterIterator::AdapterIterator(const AdapterIterator& copy)
+        : AdapterIterator() {
+        if (copy.IsValid() == true) {
+            const string name (copy.Name());
+            while ( (Next() == true) && (Name() != name) ) { /* Intentionally left empty */ }
         }
-        return (result);
     }
 
-    AdapterObserver::Observer::Observer(INotification* callback)
-        : SocketDatagram(
-              true,
-              NodeId(NETLINK_ROUTE, 0, RTMGRP_LINK),
-              NodeId(),
-              64,
-              4000)
-        , _parser(callback)
+    AdapterIterator& AdapterIterator::operator=(const AdapterIterator& RHS)
     {
-    }
+        _reset = true;
+        _list = RHS._list;
+        _index = _list.begin();
 
-    AdapterObserver::Observer::~Observer()
-    {
-        Close(Core::infinite);
-    }
-
-    // Methods to extract and insert data into the socket buffers
-    /* virtual */ uint16_t AdapterObserver::Observer::SendData(uint8_t* dataFrame, const uint16_t maxSendSize)
-    {
-        return (0);
-    }
-
-    /* virtual */ uint16_t AdapterObserver::Observer::ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize)
-    {
-        return (_parser.Deserialize(dataFrame, receivedSize));
-    }
-
-    // Signal a state change, Opened, Closed or Accepted
-    /* virtual */ void AdapterObserver::Observer::StateChange()
-    {
+        return (*this);
     }
 
 #endif
 
-    AdapterObserver::AdapterObserver(INotification* callback)
-#ifdef __WINDOWS__
-    {
-#else
-        : _link(callback){
-#endif
-
-#ifdef __WINDOWS__
-        //IoWMIOpenBlock(&GUID_NDIS_STATUS_LINK_STATE, WMIGUID_NOTIFICATION, . . .);
-        //IoWMISetNotificationCallback(. . ., Callback, . . .);
-
-        //void Callback(PWNODE_HEADER wnode, . . .)
-        //{
-        //	auto instance = (PWNODE_SINGLE_INSTANCE)wnode;
-        //	auto header = (PNDIS_WMI_EVENT_HEADER)((PUCHAR)instance +
-        //		instance->DataBlockOffset + sizeof(ULONG));
-        //	auto linkState = (PNDIS_LINK_STATE)(header + 1);
-
-        //	switch (linkState->MediaConnectState)
-        //	{
-        //	case MediaConnectStateConnected:
-        //		. . .
-        //	}
-        //}
-
-#endif
-    }
-
-    AdapterObserver::~AdapterObserver()
-    {
-    }
 }
 }
