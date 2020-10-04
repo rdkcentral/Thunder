@@ -11,7 +11,7 @@
   },
   "definitions": {
     "status": {
-      "description": "upgrade status",
+      "description": "Upgrade status",
       "type": "string",
       "enum": [
         "none",
@@ -29,7 +29,7 @@
       "example": "completed"
     },
     "error": {
-      "description": "reason of error",
+      "description": "Reason of error",
       "type": "string",
       "enum": [
         "none",
@@ -43,18 +43,20 @@
         "unavailable",
         "timedout",
         "downloaddirectorynotexist",
+        "resumenotsupported",
+        "invalidrange",
         "unkown"
       ],
       "example": "operationotsupported"
     },
     "type": {
-      "description": "type of the firmware",
+      "description": "Type of the firmware",
       "type": "string",
       "enum": [
         "CDL",
         "RCDL"
       ],
-      "example": "CDL"
+      "example": "RCDL"
     }
   },
   "properties": {
@@ -72,7 +74,7 @@
       "readonly": true,
       "summary": "Max free space available to download image",
       "params": {
-        "description": "available free space in bytes",
+        "description": "Available free space in bytes",
         "type": "number",
         "size": 64,
         "example": 315576
@@ -87,12 +89,12 @@
         "type": "object",
         "properties": {
           "name": {
-            "description": "name of the firmware",
+            "description": "Name of the firmware",
             "type": "string",
             "example": "firmware_v.0"
           },
           "location": {
-            "description": "location/url of the firmware to be upgraded",
+            "description": "Location or URL of the firmware to be upgraded",
             "type": "string",
             "example": "http://my.site.com/images"
           },
@@ -100,7 +102,7 @@
             "$ref": "#/definitions/type"
           },
           "progressinterval": {
-            "description": "number of seconds between progress update events (5 seconds, 10 seconds etc). 0 means invoking callback only once to report final upgrade result",
+            "description": "Number of seconds between progress update events (5 seconds, 10 seconds etc). 0 means invoking callback only once to report final upgrade result",
             "type": "number",
             "size": 16,
             "example": "10"
@@ -136,20 +138,59 @@
           "$ref": "#/common/errors/badrequest"
         },
         {
-          "description": "Bad hash value given",
-          "$ref": "#/common/errors/unknownkey"
-        },
-        {
           "description": "Invalid state of device",
           "$ref": "#/common/errors/illegalstate"
         },
         {
           "description": "Incorrect hash given",
           "$ref": "#/common/errors/incorrecthash"
+        }
+      ]
+    },
+    "resume": {
+      "summary": "Resume download from the last paused position",
+      "events": "upgradeprogress",
+      "params": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Name of the firmware",
+            "type": "string",
+            "example": "firmware_v.0"
+          },
+          "location": {
+            "description": "Location or URL of the firmware to be upgraded",
+            "type": "string",
+            "example": "http://my.site.com/images"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Operation in progress",
+          "$ref": "#/common/errors/inprogress"
         },
         {
-          "description": "Authentication failure",
-          "$ref": "#/common/errors/unauthenticated"
+          "description": "Invalid location given",
+          "$ref": "#/common/errors/incorrecturl"
+        },
+        {
+          "description": "Error in download",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Bad file name given",
+          "$ref": "#/common/errors/badrequest"
+        },
+        {
+          "description": "Invalid state of device",
+          "$ref": "#/common/errors/illegalstate"
         }
       ]
     }
