@@ -28,6 +28,8 @@
 #include <openssl/sha.h>
 #include <openssl/evp.h>
 
+#include <limits.h>
+
 #include "Vault.h"
 
 
