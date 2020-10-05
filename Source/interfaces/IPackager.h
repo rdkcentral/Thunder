@@ -18,6 +18,7 @@
  */
 
 #pragma once
+
 #include "Module.h"
 
 namespace WPEFramework {
@@ -35,7 +36,15 @@ namespace Exchange {
             VERIFYING,
             VERIFIED,
             INSTALLING,
-            INSTALLED
+            INSTALLED,
+
+            DOWNLOAD_FAILED,
+            DECRYPTION_FAILED,
+            EXTRACTION_FAILED,
+            VERIFICATION_FAILED,
+            INSTALL_FAILED,
+
+            REMOVE_FAILED
         };
 
         struct EXTERNAL IInstallationInfo : virtual public Core::IUnknown {
@@ -57,6 +66,34 @@ namespace Exchange {
             enum { ID = ID_PACKAGER_NOTIFICATION };
             virtual void StateChange(IPackageInfo* package, IInstallationInfo* install) = 0;
             virtual void RepositorySynchronize(uint32_t status) = 0;
+            virtual void IntallStep(state status, uint32_t task, string id, int32_t code) = 0;
+        };
+
+        struct EXTERNAL IPackageInfoEx : virtual public Core::IUnknown {
+            enum { ID = ID_PACKAGER_PACKAGEINFOEX };
+
+            virtual ~IPackageInfoEx(){};
+
+            virtual string Name() const = 0;
+            virtual string BundlePath() const = 0;
+            virtual string Version() const = 0;
+            virtual string PkgId() const = 0;
+            virtual string Installed() const = 0;
+            virtual int64_t SizeInBytes() const = 0;
+            virtual string Type() const = 0;
+
+            struct IIterator : virtual public Core::IUnknown
+            {
+                enum { ID = ID_PACKAGER_PACKAGEINFOEX_ITERATOR };
+
+                virtual ~IIterator(){};
+
+                virtual uint32_t Count() const = 0;
+                virtual void Reset() = 0;
+                virtual bool IsValid() const = 0;
+                virtual bool Next() = 0;
+                virtual IPackageInfoEx* Current() const = 0;
+            };
         };
 
         virtual void Register(INotification* observer) = 0;
@@ -64,6 +101,16 @@ namespace Exchange {
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;
         virtual uint32_t Install(const string& name, const string& version, const string& arch) = 0;
         virtual uint32_t SynchronizeRepository() = 0;
+
+        // DAC Installer
+        virtual uint32_t Install(const string& pkgId, const string& type, const string& url, const string& token, const string& listener) = 0;
+        virtual uint32_t Remove(const string& pkgId, const string& listener) = 0;
+        virtual uint32_t Cancel(const string& task, const string& listener) = 0;
+        virtual uint32_t IsInstalled(const string& pkgId) = 0;
+        virtual uint32_t GetInstallProgress(const string& task) = 0;
+        virtual IPackageInfoEx::IIterator* GetInstalled() = 0;
+        virtual IPackageInfoEx* GetPackageInfo(const string& pkgId) = 0;
+        virtual int64_t GetAvailableSpace() = 0;
     };
 }
 }
