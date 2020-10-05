@@ -49,101 +49,15 @@
 #include <net/if_dl.h>
 #endif
 
-// Convert a string of binary bytes data (address) to a Hexadecimal string (output)
-void ConvertMACToString(const uint8_t address[], const uint8_t length, const char delimiter, string& output)
-{
-    for (uint8_t i = 0; i < length; i++) {
-        // Reason for the low-level approch is performance.
-        // In stead of using string operations, we know that each byte exists of 2 nibbles,
-        // lets just translate these nibbles to Hexadecimal numbers and add them to the output.
-        // This saves a setup of several string manipulation operations.
-        uint8_t highNibble = ((address[i] & 0xF0) >> 4);
-        uint8_t lowNibble = (address[i] & 0x0F);
-        if ((i != 0) && (delimiter != '\0')) {
-            output += delimiter;
-        }
-        output += static_cast<char>(highNibble + (highNibble >= 10 ? ('A' - 10) : '0'));
-        output += static_cast<char>(lowNibble + (lowNibble >= 10 ? ('A' - 10) : '0'));
-    }
-}
-
 namespace WPEFramework {
 
 namespace Core {
-
-    AdapterObserver::AdapterObserver(INotification* callback)
-        : _callback(callback)
-    {
-#ifdef __WINDOWS__
-        //IoWMIOpenBlock(&GUID_NDIS_STATUS_LINK_STATE, WMIGUID_NOTIFICATION, . . .);
-        //IoWMISetNotificationCallback(. . ., Callback, . . .);
-
-        //void Callback(PWNODE_HEADER wnode, . . .)
-        //{
-        //	auto instance = (PWNODE_SINGLE_INSTANCE)wnode;
-        //	auto header = (PNDIS_WMI_EVENT_HEADER)((PUCHAR)instance +
-        //		instance->DataBlockOffset + sizeof(ULONG));
-        //	auto linkState = (PNDIS_LINK_STATE)(header + 1);
-
-        //	switch (linkState->MediaConnectState)
-        //	{
-        //	case MediaConnectStateConnected:
-        //		. . .
-        //	}
-        //}
-
-#endif
-    }
-
-    AdapterObserver::~AdapterObserver()
-    {
-        Close();
-    }
-
-    uint32_t AdapterObserver::Open() {
-        #ifndef __WINDOWS__
-        networkController.Instance().Register(_callback);
-        #endif
-        return (Core::ERROR_NONE);
-    }
-
-    uint32_t AdapterObserver::Close() {
-        #ifndef __WINDOWS__
-        networkController.Instance().Unregister(_callback);
-        #endif
-        return (Core::ERROR_NONE);
-    }
-
-    bool AdapterIterator::HasMAC() const
-    {
-        uint8_t index = 0;
-        uint8_t mac[6];
-        MACAddress(mac, sizeof(mac));
-
-        while ((index < sizeof(mac)) && (mac[index] == 0)) {
-            index++;
-        }
-
-        return (index < sizeof(mac));
-    }
 
 #ifdef __WINDOWS__
 
 /* Note: could also use malloc() and free() */
 #define MALLOC(x) HeapAlloc(GetProcessHeap(), 0, (x))
-#definebool AdapterIterator::HasMAC() const
-{
-    uint8_t index = 0;
-    uint8_t mac[6];
-    MACAddress(mac, sizeof(mac));
-
-    while ((index < sizeof(mac)) && (mac[index] == 0)) {
-        index++;
-    }
-
-    return (index < sizeof(mac));
-}
- FREE(x) HeapFree(GetProcessHeap(), 0, (x))
+#define FREE(x) HeapFree(GetProcessHeap(), 0, (x))
 
     static uint16_t AdapterCount = 0;
     static PIP_ADAPTER_ADDRESSES _interfaceInfo = nullptr;
@@ -743,7 +657,7 @@ namespace Core {
                     TRACE_L1("IPAddressFetchType request failed with code %d", error->error);
                 } 
             }
-            else {
+            else if (Type() != NLMSG_DONE) {
                 TRACE_L1("IPAddressFetchType: Read unexpected type: %d", Type());
             }
 
@@ -803,7 +717,7 @@ namespace Core {
         }
         uint16_t Read(const uint8_t stream[], const uint16_t length) override
         {
-            if ((ADD === true) && (Type() == RTM_NEWADDR)) {
+            if ((ADD == true) && (Type() == RTM_NEWADDR)) {
 
                 const struct ifaddrmsg* rtmp = reinterpret_cast<const struct ifaddrmsg*>(stream);
 
@@ -815,14 +729,14 @@ namespace Core {
 
                 for (; RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
 
-                    IPNode result (ToIPNode(IPV6, rtatp, prefixlen));
+                    IPNode result (ToIPNode(NodeId::TYPE_IPV6, rtatp, prefixlen));
 
                     if (result.IsValid() == true) {
                         _network.Added(result);
                     }
                 }
 
-            } else if ((ADD === false) && (Type() == RTM_DELADDR)) {
+            } else if ((ADD == false) && (Type() == RTM_DELADDR)) {
 
                 const struct ifaddrmsg* rtmp = reinterpret_cast<const struct ifaddrmsg*>(stream);
 
@@ -834,7 +748,7 @@ namespace Core {
 
                 for (; RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
 
-                    IPNode result (ToIPNode(IPV6, rtatp, prefixlen));
+                    IPNode result (ToIPNode(NodeId::TYPE_IPV6, rtatp, prefixlen));
 
                     if (result.IsValid() == true) {
                         _network.Removed(result);
@@ -923,7 +837,7 @@ namespace Core {
 
             parameters.Add(RTA_OIF, _interface.Id());
 
-            TRACE_L1("Gateway: %s, Network: %s, Interface %d, result %d", _gateway.HostAddress().c_str(), _network.HostAddress().c_str(), _interfac->.Id(), parameters.Size());
+            TRACE_L1("Gateway: %s, Network: %s, Interface %d, result %d", _gateway.HostAddress().c_str(), _network.HostAddress().c_str(), _interface.Id(), parameters.Size());
 
             /*
                 for (uint8_t teller = 0; teller < parameters.Size(); teller++) {
@@ -1147,7 +1061,7 @@ namespace Core {
             }
             uint16_t Read(const uint8_t stream[], const uint16_t length) override
             {
-                if (Type() == RTM_GETLINK) {
+                if (Type() == RTM_NEWLINK) {
                     const struct ifinfomsg* iface = reinterpret_cast<const struct ifinfomsg*>(stream);
                     _parent.Add(iface->ifi_index, reinterpret_cast<const struct rtattr*>(IFLA_RTA(iface)), length - sizeof(struct ifinfomsg));
                 } else if (Type() == NLMSG_ERROR) {
@@ -1180,15 +1094,19 @@ namespace Core {
         {
             ASSERT(IsValid());
 
+            uint32_t result = Core::ERROR_NONE;
             // See if we have a communication path to get info...
-            InterfacesFetch ifInfo(*this);
+            {
+                InterfacesFetch ifInfo(*this);
 
-            if (_channel->Exchange(ifInfo, ifInfo) != ERROR_NONE) {
+                result = _channel->Exchange(ifInfo, ifInfo);
+            }
+            if (result != ERROR_NONE) {
                 TRACE_L1("Could not load the base set of interfaces.");
             }
             else {
                 for (const Element& element : _networks) {
-                    element.second->Addresses();
+                    Addresses(*element.second);
                 }
             }
         }
@@ -1250,7 +1168,7 @@ namespace Core {
             }
             _adminLock.Unlock();            
         }
-        inline uint32_t Exchange(const Netlink& outbound, Netlink& inbound) {
+        inline uint32_t Interchange(const Netlink& outbound, Netlink& inbound) {
             return(_channel->Exchange(outbound, inbound));
         }
 
@@ -1258,6 +1176,23 @@ namespace Core {
         void Notify(const string& name) {
             for (AdapterObserver::INotification* callback : _observers) {
                 callback->Event(name);
+            }
+        }
+        
+        void Addresses(Network& network) {
+            Core::IPNode ipAddress;
+            IPAddressFetchType<false> ipv4(network);
+            
+
+            if (_channel->Exchange(ipv4, ipv4) != ERROR_NONE) {
+                TRACE_L1("Network::Network(): Could not read ipv4 Nodes");
+            }
+            else {
+                IPAddressFetchType<false> ipv6(network);
+
+                if (_channel->Exchange(ipv6, ipv6) != ERROR_NONE) {
+                    TRACE_L1("Network::Network(): Could not read ipv6 Nodes");
+                }
             }
         }
 
@@ -1269,7 +1204,7 @@ namespace Core {
         std::list<AdapterObserver::INotification*> _observers;
     };
 
-    static SingletonType<IPNetworks> networkController;
+    static IPNetworks& networkController = Core::SingletonType<IPNetworks>::Instance();
 
     Network::Network(const uint32_t index, const struct rtattr* iface, const uint32_t length)
         : _adminLock()
@@ -1415,21 +1350,21 @@ namespace Core {
     {
         IPAddressModifyType<true> modifier(*this, address);
 
-        return (networkController.Instance().Exchange(modifier, modifier));
+        return (networkController.Interchange(modifier, modifier));
     }
 
     uint32_t Network::Delete(const IPNode& address)
     {
         IPAddressModifyType<false> modifier(*this, address);
 
-        return (networkController.Instance().Exchange(modifier, modifier));
+        return (networkController.Interchange(modifier, modifier));
     }
 
     uint32_t Network::Gateway(const IPNode& network, const NodeId& gateway)
     {
         IPRouteModifyType<true> modifier(*this, network, gateway);
 
-        return (networkController.Instance().Exchange(modifier, modifier));
+        return (networkController.Interchange(modifier, modifier));
     }
 
     NodeId Network::Broadcast() const
@@ -1535,23 +1470,7 @@ namespace Core {
                     break;
                 }
             default:
-                // TRACE_L1("Not handling: %d\n", rtatp->rta_type);
-                break;
-            }
-        }
-    }
-
-    void Network::Addresses() {
-        IPAddressFetchType<false> ipv4(_index, _ipv4Nodes);
-
-        if (networkController.Exchange(ipv4, ipv4) != ERROR_NONE) {
-            TRACE_L1("Network::Network(): Could not read ipv4 Nodes");
-        }
-        else {
-            IPAddressFetchType<true> ipv6(_index, _ipv6Nodes);
-
-            if (networkController.Exchange(ipv6, ipv6) != ERROR_NONE) {
-                TRACE_L1("Network::Network(): Could not read ipv6 Nodes");
+                // TRACE_L1("Network::Network(): Could not read ipv6 Nodes");
             }
         }
     }
@@ -1561,7 +1480,7 @@ namespace Core {
         , _list()
         , _index() {
         // Time to get the current set of networks..
-        networkController.Instance().Load(_list);
+        networkController.Load(_list);
         _index = _list.begin();
     }
 
@@ -1589,5 +1508,60 @@ namespace Core {
 
 #endif
 
+    AdapterObserver::AdapterObserver(INotification* callback)
+        : _callback(callback)
+    {
+#ifdef __WINDOWS__
+        //IoWMIOpenBlock(&GUID_NDIS_STATUS_LINK_STATE, WMIGUID_NOTIFICATION, . . .);
+        //IoWMISetNotificationCallback(. . ., Callback, . . .);
+
+        //void Callback(PWNODE_HEADER wnode, . . .)
+        //{
+        //	auto instance = (PWNODE_SINGLE_INSTANCE)wnode;
+        //	auto header = (PNDIS_WMI_EVENT_HEADER)((PUCHAR)instance +
+        //		instance->DataBlockOffset + sizeof(ULONG));
+        //	auto linkState = (PNDIS_LINK_STATE)(header + 1);
+
+        //	switch (linkState->MediaConnectState)
+        //	{
+        //	case MediaConnectStateConnected:
+        //		. . .
+        //	}
+        //}
+
+#endif
+    }
+
+    AdapterObserver::~AdapterObserver()
+    {
+        Close();
+    }
+
+    uint32_t AdapterObserver::Open() {
+#ifndef __WINDOWS__
+        networkController.Register(_callback);
+#endif
+        return (Core::ERROR_NONE);
+    }
+
+    uint32_t AdapterObserver::Close() {
+#ifndef __WINDOWS__
+        networkController.Unregister(_callback);
+#endif
+        return (Core::ERROR_NONE);
+    }
+
+    bool AdapterIterator::HasMAC() const
+    {
+        uint8_t index = 0;
+        uint8_t mac[6];
+        MACAddress(mac, sizeof(mac));
+
+        while ((index < sizeof(mac)) && (mac[index] == 0)) {
+            index++;
+        }
+
+        return (index < sizeof(mac));
+    }
 }
 }

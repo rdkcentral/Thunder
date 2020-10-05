@@ -565,6 +565,24 @@ namespace Core {
         bool HasMAC() const;
 
     private:
+        inline void ConvertMACToString(const uint8_t address[], const uint8_t length, const char delimiter, string& output) const
+        {
+            for (uint8_t i = 0; i < length; i++) {
+                // Reason for the low-level approch is performance.
+                // In stead of using string operations, we know that each byte exists of 2 nibbles,
+                // lets just translate these nibbles to Hexadecimal numbers and add them to the output.
+                // This saves a setup of several string manipulation operations.
+                uint8_t highNibble = ((address[i] & 0xF0) >> 4);
+                uint8_t lowNibble = (address[i] & 0x0F);
+                if ((i != 0) && (delimiter != '\0')) {
+                    output += delimiter;
+                }
+                output += static_cast<char>(highNibble + (highNibble >= 10 ? ('A' - 10) : '0'));
+                output += static_cast<char>(lowNibble + (lowNibble >= 10 ? ('A' - 10) : '0'));
+            }
+        }
+
+    private:
         bool _reset;
         std::list<Core::ProxyType<Network> > _list;
         std::list<Core::ProxyType<Network> >::iterator _index;
