@@ -711,14 +711,26 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         // Right we have the shells for all possible services registered, time to activate what is needed :-)
         ServiceMap::Iterator iterator(_services.Services());
 
-        while (iterator.Next() == true) {
+        // sort plugins based on StartupOrder from configuration
+        std::vector<Core::ProxyType<Service>> configured_services;
+        while (iterator.Next())
+          configured_services.push_back(*iterator);
 
-            Core::ProxyType<Service> service(*iterator);
+        std::sort(configured_services.begin(), configured_services.end(),
+          [](const Core::ProxyType<Service>& lhs, const Core::ProxyType<Service>&rhs)
+          {
+            return lhs->StartupOrder() < rhs->StartupOrder();
+          });
 
+        for (auto service : configured_services)
+        {
             if (service->AutoStart() == true) {
+                SYSLOG(Logging::Startup, (_T("Activating plugin [%s]:[%s]"),
+                  service->ClassName().c_str(), service->Callsign().c_str()));
                 service->Activate(PluginHost::IShell::STARTUP);
             } else {
-                SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] blocked"), service->ClassName().c_str(), service->Callsign().c_str()));
+                SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] delayed, autostart is false"),
+                  service->ClassName().c_str(), service->Callsign().c_str()));
             }
         }
     }

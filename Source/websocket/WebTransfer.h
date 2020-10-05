@@ -58,6 +58,7 @@ namespace Web {
     public:
         enum enumTransferState {
             TRANSFER_IDLE,
+            TRANSFER_INFO,
             TRANSFER_UPLOAD,
             TRANSFER_DOWNLOAD
         };
@@ -101,6 +102,9 @@ namespace Web {
             void Close() {
                 BaseClass::Close(Core::infinite);
                 BaseClass::Flush();
+                Clear();
+            }
+            inline void Clear() {
                 if (_request.IsValid() == true) {
                     _request.Release();
                 }
@@ -184,6 +188,37 @@ namespace Web {
         }
 
     public:
+        uint32_t CollectInfo(const Core::URL& source)
+        {
+            uint32_t result = Core::ERROR_INPROGRESS;
+
+            _adminLock.Lock();
+
+            if (_state == TRANSFER_IDLE) {
+                result = Core::ERROR_INCORRECT_URL;
+
+                if (source.IsValid() == true) {
+                    result = Core::ERROR_COULD_NOT_SET_ADDRESS;
+
+                    if (Setup(source) == true) {
+                        result = Core::ERROR_NONE;
+
+                        _state = TRANSFER_INFO;
+                        _request.Verb = Web::Request::HTTP_HEAD;
+                        _request.Path = '/' + source.Path().Value();
+                        _request.Host = source.Host().Value();
+
+                        // Prepare the request for processing
+                        result = _channel.StartTransfer(Core::ProxyType<Web::Request>(_request));
+                    }
+                }
+            }
+
+            _adminLock.Unlock();
+
+            return (result);
+        }
+
         uint32_t Upload(const Core::URL& destination, const Core::File& source)
         {
             uint32_t result = Core::ERROR_INPROGRESS;
@@ -224,7 +259,7 @@ namespace Web {
 
             return (result);
         }
-        uint32_t Download(const Core::URL& source, Core::File& destination)
+        uint32_t Download(const Core::URL& source, Core::File& destination, const uint64_t position)
         {
             uint32_t result = Core::ERROR_INPROGRESS;
 
@@ -244,12 +279,16 @@ namespace Web {
 
                         // See if we can create a file to store the download in
                         static_cast<FILEBODY&>(_fileBody) = destination;
-                        _fileBody.Position(false, 0);
+                        _fileBody.Position(false, position);
 
                         _state = TRANSFER_DOWNLOAD;
                         _request.Verb = Web::Request::HTTP_GET;
                         _request.Path = '/' + source.Path().Value();
                         _request.Host = source.Host().Value();
+
+                        if (position) {
+                            _request.Range = "bytes=" + std::to_string(position) + '-';
+                        }
 
                         // Prepare the request for processing
                         result = _channel.StartTransfer(Core::ProxyType<Web::Request>(_request));
@@ -273,7 +312,8 @@ namespace Web {
         }
 
         virtual bool Setup(const Core::URL& remote) = 0;
-        virtual void Transfered(const uint32_t result, const FILEBODY& file) = 0;
+        virtual void InfoCollected(const uint32_t result, const Core::ProxyType<Web::Response>& info) = 0;
+        virtual void Transferred(const uint32_t result, const FILEBODY& file) = 0;
 
     protected:
         inline LINK& Link()
@@ -297,7 +337,10 @@ namespace Web {
             // We are done, change state
             _adminLock.Lock();
             if (response.IsValid() == true) {
-                _fileBody.Core::File::LoadFileInfo();
+                if (_state == TRANSFER_DOWNLOAD) {
+                    _fileBody.Core::File::LoadFileInfo();
+                }
+
                 if (response->ErrorCode == Web::STATUS_NOT_FOUND) {
                     errorCode = Core::ERROR_UNAVAILABLE;
                 } else if (((response->ErrorCode == STATUS_OK) && (_state == TRANSFER_DOWNLOAD)) &&
@@ -306,30 +349,34 @@ namespace Web {
                 } else if ((response->ErrorCode == Web::STATUS_UNAUTHORIZED) || 
                           ((_state == TRANSFER_DOWNLOAD) && (_ValidateHash<LINK, FILEBODY>(response->ContentSignature) == false))) {
                     errorCode = Core::ERROR_INCORRECT_HASH;
+                } else if (response->ErrorCode == Web::STATUS_REQUEST_RANGE_NOT_SATISFIABLE) {
+                    errorCode = Core::ERROR_INVALID_RANGE;
                 }
-                response.Release();
             } else {
                 errorCode = Core::ERROR_UNAVAILABLE;
             }
 
+            if (_state == TRANSFER_INFO) {
+                InfoCollected(errorCode, response);
+            } else {
+                Transferred(errorCode, (static_cast<FILEBODY&>(_fileBody)));
+            }
+
             _state = TRANSFER_IDLE;
-
-            Transfered(errorCode, (static_cast<FILEBODY&>(_fileBody)));
-
+            if (response.IsValid() == true) {
+                response.Release();
+            }
+            _channel.Clear();
             _adminLock.Unlock();
         }
         // Notification of a Partial Request received, time to attach a body..
         inline void LinkBody(Core::ProxyType<Web::Response>& element)
         {
-            // oke, now we should now all sizes... for Downloading and receving...
-            if ( (_state == TRANSFER_DOWNLOAD) && (element->ContentLength.IsSet() == true)) {
+            if (_fileBody.Exists() == true) {
 
-                // Now we have a content length that we are going to receive, time to set it...
-                _fileBody.Position(false, 0);
+                element->Body(Core::ProxyType<FILEBODY>(_fileBody));
+                _fileBody.Release();
             }
-
-            element->Body(Core::ProxyType<FILEBODY>(_fileBody));
-            _fileBody.Release();
         }
         template <typename ACTUALLINK, typename ACTUALFILEBODY>
         inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type

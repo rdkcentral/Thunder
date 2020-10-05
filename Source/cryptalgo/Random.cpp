@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include "Random.h"
 
 #ifdef __LINUX__
@@ -34,14 +34,17 @@ namespace Crypto {
     // --------------------------------------------------------------------------------------------
     void Reseed()
     {
+#ifdef __WINDOWS__
         srand(static_cast<unsigned int>(time(nullptr)));
+#endif // __WINDOWS__
+#ifdef __LINUX__
+        srandom(static_cast<unsigned int>(time(nullptr)));
+#endif // __LINUX__
     }
 
     void Random(uint8_t& value)
     {
 #if RAND_MAX >= 0xFF
-        srand(static_cast<unsigned int>(time(nullptr)));
-
 #ifdef __WINDOWS__
         value = static_cast<uint8_t>(rand() & 0xFF);
 #endif // __WINDOWS__
