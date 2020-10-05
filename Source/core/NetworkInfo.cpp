@@ -729,7 +729,7 @@ namespace Core {
 
                 for (; RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
 
-                    IPNode result (ToIPNode(NodeId::TYPE_IPV6, rtatp, prefixlen));
+                    IPNode result (ToIPNode((_node.Type() == NodeId::TYPE_IPV6), rtatp, prefixlen));
 
                     if (result.IsValid() == true) {
                         _network.Added(result);
@@ -748,7 +748,7 @@ namespace Core {
 
                 for (; RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
 
-                    IPNode result (ToIPNode(NodeId::TYPE_IPV6, rtatp, prefixlen));
+                    IPNode result (ToIPNode((_node.Type() == NodeId::TYPE_IPV6), rtatp, prefixlen));
 
                     if (result.IsValid() == true) {
                         _network.Removed(result);
@@ -762,7 +762,7 @@ namespace Core {
                     TRACE_L1("IPAddressModify request failed with code %d", error->error);
                 } 
             }
-            else {
+            else if (Type() != NLMSG_DONE) {
                 TRACE_L1("IPAddressModifyType: Read unexpected type: %d", Type());
             }
 
