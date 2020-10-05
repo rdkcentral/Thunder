@@ -570,6 +570,7 @@ namespace Web {
             Origin.Clear();
             Upgrade.Clear();
             Host.Clear();
+            Range.Clear();
             Connection.Clear();
             Accept.Clear();
             AcceptEncoding.Clear();
@@ -613,6 +614,7 @@ namespace Web {
         Core::OptionalType<EncodingTypes> ContentEncoding;
         Core::OptionalType<TransferTypes> TransferEncoding;
         Core::OptionalType<string> Host;
+        Core::OptionalType<string> Range;
         Core::OptionalType<connection> Connection;
         Core::OptionalType<string> Accept;
         Core::OptionalType<EncodingTypes> AcceptEncoding;

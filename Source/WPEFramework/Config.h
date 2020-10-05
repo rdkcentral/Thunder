@@ -505,6 +505,9 @@ namespace PluginHost {
             if (error.IsSet() == false) {
                 _webPrefix = '/' + config.Prefix.Value();
                 _JSONRPCPrefix = '/' + config.JSONRPC.Value();
+#ifdef PROCESSCONTAINERS_ENABLED
+                _ProcessContainersLogging = config.ProcessContainers.Logging.Value();
+#endif
                 _volatilePath = Core::Directory::Normalize(config.VolatilePath.Value());
                 _persistentPath = Core::Directory::Normalize(config.PersistentPath.Value());
                 _dataPath = Core::Directory::Normalize(config.DataPath.Value());
@@ -602,6 +605,11 @@ namespace PluginHost {
         {
             return (_JSONRPCPrefix);
         }
+#ifdef PROCESSCONTAINERS_ENABLED
+        inline const string& ProcessContainersLogging() const {
+            return (_ProcessContainersLogging);
+        }
+#endif
         inline const string& VolatilePath() const
         {
             return (_volatilePath);
@@ -832,6 +840,9 @@ namespace PluginHost {
         Core::JSON::ArrayType<Plugin::Config> _plugins;
         std::list<PluginHost::IShell::reason> _reasons;
         Substituter _substituter;
+#ifdef PROCESSCONTAINERS_ENABLED
+        string _ProcessContainersLogging;
+#endif
     };
 }
 }
