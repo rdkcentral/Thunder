@@ -315,7 +315,6 @@ namespace Core {
         {
             return (_mask == static_cast<uint8_t>(~0) ? (Type() == Core::NodeId::TYPE_IPV4 ? 32 : 128) : _mask);
         }
-        NodeId Broadcast() const;
         inline bool operator==(const IPNode& rInfo) const
         {
             return ((rInfo._mask == _mask) && (NodeId::operator==(rInfo)));
@@ -324,6 +323,16 @@ namespace Core {
         {
             return (!IPNode::operator==(rInfo));
         }
+        inline bool operator==(const NodeId& rInfo) const
+        {
+            return (NodeId::operator==(rInfo));
+        }
+        inline bool operator!=(const NodeId& rInfo) const
+        {
+            return (!IPNode::operator==(rInfo));
+        }
+
+        NodeId Broadcast() const;
 
     private:
         uint8_t _mask;

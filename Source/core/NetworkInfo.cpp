@@ -1470,7 +1470,8 @@ namespace Core {
                     break;
                 }
             default:
-                // TRACE_L1("Network::Network(): Could not read ipv6 Nodes");
+                TRACE_L1("Network::Network(): Could not read ipv6 Nodes");
+		break;
             }
         }
     }

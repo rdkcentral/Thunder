@@ -219,7 +219,6 @@ namespace PluginHost {
             adapter = Core::AdapterIterator(_T("lo"));
 
             if (adapter.IsValid() == false) {
-                Core::AdapterIterator::Flush();
                 SleepMs(500);
             }
 
@@ -419,11 +418,6 @@ namespace PluginHost {
             SYSLOG(Logging::Startup, (_T("Version:       %s"), _config->Version().c_str()));
             SYSLOG(Logging::Startup, (_T("Traces:        %s"), traceSettings.c_str()));
 
-#ifndef __WINDOWS__
-            // We need at least the loopback interface before we continue...
-            StartLoopbackInterface();
-#endif
-
             // Before we do any translation of IP, make sure we have the right network info...
             if (_config->IPv6() == false) {
                 SYSLOG(Logging::Startup, (_T("Forcing the network to IPv4 only.")));
@@ -432,6 +426,11 @@ namespace PluginHost {
 
             // Load plugin configs from a directory.
             LoadPlugins(pluginPath, *_config);
+
+#ifndef __WINDOWS__
+            // We need at least the loopback interface before we continue...
+            StartLoopbackInterface();
+#endif
 
             // Startup/load/initialize what we found in the configuration.
             _dispatcher = new PluginHost::Server(*_config, _background);
