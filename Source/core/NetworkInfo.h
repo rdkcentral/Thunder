@@ -561,11 +561,6 @@ namespace Core {
 
             return ((*_index)->Gateway(network, gateway));
         }
-        inline void Flush() {
-            ASSERT(IsValid());
-
-            ((*_index)->Addresses());
-        }
         bool HasMAC() const;
 
     private:

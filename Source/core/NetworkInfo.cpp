@@ -589,90 +589,13 @@ namespace Core {
                 break;
                 */
             default:
-                // TRACE_L1("Not handling: %d\n", rtatp->rta_type);
+                TRACE_L1("ToIPNode: Not handling: %d\n", rtatp->rta_type);
                 break;
             }
         }
 
         return (result);
     }
-
-    template <const bool IPV6>
-    class IPAddressFetchType : public Netlink {
-    public:
-        IPAddressFetchType() = delete;
-        IPAddressFetchType(const IPAddressFetchType<IPV6>&) = delete;
-        IPAddressFetchType<IPV6>& operator=(const IPAddressFetchType<IPV6>&) = delete;
-
-        IPAddressFetchType(Network& parent)
-            : _parent(parent)
-        {
-        }
-        ~IPAddressFetchType() override = default;
-
-    private:
-        uint16_t Write(uint8_t stream[], const uint16_t length) const override
-        {
-            uint16_t result = sizeof(struct ifaddrmsg) + RTA_LENGTH(IPV6 ? 16 : 4);
-
-            ASSERT(length >= result);
-            ::memset(stream, 0, result);
-
-            Flags(NLM_F_REQUEST | NLM_F_ROOT | NLM_F_ACK);
-            Type(RTM_GETADDR);
-
-            struct ifaddrmsg* message(reinterpret_cast<struct ifaddrmsg*>(stream));
-            message->ifa_family = (IPV6 ? AF_INET6 : AF_INET);
-            message->ifa_index = _parent.Id();
-
-            struct rtattr* attribs(reinterpret_cast<struct rtattr*>(stream + sizeof(struct ifaddrmsg)));
-            attribs->rta_len = (IPV6 ? RTA_LENGTH(16) : RTA_LENGTH(4));
-            attribs->rta_type = 0;
-
-            return (result);
-        }
-        uint16_t Read(const uint8_t stream[], const uint16_t length) override
-        {
-            if ((Type() == RTM_NEWADDR) || (Type() == RTM_GETADDR) || (Type() == RTM_DELADDR)) {
-                const struct ifaddrmsg* rtmp = reinterpret_cast<const struct ifaddrmsg*>(stream);
-                
-                if (_parent.Id() == rtmp->ifa_index) {
-
-                    const struct rtattr* rtatp = reinterpret_cast<const struct rtattr*>(IFA_RTA(rtmp));
-                    const uint8_t prefixlen = static_cast<uint8_t>(rtmp->ifa_prefixlen);
-                    uint16_t rtattrlen = length - sizeof(struct ifaddrmsg);
-
-                    for (; RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
-
-                        IPNode result (ToIPNode(IPV6, rtatp, prefixlen));
-
-                        if (result.IsValid() == true) {
-
-                            if (Type() == RTM_DELADDR) {
-                                _parent.Removed(result);
-                            } else {
-                                _parent.Added(result);
-                            }
-                        }
-                    }
-                }
-            } else if (Type() == NLMSG_ERROR) {
-                const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
-
-                if (error->error != 0) {
-                    TRACE_L1("IPAddressFetchType request failed with code %d", error->error);
-                } 
-            }
-            else if (Type() != NLMSG_DONE) {
-                TRACE_L1("IPAddressFetchType: Read unexpected type: %d", Type());
-            }
-
-            return (length);
-        }
-
-    private:
-        Network& _parent;
-    };
 
     template <const bool ADD>
     class IPAddressModifyType : public Netlink {
@@ -722,50 +645,18 @@ namespace Core {
         }
         uint16_t Read(const uint8_t stream[], const uint16_t length) override
         {
-            if ((ADD == true) && (Type() == RTM_NEWADDR)) {
-
-                const struct ifaddrmsg* rtmp = reinterpret_cast<const struct ifaddrmsg*>(stream);
-
-                if (_network.Id() == rtmp->ifa_index) {
-
-                    const struct rtattr* rtatp = reinterpret_cast<const struct rtattr*>(IFA_RTA(rtmp));
-                    const uint8_t prefixlen = static_cast<uint8_t>(rtmp->ifa_prefixlen);
-                    uint16_t rtattrlen = length - sizeof(struct ifaddrmsg);
-
-                    for (; RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
-
-                        IPNode result (ToIPNode((_node.Type() == NodeId::TYPE_IPV6), rtatp, prefixlen));
-
-                        if (result.IsValid() == true) {
-                            _network.Added(result);
-                        }
-                    }
-                }
-            } else if ((ADD == false) && (Type() == RTM_DELADDR)) {
-
-                const struct ifaddrmsg* rtmp = reinterpret_cast<const struct ifaddrmsg*>(stream);
-
-                ASSERT(_network.Id() == rtmp->ifa_index);
-
-                const struct rtattr* rtatp = reinterpret_cast<const struct rtattr*>(IFA_RTA(rtmp));
-                const uint8_t prefixlen = static_cast<uint8_t>(rtmp->ifa_prefixlen);
-                uint16_t rtattrlen = length - sizeof(struct ifaddrmsg);
-
-                for (; RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
-
-                    IPNode result (ToIPNode((_node.Type() == NodeId::TYPE_IPV6), rtatp, prefixlen));
-
-                    if (result.IsValid() == true) {
-                        _network.Removed(result);
-                    }
-                }
-
-            } else if (Type() == NLMSG_ERROR) {
+            if (Type() == NLMSG_ERROR) {
                 const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
 
                 if (error->error != 0) {
-                    TRACE_L1("IPAddressModify request failed with code %d", error->error);
+                    TRACE_L1("IPAddressModify: Request failed with code %d", error->error);
                 } 
+                else if (ADD == true) {
+                    _network.Added(_node);
+                }
+                else if (ADD == false) {
+                    _network.Removed(_node);
+                }
             }
             else if (Type() != NLMSG_DONE) {
                 TRACE_L1("IPAddressModifyType: Read unexpected type: %d", Type());
@@ -872,10 +763,10 @@ namespace Core {
                 const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
 
                 if (error->error != 0) {
-                    TRACE_L1("IPRouteModifyType request failed with code %d", error->error);
+                    TRACE_L1("IPRouteModifyType: Request failed with code %d", error->error);
                 } 
             }
-            else {
+            else if (Type() != NLMSG_DONE) {
                 TRACE_L1("IPRouteModifyType: Read unexpected type: %d", Type());
             }
 
@@ -1073,12 +964,86 @@ namespace Core {
                     const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
 
                     if (error->error != 0) {
-                        TRACE_L1("Interfaces fetch request failed with code %d", error->error);
+                        TRACE_L1("InterfacesFetch: Request failed with code %d", error->error);
                     } 
                 } 
-                else {
+                else if (Type() != NLMSG_DONE) {
                     TRACE_L1("InterfacesFetch: Read unexpected type: %d", Type());
                 }
+                return (length);
+            }
+
+        private:
+            IPNetworks& _parent;
+        };
+
+        template <const bool IPV6>
+        class IPAddressFetchType : public Netlink {
+        public:
+            IPAddressFetchType() = delete;
+            IPAddressFetchType(const IPAddressFetchType<IPV6>&) = delete;
+            IPAddressFetchType<IPV6>& operator=(const IPAddressFetchType<IPV6>&) = delete;
+
+            IPAddressFetchType(IPNetworks& parent)
+                : _parent(parent)
+            {
+            }
+            ~IPAddressFetchType() override = default;
+
+        private:
+            uint16_t Write(uint8_t stream[], const uint16_t length) const override
+            {
+                uint16_t result = sizeof(struct ifaddrmsg) + RTA_LENGTH(IPV6 ? 16 : 4);
+
+                ASSERT(length >= result);
+                ::memset(stream, 0, result);
+
+                Flags(NLM_F_REQUEST | NLM_F_ROOT | NLM_F_ACK);
+                Type(RTM_GETADDR);
+
+                struct ifaddrmsg* message(reinterpret_cast<struct ifaddrmsg*>(stream));
+                message->ifa_family = (IPV6 ? AF_INET6 : AF_INET);
+                message->ifa_index = 0;
+
+                struct rtattr* attribs(reinterpret_cast<struct rtattr*>(stream + sizeof(struct ifaddrmsg)));
+                attribs->rta_len = (IPV6 ? RTA_LENGTH(16) : RTA_LENGTH(4));
+                attribs->rta_type = 0;
+
+                return (result);
+            }
+            uint16_t Read(const uint8_t stream[], const uint16_t length) override
+            {
+                if ( (Type() == RTM_GETADDR) || (Type() == RTM_NEWADDR) || (Type() == RTM_DELADDR) ) {
+                    const struct ifaddrmsg* rtmp = reinterpret_cast<const struct ifaddrmsg*>(stream);
+                    
+                    const struct rtattr* rtatp = reinterpret_cast<const struct rtattr*>(IFA_RTA(rtmp));
+                    const uint8_t prefixlen = static_cast<uint8_t>(rtmp->ifa_prefixlen);
+                    uint16_t rtattrlen = length - sizeof(struct ifaddrmsg);
+
+                    for (; RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
+
+                        IPNode result (ToIPNode(IPV6, rtatp, prefixlen));
+
+                        if (result.IsValid() == true) {
+                            if (Type() != RTM_DELADDR) {
+                                _parent.Added(rtmp->ifa_index, result);
+                            }
+                            else {
+                                _parent.Removed(rtmp->ifa_index, result);
+                            }
+                        }
+                    }
+                } else if (Type() == NLMSG_ERROR) {
+                    const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
+
+                    if (error->error != 0) {
+                        TRACE_L1("IPAddressFetchType: Request failed with code %d", error->error);
+                    } 
+                }
+                else if (Type() != NLMSG_DONE) {
+                    TRACE_L1("IPAddressFetchType: Read unexpected type: %d", Type());
+                }
+
                 return (length);
             }
 
@@ -1099,16 +1064,25 @@ namespace Core {
         {
             ASSERT(IsValid());
 
-            uint32_t result = Core::ERROR_NONE;
-            // See if we have a communication path to get info...
             InterfacesFetch ifInfo(*this);
 
-            if (_channel->Exchange(ifInfo, ifInfo) != ERROR_NONE) {
+            uint32_t result = _channel->Exchange(ifInfo, ifInfo);
+
+            if (result != ERROR_NONE) {
                 TRACE_L1("Could not load the base set of interfaces.");
             }
             else {
-                for (const Element& element : _networks) {
-                    Addresses(*element.second);
+                IPAddressFetchType<false> ipv4(*this);
+            
+                if (_channel->Exchange(ipv4, ipv4) != ERROR_NONE) {
+                    TRACE_L1("IPNetworks(): Could not read ipv4 Nodes");
+                }
+                else {
+                    IPAddressFetchType<false> ipv6(*this);
+
+                    if (_channel->Exchange(ipv6, ipv6) != ERROR_NONE) {
+                        TRACE_L1("IPNetworks(): Could not read ipv6 Nodes");
+                    }
                 }
             }
         }
@@ -1142,14 +1116,23 @@ namespace Core {
             }
             _adminLock.Unlock();            
         }
+        inline uint32_t Interchange(const Netlink& outbound, Netlink& inbound) {
+            return(_channel->Exchange(outbound, inbound));
+        }
+
+    private:
         void Add(const uint32_t id, const struct rtattr* data, const uint16_t length) {
             string interfaceName;
+
             _adminLock.Lock();
+
             Map::iterator index (_networks.find(id));
             if (index == _networks.end()) {
+                Core::ProxyType<Network> newNetwork (Core::ProxyType<Network>::Create(id, data, length));
                 _networks.emplace(std::piecewise_construct,
                     std::forward_as_tuple(id),
-                    std::forward_as_tuple(Core::ProxyType<Network>::Create(id, data, length)));
+                    std::forward_as_tuple(newNetwork));
+                interfaceName = newNetwork->Name();
             }
             else {
                 index->second->Update(data, length);
@@ -1158,7 +1141,7 @@ namespace Core {
 
             Notify(interfaceName);
 
-            _adminLock.Unlock();
+            _adminLock.Unlock();            
         }
         void Remove(const uint32_t id) {
             _adminLock.Lock();
@@ -1170,29 +1153,21 @@ namespace Core {
             }
             _adminLock.Unlock();            
         }
-        inline uint32_t Exchange(const Netlink& outbound, Netlink& inbound) {
-            return(_channel->Exchange(outbound, inbound));
-        }
-        void Addresses(Network& network) {
-            Core::IPNode ipAddress;
-            IPAddressFetchType<false> ipv4(network);
-            
-            if (_channel->Exchange(ipv4, ipv4) != ERROR_NONE) {
-                TRACE_L1("Network::Network(): Could not read ipv4 Nodes");
-            }
-            else {
-                IPAddressFetchType<true> ipv6(network);
-
-                if (_channel->Exchange(ipv6, ipv6) != ERROR_NONE) {
-                    TRACE_L1("Network::Network(): Could not read ipv6 Nodes");
-                }
-            }
-        }
-
-    private:
         void Notify(const string& name) {
             for (AdapterObserver::INotification* callback : _observers) {
                 callback->Event(name);
+            }
+        }
+        void Added(const uint32_t id, const Core::IPNode& node) {
+            Map::iterator index(_networks.find(id));
+            if (index != _networks.end()) {
+                index->second->Added(node);
+            }
+        }
+        void Removed(const uint32_t id, const Core::IPNode& node) {
+            Map::iterator index(_networks.find(id));
+            if (index != _networks.end()) {
+                index->second->Removed(node);
             }
         }
 
@@ -1349,21 +1324,22 @@ namespace Core {
     uint32_t Network::Add(const IPNode& address)
     {
         IPAddressModifyType<true> modifier(*this, address);
-        return networkController.Exchange(modifier, modifier);
+
+        return (networkController.Interchange(modifier, modifier));
     }
 
     uint32_t Network::Delete(const IPNode& address)
     {
         IPAddressModifyType<false> modifier(*this, address);
 
-        return (networkController.Exchange(modifier, modifier));
+        return (networkController.Interchange(modifier, modifier));
     }
 
     uint32_t Network::Gateway(const IPNode& network, const NodeId& gateway)
     {
         IPRouteModifyType<true> modifier(*this, network, gateway);
 
-        return (networkController.Exchange(modifier, modifier));
+        return (networkController.Interchange(modifier, modifier));
     }
 
     NodeId Network::Broadcast() const
@@ -1469,14 +1445,10 @@ namespace Core {
                     break;
                 }
             default:
-                TRACE_L1("Network::Network(): Could not read ipv6 Nodes");
-                break;
+                // TRACE_L1("Unknown option encountered: %d", rtatp->rta_type);
+		break;
             }
         }
-    }
-
-    void Network::Addresses() {
-        networkController.Addresses(*this);
     }
 
     AdapterIterator::AdapterIterator()
