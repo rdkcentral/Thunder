@@ -19,35 +19,9 @@
 
 #include "PluginServer.h"
 
-#include <fstream>
-
 namespace WPEFramework {
 
 namespace PluginHost {
-
-static void LogSystemFiles(const Core::process_t pid)
-{
-    static auto logProcPath = [](const std::string& path)
-    {
-        std::ifstream fileStream(path);
-        if (fileStream.is_open()) {
-            SYSLOG (Logging::Crash, ("-== %s ==-\n", path.c_str()));
-            std::string line;
-            while (std::getline(fileStream, line))
-            {
-                SYSLOG (Logging::Crash, (line));
-            }
-        }
-    };
-
-    logProcPath("/proc/meminfo");
-    logProcPath("/proc/loadavg");
-
-    if (pid > 0) {
-        std::string procPath = std::string("/proc/") + std::to_string(pid) + "/status";
-        logProcPath(procPath);
-    }
-}
 
 /* static */ void Server::PostMortem(Service& service, const IShell::reason why, RPC::IRemoteConnection* connection) {
 
@@ -57,12 +31,12 @@ static void LogSystemFiles(const Core::process_t pid)
             // It is a plugin in the Thunder Process space, the current PostMortem Dump on the process
             // has the side-effect of killing the full process. Lets not do thet for internal Plugins :-)
             // Just log all the information we have from /proc
-            LogSystemFiles(0);
+            Logging::DumpSystemFiles(0);
         }
         else {
             // Time to flush all the "System information", before we send signals. This too keep 
             // those figures as close to the moment of hange detect.
-            LogSystemFiles(static_cast<Core::process_t>(connection->RemoteId()));
+            Logging::DumpSystemFiles(static_cast<Core::process_t>(connection->RemoteId()));
         
             connection->PostMortem();
         }

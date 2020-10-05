@@ -23,6 +23,8 @@
 #include <syslog.h>
 #endif
 
+#include <fstream>
+
 namespace WPEFramework {
 namespace Logging {
 
@@ -70,6 +72,31 @@ namespace Logging {
             printf("[%11ju us] %s\n", static_cast<uintmax_t>(now.Ticks() - _baseTime), information->Data());
         }
     }
+
+    void DumpSystemFiles(const Core::process_t pid)
+    {
+        static auto logProcPath = [](const std::string& path)
+        {
+            std::ifstream fileStream(path);
+            if (fileStream.is_open()) {
+                SYSLOG (Logging::Crash, ("-== %s ==-\n", path.c_str()));
+                std::string line;
+                while (std::getline(fileStream, line))
+                {
+                    SYSLOG (Logging::Crash, (line));
+                }
+            }
+        };
+
+        logProcPath("/proc/meminfo");
+        logProcPath("/proc/loadavg");
+
+        if (pid > 0) {
+            std::string procPath = std::string("/proc/") + std::to_string(pid) + "/status";
+            logProcPath(procPath);
+        }
+    }
+
 
 }
 } // namespace PluginHost
