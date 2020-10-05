@@ -26,6 +26,7 @@ namespace Implementation {
 class Vault {
 public:
     static Vault& NetflixInstance();
+    static Vault& PlatformInstance();
 
 private:
     using Callback = std::function<void(Vault&)>;
