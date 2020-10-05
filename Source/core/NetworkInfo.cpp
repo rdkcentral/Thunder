@@ -1051,10 +1051,7 @@ namespace Core {
             IPNetworks& _parent;
         };
 
-    public:
-        IPNetworks(const IPNetworks&) = delete;
-        IPNetworks& operator=(const IPNetworks&) = delete;
-
+    protected:
         IPNetworks()
             : _adminLock()
             , _channel(ProxyType<Channel>::Create())
@@ -1086,7 +1083,18 @@ namespace Core {
                 }
             }
         }
+
+    public:
+        IPNetworks(const IPNetworks&) = delete;
+        IPNetworks& operator=(const IPNetworks&) = delete;
+
         ~IPNetworks() = default;
+
+        static IPNetworks& Instance()
+        {
+            static IPNetworks& _instance = SingletonType<IPNetworks>::Instance();
+            return (_instance);
+        }
 
     public:
         inline bool IsValid() const
@@ -1178,8 +1186,6 @@ namespace Core {
         Observer _observer;
         std::list<AdapterObserver::INotification*> _observers;
     };
-
-    static IPNetworks& networkController = Core::SingletonType<IPNetworks>::Instance();
 
     Network::Network(const uint32_t index, const struct rtattr* iface, const uint32_t length)
         : _adminLock()
@@ -1325,21 +1331,21 @@ namespace Core {
     {
         IPAddressModifyType<true> modifier(*this, address);
 
-        return (networkController.Interchange(modifier, modifier));
+        return (IPNetworks::Instance().Interchange(modifier, modifier));
     }
 
     uint32_t Network::Delete(const IPNode& address)
     {
         IPAddressModifyType<false> modifier(*this, address);
 
-        return (networkController.Interchange(modifier, modifier));
+        return (IPNetworks::Instance().Interchange(modifier, modifier));
     }
 
     uint32_t Network::Gateway(const IPNode& network, const NodeId& gateway)
     {
         IPRouteModifyType<true> modifier(*this, network, gateway);
 
-        return (networkController.Interchange(modifier, modifier));
+        return (IPNetworks::Instance().Interchange(modifier, modifier));
     }
 
     NodeId Network::Broadcast() const
@@ -1456,7 +1462,7 @@ namespace Core {
         , _list()
         , _index() {
         // Time to get the current set of networks..
-        networkController.Load(_list);
+        IPNetworks::Instance().Load(_list);
         _index = _list.begin();
     }
 
@@ -1478,6 +1484,11 @@ namespace Core {
         _reset = true;
         _list = RHS._list;
         _index = _list.begin();
+
+        if (RHS.IsValid()) {
+            string name (RHS.Name());
+            while ( (Next() == true) && (Name() != name) ) { /* Intentionally left empty */ }
+        }
 
         return (*this);
     }
@@ -1515,14 +1526,14 @@ namespace Core {
 
     uint32_t AdapterObserver::Open() {
 #ifndef __WINDOWS__
-        networkController.Register(_callback);
+        IPNetworks::Instance().Register(_callback);
 #endif
         return (Core::ERROR_NONE);
     }
 
     uint32_t AdapterObserver::Close() {
 #ifndef __WINDOWS__
-        networkController.Unregister(_callback);
+        IPNetworks::Instance().Unregister(_callback);
 #endif
         return (Core::ERROR_NONE);
     }

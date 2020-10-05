@@ -212,6 +212,7 @@ namespace PluginHost {
     void StartLoopbackInterface()
     {
         Core::AdapterIterator adapter;
+
         uint8_t retries = 8;
         // Some interfaces take some time, to be available. Wait a certain amount
         // of time in which the interface should come up.
