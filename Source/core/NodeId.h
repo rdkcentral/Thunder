@@ -271,10 +271,6 @@ namespace Core {
         NodeId& operator=(const struct sockaddr_l2& rInfo);
 #endif
 
-        inline operator struct sockaddr*()
-        {
-            return (reinterpret_cast<struct sockaddr*>(&(m_structInfo)));
-        }
         //------------------------------------------------------------------------
         // Protected Methods
         //------------------------------------------------------------------------
@@ -283,6 +279,10 @@ namespace Core {
 
     private:
         friend class IPNode;
+        inline operator struct sockaddr*()
+        {
+            return (reinterpret_cast<struct sockaddr*>(&(m_structInfo)));
+        }
 
         mutable string m_hostName;
         SocketInfo m_structInfo;
