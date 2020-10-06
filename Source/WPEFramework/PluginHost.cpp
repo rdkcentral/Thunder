@@ -68,6 +68,51 @@ namespace PluginHost {
         }
     };
 
+    class AdapterObserver : public WPEFramework::Core::AdapterObserver::INotification {
+    public:
+        static int32_t constexpr WaitTime = 3000; //Just wait for 3 seconds
+
+    public:
+        AdapterObserver() = delete;
+        AdapterObserver(const AdapterObserver&) = delete;
+        AdapterObserver& operator=(const AdapterObserver&) = delete;
+
+        AdapterObserver(string interface)
+            : _signal(false, true)
+            , _interface(interface)
+            , _observer(this)
+        {
+        }
+        ~AdapterObserver() override = default;
+
+    public:
+        void Open()
+        {
+            _observer.Open();
+        }
+        void Close()
+        {
+            _observer.Close();
+        }
+        virtual void Event(const string& interface) override
+        {
+            if (interface == _interface) {
+                // We need to add this interface, it is currently not present.
+                _signal.SetEvent();
+            }
+        }
+        inline uint32_t WaitForCompletion(int32_t waitTime)
+        {
+            uint32_t status = _signal.Lock(waitTime);
+            _signal.ResetEvent(); //Clear signalled event
+            return status;
+        }
+    private:
+        Core::Event _signal;
+        string _interface;
+        Core::AdapterObserver _observer;
+    };
+
     class ExitHandler : public Core::Thread {
     private:
         ExitHandler(const ExitHandler&) = delete;
@@ -211,47 +256,28 @@ namespace PluginHost {
 #ifndef __WINDOWS__
     void StartLoopbackInterface()
     {
-        Core::AdapterIterator adapter;
-
-        uint8_t retries = 8;
-        // Some interfaces take some time, to be available. Wait a certain amount
-        // of time in which the interface should come up.
-        do {
-            adapter = Core::AdapterIterator(_T("lo"));
-
-            if (adapter.IsValid() == false) {
-                SleepMs(500);
-            }
-
-        } while ((retries-- != 0) && (adapter.IsValid() == false));
+        Core::AdapterIterator adapter(_T("lo"));
+        AdapterObserver _observer(_T("lo"));
+        _observer.Open();
 
         if (adapter.IsValid() == false) {
-            SYSLOG(Logging::Startup, (_T("Interface [lo], not available")));
-        } else {
+            SYSLOG(Logging::Startup, (string(_T("Interface [lo], not available, wait for a while"))));
+            if (_observer.WaitForCompletion(AdapterObserver::WaitTime) == Core::ERROR_NONE) {
+                SYSLOG(Logging::Startup, (string(_T("Interface [lo] ready to setup")));
+            }
+        }
+
+        if (adapter.IsValid() == true) {
 
             adapter.Up(true);
             adapter.Add(Core::IPNode(Core::NodeId("127.0.0.1"), 8));
-
-            retries = 40;
-            Core::NodeId nodeId;
-
-            // Last thing we need to wait for is the resolve of localhost to work.
-            do {
-                nodeId = Core::NodeId(_T("localhost"));
-
-                if (nodeId.IsValid() == false) {
-                    SleepMs(100);
-                }
-
-            } while ((retries-- != 0) && (nodeId.IsValid() == false));
-
-            if (retries != 0) {
-                SYSLOG(Logging::Startup, (string(_T("Interface [lo], fully functional"))));
-            } else {
-                SYSLOG(Logging::Startup, (string(_T("Interface [lo], partly functional (no name resolving)"))));
-            }
+            SYSLOG(Logging::Startup, (string(_T("Interface [lo], fully functional"))));
+        } else {
+            SYSLOG(Logging::Startup, (string(_T("Interface [lo], partly functional (no name resolving)"))));
         }
+        _observer.Close();
     }
+
 #endif
 
 #ifdef __WINDOWS__
