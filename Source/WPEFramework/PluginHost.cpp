@@ -263,7 +263,7 @@ namespace PluginHost {
         if (adapter.IsValid() == false) {
             SYSLOG(Logging::Startup, (string(_T("Interface [lo], not available, wait for a while"))));
             if (_observer.WaitForCompletion(AdapterObserver::WaitTime) == Core::ERROR_NONE) {
-                SYSLOG(Logging::Startup, (string(_T("Interface [lo] ready to setup")));
+                SYSLOG(Logging::Startup, (string(_T("Interface [lo] ready to setup"))));
             }
         }
 
