@@ -79,7 +79,7 @@ namespace Exchange {
             virtual string Version() const = 0;
             virtual string PkgId() const = 0;
             virtual string Installed() const = 0;
-            virtual int64_t SizeInBytes() const = 0;
+            virtual uint64_t SizeInBytes() const = 0;
             virtual string Type() const = 0;
 
             struct IIterator : virtual public Core::IUnknown
