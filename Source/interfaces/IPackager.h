@@ -110,7 +110,7 @@ namespace Exchange {
         virtual uint32_t GetInstallProgress(const string& task) = 0;
         virtual IPackageInfoEx::IIterator* GetInstalled() = 0;
         virtual IPackageInfoEx* GetPackageInfo(const string& pkgId) = 0;
-        virtual int64_t GetAvailableSpace() = 0;
+        virtual uint64_t GetAvailableSpace() = 0;
     };
 }
 }
