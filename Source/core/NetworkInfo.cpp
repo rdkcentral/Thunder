@@ -1022,14 +1022,16 @@ namespace Core {
 
                     for (; RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
 
-                        IPNode result (ToIPNode(IPV6, rtatp, prefixlen));
+                        if ((rtatp->rta_type == IFA_ADDRESS) || (rtatp->rta_type == IFA_LOCAL)) {
+                            IPNode result (ToIPNode(IPV6, rtatp, prefixlen));
 
-                        if (result.IsValid() == true) {
-                            if (Type() != RTM_DELADDR) {
-                                _parent.Added(rtmp->ifa_index, result);
-                            }
-                            else {
-                                _parent.Removed(rtmp->ifa_index, result);
+                            if (result.IsValid() == true) {
+                                if (Type() != RTM_DELADDR) {
+                                    _parent.Added(rtmp->ifa_index, result);
+                                }
+                                else {
+                                    _parent.Removed(rtmp->ifa_index, result);
+                                }
                             }
                         }
                     }
@@ -1124,7 +1126,7 @@ namespace Core {
             }
             _adminLock.Unlock();            
         }
-        inline uint32_t Interchange(const Netlink& outbound, Netlink& inbound) {
+        inline uint32_t Exchange(const Netlink& outbound, Netlink& inbound) {
             return(_channel->Exchange(outbound, inbound));
         }
 
@@ -1331,21 +1333,21 @@ namespace Core {
     {
         IPAddressModifyType<true> modifier(*this, address);
 
-        return (IPNetworks::Instance().Interchange(modifier, modifier));
+        return (IPNetworks::Instance().Exchange(modifier, modifier));
     }
 
     uint32_t Network::Delete(const IPNode& address)
     {
         IPAddressModifyType<false> modifier(*this, address);
 
-        return (IPNetworks::Instance().Interchange(modifier, modifier));
+        return (IPNetworks::Instance().Exchange(modifier, modifier));
     }
 
     uint32_t Network::Gateway(const IPNode& network, const NodeId& gateway)
     {
         IPRouteModifyType<true> modifier(*this, network, gateway);
 
-        return (IPNetworks::Instance().Interchange(modifier, modifier));
+        return (IPNetworks::Instance().Exchange(modifier, modifier));
     }
 
     NodeId Network::Broadcast() const
