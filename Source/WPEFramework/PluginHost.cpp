@@ -82,23 +82,20 @@ namespace PluginHost {
             , _interface(interface)
             , _observer(this)
         {
+            _observer.Open();
+
             Core::AdapterIterator adapter(interface);
 
             if (adapter.IsValid() == true) {
                 _signal.SetEvent();
             }
         }
-        ~AdapterObserver() override = default;
-
-    public:
-        void Open()
-        {
-            _observer.Open();
-        }
-        void Close()
+        ~AdapterObserver() override
         {
             _observer.Close();
         }
+
+    public:
         virtual void Event(const string& interface) override
         {
             if (interface == _interface) {
@@ -270,7 +267,6 @@ namespace PluginHost {
     void StartLoopbackInterface()
     {
         AdapterObserver observer(_T("lo"));
-        observer.Open();
 
         if (observer.WaitForCompletion(AdapterObserver::WaitTime) == Core::ERROR_NONE) {
             observer.Up();
@@ -278,7 +274,6 @@ namespace PluginHost {
         } else {
             SYSLOG(Logging::Startup, (string(_T("Interface [lo], partly functional (no name resolving)"))));
         }
-        observer.Close();
     }
 #endif
 
