@@ -68,6 +68,61 @@ namespace PluginHost {
         }
     };
 
+    class AdapterObserver : public WPEFramework::Core::AdapterObserver::INotification {
+    public:
+        static int32_t constexpr WaitTime = 3000; //Just wait for 3 seconds
+
+    public:
+        AdapterObserver() = delete;
+        AdapterObserver(const AdapterObserver&) = delete;
+        AdapterObserver& operator=(const AdapterObserver&) = delete;
+
+        AdapterObserver(string interface)
+            : _signal(false, true)
+            , _interface(interface)
+            , _observer(this)
+        {
+            _observer.Open();
+
+            Core::AdapterIterator adapter(interface);
+
+            if (adapter.IsValid() == true) {
+                _signal.SetEvent();
+            }
+        }
+        ~AdapterObserver() override
+        {
+            _observer.Close();
+        }
+
+    public:
+        virtual void Event(const string& interface) override
+        {
+            if (interface == _interface) {
+                // We need to add this interface, it is currently not present.
+                _signal.SetEvent();
+            }
+        }
+        inline uint32_t WaitForCompletion(int32_t waitTime)
+        {
+            return _signal.Lock(waitTime);
+        }
+        void Up()
+        {
+            Core::AdapterIterator adapter(_interface);
+
+            if (adapter.IsValid() == true) {
+                adapter.Up(true);
+                adapter.Add(Core::IPNode(Core::NodeId("127.0.0.1"), 8));
+            }
+        }
+
+    private:
+        Core::Event _signal;
+        string _interface;
+        Core::AdapterObserver _observer;
+    };
+
     class ExitHandler : public Core::Thread {
     private:
         ExitHandler(const ExitHandler&) = delete;
@@ -211,45 +266,13 @@ namespace PluginHost {
 #ifndef __WINDOWS__
     void StartLoopbackInterface()
     {
-        Core::AdapterIterator adapter;
-        uint8_t retries = 8;
-        // Some interfaces take some time, to be available. Wait a certain amount
-        // of time in which the interface should come up.
-        do {
-            adapter = Core::AdapterIterator(_T("lo"));
+        AdapterObserver observer(_T("lo"));
 
-            if (adapter.IsValid() == false) {
-                Core::AdapterIterator::Flush();
-                SleepMs(500);
-            }
-
-        } while ((retries-- != 0) && (adapter.IsValid() == false));
-
-        if (adapter.IsValid() == false) {
-            SYSLOG(Logging::Startup, (_T("Interface [lo], not available")));
+        if (observer.WaitForCompletion(AdapterObserver::WaitTime) == Core::ERROR_NONE) {
+            observer.Up();
+            SYSLOG(Logging::Startup, (string(_T("Interface [lo], fully functional"))));
         } else {
-
-            adapter.Up(true);
-            adapter.Add(Core::IPNode(Core::NodeId("127.0.0.1"), 8));
-
-            retries = 40;
-            Core::NodeId nodeId;
-
-            // Last thing we need to wait for is the resolve of localhost to work.
-            do {
-                nodeId = Core::NodeId(_T("localhost"));
-
-                if (nodeId.IsValid() == false) {
-                    SleepMs(100);
-                }
-
-            } while ((retries-- != 0) && (nodeId.IsValid() == false));
-
-            if (retries != 0) {
-                SYSLOG(Logging::Startup, (string(_T("Interface [lo], fully functional"))));
-            } else {
-                SYSLOG(Logging::Startup, (string(_T("Interface [lo], partly functional (no name resolving)"))));
-            }
+            SYSLOG(Logging::Startup, (string(_T("Interface [lo], partly functional (no name resolving)"))));
         }
     }
 #endif
@@ -419,11 +442,6 @@ namespace PluginHost {
             SYSLOG(Logging::Startup, (_T("Version:       %s"), _config->Version().c_str()));
             SYSLOG(Logging::Startup, (_T("Traces:        %s"), traceSettings.c_str()));
 
-#ifndef __WINDOWS__
-            // We need at least the loopback interface before we continue...
-            StartLoopbackInterface();
-#endif
-
             // Before we do any translation of IP, make sure we have the right network info...
             if (_config->IPv6() == false) {
                 SYSLOG(Logging::Startup, (_T("Forcing the network to IPv4 only.")));
@@ -432,6 +450,11 @@ namespace PluginHost {
 
             // Load plugin configs from a directory.
             LoadPlugins(pluginPath, *_config);
+
+#ifndef __WINDOWS__
+            // We need at least the loopback interface before we continue...
+            StartLoopbackInterface();
+#endif
 
             // Startup/load/initialize what we found in the configuration.
             _dispatcher = new PluginHost::Server(*_config, _background);
