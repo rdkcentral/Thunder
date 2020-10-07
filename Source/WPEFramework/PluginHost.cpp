@@ -82,6 +82,11 @@ namespace PluginHost {
             , _interface(interface)
             , _observer(this)
         {
+            Core::AdapterIterator adapter(interface);
+
+            if (adapter.IsValid() == true) {
+                _signal.SetEvent();
+            }
         }
         ~AdapterObserver() override = default;
 
@@ -103,10 +108,18 @@ namespace PluginHost {
         }
         inline uint32_t WaitForCompletion(int32_t waitTime)
         {
-            uint32_t status = _signal.Lock(waitTime);
-            _signal.ResetEvent(); //Clear signalled event
-            return status;
+            return _signal.Lock(waitTime);
         }
+        void Up()
+        {
+            Core::AdapterIterator adapter(_interface);
+
+            if (adapter.IsValid() == true) {
+                adapter.Up(true);
+                adapter.Add(Core::IPNode(Core::NodeId("127.0.0.1"), 8));
+            }
+        }
+
     private:
         Core::Event _signal;
         string _interface;
@@ -256,28 +269,17 @@ namespace PluginHost {
 #ifndef __WINDOWS__
     void StartLoopbackInterface()
     {
-        Core::AdapterIterator adapter(_T("lo"));
-        AdapterObserver _observer(_T("lo"));
-        _observer.Open();
+        AdapterObserver observer(_T("lo"));
+        observer.Open();
 
-        if (adapter.IsValid() == false) {
-            SYSLOG(Logging::Startup, (string(_T("Interface [lo], not available, wait for a while"))));
-            if (_observer.WaitForCompletion(AdapterObserver::WaitTime) == Core::ERROR_NONE) {
-                SYSLOG(Logging::Startup, (string(_T("Interface [lo] ready to setup"))));
-            }
-        }
-
-        if (adapter.IsValid() == true) {
-
-            adapter.Up(true);
-            adapter.Add(Core::IPNode(Core::NodeId("127.0.0.1"), 8));
+        if (observer.WaitForCompletion(AdapterObserver::WaitTime) == Core::ERROR_NONE) {
+            observer.Up();
             SYSLOG(Logging::Startup, (string(_T("Interface [lo], fully functional"))));
         } else {
             SYSLOG(Logging::Startup, (string(_T("Interface [lo], partly functional (no name resolving)"))));
         }
-        _observer.Close();
+        observer.Close();
     }
-
 #endif
 
 #ifdef __WINDOWS__
