@@ -298,7 +298,11 @@ namespace Core {
         {
             _reset = RHS._reset;
             _list = RHS._list;
-            _index = RHS._index;
+            if (RHS._index != RHS._list.end()) {
+                _index = find(_list.begin(), _list.end(), *(RHS._index));
+            } else {
+                _index = _list.begin();
+            }
 
             return (*this);
         }
