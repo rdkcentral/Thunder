@@ -321,6 +321,7 @@ namespace PluginHost {
 #ifdef PROCESSCONTAINERS_ENABLED
                 , ProcessContainers()
 #endif
+                , LinkerPluginPaths()
             {
                 // No IdleTime
                 Add(_T("version"), &Version);
@@ -350,6 +351,7 @@ namespace PluginHost {
 #ifdef PROCESSCONTAINERS_ENABLED
                 Add(_T("processcontainers"), &ProcessContainers);
 #endif
+                Add(_T("linkerpluginpaths"), &LinkerPluginPaths);
             }
             ~JSONConfig() override = default;
 
@@ -382,6 +384,7 @@ namespace PluginHost {
 #ifdef PROCESSCONTAINERS_ENABLED
             ProcessContainerConfig ProcessContainers;
 #endif
+            Core::JSON::ArrayType<Core::JSON::String> LinkerPluginPaths;
         };
 
     public:
@@ -568,6 +571,10 @@ namespace PluginHost {
 
                 // Get all in the config configure Plugins..
                 _plugins = config.Plugins;
+
+                Core::JSON::ArrayType<Core::JSON::String>::Iterator itr(config.LinkerPluginPaths.Elements());
+                while (itr.Next())
+                    _linkerPluginPaths.push_back(itr.Current().Value());
             }
         }
         ~Config()
@@ -775,6 +782,11 @@ namespace PluginHost {
             return;
         }
 
+        inline const std::vector<std::string>& LinkerPluginPaths() const
+        {
+            return _linkerPluginPaths;
+        }
+
     private:
         friend class Server;
 
@@ -843,6 +855,7 @@ namespace PluginHost {
 #ifdef PROCESSCONTAINERS_ENABLED
         string _ProcessContainersLogging;
 #endif
+        std::vector<std::string> _linkerPluginPaths;
     };
 }
 }

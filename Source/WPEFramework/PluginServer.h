@@ -855,6 +855,22 @@ namespace PluginHost {
             }
 
         private:
+            virtual std::vector<string> GetAllLibrarySearchPaths(const string& locator) const override
+            {
+                // system configured paths
+                std::vector<string> all_paths;
+                all_paths.push_back(_administrator.Configuration().PersistentPath() + locator);
+                all_paths.push_back(_administrator.Configuration().SystemPath() + locator);
+                all_paths.push_back(_administrator.Configuration().AppPath() + _T("Plugins/") + locator);
+
+                // additionaly defined user paths
+                const std::vector<string> temp = _administrator.Configuration().LinkerPluginPaths();
+                for (const string& s : temp)
+                    all_paths.push_back(Core::Directory::Normalize(s) + locator);
+
+                return all_paths;
+            }
+
             inline IPlugin* CheckLibrary(const string& name, const TCHAR* className, const uint32_t version)
             {
                 IPlugin* newIF = nullptr;
@@ -906,11 +922,10 @@ namespace PluginHost {
                     Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
                     newIF = admin.Instantiate<IPlugin>(Core::Library(), className, version);
                 } else {
-                    if ((newIF = CheckLibrary((_administrator.Configuration().PersistentPath() + locator), className, version)) == nullptr) {
-                        if ((newIF = CheckLibrary((_administrator.Configuration().SystemPath() + locator), className, version)) == nullptr) {
-                            newIF = CheckLibrary((_administrator.Configuration().AppPath() + _T("Plugins/") + locator), className, version);
-                        }
-                    }
+                    std::vector<string> all_paths = GetAllLibrarySearchPaths(locator);
+                    std::vector<string>::const_iterator iter = std::begin(all_paths);
+                    while ((iter != std::end(all_paths)) && ((newIF = CheckLibrary(*iter, className, version)) == nullptr))
+                        ++iter;
                 }
 
                 if (newIF != nullptr) {
