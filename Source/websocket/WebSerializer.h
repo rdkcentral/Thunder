@@ -276,9 +276,12 @@ namespace Web {
         uint32_t Deserialize() override
         {
             _hash.Reset();
+            uint32_t result = FileBody::Deserialize();
+            if (result) {
+                LoadHash();
+            }
 
-            LoadHash();
-            return (FileBody::Deserialize());
+            return (result);
         }
         uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength) override
         {
