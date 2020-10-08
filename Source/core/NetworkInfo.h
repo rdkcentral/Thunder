@@ -298,7 +298,7 @@ namespace Core {
         {
             _reset = RHS._reset;
             _list = RHS._list;
-            _index = RHS._index;
+            _index = find(_list.begin(), _list.end(), *(RHS._index));
 
             return (*this);
         }
