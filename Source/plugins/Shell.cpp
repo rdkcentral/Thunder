@@ -239,7 +239,6 @@ namespace PluginHost
                     }
                     return (result != nullptr);
                 });
-                return result;
             }
         } else {
             ICOMLink* handler(COMLink());
