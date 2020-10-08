@@ -72,6 +72,7 @@ private:
         , _name(displayName)
         , _displayConnection(interface)
         , _hdrProperties(interface != nullptr ? interface->QueryInterface<Exchange::IHDRProperties>() : nullptr)
+        , _graphicsProperties(interface != nullptr ? interface->QueryInterface<Exchange::IGraphicsProperties>() : nullptr)
         , _notification(this)
         , _callbacks()
     {
@@ -269,6 +270,9 @@ private:
         if (_hdrProperties != nullptr) {
             _hdrProperties->Release();
         }
+        if(_graphicsProperties != nullptr) {
+            _graphicsProperties->Release();
+        }
     }
 
 public:
@@ -379,6 +383,22 @@ public:
                    ( _displayConnection->Height(value) == Core::ERROR_NONE ? value : 0) :
                    0 );
     }
+    uint8_t WidthInCentimeters() const
+    {
+        ASSERT(_displayConnection != nullptr);
+        uint8_t value = 0;
+        return (_displayConnection != nullptr ?
+                   ( _displayConnection->WidthInCentimeters(value) == Core::ERROR_NONE ? value : 0) :
+                   0 );
+    }
+    uint8_t HeightInCentimeters() const
+    {
+        ASSERT(_displayConnection != nullptr);
+        uint8_t value = 0;
+        return (_displayConnection != nullptr ?
+                   ( _displayConnection->HeightInCentimeters(value) == Core::ERROR_NONE ? value : 0) :
+                   0 );
+    }
     uint32_t VerticalFreq() const
     {
         ASSERT(_displayConnection != nullptr);
@@ -387,6 +407,12 @@ public:
                    ( _displayConnection->VerticalFreq(value) == Core::ERROR_NONE ? value : 0) :
                    0 );
     }
+
+    uint32_t EDID(uint16_t& len, uint8_t data[]) {
+        ASSERT(_displayConnection != nullptr);
+        return _displayConnection->EDID(len, data);
+    }
+
     Exchange::IHDRProperties::HDRType HDR() const
     {
         Exchange::IHDRProperties::HDRType value = Exchange::IHDRProperties::HDRType::HDR_OFF;
@@ -404,12 +430,23 @@ public:
                      Exchange::IConnectionProperties::HDCPProtectionType::HDCP_Unencrypted ) :
                    Exchange::IConnectionProperties::HDCPProtectionType::HDCP_Unencrypted );
     }
+    uint64_t TotalGpuRam() const 
+    {
+        uint64_t memory(0);
+        return _graphicsProperties != nullptr ? _graphicsProperties->TotalGpuRam(memory) : memory;
+    }
+    uint64_t FreeGpuRam() const 
+    {
+        uint64_t memory(0);
+        return _graphicsProperties != nullptr ? _graphicsProperties->FreeGpuRam(memory) : memory;
+    }
 
 private:
     mutable int _refCount;
     const string _name;
     Exchange::IConnectionProperties* _displayConnection;
     Exchange::IHDRProperties* _hdrProperties;
+    Exchange::IGraphicsProperties* _graphicsProperties;
     Core::Sink<Notification> _notification;
     Callbacks _callbacks;
     static DisplayInfo::DisplayInfoAdministration _administration;
@@ -528,6 +565,31 @@ displayinfo_hdcp_protection_t displayinfo_hdcp_protection(struct displayinfo_typ
     }
 
     return type;
+}
+
+uint64_t displayinfo_total_gpu_ram(struct displayinfo_type* instance)
+{
+    return reinterpret_cast<DisplayInfo*>(instance)->TotalGpuRam();
+}
+
+uint64_t displayinfo_free_gpu_ram(struct displayinfo_type* instance)
+{
+    return reinterpret_cast<DisplayInfo*>(instance)->FreeGpuRam();
+}
+
+uint32_t displayinfo_edid(struct displayinfo_type* displayinfo, uint8_t buffer[], uint16_t* length)
+{
+    return reinterpret_cast<DisplayInfo*>(displayinfo)->EDID(*length, buffer);
+}
+
+uint8_t displayinfo_width_in_centimeters(struct displayinfo_type* displayinfo)
+{
+    return reinterpret_cast<DisplayInfo*>(displayinfo)->WidthInCentimeters();
+}
+
+uint8_t displayinfo_height_in_centimeters(struct displayinfo_type* displayinfo)
+{
+    return reinterpret_cast<DisplayInfo*>(displayinfo)->HeightInCentimeters();
 }
 
 } // extern "C"
