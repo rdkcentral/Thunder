@@ -229,7 +229,7 @@ namespace Web {
     template <typename HASHALGORITHM>
     class SignedFileBodyType : public FileBody {
     private:
-        static int16_t constexpr HashBlockSize = 1024;
+        static int16_t constexpr BlockSize = 1024;
     public:
         using HashType = HASHALGORITHM;
 
@@ -298,21 +298,20 @@ namespace Web {
     private:
         void LoadHash() {
 
-            Core::File::Position(false, 0);
-            uint64_t sizeToCalculate = static_cast<int64_t>(Core::File::Size());
-            if (sizeToCalculate > 0) {
-                sizeToCalculate -= 1; // Remove end of file
-            }
-            uint8_t stream[HashBlockSize];
-            while (sizeToCalculate > 0) {
-                if (sizeToCalculate > HashBlockSize) {
-                    FileBody::Serialize(stream, HashBlockSize);
-                    sizeToCalculate -= HashBlockSize;
-                    _hash.Input(stream, HashBlockSize);
-                } else {
-                    FileBody::Serialize(stream, sizeToCalculate);
-                    _hash.Input(stream, sizeToCalculate);
-                    sizeToCalculate = 0;
+            if ((static_cast<int64_t>(Core::File::Size() > 0)) && (Core::File::IsOpen() == true)) {
+                // Set file position to beginning
+                Core::File::Position(false, 0);
+                uint8_t buffer[BlockSize];
+                uint64_t dataToRead = (static_cast<int64_t>(Core::File::Size()) - 1);
+
+                while (dataToRead > 0) {
+                    uint16_t realReadData = Core::File::Read(buffer, BlockSize);
+
+                    // Adjust Read Data to avoid end of file
+                    realReadData = ((realReadData != BlockSize) && (realReadData != 0))? (realReadData - 1): realReadData;
+                    _hash.Input(buffer, realReadData);
+
+                    dataToRead -= (realReadData == 0) ? dataToRead: realReadData;
                 }
             }
         }
