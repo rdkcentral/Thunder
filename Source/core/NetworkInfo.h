@@ -296,9 +296,13 @@ namespace Core {
 
         inline IPV4AddressIterator& operator=(const IPV4AddressIterator& RHS)
         {
-            _reset = true;
+            _reset = RHS._reset;
             _list = RHS._list;
-            _index = _list.begin();
+            if (RHS._index != RHS._list.end()) {
+                _index = find(_list.begin(), _list.end(), *(RHS._index));
+            } else {
+                _index = _list.begin();
+            }
 
             return (*this);
         }
