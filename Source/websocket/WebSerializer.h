@@ -228,6 +228,8 @@ namespace Web {
 
     template <typename HASHALGORITHM>
     class SignedFileBodyType : public FileBody {
+    private:
+        static int16_t constexpr BlockSize = 1024;
     public:
         using HashType = HASHALGORITHM;
 
@@ -274,8 +276,12 @@ namespace Web {
         uint32_t Deserialize() override
         {
             _hash.Reset();
+            uint32_t result = FileBody::Deserialize();
+            if (result) {
+                LoadHash();
+            }
 
-            return (FileBody::Deserialize());
+            return (result);
         }
         uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength) override
         {
@@ -287,6 +293,27 @@ namespace Web {
             }
 
             return deserialized;
+        }
+
+    private:
+        void LoadHash() {
+
+            if ((static_cast<int64_t>(Core::File::Size() > 0)) && (Core::File::IsOpen() == true)) {
+                // Set file position to beginning
+                Core::File::Position(false, 0);
+                uint8_t buffer[BlockSize];
+                uint64_t dataToRead = (static_cast<int64_t>(Core::File::Size()) - 1);
+
+                while (dataToRead > 0) {
+                    uint16_t realReadData = Core::File::Read(buffer, BlockSize);
+
+                    // Adjust Read Data to avoid end of file
+                    realReadData = ((realReadData != BlockSize) && (realReadData != 0))? (realReadData - 1): realReadData;
+                    _hash.Input(buffer, realReadData);
+
+                    dataToRead -= (realReadData == 0) ? dataToRead: realReadData;
+                }
+            }
         }
 
     private:

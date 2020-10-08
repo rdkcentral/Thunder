@@ -343,7 +343,7 @@ namespace Web {
 
                 if (response->ErrorCode == Web::STATUS_NOT_FOUND) {
                     errorCode = Core::ERROR_UNAVAILABLE;
-                } else if (((response->ErrorCode == STATUS_OK) && (_state == TRANSFER_DOWNLOAD)) &&
+                } else if ((((response->ErrorCode == STATUS_OK) || (response->ErrorCode == STATUS_PARTIAL_CONTENT)) && (_state == TRANSFER_DOWNLOAD)) &&
                            (((Transferred() == 0) && (FileSize() == 0)) || (FileSize() < Transferred()))) {
                     errorCode = Core::ERROR_WRITE_ERROR;
                 } else if ((response->ErrorCode == Web::STATUS_UNAUTHORIZED) || 
