@@ -313,6 +313,8 @@ namespace Web {
 
                     dataToRead -= (realReadData == 0) ? dataToRead: realReadData;
                 }
+                // Set back file position to the end of file to append from there
+                Core::File::Position(false, (static_cast<int64_t>(Core::File::Size()) - 1));
             }
         }
 
