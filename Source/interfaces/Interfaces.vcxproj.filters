@@ -1,0 +1,246 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="ProxyStubs_AVNClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_Browser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_Composition.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_ContentDecryption.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_DsgccClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_Guide.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_Netflix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_Packager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_Performance.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_PlayGiga.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_Power.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_Provisioning.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_RPCLink.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_RtspClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_Stream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_TestController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_TestUtility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_WebDriver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_WebPA.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_WebServer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_AVSClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_DeviceIdentification.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_Dictionary.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_DisplayInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_Dolby.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_External.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_InputPin.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_InputSwitch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_KeyHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_Math.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_PlayerInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_RemoteControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_ResourceMonitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_VoiceHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_VolumeControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Module.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{08108e2f-1ffd-48e0-89d9-23f5409dc0eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{4ee0c8e4-3ba3-4683-8c6f-23463d09d9d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Interface Files">
+      <UniqueIdentifier>{379b5f39-b7a5-466c-bd91-4f42b78a78bb}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IBrowser.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ICommand.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IDictionary.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IMemory.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INetflix.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ISwitchBoard.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IWebServer.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IComposition.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IKeyHandler.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IProvisioning.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ITimeSync.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IVoiceHandler.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IWebDriver.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IRPCLink.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IAVNClient.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IBluetooth.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ICapture.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IContentDecryption.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IDRM.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IDsgccClient.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IExternal.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IGuide.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IIPNetwork.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IPackager.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IPerformance.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IPlayGiga.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IPower.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IRtspClient.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ISystemCommands.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ITestController.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Ids.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IAVSClient.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IDisplayInfo.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IInputSwitch.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IStream.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IExternalBase.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="definitions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="DataModel.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
+  </ItemGroup>
+</Project>

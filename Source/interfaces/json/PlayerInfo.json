@@ -1,0 +1,123 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Player Info API",
+    "class": "PlayerInfo",
+    "description": "PlayerInfo JSON-RPC interface"
+  },
+  "definitions": {
+    "audiocodecs": {
+      "type": "string",
+      "enum": [
+        "Undefined",
+        "AAC",
+        "AC3",
+        "AC3Plus",
+        "DTS",
+        "MPEG1",
+        "MPEG2",
+        "MPEG3",
+        "MPEG4",
+        "OPUS",
+        "VorbisOGG",
+        "WAV"
+      ],
+      "enumvalues": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "description": "Audio Codec supported by the platform",
+      "example": "AudioAAC"
+    },
+    "videocodecs": {
+      "type": "string",
+      "enum": [
+        "Undefined",
+        "H263",
+        "H264",
+        "H265",
+        "H26510",
+        "MPEG",
+        "VP8",
+        "VP9",
+        "VP10"
+      ],
+      "enumvalues": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "description": "Video Codec supported by the platform",
+      "example": "VideoH264"
+    },
+    "codecs": {
+      "type": "object",
+      "properties": {
+        "audio": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/audiocodecs"
+          }
+        },
+        "video": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/videocodecs"
+          }
+        }
+      }
+    },
+    "dolby":{
+      "type":"string",
+      "enum":[
+        "DIGITAL_PCM",
+        "DIGITAL_PLUS",
+        "DIGITAL_AC3",
+        "AUTO"
+      ],
+      "enumvalues":[
+        0,
+        3,
+        4,
+        5
+      ]
+    },
+    "required": [
+      "audio",
+      "video"
+    ]
+  },
+  "properties": {
+    "playerinfo": {
+      "summary": "Player general information",
+      "readonly": true,
+      "params": {
+          "$ref": "#/definitions/codecs"
+      }
+    },
+    "dolbymode": {
+      "summary" : "Dolby output mode",
+      "readonly": false,
+      "params": {
+        "$ref": "#/definitions/dolby"
+      }
+    }
+  }
+}

@@ -1,0 +1,243 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Compositor API",
+    "class": "Compositor",
+    "description": "Compositor JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "properties": {
+    "resolution": {
+      "summary": "Screen resolution",
+      "description": "Use this property to set or retrieve the current resolution of the screen.",
+      "params": {
+        "type": "string",
+        "enum": [
+          "unknown",
+          "480i",
+          "480p",
+          "720p50",
+          "720p60",
+          "1080p24",
+          "1080i50",
+          "1080p50",
+          "1080p60",
+          "2160p50",
+          "2160p60"
+        ],
+        "example": "1080p24"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/unknownkey",
+          "description": "Unknown resolution"
+        },
+        {
+          "$ref": "#/common/errors/unavailable",
+          "description": "Set resolution is not supported or failed"
+        },
+        {
+          "$ref": "#/common/errors/general",
+          "description": "Failed to set resolution"
+        }
+      ]
+    },
+    "zorder": {
+      "summary": "List of compositor clients sorted by z-order",
+      "description": "Use this property to retrieve the list of all clients in z-order. Each client has an z-order-value that determines its position with respect to the screen. The ordering is that the top position is closest to the screen, the next z-order-value first behind the top, and so on.",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "description": "Client name",
+          "example": "Netflix"
+        }
+      },
+      "errors": [
+        {
+          "description": "Failed to get z-order",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    },
+    "geometry": {
+      "summary": "Client surface geometry",
+      "description": "Use this property to update or retrieve the geometry of a client's surface.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "description": "Horizontal coordinate of the surface",
+            "type": "number",
+            "example": 0
+          },
+          "y": {
+            "description": "Vertical coordinate of the surface",
+            "type": "number",
+            "example": 0
+          },
+          "width": {
+            "description": "Surface width",
+            "type": "number",
+            "example": 1280
+          },
+          "height": {
+            "description": "Surface height",
+            "type": "number",
+            "example": 720
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height"
+        ]
+      },
+      "index": {
+        "name": "Client",
+        "example": "Netflix"
+      },
+      "errors": [
+        {
+          "description": "Client not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "visiblity": {
+      "summary": "Client surface visibility",
+      "description": "Use this property to set the client's surface visibility.",
+      "writeonly":true,
+      "params": {
+        "type": "string",
+        "enum": [
+          "visible",
+          "hidden"
+        ],
+        "example": "visible"
+      },
+      "index": {
+        "name": "Client",
+        "example": "Netflix"
+      },
+      "errors": [
+        {
+          "description": "Client not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "opacity": {
+      "summary": "Client surface opacity",
+      "description": "Use this property to set the client's surface opacity level.",
+      "writeonly":true,
+      "params": {
+        "description": "Opacity level (0 to 255; 0: fully transparent, 255: fully opaque)",
+        "type": "number",
+        "size": 8,
+        "example": 127
+      },
+      "index": {
+        "name": "Client",
+        "example": "Netflix"
+      },
+      "errors": [
+        {
+          "description": "Client not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    }
+  },
+  "methods": {
+    "putontop": {
+      "summary": "Puts client surface on top in z-order",
+      "description": "Use this method to get a client's surface to the top position.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "client": {
+            "type": "string",
+            "description": "Client name",
+            "example": "Netflix"
+          }
+        },
+        "required": [
+          "client"
+        ]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Client not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "putbelow": {
+      "summary": "Puts client surface below another surface",
+      "description": "Use this method to reorder client surfaces in the z-order list.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "client": {
+            "type": "string",
+            "description": "Client name to change z-order position",
+            "example": "Netflix"
+          },
+          "relative": {
+            "type": "string",
+            "description": "Client to put the other surface below",
+            "example": "WebKitBrowser"
+          }
+        },
+        "required": [
+          "client",
+          "relative"
+        ]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Client(s) not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "select": {
+      "summary": "Directs the input to the given client, disabling all the others",
+      "description": "Use this method to direct all inputs to this client. The client that is receiving the inputs prior to this call will nolonger receive it anymore after this call.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "client": {
+            "type": "string",
+            "description": "Client name",
+            "example": "Netflix"
+          }
+        },
+        "required": [
+          "client"
+        ]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Client not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    }
+  }
+}

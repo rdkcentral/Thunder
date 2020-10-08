@@ -1,0 +1,492 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Remote Control API",
+    "class": "RemoteControl",
+    "description": "RemoteControl JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "definitions": {
+    "code": {
+      "description": "Key code",
+      "type": "number",
+      "example": 1
+    },
+    "device": {
+      "description": "Device name",
+      "type": "string",
+      "example": "DevInput"
+    },
+    "modifiers": {
+      "type": "array",
+      "description": "List of key modifiers",
+      "items": {
+        "type": "string",
+        "enum": [
+          "leftshift",
+          "rightshift",
+          "leftalt",
+          "rightalt",
+          "leftctrl",
+          "rightctrl"
+        ],
+        "enumvalues": [
+          1,
+          2,
+          4,
+          8,
+          16,
+          32
+        ],
+        "enumtyped": false,
+        "description": "Key modifier",
+        "example": "leftshift"
+      }
+    },
+    "key": {
+      "description": "Key ingest value",
+      "type": "number",
+      "size": 16,
+      "example": 103
+    },
+    "rcobj": {
+      "type": "object",
+      "properties": {
+        "device": {
+          "$ref": "#/definitions/device"
+        },
+        "code": {
+          "$ref": "#/definitions/code"
+        },
+        "key": {
+          "$ref": "#/definitions/key"
+        },
+        "modifiers": {
+          "$ref": "#/definitions/modifiers"
+        }
+      },
+      "required": [
+        "device",
+        "code",
+        "key"
+      ]
+    },
+    "keyobj":{
+      "type": "object",
+      "properties": {
+        "device": {
+          "$ref": "#/definitions/device"
+        },
+        "code": {
+          "$ref": "#/definitions/code"
+        }
+      },
+      "required": [
+        "device",
+        "code"
+      ]
+    }
+  },
+  "properties": {
+    "devices": {
+      "summary": "Names of all available devices",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "description": "Device name",
+          "example": "Web"
+        }
+      }
+    },
+    "device": {
+      "summary": "Metadata of a specific device",
+      "readonly": true,
+      "index": {
+        "name": "Device",
+        "example": "DevInput"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "metadata": {
+            "description": "Device metadata",
+            "type": "string",
+            "example": "It is based on protocol A"
+          }
+        },
+        "required": [
+          "name",
+          "metadata"
+        ]
+      },
+      "errors": [
+        {
+          "description": "Metadata not supported on a virtual device",
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        }
+      ]
+    }
+  },
+  "methods": {
+    "key": {
+      "summary": "Gets key code details",
+      "params": {
+        "$ref": "#/definitions/keyobj"
+      },
+      "result": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/definitions/code"
+          },
+          "key": {
+            "$ref": "#/definitions/key"
+          },
+          "modifiers": {
+            "$ref": "#/definitions/modifiers"
+          }
+        },
+        "required": [
+          "code",
+          "key"
+        ]
+      },
+      "errors": [
+        {
+          "description": "Key does not exist",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        }
+      ]
+    },
+    "send": {
+      "summary": "Sends a key to a device (press and release)",
+      "params": {
+        "$ref": "#/definitions/keyobj"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        },
+        {
+          "description": "Key does not exist",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Key map table does not exist",
+          "$ref": "#/common/errors/unknowntable"
+        },
+        {
+          "description": "Key is already released",
+          "$ref": "#/common/errors/alreadyreleased"
+        }
+      ]
+    },
+    "press": {
+      "summary": "Presses a key on a device",
+      "params": {
+        "$ref": "#/definitions/keyobj"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        },
+        {
+          "description": "Key does not exist",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Key map table does not exist",
+          "$ref": "#/common/errors/unknowntable"
+        }
+      ]
+    },
+    "release": {
+      "summary": "Releases a key on a device",
+      "params": {
+        "$ref": "#/definitions/keyobj"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        },
+        {
+          "description": "Key does not exist",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Key map table does not exist",
+          "$ref": "#/common/errors/unknowntable"
+        },
+        {
+          "description": "Key is already released",
+          "$ref": "#/common/errors/alreadyreleased"
+        }
+      ]
+    },
+    "add": {
+      "summary": "Adds a key code to the key map",
+      "params": {
+        "$ref": "#/definitions/rcobj"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        },
+        {
+          "description": "Code already exists",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    },
+    "modify": {
+      "summary": "Modifies a key code in the key map",
+      "params": {
+        "$ref": "#/definitions/rcobj"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        },
+        {
+          "description": "Key does not exist",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    },
+    "delete": {
+      "summary": "Deletes a key code from the key map",
+      "params": {
+        "$ref": "#/definitions/keyobj"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Key does not exist",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        }
+      ]
+    },
+    "load": {
+      "summary": "Re-loads the device's key map from persistent memory",
+      "params": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "$ref": "#/definitions/device"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "File does not exist",
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        },
+        {
+          "description": "Illegal state",
+          "$ref": "#/common/errors/illegalstate"
+        },
+        {
+          "description": "Opening failed",
+          "$ref": "#/common/errors/openingfailed"
+        }
+      ]
+    },
+    "save": {
+      "summary": "Saves the device's key map into persistent path",
+      "params": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "$ref": "#/definitions/device"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "File is not created",
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        },
+        {
+          "description": "Illegal state",
+          "$ref": "#/common/errors/illegalstate"
+        }
+      ]
+    },
+    "pair": {
+      "summary": "Activates pairing mode of a device",
+      "params": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "$ref": "#/definitions/device"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Failed to activate pairing",
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        }
+      ]
+    },
+    "unpair": {
+      "summary": "Unpairs a device",
+      "params": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "$ref": "#/definitions/device"
+          },
+          "bindid": {
+            "description": "Binding ID",
+            "type": "string",
+            "example": "id"
+          }
+        },
+        "required": [
+          "device",
+          "bindid"
+        ]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Failed to unpair the device",
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        }
+      ]
+    }
+  },
+  "events": {
+    "keypressed": {
+      "summary": "Notifies of a key press/release action.",
+      "id": {
+        "name": "key code",
+        "example": "42"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "pressed": {
+            "type": "boolean",
+            "description": "Denotes if the key was pressed (true) or released (false)"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,245 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="json\DeviceInfo.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\DIALServer.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\LocationSync.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\Messenger.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\Monitor.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\NetworkControl.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\RemoteControl.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\Spark.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\StateControl.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\Streamer.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\SystemCommands.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\TestUtility.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\TimeSync.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\TraceControl.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\WebKitBrowser.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\WifiControl.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\Browser.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\DHCPServer.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\InputSwitch.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\OCDM.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\SecurityAgent.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\IOConnector.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Contracts">
+      <UniqueIdentifier>{6975244d-cb23-4d09-a334-80cf1e1b4845}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{3c5d92bc-9901-475e-bb35-643cd2f2296b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{c5ebb452-1dd1-4410-9a69-da3188dc9cd5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Interfaces">
+      <UniqueIdentifier>{832f72b9-f988-4a91-98b6-0a6e62b7ca87}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Definitions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="definitions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IAVNClient.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IAVSClient.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IBluetooth.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IBrowser.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IButler.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="ICapture.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="ICommand.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IComposition.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IContentDecryption.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IDeviceIdentification.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IDictionary.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IDisplayInfo.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IDolby.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IDRM.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="Ids.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IDsgccClient.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IExternal.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IExternalBase.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IGuide.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IInputPin.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IInputSwitch.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IIPNetwork.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IKeyHandler.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IMath.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IMemory.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IMessenger.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="INetflix.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IPackager.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IPerformance.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IPlayerInfo.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IPlayGiga.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IPower.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IProvisioning.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IRemoteControl.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IResourceMonitor.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IRPCLink.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IRtspClient.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="ISecureShellServer.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IStream.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="ISwitchBoard.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="ISystemCommands.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="ITestController.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="ITestUtility.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="ITimeSync.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IVoiceHandler.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IVolumeControl.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IWebDriver.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IWebPA.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IWebServer.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="Module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

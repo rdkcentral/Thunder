@@ -1,0 +1,209 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "WebKit Browser API",
+    "class": "WebKitBrowser",
+    "description": "WebKitBrowser JSON-RPC interface"
+  },
+    "common": {
+      "$ref": "common.json"  
+    },
+    "include": {
+      "browser": {
+        "$ref": "Browser.json#"
+      },
+      "statecontrol": {
+        "$ref": "StateControl.json#"
+      }
+    },
+    "properties": {
+    "useragent": {
+      "summary": "UserAgent string used by browser",
+        "params": {
+          "type": "string",
+          "example": "Mozilla/5.0 (Linux; x86_64 GNU/Linux) AppleWebKit/601.1 (KHTML, like Gecko) Version/8.0 Safari/601.1 WP"
+        }
+    },
+    "httpcookieacceptpolicy": {
+      "summary": "HTTP cookies accept policy",
+      "params": {
+        "type": "string",
+        "enum": [
+          "always",
+          "never",
+          "onlyfrommaindocumentdomain",
+          "exclusivelyfrommaindocumentdomain"
+        ]
+      },
+      "errors": [
+        {
+          "code": 22,
+          "message": "ERROR_UNKNOWN_KEY",
+          "description": "Unknown policy"
+        }
+      ]
+    },
+    "localstorageenabled": {
+      "summary": "Controls the local storage availability",
+        "params": {
+          "type": "boolean"
+        }
+    },
+    "languages": {
+      "summary": "User preferred languages",
+      "params": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "example": "en-US"
+        }
+      }
+    },
+    "headers": {
+      "summary": "Headers to send on all requests that the browser makes",
+      "params": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Header name",
+              "type": "string",
+              "example": "X-Forwarded-For"
+            },
+            "value": {
+              "description": "Header value",
+              "type": "string",
+              "example": "::1"
+            }
+          }
+        }
+      }
+    }
+  },
+    "methods": {
+    "bridgereply": {
+      "summary": "A response for legacy $badger",
+      "params": {
+        "description": "A base64 encoded JSON string response to be delivered to $badger.callback(pid, success, json)",
+        "type": "string",
+        "properties": {
+          "pid": {
+            "type": "number",
+            "description": "The $badger promise Id associated with query"
+          },
+          "success": {
+            "type": "boolean",
+            "description": "Which $badger promise callback to invoke"
+          },
+          "json": {
+            "type": "object",
+            "description": "Payload to pass to the $badger promise callback",
+            "properties": {},
+            "required": []
+          }
+        },
+        "required": [
+          "pid",
+          "success"
+        ]
+      },
+      "result": {
+        "type": "null"
+      }
+    },
+    "bridgeevent": {
+      "summary": "Send legacy $badger event",
+      "params": {
+        "description": "A base64 encoded JSON string response to be delivered to window.$badger.event(handlerId, json)",
+        "type": "string",
+        "properties": {
+          "handlerId": {
+            "type": "number",
+            "description": "The $badger handler Id"
+          },
+          "json": {
+            "type": "object",
+            "description": "Payload to pass to the $badger",
+            "properties": {},
+            "required": []
+          }
+        },
+        "required": [
+          "handlerId",
+          "json"
+        ]
+      },
+      "result": {
+        "type": "null"
+      }
+    }
+  },
+  "events": {
+    "loadfinished": {
+      "summary": "Initial HTML document has been completely loaded and parsed",
+      "params": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "description": "The URL that has been loaded",
+            "type": "string",
+            "example": "https://example.com"
+          },
+          "httpstatus": {
+            "description": "The response code of main resource request",
+            "type": "integer",
+            "signed": true,
+            "example": 200
+          }
+        },
+        "required": [
+          "url",
+          "httpstatus"
+        ]
+      }
+    },
+    "loadfailed": {
+      "summary": "Browser failed to load page",
+      "params": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "description": "The URL that browser failed to load",
+            "type": "string",
+            "example": "https://example.com"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    },
+    "bridgequery": {
+      "summary": "A Base64 encoded JSON message from legacy $badger bridge",
+      "params": {
+        "type": "string",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Requested action"
+          },
+          "pid": {
+            "type": "number",
+            "description": "Promise Id associated with query"
+          },
+          "args": {
+            "type": "object",
+            "description": "Arguments to the action",
+            "properties": {},
+            "required": []
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    }
+  }
+}

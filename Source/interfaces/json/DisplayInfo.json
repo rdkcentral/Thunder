@@ -1,0 +1,82 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Display Info API",
+    "class": "DisplayInfo",
+    "description": "DisplayInfo JSON-RPC interface"
+  },
+  "properties": {
+    "displayinfo": {
+      "summary": "Display general information",
+      "readonly": true,
+      "params": {
+        "type": "object",
+        "properties": {
+          "totalgpuram": {
+            "description": "Total GPU DRAM memory (in bytes)",
+            "example": 381681664,
+            "type": "number",
+            "size": 64
+          },
+          "freegpuram": {
+            "description": "Free GPU DRAM memory (in bytes)",
+            "example": 358612992,
+            "type": "number",
+            "size": 64
+          },
+          "audiopassthrough": {
+            "description": "Audio Pass through is support for this device",
+            "type": "boolean",
+            "example": false
+          },
+          "connected": {
+            "description": "HDMI display connection status",
+            "type": "boolean",
+            "example": true
+          },
+          "width": {
+            "description": "Width of the connected HDMI display",
+            "type": "number",
+            "size": 32,
+            "example": 1280
+          },
+          "height": {
+            "description": "Height of the connected HDMI display",
+            "type": "number",
+            "size": 32,
+            "example": 720
+          },
+          "hdcpprotection": {
+            "description": "HDCP Protection",
+            "type": "string",
+            "enum": [ "Unencrypted", "HDCP1x", "HDCP2x"],
+            "example": "HDCP1x"
+          },
+          "hdrtype": {
+            "description": "HDR Type used",
+            "type": "string",
+            "enum": [ "HDROff", "HDR10", "HDR10Plus", "HDRDolbyVision", "HDRTechnicolor" ],
+            "example": "HDROff"
+          }
+        },
+        "required": [
+          "totalgpuram",
+          "freegpuram",
+          "audiopassthrough",
+          "connected",
+          "width",
+          "height",
+          "hdcpprotection",
+          "hdrtype"
+        ]
+      }
+    }
+  },
+  "events": {
+    "updated": {
+      "summary": "Notifies about a change/update in the connection",
+      "description": "Register to this event to be notified about any change in the connection"
+    }
+  }
+}

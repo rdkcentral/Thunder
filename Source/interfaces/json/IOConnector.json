@@ -1,0 +1,59 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "IO Connector API",
+    "class": "IOConnector",
+    "description": "IO Connector JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "definitions": {
+    "pinvalue": {
+      "type": "number",
+      "signed": true,
+      "string": "Value of the pin",
+      "example": "1"
+    }
+  },
+  "properties": {
+    "pin": {
+      "summary": "GPIO pin value",
+      "events": [
+        "activity"
+      ],
+      "index": {
+        "name": "pin ID",
+        "example": "189"
+      },
+      "params": {
+        "$ref": "#/definitions/pinvalue"
+      },
+      "errors": [
+        {
+          "description": "Unknown pin ID given",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    }
+  },
+  "events": {
+    "activity": {
+      "summary": "Notifies about GPIO pin activity",
+      "description": "Register to this event to be notified about pin value changes",
+      "id": {
+        "name": "pin ID",
+        "example": "189"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "$ref": "#/definitions/pinvalue"
+          }
+        }
+      }
+    }
+  }
+}

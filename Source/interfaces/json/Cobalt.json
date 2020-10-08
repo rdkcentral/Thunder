@@ -1,0 +1,23 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Cobalt API",
+    "class": "Cobalt",
+    "description": "Cobalt JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "include": {
+    "browser": {
+      "$ref": "Browser.json#"
+    },
+    "statecontrol": {
+      "$ref": "StateControl.json#"
+    }
+  },
+  "events":{
+    "pageclosure": null
+  }
+}

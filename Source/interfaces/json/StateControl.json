@@ -1,0 +1,42 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "StateControl API",
+    "class": "StateControl",
+    "description": "StateControl JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "properties": {
+    "state": {
+      "summary": "Running state of the service",
+      "params": {
+        "type": "string",
+        "enum": [
+          "resumed",
+          "suspended"
+        ]
+      },
+      "events": [
+        "statechange"
+      ]
+    }
+  },
+  "events": {
+    "statechange": {
+      "summary": "Signals a state change of the service",
+      "params": {
+        "type": "object",
+        "properties": {
+          "suspended": {
+            "description": "Determines if the service has entered suspended state (true) or resumed state (false)",
+            "type": "boolean",
+            "example": false
+          }
+        }
+      }
+    }
+  }
+}
