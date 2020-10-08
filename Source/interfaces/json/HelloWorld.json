@@ -1,0 +1,28 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Hello World API",
+    "class": "HelloWorld",
+    "description": "HelloWrold JSON-RPC interface"
+  },
+  "properties": {
+    "helloworld": {
+      "summary": "Hello World Demo",
+      "readonly": true,
+      "params": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "description": "Greet Message",
+            "example": "Hello World",
+            "type": "string"
+	    }
+          },
+        "required": [
+          "firmwareversion"
+        ]
+      }
+    }
+  }
+}
