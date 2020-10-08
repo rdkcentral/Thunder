@@ -224,17 +224,14 @@ namespace PluginHost
             if (locator.empty() == true) {
                 result = Core::ServiceAdministrator::Instance().Instantiate(Core::Library(), className.c_str(), version, interface);
             } else {
-                string search(PersistentPath() + locator);
-                Core::Library resource(search.c_str());
-
-                if (!resource.IsLoaded()) {
-                    search = DataPath() + locator;
-                    resource = Core::Library(search.c_str());
-
-                    if (!resource.IsLoaded()) {
-                        resource = Core::Library(locator.c_str());
-                    }
-                }
+                Core::Library resource;
+                std::vector<string> all_paths = GetAllLibrarySearchPaths(locator);
+                std::find_if(std::begin(all_paths), std::end(all_paths), [&resource](const string& path) {
+                    Core::File file(path.c_str(), false);
+                    if (file.Exists())
+                        resource = Core::Library(path.c_str());
+                    return resource.IsLoaded();
+                });
                 if (resource.IsLoaded() == true) {
                     result = Core::ServiceAdministrator::Instance().Instantiate(resource, className.c_str(), version, interface);
                 }
