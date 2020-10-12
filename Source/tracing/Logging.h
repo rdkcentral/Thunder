@@ -29,12 +29,13 @@
 namespace WPEFramework {
 namespace Logging {
 
-#define SYSLOG(CATEGORY, PARAMETERS)							\
+#define SYSLOG(CATEGORY, PARAMETERS)				\
     if (Logging::LoggingType<CATEGORY>::IsEnabled() == true) {  \
         Logging::LoggingType<CATEGORY> __data__ PARAMETERS;     \
-        Logging::SysLog(__FILE__, __LINE__, &__data__);			\
+        Logging::SysLog(__FILE__, __LINE__, &__data__);		\
     }
 
+    void EXTERNAL DumpSystemFiles(const Core::process_t pid);
     void EXTERNAL SysLog(const char filename[], const uint32_t line, const Trace::ITrace* data);
     void EXTERNAL SysLog(const bool toConsole);
     extern EXTERNAL const char* MODULE_LOGGING;

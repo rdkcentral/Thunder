@@ -23,6 +23,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 string(REPLACE "-Wl,--as-needed" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-as-needed")
 
+option(INCLUDE_SOFTWARE_CRYPTOGRAPHY_LIBRARY "Include explicitly a software based cryptography library" OFF)
+
 add_subdirectory(implementation)
 
 add_library(${TARGET} SHARED
@@ -80,3 +82,60 @@ InstallPackageConfig(
 InstallCMakeConfig(
     TARGETS ${TARGET}
 )
+
+if(INCLUDE_SOFTWARE_CRYPTOGRAPHY_LIBRARY)
+    find_package(OpenSSL REQUIRED)
+
+    add_library(${TARGET}Software SHARED
+        Module.cpp
+        Cryptography.cpp
+        NetflixSecurity.cpp
+        implementation/OpenSSL/Vault.cpp
+        implementation/OpenSSL/Hash.cpp
+        implementation/OpenSSL/Cipher.cpp
+        implementation/OpenSSL/DiffieHellman.cpp
+        implementation/OpenSSL/Derive.cpp
+    )
+
+    target_link_libraries(${TARGET}Software 
+        PRIVATE
+            ${NAMESPACE}Core::${NAMESPACE}Core
+            ${NAMESPACE}Tracing::${NAMESPACE}Tracing
+            OpenSSL::SSL
+            OpenSSL::Crypto
+    )
+
+    target_include_directories(${TARGET}Software 
+        PRIVATE
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/implementation>
+        PUBLIC
+            $<INSTALL_INTERFACE:include/${NAMESPACE}/cryptography>
+    )
+
+    set_target_properties(${TARGET}Software PROPERTIES
+        CXX_STANDARD 11
+        CXX_STANDARD_REQUIRED YES
+        FRAMEWORK FALSE
+        LINK_WHAT_YOU_USE TRUE
+        VERSION ${VERSION}
+        SOVERSION ${VERSION_MAJOR}
+    )
+
+    install(
+        TARGETS ${TARGET}Software EXPORT ${TARGET}SoftwareTargets
+        ARCHIVE DESTINATION lib COMPONENT libs
+        LIBRARY DESTINATION lib COMPONENT libs
+        FRAMEWORK DESTINATION bin COMPONENT libs
+        INCLUDES DESTINATION include/${NAMESPACE}/cryptography
+    )
+
+    InstallPackageConfig(
+        TARGETS ${TARGET}Software
+        DESCRIPTION "A software crypto wrapper library."
+    )
+
+    InstallCMakeConfig(
+        TARGETS ${TARGET}Software 
+    )
+endif(INCLUDE_SOFTWARE_LIB)

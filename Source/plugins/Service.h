@@ -175,6 +175,10 @@ namespace PluginHost {
         {
             return (_config.Configuration().Versions.Value());
         }
+        virtual uint32_t StartupOrder() const
+        {
+            return (_config.Configuration().StartupOrder.Value());
+        }
         virtual string Locator() const
         {
             return (_config.Configuration().Locator.Value());
