@@ -390,7 +390,7 @@ namespace Web {
     private:
         mutable uint32_t _lastPosition;
         mutable string _body;
-        uint16_t _offset;
+        uint32_t _offset;
     };
 
     template <typename JSONOBJECT, typename HASHALGORITHM>
