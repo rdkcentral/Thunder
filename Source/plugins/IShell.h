@@ -306,6 +306,12 @@ namespace PluginHost {
 
     private:
         void* Root(uint32_t& pid, const uint32_t waitTime, const string className, const uint32_t interface, const uint32_t version = ~0);
+
+        /* @stubgen:omit */
+        virtual std::vector<string> GetLibrarySearchPaths(const string& locator) const
+        {
+            return std::vector<string> {};
+        }
     };
 } // namespace PluginHost
 
