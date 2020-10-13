@@ -22,8 +22,6 @@ option(CORE
         "Include the core library." ON)
 option(CRYPTALGO
         "Include the encyption algorithm library." ON)
-option(CRYPTOGRAPHY
-        "Include the cryptography library." OFF)
 option(BLUETOOTH
         "Include the bluetooth library." OFF)
 option(BROADCAST
@@ -40,8 +38,6 @@ option(COM
         "Include the COM library." OFF)
 option(PROTOCOLS
         "Include Protocols lib." ON)
-option(CDMI
-        "Include OpenCDM interface." OFF)
 option(PROCESS
         "Include the COM hosting process executable." ON)
 option(PROXY_STUB
@@ -120,10 +116,6 @@ if(BROADCAST)
     add_subdirectory(broadcast)
 endif()
 
-if(CDMI)
-    add_subdirectory(ocdm)
-endif()
-
 if(WEBSOCKET)
     add_subdirectory(websocket)
 endif()
@@ -134,10 +126,6 @@ endif()
 
 if(BLUETOOTH)
     add_subdirectory(bluetooth)
-endif()
-
-if(CRYPTOGRAPHY)
-    add_subdirectory(cryptography)
 endif()
 
 if(PROFILER)
