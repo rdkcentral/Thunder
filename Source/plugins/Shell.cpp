@@ -224,7 +224,7 @@ namespace PluginHost
             if (locator.empty() == true) {
                 result = Core::ServiceAdministrator::Instance().Instantiate(Core::Library(), className.c_str(), version, interface);
             } else {
-                std::vector<string> all_paths = GetAllLibrarySearchPaths(locator);
+                std::vector<string> all_paths = GetLibrarySearchPaths(locator);
                 std::find_if(std::begin(all_paths), std::end(all_paths), [&result, className, version, interface](const string& path) {
                     Core::File file(path.c_str(), false);
                     if (file.Exists())
