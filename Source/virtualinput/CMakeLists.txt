@@ -26,7 +26,6 @@ add_library(${TARGET} SHARED
 
 set(PUBLIC_HEADERS
         virtualinput.h
-        IVirtualInput.h
         Module.h
         )
 

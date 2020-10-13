@@ -33,6 +33,7 @@
 #include "Service.h"
 #include "System.h"
 #include "VirtualInput.h"
+#include "IVirtualInput.h"
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "plugins.lib")

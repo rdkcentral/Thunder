@@ -17,8 +17,7 @@
  * limitations under the License.
  */
 
-#include "../core/core.h"
-
+#include <core/core.h>
 #include <provision/DRMInfo.h>
 
 #include "IPCProvision.h"
