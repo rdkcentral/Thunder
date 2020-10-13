@@ -21,7 +21,23 @@ option(PLUGIN_COMPOSITOR_IMPLEMENTATION "Defines which implementation is used." 
 
 message("Setup ${TARGET} v${VERSION}...")
 
-add_subdirectory (${PLUGIN_COMPOSITOR_IMPLEMENTATION})
+if("${PLUGIN_COMPOSITOR_IMPLEMENTATION}" STREQUAL "Nexus")
+    if (COMPOSITORCLIENT_IMPLEMENTATION_PATH)
+        add_subdirectory(${COMPOSITORCLIENT_IMPLEMENTATION_PATH})
+    elseif (CODE_FROM_EXTERNAL_REPOSITORY)
+        include(GetExternalCode)
+        GetExternalCode(
+            GIT_REPOSITORY "https://code.rdkcentral.com/r/soc/broadcom/components/rdkcentral/thunder/compositorclient"
+            GIT_TAG "master"
+            SOURCE_DIR "NexusExt"
+        )
+        add_subdirectory(NexusExt)
+    else()
+        add_subdirectory(Nexus)
+    endif()
+else()
+    add_subdirectory (${PLUGIN_COMPOSITOR_IMPLEMENTATION})
+endif()
 
 install(
 	FILES Client.h

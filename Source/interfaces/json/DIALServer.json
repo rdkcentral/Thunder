@@ -24,6 +24,11 @@
             "description": "Additional application-specific parameters",
             "type": "string",
             "example": "watch?v=zpp045FBbQY"
+          },
+          "payload": {
+            "description": "Additional application-specific payload",
+            "type": "string",
+            "example": ""
           }
         },
         "required": [
@@ -37,14 +42,24 @@
         "type": "object",
         "properties": {
           "application": {
-            "description": "Application name",
-            "type": "string",
-            "example": "YouTube"
+            "$ref": "#/events/start/params/properties/application"
           },
           "parameters": {
-            "description": "Additional application-specific parameters",
-            "type": "string",
-            "example": ""
+            "$ref": "#/events/start/params/properties/parameters"
+          }
+        },
+        "required": [
+          "application"
+        ]
+      }
+    },
+    "hide": {
+      "summary": "Signals that application hide was requested over DIAL *(passive mode only)*",
+      "params": {
+        "type": "object",
+        "properties": {
+          "application": {
+            "$ref": "#/events/start/params/properties/application"
           }
         },
         "required": [

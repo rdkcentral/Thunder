@@ -302,12 +302,6 @@ class Identifier():
                 continue
             elif token in ["export"]: # skip
                 continue
-
-            elif token == "=":
-                value_next = True
-            elif value_next:
-                self.value.append(token)
-
             # keep identifers with scope operator together
             elif token == "::":
                 if len(type) > 1:
@@ -978,13 +972,13 @@ class Attribute(Variable):
 
 # Holds enumeration items
 class Enumerator(Identifier, Name):
-    def __init__(self, parent_block, name, type=["int"]):
+    def __init__(self, parent_block, name, value=None, type=["int"]):
         parent_enum = parent_block if parent_block.scoped else parent_block.parent
-        Identifier.__init__(self, parent_enum, self, [type, *name], [])
+        Identifier.__init__(self, parent_enum, self, [type, name], [])
         Name.__init__(self, parent_enum, self.name)
         self.parent = parent_block
-        self.value = parent_block.GetValue() if not self.value else Evaluate(self.value)
-        self.autoValue = (self.value == None)
+        self.value = parent_block.GetValue() if value == None else Evaluate(value)
+        self.autoValue = (value == None)
         if isinstance(self.value, (int)):
             self.parent.SetValue(self.value)
         self.parent.items.append(self)
@@ -1506,7 +1500,7 @@ def Parse(contents):
             j = i + 1
             while tokens[j] != ";":
                 j += 1
-            typedef = Typedef(current_block[-1], [tokens[i + 1], tokens[j - 1]] if tokens[j - 2] == "}" else tokens[i + 1:j])
+            typedef = Typedef(current_block[-1], tokens[i + 1:j])
             if event_next:
                 typedef.is_event = True
                 event_next = False
@@ -1815,7 +1809,7 @@ def Parse(contents):
             j = i
             while True:
                 if tokens[i] in ['}', ',']:
-                    Enumerator(enum, tokens[j:i], enum.type)
+                    Enumerator(enum, tokens[j], tokens[j + 2:i] if tokens[j + 1] == '=' else None, enum.type)
                     if tokens[i + 1] == '}':
                         i += 1 # handle ,} situation
                         break

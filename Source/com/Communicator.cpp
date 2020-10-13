@@ -22,6 +22,10 @@
 #include <limits>
 #include <memory>
 
+#ifdef PROCESSCONTAINERS_ENABLED
+#include "ProcessInfo.h"
+#endif
+
 namespace WPEFramework {
 namespace RPC {
 
@@ -300,8 +304,8 @@ namespace RPC {
 
     void Communicator::ContainerProcess::PostMortem() /* override */
     {
-        Core::process_t = pid;
-        if ( (_container != nullptr) && ((pid = static_cast<Core::process_t>(container->Pid())) != 0) ) {
+        Core::process_t pid;
+        if ( (_container != nullptr) && ((pid = static_cast<Core::process_t>(_container->Pid())) != 0) ) {
             Core::ProcessInfo process(pid);
             process.Dump();
         }

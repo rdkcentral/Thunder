@@ -197,6 +197,52 @@ EXTERNAL displayinfo_hdr_t displayinfo_hdr(struct displayinfo_type* instance);
  **/
 EXTERNAL displayinfo_hdcp_protection_t displayinfo_hdcp_protection(struct displayinfo_type* instance);
 
+/**
+ * \brief Get the total available GPU RAM space in bytes.
+ * 
+ * \param instance Instance of \ref displayinfo_type.
+ * \return The total amount of GPU RAM available on the device.
+ */
+EXTERNAL uint64_t displayinfo_total_gpu_ram(struct displayinfo_type* instance);
+
+/**
+ * \brief Get the currently available GPU RAM in bytes.
+ * 
+ * \param instance Instance of \ref displayinfo_type.
+ * \return The current amount of available GPU RAM memory.
+ */
+EXTERNAL uint64_t displayinfo_free_gpu_ram(struct displayinfo_type* instance);
+
+/**
+ * \brief Returns EDID data of a connected display.
+ *
+ * \param instance Instance of \ref displayinfo_type.
+ * \param buffer Buffer that will contain the data.
+ * \param length Size of \ref buffer. On success it'll be set to the length of the actuall data in \ref buffer.
+ *
+ **/
+EXTERNAL uint32_t displayinfo_edid(struct displayinfo_type* instance, uint8_t buffer[], uint16_t* length);
+
+/**
+ * \brief Get the heigth of the connected display in centimaters
+ *
+ * \param instance Instance of \ref displayinfo_type.
+ *
+ * \return The current heigth in centimeters, 0 on error or invalid connection
+ *
+ **/
+EXTERNAL uint8_t displayinfo_width_in_centimeters(struct displayinfo_type* instance);
+
+/**
+ * \brief Get the width of the connected display in centimeters
+ *
+ * \param instance Instance of \ref displayinfo_type.
+ *
+ * \return The current width in centimeters, 0 on error or invalid connection
+ *
+ **/
+EXTERNAL uint8_t displayinfo_height_in_centimeters(struct displayinfo_type* instance);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

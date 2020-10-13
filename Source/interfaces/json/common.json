@@ -170,6 +170,14 @@
     "unauthenticated": {
       "code": 42,
       "message": "ERROR_UNAUTHENTICATED"
+    },
+    "notexist": {
+      "code": 43,
+      "message": "ERROR_NOT_EXIST"
+    },
+    "notsupported": {
+      "code": 44,
+      "message": "ERROR_NOT_SUPPORTED"
     }
   },
   "results": {
