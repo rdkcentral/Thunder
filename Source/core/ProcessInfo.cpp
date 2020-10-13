@@ -596,7 +596,7 @@ namespace Core {
 #ifndef __WINDOWS__
             struct group* grp = getgrnam(groupName.c_str());
             if (grp != nullptr) {
-                result = (::setpgid(_pid, grp->gr_gid) == 0 ? ERROR_NONE : ERROR_UNAVAILABLE);
+                result = (::setgid(grp->gr_gid) == 0 ? ERROR_NONE : ERROR_UNAVAILABLE);
             }
 #endif
         }
