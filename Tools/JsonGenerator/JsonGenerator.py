@@ -206,7 +206,7 @@ class JsonType():
         raise RuntimeError("can't instantiate %s" % self.name)
 
     def CppName(self): # C++ name of the object
-        return self.TrueName().capitalize()
+        return self.true_name[0].upper() + self.true_name[1:]
 
     def CppDefValue(self): # Value to instantiate with in C++
         return ""
