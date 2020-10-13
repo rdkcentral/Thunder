@@ -855,18 +855,24 @@ namespace PluginHost {
             }
 
         private:
-            virtual std::vector<string> GetAllLibrarySearchPaths(const string& locator) const override
+            virtual std::vector<string> GetLibrarySearchPaths(const string& locator) const override
             {
-                // system configured paths
                 std::vector<string> all_paths;
-                all_paths.push_back(_administrator.Configuration().PersistentPath() + locator);
-                all_paths.push_back(_administrator.Configuration().SystemPath() + locator);
-                all_paths.push_back(_administrator.Configuration().AppPath() + _T("Plugins/") + locator);
 
-                // additionaly defined user paths
                 const std::vector<string> temp = _administrator.Configuration().LinkerPluginPaths();
-                for (const string& s : temp)
-                    all_paths.push_back(Core::Directory::Normalize(s) + locator);
+                if (!temp.empty())
+                {
+                    // additionaly defined user paths
+                    for (const string& s : temp)
+                        all_paths.push_back(Core::Directory::Normalize(s) + locator);
+                }
+                else
+                {
+                    // system configured paths
+                    all_paths.push_back(_administrator.Configuration().PersistentPath() + locator);
+                    all_paths.push_back(_administrator.Configuration().SystemPath() + locator);
+                    all_paths.push_back(_administrator.Configuration().AppPath() + _T("Plugins/") + locator);
+                }
 
                 return all_paths;
             }
@@ -922,7 +928,7 @@ namespace PluginHost {
                     Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
                     newIF = admin.Instantiate<IPlugin>(Core::Library(), className, version);
                 } else {
-                    std::vector<string> all_paths = GetAllLibrarySearchPaths(locator);
+                    std::vector<string> all_paths = GetLibrarySearchPaths(locator);
                     std::vector<string>::const_iterator iter = std::begin(all_paths);
                     while ((iter != std::end(all_paths)) && ((newIF = CheckLibrary(*iter, className, version)) == nullptr))
                         ++iter;
