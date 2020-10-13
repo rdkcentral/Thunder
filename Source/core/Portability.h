@@ -210,6 +210,7 @@ typedef std::string string;
 #undef DELETE
 #undef min
 #undef max
+#undef ERROR_NOT_SUPPORTED
 
 //#if _MSC_VER >= 1600
 //const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) - 1;
