@@ -44,6 +44,7 @@ namespace Plugin {
             , Configuration(false)
             , PersistentPathPostfix()
             , VolatilePathPostfix()
+            , StartupOrder(50)
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -57,6 +58,7 @@ namespace Plugin {
             Add(_T("configuration"), &Configuration);
             Add(_T("persistentpathpostfix"), &PersistentPathPostfix);
             Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
+            Add(_T("startuporder"), &StartupOrder);
         }
         Config(const Config& copy)
             : Core::JSON::Container()
@@ -72,6 +74,7 @@ namespace Plugin {
             , Configuration(copy.Configuration)
             , PersistentPathPostfix(copy.PersistentPathPostfix)
             , VolatilePathPostfix(copy.VolatilePathPostfix)
+            , StartupOrder(copy.StartupOrder)
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -83,8 +86,8 @@ namespace Plugin {
             Add(_T("precondition"), &Precondition);
             Add(_T("termination"), &Termination);
             Add(_T("configuration"), &Configuration);
-            Add(_T("persistentpostfix"), &PersistentPathPostfix);
-            Add(_T("volatilepostfix"), &VolatilePathPostfix);
+            Add(_T("persistentpathpostfix"), &PersistentPathPostfix);
+            Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
         }
         ~Config()
         {
@@ -104,6 +107,7 @@ namespace Plugin {
             Termination = RHS.Termination;
             PersistentPathPostfix = RHS.PersistentPathPostfix;
             VolatilePathPostfix = RHS.VolatilePathPostfix;
+            StartupOrder = RHS.StartupOrder;
 
             return (*this);
         }
@@ -133,6 +137,7 @@ namespace Plugin {
         Core::JSON::String Configuration;
         Core::JSON::String PersistentPathPostfix;
         Core::JSON::String VolatilePathPostfix;
+        Core::JSON::DecUInt32 StartupOrder;
 
         static Core::NodeId IPV4UnicastNode(const string& ifname);
 

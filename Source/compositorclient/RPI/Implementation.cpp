@@ -30,10 +30,10 @@
 
 #include <algorithm>
 
-#include "../../core/core.h"
-#include "../../com/com.h"
-#include "../../interfaces/IComposition.h"
-#include "../../virtualinput/virtualinput.h"
+#include <core/core.h>
+#include <com/com.h>
+#include <interfaces/IComposition.h>
+#include <virtualinput/virtualinput.h>
 #include "../Client.h"
 
 int g_pipefd[2];
@@ -359,6 +359,8 @@ private:
     Display() = delete;
     Display(const Display&) = delete;
     Display& operator=(const Display&) = delete;
+    
+    Display(const std::string& displayName);
 
     class EXTERNAL CompositorClient {
     private:
@@ -549,8 +551,30 @@ private:
     };
 
 public:
-    Display(const std::string& displayName);
+    typedef std::map<const string, Display*> DisplayMap;
+    
     virtual ~Display();
+
+    static Display& Instance(const string& displayName){
+        Display* result(nullptr);
+
+        _displaysMapLock.Lock();
+
+        DisplayMap::iterator index(_displays.find(displayName));
+
+        if (index == _displays.end()) {
+            result = new Display(displayName);
+            _displays.insert(std::pair<const std::string, Display*>(displayName, result));
+        } else {
+            result = index->second;
+        }
+        result->AddRef();
+        _displaysMapLock.Unlock();
+
+        assert(result != nullptr);
+
+        return (*result);
+    } 
 
     virtual void AddRef() const
     {
@@ -563,6 +587,16 @@ public:
     virtual uint32_t Release() const
     {
         if (Core::InterlockedDecrement(_refCount) == 0) {
+            _displaysMapLock.Lock();
+
+            DisplayMap::iterator display = _displays.find(_displayName);
+
+            if (display != _displays.end()){
+                _displays.erase(display);
+            }
+
+            _displaysMapLock.Unlock();
+
             const_cast<Display*>(this)->Deinitialize();
 
             return (Core::ERROR_CONNECTION_CLOSED);
@@ -679,6 +713,9 @@ private:
         _adminLock.Unlock();
     }
 
+    static DisplayMap _displays; 
+    static Core::CriticalSection _displaysMapLock;
+
     bool _isRunning;
     std::string _displayName;
     mutable Core::CriticalSection _adminLock;
@@ -693,6 +730,9 @@ private:
 
     mutable uint32_t _refCount;
 };
+
+Display::DisplayMap Display::_displays;
+Core::CriticalSection Display::_displaysMapLock;
 
 Display::SurfaceImplementation::SurfaceImplementation(
     Display* display,
@@ -930,14 +970,10 @@ void Display::RevokeClientInterface(Exchange::IComposition::IClient* client)
 #endif
     }
 }
-
 } // RPI
 
 Compositor::IDisplay* Compositor::IDisplay::Instance(const string& displayName)
 {
-    static RPI::Display& myDisplay = Core::SingletonType<RPI::Display>::Instance(displayName);
-    myDisplay.AddRef();
-
-    return (&myDisplay);
+    return (&(RPI::Display::Instance(displayName)));
 }
 } // WPEFramework

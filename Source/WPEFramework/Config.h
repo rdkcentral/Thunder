@@ -321,6 +321,7 @@ namespace PluginHost {
 #ifdef PROCESSCONTAINERS_ENABLED
                 , ProcessContainers()
 #endif
+                , LinkerPluginPaths()
             {
                 // No IdleTime
                 Add(_T("version"), &Version);
@@ -350,6 +351,7 @@ namespace PluginHost {
 #ifdef PROCESSCONTAINERS_ENABLED
                 Add(_T("processcontainers"), &ProcessContainers);
 #endif
+                Add(_T("linkerpluginpaths"), &LinkerPluginPaths);
             }
             ~JSONConfig() override = default;
 
@@ -382,6 +384,7 @@ namespace PluginHost {
 #ifdef PROCESSCONTAINERS_ENABLED
             ProcessContainerConfig ProcessContainers;
 #endif
+            Core::JSON::ArrayType<Core::JSON::String> LinkerPluginPaths;
         };
 
     public:
@@ -505,6 +508,9 @@ namespace PluginHost {
             if (error.IsSet() == false) {
                 _webPrefix = '/' + config.Prefix.Value();
                 _JSONRPCPrefix = '/' + config.JSONRPC.Value();
+#ifdef PROCESSCONTAINERS_ENABLED
+                _ProcessContainersLogging = config.ProcessContainers.Logging.Value();
+#endif
                 _volatilePath = Core::Directory::Normalize(config.VolatilePath.Value());
                 _persistentPath = Core::Directory::Normalize(config.PersistentPath.Value());
                 _dataPath = Core::Directory::Normalize(config.DataPath.Value());
@@ -565,6 +571,10 @@ namespace PluginHost {
 
                 // Get all in the config configure Plugins..
                 _plugins = config.Plugins;
+
+                Core::JSON::ArrayType<Core::JSON::String>::Iterator itr(config.LinkerPluginPaths.Elements());
+                while (itr.Next())
+                    _linkerPluginPaths.push_back(itr.Current().Value());
             }
         }
         ~Config()
@@ -602,6 +612,11 @@ namespace PluginHost {
         {
             return (_JSONRPCPrefix);
         }
+#ifdef PROCESSCONTAINERS_ENABLED
+        inline const string& ProcessContainersLogging() const {
+            return (_ProcessContainersLogging);
+        }
+#endif
         inline const string& VolatilePath() const
         {
             return (_volatilePath);
@@ -767,6 +782,11 @@ namespace PluginHost {
             return;
         }
 
+        inline const std::vector<std::string>& LinkerPluginPaths() const
+        {
+            return _linkerPluginPaths;
+        }
+
     private:
         friend class Server;
 
@@ -832,6 +852,10 @@ namespace PluginHost {
         Core::JSON::ArrayType<Plugin::Config> _plugins;
         std::list<PluginHost::IShell::reason> _reasons;
         Substituter _substituter;
+#ifdef PROCESSCONTAINERS_ENABLED
+        string _ProcessContainersLogging;
+#endif
+        std::vector<std::string> _linkerPluginPaths;
     };
 }
 }

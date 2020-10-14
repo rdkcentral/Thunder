@@ -134,6 +134,7 @@ set(PUBLIC_HEADERS
         TextFragment.h
         TextReader.h
         Thread.h
+        ThreadPool.h
         Time.h
         Timer.h
         Trace.h

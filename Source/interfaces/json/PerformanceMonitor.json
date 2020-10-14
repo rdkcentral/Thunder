@@ -1,0 +1,149 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Performance Monitor API",
+    "class": "PerformanceMonitor",
+    "description": "Performance Monitor JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "definitions": {
+    "time": {
+      "type": "number",
+      "size": 32
+    },
+    "datasize": {
+      "type": "number",
+      "size": 32
+    },
+    "buffer": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string",
+          "description": "Any string data upto the size specified in the length",
+          "example": "abababababab"
+        },
+        "length": {
+          "type": "number",
+          "size": 16
+        },
+        "duration": {
+          "type": "number",
+          "size": 16
+        }
+      }
+    },
+    "statistics": {
+      "type": "object",
+      "properties": {
+        "minimum": {
+          "$ref": "#/definitions/time",
+          "example": 1
+        },
+        "maximum": {
+          "$ref": "#/definitions/time",
+          "example": 4
+        },
+        "average": {
+          "$ref": "#/definitions/time",
+          "example": 2
+        },
+        "count": {
+          "$ref": "#/definitions/time",
+          "example": 5
+        }
+      }
+    }
+  },
+  "properties": {
+    "measurement": {
+      "summary": "Retrieve the performance measurement against given package size. Measurements will be provided in milliseconds",
+      "readonly": true,
+      "params": {
+        "type": "object",
+        "properties": {
+          "serialization": {
+            "description": "Time taken to complete serialization",
+            "$ref": "#/definitions/statistics"
+          },
+          "deserialization": {
+            "description": "Time taken to complete deserialization",
+            "$ref": "#/definitions/statistics"
+          },
+          "execution": {
+            "description": "Time taken to complete execution",
+            "$ref": "#/definitions/statistics"
+          },
+          "threadpool": {
+            "description": "Time taken to complete threadpool wait",
+            "$ref": "#/definitions/statistics"
+          },
+          "communication": {
+            "description": "Time taken to complete communication",
+            "$ref": "#/definitions/statistics"
+          },
+          "total": {
+            "description": "Time taken to complete whole jsonrpc process",
+            "$ref": "#/definitions/statistics"
+          }
+        },
+        "required": [
+          "serialization",
+          "deserialization",
+          "execution",
+          "threadpool",
+          "communication",
+          "total"
+        ]
+      },
+      "index": {
+        "name": "Package size",
+        "description": "Size of package whose statistics info has to be retrieved",
+        "example": "1000"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    }
+  },
+  "methods": {
+    "clear": {
+      "summary": "Clear all performance data collected",
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    },
+    "send": {
+      "summary": "Interface to test send data",
+      "params": {
+        "$ref": "#/definitions/buffer"
+      },
+      "result": {
+        "$ref": "#/definitions/datasize",
+        "description": "Size of data received by the jsonrpc interface"
+      }
+    },
+    "receive": {
+      "summary": "Interface to test receive data",
+      "params": {
+        "$ref": "#/definitions/datasize",
+        "description": "Size of data to be provided by the jsonrpc interface"
+      },
+      "result": {
+        "$ref": "#/definitions/buffer"
+      }
+    },
+    "exchange": {
+      "summary": "Interface to test exchange data",
+      "params": {
+        "$ref": "#/definitions/buffer"
+      },
+      "result": {
+        "$ref": "#/definitions/buffer"
+      }
+    }
+  }
+}

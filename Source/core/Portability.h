@@ -210,6 +210,7 @@ typedef std::string string;
 #undef DELETE
 #undef min
 #undef max
+#undef ERROR_NOT_SUPPORTED
 
 //#if _MSC_VER >= 1600
 //const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) - 1;
@@ -691,7 +692,9 @@ namespace Core {
         ERROR_CODE(ERROR_WRITE_ERROR, 40) \
         ERROR_CODE(ERROR_INVALID_DESIGNATOR, 41) \
         ERROR_CODE(ERROR_UNAUTHENTICATED, 42) \
-        ERROR_CODE(ERROR_NOT_EXIST, 43)
+        ERROR_CODE(ERROR_NOT_EXIST, 43) \
+        ERROR_CODE(ERROR_NOT_SUPPORTED, 44) \
+        ERROR_CODE(ERROR_INVALID_RANGE, 45)
 
     #define ERROR_CODE(CODE, VALUE) CODE = VALUE,
 

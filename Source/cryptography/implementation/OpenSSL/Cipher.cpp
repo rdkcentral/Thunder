@@ -29,6 +29,8 @@
 #include <openssl/evp.h>
 #include <climits>
 
+#include <limits.h>
+
 #include "Vault.h"
 
 
