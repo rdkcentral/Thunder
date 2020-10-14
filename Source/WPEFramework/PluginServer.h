@@ -868,8 +868,10 @@ namespace PluginHost {
                 }
                 else
                 {
+                    string className = PluginHost::Service::Configuration().ClassName.Value() + _T("/");
                     // system configured paths
-                    all_paths.push_back(_administrator.Configuration().PersistentPath() + locator);
+                    all_paths.push_back(_administrator.Configuration().DataPath() + className + locator);
+                    all_paths.push_back(_administrator.Configuration().PersistentPath() + className + locator);
                     all_paths.push_back(_administrator.Configuration().SystemPath() + locator);
                     all_paths.push_back(_administrator.Configuration().AppPath() + _T("Plugins/") + locator);
                 }
