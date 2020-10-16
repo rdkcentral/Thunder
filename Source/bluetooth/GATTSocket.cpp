@@ -165,9 +165,9 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
              }
              else {
                  uint16_t last = 0;
-                 uint8_t entries = (length - 1) / 4;
+                 uint8_t entries = (length - 2) / 4;
                  for (uint8_t index = 0; index < entries; index++) {
-                     uint16_t offset = 2 + (index * stream[1]);
+                     uint16_t offset = 2 + (index * 4);
                      uint16_t foundHandle = (stream[offset + 1] << 8) | stream[offset + 0];
                      uint16_t groupHandle = (stream[offset + 3] << 8) | stream[offset + 2];
                      _response.Add(foundHandle, groupHandle);
@@ -237,6 +237,7 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
                  uint16_t last = 0;
                  uint8_t step = (stream[1] == 1 ? 2 : 16);
                  uint8_t entries = ((length - 2) / (2 + step));
+
                  for (uint8_t index = 0; index < entries; index++) {
                      uint16_t offset = 2 + (index * (2 + step));
                      uint16_t handle = (stream[offset + 1] << 8) | stream[offset + 0];

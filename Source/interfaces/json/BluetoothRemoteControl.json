@@ -153,6 +153,19 @@
         }
       ]
     },
+    "voice": {
+      "summary": "Enable or Disable the flow of Voice data fragments from the remote",
+      "params": {
+        "type": "boolean",
+        "description": "enable (true) or disable (false) flow of voice data"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/general",
+          "description": "Failed to set the voice flow"
+        }
+      ]
+    },
     "audioprofile" : {
       "summary": "Audio profile details",
       "readonly": true,
