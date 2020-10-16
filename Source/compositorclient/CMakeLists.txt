@@ -24,15 +24,14 @@ message("Setup ${TARGET} v${VERSION}...")
 if("${PLUGIN_COMPOSITOR_IMPLEMENTATION}" STREQUAL "Nexus")
     if (COMPOSITORCLIENT_IMPLEMENTATION_PATH)
         add_subdirectory(${COMPOSITORCLIENT_IMPLEMENTATION_PATH})
-    elseif (CODE_FROM_EXTERNAL_REPOSITORY)
+    else()
         include(GetExternalCode)
+        set(COMPOSITORCLIENT_IMPLEMENTATION_VERSION "master" CACHE STRING "compositorclient implementation version")
         GetExternalCode(
             GIT_REPOSITORY "https://code.rdkcentral.com/r/soc/broadcom/components/rdkcentral/thunder/compositorclient"
-            GIT_TAG "master"
-            SOURCE_DIR "NexusExt"
+            GIT_TAG ${COMPOSITORCLIENT_IMPLEMENTATION_VERSION}
+            SOURCE_DIR "Nexus"
         )
-        add_subdirectory(NexusExt)
-    else()
         add_subdirectory(Nexus)
     endif()
 else()
