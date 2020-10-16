@@ -130,7 +130,7 @@ namespace PluginHost {
         private:
             Channel& _parent;
             mutable Core::ProxyType<const Core::JSON::IElement> _current;
-            mutable uint16_t _offset;
+            mutable uint32_t _offset;
         };
         class EXTERNAL DeserializerImpl {
         public:
@@ -187,7 +187,7 @@ namespace PluginHost {
         private:
             Channel& _parent;
             Core::ProxyType<Core::JSON::IElement> _current;
-            uint16_t _offset;
+            uint32_t _offset;
         };
 
     public:
