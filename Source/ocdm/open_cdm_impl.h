@@ -532,7 +532,6 @@ public:
             DecryptSession(nullptr);
         }
 
-        system->Release();
         TRACE_L1("Destructed the Session Client side: %p", this);
     }
 
