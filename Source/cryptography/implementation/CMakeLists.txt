@@ -21,14 +21,6 @@ set(CRYPTOGRAPHY_IMPLEMENTATION "None" CACHE STRING "Defines what implementation
 if(${CRYPTOGRAPHY_IMPLEMENTATION} STREQUAL "Nexus")
     if (CRYPTOGRAPHY_IMPLEMENTATION_PATH)
         add_subdirectory(${CRYPTOGRAPHY_IMPLEMENTATION_PATH})
-    elseif (CODE_FROM_EXTERNAL_REPOSITORY)
-        include(GetExternalCode)
-        GetExternalCode(
-            GIT_REPOSITORY "https://code.rdkcentral.com/r/soc/broadcom/components/rdkcentral/thunder/Icrypto-nexus"
-            GIT_TAG "master"
-            SOURCE_DIR "Nexus"
-        )
-        add_subdirectory(Nexus)
     else()
         include(GetExternalCode)
         GetExternalCode(
