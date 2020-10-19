@@ -160,12 +160,12 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
               *   - Attribute Handle (2 octets)
               *   - Attribute Value (at least 1 octet) */
              /* Minimum Attribute Data List size */
-             if (stream[1] < 3) {
+             if (length < 5) {
                  _error = Core::ERROR_BAD_REQUEST;
              }
              else {
                  uint16_t last = 0;
-                 uint8_t entries = (length - 2) / 4;
+                 uint8_t entries = (length - 1) / 4;
                  for (uint8_t index = 0; index < entries; index++) {
                      uint16_t offset = 1 + (index * 4);
                      uint16_t foundHandle = (stream[offset + 1] << 8) | stream[offset + 0];
