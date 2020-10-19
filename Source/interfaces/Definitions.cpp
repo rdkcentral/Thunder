@@ -28,6 +28,7 @@
 #include "ICommand.h"
 #include "IComposition.h"
 #include "IContentDecryption.h"
+#include "ICustomerCareOperations.h"
 #include "IDeviceIdentification.h"
 #include "IDictionary.h"
 #include "IDisplayInfo.h"
