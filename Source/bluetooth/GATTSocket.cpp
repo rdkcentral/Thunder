@@ -167,7 +167,7 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
                  uint16_t last = 0;
                  uint8_t entries = (length - 2) / 4;
                  for (uint8_t index = 0; index < entries; index++) {
-                     uint16_t offset = 2 + (index * 4);
+                     uint16_t offset = 1 + (index * 4);
                      uint16_t foundHandle = (stream[offset + 1] << 8) | stream[offset + 0];
                      uint16_t groupHandle = (stream[offset + 3] << 8) | stream[offset + 2];
                      _response.Add(foundHandle, groupHandle);
