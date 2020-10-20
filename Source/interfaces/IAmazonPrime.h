@@ -42,7 +42,7 @@ namespace Exchange {
         // @brief Send a message over the message bus to ignition
         // @param messsage the message to send according the amazon spec found
         //        in the parter portal.
-        virtual void Send(const string& message) = 0;
+        virtual uint32_t Send(const string& message) = 0;
 };
 }
 }
