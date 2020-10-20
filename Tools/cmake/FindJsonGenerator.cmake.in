@@ -30,7 +30,7 @@ function(JsonGenerator)
         message(FATAL_ERROR "JsonGenerator path ${JSON_GENERATOR} invalid.")
     endif()
 
-    set(optionsArgs CODE STUBS DOCS NO_WARNINGS COPY_CTOR NO_REF_NAMES)
+    set(optionsArgs CODE STUBS DOCS NO_STYLE_WARNINGS COPY_CTOR NO_REF_NAMES)
     set(oneValueArgs OUTPUT IFDIR INDENT DEF_STRING DEF_INT_SIZE PATH)
     set(multiValueArgs INPUT INCLUDE_PATH)
 
@@ -56,8 +56,8 @@ function(JsonGenerator)
         list(APPEND _execute_command  "--docs")
     endif()
 
-    if(Argument_NO_WARNINGS)
-        list(APPEND _execute_command  "--no-warnings")
+    if(Argument_NO_STYLE_WARNINGS)
+        list(APPEND _execute_command  "--no-style-warnings")
     endif()
 
     if(Argument_COPY_CTOR)
