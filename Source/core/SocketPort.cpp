@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "IPFrame.h"
 #include "SocketPort.h"
 #include "ProcessInfo.h"
 #include "ResourceMonitor.h"
@@ -1150,6 +1151,23 @@ namespace Core {
 
     /* virtual */ SocketDatagram::~SocketDatagram()
     {
+    }
+
+    uint16_t SocketDatagram::Size() const
+    {
+        Core::UDPFrameType<0> udp;
+        return udp.Size();
+    }
+
+    uint16_t SocketDatagram::ForceAnyAddress(uint8_t* header, uint16_t size) const
+    {
+        NodeId anyAddress("0.0.0.0", LocalNode().PortNumber(), LocalNode().Type());
+
+        Core::UDPFrameType<0> udp(anyAddress, RemoteNode());
+        udp.Length(size);
+        memcpy(header, udp.Header(), udp.Size() - size);
+
+        return udp.Size();
     }
 }
 } // namespace Solution::Core

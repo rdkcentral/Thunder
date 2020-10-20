@@ -81,7 +81,7 @@ namespace Core {
             iphdr* ipHeader = reinterpret_cast<iphdr*>(_buffer);
             if (ipHeader->version == 4) {
                 ASSERT (node.Type() == NodeId::TYPE_IPV4);
-                const sockaddr_in& result = static_cast<const union SocketInfo&>(node).IPV4Socket;
+                const sockaddr_in& result = static_cast<const NodeId::SocketInfo&>(node).IPV4Socket;
                 ipHeader->saddr = result.sin_addr.s_addr;
                 ipHeader->check = Checksum();
             }
@@ -103,7 +103,7 @@ namespace Core {
             iphdr* ipHeader = reinterpret_cast<iphdr*>(_buffer);
             if (ipHeader->version == 4) {
                 ASSERT (node.Type() == NodeId::TYPE_IPV4);
-                const sockaddr_in& result = static_cast<const union SocketInfo&>(node).IPV4Socket;
+                const sockaddr_in& result = static_cast<const NodeId::SocketInfo&>(node).IPV4Socket;
                 ipHeader->daddr = result.sin_addr.s_addr;
                 ipHeader->check = Checksum();
             }
@@ -117,20 +117,31 @@ namespace Core {
             ipHeader->ttl   = ttl;
             ipHeader->check = Checksum() ;
         }
+        void Length(const uint16_t length) {
+            _length = length;
+
+            iphdr* ipHeader = reinterpret_cast<iphdr*>(_buffer);
+            ipHeader->tot_len = htons(sizeof(iphdr) + length);
+            ipHeader->check = Checksum();
+        }
         inline uint16_t Size() const {
             return (sizeof(iphdr) + _length);
         }
         uint8_t* Frame() 
         {
-            return (SIZE > 0 ? &(_buffer[sizeof(iphdr)]) : nullptr);   
+            return (SIZE > 0 ? &(_buffer[sizeof(iphdr)]) : nullptr);
         }
         const uint8_t* Frame() const
         {
-            return (SIZE > 0 ? &(_buffer[sizeof(iphdr)]) : nullptr);   
+            return (SIZE > 0 ? &(_buffer[sizeof(iphdr)]) : nullptr);
         }
-        void Length(const uint16_t length) {
-            ASSERT (length <= SIZE);
-            _length = length;
+        uint8_t* Header()
+        {
+            return _buffer;
+        }
+        const uint8_t* Header() const
+        {
+            return _buffer;
         }
 
     private:
@@ -246,12 +257,14 @@ namespace Core {
             udphdr* udpHeader = reinterpret_cast<udphdr*>(Base::Frame());
 
             memset(udpHeader, 0, sizeof(udphdr));
+            Length(0);
         }
         UDPFrameType(const NodeId& source, const NodeId& destination) : Base(source, destination) {
             udphdr* udpHeader = reinterpret_cast<udphdr*>(Base::Frame());
 
             udpHeader->source = htons(source.PortNumber());
             udpHeader->dest = htons(destination.PortNumber());
+            Length(0);
         }
         ~UDPFrameType() = default;
 
@@ -280,16 +293,30 @@ namespace Core {
                 udpHeader->dest = htons(node.PortNumber());
             }
         }
+        void Length(const uint16_t length) {
+            Base::Length(sizeof(udphdr) + length);
+            udphdr* udpHeader = reinterpret_cast<udphdr*>(Base::Frame());
+            udpHeader->len = htons(sizeof(udphdr) + length);
+        }
+
         inline uint16_t Size() const {
             return (sizeof(udphdr) + Base::Size());
         }
         uint8_t* Frame() 
         {
-            return (SIZE > 0 ? &(Frame()[sizeof(udphdr)]) : nullptr);   
+            return (SIZE > 0 ? &(Frame()[sizeof(udphdr)]) : nullptr);
         }
         const uint8_t* Frame() const
         {
-            return (SIZE > 0 ? &(Frame()[sizeof(udphdr)]) : nullptr);   
+            return (SIZE > 0 ? &(Frame()[sizeof(udphdr)]) : nullptr);
+        }
+        uint8_t* Header()
+        {
+            return Base::Header();
+        }
+        const uint8_t* Header() const
+        {
+            return Base::Header();
         }
     };
 #endif

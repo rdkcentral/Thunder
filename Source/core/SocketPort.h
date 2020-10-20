@@ -327,6 +327,9 @@ namespace Core {
 
         // Signal a state change, Opened, Closed or Accepted
         virtual void StateChange() = 0;
+
+        uint16_t Size() const;
+        uint16_t ForceAnyAddress(uint8_t* header, uint16_t size) const;
     };
 
     class EXTERNAL SocketListner {
