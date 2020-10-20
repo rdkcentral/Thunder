@@ -405,7 +405,9 @@ namespace PluginHost
         event.Code = code;
         Send(event);
         if (--_repeatCounter == 0) {
+             _lock.Lock();
             DispatchRegisteredKey(IVirtualInput::KeyData::RELEASED, _pressedCode);
+             _lock.Unlock();
         }
     }
 
