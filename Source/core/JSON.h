@@ -1788,10 +1788,7 @@ namespace Core {
                             }
                         }
 
-                        if (escapeHandling == EscapeSequenceAction::COLLAPSE || escapeHandling == EscapeSequenceAction::REPLACE) {
-                            if (escapeHandling == EscapeSequenceAction::REPLACE) {
-                                current = EscapeSequenceReplacemnent(current);
-                            }
+                        if (escapeHandling == EscapeSequenceAction::COLLAPSE) {
                             _value[_value.length() - 1] = current;
                             ++_unaccountedCount;
                         } else {
@@ -1930,40 +1927,12 @@ namespace Core {
             EscapeSequenceAction GetEscapeSequenceAction(char current) const
             {
                 EscapeSequenceAction action = EscapeSequenceAction::COLLAPSE;
-                if (current == 'u') {
+                if (current == 'u' || current == 'n' || current == 't' || current == 'r' || current == 'f' || current == 'b') {
                     action = EscapeSequenceAction::NOTHING;
                 } else if((current == '\"') && (_scopeCount & DepthCountMask)) {
                     action = EscapeSequenceAction::NOTHING;
-                } else {
-                    if (current == 'n' || current == 'r' || current == 't' || current == 'f' || current == 'b')
-                        action = EscapeSequenceAction::REPLACE;
                 }
-
                 return action;
-            }
-
-            char EscapeSequenceReplacemnent(char current) const
-            {
-                ASSERT(GetEscapeSequenceAction(current) == EscapeSequenceAction::REPLACE);
-                char replacement = current;
-                switch (current) {
-                case 'n':
-                    replacement = '\n';
-                    break;
-                case 'r':
-                    replacement = '\r';
-                    break;
-                case 't':
-                    replacement = '\t';
-                    break;
-                case 'f':
-                    replacement = '\f';
-                    break;
-                case 'b':
-                    replacement = '\b';
-                    break;
-                }
-                return replacement;
             }
 
             enum class ScopeBracket : bool {
