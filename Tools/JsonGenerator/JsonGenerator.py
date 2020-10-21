@@ -148,7 +148,7 @@ class JsonType():
     def __init__(self, name, parent, schema, included=None):
         self.name = schema["original"] if "original" in schema else name
         if parent and not self.name.islower():
-            trace.Warn("Mixed case identifiers are deprecated, use all all-lowercase names ('%s')" % self.name)
+            trace.Warn("Mixed case identifiers are supported, however all-lowercase names are recommended ('%s')" % self.name)
         self.true_name = name
         self.schema = schema
         self.duplicate = False
