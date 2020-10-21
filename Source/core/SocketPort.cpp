@@ -1159,13 +1159,12 @@ namespace Core {
         return udp.Size();
     }
 
-    uint16_t SocketDatagram::ForceAnyAddress(uint8_t* header, uint16_t size) const
+    uint16_t SocketDatagram::SetHeader(const Core::NodeId& local, const Core::NodeId& remote, const uint16_t pktSize, uint8_t* header) const
     {
-        NodeId anyAddress("0.0.0.0", LocalNode().PortNumber(), LocalNode().Type());
+        Core::UDPFrameType<0> udp(local, remote);
+        udp.Length(pktSize);
 
-        Core::UDPFrameType<0> udp(anyAddress, RemoteNode());
-        udp.Length(size);
-        memcpy(header, udp.Header(), udp.Size() - size);
+        memcpy(header, udp.Header(), udp.Size() - pktSize);
 
         return udp.Size();
     }

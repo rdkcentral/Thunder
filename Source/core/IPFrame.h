@@ -261,6 +261,7 @@ namespace Core {
         }
         UDPFrameType(const NodeId& source, const NodeId& destination) : Base(source, destination) {
             udphdr* udpHeader = reinterpret_cast<udphdr*>(Base::Frame());
+            memset(udpHeader, 0, sizeof(udphdr));
 
             udpHeader->source = htons(source.PortNumber());
             udpHeader->dest = htons(destination.PortNumber());
@@ -294,13 +295,13 @@ namespace Core {
             }
         }
         void Length(const uint16_t length) {
-            Base::Length(sizeof(udphdr) + length);
             udphdr* udpHeader = reinterpret_cast<udphdr*>(Base::Frame());
             udpHeader->len = htons(sizeof(udphdr) + length);
+            Base::Length(sizeof(udphdr) + length);
         }
 
         inline uint16_t Size() const {
-            return (sizeof(udphdr) + Base::Size());
+            return (Base::Size());
         }
         uint8_t* Frame() 
         {
