@@ -1,3 +1,13 @@
+# Creates a symlink (if used in CMakeLists.txt in configuration phase)
+# 
+# example: ${CMAKE_PROJECT_DIR}/include/link.h > ${CMAKE_BINARY_DIR}/target.h
+#
+# include(CreateLink)
+# CreateLink(
+#    LINK "${CMAKE_PROJECT_DIR}/include/link.h"
+#    TARGET "${CMAKE_BINARY_DIR}/target.h"
+#)
+# 
 function(CreateLink)
     set(oneValueArgs TARGET LINK)
 
@@ -12,6 +22,6 @@ function(CreateLink)
         message(WARNING "Please consider to switch to CMake 3.14.0 or up to create symlinks")
         INSTALL(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${Argument_TARGET} ${Argument_LINK})")
     else()
-        file(CREATE_LINK ${Argument_TARGET} ${Argument_LINK})
+        file(CREATE_LINK ${Argument_TARGET} ${Argument_LINK} SYMBOLIC)
     endif()
 endfunction(CreateLink)
