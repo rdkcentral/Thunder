@@ -235,6 +235,8 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
             emit.Line('#include "Module.h"')
         emit.Line()
 
+        emit.Line('#include <com/com.h>')
+
         if EMIT_MODULE_NAME_DECLARATION:
             emit.Line("MODULE_NAME_DECLARATION(BUILDREF_WEBBRIDGE)")
             emit.Line()
