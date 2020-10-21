@@ -569,11 +569,13 @@ namespace JSONRPC {
             return (version == static_cast<uint8_t>(~0) ? 1 : version);
         }
 
-        static constexpr uint32_t DefaultWaitTime = 10000;
         typedef std::map<uint32_t, Entry> PendingMap;
         typedef std::function<uint32_t(const string&, const string& parameters, string& result)> InvokeFunction;
 
 	protected:
+    
+        static constexpr uint32_t DefaultWaitTime = 10000;
+
         LinkType(const string& callsign, const string connectingCallsign, const TCHAR* localCallsign, const string& query)
             : _adminLock()
             , _connectId(RemoteNodeId())
@@ -583,12 +585,18 @@ namespace JSONRPC {
             , _localSpace()
             , _pendingQueue()
             , _scheduledTime(0)
+            , _versionstring()
         {
             if (localCallsign == nullptr) {
 	        static uint32_t sequence;
                 _localSpace = string("temporary") + Core::NumberType<uint32_t>(Core::InterlockedIncrement(sequence)).Text();
             } else {
                 _localSpace = localCallsign;
+            }
+
+            uint8_t version = Core::JSONRPC::Message::Version(callsign + '.');
+            if( version != static_cast<uint8_t>(~0) ) {
+                _versionstring = '.' + Core::NumberType<uint8_t>(version).Text();
             }
         }
         void Announce() {
@@ -1023,7 +1031,7 @@ namespace JSONRPC {
                 uint32_t id = _channel->Sequence();
                 message->Id = id;
                 if (_callsign.empty() == false) {
-                    message->Designator = _callsign + '.' + method;
+                    message->Designator = _callsign + _versionstring + '.' + method;
                 } else {
                     message->Designator = method;
                 }
@@ -1081,7 +1089,7 @@ namespace JSONRPC {
                 uint32_t id = _channel->Sequence();
                 message->Id = id;
                 if (_callsign.empty() == false) {
-                    message->Designator = _callsign + '.' + method;
+                    message->Designator = _callsign + _versionstring + '.' + method;
                 } else {
                     message->Designator = method;
                 }
@@ -1206,6 +1214,7 @@ namespace JSONRPC {
         string _localSpace;
         PendingMap _pendingQueue;
         uint64_t _scheduledTime;
+        string _versionstring;
     };
 
     // This is for backward compatibility. Please use the template and not the typedef below!!!
@@ -1220,7 +1229,10 @@ namespace JSONRPC {
     private:
         class Connection : public LinkType<INTERFACE> {
         private:
-            static constexpr uint32_t DefaultWaitTime = 3000;
+            static constexpr uint32_t ConnectionWaitTime = 3000;
+            using Base = LinkType<INTERFACE>;
+        public:
+            static constexpr uint32_t DefaultWaitTime = Base::DefaultWaitTime;
         private:
             class Statechange : public Core::JSON::Container {
             public:
@@ -1298,12 +1310,12 @@ namespace JSONRPC {
             template <typename INBOUND, typename METHOD>
             uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)
             {
-                return Client::Subscribe<INBOUND, METHOD>(waitTime, eventName, method);
+                return Subscribe<INBOUND, METHOD>(waitTime, eventName, method);
             }
             template <typename INBOUND, typename METHOD, typename REALOBJECT>
             uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method, REALOBJECT* objectPtr)
             {
-                return Client::Subscribe<INBOUND, METHOD, REALOBJECT>(waitTime, eventName, method, objectPtr);
+                return Subscribe<INBOUND, METHOD, REALOBJECT>(waitTime, eventName, method, objectPtr);
             }
             bool IsActivated()
             {
@@ -1316,7 +1328,7 @@ namespace JSONRPC {
                 if (value == JSONRPC::JSONPluginState::ACTIVATED) {
                     if ((_state != ACTIVATED) && (_state != LOADING)) {
                         _state = state::LOADING;
-                        auto index(Client::Events());
+                        auto index(Base::Events());
                         while (index.Next() == true) {
                             _events.push_back(index.Event());
                         }
@@ -1337,7 +1349,7 @@ namespace JSONRPC {
             }
             void state_change(const Statechange& info)
             {
-                if ((info.State.IsSet() == true) && (info.Callsign.Value() == Client::Callsign())) {
+                if ((info.State.IsSet() == true) && (info.Callsign.Value() == Base::Callsign())) {
                     SetState(info.State.Value());
                 }
             }
@@ -1352,17 +1364,17 @@ namespace JSONRPC {
             void monitor_on(const Core::JSON::String& parameters, const Core::JSONRPC::Error* result)
             {
                 if (result == nullptr) {
-                    string method = string("status@") + Client::Callsign();
-                    _monitor.template Dispatch<void>(DefaultWaitTime, method, &Connection::monitor_response, this);
+                    string method = string("status@") + Base::Callsign();
+                    _monitor.template Dispatch<void>(ConnectionWaitTime, method, &Connection::monitor_response, this);
                 }
             }
             void next_event(const Core::JSON::String& parameters, const Core::JSONRPC::Error* result)
             {
                 // See if there are events pending for registration...
                 if (_events.empty() == false) {
-                    const string parameters("{ \"event\": \"" + _events.front() + "\", \"id\": \"" + Client::Namespace() + "\"}");
+                    const string parameters("{ \"event\": \"" + _events.front() + "\", \"id\": \"" + Base::Namespace() + "\"}");
                     _events.pop_front();
-                    Client::Dispatch<string>(DefaultWaitTime, "register", parameters, &Connection::next_event, this);
+                    Dispatch<string>(ConnectionWaitTime, "register", parameters, &Connection::next_event, this);
                 }
                 else {
                     SetState(JSONRPC::JSONPluginState::ACTIVATED);
@@ -1374,7 +1386,7 @@ namespace JSONRPC {
                 // Time to open up the monitor
                 const string parameters("{ \"event\": \"statechange\", \"id\": \"" + _monitor.Namespace() + "\"}");
 
-                _monitor.template Dispatch<string>(DefaultWaitTime, "register", parameters, &Connection::monitor_on, this);
+                _monitor.template Dispatch<string>(ConnectionWaitTime, "register", parameters, &Connection::monitor_on, this);
             }
 
         private:
@@ -1508,15 +1520,15 @@ namespace JSONRPC {
         // Opaque JSON structure methods.
         // Anything goes!
         // ===================================================================================
-        uint32_t Invoke(const char method[], const Core::JSON::VariantContainer& parameters, Core::JSON::VariantContainer& response, const uint32_t waitTime = Client::DefaultWaitTime)
+        uint32_t Invoke(const char method[], const Core::JSON::VariantContainer& parameters, Core::JSON::VariantContainer& response, const uint32_t waitTime = Connection::DefaultWaitTime)
         {
                 return (_connection.Invoke(waitTime, method, parameters, response));
         }
-        uint32_t SetProperty(const char method[], const Core::JSON::VariantContainer& object, const uint32_t waitTime = Client::DefaultWaitTime)
+        uint32_t SetProperty(const char method[], const Core::JSON::VariantContainer& object, const uint32_t waitTime = Connection::DefaultWaitTime)
         {
                 return (_connection.Set(waitTime, method, object));
         }
-        uint32_t GetProperty(const char method[], Core::JSON::VariantContainer& object, const uint32_t waitTime = Client::DefaultWaitTime)
+        uint32_t GetProperty(const char method[], Core::JSON::VariantContainer& object, const uint32_t waitTime = Connection::DefaultWaitTime)
         {
                 return (_connection.template Get<Core::JSON::VariantContainer>(waitTime, method, object));
         }

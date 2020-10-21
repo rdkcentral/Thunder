@@ -25,6 +25,7 @@
 #include "Singleton.h"
 #include "Thread.h"
 #include "Trace.h"
+#include "Timer.h"
 
 namespace WPEFramework {
 
@@ -40,12 +41,12 @@ namespace Core {
         virtual void Handle(const uint16_t events) = 0;
     };
 
-    template <typename RESOURCE, typename WATCHDOG = Void>
+    template <typename RESOURCE, typename WATCHDOG>
     class ResourceMonitorType {
     private:
         static constexpr uint8_t FileDescriptorAllocation = 32;
 
-        typedef ResourceMonitorType<RESOURCE> Parent;
+        typedef ResourceMonitorType<RESOURCE, WATCHDOG> Parent;
 
         ResourceMonitorType(const ResourceMonitorType&) = delete;
         ResourceMonitorType& operator=(const ResourceMonitorType&) = delete;
@@ -99,8 +100,8 @@ namespace Core {
             , _adminLock()
             , _resourceList()
             , _monitorRuns(0)
-            , _watchDog()
             , _name(_T("Monitor::") + ClassNameOnly(typeid(RESOURCE).name()).Text())
+            , _watchDog(1024 * 512, _name.c_str())
 #ifdef __WINDOWS__
             , _action(WSACreateEvent())
 #else
@@ -281,6 +282,7 @@ namespace Core {
         {
         }
 
+    public:
 #ifdef __LINUX__
         bool Initialize()
         {
@@ -518,8 +520,8 @@ namespace Core {
         mutable Core::CriticalSection _adminLock;
         std::list<RESOURCE*> _resourceList;
         uint32_t _monitorRuns;
-        WATCHDOG _watchDog;
         string _name;
+        WATCHDOG _watchDog;
 
 #ifdef __LINUX__
         uint32_t _descriptorArrayLength;
@@ -549,7 +551,7 @@ namespace Core {
         {
         }
 
-    private:
+    public:
         uint32_t Expired()
         {
             fprintf(stderr, "===> Resource monitor thread is taking too long.");
@@ -559,7 +561,7 @@ namespace Core {
 
     typedef ResourceMonitorType<IResource, WatchDogType<ResourceMonitorHandler>> ResourceMonitorBase;
 #else
-    typedef ResourceMonitorType<IResource> ResourceMonitorBase;
+    typedef ResourceMonitorType<IResource, Void> ResourceMonitorBase;
 #endif
 
     class EXTERNAL ResourceMonitor : public ResourceMonitorBase {

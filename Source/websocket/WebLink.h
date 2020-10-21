@@ -160,48 +160,18 @@ namespace Web {
 
         template <typename PARENTCLASS, typename ACTUALLINK>
         class HandlerType : public ACTUALLINK {
-        private:
-            HandlerType();
-            HandlerType(const HandlerType<PARENTCLASS, ACTUALLINK>&);
-            HandlerType<PARENTCLASS, ACTUALLINK>& operator=(const HandlerType<PARENTCLASS, ACTUALLINK>&);
-
         public:
-            HandlerType(PARENTCLASS& parent)
-                : ACTUALLINK()
+            HandlerType() = delete;
+            HandlerType(const HandlerType<PARENTCLASS, ACTUALLINK>&) = delete;
+            HandlerType<PARENTCLASS, ACTUALLINK>& operator=(const HandlerType<PARENTCLASS, ACTUALLINK>&) = delete;
+
+            template <typename... Args>
+            HandlerType(PARENTCLASS& parent, Args&&... args)
+                : ACTUALLINK(std::forward<Args>(args)...)
                 , _parent(parent)
             {
             }
-            template <typename Arg1>
-            HandlerType(PARENTCLASS& parent, Arg1 arg1)
-                : ACTUALLINK(arg1)
-                , _parent(parent)
-            {
-            }
-            template <typename Arg1, typename Arg2>
-            HandlerType(PARENTCLASS& parent, Arg1 arg1, Arg2 arg2)
-                : ACTUALLINK(arg1, arg2)
-                , _parent(parent)
-            {
-            }
-            template <typename Arg1, typename Arg2, typename Arg3>
-            HandlerType(PARENTCLASS& parent, Arg1 arg1, Arg2 arg2, Arg3 arg3)
-                : ACTUALLINK(arg1, arg2, arg3)
-                , _parent(parent)
-            {
-            }
-            template <typename Arg1, typename Arg2, typename Arg3, typename Arg4>
-            HandlerType(PARENTCLASS& parent, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4)
-                : ACTUALLINK(arg1, arg2, arg3, arg4)
-                , _parent(parent)
-            {
-            }
-            template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5>
-            HandlerType(PARENTCLASS& parent, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5)
-                : ACTUALLINK(arg1, arg2, arg3, arg4, arg5)
-                , _parent(parent)
-            {
-            }
-            virtual ~HandlerType()
+            ~HandlerType() override
             {
             }
 
@@ -223,20 +193,18 @@ namespace Web {
                 return (*this);
             }
             // Methods to extract and insert data into the socket buffers
-            virtual uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize)
+            uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) override
             {
                 _activity = true;
                 return (_parent.SendData(_parent, dataFrame, maxSendSize));
             }
-
-            virtual uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize)
+            uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize) override
             {
                 _activity = true;
                 return (_parent.ReceiveData(_parent, dataFrame, receivedSize));
             }
-
             // Signal a state change, Opened, Closed or Accepted
-            virtual void StateChange()
+            void StateChange() override
             {
                 _parent.StateChange();
             }
@@ -246,103 +214,38 @@ namespace Web {
             PARENTCLASS& _parent;
         };
 
-        WebLinkType();
-        WebLinkType(const WebLinkType<LINK, INBOUND, OUTBOUND, ALLOCATOR>&);
-        WebLinkType<LINK, INBOUND, OUTBOUND, ALLOCATOR>& operator=(const WebLinkType<LINK, INBOUND, OUTBOUND, ALLOCATOR>&);
 
     public:
+        WebLinkType() = delete;
+        WebLinkType(const WebLinkType<LINK, INBOUND, OUTBOUND, ALLOCATOR>&) = delete;
+        WebLinkType<LINK, INBOUND, OUTBOUND, ALLOCATOR>& operator=(const WebLinkType<LINK, INBOUND, OUTBOUND, ALLOCATOR>&) = delete;
+
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
-        template <typename Arg1>
-        WebLinkType(const uint8_t queueSize, Arg1 arg1)
+        template <typename... Args>
+        WebLinkType(const uint8_t queueSize, Args&&... args)
             : _serializerImpl(*this, queueSize)
             , _deserialiserImpl(*this, queueSize)
-            , _channel(*this, arg1)
+            , _channel(*this, std::forward<Args>(args)...)
         {
         }
-        template <typename Arg1, typename Arg2>
-        WebLinkType(const uint8_t queueSize, Arg1 arg1, Arg2 arg2)
-            : _serializerImpl(*this, queueSize)
-            , _deserialiserImpl(*this, queueSize)
-            , _channel(*this, arg1, arg2)
-        {
-        }
-        template <typename Arg1, typename Arg2, typename Arg3>
-        WebLinkType(const uint8_t queueSize, Arg1 arg1, Arg2 arg2, Arg3 arg3)
-            : _serializerImpl(*this, queueSize)
-            , _deserialiserImpl(*this, queueSize)
-            , _channel(*this, arg1, arg2, arg3)
-        {
-        }
-        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4>
-        WebLinkType(const uint8_t queueSize, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4)
-            : _serializerImpl(*this, queueSize)
-            , _deserialiserImpl(*this, queueSize)
-            , _channel(*this, arg1, arg2, arg3, arg4)
-        {
-        }
-        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5>
-        WebLinkType(const uint8_t queueSize, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5)
-            : _serializerImpl(*this, queueSize)
-            , _deserialiserImpl(*this, queueSize)
-            , _channel(*this, arg1, arg2, arg3, arg4, arg5)
-        {
-        }
-
-        template <typename Arg1>
-        WebLinkType(const uint8_t queueSize, ALLOCATOR responseAllocator, Arg1 arg1)
+        template <typename... Args>
+        WebLinkType(const uint8_t queueSize, ALLOCATOR responseAllocator, Args&&... args)
             : _serializerImpl(*this, queueSize)
             , _deserialiserImpl(*this, responseAllocator)
-            , _channel(*this, arg1)
-        {
-        }
-        template <typename Arg1, typename Arg2>
-        WebLinkType(const uint8_t queueSize, ALLOCATOR responseAllocator, Arg1 arg1, Arg2 arg2)
-            : _serializerImpl(*this, queueSize)
-            , _deserialiserImpl(*this, responseAllocator)
-            , _channel(*this, arg1, arg2)
-        {
-        }
-        template <typename Arg1, typename Arg2, typename Arg3>
-        WebLinkType(const uint8_t queueSize, ALLOCATOR responseAllocator, Arg1 arg1, Arg2 arg2, Arg3 arg3)
-            : _serializerImpl(*this, queueSize)
-            , _deserialiserImpl(*this, responseAllocator)
-            , _channel(*this, arg1, arg2, arg3)
-        {
-        }
-        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4>
-        WebLinkType(const uint8_t queueSize, ALLOCATOR responseAllocator, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4)
-            : _serializerImpl(*this, queueSize)
-            , _deserialiserImpl(*this, responseAllocator)
-            , _channel(*this, arg1, arg2, arg3, arg4)
-        {
-        }
-        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5>
-        WebLinkType(const uint8_t queueSize, ALLOCATOR responseAllocator, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5)
-            : _serializerImpl(*this, queueSize)
-            , _deserialiserImpl(*this, responseAllocator)
-            , _channel(*this, arg1, arg2, arg3, arg4, arg5)
+            , _channel(*this, std::forward<Args>(args)...)
         {
         }
 #ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
-
-        virtual ~WebLinkType()
+        virtual ~WebLinkType() 
         {
             _channel.Close(Core::infinite);
         }
 
     public:
-        inline LINK& Link()
-        {
-            return (_channel.Link());
-        }
-        inline const LINK& Link() const
-        {
-            return (_channel.Link());
-        }
         // Notification of a Partial Request received, time to attach a body..
         virtual void LinkBody(Core::ProxyType<INBOUND>& element) = 0;
 
@@ -356,7 +259,7 @@ namespace Web {
         virtual void StateChange() = 0;
 
         // Submit an OUTBOUND object into the channel
-        bool Submit(const Core::ProxyType<OUTBOUND>& element)
+        inline bool Submit(const Core::ProxyType<OUTBOUND>& element)
         {
             if (_channel.IsOpen() == true) {
                 _serializerImpl.Submit(element);
@@ -371,6 +274,11 @@ namespace Web {
         inline uint32_t Close(const uint32_t waitTime)
         {
             return (_channel.Close(waitTime));
+        }
+        inline void Flush()
+        {
+            _serializerImpl.Flush();
+            _deserialiserImpl.Flush();
         }
         inline bool IsOpen() const
         {
@@ -396,7 +304,15 @@ namespace Web {
         {
             return (_channel.HasActivity());
         }
-
+        inline LINK& Link()
+        {
+            return (_channel.Link());
+        }
+        inline const LINK& Link() const
+        {
+            return (_channel.Link());
+        }
+ 
     private:
         inline void Trigger()
         {

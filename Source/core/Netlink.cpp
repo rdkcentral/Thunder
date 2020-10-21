@@ -75,29 +75,28 @@ namespace Core {
     {
         const nlmsghdr* header = reinterpret_cast<const nlmsghdr*>(stream);
         uint16_t dataLeft = streamLength;
+        bool completed = true;
         
         while (NLMSG_OK(header, dataLeft)) {
             if (header->nlmsg_type != NLMSG_NOOP) {
-                if (header->nlmsg_type == NLMSG_DONE) {
-                    _isMultimessage = false;
-                } else {                    
-                    _type = header->nlmsg_type;
-                    _flags = header->nlmsg_flags;
-                    _mySequence = header->nlmsg_seq;
+                _type = header->nlmsg_type;
+                _flags = header->nlmsg_flags;
+                _mySequence = header->nlmsg_seq;
 
-                    _isMultimessage = header->nlmsg_flags & NLM_F_MULTI;
-                    
-                    Read(
-                        reinterpret_cast<const uint8_t *>(NLMSG_DATA(header)), 
-                        header->nlmsg_len - sizeof(header)
-                    );
+
+                if (Read (reinterpret_cast<const uint8_t *>(NLMSG_DATA(header)), 
+                         header->nlmsg_len - sizeof(header)) == 0) {
+		    completed = false;
+                }
+                else {
+                    completed = (header->nlmsg_type == NLMSG_DONE) || ((header->nlmsg_flags & NLM_F_MULTI) == 0);
                 }
             }
 
             header = NLMSG_NEXT(header, dataLeft);
         }
 
-        return _isMultimessage ? 0 : streamLength - dataLeft;
+        return (completed ? streamLength : 0);
     }
 
     uint32_t SocketNetlink::Send(const Core::Netlink& outbound, const uint32_t waitTime)

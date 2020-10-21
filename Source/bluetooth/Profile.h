@@ -452,15 +452,6 @@ namespace Bluetooth {
                     return (_end);
                 }
                
-                /* 
-                template<typename DATA>
-                void Value (const DATA& value) {
-                }
-                template<typename DATA>
-                void Value (DATA& value) {
-                }
-                */
-
             private:
                 friend class Profile;
                 void Descriptors (GATTSocket::Command::Response& response) {
@@ -658,8 +649,8 @@ namespace Bluetooth {
             _adminLock.Lock();
 
             if (_socket != nullptr) {
-                if ((begin + 1) < end){
-                    _command.FindInformation(begin+1, end);
+                if (begin < end){
+                    _command.FindInformation(begin + 1, end);
                     _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnDescriptors(cmd); });
                 }
                 else {
@@ -793,6 +784,7 @@ namespace Bluetooth {
                 uint32_t waitTime = AvailableTime();
 
                 if (waitTime > 0) {
+
                     _characteristics.Current().Value(_command.Result());
 
                     if (NextCharacteristic() == false) {

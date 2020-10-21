@@ -23,15 +23,10 @@
 #define MODULE_NAME ProcessContainers
 #endif
 
-#include "../core/core.h"
+#include <core/core.h>
 
-#ifdef __WINDOWS__
+#if defined(__WINDOWS__) && defined(CONTAINERS_EXPORTS)
 #undef EXTERNAL
-#ifdef CONTAINERS_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT
-#else
-#define EXTERNAL EXTERNAL_IMPORT
 #endif
-#else
-#define EXTERNAL
-#endif
+

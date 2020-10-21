@@ -17,8 +17,7 @@
  * limitations under the License.
  */
 
-#ifndef __WEBSERIALIZER_H
-#define __WEBSERIALIZER_H
+#pragma once
 
 #include "Module.h"
 #include "WebRequest.h"
@@ -28,44 +27,40 @@ namespace WPEFramework {
 namespace Web {
 
     class EXTERNAL TextBody : public string, public IBody {
-    private:
+    public:
         TextBody(const TextBody&) = delete;
         TextBody& operator=(const TextBody&) = delete;
 
-    public:
         TextBody()
             : _lastPosition(0)
         {
         }
-        virtual ~TextBody()
-        {
-        }
+        ~TextBody() override = default;
 
+    public:
         TextBody& operator=(const string& newText)
         {
             string::operator=(newText);
 
             return (*this);
         }
-
-    public:
         inline void Clear()
         {
             string::clear();
         }
 
     protected:
-        virtual uint32_t Serialize() const override
+        uint32_t Serialize() const override
         {
             _lastPosition = 0;
             return (static_cast<uint32_t>(string::length() * sizeof(TCHAR)));
         }
-        virtual uint32_t Deserialize() override
+        uint32_t Deserialize() override
         {
             string::clear();
             return (static_cast<uint32_t>(~0));
         }
-        virtual void Serialize(uint8_t stream[], const uint16_t maxLength) const override
+        uint16_t Serialize(uint8_t stream[], const uint16_t maxLength) const override
         {
             uint16_t size = static_cast<uint16_t>(maxLength > (string::length() * sizeof(TCHAR)) ? (string::length() * sizeof(TCHAR)) : (sizeof(TCHAR) == 1 ? maxLength : (maxLength & 0xFFFE)));
 
@@ -73,8 +68,10 @@ namespace Web {
                 ::memcpy(stream, &(reinterpret_cast<const uint8_t*>(string::c_str())[_lastPosition]), size);
                 _lastPosition += size;
             }
+
+            return size;
         }
-        virtual void Deserialize(const uint8_t stream[], const uint16_t maxLength) override
+        uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength) override
         {
             uint16_t index = 0;
 
@@ -82,86 +79,86 @@ namespace Web {
                 string::operator+=(stream[index]);
                 index++;
             }
+
+            return index;
         }
-        virtual void End() const override
+        void End() const override
         {
         }
+
+    private:
         mutable uint32_t _lastPosition;
     };
 
     template <typename HASHALGORITHM>
     class SignedTextBodyType : public TextBody {
-    private:
-        SignedTextBodyType(const SignedTextBodyType<HASHALGORITHM>&);
-        SignedTextBodyType<HASHALGORITHM>& operator=(const SignedTextBodyType<HASHALGORITHM>&);
-
     public:
+        using HashType = HASHALGORITHM;
+
+        SignedTextBodyType(const SignedTextBodyType<HASHALGORITHM>&) = delete;
+        SignedTextBodyType<HASHALGORITHM>& operator=(const SignedTextBodyType<HASHALGORITHM>&) = delete;
+
         SignedTextBodyType()
             : TextBody()
             , _hash()
         {
-            _hash.Reset();
         }
         SignedTextBodyType(const string& HMACKey)
             : TextBody()
             , _hash(HMACKey)
         {
-            _hash.Reset();
         }
-        virtual ~SignedTextBodyType()
-        {
-        }
+        ~SignedTextBodyType() override = default;
 
     public:
-        inline static Crypto::EnumHashType HashType()
+        inline HashType& Hash()
         {
-            return (HASHALGORITHM::Type);
+            return (_hash);
         }
-        inline uint8_t* HashValue() const
+        inline const HashType& Hash() const
         {
-            return (_hash.Result());
+            return (_hash);
         }
 
     protected:
-        virtual uint32_t Deserialize() override
+        uint32_t Deserialize() override
         {
             _hash.Reset();
             return (TextBody::Deserialize());
         }
-        virtual void Deserialize(const uint8_t stream[], const uint16_t maxLength) override
+        uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength) override
         {
-            TextBody::Deserialize(stream, maxLength);
+            uint16_t deserialized = TextBody::Deserialize(stream, maxLength);
 
             // Also pass it through our hashing algorithm.
-            _hash.Input(stream, maxLength);
+            if (deserialized) {
+                _hash.Input(stream, maxLength);
+            }
+            return deserialized;
         }
 
-        HASHALGORITHM _hash;
+    private:
+        HashType _hash;
     };
 
     class EXTERNAL FileBody : public Core::File, public IBody {
-    private:
+    public:
         FileBody(const FileBody&) = delete;
         FileBody& operator=(const FileBody&) = delete;
 
-    public:
         FileBody()
             : Core::File()
             , _opened(false)
             , _startPosition(0)
         {
         }
-
         FileBody(const string& path, const bool sharable)
             : Core::File(path, sharable)
             , _opened(false)
             , _startPosition(0)
         {
         }
-
-        virtual ~FileBody()
-        {
-        }
+        ~FileBody() override = default;
 
     public:
         inline FileBody& operator=(const string& location)
@@ -174,14 +171,15 @@ namespace Web {
         inline FileBody& operator=(const File& RHS)
         {
             Core::File::operator=(RHS);
-            _startPosition = Core::File::Position();
+            _startPosition = static_cast<int32_t>(Core::File::Position());
 
             return (*this);
         }
 
     protected:
-        virtual uint32_t Serialize() const override
+        uint32_t Serialize() const override
         {
+            // Are we opening the file ?
             _opened = (Core::File::IsOpen() == false);
 
             if (_opened == false) {
@@ -190,27 +188,35 @@ namespace Web {
             }
             return (((_opened == false) || (Core::File::Open() == true)) ? static_cast<uint32_t>(Core::File::Size() - _startPosition) : 0);
         }
-        virtual uint32_t Deserialize() override
+        uint32_t Deserialize() override
         {
             _opened = (Core::File::IsOpen() == false);
             return (((_opened == false) || (Core::File::Create() == true)) ? static_cast<uint32_t>(~0) : 0);
         }
-        virtual void Serialize(uint8_t stream[], const uint16_t maxLength) const override
+        uint16_t Serialize(uint8_t stream[], const uint16_t maxLength) const override
         {
+            return Core::File::Read(stream, maxLength);
+        }
+        uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength) override
+        {
+            uint16_t write = Core::File::Write(stream, maxLength);
+            if (!write) {
+                _startPosition = Core::NumberType<int32_t>::Max();
+            }
 
-            Core::File::Read(stream, maxLength);
+            return write;
         }
-        virtual void Deserialize(const uint8_t stream[], const uint16_t maxLength) override
-        {
-            Core::File::Write(stream, maxLength);
-        }
-        virtual void End() const override
+        void End() const override
         {
             if (Core::File::IsOpen() == true) {
                 if (_opened == true) {
                     Core::File::Close();
                 } else {
-                    const_cast<FileBody*>(this)->Position(false, _startPosition);
+                    if (_startPosition == Core::NumberType<int32_t>::Max()) {
+                        const_cast<FileBody*>(this)->SetSize(0);
+                    } else {
+                        const_cast<FileBody*>(this)->Position(false, _startPosition);
+                    }
                 }
             }
         }
@@ -223,10 +229,13 @@ namespace Web {
     template <typename HASHALGORITHM>
     class SignedFileBodyType : public FileBody {
     private:
+        static int16_t constexpr BlockSize = 1024;
+    public:
+        using HashType = HASHALGORITHM;
+
         SignedFileBodyType(const SignedFileBodyType<HASHALGORITHM>&) = delete;
         SignedFileBodyType<HASHALGORITHM>& operator=(const SignedFileBodyType<HASHALGORITHM>&) = delete;
 
-    public:
         SignedFileBodyType()
             : FileBody()
             , _hash()
@@ -237,9 +246,7 @@ namespace Web {
             , _hash(HMACKey)
         {
         }
-        virtual ~SignedFileBodyType()
-        {
-        }
+        ~SignedFileBodyType() override = default;
 
     public:
         inline SignedFileBodyType<HASHALGORITHM>& operator=(const string& location)
@@ -256,51 +263,63 @@ namespace Web {
         }
 
     public:
-        inline static Crypto::EnumHashType HashType()
+        inline HashType& Hash()
         {
-            return (HASHALGORITHM::Type);
+            return (_hash);
         }
-        inline const uint8_t* SerializedHashValue() const
+        inline const HashType& Hash() const
         {
-            _hash.Reset();
-
-            // Read all Data
-            uint32_t length = FileBody::Serialize();
-
-            uint8_t buffer[64];
-
-            while (length > 0) {
-                uint16_t size = (length > 64 ? 64 : length);
-                FileBody::Serialize(buffer, size);
-                _hash.Input(buffer, size);
-                length -= size;
-            }
-
-            FileBody::End();
-
-            return (_hash.Result());
-        }
-        inline const uint8_t* DeserializedHashValue() const
-        {
-            return (_hash.Result());
+            return (_hash);
         }
 
     protected:
-        virtual uint32_t Deserialize() override
+        uint32_t Deserialize() override
         {
             _hash.Reset();
+            uint32_t result = FileBody::Deserialize();
+            if (result) {
+                LoadHash();
+            }
 
-            return (FileBody::Deserialize());
+            return (result);
         }
-        virtual void Deserialize(const uint8_t stream[], const uint16_t maxLength) override
+        uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength) override
         {
-            FileBody::Deserialize(stream, maxLength);
+            uint16_t deserialized = FileBody::Deserialize(stream, maxLength);
 
             // Also pass it through our hashing algorithm.
-            _hash.Input(stream, maxLength);
+            if (deserialized == maxLength) {
+                _hash.Input(stream, maxLength);
+            }
+
+            return deserialized;
         }
 
-        mutable HASHALGORITHM _hash;
+    private:
+        void LoadHash() {
+
+            if ((static_cast<int64_t>(Core::File::Size() > 0)) && (Core::File::IsOpen() == true)) {
+                // Set file position to beginning
+                Core::File::Position(false, 0);
+                uint8_t buffer[BlockSize];
+                uint64_t dataToRead = (static_cast<int64_t>(Core::File::Size()) - 1);
+
+                while (dataToRead > 0) {
+                    uint16_t realReadData = Core::File::Read(buffer, BlockSize);
+
+                    // Adjust Read Data to avoid end of file
+                    realReadData = ((realReadData != BlockSize) && (realReadData != 0))? (realReadData - 1): realReadData;
+                    _hash.Input(buffer, realReadData);
+
+                    dataToRead -= (realReadData == 0) ? dataToRead: realReadData;
+                }
+                // Set back file position to the end of file to append from there
+                Core::File::Position(false, (static_cast<int64_t>(Core::File::Size()) - 1));
+            }
+        }
+
+    private:
+        HashType _hash;
     };
 
     template <typename JSONOBJECT>
@@ -312,38 +331,20 @@ namespace Web {
         JSONBodyType(const JSONBodyType<JSONOBJECT>&) = delete;
         JSONBodyType<JSONOBJECT>& operator=(const JSONBodyType<JSONOBJECT>&) = delete;
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
         JSONBodyType()
             : JSONOBJECT()
             , _offset(0)
         {
         }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
-        virtual ~JSONBodyType()
-        {
-        }
+        ~JSONBodyType() override = default;
 
-        JSONBodyType<JSONOBJECT>& operator=(const JSONOBJECT& RHS)
+    public:
+        inline JSONBodyType<JSONOBJECT>& operator=(const JSONOBJECT& RHS)
         {
             JSONOBJECT::operator=(RHS);
 
             return (*this);
         }
-
-    public:
-        /* JIRA: BRIDGE-165
-         *
-         * Bad code but if you remove it without fixing the duplicated json issue for json arrays you
-         * buy us apple pie :-)
-         *
-         * cppcheck will give a warning on this code, but if we remove this the json output is not cleared properly
-         * Pierre will think out a solution on how to fix this warning for the future, because cppcheck is right
-         * about this one.
-         */
         inline void Clear()
         {
             JSONOBJECT::Clear();
@@ -351,7 +352,7 @@ namespace Web {
         }
 
     protected:
-        virtual uint32_t Serialize() const override
+        uint32_t Serialize() const override
         {
             _lastPosition = 0;
             _body.clear();
@@ -364,11 +365,11 @@ namespace Web {
 
             return (static_cast<uint32_t>(_body.length() * sizeof(TCHAR)));
         }
-        virtual uint32_t Deserialize() override
+        uint32_t Deserialize() override
         {
             return (static_cast<uint32_t>(~0));
         }
-        virtual void Serialize(uint8_t stream[], const uint16_t maxLength) const override
+        uint16_t Serialize(uint8_t stream[], const uint16_t maxLength) const override
         {
             uint16_t size = static_cast<uint16_t>(maxLength > (_body.length() * sizeof(TCHAR)) ? (_body.length() * sizeof(TCHAR)) : (sizeof(TCHAR) == 1 ? maxLength : (maxLength & 0xFFFE)));
 
@@ -376,28 +377,30 @@ namespace Web {
                 ::memcpy(stream, &(reinterpret_cast<const uint8_t*>(_body.c_str())[_lastPosition]), size);
                 _lastPosition += size;
             }
+            return size;
         }
-        virtual void Deserialize(const uint8_t stream[], const uint16_t maxLength) override
+        uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength) override
         {
-            static_cast<Core::JSON::IElement&>(*this).Deserialize(reinterpret_cast<const char*>(stream), maxLength, _offset);
+            return static_cast<Core::JSON::IElement&>(*this).Deserialize(reinterpret_cast<const char*>(stream), maxLength, _offset);
         }
-        virtual void End() const override
+        void End() const override
         {
         }
 
     private:
         mutable uint32_t _lastPosition;
         mutable string _body;
-        uint16_t _offset;
+        uint32_t _offset;
     };
 
     template <typename JSONOBJECT, typename HASHALGORITHM>
     class SignedJSONBodyType : public JSONBodyType<JSONOBJECT> {
-    private:
-        SignedJSONBodyType(const SignedJSONBodyType<JSONOBJECT, HASHALGORITHM>&);
-        SignedJSONBodyType<JSONOBJECT, HASHALGORITHM>& operator=(const SignedJSONBodyType<JSONOBJECT, HASHALGORITHM>&);
-
     public:
+        using HashType = HASHALGORITHM;
+
+        SignedJSONBodyType(const SignedJSONBodyType<JSONOBJECT, HASHALGORITHM>&) = delete;
+        SignedJSONBodyType<JSONOBJECT, HASHALGORITHM>& operator=(const SignedJSONBodyType<JSONOBJECT, HASHALGORITHM>&) = delete;
+
         SignedJSONBodyType()
             : JSONBodyType<JSONOBJECT>()
             , _hash()
@@ -408,38 +411,39 @@ namespace Web {
             , _hash(HMACKey)
         {
         }
-        virtual ~SignedJSONBodyType()
-        {
-        }
+        ~SignedJSONBodyType() override = default;
 
     public:
-        inline static Crypto::EnumHashType HashType()
+        inline HashType& Hash()
         {
-            return (HASHALGORITHM::Type);
+            return (_hash);
         }
-        inline const uint8_t* HashValue() const
+        inline const HashType& Hash() const
         {
-            return (const_cast<HASHALGORITHM&>(_hash).Result());
+            return (_hash);
         }
 
     protected:
-        virtual uint32_t Deserialize() override
+        uint32_t Deserialize() override
         {
             _hash.Reset();
 
             return (JSONBodyType<JSONOBJECT>::Deserialize());
         }
-        virtual void Deserialize(const uint8_t stream[], const uint16_t maxLength) override
+        uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength) override
         {
-            JSONBodyType<JSONOBJECT>::Deserialize(stream, maxLength);
+            uint16_t deserialized = JSONBodyType<JSONOBJECT>::Deserialize(stream, maxLength);
 
             // Also pass it through our hashing algorithm.
-            _hash.Input(stream, maxLength);
+            if (deserialized == maxLength) {
+                _hash.Input(stream, maxLength);
+            }
+
+            return deserialized;
         }
 
-        HASHALGORITHM _hash;
+    private:
+        HashType _hash;
     };
 }
 }
-
-#endif // __WEBSERIALIZER_H|

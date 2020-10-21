@@ -20,6 +20,8 @@ This is a non-buildable target used to set the overall mendatory settings for th
 compiler for all sources of the Framework and its Plugins
 #]]
 option(POSITION_INDEPENDENT_CODE "Create position independent code on all targets including static libs" ON)
+option(EXCEPTIONS_ENABLE "Enable exception handling" OFF)
+option(PERFORMANCE_MONITOR "Include Performance Monitoring" OFF)
 
 add_library(CompileSettings INTERFACE)
 add_library(CompileSettings::CompileSettings ALIAS CompileSettings)
@@ -40,6 +42,18 @@ if (SYSTEM_PREFIX)
     message(STATUS "System prefix is set to: ${SYSTEM_PREFIX}")
 endif()
 
+if(EXCEPTIONS_ENABLE)
+    target_compile_options(CompileSettings INTERFACE -fexceptions)
+    message(STATUS "Exception handling is enabled")
+else()
+    target_compile_options(CompileSettings INTERFACE -fno-exceptions)
+    message(STATUS "Exception handling is disabled")
+endif()
+
+if(PERFORMANCE_MONITOR)
+    target_compile_definitions(CompileSettings INTERFACE -DTHUNDER_PERFORMANCE=1)
+endif()
+
 if(NOT BUILD_TYPE)
     set(BUILD_TYPE Production)
     message(AUTHOR_WARNING "BUILD_TYPE not set, assuming '${BUILD_TYPE}'")
@@ -55,18 +69,22 @@ target_compile_options(CompileSettings INTERFACE -std=c++11 -Wno-psabi)
 #
 if("${BUILD_TYPE}" STREQUAL "Debug")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_DEBUG)
+    target_compile_options(CompileSettings INTERFACE -funwind-tables)
     set(CONFIG_DIR "Debug" CACHE STRING "Build config directory" FORCE)
 
 elseif("${BUILD_TYPE}" STREQUAL "DebugOptimized")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_DEBUG)
+    target_compile_options(CompileSettings INTERFACE -funwind-tables)
     set(CONFIG_DIR "DebugOptimized" CACHE STRING "Build config directory" FORCE)
 
 elseif("${BUILD_TYPE}" STREQUAL "ReleaseSymbols")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_NDEBUG)
+    target_compile_options(CompileSettings INTERFACE -funwind-tables)
     set(CONFIG_DIR "ReleaseSymbols" CACHE STRING "Build config directory" FORCE)
 
 elseif("${BUILD_TYPE}" STREQUAL "Release")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_NDEBUG)
+    target_compile_options(CompileSettings INTERFACE -funwind-tables)
     set(CONFIG_DIR "Release" CACHE STRING "Build config directory" FORCE)
 
 elseif("${BUILD_TYPE}" STREQUAL "Production")

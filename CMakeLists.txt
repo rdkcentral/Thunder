@@ -44,8 +44,6 @@ set(PLATFORM "PC_UNIX" CACHE STRING
         "Defines on what platform the application will run")
 
 option(INSTALL_LOCALLY "Install this project locally" OFF)
-option(BUILD_TESTS "Build framework tests (requires gtest)" OFF)
-option(BUILD_CRYPTOGRAPHY_TESTS "Build cryptography tests" OFF)
 
 set(NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")
 
@@ -82,12 +80,19 @@ if(APPLE)
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 
+if (ENABLE_CODE_COVERAGE)
+  include (CodeCoverage)
+  append_coverage_compiler_flags()
+  set(COVERAGE_EXCLUDES
+    "${CMAKE_CURRENT_BINARY_DIR}/Tests/unit*"
+    "${CMAKE_CURRENT_BINARY_DIR}/Tests/unit/core/*")
+  setup_target_for_coverage_gcovr_html(NAME "coverage")
+  setup_target_for_coverage_gcovr_xml(NAME "coverage-report")
+endif()
+
+if(BUILD_TESTS)
+  enable_testing()
+endif()
+
 add_subdirectory(Source)
-
-if (BUILD_TESTS)
-    add_subdirectory(Tests/unit)
-endif()
-
-if (BUILD_CRYPTOGRAPHY_TESTS)
-    add_subdirectory(Tests/cryptography)
-endif()
+add_subdirectory(Tests)

@@ -26,7 +26,7 @@ namespace WPEFramework {
 
 namespace Bluetooth {
 
-    class Attribute {
+    class EXTERNAL Attribute {
     public:
         enum type {
             NIL = 0x00,
@@ -109,9 +109,18 @@ namespace Bluetooth {
         uint8_t* _buffer;
     };
 
-    class GATTSocket : public Core::SynchronousChannelType<Core::SocketPort> {
+    class EXTERNAL GATTSocket : public Core::SynchronousChannelType<Core::SocketPort> {
     public:
         static constexpr uint8_t LE_ATT_CID = 4;
+
+        enum rights : uint8_t {
+            Broadcast     = 0x01,
+            Read          = 0x02,
+            Write         = 0x04,
+            WriteResponse = 0x08,
+            Notify        = 0x10,
+            Indicate      = 0x20
+        };
 
     private:
         GATTSocket(const GATTSocket&) = delete;
@@ -233,7 +242,7 @@ namespace Bluetooth {
     public:
         static constexpr uint32_t CommunicationTimeOut = 2000; /* 2 seconds. */
 
-        class Command : public Core::IOutbound, public Core::IInbound {
+        class EXTERNAL Command : public Core::IOutbound, public Core::IInbound {
         private:
             Command(const Command&) = delete;
             Command& operator=(const Command&) = delete;
@@ -415,7 +424,7 @@ namespace Bluetooth {
             };
 
         public:
-            class Response {
+            class EXTERNAL Response {
             private:
                 Response(const Response&) = delete;
                 Response& operator=(const Response&) = delete;
@@ -443,8 +452,25 @@ namespace Bluetooth {
                 }
 
             public:
-                void Type(const uint8_t response) {
-                    _type = response;
+                uint8_t Type() const {
+                    return(_type);
+                }
+                void Dump () const {
+                    if (_storage != nullptr) {
+                        fprintf (stderr, "Loaded data [%d]:", _loaded);
+                        for (uint16_t index = 0; index < _loaded; index++) {
+                            if (index == 0) {
+                                fprintf (stderr, " %02X", _storage[index]);
+                            }
+                            else {
+                                fprintf (stderr, ":%02X", _storage[index]);
+                            }
+                        }
+                        fprintf (stderr, "\n");
+                    } 
+                    else {
+                        fprintf (stderr, "There is no data to print..\n");
+                    }
                 }
                 void Clear()
                 {
@@ -476,9 +502,17 @@ namespace Bluetooth {
                     }
                     return (_iterator != _result.end());
                 }
+                uint16_t Count() const
+                {
+                    return (_result.size());
+                }
+                bool Empty() const
+                {
+                    return (_result.empty());
+                }
                 uint16_t Handle() const
                 {
-                    return (_iterator->first);
+                    return (IsValid() == true ? _iterator->first : (_result.size() == 1 ? _result.begin()->first : 0));
                 }
                 uint16_t MTU() const
                 {
@@ -504,14 +538,6 @@ namespace Bluetooth {
                 uint8_t Rights() const {
                     return (_storage[_iterator->second.second]);
                 }
-                uint16_t Count() const
-                {
-                    return (_result.size());
-                }
-                bool Empty() const
-                {
-                    return (_result.empty());
-                }
                 uint16_t Length() const
                 {
                     uint16_t result = _loaded;
@@ -533,6 +559,9 @@ namespace Bluetooth {
 
             private:
                 friend class Command;
+                void Type(const uint8_t response) {
+                    _type = response;
+                }
                 uint16_t Delta() const {
                     std::list<Entry>::iterator next(_iterator);
                     return (++next == _result.end() ? (_loaded - _iterator->second.second) : (next->second.second - _iterator->second.second));
@@ -763,6 +792,11 @@ namespace Bluetooth {
 
         inline uint16_t MTU() const {
             return (_sink.MTU());
+        }
+        uint32_t Execute(const uint32_t waitTime, Command& cmd)
+        {
+            cmd.MTU(_sink.MTU());
+            return (Exchange(waitTime, cmd, cmd));
         }
         void Execute(const uint32_t waitTime, Command& cmd, const Handler& handler)
         {

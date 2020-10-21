@@ -17,17 +17,16 @@
  * limitations under the License.
  */
 
-#include "Module.h"
-
 #ifndef __ISYSTEMINFO_H
 #define __ISYSTEMINFO_H
+
+#include <com/ICOM.h>
 
 namespace WPEFramework {
 namespace PluginHost {
 
     // This interface gives direct access to a switchboard
-    struct ISubSystem
-        : virtual public Core::IUnknown {
+    struct EXTERNAL ISubSystem : virtual public Core::IUnknown {
         enum {
             ID = RPC::ID_SUBSYSTEM
         };
@@ -65,7 +64,7 @@ namespace PluginHost {
             NOT_BLUETOOTH // The Bluetooth communication system is NOT available.
         };
 
-        struct INotification
+        struct EXTERNAL INotification
             : virtual public Core::IUnknown {
 
             enum {
@@ -81,7 +80,7 @@ namespace PluginHost {
         };
 
         /* @stubgen:omit */
-        struct ISecurity
+        struct EXTERNAL ISecurity
             : virtual public Core::IUnknown {
 
             enum {
@@ -97,7 +96,7 @@ namespace PluginHost {
         };
 
         /* @stubgen:omit */
-        struct IInternet
+        struct EXTERNAL IInternet
             : virtual public Core::IUnknown {
 
             enum {
@@ -123,7 +122,7 @@ namespace PluginHost {
 
         /* @stubgen:omit */
         // Location information
-        struct ILocation
+        struct EXTERNAL ILocation
             : virtual public Core::IUnknown {
 
             enum {
@@ -142,7 +141,7 @@ namespace PluginHost {
 
         /* @stubgen:omit */
         // Device specific identification.
-        struct IIdentifier
+        struct EXTERNAL IIdentifier
             : virtual public Core::IUnknown {
 
             enum {
@@ -158,7 +157,7 @@ namespace PluginHost {
 
         /* @stubgen:omit */
         // Time synchronisation reporting
-        struct ITime
+        struct EXTERNAL ITime
             : virtual public Core::IUnknown {
 
             enum {
@@ -174,7 +173,7 @@ namespace PluginHost {
 
         /* @stubgen:omit */
         // IProvisioning reporting
-        struct IProvisioning : public RPC::IStringIterator {
+        struct EXTERNAL IProvisioning : public RPC::IStringIterator {
 
             enum {
                 SUBSYSTEM = PROVISIONING
@@ -183,16 +182,14 @@ namespace PluginHost {
 
         /* @stubgen:omit */
         // Decryption reporting
-        struct IDecryption : public RPC::IStringIterator {
+        struct EXTERNAL IDecryption : public RPC::IStringIterator {
 
             enum {
                 SUBSYSTEM = DECRYPTION
             };
         };
 
-        virtual ~ISubSystem()
-        {
-        }
+        virtual ~ISubSystem() = default;
 
         virtual void Register(ISubSystem::INotification* notification) = 0;
         virtual void Unregister(ISubSystem::INotification* notification) = 0;

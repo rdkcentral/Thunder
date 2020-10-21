@@ -31,12 +31,11 @@ namespace PluginHost {
         typedef Web::WebSocketLinkType<Core::SocketStream, Request, Web::Response, RequestPool&> BaseClass;
 
         class EXTERNAL Package {
-        private:
+        public:
             Package() = delete;
             Package(const Package&) = delete;
             Package& operator=(const Package&) = delete;
 
-        public:
             explicit Package(const Core::ProxyType<Core::JSON::IElement>& json)
                 : _json(true)
                 , _info(json)
@@ -116,6 +115,13 @@ namespace PluginHost {
                     if ( (_offset == 0) || (loaded != length) ) {
                         _current.Release();
                     }
+#if THUNDER_PERFORMANCE
+                    else {
+			Core::ProxyType<const TrackingJSONRPC> tracking(Core::proxy_cast<const TrackingJSONRPC>(_current));
+                        ASSERT (tracking.IsValid() == true);
+                        const_cast<TrackingJSONRPC&>(*tracking).Out(loaded);
+                    }
+#endif
                 }
 
                 return (loaded);
@@ -124,7 +130,7 @@ namespace PluginHost {
         private:
             Channel& _parent;
             mutable Core::ProxyType<const Core::JSON::IElement> _current;
-            mutable uint16_t _offset;
+            mutable uint32_t _offset;
         };
         class EXTERNAL DeserializerImpl {
         public:
@@ -149,7 +155,7 @@ namespace PluginHost {
             }
             inline uint16_t Deserialize(const char* stream, const uint16_t length)
             {
-			    uint16_t loaded = 0;
+                uint16_t loaded = 0;
 
                 if (_current.IsValid() == false) {
                     if (_parent.IsOpen() == true) {
@@ -157,9 +163,19 @@ namespace PluginHost {
                         _offset = 0;
                     }
                 } 
-				if (_current.IsValid() == true) {
+                if (_current.IsValid() == true) {
                     loaded = _current->Deserialize(stream, length, _offset);
+#if THUNDER_PERFORMANCE
+		    Core::ProxyType<TrackingJSONRPC> tracking (Core::proxy_cast<TrackingJSONRPC>(_current));
+                    ASSERT (tracking.IsValid() == true);
+                    if(loaded > 0) {
+                        tracking->In(loaded);
+                    }
+#endif
                     if ( (_offset == 0) || (loaded != length)) {
+#if THUNDER_PERFORMANCE
+                        tracking->In(0);
+#endif
                         _parent.Received(_current);
                         _current.Release();
                     }
@@ -171,7 +187,7 @@ namespace PluginHost {
         private:
             Channel& _parent;
             Core::ProxyType<Core::JSON::IElement> _current;
-            uint16_t _offset;
+            uint32_t _offset;
         };
 
     public:

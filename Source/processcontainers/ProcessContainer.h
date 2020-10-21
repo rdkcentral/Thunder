@@ -101,7 +101,7 @@ namespace ProcessContainers {
         virtual bool Stop(const uint32_t timeout /*ms*/) = 0;
     };
 
-    struct IContainerAdministrator {
+    struct EXTERNAL IContainerAdministrator {
         static IContainerAdministrator& Instance();
         virtual ~IContainerAdministrator() = default;
 

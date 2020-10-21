@@ -20,9 +20,10 @@
 #ifndef __COM_IUNKNOWN_H
 #define __COM_IUNKNOWN_H
 
+#include "Module.h"
+#include "Ids.h"
 #include "Administrator.h"
 #include "Messages.h"
-#include "Module.h"
 
 namespace WPEFramework {
 
@@ -145,6 +146,7 @@ namespace ProxyStub {
             , _implementation(implementation)
             , _parent(parent)
             , _channel(channel)
+            , _remoteReferences(1)
         {
         }
         virtual ~UnknownProxy()
@@ -167,6 +169,12 @@ namespace ProxyStub {
                 }
                 // This will increment the refcount of this PS, on behalf of the user.
                 result = _parent.QueryInterface(id);
+
+                // This is an additional call to an interface for which we already have a Proxy issued.
+                // This is triggerd by the other side, offering us an interface. So once this proxy goes
+                // out of scope, we also need to "release" the AddRef associated with this on the other
+                // side..
+                _remoteReferences++;
             }
             _adminLock.Unlock();
 
@@ -194,6 +202,9 @@ namespace ProxyStub {
                     Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
 
                     message->Parameters().Set(_implementation, _interfaceId, 1);
+
+                    // Pass on the number of reference we need to lower, since it is indictaed by the amount of times this proxy had to be created
+                    message->Parameters().Writer().Number<uint32_t>(_remoteReferences);
 
                     // Just try the destruction for few Seconds...
                     result = Invoke(message, RPC::CommunicationTimeOut);
@@ -285,7 +296,7 @@ namespace ProxyStub {
                 } else {
                     // Just Release this implementation
                     id = id ^ 0x80000000;
-                    RPC::Administrator::Instance().Release(_channel, impl, id);
+                    RPC::Administrator::Instance().Release(_channel, impl, id, 1);
                 }
             }
         }
@@ -347,6 +358,7 @@ namespace ProxyStub {
         RPC::instance_id _implementation;
         Core::IUnknown& _parent;
         mutable Core::ProxyType<Core::IPCChannel> _channel;
+        uint32_t _remoteReferences;
     };
 
     template <typename INTERFACE>

@@ -3,6 +3,10 @@
 
 #include "Module.h"
 
+#ifdef USE_BREAKPAD
+#include <client/linux/handler/exception_handler.h>
+#endif
+
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 namespace WPEFramework {
@@ -127,7 +131,7 @@ namespace Process {
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:V:v:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , RemoteChannel(nullptr)
@@ -140,6 +144,7 @@ namespace Process {
             , VolatilePath()
             , AppPath()
             , ProxyStubPath()
+            , PostMortemPath()
             , User(nullptr)
             , Group(nullptr)
             , Threads(1)
@@ -164,6 +169,7 @@ namespace Process {
         string VolatilePath;
         string AppPath;
         string ProxyStubPath;
+        string PostMortemPath;
         const TCHAR* User;
         const TCHAR* Group;
         uint8_t Threads;
@@ -202,6 +208,9 @@ namespace Process {
                 break;
             case 'd':
                 DataPath = Strip(argument);
+                break;
+            case 'P':
+                PostMortemPath = Strip(argument);
                 break;
             case 'v':
                 VolatilePath = Strip(argument);
@@ -372,7 +381,11 @@ public:
         if (_server.IsValid() == true) {
 
             // We are done, close the channel and unregister all shit we added...
+            #ifdef __DEBUG__
+            _server->Close(RPC::CommunicationTimeOut);
+            #else       
             _server->Close(2 * RPC::CommunicationTimeOut);
+            #endif
 
             _proxyStubs.clear();
 
@@ -455,7 +468,7 @@ private:
             ProcessFlow::Abort();
 
         } else if (signo == SIGSEGV) {
-            DumpCallStack();
+            DumpCallStack(0, nullptr);
             // now invoke the default segfault handler
             signal(signo, SIG_DFL);
             kill(getpid(), signo);
@@ -489,7 +502,10 @@ int main(int argc, char** argv)
 #endif
 {
     // Give the debugger time to attach to this process..
+    // printf("Starting to sleep so you can attach a debugger\n");
     // Sleep(20000);
+    // printf("Continueing, I hope you have attached the debugger\n");
+
     Process::ConsoleOptions options(argc, argv);
 
     if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr) || (options.Exchange == 0)) {
@@ -509,7 +525,8 @@ int main(int argc, char** argv)
         printf("        [-v <volatile path>]\n");
         printf("        [-a <app path>]\n");
         printf("        [-m <proxy stub library path>]\n");
-        printf("        [-e <enabled SYSLOG categories>]\n\n");
+        printf("        [-e <enabled SYSLOG categories>]\n");
+        printf("        [-P <post mortem path>]\n\n");
         printf("This application spawns a seperate process space for a plugin. The plugins");
         printf("are searched in the same order as they are done in process. Starting from:\n");
         printf(" 1) <persistent path>/<locator>\n");
@@ -524,6 +541,14 @@ int main(int argc, char** argv)
             printf("Argument [%02d]: %s\n", teller, argv[teller]);
         }
     } else {
+        #ifdef USE_BREAKPAD
+        google_breakpad::MinidumpDescriptor descriptor(options.PostMortemPath);
+        google_breakpad::ExceptionHandler eh(descriptor, NULL,
+            [](const google_breakpad::MinidumpDescriptor&, void*, bool succeeded)
+                { return succeeded; },
+            NULL, true, -1);
+        #endif
+
         Process::ProcessFlow process;
 
         Core::NodeId remoteNode(options.RemoteChannel);

@@ -23,6 +23,7 @@ set(PLUGIN_INCLUDES
         plugins/IShell.h
         plugins/IStateControl.h
         plugins/ISubSystem.h
+        proxystubs/Module.h
         )
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include")
@@ -41,6 +42,8 @@ add_library(${TARGET} SHARED
         "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_SubSystem.cpp"
         Module.cpp
         )
+
+target_compile_definitions(${TARGET} PRIVATE PROXYSTUBS_EXPORTS)
 
 target_include_directories(${TARGET}
          PRIVATE 

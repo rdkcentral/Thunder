@@ -28,6 +28,10 @@
 
 namespace WPEFramework {
 namespace Core {
+
+    // On 64 bits deployments, this is probably a uint64_t, lets prepare for it :-)
+    using process_t = uint32_t;
+
     class EXTERNAL ProcessInfo {
     public:
 #ifdef __WINDOWS__
@@ -120,8 +124,8 @@ namespace Core {
             }
 
         private:
-            std::list<uint32_t> _pids;
-            std::list<uint32_t>::iterator _current;
+            std::list<process_t> _pids;
+            std::list<process_t>::iterator _current;
             uint32_t _index;
         };
 
@@ -130,7 +134,7 @@ namespace Core {
         ProcessInfo();
 
         // Specifice Process Info
-        ProcessInfo(const uint32_t id);
+        ProcessInfo(const process_t id);
 
         ProcessInfo(const ProcessInfo&);
         ProcessInfo& operator=(const ProcessInfo&);
@@ -138,7 +142,7 @@ namespace Core {
         ~ProcessInfo();
 
     public:
-        inline uint32_t Id() const
+        inline process_t Id() const
         {
             return (_pid);
         }
@@ -245,8 +249,24 @@ namespace Core {
         static string User();
         static void FindByName(const string& name, const bool exact, std::list<ProcessInfo>& processInfos);
 
+        void Dump() {
+            // The initial customer deploying this functionality sends a Floating Point Exception signal to
+            // this process to indicate that it detected a hang and it requires a Dump for PostMortem analyses.
+            // Agree, if there is a real Floating Point Exception causing the PostMortem, it can not
+            // be distinguished from this (The logged deactivation code later on might help to diffrentiate
+            // the two use cases, but you need to check more for that).
+            // Bottomline such a functionality was not yet available in Thunder. hence why we start, if we
+            // mimic this functionality, with how this customer is using it.
+            // Send the Process a SIG_FPE, to start the generation of a PostMortem dump!
+
+#ifdef __WINDOWS__
+#else
+            ::kill(_pid, SIGFPE);
+#endif
+        }
+
     private:
-        uint32_t _pid;
+        process_t _pid;
 #ifdef __WINDOWS__
         HANDLE _handle;
 #endif

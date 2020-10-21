@@ -35,6 +35,19 @@
 	* compile-time configuration.
 	*/
 
+/*
+	* The SHA-256 algorith is updated to handle upto 32 bit size data
+	* Reference: https://github.com/B-Con/crypto-algorithms
+	*
+	* Author:
+	* Brad Conte (brad AT bradconte.com)
+	*
+	* This code is released into the public domain free of any restrictions.
+	* The author requests acknowledgement if the code is used, but does not require it.
+	* This code is provided free of any liability and without any quality claims by the author.
+	*
+	*/
+
 #include "Hash.h"
 
 #ifdef __LINUX__
@@ -823,7 +836,7 @@ namespace Crypto {
     // --------------------------------------------------------------------------------------------
     // SHA256 functionality
     // --------------------------------------------------------------------------------------------
-    static void sha256_transf(SHA256::Context* ctx, const unsigned char* message, unsigned int block_nb)
+    static void sha256_trans_block(SHA256::Context* ctx, const unsigned char* message, unsigned int block_nb)
     {
         uint32_t w[64];
         uint32_t wv[8];
@@ -1021,6 +1034,48 @@ namespace Crypto {
         }
     }
 
+    static void sha256_trans(SHA256::Context* ctx, const unsigned char* message)
+    {
+       uint32_t a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
+        for (i = 0, j = 0; i < 16; ++i, j += 4) {
+             PACK32(&message[i << 2], &m[i]);
+        }
+        for ( ; i < 64; ++i) {
+                m[i] = SHA256_F4(m[i - 2]) + m[i - 7] + SHA256_F3(m[i - 15]) + m[i - 16];
+        }
+
+        a = ctx->h[0];
+        b = ctx->h[1];
+        c = ctx->h[2];
+        d = ctx->h[3];
+        e = ctx->h[4];
+        f = ctx->h[5];
+        g = ctx->h[6];
+        h = ctx->h[7];
+
+        for (i = 0; i < 64; ++i) {
+            t1 = h + SHA256_F2(e) + CH(e,f,g) + sha256_k[i] + m[i];
+            t2 = SHA256_F1(a) + MAJ(a,b,c);
+            h = g;
+            g = f;
+            f = e;
+            e = d + t1;
+            d = c;
+            c = b;
+            b = a;
+            a = t1 + t2;
+        }
+
+        ctx->h[0] += a;
+        ctx->h[1] += b;
+        ctx->h[2] += c;
+        ctx->h[3] += d;
+        ctx->h[4] += e;
+        ctx->h[5] += f;
+        ctx->h[6] += g;
+        ctx->h[7] += h;
+    }
+
     void SHA256::Reset()
     {
 #ifndef UNROLL_LOOPS
@@ -1046,72 +1101,62 @@ namespace Crypto {
 
     static void sha256_update(SHA256::Context* ctx, const unsigned char* message, unsigned int len)
     {
-        unsigned int block_nb;
-        unsigned int new_len, rem_len, tmp_len;
-        const unsigned char* shifted_message;
+        uint32_t i;
 
-        tmp_len = SHA256_BLOCK_SIZE - ctx->len;
-        rem_len = len < tmp_len ? len : tmp_len;
-
-        memcpy(&ctx->block[ctx->len], message, rem_len);
-
-        if (ctx->len + len < SHA256_BLOCK_SIZE) {
-            ctx->len += len;
-            return;
+        for (i = 0; i < len; ++i) {
+            ctx->block[ctx->len] = message[i];
+            ctx->len++;
+            if (ctx->len == 64) {
+                sha256_trans(ctx, ctx->block);
+                ctx->tot_len += 512;
+                ctx->len = 0;
+            }
         }
-
-        new_len = len - rem_len;
-        block_nb = new_len / SHA256_BLOCK_SIZE;
-
-        shifted_message = message + rem_len;
-
-        sha256_transf(ctx, ctx->block, 1);
-        sha256_transf(ctx, shifted_message, block_nb);
-
-        rem_len = new_len % SHA256_BLOCK_SIZE;
-
-        memcpy(ctx->block, &shifted_message[block_nb << 6],
-            rem_len);
-
-        ctx->len = rem_len;
-        ctx->tot_len += (block_nb + 1) << 6;
     }
 
     void SHA256::CloseContext()
     {
-        unsigned int block_nb;
-        unsigned int pm_len;
-        unsigned int len_b;
+        uint32_t i = _context.len;
 
-#ifndef UNROLL_LOOPS
-        int i;
-#endif
-
-        block_nb = (1 + ((SHA256_BLOCK_SIZE - 9) < (_context.len % SHA256_BLOCK_SIZE)));
-
-        len_b = (_context.tot_len + _context.len) << 3;
-        pm_len = block_nb << 6;
-
-        memset(_context.block + _context.len, 0, pm_len - _context.len);
-        _context.block[_context.len] = 0x80;
-        UNPACK32(len_b, _context.block + pm_len - 4);
-
-        sha256_transf(&_context, _context.block, block_nb);
-
-#ifndef UNROLL_LOOPS
-        for (i = 0; i < 8; i++) {
-            UNPACK32(_context.h[i], &(_context.block[i << 2]));
+        // Pad whatever block is left in the buffer.
+        if (_context.len < 56) {
+            _context.block[i++] = 0x80;
+            while (i < 56) {
+               _context.block[i++] = 0x00;
+            }
+        } else {
+            _context.block[i++] = 0x80;
+            while (i < 64) {
+                _context.block[i++] = 0x00;
+            }
+            sha256_trans(&_context, _context.block);
+            memset(_context.block, 0, 56);
         }
-#else
-        UNPACK32(_context.h[0], &(_context.block[0]));
-        UNPACK32(_context.h[1], &(_context.block[4]));
-        UNPACK32(_context.h[2], &(_context.block[8]));
-        UNPACK32(_context.h[3], &(_context.block[12]));
-        UNPACK32(_context.h[4], &(_context.block[16]));
-        UNPACK32(_context.h[5], &(_context.block[20]));
-        UNPACK32(_context.h[6], &(_context.block[24]));
-        UNPACK32(_context.h[7], &(_context.block[28]));
-#endif /* !UNROLL_LOOPS */
+
+        // Append to the padding the total message's length in bits and transform.
+        _context.tot_len += _context.len * 8;
+        _context.block[63] = static_cast<uint8_t>((_context.tot_len) & 0xFF);
+        _context.block[62] = static_cast<uint8_t>((_context.tot_len >> 8) & 0xFF);
+        _context.block[61] = static_cast<uint8_t>((_context.tot_len >> 16) & 0xFF);
+        _context.block[60] = static_cast<uint8_t>((_context.tot_len >> 24) & 0xFF);
+        _context.block[59] = static_cast<uint8_t>((_context.tot_len >> 32) & 0xFF);
+        _context.block[58] = static_cast<uint8_t>((_context.tot_len >> 40) & 0xFF);
+        _context.block[57] = static_cast<uint8_t>((_context.tot_len >> 48) & 0xFF);
+        _context.block[56] = static_cast<uint8_t>((_context.tot_len >> 56) & 0xFF);
+        sha256_trans(&_context, _context.block);
+
+        // Since this implementation uses little endian byte ordering and SHA uses big endian,
+        // reverse all the bytes when copying the final h to the output hash.
+        for (i = 0; i < 4; ++i) {
+            _context.hash[i]      = (_context.h[0] >> (24 - i * 8)) & 0x000000ff;
+            _context.hash[i + 4]  = (_context.h[1] >> (24 - i * 8)) & 0x000000ff;
+            _context.hash[i + 8]  = (_context.h[2] >> (24 - i * 8)) & 0x000000ff;
+            _context.hash[i + 12] = (_context.h[3] >> (24 - i * 8)) & 0x000000ff;
+            _context.hash[i + 16] = (_context.h[4] >> (24 - i * 8)) & 0x000000ff;
+            _context.hash[i + 20] = (_context.h[5] >> (24 - i * 8)) & 0x000000ff;
+            _context.hash[i + 24] = (_context.h[6] >> (24 - i * 8)) & 0x000000ff;
+            _context.hash[i + 28] = (_context.h[7] >> (24 - i * 8)) & 0x000000ff;
+        }
     }
 
     void SHA256::Input(const uint8_t message_array[], const uint16_t length)
@@ -1131,7 +1176,7 @@ namespace Crypto {
         }
     }
 
-    /*
+/*
  *  operator<<
  *
  *  Description:
@@ -1233,8 +1278,8 @@ namespace Crypto {
 
         shifted_message = message + rem_len;
 
-        sha256_transf(ctx, ctx->block, 1);
-        sha256_transf(ctx, shifted_message, block_nb);
+        sha256_trans_block(ctx, ctx->block, 1);
+        sha256_trans_block(ctx, shifted_message, block_nb);
 
         rem_len = new_len % SHA224_BLOCK_SIZE;
 
@@ -1257,14 +1302,14 @@ namespace Crypto {
 
         block_nb = (1 + ((SHA224_BLOCK_SIZE - 9) < (_context.len % SHA224_BLOCK_SIZE)));
 
-        len_b = (_context.tot_len + _context.len) << 3;
+        len_b = static_cast<unsigned int>((_context.tot_len + _context.len) << 3);
         pm_len = block_nb << 6;
 
         memset(_context.block + _context.len, 0, pm_len - _context.len);
         _context.block[_context.len] = 0x80;
         UNPACK32(len_b, _context.block + pm_len - 4);
 
-        sha256_transf(&_context, _context.block, block_nb);
+        sha256_trans_block(&_context, _context.block, block_nb);
 
 #ifndef UNROLL_LOOPS
         for (i = 0; i < 7; i++) {

@@ -270,5 +270,124 @@ namespace Core {
         }
         return true;
     }
+
+    string Partition::RemoveRepeatedPathSeparator(const string& path)
+    {
+        string trimmedPath;
+        if (path.empty() != true) {
+            uint32_t index = 0;
+            while (index < path.size()) {
+                if ((index + 1 < path.size()) && (path[index] == PathSeparator) && (path[index] == path[index + 1])) {
+                    index++;
+                    continue;
+                }
+                trimmedPath += path[index];
+                index++;
+            }
+        }
+        return trimmedPath;
+    }
+
+    bool Partition::ReadPartitionName(const string& fileName, string& deviceName)
+    {
+#ifdef __LINUX__
+        Core::File path(fileName);
+        if ((path.Open() == true)) {
+            string mountStatsFileName(MountStatsFileName);
+            Core::File mountStatsFile(mountStatsFileName);
+
+            if (mountStatsFile.Open() == true) {
+                string mountStats;
+                uint32_t size = 0;
+                do {
+                    uint8_t buffer[PARTITION_BUFFER_SIZE];
+                    if ((size = mountStatsFile.Read(buffer, PARTITION_BUFFER_SIZE)) > 0) {
+                        string buf(reinterpret_cast<char*>(buffer), size);
+                        mountStats += buf;
+                    }
+                } while (size > 0);
+
+                if (mountStats.empty() != true) {
+                    size_t found = 0;
+                    size_t current = 0;
+                    while ((found = mountStats.find(LineSeparator, current)) != std::string::npos) {
+                        string entry = mountStats.substr(current, found - current);
+                        if (entry.size()) {
+                            string mounted;
+                            size_t mountPointStart = entry.find(MountKey, 0);
+                            if (mountPointStart != std::string::npos) {
+                                mountPointStart = mountPointStart + strlen(MountKey);
+                                size_t mountPointEnd = entry.find(" ", mountPointStart);
+                                mounted = entry.substr(mountPointStart, (mountPointEnd - mountPointStart));
+                            }
+
+                            string mount = fileName;
+                            if (mounted.size()) {
+                                do {
+                                    mount = ((mount.size() > 1) && (mount.at(mount.size() - 1) == PathSeparator)) ? mount.substr(0, mount.size() - 1): mount;
+                                    if (mounted == mount) {
+                                        size_t deviceNameStart = strlen(DeviceKey);
+                                        deviceName = entry.substr(deviceNameStart, (entry.find(WordSeparator, deviceNameStart) - deviceNameStart));
+                                        break;
+                                    } else {
+                                        if (mount.size() > 1) {
+                                            size_t delimEnd = mount.find_last_of(PathSeparator);
+                                           if (delimEnd != std::string::npos) {
+                                               mount = mount.substr(0, mount.size() - (mount.size() - delimEnd) + 1);
+                                           } else {
+                                               mount.clear();
+                                           }
+                                        } else {
+                                            mount.clear();
+                                        }
+                                    }
+                                } while (mount.size());
+                            }
+                        }
+                        current = found + 1;
+                    }
+                }
+            }
+        }
+
+        return (deviceName.empty() != true);
+#else
+        return false;
+#endif
+    }
+
+    void Partition::LoadPartitionInfo()
+    {
+#ifdef __POSIX__
+        StatFS statFSData;
+
+        if (statvfs (_path.c_str(), &statFSData) == 0) {
+            uint64_t blockSize = (statFSData.f_frsize != 0) ? statFSData.f_frsize: statFSData.f_bsize;
+            _free = statFSData.f_bavail * blockSize;
+            _size = statFSData.f_blocks * blockSize;
+        }
+        ReadPartitionName(_path, _name);
+#endif
+
+#ifdef __WINDOWS__
+        string dirName = _path;
+        File path(_path);
+        if (path.IsDirectory() != true) {
+            // size_t position = str.find_last_of(ch);
+            // if (position) {
+            //    dirName = s.substr(0, position);
+            //}
+        }
+        if (dirName.empty() != true) {
+            // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getdiskfreespaceexa
+            // BOOL GetDiskFreeSpaceExA(
+            //    LPCSTR          lpDirectoryName,
+            //    PULARGE_INTEGER lpFreeBytesAvailableToCaller,
+            //    PULARGE_INTEGER lpTotalNumberOfBytes,
+            //    PULARGE_INTEGER lpTotalNumberOfFreeBytes
+            // );
+        }
+#endif
+    }
 }
 } // namespace Core

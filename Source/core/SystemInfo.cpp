@@ -156,6 +156,12 @@ namespace Core {
         m_totalram = 0;
         m_pageSize = 0;
         m_freeram = 0;
+        m_totalswap=0;
+        m_freeswap=0;
+        m_cpuloadavg[0]=0;
+        m_cpuloadavg[1]=0;
+        m_cpuloadavg[2]=0;
+
         m_prevCpuSystemTicks = 0;
         m_prevCpuUserTicks = 0;
         m_prevCpuIdleTicks = 0;
@@ -167,6 +173,11 @@ namespace Core {
         m_totalram = info.totalram;
         m_pageSize = static_cast<uint32_t>(sysconf(_SC_PAGESIZE));
         m_freeram = info.freeram;
+        m_totalswap = info.totalswap;
+        m_freeswap = info.freeswap;
+        m_cpuloadavg[0]=info.loads[0];
+        m_cpuloadavg[1]=info.loads[1];
+        m_cpuloadavg[2]=info.loads[2];
 #endif
 #endif
 
@@ -245,7 +256,7 @@ namespace Core {
             // First line of /proc/stat contains the overall CPU information
             uint64_t CpuFields[4];
 
-            int numFields = fscanf(input, _T("cpu %llu %llu %llu %llu"),
+            int numFields = fscanf(input, _T("cpu %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64),
                 &CpuFields[0], &CpuFields[1],
                 &CpuFields[2], &CpuFields[3]);
 
@@ -365,6 +376,11 @@ namespace Core {
         m_uptime = info.uptime;
         m_freeram = info.freeram;
         m_totalram = info.totalram;
+        m_totalswap = info.totalswap;
+        m_freeswap = info.freeswap;
+        m_cpuloadavg[0] = info.loads[0];
+        m_cpuloadavg[1] = info.loads[1];
+        m_cpuloadavg[2] = info.loads[2];
 #endif
     }
 

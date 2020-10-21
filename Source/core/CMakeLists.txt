@@ -84,6 +84,7 @@ set(PUBLIC_HEADERS
         IIterator.h
         IObserver.h
         IPCMessage.h
+        IPFrame.h
         IPCChannel.h
         IPCConnector.h
         ISO639.h
@@ -133,6 +134,7 @@ set(PUBLIC_HEADERS
         TextFragment.h
         TextReader.h
         Thread.h
+        ThreadPool.h
         Time.h
         Timer.h
         Trace.h
@@ -149,6 +151,8 @@ if(DISABLE_TRACING)
     target_compile_definitions(${TARGET} PUBLIC _TRACE_LEVEL=0)
     message(STATUS "Force trace level to 0")
 endif()
+
+target_compile_definitions(${TARGET} PRIVATE CORE_EXPORTS)
 
 if(BUILD_TESTS)
     target_compile_definitions(${TARGET} PRIVATE BUILD_TESTS)

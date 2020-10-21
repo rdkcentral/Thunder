@@ -68,6 +68,7 @@ static const TCHAR __DATE[] = _T("DATE:");
 static const TCHAR __SERVER[] = _T("SERVER:");
 static const TCHAR __MODIFIED[] = _T("LAST-MODIFIED:");
 static const TCHAR __ACCEPT_RANGE[] = _T("ACCEPT-RANGES:");
+static const TCHAR __RANGE[] = _T("RANGE:");
 static const TCHAR __ETAG[] = _T("ETAG:");
 static const TCHAR __ALLOW[] = _T("ALLOW:");
 static const TCHAR __WEBSOCKET_KEY[] = _T("SEC-WEBSOCKET-KEY:");
@@ -820,6 +821,11 @@ namespace Web
                             _buffer = (_current->Mode() == MARSHAL_UPPERCASE ? __CONTENT_SIGNATURE : _T("Content-HMAC:"));
                             FromSignature(_current->ContentSignature.Value(), _value);
                             _offset = 0;
+                        } else if ((_keyIndex <= 24) && (_current->Range.IsSet() == true)) {
+                            _keyIndex = 25;
+                            _buffer = (_current->Mode() == MARSHAL_UPPERCASE ? __RANGE : _T("Range:"));
+                            _value = _current->Range.Value();
+                            _offset = 0;
                         }
                     }
 
@@ -1278,10 +1284,11 @@ namespace Web
         return (current);
     }
 
-    void Request::Deserializer::Parse(const uint8_t stream[], const uint16_t maxLength)
+    uint16_t Request::Deserializer::Parse(const uint8_t stream[], const uint16_t maxLength)
     {
         ASSERT(_current != nullptr);
 
+        uint16_t parsed = 0;
         if (_current->_body.IsValid()) {
 
             // Depending on the ContentEncoding, we need to prepare the data..
@@ -1304,13 +1311,15 @@ namespace Web
                         _zlibResult = ret;
                     }
 
-                    _current->_body->Deserialize(out, static_cast<uint16_t>(sizeof(out) - _zlib.avail_out));
+                    parsed = _current->_body->Deserialize(out, static_cast<uint16_t>(sizeof(out) - _zlib.avail_out));
 
                 } while ((_zlib.avail_out == 0) && (_zlibResult == Z_OK));
             } else if (_zlibResult == static_cast<uint32_t>(~0)) {
-                _current->_body->Deserialize(stream, maxLength);
+                parsed = _current->_body->Deserialize(stream, maxLength);
             }
         }
+
+        return parsed;
     }
 
     void Request::Deserializer::Parse(const string& buffer)
@@ -1662,10 +1671,11 @@ namespace Web
         }
     }
 
-    void Response::Deserializer::Parse(const uint8_t stream[], const uint16_t maxLength)
+    uint16_t Response::Deserializer::Parse(const uint8_t stream[], const uint16_t maxLength)
     {
         ASSERT(_current != nullptr);
 
+        uint16_t parsed = 0;
         if (_current->_body.IsValid()) {
 
             // Depending on the ContentEncoding, we need to prepare the data..
@@ -1688,13 +1698,15 @@ namespace Web
                         _zlibResult = ret;
                     }
 
-                    _current->_body->Deserialize(out, static_cast<uint16_t>(sizeof(out) - _zlib.avail_out));
+                    parsed = _current->_body->Deserialize(out, static_cast<uint16_t>(sizeof(out) - _zlib.avail_out));
 
                 } while ((_zlib.avail_out == 0) && (_zlibResult == Z_OK));
             } else if (_zlibResult == static_cast<uint32_t>(~0)) {
-                _current->_body->Deserialize(stream, maxLength);
+                parsed = _current->_body->Deserialize(stream, maxLength);
             }
         }
+
+        return parsed;
     }
 
     void Response::Deserializer::Parse(const string& buffer)
@@ -1748,7 +1760,8 @@ namespace Web
                 // Empty line means we are starting the BODY
                 if (chunked || ((_current->ContentLength.IsSet() == true) && (_current->ContentLength.Value() > 0))) {
                     // Allow the Deserializer to "instantiate"/link the right Body to the response:
-                    if (LinkBody(*_current) == true) {
+                    bool hasBody = LinkBody(*_current);
+                    if (hasBody == true) {
                         _current->Body<Web::IBody>()->Deserialize();
                     }
 
@@ -1765,11 +1778,15 @@ namespace Web
                         _zlibResult = static_cast<uint32_t>(~0);
                     }
 
-                    if (chunked == false) {
-                        _parser.PassThrough(_current->ContentLength.Value());
+                    if (hasBody == true) {
+                        if (chunked == false) {
+                            _parser.PassThrough(_current->ContentLength.Value());
+                        } else {
+                            _parser.CollectLine();
+                            _state = CHUNK_INIT;
+                        }
                     } else {
-                        _parser.CollectLine();
-                        _state = CHUNK_INIT;
+                        _state = BODY_END;
                     }
                 } else {
                     // There is no body following this according to the length.

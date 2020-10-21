@@ -63,6 +63,31 @@
 #define B4000000 4000000
 #endif
 
+#if defined(WIN32) || defined(_WINDOWS) || defined (__CYGWIN__)
+    #ifdef __GNUC__
+        #define EXTERNAL        __attribute__ ((dllimport))
+        #define EXTERNAL_EXPORT __attribute__ ((dllexport))
+    #else
+        #define EXTERNAL        __declspec(dllimport) 
+        #define EXTERNAL_EXPORT __declspec(dllexport)
+    #endif
+
+    #if defined(CORE_EXPORTS)
+    #undef EXTERNAL
+    #define EXTERNAL EXTERNAL_EXPORT
+    #endif
+
+    #define EXTERNAL_HIDDEN
+#else
+  #if __GNUC__ >= 4 && !defined(__mips__)
+    #define EXTERNAL_HIDDEN __attribute__ ((visibility ("hidden")))
+    #define EXTERNAL        __attribute__ ((visibility ("default")))
+  #else
+    #define EXTERNAL
+    #define EXTERNAL_HIDDEN
+  #endif
+#endif
+
 #if defined WIN32 || defined _WINDOWS
 
 // W3 -- warning C4290: C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
@@ -108,6 +133,7 @@
 #include <array>
 
 #define AF_NETLINK 16
+#define AF_PACKET  17
 
 inline void SleepS(unsigned int a_Time)
 {
@@ -125,10 +151,6 @@ typedef std::wstring string;
 #ifndef _UNICODE
 typedef std::string string;
 #endif
-
-#define EXTERNAL_HIDDEN
-#define EXTERNAL_EXPORT __declspec(dllexport)
-#define EXTERNAL_IMPORT __declspec(dllimport)
 
 #define CBR_110 110
 #define CBR_300 300
@@ -173,7 +195,7 @@ typedef std::string string;
 #define CS7 7
 #define CS8 8
 
-#define ALLOCA _alloca
+#define ALLOCA _malloca
 
 #define KEY_LEFTSHIFT VK_LSHIFT
 #define KEY_RIGHTSHIFT VK_RSHIFT
@@ -181,12 +203,14 @@ typedef std::string string;
 #define KEY_RIGHTALT VK_RMENU
 #define KEY_LEFTCTRL VK_LCONTROL
 #define KEY_RIGHTCTRL VK_RCONTROL
+#undef INPUT_MOUSE
 
 // This is an HTTP keyword (VERB) Let's undefine it from windows headers..
 #define _CRT_SECURE_NO_WARNINGS 1
 #undef DELETE
 #undef min
 #undef max
+#undef ERROR_NOT_SUPPORTED
 
 //#if _MSC_VER >= 1600
 //const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) - 1;
@@ -249,7 +273,7 @@ typedef std::string string;
 #define KEY_RIGHTALT 5
 #define KEY_LEFTCTRL 6
 #define KEY_RIGHTCTRL 7
-extern "C" void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
+extern "C" EXTERNAL void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
 int clock_gettime(int, struct timespec*);
 #else
 #include <linux/input.h>
@@ -333,17 +357,11 @@ int clock_gettime(int, struct timespec*);
 
 #define ALLOCA alloca
 
-extern void SleepMs(unsigned int a_Time);
-inline void SleepS(unsigned int a_Time)
+extern void EXTERNAL SleepMs(unsigned int a_Time);
+inline void EXTERNAL SleepS(unsigned int a_Time)
 {
     ::SleepMs(a_Time * 1000);
 }
-
-#ifdef __GNUC__
-#define VARIABLE_IS_NOT_USED __attribute__((unused))
-#else
-#define VARIABLE_IS_NOT_USED
-#endif
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define LITTLE_ENDIAN_PLATFORM 1
@@ -355,12 +373,19 @@ inline void SleepS(unsigned int a_Time)
 
 #endif
 
+
 #ifdef __GNUC__
 #define DEPRECATED __attribute__((deprecated))
+#define VARIABLE_IS_NOT_USED __attribute__((unused))
+#define WARNING_RESULT_NOT_USED __attribute__((warn_unused_result))
 #elif defined(_MSC_VER)
 #define DEPRECATED __declspec(deprecated)
+#define VARIABLE_IS_NOT_USED
+#define WARNING_RESULT_NOT_USED
 #else
 #define DEPRECATED
+#define VARIABLE_IS_NOT_USED
+#define WARNING_RESULT_NOT_USED
 #endif
 
 #if defined(_THUNDER_DEBUG) || !defined(_THUNDER_NDEBUG)
@@ -415,7 +440,7 @@ struct TemplateIntToType {
 
 extern "C" {
 
-extern void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount);
+extern EXTERNAL void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount);
 
 #if defined(__LINUX__)
 uint64_t htonll(const uint64_t& value);
@@ -461,11 +486,6 @@ typedef enum {
 #define TCHAR char
 #endif
 
-#if !defined(__mips__)
-#define EXTERNAL_HIDDEN __attribute__((visibility("hidden")))
-#else
-#define EXTERNAL_HIDDEN
-#endif
 
 #endif // __LINUX__
 
@@ -489,8 +509,6 @@ typedef HANDLE ThreadId;
 #define QUOTE(str) #str
 #define EXPAND_AND_QUOTE(str) QUOTE(str)
 
-#include "Module.h"
-
 extern "C" {
 
 #ifdef __WINDOWS__
@@ -504,10 +522,10 @@ inline void SleepUs(unsigned int a_Time)
 }
 
 
-extern void EXTERNAL DumpCallStack(const ThreadId threadId = 0);
-}
-
+void EXTERNAL DumpCallStack(const ThreadId threadId, FILE* output);
 uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
+
+}
 
 #if !defined(__DEBUG)
 #define DEBUG_VARIABLE(X) (void)(X)
@@ -580,9 +598,8 @@ namespace Core {
 
     class Void {
     public:
-        inline Void() {}
-        template <typename ARG1>
-        inline Void(ARG1) {}
+        template <typename... Args>
+        inline Void(Args&&...) {}
         inline Void(const Void&) {}
         inline ~Void() {}
 
@@ -601,7 +618,7 @@ namespace Core {
     struct EXTERNAL IUnknown : public IReferenceCounted  {
         enum { ID = 0x00000000 };
 
-        virtual ~IUnknown(){};
+        ~IUnknown() override = default;
 
         virtual void* QueryInterface(const uint32_t interfaceNummer) = 0;
 
@@ -673,7 +690,11 @@ namespace Core {
         ERROR_CODE(ERROR_INVALID_SIGNATURE, 38) \
         ERROR_CODE(ERROR_READ_ERROR, 39) \
         ERROR_CODE(ERROR_WRITE_ERROR, 40) \
-        ERROR_CODE(ERROR_INVALID_DESIGNATOR, 41)
+        ERROR_CODE(ERROR_INVALID_DESIGNATOR, 41) \
+        ERROR_CODE(ERROR_UNAUTHENTICATED, 42) \
+        ERROR_CODE(ERROR_NOT_EXIST, 43) \
+        ERROR_CODE(ERROR_NOT_SUPPORTED, 44) \
+        ERROR_CODE(ERROR_INVALID_RANGE, 45)
 
     #define ERROR_CODE(CODE, VALUE) CODE = VALUE,
 

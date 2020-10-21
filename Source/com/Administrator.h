@@ -46,9 +46,49 @@ namespace RPC {
         Administrator(const Administrator&) = delete;
         Administrator& operator=(const Administrator&) = delete;
 
+        class RecoverySet {
+        public:
+            RecoverySet() = delete;
+            RecoverySet(const RecoverySet&) = delete;
+            RecoverySet& operator= (const RecoverySet&) = delete;
+
+            RecoverySet(const uint32_t id, Core::IUnknown* object)
+                : _interfaceId(id)
+                , _interface(object)
+                , _referenceCount(1) {
+            }
+            ~RecoverySet() = default;
+
+        public:
+            inline uint32_t Id() const {
+                return (_interfaceId);
+            }
+            inline Core::IUnknown* Unknown() const {
+                return (_interface);
+            }
+            inline void Increment() {
+                _referenceCount++;
+            }
+            inline bool Decrement(const uint32_t dropCount = 1) {
+                ASSERT(_referenceCount >= dropCount);
+                _referenceCount -= dropCount;
+                return(_referenceCount > 0);
+            }
+#ifdef __DEBUG__
+            bool Flushed() const {
+                return (_referenceCount == 0);
+            }
+#endif
+
+        private:
+            uint32_t _interfaceId;
+            Core::IUnknown* _interface;
+            uint32_t _referenceCount;
+        };
+
         typedef std::list<ProxyStub::UnknownProxy*> ProxyList;
         typedef std::map<const Core::IPCChannel*, ProxyList> ChannelMap;
-        typedef std::map<const Core::IPCChannel*, std::list< std::pair<uint32_t, Core::IUnknown*> > > ReferenceMap;
+        typedef std::map<const Core::IPCChannel*, std::list< RecoverySet > > ReferenceMap;
 
         struct EXTERNAL IMetadata {
             virtual ~IMetadata(){};
@@ -148,7 +188,7 @@ namespace RPC {
         // Methods for the Proxy Environment
         // ----------------------------------------------------------------------------------------------------
         void AddRef(Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId);
-        void Release(Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId);
+        void Release(Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId, const uint32_t dropCount);
 
         // ----------------------------------------------------------------------------------------------------
         // Methods for the Stub Environment
@@ -169,23 +209,27 @@ namespace RPC {
             RegisterUnknownInterface(channel, Convert(source, id), id);
         }
 
-        void UnregisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const Core::IUnknown* source, const uint32_t interfaceId)
+        void UnregisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const Core::IUnknown* source, const uint32_t interfaceId, const uint32_t dropCount)
         {
+            _adminLock.Lock();
+
             ReferenceMap::iterator index(_channelReferenceMap.find(channel.operator->()));
 
             if (index != _channelReferenceMap.end()) {
-                std::list< std::pair<uint32_t, Core::IUnknown*> >::iterator element(index->second.begin());
+                std::list< RecoverySet >::iterator element(index->second.begin());
 
-                while ( (element != index->second.end()) && ((element->first != interfaceId) || (element->second != source)) ) {
+                while ( (element != index->second.end()) && ((element->Id() != interfaceId) || (element->Unknown() != source)) ) {
                     element++;
                 }
 
                 ASSERT(element != index->second.end());
 
                 if (element != index->second.end()) {
-                    index->second.erase(element);
-                    if (index->second.size() == 0) {
-                        _channelReferenceMap.erase(index);
+                    if (element->Decrement(dropCount) == false) {
+                        index->second.erase(element);
+                        if (index->second.size() == 0) {
+                            _channelReferenceMap.erase(index);
+                        }
                     }
                 } else {
                     printf("====> Unregistering an interface [0x%x, %d] which has not been registered!!!\n", interfaceId, Core::ProcessInfo().Id());
@@ -193,6 +237,8 @@ namespace RPC {
             } else {
                 printf("====> Unregistering an interface [0x%x, %d] from a non-existing channel!!!\n", interfaceId, Core::ProcessInfo().Id());
             }
+
+            _adminLock.Unlock();
         }
         void UnregisterProxy(const ProxyStub::UnknownProxy& proxy);
         
@@ -201,7 +247,7 @@ namespace RPC {
         // Methods for the Stub Environment
         // ----------------------------------------------------------------------------------------------------
         Core::IUnknown* Convert(void* rawImplementation, const uint32_t id);
-       void RegisterUnknownInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* source, const uint32_t id);
+        void RegisterUnknownInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* source, const uint32_t id);
 
     private:
         // Seems like we have enough information, open up the Process communcication Channel.
@@ -358,14 +404,14 @@ namespace RPC {
             }
 
             if (message->Label() == AnnounceMessage::Id()) {
-	            _handler->Procedure(source, message);
-	    } else {
-
+                ASSERT(_handler != nullptr);
+                _handler->Procedure(source, message);
+            } else {
                 Core::ProxyType<Job> job(Job::Instance());
 
                 job->Set(source, message, _handler);
                 _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite);
-            }        
+            }
         }
 
     private:

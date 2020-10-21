@@ -17,27 +17,17 @@
  * limitations under the License.
  */
 
-#ifndef __MODULE_WEBSOCKET_H
-#define __MODULE_WEBSOCKET_H
+#pragma once
 
 #ifndef MODULE_NAME
 #define MODULE_NAME WebSocket
 #endif
 
-#include "../core/core.h"
-#include "../cryptalgo/cryptalgo.h"
-
+#include <core/core.h>
+#include <cryptalgo/cryptalgo.h>
 #include <zlib.h>
 
-#ifdef __WINDOWS__
+#if defined(__WINDOWS__) && defined(WEBSOCKET_EXPORTS)
 #undef EXTERNAL
-#ifdef WEBSOCKET_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT
-#else
-#define EXTERNAL EXTERNAL_IMPORT
 #endif
-#else
-#define EXTERNAL
-#endif
-
-#endif // __MODULE_WEBSOCKET_H

@@ -100,11 +100,29 @@ namespace Core {
             UpdateRealtimeInfo();
             return m_freeram;
         }
+        
+        inline uint64_t GetTotalSwap() 
+        {
+            UpdateRealtimeInfo();
+            return m_totalswap;
+        }
 
+        inline uint64_t GetFreeSwap() 
+        {
+            UpdateRealtimeInfo();
+            return m_freeswap;
+        }        
+ 
         inline uint64_t GetCpuLoad() const
         {
             UpdateCpuStats();
             return m_cpuload;
+        }
+
+        inline uint64_t * GetCpuLoadAvg()
+        {
+            UpdateRealtimeInfo();
+            return m_cpuloadavg;
         }
 
         inline uint64_t GetJiffies() const
@@ -312,7 +330,10 @@ namespace Core {
         uint32_t m_pageSize;
         mutable uint32_t m_uptime;
         mutable uint64_t m_freeram;
+        mutable uint64_t m_totalswap;
+        mutable uint64_t m_freeswap;
         mutable uint64_t m_cpuload;
+        mutable uint64_t m_cpuloadavg[3];
         mutable uint64_t m_jiffies;
         mutable time_t m_lastUpdateCpuStats;
 
@@ -335,17 +356,17 @@ namespace Core {
 
 #define MODULE_BUILDREF MODULE_NAME##Version
 
-#define MODULE_NAME_DECLARATION(buildref)                                                                     \
-    extern "C" {                                                                                              \
-    namespace WPEFramework {                                                                                  \
-        namespace Core {                                                                                      \
-            namespace System {                                                                                \
+#define MODULE_NAME_DECLARATION(buildref)                                                                              \
+    extern "C" {                                                                                                       \
+    namespace WPEFramework {                                                                                           \
+        namespace Core {                                                                                               \
+            namespace System {                                                                                         \
                 const char* MODULE_NAME = SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(MODULE_NAME);              \
                 const char* ModuleName() { return (MODULE_NAME); }                                            \
                 const char* ModuleBuildRef() { return (SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(buildref)); } \
-            }                                                                                                 \
-        }                                                                                                     \
-    }                                                                                                         \
+            }                                                                                                          \
+        }                                                                                                              \
+    }                                                                                                                  \
     } // extern "C" Core::System
 
 #endif // __SYSTEMINFO_H

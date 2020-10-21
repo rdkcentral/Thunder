@@ -17,22 +17,24 @@
  * limitations under the License.
  */
 
-#include "Module.h"
-
-#ifndef __ISHELL_H
-#define __ISHELL_H
+#ifndef __ISHELL_H__
+#define __ISHELL_H__
 
 #include "IPlugin.h"
 #include "ISubSystem.h"
 
+#include <com/ICOM.h>
+
 namespace WPEFramework {
+
+    namespace RPC {
+        class Object;
+    }
+
 namespace PluginHost {
 
-    struct EXTERNAL IShell
-        : virtual public Core::IUnknown {
-        enum {
-            ID = RPC::ID_SHELL
-        };
+    struct EXTERNAL IShell : virtual public Core::IUnknown {
+        enum { ID = RPC::ID_SHELL };
 
         // This interface is only returned if the IShell is accessed in the main process. The interface can
         // be used to instantiate new objects (COM objects) in a new process, or monitor the state of such a process.
@@ -46,12 +48,8 @@ namespace PluginHost {
             virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId, const string& className, const string& callsign) = 0;
         };
 
-        virtual ~IShell()
-        {
-        }
-
         // State of the IPlugin interface associated with this shell.
-        enum state {
+        enum state : uint8_t {
             DEACTIVATED,
             DEACTIVATION,
             ACTIVATED,
@@ -60,14 +58,15 @@ namespace PluginHost {
             DESTROYED
         };
 
-        enum reason {
+        enum reason : uint8_t {
             REQUESTED,
             AUTOMATIC,
             FAILURE,
             MEMORY_EXCEEDED,
             STARTUP,
             SHUTDOWN,
-            CONDITIONS
+            CONDITIONS,
+            WATCHDOG_EXPIRED
         };
 
         /* @stubgen:omit */
@@ -179,7 +178,7 @@ namespace PluginHost {
         virtual string ProxyStubPath() const = 0;
 
         //! Substituted Config value
-        virtual string ConfigSubstitution(const string& input) const = 0;
+        virtual string Substitute(const string& input) const = 0;
 
         //! AutoStart: boolean to inidcate wheter we need to start up this plugin at start
         virtual bool AutoStart() const = 0;
@@ -281,6 +280,8 @@ namespace PluginHost {
 
             return (nullptr);
         }
+
+        /* 
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* Instantiate(const uint32_t waitTime, const string className, const uint32_t version, uint32_t& connecionId, const string& locator)
         {
@@ -301,9 +302,16 @@ namespace PluginHost {
 
             return (nullptr);
         }
+        */
 
     private:
         void* Root(uint32_t& pid, const uint32_t waitTime, const string className, const uint32_t interface, const uint32_t version = ~0);
+
+        /* @stubgen:omit */
+        virtual std::vector<string> GetLibrarySearchPaths(const string& locator) const
+        {
+            return std::vector<string> {};
+        }
     };
 } // namespace PluginHost
 
@@ -320,4 +328,4 @@ namespace Core {
 } // namespace Core
 } // namespace WPEFramework
 
-#endif // __ISHELL_H
+#endif //__ISHELL_H__

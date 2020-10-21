@@ -17,24 +17,24 @@
  * limitations under the License.
  */
 
-#include "Module.h"
-
 #ifndef __IPLUGIN_H
 #define __IPLUGIN_H
+
+#include <com/ICOM.h>
 
 namespace WPEFramework {
 
 namespace Web {
-    class EXTERNAL Request;
+    class Request;
 
-    class EXTERNAL Response;
+    class Response;
 }
 
 namespace PluginHost {
 
-    struct EXTERNAL IShell;
+    struct IShell;
 
-    class EXTERNAL Channel;
+    class Channel;
 
     struct IPlugin
         : public virtual Core::IUnknown {
@@ -231,5 +231,8 @@ namespace PluginHost {
 
 } // namespace PluginHost
 } // namespace WPEFramework
+
+// Needed for the ProxyStub generated files
+#include "IShell.h"
 
 #endif // __IPLUGIN_H

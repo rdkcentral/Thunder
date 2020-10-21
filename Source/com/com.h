@@ -23,10 +23,9 @@
 #include "Communicator.h"
 #include "IRPCIterator.h"
 #include "IStringIterator.h"
-#include "ITracing.h"
 #include "IUnknown.h"
 #include "IValueIterator.h"
-#include "Ids.h"
+#include "ICOM.h"
 #include "Messages.h"
 
 #ifdef __WINDOWS__

@@ -74,7 +74,18 @@ namespace Plugin {
         Config config;
         config.FromString(_service->ConfigLine());
 
-        _probe = new Probe(_service->Accessor(), config.TTL.Value(), service->Model());
+        if (config.Probe.IsSet() == true) {
+            // "239.255.255.250:1900";
+            Core::NodeId node (config.Probe.Node.Value().c_str());
+
+            if (node.IsValid() == true) {
+                SYSLOG(Logging::Startup, (_T("Probing requested but invalid IP address [%s]"), config.Probe.Node.Value().c_str()));
+            }
+            else {
+                _probe = new Probe(node, _service, config.Probe.TTL.Value(), service->Model());
+            }
+        }
+
         Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator eventListIterator(static_cast<const Config&>(config).SubSystems.Elements());
         SubSystems(eventListIterator);
 
@@ -107,8 +118,10 @@ namespace Plugin {
             subSystems->Unregister(&_systemInfoReport);
         }
 
-        delete _probe;
-        _probe = nullptr;
+        if (_probe != nullptr) {
+            delete _probe;
+            _probe = nullptr;
+        }
 
         _service->Unregister(&_systemInfoReport);
 
@@ -241,16 +254,24 @@ namespace Plugin {
 
             result->Body(Core::proxy_cast<Web::IBody>(response));
         } else if (index.Current() == _T("Discovery")) {
-            Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData>> response(jsonBodyMetaDataFactory.Element());
 
-            Probe::Iterator index(_probe->Instances());
+            if (_probe == nullptr) {
+                result->ErrorCode = Web::STATUS_BAD_REQUEST;
+                result->Message = _T("Probe functionality not enabled!");
+            }
+            else {
+                Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData>> response(jsonBodyMetaDataFactory.Element());
 
-            while (index.Next() == true) {
-                PluginHost::MetaData::Bridge newElement((*index).URL().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure());
-                response->Bridges.Add(newElement);
+                Probe::Iterator index(_probe->Instances());
+
+                while (index.Next() == true) {
+                    PluginHost::MetaData::Bridge newElement((*index).URL().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure());
+                    response->Bridges.Add(newElement);
+                }
+
+                result->Body(Core::proxy_cast<Web::IBody>(response));
             }
 
-            result->Body(Core::proxy_cast<Web::IBody>(response));
         } else if (index.Current() == _T("SubSystems")) {
             PluginHost::ISubSystem* subSystem = _service->SubSystems();
             Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData>> response(jsonBodyMetaDataFactory.Element());
@@ -352,14 +373,19 @@ namespace Plugin {
                     }
                 }
             } else if (index.Current() == _T("Discovery")) {
-                ASSERT(_probe != nullptr);
-                Core::URL::KeyValue options(request.Query.Value());
-                uint8_t ttl = options.Number<uint8_t>(_T("TTL"), 0);
+                if (_probe != nullptr) {
+                    result->ErrorCode = Web::STATUS_BAD_REQUEST;
+                    result->Message = _T("Probe functionality not enabled!");
+                }
+                else {
+                    Core::URL::KeyValue options(request.Query.Value());
+                    uint8_t ttl = options.Number<uint8_t>(_T("TTL"), 0);
 
-                _probe->Ping(ttl);
+                    _probe->Ping(ttl);
 
-                result->ErrorCode = Web::STATUS_OK;
-                result->Message = _T("Discovery cycle initiated");
+                    result->ErrorCode = Web::STATUS_OK;
+                    result->Message = _T("Discovery cycle initiated");
+                }
             } else if (index.Current() == _T("Persist")) {
 
                 _pluginServer->Services().Persist();
@@ -438,7 +464,7 @@ namespace Plugin {
     void Controller::SubSystems()
     {
         string message;
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
         PluginHost::MetaData response;
 #endif
         Core::JSON::ArrayType<JsonData::Controller::SubsystemsParamsData> responseJsonRpc;
@@ -464,7 +490,7 @@ namespace Plugin {
                     status.Active = ((reportMask & bit) != 0);
                     responseJsonRpc.Add(status);
 
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
                     response.SubSystems.Add(current, ((reportMask & bit) != 0));
 #endif
                     sendReport = true;
@@ -484,7 +510,7 @@ namespace Plugin {
 
             TRACE_L1("Sending out a SubSystem change notification. %s", message.c_str());
 
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
             _pluginServer->_controller->Notification(message);
 #endif
             Notify("subsystemchange", responseJsonRpc);

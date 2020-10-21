@@ -38,7 +38,7 @@ namespace Core {
 
     namespace JSON {
 
-        struct Error {
+        struct EXTERNAL Error {
             explicit Error(string&& message)
                 : _message(std::move(message))
                 , _context()
@@ -94,7 +94,7 @@ namespace Core {
             {
                 char buffer[1024];
                 uint16_t loaded;
-                uint16_t offset = 0;
+                uint32_t offset = 0;
 
                 text.clear();
 
@@ -122,16 +122,23 @@ namespace Core {
             template <typename INSTANCEOBJECT>
             static bool FromString(const string& text, INSTANCEOBJECT& realObject, Core::OptionalType<Error>& error)
             {
-                uint16_t offset = 0;
+                uint32_t offset  = 0;
+                uint32_t handled = 0;
+                uint32_t size    = text.length();
 
                 realObject.Clear();
 
-                if (text.empty() == false) {
-                    // Deserialize object
-                    uint16_t loaded = static_cast<IElement&>(realObject).Deserialize(text.c_str(), static_cast<uint16_t>(text.length() + 1), offset, error);
+                while (size != handled) {
 
-                    ASSERT(loaded <= (text.length() + 1));
+		    uint16_t payload = static_cast<uint16_t>(std::min(size - handled, static_cast<uint32_t>(0xFFFF)));
+
+                    // Deserialize object
+                    uint16_t loaded = static_cast<IElement&>(realObject).Deserialize(&(text.c_str()[handled]), payload, offset, error);
+
+                    ASSERT(loaded <= payload);
                     DEBUG_VARIABLE(loaded);
+
+		    handled += loaded;
                 }
 
                 if (offset != 0 && error.IsSet() == false) {
@@ -171,7 +178,7 @@ namespace Core {
 
                     char buffer[1024];
                     uint16_t loaded;
-                    uint16_t offset = 0;
+                    uint32_t offset = 0;
 
                     // Serialize object
                     do {
@@ -202,7 +209,7 @@ namespace Core {
                     char buffer[1024];
                     uint16_t readBytes;
                     uint16_t loaded;
-                    uint16_t offset = 0;
+                    uint32_t offset = 0;
 
                     realObject.Clear();
 
@@ -258,21 +265,21 @@ namespace Core {
             virtual void Clear() = 0;
             virtual bool IsSet() const = 0;
             virtual bool IsNull() const = 0;
-            virtual uint16_t Serialize(char Stream[], const uint16_t MaxLength, uint16_t& offset) const = 0;
-            uint16_t Deserialize(const char Stream[], const uint16_t MaxLength, uint16_t& offset)
+            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const = 0;
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset)
             {
                 Core::OptionalType<Error> error;
-                uint16_t loaded = Deserialize(Stream, MaxLength, offset, error);
+                uint16_t loaded = Deserialize(stream, maxLength, offset, error);
 
                 if (error.IsSet() == true) {
                     Clear();
-                    error.Value().Context(Stream, MaxLength, loaded);
+                    error.Value().Context(stream, maxLength, loaded);
                     TRACE_L1("Parsing failed: %s", ErrorDisplayMessage(error.Value()).c_str());
                 }
 
                 return loaded;
             }
-            virtual uint16_t Deserialize(const char Stream[], const uint16_t MaxLength, uint16_t& offset, Core::OptionalType<Error>& error) = 0;
+            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) = 0;
         };
 
         struct EXTERNAL IMessagePack {
@@ -285,7 +292,7 @@ namespace Core {
             {
                 uint8_t buffer[1024];
                 uint16_t loaded;
-                uint16_t offset = 0;
+                uint32_t offset = 0;
 
                 stream.clear();
                 // Serialize object
@@ -304,16 +311,21 @@ namespace Core {
             template <typename INSTANCEOBJECT>
             static bool FromBuffer(const std::vector<uint8_t>& stream, INSTANCEOBJECT& realObject)
             {
-                uint16_t offset = 0;
+                uint32_t offset = 0;
+                uint32_t handled = 0;
+                uint32_t size = static_cast<uint32_t>(stream.size());
 
                 realObject.Clear();
 
-                if (stream.size() != 0) {
-                    // Deserialize object
-                    uint16_t loaded = static_cast<IMessagePack&>(realObject).Deserialize(&stream[0], static_cast<uint16_t>(stream.size() + 1), offset);
+                while (size != handled) {
+			uint16_t partial = static_cast<uint16_t>(std::min(size - handled, static_cast<uint32_t>(0xFFFF)));
 
-                    ASSERT(loaded <= (stream.size() + 1));
-                    DEBUG_VARIABLE(loaded);
+                        // Deserialize object
+                        uint16_t loaded = static_cast<IMessagePack&>(realObject).Deserialize(&(stream[handled]), partial, offset);
+
+                        ASSERT(loaded <= partial);
+                        DEBUG_VARIABLE(loaded);
+                        handled += loaded;
                 }
 
                 if (offset) {
@@ -332,7 +344,7 @@ namespace Core {
 
                     uint8_t buffer[1024];
                     uint16_t loaded;
-                    uint16_t offset = 0;
+                    uint32_t offset = 0;
 
                     // Serialize object
                     do {
@@ -359,7 +371,7 @@ namespace Core {
                     uint8_t buffer[1024];
                     uint16_t readBytes;
                     uint16_t loaded;
-                    uint16_t offset = 0;
+                    uint32_t offset = 0;
 
                     realObject.Clear();
 
@@ -415,8 +427,8 @@ namespace Core {
             virtual void Clear() = 0;
             virtual bool IsSet() const = 0;
             virtual bool IsNull() const = 0;
-            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const = 0;
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) = 0;
+            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint32_t& offset) const = 0;
+            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint32_t& offset) = 0;
         };
 
         enum class ValueValidity : int8_t {
@@ -426,7 +438,7 @@ namespace Core {
             VALID
         };
 
-        static ValueValidity IsNullValue(const char stream[], const uint16_t maxLength, uint16_t& offset, uint16_t& loaded)
+        static ValueValidity IsNullValue(const char stream[], const uint16_t maxLength, uint32_t& offset, uint16_t& loaded)
         {
             ValueValidity validity = ValueValidity::INVALID;
             const size_t nullTagLen = strlen(IElement::NullTag);
@@ -516,7 +528,7 @@ namespace Core {
 
             inline operator TYPE() const
             {
-                return _value;
+                return Value();
             }
 
             void Null(const bool enabled)
@@ -547,7 +559,7 @@ namespace Core {
         private:
             // IElement iface:
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
-            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -610,7 +622,7 @@ namespace Core {
                 return (loaded);
             }
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
 
@@ -740,7 +752,7 @@ namespace Core {
             }
 
             // IMessagePack iface:
-            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 if ((_set & UNDEFINED) != 0) {
                     stream[0] = IMessagePack::NullValue;
@@ -749,7 +761,7 @@ namespace Core {
                 return (Convert(stream, maxLength, offset, TemplateIntToType<SIGNED>()));
             }
 
-            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint32_t& offset) override
             {
                 uint8_t loaded = 0;
                 if (offset == 0) {
@@ -787,7 +799,7 @@ namespace Core {
                 return (loaded);
             }
 
-            uint16_t Convert(char stream[], const uint16_t maxLength, uint16_t& offset, const TYPE serialize) const
+            uint16_t Convert(char stream[], const uint16_t maxLength, uint32_t& offset, const TYPE serialize) const
             {
                 uint8_t parsed = 4;
                 uint16_t loaded = 0;
@@ -822,17 +834,17 @@ namespace Core {
                 return (loaded);
             }
 
-            uint16_t Convert(char stream[], const uint16_t maxLength, uint16_t& offset, const TemplateIntToType<false>& /* For compile time diffrentiation */) const
+            uint16_t Convert(char stream[], const uint16_t maxLength, uint32_t& offset, const TemplateIntToType<false>& /* For compile time diffrentiation */) const
             {
                 return (Convert(stream, maxLength, offset, _value));
             }
 
-            uint16_t Convert(char stream[], const uint16_t maxLength, uint16_t& offset, const TemplateIntToType<true>& /* For c ompile time diffrentiation */) const
+            uint16_t Convert(char stream[], const uint16_t maxLength, uint32_t& offset, const TemplateIntToType<true>& /* For c ompile time diffrentiation */) const
             {
                 return (Convert(stream, maxLength, offset, ::abs(_value)));
             }
 
-            uint16_t Convert(uint8_t stream[], const uint16_t maxLength, uint16_t& offset, const TemplateIntToType<false>& /* For compile time diffrentiation */) const
+            uint16_t Convert(uint8_t stream[], const uint16_t maxLength, uint32_t& offset, const TemplateIntToType<false>& /* For compile time diffrentiation */) const
             {
                 uint8_t loaded = 0;
                 uint8_t bytes = (_value <= 0x7F ? 0 : _value < 0xFF ? 1 : _value < 0xFFFF ? 2 : _value < 0xFFFFFFFF ? 4 : 8);
@@ -875,7 +887,7 @@ namespace Core {
                 return (loaded);
             }
 
-            uint16_t Convert(uint8_t stream[], const uint16_t maxLength, uint16_t& offset, const TemplateIntToType<true>& /* For c ompile time diffrentiation */) const
+            uint16_t Convert(uint8_t stream[], const uint16_t maxLength, uint32_t& offset, const TemplateIntToType<true>& /* For c ompile time diffrentiation */) const
             {
                 uint8_t loaded = 0;
                 uint8_t bytes = (((_value < 16) && (_value > -15)) ? 0 : ((_value < 128) && (_value > -127)) ? 1 : ((_value < 32767) && (_value > -32766)) ? 2 : ((_value < 2147483647) && (_value > -2147483646)) ? 4 : 8);
@@ -1010,7 +1022,7 @@ namespace Core {
 
             inline operator TYPE() const
             {
-                return _value;
+                return Value();
             }
 
             void Null(const bool enabled)
@@ -1077,7 +1089,7 @@ namespace Core {
 
             // IElement iface:
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
-            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -1116,7 +1128,7 @@ namespace Core {
                 return loaded;
             }
             
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
 
@@ -1142,6 +1154,8 @@ namespace Core {
                     str += stream[loaded++];
 
                 }
+
+                loaded++;
 
                 if(str == IElement::NullTag)
                 {
@@ -1179,7 +1193,7 @@ namespace Core {
             // IMessagePack iface:
             // Refer to https://github.com/msgpack/msgpack/blob/master/spec.md#float-format-family 
             // for MessagePack format for float.
-            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 if ((_set & UNDEFINED) != 0 || 
                     std::isinf(_value) ||
@@ -1215,7 +1229,7 @@ namespace Core {
                 return loaded;
             }
 
-            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint32_t& offset) override
             {
                 uint16_t loaded = 0;
                 int bytes = 0;
@@ -1315,7 +1329,7 @@ namespace Core {
 
             inline operator bool() const
             {
-                return (_value & ValueBit);
+                return Value();
             }
 
             void Null(const bool enabled)
@@ -1344,7 +1358,7 @@ namespace Core {
 
         private:
             // IElement iface:
-            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 static constexpr char trueBuffer[] = "true";
                 static constexpr char falseBuffer[] = "false";
@@ -1375,7 +1389,7 @@ namespace Core {
                 return (loaded);
             }
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
                 static constexpr char trueBuffer[] = "true";
@@ -1428,7 +1442,7 @@ namespace Core {
             }
 
             // IMessagePack iface:
-            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 if ((_value & NullBit) != 0) {
                     stream[0] = IMessagePack::NullValue;
@@ -1440,7 +1454,7 @@ namespace Core {
                 return (1);
             }
 
-            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint32_t& offset) override
             {
                 if ((stream[0] == IMessagePack::NullValue) != 0) {
                     _value = NullBit;
@@ -1479,6 +1493,7 @@ namespace Core {
             explicit String(const bool quoted = true)
                 : _default()
                 , _scopeCount(quoted ? QuotedSerializeBit : None)
+                , _unaccountedCount(0)
                 , _value()
             {
             }
@@ -1486,6 +1501,7 @@ namespace Core {
             explicit String(const string& Value, const bool quoted = true)
                 : _default()
                 , _scopeCount(quoted ? QuotedSerializeBit : None)
+                , _unaccountedCount(0)
                 , _value()
             {
                 Core::ToString(Value.c_str(), _default);
@@ -1494,6 +1510,7 @@ namespace Core {
             explicit String(const char Value[], const bool quoted = true)
                 : _default()
                 , _scopeCount(quoted ? QuotedSerializeBit : None)
+                , _unaccountedCount(0)
                 , _value()
             {
                 Core::ToString(Value, _default);
@@ -1503,6 +1520,7 @@ namespace Core {
             explicit String(const wchar_t Value[], const bool quoted = true)
                 : _default()
                 , _scopeCount(quoted ? QuotedSerializeBit : None)
+                , _unaccountedCount(0)
                 , _value()
             {
                 Core::ToString(Value, _default);
@@ -1512,6 +1530,7 @@ namespace Core {
             String(const String& copy)
                 : _default(copy._default)
                 , _scopeCount(copy._scopeCount & (QuotedSerializeBit | SetBit))
+                , _unaccountedCount(0)
                 , _value(copy._value)
             {
             }
@@ -1667,7 +1686,7 @@ namespace Core {
             }
 
             // IElement iface:
-            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 bool quoted = IsQuoted();
                 uint16_t result = 0;
@@ -1676,7 +1695,7 @@ namespace Core {
 
                 if ((quoted == false) || ((_scopeCount & NullBit) != 0)) {
                     std::string source((_value.empty() || (_scopeCount & NullBit)) ? NullTag : _value);
-                    result = static_cast<uint16_t>(source.copy(stream, maxLength - result, offset));
+                    result = static_cast<uint16_t>(source.copy(stream, maxLength, offset));
                     offset = (result < maxLength ? 0 : offset + result);
                 } else {
                     if (offset == 0) {
@@ -1686,7 +1705,7 @@ namespace Core {
                         _unaccountedCount = 0;
                     }
 
-                    uint16_t length = static_cast<uint16_t>(_value.length()) - (offset - 1);
+                    uint32_t length = static_cast<uint32_t>(_value.length()) - (offset - 1);
                     if (length > 0) {
                         const TCHAR* source = &(_value[offset - 1]);
                         offset += length;
@@ -1726,7 +1745,7 @@ namespace Core {
                 return (result);
             }
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 bool finished = false;
                 uint16_t result = 0;
@@ -1818,10 +1837,7 @@ namespace Core {
                             }
                         }
 
-                        if (escapeHandling == EscapeSequenceAction::COLLAPSE || escapeHandling == EscapeSequenceAction::REPLACE) {
-                            if (escapeHandling == EscapeSequenceAction::REPLACE) {
-                                current = EscapeSequenceReplacemnent(current);
-                            }
+                        if (escapeHandling == EscapeSequenceAction::COLLAPSE) {
                             _value[_value.length() - 1] = current;
                             ++_unaccountedCount;
                         } else {
@@ -1837,7 +1853,7 @@ namespace Core {
                 }
 
                 if (finished == false) {
-                    offset = static_cast<uint16_t>(_value.length()) + _unaccountedCount;
+                    offset = static_cast<uint32_t>(_value.length()) + _unaccountedCount;
                 } else {
                     offset = 0;
                     _scopeCount |= ((_scopeCount & QuoteFoundBit) ? SetBit : (_value == NullTag ? NullBit : SetBit));
@@ -1847,7 +1863,7 @@ namespace Core {
             }
 
             // IMessagePack iface:
-            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
@@ -1895,7 +1911,7 @@ namespace Core {
                 return (loaded);
             }
 
-            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint32_t& offset) override
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
@@ -1960,40 +1976,12 @@ namespace Core {
             EscapeSequenceAction GetEscapeSequenceAction(char current) const
             {
                 EscapeSequenceAction action = EscapeSequenceAction::COLLAPSE;
-                if (current == 'u') {
+                if (current == 'u' || current == 'n' || current == 't' || current == 'r' || current == 'f' || current == 'b') {
                     action = EscapeSequenceAction::NOTHING;
                 } else if((current == '\"') && (_scopeCount & DepthCountMask)) {
                     action = EscapeSequenceAction::NOTHING;
-                } else {
-                    if (current == 'n' || current == 'r' || current == 't' || current == 'f' || current == 'b')
-                        action = EscapeSequenceAction::REPLACE;
                 }
-
                 return action;
-            }
-
-            char EscapeSequenceReplacemnent(char current) const
-            {
-                ASSERT(GetEscapeSequenceAction(current) == EscapeSequenceAction::REPLACE);
-                char replacement = current;
-                switch (current) {
-                case 'n':
-                    replacement = '\n';
-                    break;
-                case 'r':
-                    replacement = '\r';
-                    break;
-                case 't':
-                    replacement = '\t';
-                    break;
-                case 'f':
-                    replacement = '\f';
-                    break;
-                case 'b':
-                    replacement = '\b';
-                    break;
-                }
-                return replacement;
             }
 
             enum class ScopeBracket : bool {
@@ -2068,7 +2056,7 @@ namespace Core {
 
         protected:
             // IElement iface:
-            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 static const TCHAR base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                                     "abcdefghijklmnopqrstuvwxyz"
@@ -2128,7 +2116,7 @@ namespace Core {
                 return (loaded);
             }
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
 
@@ -2230,7 +2218,7 @@ namespace Core {
             }
 
             // IMessagePack iface:
-            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
@@ -2262,7 +2250,7 @@ namespace Core {
                 return (loaded);
             }
 
-            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint32_t& offset) override
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
@@ -2382,7 +2370,7 @@ namespace Core {
 
             inline operator const ENUMERATE() const
             {
-                return _value;
+                return Value();
             }
 
             const TCHAR* Data() const
@@ -2415,7 +2403,7 @@ namespace Core {
 
         private:
             // IElement iface:
-            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 if (offset == 0) {
                     if ((_state & UNDEFINED) != 0) {
@@ -2427,7 +2415,7 @@ namespace Core {
                 return (static_cast<const IElement&>(_parser).Serialize(stream, maxLength, offset));
             }
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t result = static_cast<IElement&>(_parser).Deserialize(stream, maxLength, offset, error);
 
@@ -2456,7 +2444,7 @@ namespace Core {
             }
 
             // IMessagePack iface:
-            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -2471,7 +2459,7 @@ namespace Core {
                 return (loaded == 0 ? static_cast<const IMessagePack&>(_package).Serialize(stream, maxLength, offset) : loaded);
             }
 
-            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint32_t& offset) override
             {
                 uint16_t result = 0;
 
@@ -2723,13 +2711,17 @@ namespace Core {
 
         public:
             ArrayType()
-                : _data()
+                : _state(0)
+                , _count(0)
+                , _data()
                 , _iterator(_data)
             {
             }
 
             ArrayType(const ArrayType<ELEMENT>& copy)
-                : _data(copy._data)
+                : _state(copy._state)
+                , _count(copy._count)
+                , _data(copy._data)
                 , _iterator(_data)
             {
             }
@@ -2849,7 +2841,7 @@ namespace Core {
 
         private:
             // IElement iface:
-            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -2860,7 +2852,7 @@ namespace Core {
                 } else if (offset == END_MARKER) {
                     offset = ~0;
                 }
-                while ((loaded < maxLength) && (offset != static_cast<uint16_t>(~0))) {
+                while ((loaded < maxLength) && (offset != static_cast<uint32_t>(~0))) {
                     if (offset >= PARSE) {
                         offset -= PARSE;
                         loaded += static_cast<const IElement&>(_iterator.Current()).Serialize(&(stream[loaded]), maxLength - loaded, offset);
@@ -2870,7 +2862,7 @@ namespace Core {
                         offset = PARSE;
                     }
                 }
-                if (offset == static_cast<uint16_t>(~0)) {
+                if (offset == static_cast<uint32_t>(~0)) {
                     if (loaded < maxLength) {
                         stream[loaded++] = ']';
                         offset = FIND_MARKER;
@@ -2882,7 +2874,7 @@ namespace Core {
                 return (loaded);
             }
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
                 // Run till we find opening bracket..
@@ -2966,7 +2958,7 @@ namespace Core {
             }
 
             // IMessagePack iface:
-            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -3004,7 +2996,7 @@ namespace Core {
                 return (loaded);
             }
 
-            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint32_t& offset) override
             {
                 uint16_t loaded = 0;
 
@@ -3221,7 +3213,7 @@ namespace Core {
 
         private:
             // IElement iface:
-            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -3239,7 +3231,7 @@ namespace Core {
                     offset = ~0;
                 }
 
-                while ((loaded < maxLength) && (offset != static_cast<uint16_t>(~0))) {
+                while ((loaded < maxLength) && (offset != static_cast<uint32_t>(~0))) {
                     if (offset >= PARSE) {
                         offset -= PARSE;
                         loaded += _current.json->Serialize(&(stream[loaded]), maxLength - loaded, offset);
@@ -3261,7 +3253,7 @@ namespace Core {
                         }
                     }
                 }
-                if (offset == static_cast<uint16_t>(~0)) {
+                if (offset == static_cast<uint32_t>(~0)) {
                     if (loaded < maxLength) {
                         stream[loaded++] = '}';
                         offset = FIND_MARKER;
@@ -3274,7 +3266,7 @@ namespace Core {
                 return (loaded);
             }
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
                 // Run till we find opening bracket..
@@ -3426,7 +3418,7 @@ namespace Core {
             }
 
             // IMessagePack iface:
-            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -3492,7 +3484,7 @@ namespace Core {
                 return (loaded);
             }
 
-            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint32_t& offset) override
             {
                 uint16_t loaded = 0;
 
@@ -3828,7 +3820,7 @@ namespace Core {
 
         private:
             // IElement iface:
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override;
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override;
 
             static uint16_t FindEndOfScope(const char stream[], uint16_t maxLength)
             {
@@ -4162,7 +4154,7 @@ namespace Core {
             return (result);
         }
 
-        inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error)
+        inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error)
         {
             uint16_t result = 0;
             if (stream[0] == '{' || stream[0] == '[') {
@@ -4222,7 +4214,7 @@ namespace Core {
             bool FromString(const string& value, Core::ProxyType<INSTANCEOBJECT>& receptor)
             {
                 uint16_t fillCount = 0;
-                uint16_t offset = 0;
+                uint32_t offset = 0;
                 uint16_t size, loaded;
 
                 receptor->Clear();
@@ -4247,7 +4239,7 @@ namespace Core {
 
             bool ToString(const Core::ProxyType<INSTANCEOBJECT>& receptor, string& value)
             {
-                uint16_t offset = 0;
+                uint32_t offset = 0;
                 uint16_t loaded;
 
                 // Serialize object
