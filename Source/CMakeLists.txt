@@ -22,8 +22,6 @@ option(CORE
         "Include the core library." ON)
 option(CRYPTALGO
         "Include the encyption algorithm library." ON)
-option(CRYPTOGRAPHY
-        "Include the cryptography library." OFF)
 option(BLUETOOTH
         "Include the bluetooth library." OFF)
 option(BROADCAST
@@ -36,34 +34,20 @@ option(TRACING
         "Include the tracing library." ON)
 option(PROFILER
         "Include the profiler library." OFF)
-option(PROVISIONPROXY
-        "Include the provisionproxy library." OFF)
-option(SECURITYAGENT
-        "Include the securityagent library." OFF)
-option(DISPLAYINFO
-        "Include the displayinfo COMRPC abstraction library." OFF)
 option(COM
         "Include the COM library." OFF)
 option(PROTOCOLS
         "Include Protocols lib." ON)
-option(CDMI
-        "Include OpenCDM interface." OFF)
 option(PROCESS
         "Include the COM hosting process executable." ON)
 option(PROXY_STUB
         "Include proxy/stubs." ON)
 option(PLUGINS
         "Include plugins library." ON)
-option(INTERFACES
-        "Include interfaces library." ON)
 option(EXECUTABLE
         "Include the hosting executable." ON)
 option(VIRTUALINPUT
         "Include VirtualInput for external applications." OFF)
-option(COMPOSITORCLIENT
-        "Include a graphics backend abstraction for external applications." OFF)
-option(GSTREAMERCLIENT
-        "Include a gstreamer sink abstraction for external applications." OFF)
 option(PROCESSCONTAINERS
         "Include containerization in the build." OFF)
 option(TEST_APPS
@@ -132,18 +116,6 @@ if(BROADCAST)
     add_subdirectory(broadcast)
 endif()
 
-if(PROVISIONPROXY)
-    add_subdirectory(provisionproxy)
-endif()
-
-if(SECURITYAGENT)
-    add_subdirectory(securityagent)
-endif()
-
-if(CDMI)
-    add_subdirectory(ocdm)
-endif()
-
 if(WEBSOCKET)
     add_subdirectory(websocket)
 endif()
@@ -154,10 +126,6 @@ endif()
 
 if(BLUETOOTH)
     add_subdirectory(bluetooth)
-endif()
-
-if(CRYPTOGRAPHY)
-    add_subdirectory(cryptography)
 endif()
 
 if(PROFILER)
@@ -180,26 +148,6 @@ endif()
 
 if(PLUGINS)
     add_subdirectory(plugins)
-endif()
-
-if(INTERFACES)
-    add_subdirectory(interfaces)
-endif()
-
-if(VIRTUALINPUT)
-    add_subdirectory(virtualinput)
-endif()
-
-if(COMPOSITORCLIENT)
-    add_subdirectory(compositorclient)
-endif()
-
-if(GSTREAMERCLIENT)
-    add_subdirectory(gstreamerclient)
-endif()
-
-if(DISPLAYINFO)
-    add_subdirectory(displayinfo)
 endif()
 
 if(PROCESS)

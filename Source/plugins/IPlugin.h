@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#include "Module.h"
-
 #ifndef __IPLUGIN_H
 #define __IPLUGIN_H
+
+#include <com/ICOM.h>
 
 namespace WPEFramework {
 
@@ -231,5 +231,8 @@ namespace PluginHost {
 
 } // namespace PluginHost
 } // namespace WPEFramework
+
+// Needed for the ProxyStub generated files
+#include "IShell.h"
 
 #endif // __IPLUGIN_H

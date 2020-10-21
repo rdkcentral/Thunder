@@ -25,7 +25,6 @@
 #include "Probe.h"
 #include "json/JsonData_Controller.h"
 
-
 namespace WPEFramework {
 namespace Plugin {
 
@@ -116,14 +115,35 @@ namespace Plugin {
             Config(const Config&) = delete;
             Config& operator=(const Config&) = delete;
 
+            class ProbeConfig : public Core::JSON::Container {
+            private:
+                ProbeConfig(const ProbeConfig&) = delete;
+                ProbeConfig& operator=(const ProbeConfig&) = delete;
+
+            public:
+                ProbeConfig()
+                    : Core::JSON::Container()
+                    , TTL(1)
+                    , Node(_T("239.255.255.0:1900"))
+                {
+                    Add(_T("ttl"), &TTL);
+                    Add(_T("node"), &Node);
+                }
+                ~ProbeConfig() override = default;
+
+            public:
+                Core::JSON::DecUInt8 TTL;
+                Core::JSON::String Node;
+            };
+
         public:
             Config()
                 : Core::JSON::Container()
-                , TTL(1)
+                , Probe()
                 , Resumes()
                 , SubSystems()
             {
-                Add(_T("ttl"), &TTL);
+                Add(_T("probe"), &Probe);
                 Add(_T("resumes"), &Resumes);
                 Add(_T("subsystems"), &SubSystems);
             }
@@ -132,7 +152,7 @@ namespace Plugin {
             }
 
         public:
-            Core::JSON::DecUInt8 TTL;
+            ProbeConfig Probe;
             Core::JSON::ArrayType<Core::JSON::String> Resumes;
             Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> SubSystems;
         };
@@ -275,6 +295,7 @@ namespace Plugin {
         void RegisterAll();
         void UnregisterAll();
         uint32_t endpoint_activate(const JsonData::Controller::ActivateParamsInfo& params);
+        uint32_t endpoint_clone(const JsonData::Controller::CloneParamsInfo& params, Core::JSON::String& response);
         uint32_t endpoint_deactivate(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_startdiscovery(const JsonData::Controller::StartdiscoveryParamsData& params);
         uint32_t endpoint_storeconfig();

@@ -49,7 +49,8 @@ namespace Core {
             EXTERNALPASS = 0x020,
             UPPERCASE = 0x040,
             LOWERCASE = 0x080,
-            SPLITCHAR = 0x100
+            SPLITCHAR = 0x100,
+            PARSESTOP = 0x200
         };
 
         ParserType(HANDLER& parent)
@@ -68,6 +69,7 @@ namespace Core {
         inline void Reset()
         {
             _state = SKIP_WHITESPACE | WORD_CAPTURE;
+            _byteCounter = 0;
         }
         inline void CollectWord()
         {
@@ -110,19 +112,30 @@ namespace Core {
 
             while (current < maxLength) {
                 // Pass through if requested..
+
                 while (((_state & EXTERNALPASS) != 0) && (current < maxLength)) {
                     uint16_t passOn = (static_cast<uint32_t>(maxLength - current) > _byteCounter ? static_cast<uint16_t>(_byteCounter) : (maxLength - current));
 
-                    _parent.Parse(&stream[current], passOn);
+                    if (_parent.Parse(&stream[current], passOn)) {
 
-                    // It might be chunked passthrough
-                    _byteCounter -= passOn;
-                    current += passOn;
+                        // It might be chunked passthrough
+                        _byteCounter -= passOn;
+                        current += passOn;
 
-                    if (_byteCounter == 0) {
-                        _state &= (~EXTERNALPASS);
+                        if (_byteCounter == 0) {
+                            _state &= (~EXTERNALPASS);
+                            _parent.EndOfPassThrough();
+                        }
+                    } else {
                         _parent.EndOfPassThrough();
+                        _state = PARSESTOP;
+                        _byteCounter = 0;
+                        break;
                     }
+                }
+
+                if ((_state & PARSESTOP) != 0) {
+                    break;
                 }
 
                 // Skip a line if required...
@@ -175,6 +188,7 @@ namespace Core {
                             _parent.Parse(_buffer);
                             _buffer.clear();
                             _state |= SKIP_WHITESPACE;
+                            _byteCounter = 0;
                         } else {
                             _buffer += character;
                             _byteCounter++;
@@ -193,7 +207,8 @@ namespace Core {
 
                         if ((terminated & 0x80) == 0x80) {
                             if (_byteCounter != 0) {
-                                _buffer.erase(_buffer.end() - _byteCounter);
+                                ASSERT(_byteCounter <= _buffer.size());
+                                _buffer.erase(_buffer.size() - _byteCounter);
                                 _byteCounter = 0;
                             }
 

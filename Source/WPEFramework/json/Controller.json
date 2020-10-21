@@ -61,7 +61,7 @@
               "Location",
               "Time",
               "Provisioning",
-              "Decryption,",
+              "Decryption",
               "Graphics",
               "WebSource",
               "Streaming"
@@ -72,7 +72,7 @@
         },
         "configuration": {
           "description": "Custom configuration properties of the plugin",
-          "type": "object",
+          "type": "string",
           "properties": {},
           "required": []
         },
@@ -202,7 +202,7 @@
             "Location",
             "Time",
             "Provisioning",
-            "Decryption,",
+            "Decryption",
             "Graphics",
             "WebSource",
             "Streaming"

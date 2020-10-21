@@ -23,14 +23,11 @@
 
 // ---- Include local include files ----
 #include "Module.h"
-#include "IUnknown.h"
-// @stubgen:include "IRPCIterator.h"
-#include "IRPCIterator.h"
+#include "ICOM.h"
 
 namespace WPEFramework {
 namespace RPC {
 
-    typedef IIteratorType<string, ID_STRINGITERATOR> IStringIterator;
     typedef IteratorType<IStringIterator> StringIterator;
 }
 }

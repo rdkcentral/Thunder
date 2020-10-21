@@ -26,7 +26,7 @@ namespace WPEFramework {
 
 namespace Bluetooth {
 
-    class Address {
+    class EXTERNAL Address {
     public:
         Address()
             : _length(0)
@@ -149,7 +149,7 @@ namespace Bluetooth {
         uint8_t _length;
     };
 
-    class EIR {
+    class EXTERNAL EIR {
         static constexpr uint8_t EIR_UUID16_SOME = 0x02;
         static constexpr uint8_t EIR_UUID16_ALL = 0x03;
         static constexpr uint8_t EIR_UUID32_SOME = 0x04;
@@ -281,7 +281,7 @@ namespace Bluetooth {
         std::list<KEYTYPE> _list;
     };
 
-    class LinkKey {
+    class EXTERNAL LinkKey {
     public:
         LinkKey() {
             ::memset(&_key, 0, sizeof(_key));
@@ -361,7 +361,7 @@ namespace Bluetooth {
         struct mgmt_link_key_info _key;
     };
 
-    class LongTermKey {
+    class EXTERNAL LongTermKey {
     public:
         LongTermKey() {
             ::memset(&_key, 0, sizeof(_key));
@@ -448,7 +448,7 @@ namespace Bluetooth {
         struct mgmt_ltk_info _key;
     };
 
-    class IdentityKey {
+    class EXTERNAL IdentityKey {
     public:
         IdentityKey() {
             ::memset(&_key, 0, sizeof(_key));
@@ -512,7 +512,7 @@ namespace Bluetooth {
         struct mgmt_irk_info _key;
     };
 
-    class SignatureKey {
+    class EXTERNAL SignatureKey {
     public:
         SignatureKey() {
             ::memset(&_key, 0, sizeof(_key));
@@ -587,7 +587,7 @@ namespace Bluetooth {
     typedef KeyListType<SignatureKey> SignatureKeys;
 
 
-    class HCISocket : public Core::SynchronousChannelType<Core::SocketPort> {
+    class EXTERNAL HCISocket : public Core::SynchronousChannelType<Core::SocketPort> {
     private:
         static constexpr int      SCAN_TIMEOUT = 1000;
         static constexpr uint8_t  SCAN_TYPE = 0x01;
@@ -598,7 +598,7 @@ namespace Bluetooth {
 
     public:
 
-        template<const uint16_t OPCODE, typename OUTBOUND, typename INBOUND, const uint8_t RESPONSECODE = ~0>
+        template<const uint16_t OPCODE, typename OUTBOUND, typename INBOUND, const uint8_t RESPONSECODE = static_cast<uint8_t>(~0)>
         class CommandType : public Core::IOutbound, public Core::IInbound {
         private:
             CommandType<OPCODE, OUTBOUND, INBOUND, RESPONSECODE>& operator=(const CommandType<OPCODE, OUTBOUND, INBOUND, RESPONSECODE>&) = delete;
@@ -739,7 +739,7 @@ namespace Bluetooth {
         };
 
     public:
-        class FeatureIterator {
+        class EXTERNAL FeatureIterator {
         public:
             FeatureIterator()
                 : _index(-1)
@@ -923,7 +923,7 @@ namespace Bluetooth {
         template<typename COMMAND>
         void Execute(const uint32_t waitTime, const COMMAND& cmd, std::function<void(COMMAND&, const uint32_t error)> handler)
         {
-            class Handler : public Core::IOutbound::ICallback {
+            class EXTERNAL Handler : public Core::IOutbound::ICallback {
             public:
                 Handler() = delete;
                 Handler(const Handler&) = delete;
@@ -968,105 +968,105 @@ namespace Bluetooth {
         struct hci_filter _filter;
     };
 
-    class ManagementSocket : public Core::SynchronousChannelType<Core::SocketPort> {
+    class EXTERNAL ManagementSocket : public Core::SynchronousChannelType<Core::SocketPort> {
     public:
-        class Info {
+        class EXTERNAL Info {
         public:
-            class Properties {
-            public:
-                Properties() : _value(0) {}
-                Properties(const uint32_t value) : _value(value) {}
-                Properties(const Properties& copy) : _value(copy._value) {}
-                ~Properties() {}
+		    class EXTERNAL Properties {
+		    public:
+			Properties() : _value(0) {}
+			Properties(const uint32_t value) : _value(value) {}
+			Properties(const Properties& copy) : _value(copy._value) {}
+			~Properties() {}
 
-                Properties& operator= (const Properties& rhs) {
-                    _value = rhs._value;
-                    return (*this);
-                }
+			Properties& operator= (const Properties& rhs) {
+			    _value = rhs._value;
+			    return (*this);
+			}
 
-            public:
-                bool IsPowered() const {
-                    return ((_value & MGMT_SETTING_POWERED) != 0);
-                }
-		bool IsConnectable() const {
-                    return ((_value & MGMT_SETTING_CONNECTABLE) != 0);
-                }
-		bool IsFastConnectable() const {
-                    return ((_value & MGMT_SETTING_FAST_CONNECTABLE) != 0);
-                }
-		bool IsDiscoverable() const {
-                    return ((_value & MGMT_SETTING_DISCOVERABLE) != 0);
-                }
-		bool IsBondable() const {
-                    return ((_value & MGMT_SETTING_BONDABLE) != 0);
-                }
-		bool HasLinkLevelSecurity() const {
-                    return ((_value & MGMT_SETTING_LINK_SECURITY) != 0);
-                }
-		bool HasSecureSimplePairing() const {
-                    return ((_value & MGMT_SETTING_SSP) != 0);
-                }
-		bool HasBasicEnhancedRate() const {
-                    return ((_value & MGMT_SETTING_BREDR) != 0);
-                }
-		bool HasHighSpeed() const {
-                    return ((_value & MGMT_SETTING_HS) != 0);
-                }
-		bool HasLowEnergy() const {
-                    return ((_value & MGMT_SETTING_LE) != 0);
-                }
-		bool IsAdvertising() const {
-                    return ((_value & MGMT_SETTING_ADVERTISING) != 0);
-                }
-		bool HasSecureConnections() const {
-                    return ((_value & MGMT_SETTING_SECURE_CONN) != 0);
-                }
-		bool HasDebugKeys() const {
-                    return ((_value & MGMT_SETTING_DEBUG_KEYS) != 0);
-                }
-		bool HasPrivacy() const {
-                    return ((_value & MGMT_SETTING_PRIVACY) != 0);
-                }
-		bool HasConfiguration() const {
-                    return ((_value & MGMT_SETTING_CONFIGURATION) != 0);
-                }
-		bool HasStaticAddress() const {
-                    return ((_value & MGMT_SETTING_STATIC_ADDRESS) != 0);
-                }
+		    public:
+			bool IsPowered() const {
+			    return ((_value & MGMT_SETTING_POWERED) != 0);
+			}
+			bool IsConnectable() const {
+			    return ((_value & MGMT_SETTING_CONNECTABLE) != 0);
+			}
+			bool IsFastConnectable() const {
+			    return ((_value & MGMT_SETTING_FAST_CONNECTABLE) != 0);
+			}
+			bool IsDiscoverable() const {
+			    return ((_value & MGMT_SETTING_DISCOVERABLE) != 0);
+			}
+			bool IsBondable() const {
+			    return ((_value & MGMT_SETTING_BONDABLE) != 0);
+			}
+			bool HasLinkLevelSecurity() const {
+			    return ((_value & MGMT_SETTING_LINK_SECURITY) != 0);
+			}
+			bool HasSecureSimplePairing() const {
+			    return ((_value & MGMT_SETTING_SSP) != 0);
+			}
+			bool HasBasicEnhancedRate() const {
+			    return ((_value & MGMT_SETTING_BREDR) != 0);
+			}
+			bool HasHighSpeed() const {
+			    return ((_value & MGMT_SETTING_HS) != 0);
+			}
+			bool HasLowEnergy() const {
+			    return ((_value & MGMT_SETTING_LE) != 0);
+			}
+			bool IsAdvertising() const {
+			    return ((_value & MGMT_SETTING_ADVERTISING) != 0);
+			}
+			bool HasSecureConnections() const {
+			    return ((_value & MGMT_SETTING_SECURE_CONN) != 0);
+			}
+			bool HasDebugKeys() const {
+			    return ((_value & MGMT_SETTING_DEBUG_KEYS) != 0);
+			}
+			bool HasPrivacy() const {
+			    return ((_value & MGMT_SETTING_PRIVACY) != 0);
+			}
+			bool HasConfiguration() const {
+			    return ((_value & MGMT_SETTING_CONFIGURATION) != 0);
+			}
+			bool HasStaticAddress() const {
+			    return ((_value & MGMT_SETTING_STATIC_ADDRESS) != 0);
+			}
 
-            private:
-                uint32_t _value;
-            };
-        public:
-            Info()
-                : _address()
-                , _version(0)
-                , _manufacturer(0)
-                , _supported(0)
-                , _settings(0)
-                , _deviceClass(0)
-                , _name()
-                , _shortName()
-            {
-            }
-            Info(const Info& copy)
-                : _address(copy._address)
-                , _version(copy._version)
-                , _manufacturer(copy._manufacturer)
-                , _supported(copy._supported)
-                , _settings(copy._settings)
-                , _deviceClass(copy._deviceClass)
-                , _name(copy._name)
-                , _shortName(copy._shortName)
-            {
-            }
-            Info(const mgmt_rp_read_info& copy)
-                : _address(copy.bdaddr)
-                , _version(copy.version)
-                , _manufacturer(copy.manufacturer)
-                , _supported(copy.supported_settings)
-                , _settings(copy.current_settings)
-                , _deviceClass((copy.dev_class[2] << 16) | (copy.dev_class[1] << 8) | copy.dev_class[0])
+		    private:
+			uint32_t _value;
+		    };
+		public:
+		    Info()
+			: _address()
+			, _version(0)
+			, _manufacturer(0)
+			, _supported(0)
+			, _settings(0)
+			, _deviceClass(0)
+			, _name()
+			, _shortName()
+		    {
+		    }
+		    Info(const Info& copy)
+			: _address(copy._address)
+			, _version(copy._version)
+			, _manufacturer(copy._manufacturer)
+			, _supported(copy._supported)
+			, _settings(copy._settings)
+			, _deviceClass(copy._deviceClass)
+			, _name(copy._name)
+			, _shortName(copy._shortName)
+		    {
+		    }
+		    Info(const mgmt_rp_read_info& copy)
+			: _address(copy.bdaddr)
+			, _version(copy.version)
+			, _manufacturer(copy.manufacturer)
+			, _supported(copy.supported_settings)
+			, _settings(copy.current_settings)
+			, _deviceClass((copy.dev_class[2] << 16) | (copy.dev_class[1] << 8) | copy.dev_class[0])
                 , _name(Core::ToString(reinterpret_cast<const char*>(copy.name)))
                 , _shortName(Core::ToString(reinterpret_cast<const char*>(copy.short_name)))
             {

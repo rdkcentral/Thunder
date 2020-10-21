@@ -37,16 +37,13 @@ namespace Core {
 
     class EXTERNAL Netlink {
     private:
-        Netlink& operator=(const Netlink&) = delete;
-
         template <typename HEADER>
         class Parameters {
-        private:
+        public:
             Parameters() = delete;
             Parameters(const Parameters&) = delete;
             Parameters& operator=(const Parameters&) = delete;
 
-        public:
             Parameters(HEADER& header, uint8_t buffer[], const uint16_t bufferSize)
                 : _buffer(&(buffer[NLMSG_ALIGN(sizeof(HEADER))]))
                 , _size(bufferSize >= NLMSG_ALIGN(sizeof(HEADER)) ? bufferSize - NLMSG_ALIGN(sizeof(HEADER)) : 0)
@@ -57,9 +54,7 @@ namespace Core {
 
                 ::memcpy(buffer, &header, (sizeof(HEADER) < bufferSize ? sizeof(HEADER) : bufferSize));
             }
-            ~Parameters()
-            {
-            }
+            ~Parameters() = default;
 
         public:
             uint16_t Size() const
@@ -86,21 +81,18 @@ namespace Core {
 
     public:
         class EXTERNAL Frames {
-        private:
+        public:
             Frames() = delete;
             Frames(const Frames&) = delete;
             Frames& operator=(const Frames&) = delete;
 
-        public:
             Frames(const uint8_t dataFrame[], const uint16_t receivedSize)
                 : _data(dataFrame)
                 , _size(receivedSize)
                 , _offset(~0)
             {
             }
-            ~Frames()
-            {
-            }
+            ~Frames() = default;
 
         public:
             inline bool IsValid() const
@@ -164,23 +156,21 @@ namespace Core {
         };
 
     public:
+        Netlink& operator=(const Netlink&) = delete;
+
         Netlink()
-            : _type(0)
+            : _type(NLMSG_DONE)
             , _flags(0)
             , _mySequence(~0)
-            , _isMultimessage(false)
         {
         }
         Netlink(const Netlink& copy)
             : _type(copy._type)
             , _flags(copy._flags)
             , _mySequence(copy._mySequence)
-            , _isMultimessage(false)
         {
         }
-        virtual ~Netlink()
-        {
-        }
+        virtual ~Netlink() = default;
 
     public:
         uint32_t Sequence() const
@@ -214,46 +204,40 @@ namespace Core {
         mutable uint32_t _type;
         mutable uint32_t _flags;
         mutable uint32_t _mySequence;
-        mutable bool _isMultimessage;
         static uint32_t _sequenceId;
     };
 
     // https://www.kernel.org/doc/Documentation/connector/connector.txt
-
     template <const uint32_t IDX, const uint32_t VAL>
-    class ConnectorType : public Core::Netlink {
-    private:
+    class ConnectorType : public Netlink {
+    public:
         ConnectorType<IDX, VAL>& operator=(const ConnectorType<IDX, VAL>&) = delete;
 
-    public:
         ConnectorType()
-            : Core::Netlink()
+            : Netlink()
         {
-            Type(NLMSG_DONE);
-            Flags(0);
         }
         ConnectorType(const ConnectorType<IDX, VAL>& copy)
-            : Core::Netlink(copy)
+            : Netlink(copy)
         {
         }
-        ~ConnectorType()
-        {
-        }
+        ~ConnectorType() = default;
 
+    public:
         inline uint32_t Acknowledge() const
         {
             return (_ack);
         }
         inline bool Ingest(const uint8_t stream[], const uint16_t length)
         {
-            return (Core::Netlink::Deserialize(stream, length) == length);
+            return (Netlink::Deserialize(stream, length) == length);
         }
 
     private:
         virtual uint16_t Message(uint8_t stream[], const uint16_t length) const = 0;
         virtual uint16_t Message(const uint8_t stream[], const uint16_t length) = 0;
 
-        virtual uint16_t Write(uint8_t stream[], const uint16_t length) const
+        uint16_t Write(uint8_t stream[], const uint16_t length) const override
         {
 
             static_assert(NLMSG_ALIGNTO == 4, "Assuming the message element are 32 bits aligned!!");
@@ -275,9 +259,8 @@ namespace Core {
 
             return (result + 20);
         }
-        virtual uint16_t Read(const uint8_t stream[], const uint16_t length) override
+        uint16_t Read(const uint8_t stream[], const uint16_t length) override
         {
-
             /* parse & filter out connector msgs chain */
             const struct cn_msg* internal(reinterpret_cast<const struct cn_msg*>(stream));
             uint16_t size = 0;
@@ -289,7 +272,7 @@ namespace Core {
 
                     ::memcpy(&_ack, &(internal->ack), 4);
 
-                    completed = (Message(internal->data, internal->len) < internal->len);
+                    completed = (Message(internal->data, internal->len) != 0);
                 }
 
                 if (completed == false) {
@@ -305,7 +288,7 @@ namespace Core {
         uint32_t _ack;
     };
 
-    class SocketNetlink : public Core::SocketDatagram {
+    class EXTERNAL SocketNetlink : public SocketDatagram {
     private:
         SocketNetlink(const SocketNetlink&) = delete;
         SocketNetlink& operator=(const SocketNetlink&) = delete;
@@ -372,42 +355,42 @@ namespace Core {
                 }
                 return (handled);
             }
-            inline bool operator==(const Core::Netlink& rhs) const
+            inline bool operator==(const Netlink& rhs) const
             {
                 return (&rhs == &_outbound);
             }
-            inline bool operator!=(const Core::Netlink& rhs) const
+            inline bool operator!=(const Netlink& rhs) const
             {
                 return (!operator==(rhs));
             }
             inline bool Wait(const uint32_t waitTime)
             {
-                bool result = (_signaled.Lock(waitTime) == Core::ERROR_NONE ? true : false);
+                bool result = (_signaled.Lock(waitTime) == ERROR_NONE ? true : false);
                 return (result);
             }
 
         private:
             const Netlink& _outbound;
             Netlink* _inbound;
-            mutable Core::Event _signaled;
+            mutable Event _signaled;
             mutable state _state;
         };
         typedef std::list<Message> PendingList;
 
     public:
-        SocketNetlink(const Core::NodeId& destination)
-            : SocketDatagram(false, destination, Core::NodeId(), 512, 1024)
+        SocketNetlink(const NodeId& destination)
+            : SocketDatagram(false, destination, NodeId(), 512, 1024)
             , _adminLock()
         {
         }
         ~SocketNetlink()
         {
-            Core::SocketDatagram::Close(Core::infinite);
+            SocketDatagram::Close(infinite);
         }
 
     public:
-        uint32_t Send(const Core::Netlink& outbound, const uint32_t waitTime);
-        uint32_t Exchange(const Core::Netlink& outbound, Core::Netlink& inbound, const uint32_t waitTime);
+        uint32_t Send(const Netlink& outbound, const uint32_t waitTime);
+        uint32_t Exchange(const Netlink& outbound, Netlink& inbound, const uint32_t waitTime);
 
         virtual uint16_t Deserialize(const uint8_t dataFrame[], const uint16_t receivedSize) = 0;
 
@@ -419,7 +402,7 @@ namespace Core {
 
     private:
         uint32_t _bufferBefore;
-        Core::CriticalSection _adminLock;
+        CriticalSection _adminLock;
         uint32_t _bufferAfter;
         PendingList _pending;
     };

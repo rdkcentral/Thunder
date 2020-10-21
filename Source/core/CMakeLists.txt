@@ -84,6 +84,7 @@ set(PUBLIC_HEADERS
         IIterator.h
         IObserver.h
         IPCMessage.h
+        IPFrame.h
         IPCChannel.h
         IPCConnector.h
         ISO639.h
@@ -133,6 +134,7 @@ set(PUBLIC_HEADERS
         TextFragment.h
         TextReader.h
         Thread.h
+        ThreadPool.h
         Time.h
         Timer.h
         Trace.h

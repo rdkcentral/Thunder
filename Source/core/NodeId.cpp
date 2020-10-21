@@ -154,23 +154,38 @@ namespace Core {
 
         m_hostName = NetlinkName(m_structInfo);
     }
-    
-    NodeId::NodeId(const int32_t interfaceIndex, const uint16_t protocolFilter, const uint16_t hardwareAddressLength, const uint8_t* hardwareAddress)
-    {
-        ASSERT(interfaceIndex > 0);
 
-        m_structInfo.RawSocket.sll_family = AF_PACKET;
-        m_structInfo.RawSocket.sll_ifindex = interfaceIndex;
-        m_structInfo.RawSocket.sll_protocol = htons(protocolFilter);
+    NodeId::NodeId(const struct sockaddr_ll& rInfo)
+    {
+        memcpy(&(m_structInfo.RawSocket), &rInfo, sizeof(sockaddr_ll));
         
-        if(hardwareAddressLength > 0){
-            ASSERT(hardwareAddressLength == ETH_ALEN);
-            m_structInfo.RawSocket.sll_halen = ETH_ALEN;
-            memcpy(m_structInfo.RawSocket.sll_addr, hardwareAddress, (hardwareAddressLength <= ETH_ALEN) ? hardwareAddressLength : ETH_ALEN);
-        }
-    
         m_hostName = RawName(m_structInfo);
     }
+    
+    NodeId::NodeId(const uint16_t interfaceIndex, const uint16_t protocol, const uint8_t type, const uint8_t length, const uint8_t* address)
+    {
+        if (interfaceIndex == 0) {
+            memset(&m_structInfo, 0xFF, sizeof(m_structInfo));
+        }
+        else {
+            m_structInfo.RawSocket.sll_family = AF_PACKET;
+            m_structInfo.RawSocket.sll_ifindex = interfaceIndex;
+            m_structInfo.RawSocket.sll_protocol = htons(protocol);
+            m_structInfo.RawSocket.sll_hatype = type;
+            m_structInfo.RawSocket.sll_halen = length;
+        
+            if(length > 0){
+                memcpy(m_structInfo.RawSocket.sll_addr, address, std::min(length, static_cast<uint8_t>(sizeof(m_structInfo.RawSocket.sll_addr))));
+            }
+    
+            m_hostName = RawName(m_structInfo);
+        }
+    }
+    NodeId::NodeId(const char interfaceName[], const uint16_t protocol, const uint8_t type, const uint8_t length, const uint8_t* address)
+        : NodeId(::if_nametoindex(interfaceName), protocol, type, length, address)
+    {
+    }
+
 #endif
 
 #ifdef CORE_BLUETOOTH

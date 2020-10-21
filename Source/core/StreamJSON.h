@@ -99,7 +99,7 @@ namespace Core {
             ParentClass& _parent;
             mutable Core::CriticalSection _adminLock;
             mutable Core::ProxyList<INTERFACE> _sendQueue;
-            mutable uint16_t _offset;
+            mutable uint32_t _offset;
         };
         class DeserializerImpl {
         public:
@@ -162,7 +162,7 @@ namespace Core {
             ParentClass& _parent;
             ALLOCATOR _factory;
             Core::ProxyType<INTERFACE> _current;
-            uint16_t _offset;
+            uint32_t _offset;
         };
 
         class HandlerType : public SOURCE {

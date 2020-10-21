@@ -159,57 +159,6 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         const string _controllerName;
     };
 
-    static Core::NodeId DetermineAccessor(const Server::Config& configuration, Core::NodeId& accessor)
-    {
-        Core::NodeId result(configuration.Binding.Value().c_str());
-
-        if (configuration.Interface.Value().empty() == false) {
-            Core::NodeId selectedNode = Plugin::Config::IPV4UnicastNode(configuration.Interface.Value());
-
-            if (selectedNode.IsValid() == true) {
-                accessor = selectedNode;
-                result = accessor;
-            }
-        } else if (result.IsAnyInterface() == true) {
-            Core::NodeId selectedNode = Plugin::Config::IPV4UnicastNode(configuration.Interface.Value());
-
-            if (selectedNode.IsValid() == true) {
-                accessor = selectedNode;
-            }
-        } else {
-            accessor = result;
-        }
-
-        if (accessor.IsValid() == false) {
-
-            // Let's go fr the default and make the best of it :-)
-            struct sockaddr_in value;
-
-            value.sin_addr.s_addr = 0;
-            value.sin_family = AF_INET;
-            value.sin_port = htons(configuration.Port.Value());
-
-            result = value;
-            accessor = result;
-
-            TRACE_L1("Invalid config information could not resolve to a proper IP set to: (%s:%d)", result.HostAddress().c_str(), result.PortNumber());
-        } else {
-            result.PortNumber(configuration.Port.Value());
-
-            string URL(_T("http://"));
-
-            URL += accessor.HostAddress();
-            URL += ':' + Core::NumberType<uint32_t>(configuration.Port.Value()).Text();
-
-            accessor.PortNumber(configuration.Port.Value());
-
-            SYSLOG(Logging::Startup, (_T("Accessor: %s"), URL.c_str()));
-            SYSLOG(Logging::Startup, (_T("Interface IP: %s"), result.HostAddress().c_str()));
-        }
-
-        return (result);
-    }
-
     void Server::ChannelMap::GetMetaData(Core::JSON::ArrayType<MetaData::Channel> & metaData) const
     {
 
@@ -322,12 +271,6 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         _administrator.Unregister(sink);
     }
 
-    // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
-    /* virtual */ PluginHost::IShell::ICOMLink* Server::Service::COMLink()
-    {
-        return (&_administrator);
-    }
-
     // Methods to stop/start/update the service.
     uint32_t Server::Service::Activate(const PluginHost::IShell::reason why)
     {
@@ -425,7 +368,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                     State(ACTIVATED);
                     _administrator.StateChange(this);
 
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
                     _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
 #endif
 
@@ -476,6 +419,10 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
                 Unlock();
 
+                // We might require PostMortem analyses if the reason is not really clear. Call the PostMortum installed so it can generate
+                // required logs/OS information before we start to kill it.
+                Server::PostMortem(*this, why, _connection);
+
                 // If we enabled the webserver, we should also disable it.
                 if ((PluginHost::Service::Configuration().WebUI.IsSet()) || (PluginHost::Service::Configuration().WebUI.Value().empty() == false)) {
                     DisableWebServer();
@@ -492,6 +439,11 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                 if (dispatcher != nullptr) {
                     dispatcher->Deactivate();
                 }
+
+                if (_connection != nullptr) {
+                    _connection->Release();
+                    _connection = nullptr;
+                }
             }
 
             SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
@@ -502,7 +454,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
             _administrator.StateChange(this);
 
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
             _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
 #endif
 
@@ -532,7 +484,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     {
         const ForwardMessage forwarder(PluginHost::Service::Callsign(), message);
 
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
         // Notify the base class and the subscribers
         PluginHost::Service::Notification(message);
 #endif
@@ -609,41 +561,15 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         Close(0);
     }
 
-    static string DetermineProperModel(Core::JSON::String & input)
-    {
-        string result;
-
-        if (input.IsSet()) {
-            result = input.Value();
-        } else if (Core::SystemInfo::GetEnvironment(_T("MODEL_NAME"), result) == false) {
-            result = "UNKNOWN";
-        }
-        return (result);
-    }
-
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
 
-    Server::Server(Server::Config & configuration, const bool background)
-        : _accessor()
-        , _dispatcher(configuration.Process.IsSet() ? configuration.Process.StackSize.Value() : 0)
-        , _connections(*this, DetermineAccessor(configuration, _accessor), configuration.IdleTime)
-        , _config(configuration.Version.Value(),
-              DetermineProperModel(configuration.Model),
-              background,
-              configuration.Prefix.Value(),
-              configuration.JSONRPC.Value(),
-              configuration.VolatilePath.Value(),
-              configuration.PersistentPath.Value(),
-              configuration.DataPath.Value(),
-              configuration.SystemPath.Value(),
-              configuration.ProxyStubPath.Value(),
-              configuration.Signature.Value(),
-              _accessor,
-              Core::NodeId(configuration.Communicator.Value().c_str()),
-              configuration.Redirect.Value())
-        , _services(*this, _config, configuration.Process.IsSet() ? configuration.Process.StackSize.Value() : 0)
+    Server::Server(Config& configuration, const bool background)
+        : _dispatcher(configuration.StackSize())
+        , _connections(*this, configuration.Binder(), configuration.IdleTime())
+        , _config(configuration)
+        , _services(*this, _config, configuration.StackSize())
         , _controller()
         , _factoriesImplementation()
     {
@@ -656,14 +582,10 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             Core::Directory(persistentPath.Name().c_str()).Create();
         }
 
-        if (configuration.Environments.IsSet() == true) {
-            _environment.Set(_config, configuration.Environments);
-        }
-
         // Lets assign a workerpool, we created it...
         Core::WorkerPool::Assign(&_dispatcher);
 
-        Core::JSON::ArrayType<Plugin::Config>::Iterator index = configuration.Plugins.Elements();
+        Core::JSON::ArrayType<Plugin::Config>::Iterator index = configuration.Plugins();
 
         // First register all services, than if we got them, start "activating what is required.
         // Whatever plugin is needed, we at least have our MetaData plugin available (as the first entry :-).
@@ -708,9 +630,9 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
         // Create input handle
         _inputHandler.Initialize(
-            configuration.Input.Type.Value(), 
-            configuration.Input.Locator.Value(), 
-            configuration.Input.OutputEnabled.Value());
+            configuration.Input().Type(), 
+            configuration.Input().Locator(), 
+            configuration.Input().Enabled());
 
         // Initialize static message.
         Service::Initialize();
@@ -720,10 +642,9 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         _controller = _services.Insert(metaDataConfig);
 
 #ifdef PROCESSCONTAINERS_ENABLED
-
         // turn on ProcessContainer logging
         ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
-        admin.Logging(configuration.VolatilePath.Value(), configuration.ProcessContainers.Logging.Value());
+        admin.Logging(_config.VolatilePath(), configuration.ProcessContainersLogging());
 #endif
     }
 
@@ -742,12 +663,12 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     {
         Plugin::Controller* controller;
         if ((_controller.IsValid() == false) || ((controller = (_controller->ClassType<Plugin::Controller>())) == nullptr)) {
-            DumpCallStack();
+            DumpCallStack(0, nullptr);
         } else {
 
             controller->Notification(data);
 
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
             string result;
             data.ToString(result);
             _controller->Notification(result);
@@ -790,14 +711,26 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         // Right we have the shells for all possible services registered, time to activate what is needed :-)
         ServiceMap::Iterator iterator(_services.Services());
 
-        while (iterator.Next() == true) {
+        // sort plugins based on StartupOrder from configuration
+        std::vector<Core::ProxyType<Service>> configured_services;
+        while (iterator.Next())
+          configured_services.push_back(*iterator);
 
-            Core::ProxyType<Service> service(*iterator);
+        std::sort(configured_services.begin(), configured_services.end(),
+          [](const Core::ProxyType<Service>& lhs, const Core::ProxyType<Service>&rhs)
+          {
+            return lhs->StartupOrder() < rhs->StartupOrder();
+          });
 
+        for (auto service : configured_services)
+        {
             if (service->AutoStart() == true) {
+                SYSLOG(Logging::Startup, (_T("Activating plugin [%s]:[%s]"),
+                  service->ClassName().c_str(), service->Callsign().c_str()));
                 service->Activate(PluginHost::IShell::STARTUP);
             } else {
-                SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] blocked"), service->ClassName().c_str(), service->Callsign().c_str()));
+                SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] delayed, autostart is false"),
+                  service->ClassName().c_str(), service->Callsign().c_str()));
             }
         }
     }

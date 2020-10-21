@@ -70,7 +70,7 @@ namespace RPC {
         }
     }
 
-    void Administrator::Release(Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId)
+    void Administrator::Release(Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId, const uint32_t dropCount)
     {
         // stub are loaded before any action is taken and destructed if the process closes down, so no need to lock..
         std::map<uint32_t, ProxyStub::UnknownStub*>::iterator index(_stubs.find(interfaceId));
@@ -81,7 +81,7 @@ namespace RPC {
             ASSERT(implementation != nullptr);
 
             if (implementation != nullptr) {
-                UnregisterInterface(channel, implementation, interfaceId);
+                UnregisterInterface(channel, implementation, interfaceId, dropCount);
                 implementation->Release();
             }
         } else {
@@ -219,6 +219,8 @@ namespace RPC {
 
     void Administrator::RegisterUnknownInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* reference, const uint32_t id)
     {
+        _adminLock.Lock();
+
         ReferenceMap::iterator index = _channelReferenceMap.find(channel.operator->());
 
         if (index == _channelReferenceMap.end()) {
@@ -229,9 +231,9 @@ namespace RPC {
         } else {
             // See that it does not already exists on this channel, no need to register
             // it again!!!
-            std::list< std::pair<uint32_t, Core::IUnknown*> >::iterator element(index->second.begin());
+            std::list< RecoverySet >::iterator element(index->second.begin());
 
-            while ( (element != index->second.end()) && ((element->first != id) || (element->second != reference)) ) {
+            while ( (element != index->second.end()) && ((element->Id() != id) || (element->Unknown() != reference)) ) {
                 element++;
             }
 
@@ -240,9 +242,25 @@ namespace RPC {
                 index->second.emplace_back(id, reference);
             }
             else {
-                printf("====> According to Bartjes law, this should not happen !\n");
+                // If this happens, it means that the interface we are trying to register, is already handed out, over the same channel.
+                // This means, that on the otherside (the receiving side) that will create a Proxy for this interface, finds this interface as well.
+                // Now two things can happen:
+                // 1) Everything is stable, when this call arrives on the otherside, the proxy is found, and the externalReferenceCount (the number 
+                //    of AddRefs the RemoteSide has on this Real Object is incremented by one).
+                // 2) Corner case, unlikely top happen, but we need to cater for it. If during the return of this reference, that Proxy on the otherside
+                //    might reach the reference 0. That will, on that side, clear out the proxy. That will send a Release for that proxy to this side and
+                //    that release will not kill the "real" object here becasue we have still a reference on the real object for this interface. When this 
+                //    interface reaches the other side, it will simply create a new proxy with an externalReference COunt of 1.
+                //
+                // However, if the connection dies and scenario 2 took place, and we did *not* reference count this cleanup map, this reference for the newly 
+                // created proxy in step 2, is in case of a crash never released!!! So to avoid this scenario, we should also reference count the cleanup map 
+                // interface entry here, than we are good to go, as long as the "dropReleases" count also ends up here :-)
+                TRACE_L1("The Proxy is existing on the otherside, no need ");
+                element->Increment();
             }
         }
+
+        _adminLock.Unlock();
     }
 
     Core::IUnknown* Administrator::Convert(void* rawImplementation, const uint32_t id) 
@@ -258,10 +276,18 @@ namespace RPC {
         ReferenceMap::iterator remotes(_channelReferenceMap.find(channel.operator->()));
 
         if (remotes != _channelReferenceMap.end()) {
-            std::list<std::pair<uint32_t, Core::IUnknown*>>::iterator loop(remotes->second.begin());
+            std::list<RecoverySet>::iterator loop(remotes->second.begin());
             while (loop != remotes->second.end()) {
+                uint32_t result;
+
                 // We will release on behalf of the other side :-)
-                loop->second->Release();
+                do {
+                    result = loop->Unknown()->Release();
+
+                } while ((loop->Decrement()) && (result == Core::ERROR_NONE));
+
+                ASSERT (loop->Flushed() == true);
+
                 loop++;
             }
             _channelReferenceMap.erase(remotes);

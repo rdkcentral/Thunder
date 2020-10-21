@@ -31,6 +31,9 @@
     <None Include="ExampleConfigWindows.json">
       <Filter>Configurations</Filter>
     </None>
+    <None Include="BartjensConfig.json">
+      <Filter>Configurations</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Controller.cpp">
@@ -51,6 +54,9 @@
     <ClCompile Include="ControllerJsonRpc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PostMortem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Controller.h">
@@ -69,6 +75,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SystemInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
