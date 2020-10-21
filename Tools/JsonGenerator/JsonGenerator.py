@@ -1265,7 +1265,7 @@ def EmitEnumRegs(root, emit, header_file, if_file):
         emit.Line("ENUM_CONVERSION_END(%s);" % fullname)
 
     # Enumeration conversion code
-    emit.Line("#include <interfaces/definitions.h>")
+    emit.Line("#include \"definitions.h\"")
     if if_file.endswith(".h"):
         emit.Line("#include <%s%s>" % (CPP_IF_PATH, if_file))
     emit.Line("#include <core/Enumerate.h>")
