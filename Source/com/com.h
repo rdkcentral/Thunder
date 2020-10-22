@@ -28,6 +28,6 @@
 #include "ICOM.h"
 #include "Messages.h"
 
-#ifdef __WINDOWS__
+#if defined(__WINDOWS__) && !defined(COM_EXPORTS)
 #pragma comment(lib, "com.lib")
 #endif

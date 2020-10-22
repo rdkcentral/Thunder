@@ -21,4 +21,4 @@
 #include "IUnknown.h"
 #include "Module.h"
 
-#include "generated/proxystubs/ProxyStubs_COM.cpp"
+#include "generated/ProxyStubs_COM.cpp"
