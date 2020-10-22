@@ -17,9 +17,9 @@
 
 set(TARGET ${NAMESPACE}COM)
 
-ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ICOM.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs")
+ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ICOM.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
-set(PROXYSTUB_COM_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_COM.cpp")
+set(PROXYSTUB_COM_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_COM.cpp")
 
 configure_file( "${CMAKE_CURRENT_LIST_DIR}/ProxyStubs.cpp.in"
                 "${CMAKE_CURRENT_BINARY_DIR}/ProxyStubs.cpp"
