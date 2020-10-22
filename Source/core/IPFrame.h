@@ -57,6 +57,10 @@ namespace Core {
             Source(source);
             Destination(destination);
         }
+        IPFrameType(const uint8_t buffer[], const uint16_t size)
+            : _length(size - sizeof(iphdr)) {
+             memcpy(_buffer, buffer, sizeof(iphdr) + SIZE);
+        }
         ~IPFrameType() = default;
 
     public:
@@ -64,7 +68,7 @@ namespace Core {
             const iphdr* ipHeader = reinterpret_cast<const iphdr*>(_buffer);
             return ((ipHeader->protocol == PROTOCOL) && (Checksum() == ipHeader->check));
         }
-        inline NodeId& Source() const {
+        inline NodeId Source() const {
             NodeId result;
             const iphdr* ipHeader = reinterpret_cast<const iphdr*>(_buffer);
             if (ipHeader->version == 4) {
@@ -86,7 +90,7 @@ namespace Core {
                 ipHeader->check = Checksum();
             }
         }
-        inline NodeId& Destination() const {
+        inline NodeId Destination() const {
             NodeId result;
             const iphdr* ipHeader = reinterpret_cast<const iphdr*>(_buffer);
             if (ipHeader->version == 4) {
@@ -127,26 +131,21 @@ namespace Core {
         inline uint16_t Size() const {
             return (sizeof(iphdr) + _length);
         }
-        uint8_t* Frame() 
-        {
+        uint8_t* Frame() {
             return (SIZE > 0 ? &(_buffer[sizeof(iphdr)]) : nullptr);
         }
-        const uint8_t* Frame() const
-        {
+        const uint8_t* Frame() const {
             return (SIZE > 0 ? &(_buffer[sizeof(iphdr)]) : nullptr);
         }
-        uint8_t* Header()
-        {
+        uint8_t* Header() {
             return _buffer;
         }
-        const uint8_t* Header() const
-        {
+        const uint8_t* Header() const {
             return _buffer;
         }
 
     private:
-        uint16_t Checksum() const
-        {
+        uint16_t Checksum() const {
             // src: https://gist.github.com/david-hoze/0c7021434796997a4ca42d7731a7073a
             iphdr*    ipHeader = const_cast<iphdr*>(reinterpret_cast<const iphdr*>(_buffer));
             uint16_t* data     = reinterpret_cast<uint16_t*>(ipHeader);
@@ -204,6 +203,8 @@ namespace Core {
             tcpHeader->source = htons(source.PortNumber());
             tcpHeader->dest = htons(destination.PortNumber());
         }
+        TCPFrameType(const uint8_t buffer[], const uint16_t size) : Base(buffer, size - sizeof(udphdr)) {
+        }
         ~TCPFrameType() = default;
 
     public:
@@ -232,15 +233,19 @@ namespace Core {
             }
         }
         inline uint16_t Size() const {
-            return (sizeof(tcphdr) + Base::Size());
+            return (Base::Size());
         }
-        uint8_t* Frame() 
-        {
+        uint8_t* Frame() {
             return (SIZE > 0 ? &(Frame()[sizeof(tcphdr)]) : nullptr);   
         }
-        const uint8_t* Frame() const
-        {
+        const uint8_t* Frame() const {
             return (SIZE > 0 ? &(Frame()[sizeof(tcphdr)]) : nullptr);   
+        }
+        uint8_t* Header() {
+            return Base::Header();
+        }
+        const uint8_t* Header() const {
+            return Base::Header();
         }
     };
 	
@@ -266,6 +271,8 @@ namespace Core {
             udpHeader->source = htons(source.PortNumber());
             udpHeader->dest = htons(destination.PortNumber());
             Length(0);
+        }
+        UDPFrameType(const uint8_t buffer[], const uint16_t size) : Base(buffer, size - sizeof(udphdr)) {
         }
         ~UDPFrameType() = default;
 
@@ -303,20 +310,16 @@ namespace Core {
         inline uint16_t Size() const {
             return (Base::Size());
         }
-        uint8_t* Frame() 
-        {
+        uint8_t* Frame() {
             return (SIZE > 0 ? &(Frame()[sizeof(udphdr)]) : nullptr);
         }
-        const uint8_t* Frame() const
-        {
+        const uint8_t* Frame() const {
             return (SIZE > 0 ? &(Frame()[sizeof(udphdr)]) : nullptr);
         }
-        uint8_t* Header()
-        {
+        uint8_t* Header() {
             return Base::Header();
         }
-        const uint8_t* Header() const
-        {
+        const uint8_t* Header() const {
             return Base::Header();
         }
     };

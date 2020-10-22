@@ -1153,13 +1153,23 @@ namespace Core {
     {
     }
 
-    uint16_t SocketDatagram::Size() const
+    uint16_t SocketDatagram::HeaderSize() const
     {
         Core::UDPFrameType<0> udp;
         return udp.Size();
     }
 
-    uint16_t SocketDatagram::SetHeader(const Core::NodeId& local, const Core::NodeId& remote, const uint16_t pktSize, uint8_t* header) const
+    bool SocketDatagram::IsValid(const uint8_t header[], const uint16_t size, const uint16_t destPort) const
+    {
+        bool status = false;
+        Core::UDPFrameType<0> udp(header, size);
+        Core::NodeId dest = udp.Destination();
+        if ((udp.IsValid() == true) && (dest.PortNumber() == destPort)) {
+            status = true;
+        }
+        return status;
+    }
+    uint16_t SocketDatagram::SetHeader(const Core::NodeId& local, const Core::NodeId& remote, const uint16_t pktSize, uint8_t header[]) const
     {
         Core::UDPFrameType<0> udp(local, remote);
         udp.Length(pktSize);
