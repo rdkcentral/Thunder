@@ -1169,14 +1169,14 @@ namespace Core {
         }
         return status;
     }
-    uint16_t SocketDatagram::SetHeader(const Core::NodeId& local, const Core::NodeId& remote, const uint16_t pktSize, uint8_t header[]) const
+    uint16_t SocketDatagram::SetHeader(const Core::NodeId& local, const Core::NodeId& remote, const uint16_t payloadSize, uint8_t packet[]) const
     {
         Core::UDPFrameType<0> udp(local, remote);
-        udp.Length(pktSize);
+        uint16_t pktSize = udp.UpdatePayloadInfo(packet + udp.Size(), payloadSize);
 
-        memcpy(header, udp.Header(), udp.Size() - pktSize);
+        memcpy(packet, udp.Header(), pktSize - payloadSize);
 
-        return udp.Size();
+        return pktSize;
     }
 }
 } // namespace Solution::Core
