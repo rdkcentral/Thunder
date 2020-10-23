@@ -225,11 +225,12 @@ namespace PluginHost
                 result = Core::ServiceAdministrator::Instance().Instantiate(Core::Library(), className.c_str(), version, interface);
             } else {
                 std::vector<string> all_paths = GetLibrarySearchPaths(locator);
-                std::find_if(std::begin(all_paths), std::end(all_paths), [&result, className, version, interface](const string& path) {
-                    Core::File file(path.c_str(), false);
+                std::vector<string>::const_iterator index = all_paths.begin();
+                while ((result == nullptr) && (index != all_paths.end())) {
+                    Core::File file(index->c_str(), false);
                     if (file.Exists())
                     {
-                        Core::Library resource(path.c_str());
+                        Core::Library resource(index->c_str());
                         if (resource.IsLoaded())
                             result = Core::ServiceAdministrator::Instance().Instantiate(
                                 resource,
@@ -237,8 +238,8 @@ namespace PluginHost
                                 version,
                                 interface);
                     }
-                    return (result != nullptr);
-                });
+                    index++;
+                }
             }
         } else {
             ICOMLink* handler(COMLink());

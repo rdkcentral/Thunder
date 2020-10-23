@@ -528,7 +528,7 @@ namespace Core {
             // That's easy, if there is space left..
             if (m_Current >= m_Max) {
                 // Time to expand. Double the capacity. Allocate the capacity.
-                IReferenceCounted** l_NewList = new IReferenceCounted*[(m_Max << 1)];
+                IReferenceCounted** l_NewList = new IReferenceCounted*[static_cast<uint32_t>(m_Max << 1)];
 
                 // Copy the old list in (Dirty but quick !!!!)
                 memcpy(l_NewList, &m_List[0], (m_Max * sizeof(IReferenceCounted*)));
