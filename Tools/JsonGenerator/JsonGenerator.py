@@ -33,7 +33,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pard
 import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 
-VERSION = "1.7"
+VERSION = "1.7.1"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
@@ -275,7 +275,7 @@ class JsonDouble(JsonType):
         return TypePrefix("Double")
 
     def CppStdClass(self):
-            return "double"
+        return "double"
 
 
 class JsonString(JsonType):
@@ -361,7 +361,7 @@ class JsonEnum(JsonType):
         return len(self.refs)
 
     def CppStdClass(self):
-        return self.cpptype
+        return self.CppClass()
 
     def IsStronglyTyped(self):
         return self.strongly_typed
@@ -1297,7 +1297,7 @@ def EmitEvent(emit, root, event, static=False):
     params = event.Properties()[0].CppType()
     par = "const string& id, " if event.HasSendif() else ""
     par = par + ", ".join(
-        map(lambda x: "const " + x.CppStdClass() + "& " + x.JsonName(),
+        map(lambda x: "const " + (GetNamespace(root, x, False) if not static else "") + x.CppStdClass() + "& " + x.JsonName(),
             event.Properties()[0].Properties()))
     if not static:
         line = "void %s::%s(%s)" % (root.JsonName(), event.MethodName(), par)
@@ -1690,9 +1690,7 @@ def EmitHelperCode(root, emit, header_file):
                 params = __NsName(method.Properties()[0])
                 par = ""
                 if params != "void":
-                    par = ", ".join(
-                        map(lambda x: "const " + GetNamespace(root, x) + x.CppStdClass() + "& " + x.JsonName(),
-                            method.Properties()[0].Properties()))
+                    par = ", ".join(map(lambda x: "const " + GetNamespace(root, x) + x.CppStdClass() + "& " + x.JsonName(), method.Properties()[0].Properties()))
                 line = ('void %s(%s%s);' %
                         (method.MethodName(), "const string& id, " if method.HasSendif() else "", par))
                 if method.included_from:
