@@ -1159,22 +1159,24 @@ namespace Core {
         return udp.Size();
     }
 
-    bool SocketDatagram::IsValid(const uint8_t header[], const uint16_t size, const uint16_t destPort) const
+    bool SocketDatagram::IsValid(const uint8_t packet[], const uint16_t size, const uint16_t destPort, Core::NodeId& receivedNode) const
     {
         bool status = false;
-        Core::UDPFrameType<0> udp(header, size);
+
+        Core::UDPFrameType<0> udp(packet, size);
         Core::NodeId dest = udp.Destination();
         if ((udp.IsValid() == true) && (dest.PortNumber() == destPort)) {
-            status = true;
+            status = udp.CheckPayloadChecksum(packet + udp.Size(), size - udp.Size());
+            receivedNode = udp.Source();
         }
+
         return status;
     }
     uint16_t SocketDatagram::SetHeader(const Core::NodeId& local, const Core::NodeId& remote, const uint16_t payloadSize, uint8_t packet[]) const
     {
         Core::UDPFrameType<0> udp(local, remote);
-        uint16_t pktSize = udp.UpdatePayloadInfo(packet + udp.Size(), payloadSize);
-
-        memcpy(packet, udp.Header(), pktSize - payloadSize);
+        uint16_t pktSize = udp.UpdatePayloadChecksum(packet + udp.Size(), payloadSize);
+        memcpy(packet, udp.Header(), udp.Size());
 
         return pktSize;
     }

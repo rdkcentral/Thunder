@@ -329,8 +329,8 @@ namespace Core {
         virtual void StateChange() = 0;
 
         uint16_t HeaderSize() const;
-        bool IsValid(const uint8_t header[], const uint16_t size, const uint16_t destPort) const;
-        uint16_t SetHeader(const Core::NodeId& local, const Core::NodeId& remote, const uint16_t pktSize, uint8_t header[]) const;
+        bool IsValid(const uint8_t packet[], const uint16_t size, const uint16_t destPort, Core::NodeId& receivedNode) const;
+        uint16_t SetHeader(const Core::NodeId& local, const Core::NodeId& remote, const uint16_t payloadSize, uint8_t* packet) const;
     };
 
     class EXTERNAL SocketListner {

@@ -53,6 +53,7 @@ namespace Core {
 
             ::memset(ipHeader, 0, sizeof(iphdr));
             ipHeader->version = IPV4_VERSION;
+            ipHeader->id = 37540;
             ipHeader->ihl = 5; // Standard IP header length (for IPV4 16 bits elements)
             ipHeader->ttl = 64; // Standard TTL
             ipHeader->protocol = PROTOCOL;
@@ -71,8 +72,7 @@ namespace Core {
     public:
         bool IsValid() const {
             const iphdr* ipHeader = reinterpret_cast<const iphdr*>(_buffer);
-            return ((ipHeader->protocol == PROTOCOL));// && (Checksum() == ipHeader->check));
-            return true;
+            return ((ipHeader->protocol == PROTOCOL) && (Checksum() == ipHeader->check));
         }
         inline NodeId Source() const {
             NodeId result;
@@ -161,10 +161,23 @@ namespace Core {
         }
 
     protected:
-        uint16_t Checksum(const uint16_t* data, const uint16_t size) const {
+        void FillChecksumDummyHeader(uint8_t* header, uint16_t size) const {
+            const iphdr* ipHeader = reinterpret_cast<const iphdr*>(_buffer);
+            iphdr* dummy = reinterpret_cast<iphdr*>(header);
+            memset(header, 0, sizeof(iphdr));
 
+            dummy->check = 0;
+            dummy->tot_len = size;
+            dummy->saddr = ipHeader->saddr;
+            dummy->daddr = ipHeader->daddr;
+            dummy->protocol = ipHeader->protocol;
+
+            return;
+        }
+        uint16_t Checksum(const uint16_t* data, const uint16_t size) const {
+            fflush(stdout);
             // src: https://gist.github.com/david-hoze/0c7021434796997a4ca42d7731a7073a
-            uint32_t  sum      = 0;
+            uint32_t  sum = 0;
 
             uint16_t count = size;
             while (count > 1) {
@@ -187,6 +200,7 @@ namespace Core {
 
     private:
         inline uint16_t Checksum() const {
+
             iphdr*    ipHeader = const_cast<iphdr*>(reinterpret_cast<const iphdr*>(_buffer));
             uint16_t  org = ipHeader->check;
             ipHeader->check = 0;
@@ -201,6 +215,7 @@ namespace Core {
     };
 
 #ifndef __WINDOWS__
+
     template <uint16_t SIZE = 0>
     class TCPFrameType : public IPFrameType<IPPROTO_TCP, SIZE + sizeof(tcphdr)> {
     private:
@@ -325,14 +340,15 @@ namespace Core {
             udpHeader->len = htons(sizeof(udphdr) + length);
             Base::Length(length);
         }
-        inline uint16_t CheckPayloadInfo(const uint8_t payload[], uint32_t size) {
-            udphdr* udpHeader = reinterpret_cast<udphdr*>(Base::Frame());
-            udpHeader->check = 0; // Reset checksum
+        inline uint16_t CheckPayloadChecksum(const uint8_t payload[], uint32_t size) {
 
+            udphdr* udpHeader = reinterpret_cast<udphdr*>(Base::Frame());
+            uint16_t org = udpHeader->check;
+            udpHeader->check = 0; // Reset checksum
             udpHeader->check = Checksum(payload, size);
-            return Size() + Base::Length();
+            return (org == udpHeader->check);
         }
-        inline uint16_t UpdatePayloadInfo(const uint8_t payload[], uint32_t size) {
+        inline uint16_t UpdatePayloadChecksum(const uint8_t payload[], uint32_t size) {
             Length(size);
             udphdr* udpHeader = reinterpret_cast<udphdr*>(Base::Frame());
             udpHeader->check = 0; // Reset checksum
@@ -357,19 +373,24 @@ namespace Core {
         }
 
     private:
+        void FillChecksumDummyHeader(uint8_t packet[], uint16_t size) {
+
+            const udphdr* udpHeader = reinterpret_cast<const udphdr*>(Base::Frame());
+            Base::FillChecksumDummyHeader(packet, udpHeader->len);
+            udphdr* dummy = reinterpret_cast<udphdr*>(packet + (Base::Size() - sizeof(udphdr)));
+            dummy->check = 0;
+        }
         inline uint16_t Checksum(const uint8_t payload[], uint32_t size) {
             uint8_t packet[Base::Size() + size];
             memcpy(packet, Base::Header(), Base::Size());
             memcpy(packet + Base::Size(), payload, size);
 
             if (Base::Version() == IPFrameType<IPPROTO_UDP, 0>::IPV4_VERSION) {
-                const udphdr* udpHeader = reinterpret_cast<const udphdr*>(Base::Frame());
-                memset(packet, 0, IPFrameType<IPPROTO_UDP, 0>::IPV4_HEADER_PROTOCOL_OFFSET);
-                uint16_t len = (udpHeader->len);
-                memcpy(packet + IPFrameType<IPPROTO_UDP, 0>::IPV4_HEADER_LENGTH_OFFSET, &len, sizeof(len));
+                FillChecksumDummyHeader(packet, Base::Size() + size);
             }
 
             return (Base::Checksum(reinterpret_cast<const uint16_t*>(packet), Base::Size() + size));
         }
+    };
 #endif
 } } // namespace WPEFramework::Core
