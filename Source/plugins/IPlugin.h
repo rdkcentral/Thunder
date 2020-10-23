@@ -36,7 +36,7 @@ namespace PluginHost {
 
     class Channel;
 
-    struct IPlugin
+    struct EXTERNAL IPlugin
         : public virtual Core::IUnknown {
 
         enum {

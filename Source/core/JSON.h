@@ -124,7 +124,7 @@ namespace Core {
             {
                 uint32_t offset  = 0;
                 uint32_t handled = 0;
-                uint32_t size    = text.length();
+                uint32_t size    = static_cast<uint32_t>(text.length());
 
                 realObject.Clear();
 
