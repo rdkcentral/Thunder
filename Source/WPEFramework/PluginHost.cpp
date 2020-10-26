@@ -361,7 +361,7 @@ namespace PluginHost {
 
             if (_config->Process().IsSet() == true) {
 
-                Core::ProcessInfo myself;
+                Core::ProcessCurrent myself;
 
                 if (_config->Process().OOMAdjust() != 0) {
                     myself.OOMAdjust(_config->Process().OOMAdjust());

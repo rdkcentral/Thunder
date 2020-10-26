@@ -196,8 +196,11 @@ namespace Core {
             return (0);
 #else
             int8_t result = 0;
-            FILE* fp = fopen(_T("/proc/self/oom_adj"), _T("r"));
 
+            TCHAR buffer[128];
+            snprintf(buffer, sizeof(buffer), "/proc/%d/oom_adj", _pid);
+
+            FILE* fp = fopen(buffer, _T("r"));
             if (fp) {
                 int number;
                 fscanf(fp, "%d", &number);
@@ -210,8 +213,10 @@ namespace Core {
         inline void OOMAdjust(const int8_t adjust)
         {
 #ifndef __WINDOWS__
-            FILE* fp = fopen(_T("/proc/self/oom_adj"), _T("w"));
+            TCHAR buffer[128];
+            snprintf(buffer, sizeof(buffer), "/proc/%d/oom_adj", _pid);
 
+            FILE* fp = fopen(buffer, _T("w"));
             if (fp) {
                 fprintf(fp, "%d", adjust);
                 fclose(fp);
@@ -239,14 +244,8 @@ namespace Core {
         string Name() const;
         string Executable() const;
         std::list<string> CommandLine() const;
-        uint32_t Group(const string& groupName);
-        string Group() const;
         void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
 
-        // Setting, or getting, the user can onl be done for the
-        // current process, hence why they are static.
-        static uint32_t User(const string& userName);
-        static string User();
         static void FindByName(const string& name, const bool exact, std::list<ProcessInfo>& processInfos);
 
         void Dump() {
@@ -271,6 +270,22 @@ namespace Core {
         HANDLE _handle;
 #endif
     }; // class ProcessInfo
+
+   class ProcessCurrent: public ProcessInfo {
+   public:
+       ProcessCurrent(const ProcessInfo&) = delete;
+       ProcessCurrent& operator= (const ProcessInfo&) = delete;
+
+       ProcessCurrent() : ProcessInfo() {
+       }
+       ~ProcessCurrent() = default;
+
+   public:
+       string User() const;
+       uint32_t User(const string& userName);
+       string Group() const;
+       uint32_t Group(const string& groupName);
+   };
 
    class ProcessTree
    {
