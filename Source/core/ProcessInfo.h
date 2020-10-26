@@ -196,8 +196,11 @@ namespace Core {
             return (0);
 #else
             int8_t result = 0;
-            FILE* fp = fopen(_T("/proc/self/oom_adj"), _T("r"));
 
+            TCHAR buffer[128];
+            snprintf(buffer, sizeof(buffer), "/proc/%d/oom_adj", _pid);
+
+            FILE* fp = fopen(buffer, _T("r"));
             if (fp) {
                 int number;
                 fscanf(fp, "%d", &number);
@@ -210,8 +213,10 @@ namespace Core {
         inline void OOMAdjust(const int8_t adjust)
         {
 #ifndef __WINDOWS__
-            FILE* fp = fopen(_T("/proc/self/oom_adj"), _T("w"));
+            TCHAR buffer[128];
+            snprintf(buffer, sizeof(buffer), "/proc/%d/oom_adj", _pid);
 
+            FILE* fp = fopen(buffer, _T("w"));
             if (fp) {
                 fprintf(fp, "%d", adjust);
                 fclose(fp);
