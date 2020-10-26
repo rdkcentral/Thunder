@@ -588,32 +588,6 @@ namespace Core {
     }
 #endif
 
-    uint32_t ProcessInfo::Group(const string& groupName)
-    {
-        uint32_t result = ERROR_BAD_REQUEST;
-        if (groupName.empty() == false) {
-            result = ERROR_UNKNOWN_KEY;
-#ifndef __WINDOWS__
-            struct group* grp = getgrnam(groupName.c_str());
-            if (grp != nullptr) {
-                result = (::setgid(grp->gr_gid) == 0 ? ERROR_NONE : ERROR_UNAVAILABLE);
-            }
-#endif
-        }
-        return (result);
-    }
-    string ProcessInfo::Group() const
-    {
-        string result;
-#ifndef __WINDOWS__
-        struct group* grp = getgrgid(::getpgid(_pid));
-        if (grp != nullptr) {
-            result = grp->gr_name;
-        }
-#endif
-        return (result);
-    }
-
     // pagemap file is documented here:
     //   https://www.kernel.org/doc/Documentation/vm/pagemap.txt
     void ProcessInfo::MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const
@@ -691,32 +665,6 @@ namespace Core {
         #endif // __WINDOWS__
     }
 
-    /* static */ uint32_t ProcessInfo::User(const string& userName)
-    {
-        uint32_t result = ERROR_BAD_REQUEST;
-        if (userName.empty() == false) {
-            result = ERROR_UNKNOWN_KEY;
-#ifndef __WINDOWS__
-            struct passwd* pwd = getpwnam(userName.c_str());
-            if (pwd != nullptr) {
-                result = (::setuid(pwd->pw_uid) == 0 ? ERROR_NONE : ERROR_UNAVAILABLE);
-            }
-#endif
-        }
-        return (result);
-    }
-    /* static */ string ProcessInfo::User()
-    {
-        string result;
-#ifndef __WINDOWS__
-        struct passwd* pwd = getpwuid(::getuid());
-        if (pwd != nullptr) {
-            result = pwd->pw_name;
-        }
-#endif
-        return (result);
-    }
-
     /* static */ void ProcessInfo::FindByName(const string& name, const bool exact, std::list<ProcessInfo>& processInfos)
     {
 #ifndef __WINDOWS__
@@ -730,6 +678,60 @@ namespace Core {
 
 #endif // !__WINDOWS__
 
+    }
+
+    /* static */ string ProcessCurrent::User()
+    {
+        string userName;
+#ifndef __WINDOWS__
+        struct passwd* pwd = getpwuid(::getuid());
+        if (pwd != nullptr) {
+            userName = pwd->pw_name;
+        }
+#endif
+        return (userName);
+    }
+
+    /* static */ uint32_t ProcessCurrent::User(const string& userName)
+    {
+        uint32_t result = ERROR_BAD_REQUEST;
+        if (userName.empty() == false) {
+            result = ERROR_UNKNOWN_KEY;
+#ifndef __WINDOWS__
+            struct passwd* pwd = getpwnam(userName.c_str());
+            if (pwd != nullptr) {
+                result = (::setuid(pwd->pw_uid) == 0 ? ERROR_NONE : ERROR_UNAVAILABLE);
+            }
+#endif
+        }
+        return (result);
+    }
+
+    /* static */ string ProcessCurrent::Group()
+    {
+        string groupName;
+#ifndef __WINDOWS__
+        struct group* grp = getgrgid(::getgid());
+        if (grp != nullptr) {
+            groupName = grp->gr_name;
+        }
+#endif
+        return (groupName);
+    }
+
+    /* static */ uint32_t ProcessCurrent::Group(const string& groupName)
+    {
+        uint32_t result = ERROR_BAD_REQUEST;
+        if (groupName.empty() == false) {
+            result = ERROR_UNKNOWN_KEY;
+#ifndef __WINDOWS__
+            struct group* grp = getgrnam(groupName.c_str());
+            if (grp != nullptr) {
+                result = (::setgid(grp->gr_gid) == 0 ? ERROR_NONE : ERROR_UNAVAILABLE);
+            }
+#endif
+        }
+        return (result);
     }
 
     static void EnumerateChildProcesses(const ProcessInfo& processInfo, std::list<ProcessInfo>& pids)

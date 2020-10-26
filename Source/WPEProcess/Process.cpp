@@ -573,11 +573,10 @@ int main(int argc, char** argv)
 
             // Firts make sure we apply the correct rights to our selves..
             if (options.Group != nullptr) {
-                Core::ProcessInfo().Group(string(options.Group));
+                Core::ProcessCurrent::Group(string(options.Group));
             }
-
             if (options.User != nullptr) {
-                Core::ProcessInfo::User(string(options.User));
+                Core::ProcessCurrent::User(string(options.User));
             }
 
             process.Startup(options.Threads, remoteNode);
