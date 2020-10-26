@@ -65,7 +65,7 @@ namespace Core {
         }
         IPFrameType(const uint8_t buffer[], const uint16_t size)
             : _length(size - sizeof(iphdr)) {
-             memcpy(_buffer, buffer, sizeof(iphdr) + SIZE);
+             ::memcpy(_buffer, buffer, sizeof(iphdr) + SIZE);
         }
         ~IPFrameType() = default;
 
@@ -164,7 +164,6 @@ namespace Core {
         void FillChecksumDummyHeader(uint8_t* header, uint16_t size) const {
             const iphdr* ipHeader = reinterpret_cast<const iphdr*>(_buffer);
             iphdr* dummy = reinterpret_cast<iphdr*>(header);
-            memset(header, 0, sizeof(iphdr));
 
             dummy->check = 0;
             dummy->tot_len = size;
@@ -175,7 +174,6 @@ namespace Core {
             return;
         }
         uint16_t Checksum(const uint16_t* data, const uint16_t size) const {
-            fflush(stdout);
             // src: https://gist.github.com/david-hoze/0c7021434796997a4ca42d7731a7073a
             uint32_t  sum = 0;
 
@@ -228,7 +226,7 @@ namespace Core {
         TCPFrameType() : Base() {
             tcphdr* tcpHeader = reinterpret_cast<tcphdr*>(Base::Frame());
 
-            memset(tcpHeader, 0, sizeof(tcphdr));
+            ::memset(tcpHeader, 0, sizeof(tcphdr));
         }
         TCPFrameType(const NodeId& source, const NodeId& destination) : Base(source, destination) {
             tcphdr* tcpHeader = reinterpret_cast<tcphdr*>(Base::Frame());
@@ -294,12 +292,12 @@ namespace Core {
         UDPFrameType() : Base() {
             udphdr* udpHeader = reinterpret_cast<udphdr*>(Base::Frame());
 
-            memset(udpHeader, 0, sizeof(udphdr));
+            ::memset(udpHeader, 0, sizeof(udphdr));
             Length(0);
         }
         UDPFrameType(const NodeId& source, const NodeId& destination) : Base(source, destination) {
             udphdr* udpHeader = reinterpret_cast<udphdr*>(Base::Frame());
-            memset(udpHeader, 0, sizeof(udphdr));
+            ::memset(udpHeader, 0, sizeof(udphdr));
 
             udpHeader->source = htons(source.PortNumber());
             udpHeader->dest = htons(destination.PortNumber());
@@ -374,20 +372,23 @@ namespace Core {
 
     private:
         void FillChecksumDummyHeader(uint8_t packet[], uint16_t size) {
-
             const udphdr* udpHeader = reinterpret_cast<const udphdr*>(Base::Frame());
             Base::FillChecksumDummyHeader(packet, udpHeader->len);
+
             udphdr* dummy = reinterpret_cast<udphdr*>(packet + (Base::Size() - sizeof(udphdr)));
             dummy->check = 0;
+            dummy->dest = udpHeader->dest;
+            dummy->source = udpHeader->source;
+            dummy->len = udpHeader->len;
         }
         inline uint16_t Checksum(const uint8_t payload[], uint32_t size) {
             uint8_t packet[Base::Size() + size];
-            memcpy(packet, Base::Header(), Base::Size());
-            memcpy(packet + Base::Size(), payload, size);
+            ::memset(packet, 0, Base::Size() + size);
 
             if (Base::Version() == IPFrameType<IPPROTO_UDP, 0>::IPV4_VERSION) {
                 FillChecksumDummyHeader(packet, Base::Size() + size);
             }
+            ::memcpy(packet + Base::Size(), payload, size);
 
             return (Base::Checksum(reinterpret_cast<const uint16_t*>(packet), Base::Size() + size));
         }

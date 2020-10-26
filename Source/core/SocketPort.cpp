@@ -1166,8 +1166,8 @@ namespace Core {
         Core::UDPFrameType<0> udp(packet, size);
         Core::NodeId dest = udp.Destination();
         if ((udp.IsValid() == true) && (dest.PortNumber() == destPort)) {
-            status = udp.CheckPayloadChecksum(packet + udp.Size(), size - udp.Size());
             receivedNode = udp.Source();
+            status = true;
         }
 
         return status;
