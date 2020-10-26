@@ -680,7 +680,7 @@ namespace Core {
 
     }
 
-    /* static */ string ProcessCurrent::User()
+    string ProcessCurrent::User() const
     {
         string userName;
 #ifndef __WINDOWS__
@@ -692,7 +692,7 @@ namespace Core {
         return (userName);
     }
 
-    /* static */ uint32_t ProcessCurrent::User(const string& userName)
+    uint32_t ProcessCurrent::User(const string& userName)
     {
         uint32_t result = ERROR_BAD_REQUEST;
         if (userName.empty() == false) {
@@ -707,7 +707,7 @@ namespace Core {
         return (result);
     }
 
-    /* static */ string ProcessCurrent::Group()
+    string ProcessCurrent::Group() const
     {
         string groupName;
 #ifndef __WINDOWS__
@@ -719,7 +719,7 @@ namespace Core {
         return (groupName);
     }
 
-    /* static */ uint32_t ProcessCurrent::Group(const string& groupName)
+    uint32_t ProcessCurrent::Group(const string& groupName)
     {
         uint32_t result = ERROR_BAD_REQUEST;
         if (groupName.empty() == false) {

@@ -281,10 +281,10 @@ namespace Core {
        ~ProcessCurrent() = default;
 
    public:
-       static string User();
-       static uint32_t User(const string& userName);
-       static string Group();
-       static uint32_t Group(const string& groupName);
+       string User() const;
+       uint32_t User(const string& userName);
+       string Group() const;
+       uint32_t Group(const string& groupName);
    };
 
    class ProcessTree
