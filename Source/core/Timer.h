@@ -80,7 +80,7 @@ namespace Core {
             {
             }
 
-            inline TimedInfo(TimedInfo&& copy)
+            inline TimedInfo(TimedInfo&& copy) noexcept
                 : m_ScheduleTime(copy.m_ScheduleTime)
                 , m_Info(std::move(copy.m_Info))
             {

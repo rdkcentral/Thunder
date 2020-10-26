@@ -124,7 +124,7 @@ namespace Core {
             {
                 uint32_t offset  = 0;
                 uint32_t handled = 0;
-                uint32_t size    = text.length();
+                uint32_t size    = static_cast<uint32_t>(text.length());
 
                 realObject.Clear();
 
@@ -265,21 +265,21 @@ namespace Core {
             virtual void Clear() = 0;
             virtual bool IsSet() const = 0;
             virtual bool IsNull() const = 0;
-            virtual uint16_t Serialize(char Stream[], const uint16_t MaxLength, uint32_t& offset) const = 0;
-            uint16_t Deserialize(const char Stream[], const uint16_t MaxLength, uint32_t& offset)
+            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const = 0;
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset)
             {
                 Core::OptionalType<Error> error;
-                uint16_t loaded = Deserialize(Stream, MaxLength, offset, error);
+                uint16_t loaded = Deserialize(stream, maxLength, offset, error);
 
                 if (error.IsSet() == true) {
                     Clear();
-                    error.Value().Context(Stream, MaxLength, loaded);
+                    error.Value().Context(stream, maxLength, loaded);
                     TRACE_L1("Parsing failed: %s", ErrorDisplayMessage(error.Value()).c_str());
                 }
 
                 return loaded;
             }
-            virtual uint16_t Deserialize(const char Stream[], const uint16_t MaxLength, uint32_t& offset, Core::OptionalType<Error>& error) = 0;
+            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) = 0;
         };
 
         struct EXTERNAL IMessagePack {
@@ -1106,6 +1106,8 @@ namespace Core {
 
                 }
 
+                loaded++;
+
                 if(str == IElement::NullTag)
                 {
                     _set |= UNDEFINED;
@@ -1786,10 +1788,7 @@ namespace Core {
                             }
                         }
 
-                        if (escapeHandling == EscapeSequenceAction::COLLAPSE || escapeHandling == EscapeSequenceAction::REPLACE) {
-                            if (escapeHandling == EscapeSequenceAction::REPLACE) {
-                                current = EscapeSequenceReplacemnent(current);
-                            }
+                        if (escapeHandling == EscapeSequenceAction::COLLAPSE) {
                             _value[_value.length() - 1] = current;
                             ++_unaccountedCount;
                         } else {
@@ -1928,40 +1927,12 @@ namespace Core {
             EscapeSequenceAction GetEscapeSequenceAction(char current) const
             {
                 EscapeSequenceAction action = EscapeSequenceAction::COLLAPSE;
-                if (current == 'u') {
+                if (current == 'u' || current == 'n' || current == 't' || current == 'r' || current == 'f' || current == 'b') {
                     action = EscapeSequenceAction::NOTHING;
                 } else if((current == '\"') && (_scopeCount & DepthCountMask)) {
                     action = EscapeSequenceAction::NOTHING;
-                } else {
-                    if (current == 'n' || current == 'r' || current == 't' || current == 'f' || current == 'b')
-                        action = EscapeSequenceAction::REPLACE;
                 }
-
                 return action;
-            }
-
-            char EscapeSequenceReplacemnent(char current) const
-            {
-                ASSERT(GetEscapeSequenceAction(current) == EscapeSequenceAction::REPLACE);
-                char replacement = current;
-                switch (current) {
-                case 'n':
-                    replacement = '\n';
-                    break;
-                case 'r':
-                    replacement = '\r';
-                    break;
-                case 't':
-                    replacement = '\t';
-                    break;
-                case 'f':
-                    replacement = '\f';
-                    break;
-                case 'b':
-                    replacement = '\b';
-                    break;
-                }
-                return replacement;
             }
 
             enum class ScopeBracket : bool {
