@@ -683,7 +683,7 @@ namespace Core {
                             offset = 4;
                         } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'l')) {
                             offset = 3;
-                        } else if (stream[loaded] == '"' && ((_set & NEGATIVE) == 0) && ((_set & UNDEFINED) == 0)) {
+                        } else if (stream[loaded] == '\"' && ((_set & NEGATIVE) == 0) && ((_set & UNDEFINED) == 0)) {
                             offset = 4;
                             --loaded;
                         } else {
@@ -702,7 +702,7 @@ namespace Core {
                             offset = 4;
                         } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'l')) {
                             offset = 4;
-                        } else if ((stream[loaded] == '"') && ((_set & UNDEFINED) == 0)) {
+                        } else if ((stream[loaded] == '\"') && ((_set & UNDEFINED) == 0)) {
                             offset = 4;
                             --loaded;
                         } else {
