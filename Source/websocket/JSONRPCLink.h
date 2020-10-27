@@ -594,7 +594,7 @@ namespace JSONRPC {
                 _localSpace = localCallsign;
             }
 
-            uint8_t version = Core::JSONRPC::Message::Version(callsign + '.');
+            uint8_t version = Core::JSONRPC::Message::Version(_callsign);
             if( version != static_cast<uint8_t>(~0) ) {
                 _versionstring = '.' + Core::NumberType<uint8_t>(version).Text();
             }
@@ -1293,7 +1293,7 @@ namespace JSONRPC {
 
             // TODO: Constructos of the Client with version are bogus. Clean i tup
             Connection(SmartLinkType<INTERFACE>& parent, const string& callsign, const TCHAR* localCallsign, const string& query)
-                    : Client(callsign, string(), localCallsign, query)
+                    : Base(callsign, string(), localCallsign, query)
                     , _monitor(string(), false)
                     , _parent(parent)
                     , _state(UNKNOWN)
@@ -1374,7 +1374,7 @@ namespace JSONRPC {
                 if (_events.empty() == false) {
                     const string parameters("{ \"event\": \"" + _events.front() + "\", \"id\": \"" + Base::Namespace() + "\"}");
                     _events.pop_front();
-                    Dispatch<string>(ConnectionWaitTime, "register", parameters, &Connection::next_event, this);
+                    LinkType<INTERFACE>::Dispatch(ConnectionWaitTime, _T("register"), parameters, &Connection::next_event, this);
                 }
                 else {
                     SetState(JSONRPC::JSONPluginState::ACTIVATED);
