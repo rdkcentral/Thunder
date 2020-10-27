@@ -130,7 +130,7 @@ namespace Core {
 
                 while (size != handled) {
 
-		    uint16_t payload = static_cast<uint16_t>(std::min(size - handled, static_cast<uint32_t>(0xFFFF)));
+		    uint16_t payload = static_cast<uint16_t>(std::min((size - handled) + 1, static_cast<uint32_t>(0xFFFF)));
 
                     // Deserialize object
                     uint16_t loaded = static_cast<IElement&>(realObject).Deserialize(&(text.c_str()[handled]), payload, offset, error);
