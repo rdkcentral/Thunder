@@ -543,6 +543,9 @@ namespace Core {
             }
 
         public:
+            inline uint32_t Observers() const {
+                return (static_cast<uint32_t>(_observers.size()));
+            }
             inline EventIterator Events() const
             {
                 return (EventIterator(_handlers));

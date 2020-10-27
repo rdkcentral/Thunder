@@ -1,21 +1,21 @@
 {
-  "port": 8080,
-  "interface": "LAN",
-  "idletime": 60,
-  "ipv6": false,
-  "persistentpath": "C:/Projects/artifacts/Persistent",
-  "volatilepath": "C:/Projects/artifacts/temp",
-  "datapath": "C:/Projects/artifacts/Debug/Plugins",
-  "systempath": "C:/Projects/artifacts/Debug",
-  "proxystubpath": "C:/Projects/artifacts/ProxyStubs/Debug",
-  "communicator": "127.0.0.1:62000",
-  "redirect": "Service/Controller/UI",
-  "tracing": [
-    {
-      "module": "Plugin_SecurityAgent",
-      "enabled": true
-    }
-  ],
+    "port": 8080,
+    "interface": "LAN",
+    "idletime": 60,
+    "ipv6": false,
+    "persistentpath": "C:/Projects/Domotica/artifacts/Persistent",
+    "volatilepath": "C:/Projects/Domotica/artifacts/temp",
+    "datapath": "C:/Projects/Domotica/artifacts/Debug/Plugins",
+    "systempath": "C:/Projects/Domotica/artifacts/Debug",
+    "proxystubpath": "C:/Projects/Domotica/artifacts/ProxyStubs/Debug",
+    "communicator": "127.0.0.1:62000",
+    "redirect": "Service/Controller/UI",
+    "tracing": [
+        {
+            "module": "Plugin_SecurityAgent",
+            "enabled": true
+        }
+    ],
     "plugins": [
         {
             "callsign": "Controller",
@@ -33,7 +33,7 @@
             "callsign": "StateController",
             "locator": "libStateController.so",
             "classname": "StateController",
-            "autostart": true
+            "autostart": false
         },
         {
             "callsign": "IOControl",
@@ -61,7 +61,7 @@
             "callsign": "OutOfProcessPlugin",
             "locator": "libOutOfProcessPlugin.so",
             "classname": "OutOfProcessPlugin",
-            "autostart": true,
+            "autostart": false,
             "configuration": {
                 "outofprocess": true,
                 "url": "http://netflix.com/tv",
@@ -87,7 +87,7 @@
             "callsign": "JSONRPCPlugin",
             "locator": "libJSONRPCPlugin.so",
             "classname": "JSONRPCPlugin",
-            "autostart": false
+            "autostart": true
         },
         {
             "callsign": "OpenCDMi",

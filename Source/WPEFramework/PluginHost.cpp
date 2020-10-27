@@ -361,7 +361,7 @@ namespace PluginHost {
 
             if (_config->Process().IsSet() == true) {
 
-                Core::ProcessInfo myself;
+                Core::ProcessCurrent myself;
 
                 if (_config->Process().OOMAdjust() != 0) {
                     myself.OOMAdjust(_config->Process().OOMAdjust());
@@ -512,8 +512,9 @@ namespace PluginHost {
 
 #if THUNDER_RUNTIME_STATISTICS
                             printf("Requests:   %d\n", index.Current().ProcessedRequests.Value());
-                            printf("JSON:       %d\n\n", index.Current().ProcessedObjects.Value());
+                            printf("JSON:       %d\n", index.Current().ProcessedObjects.Value());
 #endif
+                            printf("\n");
                         }
                         break;
                     }

@@ -572,12 +572,11 @@ int main(int argc, char** argv)
             TRACE_L1("Spawning a new plugin %s.", options.ClassName);
 
             // Firts make sure we apply the correct rights to our selves..
-            if (options.User != nullptr) {
-                Core::ProcessInfo::User(string(options.User));
-            }
-
             if (options.Group != nullptr) {
-                Core::ProcessInfo().Group(string(options.Group));
+                Core::ProcessCurrent().Group(string(options.Group));
+            }
+            if (options.User != nullptr) {
+                Core::ProcessCurrent().User(string(options.User));
             }
 
             process.Startup(options.Threads, remoteNode);
