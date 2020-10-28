@@ -128,9 +128,9 @@ namespace Core {
 
                 realObject.Clear();
 
-                while (size != handled) {
+                while (handled < size) {
 
-		    uint16_t payload = static_cast<uint16_t>(std::min(size - handled, static_cast<uint32_t>(0xFFFF)));
+		    uint16_t payload = static_cast<uint16_t>(std::min((size - handled) + 1, static_cast<uint32_t>(0xFFFF)));
 
                     // Deserialize object
                     uint16_t loaded = static_cast<IElement&>(realObject).Deserialize(&(text.c_str()[handled]), payload, offset, error);
@@ -665,6 +665,9 @@ namespace Core {
                             offset = 4;
                         } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'u')) {
                             offset = 2;
+                        } else if ((stream[loaded] == '\"') && ((_set & QUOTED) != 0)) {
+                            offset = 4;
+                            --loaded;
                         } else {
                             error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
                             ++loaded;
@@ -683,6 +686,9 @@ namespace Core {
                             offset = 4;
                         } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'l')) {
                             offset = 3;
+                        } else if (stream[loaded] == '\"' && ((_set & QUOTED) != 0)) {
+                            offset = 4;
+                            --loaded;
                         } else {
                             error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
                             ++loaded;
@@ -699,6 +705,9 @@ namespace Core {
                             offset = 4;
                         } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'l')) {
                             offset = 4;
+                        } else if (stream[loaded] == '\"' && ((_set & QUOTED) != 0)) {
+                            offset = 4;
+                            --loaded;
                         } else {
                             error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
                             ++loaded;
