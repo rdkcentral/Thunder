@@ -327,10 +327,6 @@ namespace Core {
 
         // Signal a state change, Opened, Closed or Accepted
         virtual void StateChange() = 0;
-
-        uint16_t HeaderSize() const;
-        bool IsValid(const uint8_t packet[], const uint16_t size, const uint16_t destPort, Core::NodeId& receivedNode) const;
-        uint16_t SetHeader(const Core::NodeId& local, const Core::NodeId& remote, const uint16_t payloadSize, uint8_t* packet) const;
     };
 
     class EXTERNAL SocketListner {

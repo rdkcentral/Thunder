@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-#include "IPFrame.h"
 #include "SocketPort.h"
 #include "ProcessInfo.h"
 #include "ResourceMonitor.h"
@@ -528,8 +527,9 @@ namespace Core {
             // port, unless there is an active listening socket bound to the port already. This
             // enables you to get around those "Address already in use" error messages when you
             // try to restart your server after a crash.
+
             int optval = 1;
-            socklen_t optionLength = sizeof(int);
+            socklen_t optionLength = sizeof(optval);
 
             if (::setsockopt(l_Result, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength) < 0) {
                 TRACE_L1("Error on setting SO_REUSEADDR option. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
@@ -1153,32 +1153,5 @@ namespace Core {
     {
     }
 
-    uint16_t SocketDatagram::HeaderSize() const
-    {
-        Core::UDPFrameType<0> udp;
-        return udp.Size();
-    }
-
-    bool SocketDatagram::IsValid(const uint8_t packet[], const uint16_t size, const uint16_t destPort, Core::NodeId& receivedNode) const
-    {
-        bool status = false;
-
-        Core::UDPFrameType<0> udp(packet, size);
-        Core::NodeId dest = udp.Destination();
-        if ((udp.IsValid() == true) && (dest.PortNumber() == destPort)) {
-            receivedNode = udp.Source();
-            status = true;
-        }
-
-        return status;
-    }
-    uint16_t SocketDatagram::SetHeader(const Core::NodeId& local, const Core::NodeId& remote, const uint16_t payloadSize, uint8_t packet[]) const
-    {
-        Core::UDPFrameType<0> udp(local, remote);
-        uint16_t pktSize = udp.UpdatePayloadChecksum(packet + udp.Size(), payloadSize);
-        memcpy(packet, udp.Header(), udp.Size());
-
-        return pktSize;
-    }
 }
 } // namespace Solution::Core

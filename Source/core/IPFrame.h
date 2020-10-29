@@ -35,149 +35,177 @@ namespace WPEFramework {
 
 namespace Core {
 
+    template <uint16_t SIZE>
+    class EthernetFrameType {
+    private:
+        static constexpr uint8_t headerSize = 14;
+
+    public:
+        EthernetFrameType (const EthernetFrameType<SIZE>&) = delete;
+        EthernetFrameType<SIZE>& operator=(const EthernetFrameType<SIZE>&) = delete;
+
+        EthernetFrameType() {
+            memset(&(_buffer[0]), 0xFF, 12);
+	    _buffer[12] = 0x08;
+	    _buffer[13] = 0x00;
+        }
+        EthernetFrameType(const uint8_t buffer[], const uint16_t size) {
+             uint16_t copySize = std::min(size, static_cast<uint16_t>(sizeof(_buffer)));
+             ::memcpy(_buffer, buffer, copySize);
+        }
+        ~EthernetFrameType() = default;
+
+    public:
+        const uint8_t* SourceMAC() const {
+            return (&(_buffer[6]));
+        }
+        void SourceMAC(const uint8_t MACAddress[]) {
+            memcpy(&(_buffer[6]), MACAddress, 6);
+        }
+        const uint8_t* DestinationMAC() const {
+            return (&(_buffer[6]));
+        }
+        void DestinationMAC(const uint8_t MACAddress[]) {
+            memcpy(&(_buffer[0]), &MACAddress, 6);
+        }
+        uint16_t HeaderSize() const {
+            return (headerSize);
+        }
+        uint8_t* Frame() {
+            return (SIZE > 0 ? &(_buffer[headerSize]) : nullptr);
+        }
+        const uint8_t* Frame() const {
+            return (SIZE > 0 ? &(_buffer[headerSize]) : nullptr);
+        }
+        const uint8_t* Data() const {
+            return _buffer;
+        }
+     
+    private:
+        uint8_t _buffer[SIZE + headerSize];
+    };
+
     template <uint8_t PROTOCOL, uint16_t SIZE = 0>
-    class IPFrameType {
-    public:
+    class IPv4FrameType : public EthernetFrameType<SIZE + sizeof(iphdr)> {
+    private:
         static constexpr uint8_t IPV4_VERSION = 4;
-        static constexpr uint8_t IPV4_HEADER_PROTOCOL_OFFSET = offsetof(iphdr, protocol);
-        static constexpr uint8_t IPV4_HEADER_LENGTH_OFFSET = offsetof(iphdr, tot_len);
+        using Base = EthernetFrameType<SIZE + sizeof(iphdr)>;
 
     public:
-        IPFrameType(const IPFrameType<PROTOCOL,SIZE>&) = delete;
-        IPFrameType<PROTOCOL,SIZE>& operator=(const IPFrameType<PROTOCOL,SIZE>&) = delete;
+        IPv4FrameType(const IPv4FrameType<PROTOCOL,SIZE>&) = delete;
+        IPv4FrameType<PROTOCOL,SIZE>& operator=(const IPv4FrameType<PROTOCOL,SIZE>&) = delete;
 
-        IPFrameType() 
-            : _length(0)
-        {
-            iphdr* ipHeader = reinterpret_cast<iphdr*>(_buffer);
+        IPv4FrameType() : Base() {
+            iphdr* ipHeader = reinterpret_cast<iphdr*>(Base::Frame());
 
             ::memset(ipHeader, 0, sizeof(iphdr));
             ipHeader->version = IPV4_VERSION;
-            ipHeader->id = 37540;
+            ipHeader->id =  htons(0xBEEF); // 37540;
             ipHeader->ihl = 5; // Standard IP header length (for IPV4 16 bits elements)
             ipHeader->ttl = 64; // Standard TTL
             ipHeader->protocol = PROTOCOL;
+            ipHeader->tot_len = htons(sizeof(sizeof(iphdr)));
             ipHeader->check = Checksum();
         }
-        IPFrameType(const NodeId& source, const NodeId& destination) : IPFrameType() {
+        IPv4FrameType(const NodeId& source, const NodeId& destination) : IPv4FrameType() {
             Source(source);
             Destination(destination);
         }
-        IPFrameType(const uint8_t buffer[], const uint16_t size)
-            : _length(size - sizeof(iphdr)) {
-             ::memcpy(_buffer, buffer, sizeof(iphdr) + SIZE);
+        IPv4FrameType(const uint8_t buffer[], const uint16_t size) : Base(buffer, size) {
         }
-        ~IPFrameType() = default;
+        ~IPv4FrameType() = default;
 
     public:
         bool IsValid() const {
-            const iphdr* ipHeader = reinterpret_cast<const iphdr*>(_buffer);
-            return ((ipHeader->protocol == PROTOCOL) && (Checksum() == ipHeader->check));
+            const iphdr* ipHeader = reinterpret_cast<const iphdr*>(Base::Frame());
+            return ((ipHeader->protocol == PROTOCOL) && (Checksum() == ntohs(ipHeader->check)));
+        }
+        uint16_t HeaderSize() const {
+            return (sizeof(iphdr));
+        }
+        uint8_t Protocol() const {
+            return (reinterpret_cast<const iphdr*>(Base::Frame())->protocol);
         }
         inline NodeId Source() const {
             NodeId result;
-            const iphdr* ipHeader = reinterpret_cast<const iphdr*>(_buffer);
+            const iphdr* ipHeader = reinterpret_cast<const iphdr*>(Base::Frame());
             if (ipHeader->version == IPV4_VERSION) {
                 sockaddr_in node;
                 ::memset (&node, 0, sizeof(node));
                 node.sin_family = AF_INET;
                 node.sin_port = 0;
-                node.sin_addr.s_addr = ipHeader->saddr;
+                node.sin_addr.s_addr = ntohl(ipHeader->saddr);
                 result = node;
             }
             return (result);
         }
         inline void Source(const NodeId& node) {
-            iphdr* ipHeader = reinterpret_cast<iphdr*>(_buffer);
+            iphdr* ipHeader = reinterpret_cast<iphdr*>(Base::Frame());
             if (ipHeader->version == IPV4_VERSION) {
                 ASSERT (node.Type() == NodeId::TYPE_IPV4);
                 const sockaddr_in& result = static_cast<const NodeId::SocketInfo&>(node).IPV4Socket;
-                ipHeader->saddr = result.sin_addr.s_addr;
+                ipHeader->saddr = ::htonl(result.sin_addr.s_addr);
                 ipHeader->check = Checksum();
             }
         }
         inline NodeId Destination() const {
             NodeId result;
-            const iphdr* ipHeader = reinterpret_cast<const iphdr*>(_buffer);
+            const iphdr* ipHeader = reinterpret_cast<const iphdr*>(Base::Frame());
             if (ipHeader->version == IPV4_VERSION) {
                 sockaddr_in node;
                 ::memset (&node, 0, sizeof(node));
                 node.sin_family = AF_INET;
                 node.sin_port = 0;
-                node.sin_addr.s_addr = ipHeader->daddr;
+                node.sin_addr.s_addr = ntohl(ipHeader->daddr);
                 result = node;
             }
             return (result);
         }
         inline void Destination(const NodeId& node) {
-            iphdr* ipHeader = reinterpret_cast<iphdr*>(_buffer);
+            iphdr* ipHeader = reinterpret_cast<iphdr*>(Base::Frame());
             if (ipHeader->version == IPV4_VERSION) {
                 ASSERT (node.Type() == NodeId::TYPE_IPV4);
                 const sockaddr_in& result = static_cast<const NodeId::SocketInfo&>(node).IPV4Socket;
-                ipHeader->daddr = result.sin_addr.s_addr;
+                ipHeader->daddr = ::htonl(result.sin_addr.s_addr);
                 ipHeader->check = Checksum();
             }
         }
         inline uint8_t TTL() const {
-            const iphdr* ipHeader = reinterpret_cast<const iphdr*>(_buffer);
-            return (ipHeader->ttl);
+            return (reinterpret_cast<const iphdr*>(Base::Frame())->ttl);
         }
         inline void TTL(const uint8_t ttl) {
-            iphdr* ipHeader = reinterpret_cast<iphdr*>(_buffer);
+            iphdr* ipHeader = reinterpret_cast<iphdr*>(Base::Frame());
             ipHeader->ttl   = ttl;
-            ipHeader->check = Checksum() ;
-        }
-        inline void Length(const uint16_t length) {
-            _length = length;
-
-            iphdr* ipHeader = reinterpret_cast<iphdr*>(_buffer);
-            ipHeader->tot_len = htons(sizeof(iphdr) + SIZE + length);
             ipHeader->check = Checksum();
         }
-        inline uint16_t Length() {
-            return _length;
+        inline uint16_t Length() const {
+            return ntohs(reinterpret_cast<const iphdr*>(Base::Frame())->tot_len) - sizeof(iphdr);
         }
-        inline uint16_t Size() const {
-            return (sizeof(iphdr) + SIZE);
+        inline void Length(const uint16_t length) {
+            iphdr* ipHeader = reinterpret_cast<iphdr*>(Base::Frame());
+            ipHeader->tot_len = ntohs(length + sizeof(iphdr));
+            ipHeader->check = Checksum();
         }
         inline uint8_t Version() const {
-            const iphdr* ipHeader = reinterpret_cast<const iphdr*>(_buffer);
-            return ipHeader->version;
+            return (reinterpret_cast<const iphdr*>(Base::Frame())->version);
         }
         uint8_t* Frame() {
-            return (SIZE > 0 ? &(_buffer[sizeof(iphdr)]) : nullptr);
+            return (SIZE > 0 ? &(Base::Frame()[sizeof(iphdr)]) : nullptr);
         }
         const uint8_t* Frame() const {
-            return (SIZE > 0 ? &(_buffer[sizeof(iphdr)]) : nullptr);
+            return (SIZE > 0 ? &(Base::Frame()[sizeof(iphdr)]) : nullptr);
         }
-        uint8_t* Header() {
-            return _buffer;
-        }
-        const uint8_t* Header() const {
-            return _buffer;
-        }
-        inline uint16_t Offset() const {
-            return offsetof(iphdr, protocol);
+        inline uint16_t Size() const {
+            return ntohs(reinterpret_cast<const iphdr*>(Base::Frame())->tot_len) + Base::HeaderSize();
         }
 
     protected:
-        void FillChecksumDummyHeader(uint8_t* header, uint16_t size) const {
-            const iphdr* ipHeader = reinterpret_cast<const iphdr*>(_buffer);
-            iphdr* dummy = reinterpret_cast<iphdr*>(header);
+        uint32_t Checksum(const uint32_t startValue, const uint16_t data[], const uint16_t lengthInBytes) const {
 
-            dummy->check = 0;
-            dummy->tot_len = size;
-            dummy->saddr = ipHeader->saddr;
-            dummy->daddr = ipHeader->daddr;
-            dummy->protocol = ipHeader->protocol;
-
-            return;
-        }
-        uint16_t Checksum(const uint16_t* data, const uint16_t size) const {
             // src: https://gist.github.com/david-hoze/0c7021434796997a4ca42d7731a7073a
-            uint32_t  sum = 0;
+            uint32_t  sum = startValue;
 
-            uint16_t count = size;
+            uint16_t count = lengthInBytes;
             while (count > 1) {
                 sum += *data++;
                 count -= 2;
@@ -186,6 +214,12 @@ namespace Core {
             if(count > 0) {
                 sum += ((*data)&htons(0xFF00));
             }
+
+            return (sum);
+        }
+        uint16_t Shrink(const uint32_t value) const {
+
+            uint32_t sum = value;
 
             if (sum > 0xFFFF) {
                 sum = (sum & 0xFFFF) + (sum >> 16);
@@ -197,48 +231,52 @@ namespace Core {
         }
 
     private:
-        inline uint16_t Checksum() const {
+        uint16_t Checksum() const {
 
-            iphdr*    ipHeader = const_cast<iphdr*>(reinterpret_cast<const iphdr*>(_buffer));
-            uint16_t  org = ipHeader->check;
+            iphdr*    ipHeader = const_cast<iphdr*>(reinterpret_cast<const iphdr*>(Base::Frame()));
+            uint16_t  original = ipHeader->check;
             ipHeader->check = 0;
-            uint16_t checksum = Checksum(reinterpret_cast<uint16_t*>(ipHeader), (ipHeader->ihl) << 2);
-            ipHeader->check = org;
-            return checksum;
+            uint32_t result = Checksum(0, reinterpret_cast<const uint16_t*>(ipHeader), sizeof(iphdr));
+            ipHeader->check = original;
+            return (Shrink(result));
         }
 
-    private:
-        uint8_t _buffer[SIZE + sizeof(iphdr)];
-        uint16_t _length;
     };
 
 #ifndef __WINDOWS__
 
     template <uint16_t SIZE = 0>
-    class TCPFrameType : public IPFrameType<IPPROTO_TCP, SIZE + sizeof(tcphdr)> {
+    class TCPv4FrameType : public IPv4FrameType<IPPROTO_TCP, SIZE + sizeof(tcphdr)> {
     private:
-        using Base = IPFrameType<IPPROTO_TCP, SIZE + sizeof(tcphdr)>;
+        using Base = IPv4FrameType<IPPROTO_TCP, SIZE + sizeof(tcphdr)>;
 
     public:
-        TCPFrameType(const TCPFrameType<SIZE>&) = delete;
-        TCPFrameType<SIZE>& operator=(const TCPFrameType<SIZE>&) = delete;
+        TCPv4FrameType(const TCPv4FrameType<SIZE>&) = delete;
+        TCPv4FrameType<SIZE>& operator=(const TCPv4FrameType<SIZE>&) = delete;
 
-        TCPFrameType() : Base() {
+        TCPv4FrameType() : Base() {
             tcphdr* tcpHeader = reinterpret_cast<tcphdr*>(Base::Frame());
 
             ::memset(tcpHeader, 0, sizeof(tcphdr));
+
+            Base::Length(sizeof(tcphdr));
         }
-        TCPFrameType(const NodeId& source, const NodeId& destination) : Base(source, destination) {
+        TCPv4FrameType(const NodeId& source, const NodeId& destination) : Base(source, destination) {
             tcphdr* tcpHeader = reinterpret_cast<tcphdr*>(Base::Frame());
 
             tcpHeader->source = htons(source.PortNumber());
             tcpHeader->dest = htons(destination.PortNumber());
+
+            Base::Length(sizeof(tcphdr));
         }
-        TCPFrameType(const uint8_t buffer[], const uint16_t size) : Base(buffer, size) {
+        TCPv4FrameType(const uint8_t buffer[], const uint16_t size) : Base(buffer, size) {
         }
-        ~TCPFrameType() = default;
+        ~TCPv4FrameType() = default;
 
     public:
+        uint16_t HeaderSize() const {
+            return (Base::HeaderSize() + sizeof(tcphdr));
+        }
         inline NodeId Source() const {
             const tcphdr* tcpHeader = reinterpret_cast<const tcphdr*>(Base::Frame());
             NodeId result (Base::Source());
@@ -263,52 +301,55 @@ namespace Core {
                 tcpHeader->dest = htons(node.PortNumber());
             }
         }
-        inline uint16_t Size() const {
-            return (Base::Size());
-        }
         uint8_t* Frame() {
-            return (SIZE > 0 ? &(Frame()[sizeof(tcphdr)]) : nullptr);   
+            return (SIZE > 0 ? &(Base::Frame()[sizeof(tcphdr)]) : nullptr);   
         }
         const uint8_t* Frame() const {
-            return (SIZE > 0 ? &(Frame()[sizeof(tcphdr)]) : nullptr);   
-        }
-        uint8_t* Header() {
-            return Base::Header();
-        }
-        const uint8_t* Header() const {
-            return Base::Header();
+            return (SIZE > 0 ? &(Base::Frame()[sizeof(tcphdr)]) : nullptr);   
         }
     };
 	
     template <uint16_t SIZE = 0>
-    class UDPFrameType : public IPFrameType<IPPROTO_UDP, SIZE + sizeof(udphdr)> {
+    class UDPv4FrameType : public IPv4FrameType<IPPROTO_UDP, SIZE + sizeof(udphdr)> {
     private:
-        using Base = IPFrameType<IPPROTO_UDP, SIZE + sizeof(udphdr)>;
+        using Base = IPv4FrameType<IPPROTO_UDP, SIZE + sizeof(udphdr)>;
 
     public:
-        UDPFrameType(const UDPFrameType<SIZE>&) = delete;
-        UDPFrameType<SIZE>& operator=(const UDPFrameType<SIZE>&) = delete;
+        UDPv4FrameType(const UDPv4FrameType<SIZE>&) = delete;
+        UDPv4FrameType<SIZE>& operator=(const UDPv4FrameType<SIZE>&) = delete;
 
-        UDPFrameType() : Base() {
+        UDPv4FrameType() : Base() {
             udphdr* udpHeader = reinterpret_cast<udphdr*>(Base::Frame());
 
             ::memset(udpHeader, 0, sizeof(udphdr));
-            Length(0);
+
+            Base::Length(sizeof(udphdr));
+
+            udpHeader->check = Checksum();
         }
-        UDPFrameType(const NodeId& source, const NodeId& destination) : Base(source, destination) {
+        UDPv4FrameType(const NodeId& source, const NodeId& destination) : Base(source, destination) {
             udphdr* udpHeader = reinterpret_cast<udphdr*>(Base::Frame());
             ::memset(udpHeader, 0, sizeof(udphdr));
 
             udpHeader->source = htons(source.PortNumber());
             udpHeader->dest = htons(destination.PortNumber());
-            Length(0);
+
+            Base::Length(sizeof(udphdr));
+
+            udpHeader->check = Checksum();
         }
-        UDPFrameType(const uint8_t buffer[], const uint16_t size) : Base(buffer, size - sizeof(udphdr)) {
+        UDPv4FrameType(const uint8_t buffer[], const uint16_t size) : Base(buffer, size) {
         }
 
-        ~UDPFrameType() = default;
+        ~UDPv4FrameType() = default;
 
     public:
+        bool IsValid() const {
+            return (Base::IsValid() && (Checksum() == ntohs(reinterpret_cast<const udphdr*>(Base::Frame())->check)));
+        }
+        uint16_t HeaderSize() const {
+            return (Base::HeaderSize() + sizeof(udphdr));
+        }
         inline NodeId Source() const {
             const udphdr* udpHeader = reinterpret_cast<const udphdr*>(Base::Frame());
             NodeId result(Base::Source());
@@ -336,62 +377,49 @@ namespace Core {
         void Length(const uint16_t length) {
             udphdr* udpHeader = reinterpret_cast<udphdr*>(Base::Frame());
             udpHeader->len = htons(sizeof(udphdr) + length);
-            Base::Length(length);
+            Base::Length(sizeof(udphdr) + length);
+            udpHeader->check = Checksum();
         }
-        inline uint16_t CheckPayloadChecksum(const uint8_t payload[], uint32_t size) {
-
-            udphdr* udpHeader = reinterpret_cast<udphdr*>(Base::Frame());
-            uint16_t org = udpHeader->check;
-            udpHeader->check = 0; // Reset checksum
-            udpHeader->check = Checksum(payload, size);
-            return (org == udpHeader->check);
-        }
-        inline uint16_t UpdatePayloadChecksum(const uint8_t payload[], uint32_t size) {
-            Length(size);
-            udphdr* udpHeader = reinterpret_cast<udphdr*>(Base::Frame());
-            udpHeader->check = 0; // Reset checksum
-
-            udpHeader->check = Checksum(payload, size);
-            return Size() + Base::Length();
-        }
-        inline uint16_t Size() const {
-            return (Base::Size());
+        uint16_t Length() const {
+            return (Base::Length() - sizeof(udphdr));
         }
         uint8_t* Frame() {
-            return (SIZE > 0 ? &(Frame()[sizeof(udphdr)]) : nullptr);
+            return (SIZE > 0 ? &(Base::Frame()[sizeof(udphdr)]) : nullptr);
         }
         const uint8_t* Frame() const {
-            return (SIZE > 0 ? &(Frame()[sizeof(udphdr)]) : nullptr);
-        }
-        uint8_t* Header() {
-            return Base::Header();
-        }
-        const uint8_t* Header() const {
-            return Base::Header();
+            return (SIZE > 0 ? &(Base::Frame()[sizeof(udphdr)]) : nullptr);
         }
 
     private:
-        void FillChecksumDummyHeader(uint8_t packet[], uint16_t size) {
-            const udphdr* udpHeader = reinterpret_cast<const udphdr*>(Base::Frame());
-            Base::FillChecksumDummyHeader(packet, udpHeader->len);
+        uint16_t Checksum() const {
+            uint16_t length      = Base::Length();
+            uint32_t source      = static_cast<const NodeId::SocketInfo&>(Base::Source()).IPV4Socket.sin_addr.s_addr;
+            uint32_t destination = static_cast<const NodeId::SocketInfo&>(Base::Destination()).IPV4Socket.sin_addr.s_addr;
 
-            udphdr* dummy = reinterpret_cast<udphdr*>(packet + (Base::Size() - sizeof(udphdr)));
-            dummy->check = 0;
-            dummy->dest = udpHeader->dest;
-            dummy->source = udpHeader->source;
-            dummy->len = udpHeader->len;
-        }
-        inline uint16_t Checksum(const uint8_t payload[], uint32_t size) {
-            uint8_t packet[Base::Size() + size];
-            ::memset(packet, 0, Base::Size() + size);
+            uint8_t pseudoHeader[12];
+            pseudoHeader[0] = (source >> 24) & 0xFF;
+            pseudoHeader[1] = (source >> 16) & 0xFF;
+            pseudoHeader[2] = (source >> 8)  & 0xFF;
+            pseudoHeader[3] =  source        & 0xFF;
+            pseudoHeader[4] = (destination >> 24) & 0xFF;
+            pseudoHeader[5] = (destination >> 16) & 0xFF;
+            pseudoHeader[6] = (destination >> 8)  & 0xFF;
+            pseudoHeader[7] =  destination        & 0xFF;
+            pseudoHeader[8] = 0x00;
+            pseudoHeader[9] = Base::Protocol();
+            pseudoHeader[10] = (length >> 8);
+            pseudoHeader[11] = (length & 0xFF);
 
-            if (Base::Version() == IPFrameType<IPPROTO_UDP, 0>::IPV4_VERSION) {
-                FillChecksumDummyHeader(packet, Base::Size() + size);
-            }
-            ::memcpy(packet + Base::Size(), payload, size);
+            udphdr* udpHeader = const_cast<udphdr*>(reinterpret_cast<const udphdr*>(Base::Frame()));
+            uint16_t  original = udpHeader->check;
+            udpHeader->check = 0;
+            uint32_t result = Base::Checksum(0, reinterpret_cast<const uint16_t*>(pseudoHeader), sizeof(pseudoHeader));
+            result = Base::Checksum (result, reinterpret_cast<const uint16_t*>(udpHeader), Base::Length());
+            udpHeader->check = original;
 
-            return (Base::Checksum(reinterpret_cast<const uint16_t*>(packet), Base::Size() + size));
+            return (Base::Shrink(result));
         }
     };
 #endif
+
 } } // namespace WPEFramework::Core
