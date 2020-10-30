@@ -1466,8 +1466,8 @@ namespace Core {
 
             String(const String& copy)
                 : _default(copy._default)
-                , _scopeCount(copy._scopeCount & (QuotedSerializeBit | SetBit))
-                , _unaccountedCount(0)
+                , _scopeCount(copy._scopeCount)
+                , _unaccountedCount(copy._unaccountedCount)
                 , _value(copy._value)
             {
             }
@@ -1506,7 +1506,8 @@ namespace Core {
             {
                 _default = RHS._default;
                 _value = RHS._value;
-                _scopeCount = (RHS._scopeCount & ~QuotedSerializeBit) | (_scopeCount & QuotedSerializeBit);
+                _scopeCount = RHS._scopeCount;
+                _unaccountedCount = RHS._unaccountedCount;
 
                 return (*this);
             }
