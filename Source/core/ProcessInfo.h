@@ -271,7 +271,7 @@ namespace Core {
 #endif
     }; // class ProcessInfo
 
-   class ProcessCurrent: public ProcessInfo {
+   class EXTERNAL ProcessCurrent: public ProcessInfo {
    public:
        ProcessCurrent(const ProcessInfo&) = delete;
        ProcessCurrent& operator= (const ProcessInfo&) = delete;
@@ -287,7 +287,7 @@ namespace Core {
        uint32_t Group(const string& groupName);
    };
 
-   class ProcessTree
+   class EXTERNAL ProcessTree
    {
       public:
          explicit ProcessTree(const ProcessInfo& processInfo);
