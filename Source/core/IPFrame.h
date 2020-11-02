@@ -136,46 +136,48 @@ namespace Core {
         inline NodeId Source() const {
             NodeId result;
             const iphdr* ipHeader = reinterpret_cast<const iphdr*>(Base::Frame());
-            if (ipHeader->version == IPV4_VERSION) {
-                sockaddr_in node;
-                ::memset (&node, 0, sizeof(node));
-                node.sin_family = AF_INET;
-                node.sin_port = 0;
-                node.sin_addr.s_addr = ntohl(ipHeader->saddr);
-                result = node;
-            }
+            ASSERT (ipHeader->version == IPV4_VERSION);
+
+            sockaddr_in node;
+            ::memset (&node, 0, sizeof(node));
+            node.sin_family = AF_INET;
+            node.sin_port = 0;
+            node.sin_addr.s_addr = ipHeader->saddr;
+            result = node;
+
             return (result);
         }
         inline void Source(const NodeId& node) {
             iphdr* ipHeader = reinterpret_cast<iphdr*>(Base::Frame());
-            if (ipHeader->version == IPV4_VERSION) {
-                ASSERT (node.Type() == NodeId::TYPE_IPV4);
-                const sockaddr_in& result = static_cast<const NodeId::SocketInfo&>(node).IPV4Socket;
-                ipHeader->saddr = ::htonl(result.sin_addr.s_addr);
-                ipHeader->check = Checksum();
-            }
+            ASSERT (ipHeader->version == IPV4_VERSION);
+            ASSERT (node.Type() == NodeId::TYPE_IPV4);
+
+            const sockaddr_in& result = static_cast<const NodeId::SocketInfo&>(node).IPV4Socket;
+            ipHeader->saddr = result.sin_addr.s_addr;
+            ipHeader->check = Checksum();
         }
         inline NodeId Destination() const {
             NodeId result;
             const iphdr* ipHeader = reinterpret_cast<const iphdr*>(Base::Frame());
-            if (ipHeader->version == IPV4_VERSION) {
-                sockaddr_in node;
-                ::memset (&node, 0, sizeof(node));
-                node.sin_family = AF_INET;
-                node.sin_port = 0;
-                node.sin_addr.s_addr = ntohl(ipHeader->daddr);
-                result = node;
-            }
+            ASSERT (ipHeader->version == IPV4_VERSION);
+
+            sockaddr_in node;
+            ::memset (&node, 0, sizeof(node));
+            node.sin_family = AF_INET;
+            node.sin_port = 0;
+            node.sin_addr.s_addr = ipHeader->daddr;
+            result = node;
+
             return (result);
         }
         inline void Destination(const NodeId& node) {
             iphdr* ipHeader = reinterpret_cast<iphdr*>(Base::Frame());
-            if (ipHeader->version == IPV4_VERSION) {
-                ASSERT (node.Type() == NodeId::TYPE_IPV4);
-                const sockaddr_in& result = static_cast<const NodeId::SocketInfo&>(node).IPV4Socket;
-                ipHeader->daddr = ::htonl(result.sin_addr.s_addr);
-                ipHeader->check = Checksum();
-            }
+            ASSERT (ipHeader->version == IPV4_VERSION);
+            ASSERT (node.Type() == NodeId::TYPE_IPV4);
+
+            const sockaddr_in& result = static_cast<const NodeId::SocketInfo&>(node).IPV4Socket;
+            ipHeader->daddr = result.sin_addr.s_addr;
+            ipHeader->check = Checksum();
         }
         inline uint8_t TTL() const {
             return (reinterpret_cast<const iphdr*>(Base::Frame())->ttl);
@@ -417,8 +419,8 @@ namespace Core {
     private:
         uint16_t Checksum() const {
             uint16_t length      = Base::Length();
-            uint32_t source      = static_cast<const NodeId::SocketInfo&>(Base::Source()).IPV4Socket.sin_addr.s_addr;
-            uint32_t destination = static_cast<const NodeId::SocketInfo&>(Base::Destination()).IPV4Socket.sin_addr.s_addr;
+            uint32_t source      = ntohl(static_cast<const NodeId::SocketInfo&>(Base::Source()).IPV4Socket.sin_addr.s_addr);
+            uint32_t destination = ntohl(static_cast<const NodeId::SocketInfo&>(Base::Destination()).IPV4Socket.sin_addr.s_addr);
 
             uint8_t pseudoHeader[12];
             pseudoHeader[0] = (source >> 24) & 0xFF;
