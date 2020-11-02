@@ -252,8 +252,6 @@ namespace Core {
 
     };
 
-#ifndef __WINDOWS__
-
     static constexpr uint16_t TCPv4FrameSize = sizeof(tcphdr);
 
     template <uint16_t SIZE = 0>
@@ -446,6 +444,5 @@ namespace Core {
             return (Base::Shrink(result));
         }
     };
-#endif
 
 } } // namespace WPEFramework::Core
