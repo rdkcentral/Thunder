@@ -24,6 +24,7 @@
 #include "NodeId.h"
 
 #ifdef __WINDOWS__
+#include <net/ipheaders.h>
 #else
 #include<netinet/ip.h>
 #include<netinet/udp.h>
@@ -169,6 +170,9 @@ namespace Core {
         uint16_t _length;
     };
 
+
+#ifndef __WINDOWS__
+
     template <uint16_t SIZE = 0>
     class TCPFrameType : public IPFrameType<IPPROTO_TCP, SIZE + sizeof(tcphdr)> {
     private:
@@ -192,7 +196,7 @@ namespace Core {
         ~TCPFrameType() = default;
 
     public:
-        inline NodeId& Source() const {
+        inline NodeId Source() const {
             const tcphdr* tcpHeader = reinterpret_cast<const tcphdr*>(Base::Frame());
             NodeId result (Base::Source());
             return (result.IsValid() ? NodeId(result, ntohs(tcpHeader->source)) : result);
@@ -204,7 +208,7 @@ namespace Core {
                 tcpHeader->source = htons(node.PortNumber());
             }
         }
-        inline NodeId& Destination() const {
+        inline NodeId Destination() const {
             const tcphdr* tcpHeader = reinterpret_cast<const tcphdr*>(Base::Frame());
             NodeId result(Base::Destination());
             return (result.IsValid() ? NodeId(result, ntohs(tcpHeader->dest)) : result);
@@ -228,7 +232,7 @@ namespace Core {
             return (SIZE > 0 ? &(Frame()[sizeof(tcphdr)]) : nullptr);   
         }
     };
-
+	
     template <uint16_t SIZE = 0>
     class UDPFrameType : public IPFrameType<IPPROTO_UDP, SIZE + sizeof(udphdr)> {
     private:
@@ -252,7 +256,7 @@ namespace Core {
         ~UDPFrameType() = default;
 
     public:
-        inline NodeId& Source() const {
+        inline NodeId Source() const {
             const udphdr* udpHeader = reinterpret_cast<const udphdr*>(Base::Frame());
             NodeId result(Base::Source());
             return (result.IsValid() ? NodeId(result, ntohs(udpHeader->source)) : result);
@@ -264,7 +268,7 @@ namespace Core {
                 udpHeader->source = htons(node.PortNumber());
             }
         }
-        inline NodeId& Destination() const {
+        inline NodeId Destination() const {
             const udphdr* udpHeader = reinterpret_cast<const udphdr*>(Base::Frame());
             NodeId result(Base::Destination());
             return (result.IsValid() ? NodeId(result, ntohs(udpHeader->dest)) : result);
@@ -288,5 +292,5 @@ namespace Core {
             return (SIZE > 0 ? &(Frame()[sizeof(udphdr)]) : nullptr);   
         }
     };
-
+#endif
 } } // namespace WPEFramework::Core

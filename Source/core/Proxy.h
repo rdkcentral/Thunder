@@ -528,7 +528,7 @@ namespace Core {
             // That's easy, if there is space left..
             if (m_Current >= m_Max) {
                 // Time to expand. Double the capacity. Allocate the capacity.
-                IReferenceCounted** l_NewList = new IReferenceCounted*[(m_Max << 1)];
+                IReferenceCounted** l_NewList = new IReferenceCounted*[static_cast<uint32_t>(m_Max << 1)];
 
                 // Copy the old list in (Dirty but quick !!!!)
                 memcpy(l_NewList, &m_List[0], (m_Max * sizeof(IReferenceCounted*)));
@@ -995,38 +995,32 @@ namespace Core {
         template <typename ELEMENT>
         class ProxyObjectType : public PoolElement<ELEMENT> {
         private:
-            ProxyObjectType() = delete;
-            ProxyObjectType(const ProxyObjectType<ELEMENT>&) = delete;
-            ProxyObjectType<ELEMENT>& operator=(const ProxyObjectType<ELEMENT>&) = delete;
+            HAS_MEMBER(Acquire, hasAcquire);
 
-            ProxyObjectType(ProxyPoolType<ELEMENT>* queue)
-                : PoolElement<ELEMENT>()
-                , _queue(*queue)
-            {
-                ASSERT(queue != nullptr);
-            }
-            template <typename Arg1>
-            ProxyObjectType(ProxyPoolType<ELEMENT>* queue, Arg1 a_Arg1)
-                : PoolElement<ELEMENT>(a_Arg1)
+            typedef hasAcquire<ELEMENT, void (ELEMENT::*)()> TraitAcquire;
+
+            template <typename... Args>
+            ProxyObjectType(ProxyPoolType<ELEMENT>* queue, Args&&... args)
+                : PoolElement<ELEMENT>(args...)
                 , _queue(*queue)
             {
                 ASSERT(queue != nullptr);
             }
 
         public:
+            ProxyObjectType() = delete;
+            ProxyObjectType(const ProxyObjectType<ELEMENT>&) = delete;
+            ProxyObjectType<ELEMENT>& operator=(const ProxyObjectType<ELEMENT>&) = delete;
+
             ~ProxyObjectType()
             {
             }
-            inline static Core::ProxyType<ELEMENT> Create(ProxyPoolType<ELEMENT>& queue)
+
+            template <typename... Args>
+            inline static Core::ProxyType< ProxyObjectType < ELEMENT > > Create(ProxyPoolType<ELEMENT>& queue, Args&&... args)
             {
-                ProxyObjectType* newElement(new (0) ProxyObjectType(&queue));
-                return Core::ProxyType<ELEMENT>(static_cast<IReferenceCounted*>(newElement), newElement);
-            }
-            template <typename Arg1>
-            inline static Core::ProxyType<ELEMENT> Create(ProxyPoolType<ELEMENT>& queue, Arg1 argument)
-            {
-                ProxyObjectType* newElement(new (0) ProxyObjectType(&queue, argument));
-                return Core::ProxyType<ELEMENT>(static_cast<IReferenceCounted*>(newElement), newElement);
+                ProxyObjectType* result(new (0) ProxyObjectType(&queue, args...));
+                return (Core::ProxyType< ProxyObjectType < ELEMENT > >(static_cast<IReferenceCounted*>(result), result));
             }
 
         public:
@@ -1038,6 +1032,7 @@ namespace Core {
 
                     ProxyObjectType* baseElement(const_cast<ProxyObjectType*>(this));
 
+                    baseElement->__Relinquish<ELEMENT>();
                     baseElement->__Clear<ELEMENT>();
 
                     Core::ProxyType<ProxyObjectType> returnObject(static_cast<IReferenceCounted*>(baseElement), baseElement);
@@ -1048,6 +1043,9 @@ namespace Core {
                 }
 
                 return (Core::ERROR_NONE);
+            }
+            inline void HandOut() {
+                __Acquire<ELEMENT>();
             }
 
         private:
@@ -1068,6 +1066,42 @@ namespace Core {
             template <typename TYPE>
             inline typename Core::TypeTraits::enable_if<!ProxyObjectType<TYPE>::TraitClear::value, void>::type
             __Clear()
+            {
+            }
+
+            // -----------------------------------------------------
+            // Check for Aquire method on Object
+            // -----------------------------------------------------
+            template <typename TYPE>
+            inline typename Core::TypeTraits::enable_if<ProxyObjectType<TYPE>::TraitAcquire::value, void>::type
+            __Acquire()
+            {
+                ELEMENT::Acquire();
+            }
+
+            template <typename TYPE>
+            inline typename Core::TypeTraits::enable_if<!ProxyObjectType<TYPE>::TraitAcquire::value, void>::type
+            __Acquire()
+            {
+            }
+
+            // -----------------------------------------------------
+            // Check for Relinquish method on Object
+            // -----------------------------------------------------
+            HAS_MEMBER(Relinquish, hasRelinquish);
+
+            typedef hasRelinquish<ELEMENT, void (ELEMENT::*)()> TraitRelinquish;
+
+            template <typename TYPE>
+            inline typename Core::TypeTraits::enable_if<ProxyObjectType<TYPE>::TraitRelinquish::value, void>::type
+            __Relinquish()
+            {
+                ELEMENT::Relinquish();
+            }
+
+            template <typename TYPE>
+            inline typename Core::TypeTraits::enable_if<!ProxyObjectType<TYPE>::TraitRelinquish::value, void>::type
+            __Relinquish()
             {
             }
 
@@ -1117,9 +1151,10 @@ namespace Core {
         }
 
     public:
-        Core::ProxyType<PROXYPOOLELEMENT> Element()
+        template <typename... Args>
+        Core::ProxyType<PROXYPOOLELEMENT> Element(Args&&... args)
         {
-            Core::ProxyType<PROXYPOOLELEMENT> result;
+            Core::ProxyType<ProxyPoolElement> result;
 
             _lock.Lock();
 
@@ -1129,52 +1164,20 @@ namespace Core {
 
                 _lock.Unlock();
 
-                result = ProxyPoolElement::Create(*this);
+                result = ProxyPoolElement::Create(*this, args...);
 
                 // TRACE_L1("Created a new element for: %s [%p]\n", typeid(PROXYPOOLELEMENT).name(), &static_cast<PROXYPOOLELEMENT&>(*result));
             } else {
-                Core::ProxyType<ProxyPoolElement> listLoad;
-
-                _queue.Remove(0, listLoad);
+                _queue.Remove(0, result);
 
                 _lock.Unlock();
-
-                result = Core::proxy_cast<PROXYPOOLELEMENT>(listLoad);
 
                 // TRACE_L1("Reused an element for: %s [%p]\n", typeid(PROXYPOOLELEMENT).name(), &static_cast<PROXYPOOLELEMENT&>(*result));
             }
 
-            return (result);
-        }
-        template <typename Arg1>
-        Core::ProxyType<PROXYPOOLELEMENT> Element(Arg1 argument1)
-        {
-            Core::ProxyType<PROXYPOOLELEMENT> result;
+            result->HandOut();
 
-            _lock.Lock();
-
-            if (_queue.Count() == 0) {
-
-                _createdElements++;
-
-                _lock.Unlock();
-
-                result = ProxyPoolElement::Create(*this, argument1);
-
-                // TRACE_L1("Created a new element for: %s [%p]\n", typeid(PROXYPOOLELEMENT).name(), &static_cast<PROXYPOOLELEMENT&>(*result));
-            } else {
-                Core::ProxyType<ProxyPoolElement> listLoad;
-
-                _queue.Remove(0, listLoad);
-
-                _lock.Unlock();
-
-                result = Core::proxy_cast<PROXYPOOLELEMENT>(listLoad);
-
-                // TRACE_L1("Reused an element for: %s [%p]\n", typeid(PROXYPOOLELEMENT).name(), &static_cast<PROXYPOOLELEMENT&>(*result));
-            }
-
-            return (result);
+            return (Core::proxy_cast<PROXYPOOLELEMENT>(result));
         }
         void Return(Core::ProxyType<ProxyPoolElement>& element) const
         {

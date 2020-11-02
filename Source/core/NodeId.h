@@ -85,7 +85,11 @@ namespace Core {
         };
 
         union SocketInfo {
+#ifdef __WINDOWS__
+            ADDRESS_FAMILY FamilyType;
+#else
             sa_family_t FamilyType;
+#endif
             struct sockaddr_in IPV4Socket;
             struct sockaddr_in6 IPV6Socket;
 #ifndef __WINDOWS__
@@ -121,8 +125,10 @@ namespace Core {
         NodeId(const struct sockaddr_un& rInfo, const uint16_t access = ~0);
         NodeId(const uint32_t destination, const pid_t pid, const uint32_t groups);
         NodeId(const struct sockaddr_ll& rInfo);
-        NodeId(const int32_t interfaceIndex, const uint16_t protocolFilter, const uint16_t hardwareAddressLength, const uint8_t* hardwareAddress);
+        NodeId(const uint16_t interfaceIndex, const uint16_t protocol, const uint8_t type, const uint8_t length, const uint8_t* address);
+        NodeId(const TCHAR interfaceName[], const uint16_t protocol, const uint8_t type, const uint8_t length, const uint8_t* address);
 #endif
+
 #ifdef CORE_BLUETOOTH
         NodeId(const uint16_t device, const uint16_t channel);
         NodeId(const bdaddr_t& address, const uint8_t addressType, const uint16_t cid, const uint16_t psm);
@@ -174,12 +180,16 @@ namespace Core {
             return (ntohs(m_structInfo.IPV4Socket.sin_port));
 #endif
         }
+
+#ifndef __WINDOWS__
         inline uint16_t HardwareType() const {
             return (m_structInfo.RawSocket.sll_hatype);
         }
         inline void HardwareType(const uint16_t type) {
             m_structInfo.RawSocket.sll_hatype = type;
         }
+#endif
+
         inline void PortNumber(const uint16_t portNumber)
         {
             m_structInfo.IPV4Socket.sin_port = ntohs(portNumber);
@@ -305,6 +315,23 @@ namespace Core {
         {
             return (_mask == static_cast<uint8_t>(~0) ? (Type() == Core::NodeId::TYPE_IPV4 ? 32 : 128) : _mask);
         }
+        inline bool operator==(const IPNode& rInfo) const
+        {
+            return ((rInfo._mask == _mask) && (NodeId::operator==(rInfo)));
+        }
+        inline bool operator!=(const IPNode& rInfo) const
+        {
+            return (!IPNode::operator==(rInfo));
+        }
+        inline bool operator==(const NodeId& rInfo) const
+        {
+            return (NodeId::operator==(rInfo));
+        }
+        inline bool operator!=(const NodeId& rInfo) const
+        {
+            return (!IPNode::operator==(rInfo));
+        }
+
         NodeId Broadcast() const;
 
     private:

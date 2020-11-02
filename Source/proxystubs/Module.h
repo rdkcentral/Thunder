@@ -25,10 +25,6 @@
 
 #include <core/core.h>
 #include <com/com.h>
+
+ // We require the Constructors/destructor, generated for the interfaces...
 #include <plugins/plugins.h>
-
-#if defined(__WINDOWS__) && defined(PROXYSTUBS_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
-#endif
-

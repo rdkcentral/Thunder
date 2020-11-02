@@ -228,6 +228,9 @@
     <ClInclude Include="WorkerPool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="IPFrame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CyclicBuffer.cpp">

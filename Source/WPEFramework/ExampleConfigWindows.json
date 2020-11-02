@@ -1,21 +1,21 @@
 {
-  "port": 8080,
-  "interface": "LAN",
-  "idletime": 60,
-  "ipv6": false,
-  "persistentpath": "C:/Projects/artifacts/Persistent",
-  "volatilepath": "C:/Projects/artifacts/temp",
-  "datapath": "C:/Projects/artifacts/Debug/Plugins",
-  "systempath": "C:/Projects/artifacts/Debug",
-  "proxystubpath": "C:/Projects/artifacts/ProxyStubs/Debug",
-  "communicator": "127.0.0.1:62000",
-  "redirect": "Service/Controller/UI",
-  "tracing": [
-    {
-      "module": "Plugin_SecurityAgent",
-      "enabled": true
-    }
-  ],
+    "port": 8080,
+    "interface": "LAN",
+    "idletime": 60,
+    "ipv6": false,
+    "persistentpath": "C:/Projects/Domotica/artifacts/Persistent",
+    "volatilepath": "C:/Projects/Domotica/artifacts/temp",
+    "datapath": "C:/Projects/Domotica/artifacts/Debug/Plugins",
+    "systempath": "C:/Projects/Domotica/artifacts/Debug",
+    "proxystubpath": "C:/Projects/Domotica/artifacts/ProxyStubs/Debug",
+    "communicator": "127.0.0.1:62000",
+    "redirect": "Service/Controller/UI",
+    "tracing": [
+        {
+            "module": "Plugin_SecurityAgent",
+            "enabled": true
+        }
+    ],
     "plugins": [
         {
             "callsign": "Controller",
@@ -27,13 +27,19 @@
             "callsign": "Butler",
             "locator": "libButler.so",
             "classname": "Butler",
-            "autostart": true
+            "autostart": false
+        },
+        {
+            "callsign": "StateController",
+            "locator": "libStateController.so",
+            "classname": "StateController",
+            "autostart": false
         },
         {
             "callsign": "IOControl",
             "locator": "libIOControl.so",
             "classname": "IOControl",
-            "autostart": true,
+            "autostart": false,
             "configuration": {
                 "pins": [
                     {
@@ -71,7 +77,7 @@
             "precondition": [
                 "Platform"
             ],
-            "autostart": true,
+            "autostart": false,
             "configuration": {
                 "acl": "data.json",
                 "connector": "127.0.0.1:63000"
@@ -234,7 +240,7 @@
             "callsign": "RemoteControl",
             "locator": "libremotecontrol.so",
             "classname": "RemoteControl",
-            "autostart": true,
+            "autostart": false,
             "configuration": {
                 "mapfile": "ir-remote.json"
             }

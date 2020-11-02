@@ -72,6 +72,11 @@ namespace Core {
                 index++;
             }
         }
+
+        if(found == false){
+            TRACE_L1("Missing implementation classname %s in library %s\n", name, library.Name().c_str());
+        }
+
         return (found == true ? (*index)->Create(library, interfaceNumber) : nullptr);
     }
 

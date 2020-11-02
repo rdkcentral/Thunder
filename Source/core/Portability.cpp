@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 
+#include "Module.h"
 #include "IPCConnector.h"
 #include "Portability.h"
 #include "Sync.h"
@@ -33,6 +34,8 @@
 using namespace WPEFramework;
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
+
+
 #ifdef __WINDOWS__
 
 #include <ws2tcpip.h>
@@ -140,7 +143,6 @@ static void CallstackSignalHandler(int signr VARIABLE_IS_NOT_USED, siginfo_t* in
 
 uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize)
 {
-#ifdef __LINUX__
     uint32_t result = 0;
 
     if ((threadId == 0) || (pthread_self() == threadId)) {
@@ -156,7 +158,7 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
         callstack.sa_sigaction = CallstackSignalHandler;
         sigaction(SA_SIGINFO, &callstack, &original);
 
-        g_targetThread = (threadId == 0 ? pthread_self() : threadId);
+        g_targetThread = threadId;
         g_threadCallstackBuffer = addresses;
         g_threadCallstackBufferSize = bufferSize;
         g_threadCallstackBufferUsed = 0;
@@ -176,12 +178,6 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
     }
 
     return result;
-#else
-    DEBUG_VARIABLE(threadId);
-    DEBUG_VARIABLE(addresses);
-    DEBUG_VARIABLE(bufferSize);
-    return 0;
-#endif
 }
 
 #else
@@ -210,17 +206,36 @@ void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
 
 extern "C" {
 
-void DumpCallStack(const ThreadId threadId)
+void DumpCallStack(const ThreadId threadId, FILE* feed)
 {
 #ifdef __DEBUG__
 #ifdef __LINUX__
-    void* addresses[20];
+    void* callstack[32];
+    FILE* output = (feed == nullptr ? stderr : feed);
 
-    int addressCount = GetCallStack(threadId, addresses, (sizeof(addresses) / sizeof(addresses[0])));
+    uint32_t entries = GetCallStack(threadId, callstack, (sizeof(callstack) / sizeof(callstack[0])));
 
-    fprintf(stderr, "=== Stack traceback (most recent call first):\n");
-    backtrace_symbols_fd(addresses, addressCount, fileno(stderr));
-    fflush(stderr);
+    char** symbols = backtrace_symbols(callstack, entries);
+
+    for (uint32_t i = 0; i < entries; i++) {
+        Dl_info info;
+        if (dladdr(callstack[i], &info) && info.dli_sname) {
+            char* demangled = NULL;
+            int status = -1;
+            if (info.dli_sname[0] == '_') {
+                demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
+            }
+            fprintf(output, "%-3d %*p %s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i],
+                status == 0 ? demangled : info.dli_sname == 0 ? symbols[i] : info.dli_sname,
+                (char*)callstack[i] - (char*)info.dli_saddr);
+            free(demangled);
+        } else {
+            fprintf(output, "%-3d %*p %s\n",
+            i, int(2 + sizeof(void*) * 2), callstack[i], symbols[i]);
+        }
+    }
+    free(symbols);
+    fflush(output);
 #else
     __debugbreak();
 #endif

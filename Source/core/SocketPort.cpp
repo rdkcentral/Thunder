@@ -575,6 +575,7 @@ namespace Core {
             //  - IPV4 or IPV6 UDP server
             //  - IPV4 or IPV6 TCP server with port set
             if ((SocketMode() != SOCK_STREAM) || (m_SocketType == SocketPort::LISTEN) || (((localNode.Type() == NodeId::TYPE_IPV4) || (localNode.Type() == NodeId::TYPE_IPV6)) && (localNode.PortNumber() != 0))) {
+                  
                 if (::bind(l_Result, static_cast<const NodeId&>(localNode), localNode.Size()) != SOCKET_ERROR) {
 
 #ifndef __WINDOWS__
@@ -592,7 +593,8 @@ namespace Core {
                         return (l_Result);
                     }
                 } else {
-                    TRACE_L1("Error on port socket BIND. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
+                    TRACE_L1("Error binding socket to port %u. BIND. Error %d: %s",
+                        localNode.PortNumber(), __ERRORRESULT__, strerror(__ERRORRESULT__));
                 }
             } else {
                 BufferAlignment(l_Result);
@@ -890,7 +892,6 @@ namespace Core {
 
             if (l_Size == 0) {
                 if ((m_State & SocketPort::LINK) != 0) {
-                    // The otherside has closed the connection !!!
                     m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::EXCEPTION);
                 }
             } else if (l_Size != static_cast<uint32_t>(SOCKET_ERROR)) {
@@ -905,7 +906,6 @@ namespace Core {
                 } else if (l_Result != 0) {
                     m_State |= SocketPort::EXCEPTION;
                     StateChange();
-                    printf("Read exception. %d\n", l_Result);
                 }
             }
 

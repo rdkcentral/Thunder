@@ -22,13 +22,13 @@
 
 #include "IShell.h"
 
-#include <com/com.h>
+#include <com/ICOM.h>
 
 namespace WPEFramework {
 namespace PluginHost {
 
     // This interface gives direct access to change occuring on the remote object
-    struct IStateControl
+    struct EXTERNAL IStateControl
         : virtual public Core::IUnknown {
 
         enum {

@@ -28,6 +28,7 @@ add_executable(${TARGET}
         PluginServer.cpp
         Probe.cpp
         SystemInfo.cpp
+        PostMortem.cpp
         )
 
 target_compile_definitions(${TARGET}
@@ -56,8 +57,6 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
         )
 
-# target_include_directories(${TARGET} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
-        
 if(PROCESSCONTAINERS)
     target_link_libraries(${TARGET}
         PUBLIC

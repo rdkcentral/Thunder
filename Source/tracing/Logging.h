@@ -29,12 +29,13 @@
 namespace WPEFramework {
 namespace Logging {
 
-#define SYSLOG(CATEGORY, PARAMETERS)							\
+#define SYSLOG(CATEGORY, PARAMETERS)				\
     if (Logging::LoggingType<CATEGORY>::IsEnabled() == true) {  \
         Logging::LoggingType<CATEGORY> __data__ PARAMETERS;     \
-        Logging::SysLog(__FILE__, __LINE__, &__data__);			\
+        Logging::SysLog(__FILE__, __LINE__, &__data__);		\
     }
 
+    void EXTERNAL DumpSystemFiles(const Core::process_t pid);
     void EXTERNAL SysLog(const char filename[], const uint32_t line, const Trace::ITrace* data);
     void EXTERNAL SysLog(const bool toConsole);
     extern EXTERNAL const char* MODULE_LOGGING;
@@ -130,6 +131,41 @@ namespace Logging {
         {
         }
         ~Notification()
+        {
+        }
+
+    public:
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
+
+    private:
+        std::string _text;
+    };
+
+    class EXTERNAL Crash {
+    public:
+        Crash() = delete;
+        Crash(const Crash& a_Copy) = delete;
+        Crash& operator=(const Crash& a_RHS) = delete;
+
+        Crash(const TCHAR formatter[], ...)
+        {
+            va_list ap;
+            va_start(ap, formatter);
+            Trace::Format(_text, formatter, ap);
+            va_end(ap);
+        }
+        explicit Crash(const string& text)
+            : _text(Core::ToString(text))
+        {
+        }
+        ~Crash()
         {
         }
 

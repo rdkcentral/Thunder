@@ -42,6 +42,9 @@ namespace Plugin {
             , Precondition()
             , Termination()
             , Configuration(false)
+            , PersistentPathPostfix()
+            , VolatilePathPostfix()
+            , StartupOrder(50)
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -53,6 +56,9 @@ namespace Plugin {
             Add(_T("precondition"), &Precondition);
             Add(_T("termination"), &Termination);
             Add(_T("configuration"), &Configuration);
+            Add(_T("persistentpathpostfix"), &PersistentPathPostfix);
+            Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
+            Add(_T("startuporder"), &StartupOrder);
         }
         Config(const Config& copy)
             : Core::JSON::Container()
@@ -66,6 +72,9 @@ namespace Plugin {
             , Precondition(copy.Precondition)
             , Termination(copy.Termination)
             , Configuration(copy.Configuration)
+            , PersistentPathPostfix(copy.PersistentPathPostfix)
+            , VolatilePathPostfix(copy.VolatilePathPostfix)
+            , StartupOrder(copy.StartupOrder)
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -77,6 +86,8 @@ namespace Plugin {
             Add(_T("precondition"), &Precondition);
             Add(_T("termination"), &Termination);
             Add(_T("configuration"), &Configuration);
+            Add(_T("persistentpathpostfix"), &PersistentPathPostfix);
+            Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
         }
         ~Config()
         {
@@ -94,8 +105,23 @@ namespace Plugin {
             Configuration = RHS.Configuration;
             Precondition = RHS.Precondition;
             Termination = RHS.Termination;
+            PersistentPathPostfix = RHS.PersistentPathPostfix;
+            VolatilePathPostfix = RHS.VolatilePathPostfix;
+            StartupOrder = RHS.StartupOrder;
 
             return (*this);
+        }
+
+        string DataPath(const string& basePath) const {
+            return (basePath + ClassName.Value() + '/');
+        }
+        string PersistentPath(const string& basePath) const {
+            string postfixPath = ((PersistentPathPostfix.IsSet() == true) && (PersistentPathPostfix.Value().empty() == false)) ? PersistentPathPostfix.Value(): Callsign.Value();
+            return (basePath + postfixPath + '/');
+        }
+        string VolatilePath(const string& basePath) const {
+            string postfixPath = ((VolatilePathPostfix.IsSet() == true) && (VolatilePathPostfix.Value().empty() == false)) ? VolatilePathPostfix.Value(): Callsign.Value();
+            return (basePath + postfixPath + '/');
         }
 
     public:
@@ -109,6 +135,9 @@ namespace Plugin {
         Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Precondition;
         Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Termination;
         Core::JSON::String Configuration;
+        Core::JSON::String PersistentPathPostfix;
+        Core::JSON::String VolatilePathPostfix;
+        Core::JSON::DecUInt32 StartupOrder;
 
         static Core::NodeId IPV4UnicastNode(const string& ifname);
 
@@ -149,155 +178,6 @@ namespace Plugin {
         ~Setting()
         {
         }
-    };
-}
-
-namespace PluginHost {
-
-    class EXTERNAL Config {
-    public:
-        Config() = delete;
-        Config(const Config&) = delete;
-        Config& operator=(const Config&) = delete;
-
-        Config(
-            const string& version,
-            const string& model,
-            const bool background,
-            const string& webPrefix,
-            const string& JSONRPCPrefix,
-            const string& volatilePath,
-            const string& persistentPath,
-            const string& dataPath,
-            const string& systemPath,
-            const string& proxyStubPath,
-            const string& hashKey,
-            const Core::NodeId& accessor,
-            const Core::NodeId& communicator,
-            const string& redirect)
-            : _webPrefix('/' + webPrefix)
-            , _JSONRPCPrefix('/' + JSONRPCPrefix)
-            , _volatilePath(Core::Directory::Normalize(volatilePath))
-            , _persistentPath(Core::Directory::Normalize(persistentPath))
-            , _dataPath(Core::Directory::Normalize(dataPath))
-            , _hashKey(hashKey)
-            , _appPath(Core::File::PathName((Core::ProcessInfo().Executable())))
-            , _systemPath(Core::Directory::Normalize(systemPath))
-            , _proxyStubPath(Core::Directory::Normalize(proxyStubPath))
-            , _accessor(accessor)
-            , _communicator(communicator)
-            , _redirect(redirect)
-            , _security(nullptr)
-            , _background(background)
-            , _version(version)
-            , _model(model)
-        {
-            ASSERT(_appPath.empty() == false);
-        }
-        ~Config()
-        {
-            ASSERT(_security != nullptr);
-            _security->Release();
-        }
-
-    public:
-        inline const string& Version() const
-        {
-            return (_version);
-        }
-        inline const string& Model() const
-        {
-            return (_model);
-        }
-        inline const string& Redirect() const
-        {
-            return (_redirect);
-        }
-        inline const string& WebPrefix() const
-        {
-            return (_webPrefix);
-        }
-        inline const string& JSONRPCPrefix() const
-        {
-            return (_JSONRPCPrefix);
-        }
-        inline const string& VolatilePath() const
-		{
-            return (_volatilePath);
-        }
-        inline const string& PersistentPath() const
-        {
-            return (_persistentPath);
-        }
-        inline const string& DataPath() const
-        {
-            return (_dataPath);
-        }
-        inline const string& AppPath() const
-        {
-            return (_appPath);
-        }
-        inline const Core::NodeId& Accessor() const
-        {
-            return (_accessor);
-        }
-        inline const Core::NodeId& Communicator() const
-        {
-            return (_communicator);
-        }
-        inline const string& SystemPath() const
-        {
-            return (_systemPath);
-        }
-        inline const string& ProxyStubPath() const
-        {
-            return (_proxyStubPath);
-        }
-        inline const string& HashKey() const
-        {
-            return (_hashKey);
-        }
-        inline ISecurity* Security() const
-        {
-            _security->AddRef();
-            return (_security);
-        }
-        inline bool Background() const
-        {
-            return (_background);
-        }
-
-	private:
-        friend class Server;
-
-        inline void Security(ISecurity* security)
-        {
-            ASSERT((_security == nullptr) && (security != nullptr));
-
-            _security = security;
-
-            if (_security != nullptr) {
-                _security->AddRef();
-			}
-        }
-
-    private:
-        const string _webPrefix;
-        const string _JSONRPCPrefix;
-        const string _volatilePath;
-        const string _persistentPath;
-        const string _dataPath;
-        const string _hashKey;
-        const string _appPath;
-        const string _systemPath;
-        const string _proxyStubPath;
-        const Core::NodeId _accessor;
-        const Core::NodeId _communicator;
-        const string _redirect;
-        ISecurity* _security;
-        bool _background;
-        const string _version;
-        const string _model;
     };
 }
 }

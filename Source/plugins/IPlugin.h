@@ -20,7 +20,7 @@
 #ifndef __IPLUGIN_H
 #define __IPLUGIN_H
 
-#include <com/com.h>
+#include <com/ICOM.h>
 
 namespace WPEFramework {
 
@@ -36,7 +36,7 @@ namespace PluginHost {
 
     class Channel;
 
-    struct IPlugin
+    struct EXTERNAL IPlugin
         : public virtual Core::IUnknown {
 
         enum {

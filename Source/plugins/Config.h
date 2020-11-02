@@ -28,8 +28,8 @@
 // mainly intersting for the developper to take the proper optimization
 // decisions for the code.
 
-#define RUNTIME_STATISTICS 0
+#define THUNDER_RUNTIME_STATISTICS 0
 
-#define RESTFULL_API 1
+#define THUNDER_RESTFULL_API 1
 
 #endif

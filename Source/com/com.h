@@ -23,12 +23,11 @@
 #include "Communicator.h"
 #include "IRPCIterator.h"
 #include "IStringIterator.h"
-#include "ITracing.h"
 #include "IUnknown.h"
 #include "IValueIterator.h"
-#include "Ids.h"
+#include "ICOM.h"
 #include "Messages.h"
 
-#ifdef __WINDOWS__
+#if defined(__WINDOWS__) && !defined(COM_EXPORTS)
 #pragma comment(lib, "com.lib")
 #endif

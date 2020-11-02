@@ -28,6 +28,10 @@
 
 namespace WPEFramework {
 namespace Core {
+
+    // On 64 bits deployments, this is probably a uint64_t, lets prepare for it :-)
+    using process_t = uint32_t;
+
     class EXTERNAL ProcessInfo {
     public:
 #ifdef __WINDOWS__
@@ -120,8 +124,8 @@ namespace Core {
             }
 
         private:
-            std::list<uint32_t> _pids;
-            std::list<uint32_t>::iterator _current;
+            std::list<process_t> _pids;
+            std::list<process_t>::iterator _current;
             uint32_t _index;
         };
 
@@ -130,7 +134,7 @@ namespace Core {
         ProcessInfo();
 
         // Specifice Process Info
-        ProcessInfo(const uint32_t id);
+        ProcessInfo(const process_t id);
 
         ProcessInfo(const ProcessInfo&);
         ProcessInfo& operator=(const ProcessInfo&);
@@ -138,7 +142,7 @@ namespace Core {
         ~ProcessInfo();
 
     public:
-        inline uint32_t Id() const
+        inline process_t Id() const
         {
             return (_pid);
         }
@@ -192,8 +196,11 @@ namespace Core {
             return (0);
 #else
             int8_t result = 0;
-            FILE* fp = fopen(_T("/proc/self/oom_adj"), _T("r"));
 
+            TCHAR buffer[128];
+            snprintf(buffer, sizeof(buffer), "/proc/%d/oom_adj", _pid);
+
+            FILE* fp = fopen(buffer, _T("r"));
             if (fp) {
                 int number;
                 fscanf(fp, "%d", &number);
@@ -206,8 +213,10 @@ namespace Core {
         inline void OOMAdjust(const int8_t adjust)
         {
 #ifndef __WINDOWS__
-            FILE* fp = fopen(_T("/proc/self/oom_adj"), _T("w"));
+            TCHAR buffer[128];
+            snprintf(buffer, sizeof(buffer), "/proc/%d/oom_adj", _pid);
 
+            FILE* fp = fopen(buffer, _T("w"));
             if (fp) {
                 fprintf(fp, "%d", adjust);
                 fclose(fp);
@@ -235,24 +244,50 @@ namespace Core {
         string Name() const;
         string Executable() const;
         std::list<string> CommandLine() const;
-        uint32_t Group(const string& groupName);
-        string Group() const;
         void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
 
-        // Setting, or getting, the user can onl be done for the
-        // current process, hence why they are static.
-        static uint32_t User(const string& userName);
-        static string User();
         static void FindByName(const string& name, const bool exact, std::list<ProcessInfo>& processInfos);
 
+        void Dump() {
+            // The initial customer deploying this functionality sends a Floating Point Exception signal to
+            // this process to indicate that it detected a hang and it requires a Dump for PostMortem analyses.
+            // Agree, if there is a real Floating Point Exception causing the PostMortem, it can not
+            // be distinguished from this (The logged deactivation code later on might help to diffrentiate
+            // the two use cases, but you need to check more for that).
+            // Bottomline such a functionality was not yet available in Thunder. hence why we start, if we
+            // mimic this functionality, with how this customer is using it.
+            // Send the Process a SIG_FPE, to start the generation of a PostMortem dump!
+
+#ifdef __WINDOWS__
+#else
+            ::kill(_pid, SIGFPE);
+#endif
+        }
+
     private:
-        uint32_t _pid;
+        process_t _pid;
 #ifdef __WINDOWS__
         HANDLE _handle;
 #endif
     }; // class ProcessInfo
 
-   class ProcessTree
+   class EXTERNAL ProcessCurrent: public ProcessInfo {
+   public:
+       ProcessCurrent(const ProcessInfo&) = delete;
+       ProcessCurrent& operator= (const ProcessInfo&) = delete;
+
+       ProcessCurrent() : ProcessInfo() {
+       }
+       ~ProcessCurrent() = default;
+
+   public:
+       string User() const;
+       uint32_t User(const string& userName);
+       string Group() const;
+       uint32_t Group(const string& groupName);
+   };
+
+   class EXTERNAL ProcessTree
    {
       public:
          explicit ProcessTree(const ProcessInfo& processInfo);

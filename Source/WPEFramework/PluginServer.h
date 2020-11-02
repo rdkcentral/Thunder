@@ -20,10 +20,10 @@
 #ifndef __WEBBRIDGEPLUGINSERVER_H
 #define __WEBBRIDGEPLUGINSERVER_H
 
-#include "Environment.h"
-#include "IRemoteInstantiation.h"
 #include "Module.h"
 #include "SystemInfo.h"
+#include "Config.h"
+#include "IRemoteInstantiation.h"
 
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
@@ -63,7 +63,6 @@ namespace PluginHost {
         static const TCHAR* PluginConfigDirectory;
         static const TCHAR* CommunicatorConnector;
 
-    public:
         class ForwardMessage : public Core::JSON::Container {
         private:
             ForwardMessage(const ForwardMessage&) = delete;
@@ -98,244 +97,6 @@ namespace PluginHost {
             Core::JSON::String Data;
         };
 
-        // Configuration to get a server (PluginHost server) up and running.
-        class Config : public Core::JSON::Container {
-        private:
-            Config(const Config&) = delete;
-            Config& operator=(const Config&) = delete;
-
-        public:
-            class ProcessSet : public Core::JSON::Container {
-            public:
-                ProcessSet()
-                    : Core::JSON::Container()
-                    , User()
-                    , Group()
-                    , Priority(0)
-                    , OOMAdjust(0)
-                    , Policy()
-                    , StackSize(0)
-                    , Umask(1)
-                {
-                    Add(_T("user"), &User);
-                    Add(_T("group"), &Group);
-                    Add(_T("priority"), &Priority);
-                    Add(_T("policy"), &Policy);
-                    Add(_T("oomadjust"), &OOMAdjust);
-                    Add(_T("stacksize"), &StackSize);
-                    Add(_T("umask"), &Umask);
-                }
-                ProcessSet(const ProcessSet& copy)
-                    : Core::JSON::Container()
-                    , User(copy.User)
-                    , Group(copy.Group)
-                    , Priority(copy.Priority)
-                    , OOMAdjust(copy.OOMAdjust)
-                    , Policy(copy.Policy)
-                    , StackSize(copy.StackSize)
-                    , Umask(copy.Umask)
-                {
-                    Add(_T("user"), &User);
-                    Add(_T("group"), &Group);
-                    Add(_T("priority"), &Priority);
-                    Add(_T("policy"), &Policy);
-                    Add(_T("oomadjust"), &OOMAdjust);
-                    Add(_T("stacksize"), &StackSize);
-                    Add(_T("umask"), &Umask);
-                }
-                ~ProcessSet()
-                {
-                }
-
-                ProcessSet& operator=(const ProcessSet& RHS)
-                {
-                    User = RHS.User;
-                    Group = RHS.Group;
-                    Priority = RHS.Priority;
-                    Policy = RHS.Policy;
-                    OOMAdjust = RHS.OOMAdjust;
-                    StackSize = RHS.StackSize;
-                    Umask = RHS.Umask;
-
-                    return (*this);
-                }
-
-                Core::JSON::String User;
-                Core::JSON::String Group;
-                Core::JSON::DecSInt8 Priority;
-                Core::JSON::DecSInt8 OOMAdjust;
-                Core::JSON::EnumType<Core::ProcessInfo::scheduler> Policy;
-                Core::JSON::DecUInt32 StackSize;
-                Core::JSON::DecUInt16 Umask;
-            };
-
-            class InputConfig : public Core::JSON::Container {
-            public:
-                InputConfig()
-#ifdef __WINDOWS__
-                    : Locator("127.0.0.1:9631")
-                    , Type(PluginHost::InputHandler::VIRTUAL)
-#else
-                    : Locator("/tmp/keyhandler|0760")
-                    , Type(PluginHost::InputHandler::VIRTUAL)
-#endif
-                    , OutputEnabled(true)
-                {
-
-                    Add(_T("locator"), &Locator);
-                    Add(_T("type"), &Type);
-                    Add(_T("output"), &OutputEnabled);
-                }
-                InputConfig(const InputConfig& copy)
-                    : Locator(copy.Locator)
-                    , Type(copy.Type)
-                    , OutputEnabled(copy.OutputEnabled)
-                {
-                    Add(_T("locator"), &Locator);
-                    Add(_T("type"), &Type);
-                    Add(_T("output"), &OutputEnabled);
-                }
-                ~InputConfig()
-                {
-                }
-                InputConfig& operator=(const InputConfig& RHS)
-                {
-                    Locator = RHS.Locator;
-                    Type = RHS.Type;
-                    OutputEnabled = RHS.OutputEnabled;
-                    return (*this);
-                }
-
-                Core::JSON::String Locator;
-                Core::JSON::EnumType<PluginHost::InputHandler::type> Type;
-                Core::JSON::Boolean OutputEnabled;
-            };
-
-#ifdef PROCESSCONTAINERS_ENABLED
-
-            class ProcessContainerConfig : public Core::JSON::Container {
-            public:
-                ProcessContainerConfig()
-                    : Logging(_T("NONE"))
-                {
-
-                    Add(_T("logging"), &Logging);
-                }
-                ProcessContainerConfig(const ProcessContainerConfig& copy)
-                    : Logging(copy.Logging)
-                {
-                    Add(_T("logging"), &Logging);
-                }
-                ~ProcessContainerConfig()
-                {
-                }
-                ProcessContainerConfig& operator=(const ProcessContainerConfig& RHS)
-                {
-                    Logging = RHS.Logging;
-                    return (*this);
-                }
-
-                Core::JSON::String Logging;
-            };
-
-#endif
-
-        public:
-            Config()
-                : Version()
-                , Model()
-                , Port(80)
-                , Binding(_T("0.0.0.0"))
-                , Interface()
-                , Prefix(_T("Service"))
-                , JSONRPC(_T("jsonrpc"))
-                , PersistentPath()
-                , DataPath()
-                , SystemPath()
-#ifdef __WINDOWS__
-                , VolatilePath(_T("c:/temp"))
-#else
-                , VolatilePath(_T("/tmp"))
-#endif
-                , ProxyStubPath()
-#ifdef __WINDOWS__
-                , Communicator(_T("127.0.0.1:7889"))
-#else
-                , Communicator(_T("/tmp/communicator|0777"))
-#endif
-                , Redirect(_T("http://127.0.0.1/Service/Controller/UI"))
-                , Signature(_T("TestSecretKey"))
-                , IdleTime(0)
-                , IPV6(false)
-                , DefaultTraceCategories(false)
-                , Process()
-                , Input()
-                , Configs()
-                , Environments()
-#ifdef PROCESSCONTAINERS_ENABLED
-                , ProcessContainers()
-#endif
-            {
-                // No IdleTime
-                Add(_T("version"), &Version);
-                Add(_T("model"), &Model);
-                Add(_T("port"), &Port);
-                Add(_T("binding"), &Binding);
-                Add(_T("interface"), &Interface);
-                Add(_T("prefix"), &Prefix);
-                Add(_T("persistentpath"), &PersistentPath);
-                Add(_T("datapath"), &DataPath);
-                Add(_T("systempath"), &SystemPath);
-                Add(_T("volatilepath"), &VolatilePath);
-                Add(_T("proxystubpath"), &ProxyStubPath);
-                Add(_T("communicator"), &Communicator);
-                Add(_T("signature"), &Signature);
-                Add(_T("idletime"), &IdleTime);
-                Add(_T("ipv6"), &IPV6);
-                Add(_T("tracing"), &DefaultTraceCategories);
-                Add(_T("redirect"), &Redirect);
-                Add(_T("process"), &Process);
-                Add(_T("input"), &Input);
-                Add(_T("plugins"), &Plugins);
-                Add(_T("configs"), &Configs);
-                Add(_T("environments"), &Environments);
-#ifdef PROCESSCONTAINERS_ENABLED
-                Add(_T("processcontainers"), &ProcessContainers);
-#endif
-            }
-            ~Config()
-            {
-            }
-
-        public:
-            Core::JSON::String Version;
-            Core::JSON::String Model;
-            Core::JSON::DecUInt16 Port;
-            Core::JSON::String Binding;
-            Core::JSON::String Interface;
-            Core::JSON::String Prefix;
-            Core::JSON::String JSONRPC;
-            Core::JSON::String PersistentPath;
-            Core::JSON::String DataPath;
-            Core::JSON::String SystemPath;
-            Core::JSON::String VolatilePath;
-            Core::JSON::String ProxyStubPath;
-            Core::JSON::String Communicator;
-            Core::JSON::String Redirect;
-            Core::JSON::String Signature;
-            Core::JSON::DecUInt16 IdleTime;
-            Core::JSON::Boolean IPV6;
-            Core::JSON::String DefaultTraceCategories;
-            ProcessSet Process;
-            InputConfig Input;
-            Core::JSON::String Configs;
-            Core::JSON::ArrayType<Plugin::Config> Plugins;
-            Core::JSON::ArrayType<Environment::Config> Environments;
-#ifdef PROCESSCONTAINERS_ENABLED
-            ProcessContainerConfig ProcessContainers;
-#endif
-        };
-
     private:
         class WorkerPoolImplementation : public Core::WorkerPool {
         public:
@@ -353,11 +114,10 @@ namespace PluginHost {
         };
 
         class FactoriesImplementation : public IFactories {
-        private:
+        public:
             FactoriesImplementation(const FactoriesImplementation&) = delete;
             FactoriesImplementation& operator=(const FactoriesImplementation&) = delete;
 
-        public:
             FactoriesImplementation()
                 : _requestFactory(5)
                 , _responseFactory(5)
@@ -365,9 +125,7 @@ namespace PluginHost {
                 , _jsonRPCFactory(5)
             {
             }
-            ~FactoriesImplementation() override
-            {
-            }
+            ~FactoriesImplementation() override = default;
 
         public:
             Core::ProxyType<Web::Request> Request() override
@@ -384,14 +142,14 @@ namespace PluginHost {
             }
             Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> JSONRPC() override
             {
-                return (_jsonRPCFactory.Element());
+                return (Core::proxy_cast< Web::JSONBodyType<Core::JSONRPC::Message> >(_jsonRPCFactory.Element()));
             }
 
         private:
             Core::ProxyPoolType<Web::Request> _requestFactory;
             Core::ProxyPoolType<Web::Response> _responseFactory;
             Core::ProxyPoolType<Web::FileBody> _fileBodyFactory;
-            Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> _jsonRPCFactory;
+            Core::ProxyPoolType<PluginHost::JSONRPCMessage> _jsonRPCFactory;
         };
 
         class ServiceMap;
@@ -564,7 +322,7 @@ namespace PluginHost {
             std::string _text;
         };
 
-        class Service : public PluginHost::Service {
+        class Service : public IShell::ICOMLink, public PluginHost::Service {
         private:
             Service() = delete;
             Service(const Service&) = delete;
@@ -577,11 +335,11 @@ namespace PluginHost {
                 Condition& operator=(const Condition&) = delete;
 
             public:
-                Condition(const Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>& input, const bool defaultValue)
+                Condition(const Core::JSON::ArrayType<Core::JSON::EnumType<ISubSystem::subsystem>>& input, const bool defaultValue)
                     : _events(0)
                     , _value(0)
                 {
-                    Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator index(input.Elements());
+                    Core::JSON::ArrayType<Core::JSON::EnumType<ISubSystem::subsystem>>::ConstIterator index(input.Elements());
 
                     while (index.Next() == true) {
                         uint32_t bitNr = static_cast<uint32_t>(index.Current());
@@ -609,7 +367,7 @@ namespace PluginHost {
             public:
                 inline bool IsMet() const
                 {
-                    return ((_events == 0) || ((_value != static_cast<uint32_t>(~0)) && ((_events & (1 << PluginHost::ISubSystem::END_LIST)) != 0)));
+                    return ((_events == 0) || ((_value != static_cast<uint32_t>(~0)) && ((_events & (1 << ISubSystem::END_LIST)) != 0)));
                 }
                 inline bool Evaluate(const uint32_t subsystems)
                 {
@@ -618,9 +376,9 @@ namespace PluginHost {
                     if (result ^ IsMet()) {
                         // We changed from setup, signal it...
                         if (result == true) {
-                            _events |= (1 << PluginHost::ISubSystem::END_LIST);
+                            _events |= (1 << ISubSystem::END_LIST);
                         } else {
-                            _events &= ~(1 << PluginHost::ISubSystem::END_LIST);
+                            _events &= ~(1 << ISubSystem::END_LIST);
                         }
                         result = true;
                     } else {
@@ -640,8 +398,8 @@ namespace PluginHost {
             };
 
         public:
-            Service(const PluginHost::Config* server, const Plugin::Config* plugin, ServiceMap* administrator)
-                : PluginHost::Service(*server, *plugin)
+            Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator)
+                : PluginHost::Service(plugin, server.WebPrefix(), server.PersistentPath(), server.DataPath(), server.VolatilePath())
                 , _pluginHandling()
                 , _handler(nullptr)
                 , _extended(nullptr)
@@ -651,18 +409,16 @@ namespace PluginHost {
                 , _rawSocket(nullptr)
                 , _webSecurity(nullptr)
                 , _jsonrpc(nullptr)
-                , _precondition(plugin->Precondition, true)
-                , _termination(plugin->Termination, false)
+                , _precondition(plugin.Precondition, true)
+                , _termination(plugin.Termination, false)
                 , _activity(0)
-                , _administrator(*administrator)
+                , _connection(nullptr)
+                , _administrator(administrator)
             {
-                ASSERT(server != nullptr);
-                ASSERT(plugin != nullptr);
-                ASSERT(administrator != nullptr);
             }
             ~Service()
             {
-                Deactivate(PluginHost::IShell::SHUTDOWN);
+                Deactivate(IShell::SHUTDOWN);
 
                 ASSERT(_handler == nullptr);
                 ASSERT(_extended == nullptr);
@@ -672,6 +428,7 @@ namespace PluginHost {
                 ASSERT(_rawSocket == nullptr);
                 ASSERT(_webSecurity == nullptr);
                 ASSERT(_jsonrpc == nullptr);
+                ASSERT(_connection == nullptr);
             }
 
         public:
@@ -717,7 +474,7 @@ namespace PluginHost {
             }
             inline bool Subscribe(Channel& channel)
             {
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
                 bool result = PluginHost::Service::Subscribe(channel);
 
                 if ((result == true) && (_extended != nullptr)) {
@@ -735,7 +492,7 @@ namespace PluginHost {
             }
             inline void Unsubscribe(Channel& channel)
             {
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
                 PluginHost::Service::Unsubscribe(channel);
 #endif
                 if (_extended != nullptr) {
@@ -859,7 +616,7 @@ namespace PluginHost {
                     service->AddRef();
                     Unlock();
 
-#ifdef RUNTIME_STATISTICS
+#if THUNDER_RUNTIME_STATISTICS
                     IncrementProcessedRequests();
 #endif
                     Core::InterlockedIncrement(_activity);
@@ -879,12 +636,20 @@ namespace PluginHost {
 
                 Lock();
 
-                if ((_jsonrpc != nullptr) && (IsActive() == true)) {
+                if ( (_jsonrpc == nullptr) || (IsActive() == false) ) {
+                    Unlock();
+
+                    result = Core::proxy_cast<Core::JSONRPC::Message>(Factories::Instance().JSONRPC());
+                    result->Error.SetError(Core::ERROR_BAD_REQUEST);
+                    result->Error.Text = _T("Service is not active");
+                    result->Id = message.Id;
+                }
+                else {
                     IDispatcher* service(_jsonrpc);
                     service->AddRef();
                     Unlock();
 
-#ifdef RUNTIME_STATISTICS
+#if THUNDER_RUNTIME_STATISTICS
                     IncrementProcessedRequests();
 #endif
                     Core::InterlockedIncrement(_activity);
@@ -892,9 +657,7 @@ namespace PluginHost {
                     Core::InterlockedDecrement(_activity);
 
                     service->Release();
-                } else {
-                    Unlock();
-                }
+                } 
 
                 return (result);
             }
@@ -909,7 +672,7 @@ namespace PluginHost {
                     service->AddRef();
                     Unlock();
 
-#ifdef RUNTIME_STATISTICS
+#if THUNDER_RUNTIME_STATISTICS
                     IncrementProcessedObjects();
 #endif
                     Core::InterlockedIncrement(_activity);
@@ -989,10 +752,10 @@ namespace PluginHost {
 
                 uint32_t subsystems = _administrator.SubSystemInfo();
 
-                PluginHost::IShell::state current(State());
+                IShell::state current(State());
 
                 // Active or not, update the condition state !!!!
-                if ((_precondition.Evaluate(subsystems) == true) && (current == PluginHost::IShell::PRECONDITION)) {
+                if ((_precondition.Evaluate(subsystems) == true) && (current == IShell::PRECONDITION)) {
                     if (_precondition.IsMet() == true) {
 
                         Unlock();
@@ -1003,7 +766,7 @@ namespace PluginHost {
                     }
                 }
 
-                if ((_termination.Evaluate(subsystems) == true) && (current == PluginHost::IShell::ACTIVATED)) {
+                if ((_termination.Evaluate(subsystems) == true) && (current == IShell::ACTIVATED)) {
                     if (_termination.IsMet() == true) {
 
                         Unlock();
@@ -1016,20 +779,66 @@ namespace PluginHost {
 
                 Unlock();
             }
-            virtual string ConfigSubstitution(const string& input) const
-            {
-                return _administrator.EnvironmentConfig().SubstituteVariables(_administrator.Configuration(), input);
+
+            uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
+            ISubSystem* SubSystems() override;
+            void Notify(const string& message) override;
+            void* QueryInterface(const uint32_t id) override;
+            void* QueryInterfaceByCallsign(const uint32_t id, const string& name) override;
+            void Register(IPlugin::INotification* sink) override;
+            void Unregister(IPlugin::INotification* sink) override;
+
+            string Version() const override {
+                return (_administrator.Configuration().Version());
             }
-            virtual uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
-            virtual ISubSystem* SubSystems() override;
-            virtual void Notify(const string& message) override;
-            virtual void* QueryInterface(const uint32_t id) override;
-            virtual void* QueryInterfaceByCallsign(const uint32_t id, const string& name) override;
-            virtual void Register(IPlugin::INotification* sink) override;
-            virtual void Unregister(IPlugin::INotification* sink) override;
+            string Model() const override {
+                return (_administrator.Configuration().Model());
+            }
+            bool Background() const override {
+                return (_administrator.Configuration().Background());
+            }
+            string Accessor() const override {
+                return (_administrator.Configuration().URL() + "/" + PluginHost::Service::Configuration().Callsign.Value());
+            }
+            string ProxyStubPath () const override {
+                return (_administrator.Configuration().ProxyStubPath());
+            }
+            string HashKey() const override {
+                return (_administrator.Configuration().HashKey());
+            }
+            string Substitute(const string& input) const override {
+                return (_administrator.Configuration().Substitute(input, PluginHost::Service::Configuration()));
+            }
+            bool PostMortemAllowed(PluginHost::IShell::reason why) const {
+                return (_administrator.Configuration().PostMortemAllowed(why));
+            }
 
             // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
-            virtual ICOMLink* COMLink() override;
+            IShell::ICOMLink* COMLink() override {
+                return (this);
+            }
+            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign) override
+            {
+                ASSERT(_connection == nullptr);
+
+                void* result(_administrator.Instantiate(object, waitTime, sessionId, className, callsign, DataPath(), PersistentPath(), VolatilePath()));
+
+                _connection = _administrator.RemoteConnection(sessionId);
+
+                return (result);
+            }
+            void Register(RPC::IRemoteConnection::INotification* sink) override
+            {
+                _administrator.Register(sink);
+            }
+            void Unregister(RPC::IRemoteConnection::INotification* sink) override
+            {
+                _administrator.Unregister(sink);
+            }
+            RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) override
+            {
+                return (_administrator.RemoteConnection(connectionId));
+            }
 
             // Methods to Activate and Deactivate the aggregated Plugin to this shell.
             // These are Blocking calls!!!!!
@@ -1046,9 +855,33 @@ namespace PluginHost {
             }
 
         private:
-            inline PluginHost::IPlugin* CheckLibrary(const string& name, const TCHAR* className, const uint32_t version)
+            virtual std::vector<string> GetLibrarySearchPaths(const string& locator) const override
             {
-                PluginHost::IPlugin* newIF = nullptr;
+                std::vector<string> all_paths;
+
+                const std::vector<string> temp = _administrator.Configuration().LinkerPluginPaths();
+                if (!temp.empty())
+                {
+                    // additionaly defined user paths
+                    for (const string& s : temp)
+                        all_paths.push_back(Core::Directory::Normalize(s) + locator);
+                }
+                else
+                {
+                    string className = PluginHost::Service::Configuration().ClassName.Value() + _T("/");
+                    // system configured paths
+                    all_paths.push_back(_administrator.Configuration().DataPath() + className + locator);
+                    all_paths.push_back(_administrator.Configuration().PersistentPath() + className + locator);
+                    all_paths.push_back(_administrator.Configuration().SystemPath() + locator);
+                    all_paths.push_back(_administrator.Configuration().AppPath() + _T("Plugins/") + locator);
+                }
+
+                return all_paths;
+            }
+
+            inline IPlugin* CheckLibrary(const string& name, const TCHAR* className, const uint32_t version)
+            {
+                IPlugin* newIF = nullptr;
                 Core::File libraryToLoad(name, true);
 
                 if (libraryToLoad.Exists() != true) {
@@ -1063,7 +896,7 @@ namespace PluginHost {
                         if ((HasError() == false) || (ErrorMessage().substr(0, 7) == _T("library"))) {
                             ErrorMessage(myLib.Error());
                         }
-                    } else if ((newIF = admin.Instantiate<PluginHost::IPlugin>(myLib, className, version)) == nullptr) {
+                    } else if ((newIF = admin.Instantiate<IPlugin>(myLib, className, version)) == nullptr) {
                         ErrorMessage(_T("class definitions does not exist"));
                     } else {
                         Core::System::ModuleNameImpl moduleName = reinterpret_cast<Core::System::ModuleNameImpl>(myLib.LoadFunction(_T("ModuleName")));
@@ -1084,7 +917,7 @@ namespace PluginHost {
             {
                 ASSERT((State() == DEACTIVATED) || (State() == PRECONDITION));
 
-                PluginHost::IPlugin* newIF = nullptr;
+                IPlugin* newIF = nullptr;
                 const string locator(PluginHost::Service::Configuration().Locator.Value());
                 const string classNameString(PluginHost::Service::Configuration().ClassName.Value());
                 const TCHAR* className(classNameString.c_str());
@@ -1095,25 +928,24 @@ namespace PluginHost {
 
                 if (locator.empty() == true) {
                     Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
-                    newIF = admin.Instantiate<PluginHost::IPlugin>(Core::Library(), className, version);
+                    newIF = admin.Instantiate<IPlugin>(Core::Library(), className, version);
                 } else {
-                    if ((newIF = CheckLibrary((Information().PersistentPath() + locator), className, version)) == nullptr) {
-                        if ((newIF = CheckLibrary((Information().SystemPath() + locator), className, version)) == nullptr) {
-                            newIF = CheckLibrary((Information().AppPath() + _T("Plugins/") + locator), className, version);
-                        }
-                    }
+                    std::vector<string> all_paths = GetLibrarySearchPaths(locator);
+                    std::vector<string>::const_iterator iter = std::begin(all_paths);
+                    while ((iter != std::end(all_paths)) && ((newIF = CheckLibrary(*iter, className, version)) == nullptr))
+                        ++iter;
                 }
 
                 if (newIF != nullptr) {
-                    _extended = newIF->QueryInterface<PluginHost::IPluginExtended>();
-                    _webRequest = newIF->QueryInterface<PluginHost::IWeb>();
-                    _webSocket = newIF->QueryInterface<PluginHost::IWebSocket>();
-                    _textSocket = newIF->QueryInterface<PluginHost::ITextSocket>();
-                    _rawSocket = newIF->QueryInterface<PluginHost::IChannel>();
-                    _webSecurity = newIF->QueryInterface<PluginHost::ISecurity>();
-                    _jsonrpc = newIF->QueryInterface<PluginHost::IDispatcher>();
+                    _extended = newIF->QueryInterface<IPluginExtended>();
+                    _webRequest = newIF->QueryInterface<IWeb>();
+                    _webSocket = newIF->QueryInterface<IWebSocket>();
+                    _textSocket = newIF->QueryInterface<ITextSocket>();
+                    _rawSocket = newIF->QueryInterface<IChannel>();
+                    _webSecurity = newIF->QueryInterface<ISecurity>();
+                    _jsonrpc = newIF->QueryInterface<IDispatcher>();
                     if (_webSecurity == nullptr) {
-                        _webSecurity = Information().Security();
+                        _webSecurity = _administrator.Configuration().Security();
                         _webSecurity->AddRef();
                     }
 
@@ -1129,7 +961,7 @@ namespace PluginHost {
                 ASSERT(State() != ACTIVATED);
                 ASSERT(_handler != nullptr);
 
-                PluginHost::IPlugin* currentIF = _handler;
+                IPlugin* currentIF = _handler;
 
                 if (_webRequest != nullptr) {
                     _webRequest->Release();
@@ -1188,12 +1020,13 @@ namespace PluginHost {
             Condition _precondition;
             Condition _termination;
             uint32_t _activity;
+            RPC::IRemoteConnection* _connection;
 
             ServiceMap& _administrator;
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;
         };
-        class ServiceMap : public PluginHost::IShell::ICOMLink {
+        class ServiceMap {
         public:
             typedef Core::IteratorMapType<std::map<const string, Core::ProxyType<Service>>, Core::ProxyType<Service>, const string&> Iterator;
             typedef std::map<const string, IRemoteInstantiation*> RemoteInstantiators;
@@ -1213,10 +1046,10 @@ namespace PluginHost {
                     RemoteHost& operator=(const RemoteHost&) = delete;
 
                 public:
-                    RemoteHost(const RPC::Object& instance, const string& connector)
+                    RemoteHost(const RPC::Object& instance, const RPC::Config& config)
                         : RemoteConnection()
-                        , _connector(connector)
                         , _object(instance)
+                        , _config(config)
                     {
                     }
                     virtual ~RemoteHost()
@@ -1236,7 +1069,7 @@ namespace PluginHost {
                                 Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, engine));
 
                             // Oke we have ou selves a COMClient link. Lets see if we can get the proepr interface...
-                            PluginHost::IRemoteInstantiation* instantiation = client->Open<PluginHost::IRemoteInstantiation>(_connector, ~0, 3000);
+                            IRemoteInstantiation* instantiation = client->Open<IRemoteInstantiation>(_config.Connector(), ~0, 3000);
 
                             if (instantiation == nullptr) {
                                 result = Core::ERROR_ILLEGAL_STATE;
@@ -1262,8 +1095,8 @@ namespace PluginHost {
                     }
 
                 private:
-                    const string _connector;
                     RPC::Object _object;
+                    const RPC::Config& _config;
                 };
 
             public:
@@ -1279,6 +1112,7 @@ namespace PluginHost {
                     const string& volatilePath,
                     const string& appPath,
                     const string& proxyStubPath,
+                    const string& postMortemPath,
                     const Core::ProxyType<RPC::InvokeServer>& handler)
                     : RPC::Communicator(node, proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath, Core::ProxyType<Core::IIPCServer>(handler))
                     , _parent(parent)
@@ -1288,6 +1122,7 @@ namespace PluginHost {
                     , _volatilePath(volatilePath.empty() == false ? Core::Directory::Normalize(volatilePath) : volatilePath)
                     , _appPath(appPath.empty() == false ? Core::Directory::Normalize(appPath) : appPath)
                     , _proxyStubPath(proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath)
+                    , _postMortemPath(postMortemPath.empty() == false ? Core::Directory::Normalize(postMortemPath) : postMortemPath)
 #ifdef __WINDOWS__
                     , _application(_systemPath + EXPAND_AND_QUOTE(HOSTING_COMPROCESS))
 #else
@@ -1311,19 +1146,9 @@ namespace PluginHost {
                 }
 
             public:
-                void* Create(uint32_t& connectionId, const RPC::Object& instance, const string& classname, const string& callsign, const uint32_t waitTime)
+                void* Create(uint32_t& connectionId, const RPC::Object& instance, const string& classname, const string& callsign, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath)
                 {
-                    string persistentPath(_persistentPath);
-                    string dataPath(_dataPath);
-                    string volatilePath(_volatilePath);
-
-                    if (callsign.empty() == false) {
-                        dataPath += callsign + '/';
-                        persistentPath += callsign + '/';
-                        volatilePath += callsign + '/';
-                    }
-
-                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, volatilePath, _appPath, _proxyStubPath), waitTime));
+                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, volatilePath, _appPath, _proxyStubPath, _postMortemPath), waitTime));
                 }
                 const string& PersistentPath() const
                 {
@@ -1349,6 +1174,10 @@ namespace PluginHost {
                 {
                     return (_proxyStubPath);
                 }
+                const string& PostMortemPath() const
+                {
+                    return (_postMortemPath);
+                }
                 const string& Application() const
                 {
                     return (_application);
@@ -1360,7 +1189,7 @@ namespace PluginHost {
                     RPC::Communicator::RemoteConnection* result = nullptr;
 
                     if (instance.Type() == RPC::Object::HostType::DISTRIBUTED) {
-                        result = Core::Service<RemoteHost>::Create<RPC::Communicator::RemoteConnection>(instance, config.Connector());
+                        result = Core::Service<RemoteHost>::Create<RPC::Communicator::RemoteConnection>(instance, config);
                     } else {
                         result = RPC::Communicator::CreateStarter(config, instance);
                     }
@@ -1381,6 +1210,7 @@ namespace PluginHost {
                 const string _volatilePath;
                 const string _appPath;
                 const string _proxyStubPath;
+                const string _postMortemPath;
                 const string _application;
                 mutable Core::CriticalSection _adminLock;
             };
@@ -1450,7 +1280,7 @@ namespace PluginHost {
                     }
 
                     uint32_t id;
-                    RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath());
+                    RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath());
                     RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, _T(""), configuration);
 
                     RPC::Process process(requestId, config, instance);
@@ -1696,7 +1526,18 @@ namespace PluginHost {
             private:
                 virtual void Dispatch() override
                 {
-                    _parent.Security(SystemInfo::IsActive(PluginHost::ISubSystem::SECURITY));
+                    static uint32_t previousState = 0;
+                    uint32_t changedFlags = (previousState ^ Value());
+                    previousState = Value();
+
+                    if ((changedFlags & (1 << ISubSystem::NETWORK)) != 0) {
+                         const_cast<PluginHost::Config&>(_parent.Configuration()).UpdateAccessor();
+                    }
+
+                    if ((changedFlags & (1 << ISubSystem::SECURITY)) != 0) {
+                        _parent.Security(SystemInfo::IsActive(ISubSystem::SECURITY));
+                    }
+
                     _decoupling->Schedule();
                 }
                 inline void Evaluate()
@@ -1717,14 +1558,24 @@ namespace PluginHost {
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
-            ServiceMap(Server& server, PluginHost::Config& config, const uint32_t stackSize)
+            ServiceMap(Server& server, Config& config, const uint32_t stackSize)
                 : _webbridgeConfig(config)
                 , _adminLock()
                 , _notificationLock()
                 , _services()
                 , _notifiers()
                 , _engine(Core::ProxyType<RPC::InvokeServer>::Create(&(server._dispatcher)))
-                , _processAdministrator(*this, config.Communicator(), config.PersistentPath(), config.SystemPath(), config.DataPath(), config.VolatilePath(), config.AppPath(), config.ProxyStubPath(), _engine)
+                , _processAdministrator(
+                    *this, 
+                    config.Communicator(), 
+                    config.PersistentPath(), 
+                    config.SystemPath(), 
+                    config.DataPath(), 
+                    config.VolatilePath(), 
+                    config.AppPath(), 
+                    config.ProxyStubPath(), 
+                    config.PostMortemPath(), 
+                    _engine)
                 , _server(server)
                 , _subSystems(this)
                 , _authenticationHandler(nullptr)
@@ -1855,19 +1706,19 @@ namespace PluginHost {
                 return (result);
             }
 
-            virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign) override
+            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign, const string& dataPath, const string& persistentPath, const string& volatilePath)
             {
-                return (_processAdministrator.Create(sessionId, object, className, callsign, waitTime));
+                return (_processAdministrator.Create(sessionId, object, className, callsign, waitTime, dataPath, persistentPath, volatilePath));
             }
-            virtual void Register(RPC::IRemoteConnection::INotification* sink) override
+            void Register(RPC::IRemoteConnection::INotification* sink)
             {
                 _processAdministrator.Register(sink);
             }
-            virtual void Unregister(RPC::IRemoteConnection::INotification* sink) override
+            void Unregister(RPC::IRemoteConnection::INotification* sink)
             {
                 _processAdministrator.Unregister(sink);
             }
-            virtual RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) override
+            RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId)
             {
                 return (connectionId != 0 ? _processAdministrator.Connection(connectionId) : nullptr);
             }
@@ -1886,7 +1737,7 @@ namespace PluginHost {
             inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration)
             {
                 // Whatever plugin is needse, we at least have our MetaData plugin available (as the first entry :-).
-                Core::ProxyType<Service> newService(Core::ProxyType<Service>::Create(&_webbridgeConfig, &configuration, this));
+                Core::ProxyType<Service> newService(Core::ProxyType<Service>::Create(_webbridgeConfig, configuration, *this));
 
                 if (newService.IsValid() == true) {
                     _adminLock.Lock();
@@ -1912,7 +1763,7 @@ namespace PluginHost {
                     Plugin::Config newConfiguration = original->PluginHost::Service::Configuration();
                     newConfiguration.Callsign = newCallsign;
 
-                    newService = Core::ProxyType<Service>::Create(&_webbridgeConfig, &newConfiguration, this);
+                    newService = Core::ProxyType<Service>::Create(_webbridgeConfig, newConfiguration, *this);
 
                     if (newService.IsValid() == true) {
                         // Fire up the interface. Let it handle the messages.
@@ -1950,7 +1801,7 @@ namespace PluginHost {
             {
                 _server.Notification(message);
             }
-#ifdef RESTFULL_API
+#if THUNDER_RESTFULL_API
             inline void Notification(const string& message)
             {
                 _server.Controller()->Notification(message);
@@ -2016,10 +1867,6 @@ namespace PluginHost {
 
             void Destroy();
 
-            inline const Environment& EnvironmentConfig() const
-            {
-                return _server.EnvironmentConfig();
-            }
             inline const PluginHost::Config& Configuration() const
             {
                 return _server.Configuration();
@@ -2092,8 +1939,7 @@ namespace PluginHost {
             }
 
         private:
-            PluginHost::Config& _webbridgeConfig;
-
+            Config& _webbridgeConfig;
             mutable Core::CriticalSection _adminLock;
             Core::CriticalSection _notificationLock;
             std::map<const string, Core::ProxyType<Service>> _services;
@@ -2326,11 +2172,20 @@ namespace PluginHost {
                     ASSERT(_element.IsValid() == true);
 
                     if (_jsonrpc == true) {
+#if THUNDER_PERFORMANCE
+                        Core::ProxyType<TrackingJSONRPC> tracking (Core::proxy_cast<TrackingJSONRPC>(_element));
+                        ASSERT (tracking.IsValid() == true);
+			tracking->Dispatch();
+#endif
                         Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(_element));
-
                         ASSERT(message.IsValid() == true);
 
                         _element = Core::ProxyType<Core::JSON::IElement>(Job::Process(_token, message));
+
+#if THUNDER_PERFORMANCE
+			tracking->Execution();
+#endif
+
                     } else {
                         _element = Job::Process(_element);
                     }
@@ -2640,7 +2495,7 @@ namespace PluginHost {
 
                 TRACE(SocketFlow, (element));
 
-                if  (securityClearance == false) {
+                if (securityClearance == false) {
                     Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(element));
                     if (message.IsValid()) {
                         PluginHost::Channel::Lock();
@@ -2739,8 +2594,7 @@ namespace PluginHost {
                         AbortUpgrade(Web::STATUS_SERVICE_UNAVAILABLE, _T("Could not find a correct service for this socket."));
                     } else if (Allowed(Path(), Query()) == false) {
                         AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Security prohibites this connection."));
-                    }
-                    if (serviceCall == true) {
+                    } else if (serviceCall == true) {
                         const string& serviceHeader(_parent._config.WebPrefix());
 
                         if (Protocol() == _T("notification")) {
@@ -2980,12 +2834,10 @@ namespace PluginHost {
             return (_config);
         }
         void Notification(const ForwardMessage& message);
-        const Environment& EnvironmentConfig() const
-        {
-            return _environment;
-        }
         void Open();
         void Close();
+
+        static void PostMortem(Service& service, const IShell::reason why, RPC::IRemoteConnection* connection);
 
     private:
         inline Core::ProxyType<Service> Controller()
@@ -3013,7 +2865,7 @@ namespace PluginHost {
         ChannelMap _connections;
 
         // Remember the interesting and properly formatted part of the configuration.
-        PluginHost::Config _config;
+        PluginHost::Config& _config;
 
         // Maintain a list of all the loaded plugin servers. Here we can dispatch work to.
         ServiceMap _services;
@@ -3023,8 +2875,6 @@ namespace PluginHost {
         // Hold on to the controller that controls the PluginHost. Using this plugin, the
         // system can externally control the webbridge.
         Core::ProxyType<Service> _controller;
-
-        Environment _environment;
 
         // All the object required for regular communication are coming from proxypools, which
         // will be parts of this server.
