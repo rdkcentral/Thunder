@@ -154,8 +154,9 @@ namespace Plugin {
     {
         const uint8_t& ttl = params.Ttl.Value();
 
-        ASSERT(_probe != nullptr);
-        _probe->Ping(ttl);
+        if (_probe != nullptr) {
+            _probe->Ping(ttl);
+        }
 
         return Core::ERROR_NONE;
     }
