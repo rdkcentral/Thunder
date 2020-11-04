@@ -22,6 +22,9 @@
 #ifdef __WINDOWS__
 #include <Winsock2.h>
 #include <ws2tcpip.h>
+#define __ERRORRESULT__ ::WSAGetLastError()
+#else
+#define __ERRORRESULT__ errno
 #endif
 
 namespace WPEFramework {
@@ -31,25 +34,33 @@ namespace Core {
     DoorBell::Connector::Connector(DoorBell& parent, const Core::NodeId& node)
         : _parent(parent)
         , _doorbell(node)
-        , _socket(::socket(_doorbell.Type(), SOCK_DGRAM, 0))
-        , _bound(0)
+        , _sendSocket(::socket(_doorbell.Type(), SOCK_DGRAM, 0))
+        , _receiveSocket(INVALID_SOCKET)
+        , _registered(0)
     {
     }
     /* virtual */ DoorBell::Connector::~Connector()
     {
-        if ((_bound & 0x01) == 1) {
-            ResourceMonitor::Instance().Unregister(*this);
+        if (_receiveSocket != INVALID_SOCKET) {
+            Unbind();
+
+#ifdef __WINDOWS__
+            ::closesocket(_receiveSocket);
+#else
+            ::close(_receiveSocket);
+#endif
         }
 #ifdef __WINDOWS__
-        ::closesocket(_socket);
+        ::closesocket(_sendSocket);
 #else
-        ::close(_socket);
+        ::close(_sendSocket);
 #endif
     }
 
     bool DoorBell::Connector::Bind() const
     {
-        if (_bound == 0) {
+        if (_receiveSocket == INVALID_SOCKET) {
+            _receiveSocket = ::socket(_doorbell.Type(), SOCK_DGRAM, 0);
 
 #ifndef __WINDOWS__
             // Check if domain path already exists, if so remove.
@@ -68,71 +79,81 @@ namespace Core {
                 int optval = 1;
                 socklen_t optionLength = sizeof(int);
 
-                ::setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength);
+                ::setsockopt(_receiveSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength);
             }
 
 #ifdef __WINDOWS__
             unsigned long l_Value = 1;
-            if (ioctlsocket(_socket, FIONBIO, &l_Value) != 0) {
+            if (ioctlsocket(_receiveSocket, FIONBIO, &l_Value) != 0) {
                 TRACE_L1("Error on port socket NON_BLOCKING call. Error %d", ::WSAGetLastError());
-            } else {
-                _bound = 1;
+                ::closesocket(_receiveSocket);
+                _receiveSocket = INVALID_SOCKET;
             }
 #else
             if (fcntl(_socket, F_SETOWN, getpid()) == -1) {
                 TRACE_L1("Setting Process ID failed. <%d>", errno);
-            } else {
+                ::close(_receiveSocket);
+                _receiveSocket = INVALID_SOCKET;
+            }
+            else {
                 int flags = fcntl(_socket, F_GETFL, 0) | O_NONBLOCK;
 
                 if (fcntl(_socket, F_SETFL, flags) != 0) {
                     TRACE_L1("Error on port socket F_SETFL call. Error %d", errno);
-                } else {
-                    _bound = 1;
+                    ::closesocket(_receiveSocket);
+                    _receiveSocket = INVALID_SOCKET;
                 }
             }
 #endif
 
-            if ((_bound == 1) && (::bind(_socket, static_cast<const NodeId&>(_doorbell), _doorbell.Size()) != SOCKET_ERROR)) {
+            if (_receiveSocket != INVALID_SOCKET) {
 
+                if (::bind(_receiveSocket, static_cast<const NodeId&>(_doorbell), _doorbell.Size()) == SOCKET_ERROR) {
+                    TRACE_L1("Error on socket bind for the doorbell. Error %d", __ERRORRESULT__);
+                }
+                else {
 #ifndef __WINDOWS__
-                if ((_doorbell.Type() == NodeId::TYPE_DOMAIN) && (_doorbell.Rights() <= 0777)) {
-                    _bound = ((::chmod(_doorbell.HostName().c_str(), _doorbell.Rights()) == 0) ? 1 : 0);
-                }
+                    if ((_doorbell.Type() == NodeId::TYPE_DOMAIN) && (_doorbell.Rights() <= 0777)) {
+                        if ((::chmod(_doorbell.HostName().c_str(), _doorbell.Rights()) != 0) {
+                            ::closesocket(_receiveSocket);
+                            _receiveSocket = INVALID_SOCKET;
+                        }
+                    }
 #endif
 
-                if (_bound == 1) {
-                    _bound = (SocketPort::enumState::UPDATE | 1);
-                    ResourceMonitor::Instance().Register(*const_cast<Connector*>(this));
+                    if (_receiveSocket != INVALID_SOCKET) {
+                        _registered = SocketPort::enumState::UPDATE | 0x01;
+                        ResourceMonitor::Instance().Register(*const_cast<Connector*>(this));
+                    }
                 }
-            } else {
-                _bound = 0;
             }
-        } else if (_bound == SocketPort::enumState::UPDATE) {
-            _bound |= 1;
+        }
+        else if ((_registered & 0x01) == 0) {
+            _registered = SocketPort::enumState::UPDATE | 0x01;
             ResourceMonitor::Instance().Register(*const_cast<Connector*>(this));
         }
 
-        return (_bound);
+        return ((_registered & 0x01) != 0);
     }
 
     void DoorBell::Connector::Unbind() const
     {
-        if ((_bound & 0x01) == 1) {
+        if ((_registered & 0x01) != 0) {
+            _registered = SocketPort::enumState::UPDATE;
             ResourceMonitor::Instance().Unregister(*const_cast<Connector*>(this));
-            _bound = SocketPort::enumState::UPDATE;
         }
 	}
 
     /* virtual */ IResource::handle DoorBell::Connector::Descriptor() const
     {
-        return (static_cast<IResource::handle>(_socket));
+        return (static_cast<IResource::handle>(_receiveSocket));
     }
 
     /* virtual */ uint16_t DoorBell::Connector::Events()
     {
 #ifdef __WINDOWS__
-        uint16_t result = ((_bound & SocketPort::enumState::UPDATE) | FD_READ);
-        _bound &= ~SocketPort::enumState::UPDATE;
+        uint16_t result = ((_registered & SocketPort::enumState::UPDATE) | FD_READ);
+        _registered &= ~SocketPort::enumState::UPDATE;
         return (result);
 #else
         return (POLLIN);
