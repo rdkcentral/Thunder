@@ -90,17 +90,17 @@ namespace Core {
                 _receiveSocket = INVALID_SOCKET;
             }
 #else
-            if (fcntl(_socket, F_SETOWN, getpid()) == -1) {
+            if (fcntl(_receiveSocket, F_SETOWN, getpid()) == -1) {
                 TRACE_L1("Setting Process ID failed. <%d>", errno);
                 ::close(_receiveSocket);
                 _receiveSocket = INVALID_SOCKET;
             }
             else {
-                int flags = fcntl(_socket, F_GETFL, 0) | O_NONBLOCK;
+                int flags = fcntl(_receiveSocket, F_GETFL, 0) | O_NONBLOCK;
 
-                if (fcntl(_socket, F_SETFL, flags) != 0) {
+                if (fcntl(_receiveSocket, F_SETFL, flags) != 0) {
                     TRACE_L1("Error on port socket F_SETFL call. Error %d", errno);
-                    ::closesocket(_receiveSocket);
+                    ::close(_receiveSocket);
                     _receiveSocket = INVALID_SOCKET;
                 }
             }
@@ -114,8 +114,8 @@ namespace Core {
                 else {
 #ifndef __WINDOWS__
                     if ((_doorbell.Type() == NodeId::TYPE_DOMAIN) && (_doorbell.Rights() <= 0777)) {
-                        if ((::chmod(_doorbell.HostName().c_str(), _doorbell.Rights()) != 0) {
-                            ::closesocket(_receiveSocket);
+                        if (::chmod(_doorbell.HostName().c_str(), _doorbell.Rights()) != 0) {
+                            ::close(_receiveSocket);
                             _receiveSocket = INVALID_SOCKET;
                         }
                     }
