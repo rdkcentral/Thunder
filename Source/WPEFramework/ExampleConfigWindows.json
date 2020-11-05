@@ -1,6 +1,6 @@
 {
     "port": 8080,
-    "interface": "LAN",
+    "bind": "127.0.0.1",
     "idletime": 60,
     "ipv6": false,
     "persistentpath": "C:/Projects/Domotica/artifacts/Persistent",
@@ -39,22 +39,39 @@
             "callsign": "IOControl",
             "locator": "libIOControl.so",
             "classname": "IOControl",
-            "autostart": false,
+            "autostart": true,
             "configuration": {
+                "port": "\\\\.\\COM17",
                 "pins": [
                     {
                         "id": 14,
                         "comment": "B6",
-                        "port": "\\\\.\\COM16",
                         "mode": "Both"
                     },
                     {
                         "id": 15,
                         "comment": "B7",
-                        "port": "\\\\.\\COM16",
                         "mode": "Output"
                     }
                 ]
+            }
+        },
+        {
+            "callsign": "OneWireControl",
+            "locator": "libOneWireControl.so",
+            "classname": "OneWireControl",
+            "autostart": true,
+            "configuration": {
+                "port": "\\\\.\\COM17"
+            }
+        },
+        {
+            "callsign": "I2CControl",
+            "locator": "libI2CControl.so",
+            "classname": "I2CControl",
+            "autostart": true,
+            "configuration": {
+                "port": "\\\\.\\COM17"
             }
         },
         {
@@ -231,7 +248,7 @@
             }
         },
         {
-            "callsign": "Tracing",
+            "callsign": "TraceControl",
             "locator": "libtracecontrol.so",
             "classname": "TraceControl",
             "autostart": true
