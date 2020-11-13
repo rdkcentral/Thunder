@@ -90,8 +90,13 @@ namespace Nexus {
                 , _keyboard(nullptr)
             {
 
+#if NEXUS_PLATFORM_VERSION_MAJOR <= 14
+                NXPL_NativeWindowInfo windowInfo;
+                memset(&windowInfo, 0, sizeof(windowInfo));
+#else
                 NXPL_NativeWindowInfoEXT windowInfo;
                 NXPL_GetDefaultNativeWindowInfoEXT(&windowInfo);
+#endif
                 windowInfo.x = 0;
                 windowInfo.y = 0;
                 windowInfo.width = _width;
@@ -118,8 +123,11 @@ namespace Nexus {
                 windowInfo.zOrder = 100;
 #endif
                 windowInfo.clientID = display.NexusClientId();
+#if NEXUS_PLATFORM_VERSION_MAJOR <= 14
+                _nativeWindow = NXPL_CreateNativeWindow(&windowInfo);
+#else
                 _nativeWindow = NXPL_CreateNativeWindowEXT(&windowInfo);
-
+#endif
                _parent.Register(this);
             }
 
@@ -209,7 +217,9 @@ namespace Nexus {
            NEXUS_Error rc = NxClient_Join(&joinSettings);
            BDBG_ASSERT(!rc);
 
+#if NEXUS_PLATFORM_VERSION_MAJOR > 14
            NxClient_UnregisterAcknowledgeStandby(NxClient_RegisterAcknowledgeStandby());
+#endif
 #else
            NEXUS_Error rc = NEXUS_Platform_Join();
            BDBG_ASSERT(!rc);

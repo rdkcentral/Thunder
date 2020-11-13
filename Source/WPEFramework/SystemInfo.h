@@ -77,7 +77,7 @@ namespace PluginHost {
             }
 
         private:
-            uint8_t* _identifier;
+            uint8_t* _identifier = nullptr;
         };
 
 
@@ -667,13 +667,13 @@ namespace PluginHost {
     private:
         mutable Core::CriticalSection _adminLock;
         std::list<PluginHost::ISubSystem::INotification*> _notificationClients;
-        Core::IDispatch* _callback;
+        Core::IDispatch* _callback = nullptr;
         Id* _identifier;
-        Location* _location;
-        Internet* _internet;
-        Security* _security;
-        Time* _time;
-        IProvisioning* _provisioning;
+        Location* _location = nullptr;
+        Internet* _internet = nullptr;
+        Security* _security = nullptr;
+        Time* _time = nullptr;
+        IProvisioning* _provisioning = nullptr;
         uint32_t _flags;
     };
 }
