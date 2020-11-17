@@ -169,7 +169,6 @@ namespace WPEFramework {
 					}
 
 					while (((_state & SKIP_WHITESPACE) == 0) && (current < maxLength)) {
-						bool quoted = false;
 						TCHAR character = ((_state & UPPERCASE) != 0 ? toupper(stream[current]) : ((_state & LOWERCASE) != 0 ? tolower(stream[current]) : stream[current]));
 
 						if ((_state & ESCAPED) == ESCAPED) {
