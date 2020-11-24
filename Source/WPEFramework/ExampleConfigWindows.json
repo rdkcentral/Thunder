@@ -24,9 +24,24 @@
             }
         },
         {
+            "callsign": "Provisioning",
+            "locator": "libProvisioning.so",
+            "classname": "Provisioning",
+            "autostart": false,
+            "configuration": {
+                "provisionpath":  "127.0.0.1:7777"
+            }
+        },
+        {
             "callsign": "Butler",
             "locator": "libButler.so",
             "classname": "Butler",
+            "autostart": false
+        },
+        {
+            "callsign": "QuizzMaster",
+            "locator": "libQuizzMaster.so",
+            "classname": "QuizzMaster",
             "autostart": false
         },
         {
@@ -39,7 +54,7 @@
             "callsign": "IOControl",
             "locator": "libIOControl.so",
             "classname": "IOControl",
-            "autostart": true,
+            "autostart": false,
             "configuration": {
                 "port": "\\\\.\\COM17",
                 "pins": [
@@ -60,7 +75,7 @@
             "callsign": "OneWireControl",
             "locator": "libOneWireControl.so",
             "classname": "OneWireControl",
-            "autostart": true,
+            "autostart": false,
             "configuration": {
                 "port": "\\\\.\\COM17"
             }
@@ -69,7 +84,7 @@
             "callsign": "I2CControl",
             "locator": "libI2CControl.so",
             "classname": "I2CControl",
-            "autostart": true,
+            "autostart": false,
             "configuration": {
                 "port": "\\\\.\\COM17"
             }
