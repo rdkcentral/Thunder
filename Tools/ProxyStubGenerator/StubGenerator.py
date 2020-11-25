@@ -298,7 +298,6 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                 string = Strip(string, pos + length + 1) if (length > 0) else string
                 if length > 2:
                     string = string[0:pos] + string[pos + length:]
-                print(a,"->",string)
 
                 return string
 
