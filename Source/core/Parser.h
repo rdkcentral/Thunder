@@ -199,9 +199,9 @@ namespace WPEFramework {
 							int8_t terminated = _terminator.IsTerminated(character);
 
 							if ((terminated & 0x80) == 0x80) {
+								_byteCounter = 0;
 								_parent.Parse(_buffer, ((_state & WAS_QUOTED) == WAS_QUOTED));
 								_parent.EndOfLine();
-								_byteCounter = 0;
 								_state |= SKIP_WHITESPACE;
 								_buffer.clear();
 							}
