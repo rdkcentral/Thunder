@@ -4157,7 +4157,8 @@ namespace Core {
                         String::operator=(str);
                     }
                 }
-            } else {
+            }
+            if (result == 0) {
                 result = String::Deserialize(stream, maxLength, offset, error);
 
                 _type = type::STRING;
