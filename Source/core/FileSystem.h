@@ -722,6 +722,7 @@ namespace Core {
                              ((name.length() == 2) && !((name[0] == '.') && (name[1] == '.'))) ) {
                             Directory deleteIt(Current().c_str());
                             deleteIt.Destroy(false);
+                            file.Destroy();
                         }
                     } else {
                         file.Destroy();
