@@ -454,9 +454,6 @@ namespace Tests {
             Core::NodeId flashNode(connector.c_str());
             uint32_t error;
 
-            sleep(2);
-            sleep(2);
-            sleep(2);
             testAdmin.Sync("setup server");
 
             Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
@@ -714,6 +711,7 @@ namespace Tests {
             EXPECT_EQ(error, Core::ERROR_NONE);
 
             factory->DestroyFactories();
+
             Core::Singleton::Dispose();
         }
         testAdmin.Sync("done testing");
@@ -773,7 +771,9 @@ namespace Tests {
             EXPECT_EQ(error, Core::ERROR_NONE);
 
             factory->DestroyFactories();
+
             Core::Singleton::Dispose();
+
             testAdmin.Sync("done testing");
         };
 
