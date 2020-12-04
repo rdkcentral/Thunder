@@ -42,6 +42,7 @@ class Container
         int _length;
         int* _data;
 };
+
 TEST(test_lockableContainer, lockContainer_test)
 {
     LockableContainerType<Container> containerObj1;

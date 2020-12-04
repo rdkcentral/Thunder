@@ -63,8 +63,8 @@ std::string ExecuteCmd(const char* cmd, Purpose purpose, Funcion func) {
     std::string result = "";
     std::string word = "";
     FILE* pipe = popen(cmd, "r");
-    if (!pipe) throw std::runtime_error("popen() failed!");
-    try {
+//    if (!pipe) throw std::runtime_error("popen() failed!");
+//    try {  //TODO
         while (fgets(buffer, sizeof buffer, pipe) != NULL) {
             result = buffer;
             if (purpose == Purpose::MEM) {
@@ -80,10 +80,10 @@ std::string ExecuteCmd(const char* cmd, Purpose purpose, Funcion func) {
                 break;
             }
         }
-    } catch (...) {
+   /* } catch (...) {  //TODO
         pclose(pipe);
         throw;
-    }
+    }*/
     pclose(pipe);
     return word;
 }

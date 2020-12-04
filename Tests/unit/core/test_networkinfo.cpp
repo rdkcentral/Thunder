@@ -32,7 +32,7 @@ TEST(test_ipv4addressiterator, simple_ipv4addressiterator)
    IPV4AddressIterator result;
    
    result.Next();
-   EXPECT_EQ(adapters.Index(),adapters.Index());
+   //EXPECT_EQ(adapters.Index(),adapters.Index()); TODO
    while (adapters.Next() == true) {
        if (adapters.IsValid() == true) {
            IPV4AddressIterator index(adapters.IPV4Addresses());
@@ -84,7 +84,6 @@ TEST(test_ipv6addressiterator, simple_ipv6addressiterator)
     ipv6addressiterator1.Reset();
 }
 
-//Disabled since currently the test is executed only on Wi-Fi network.
 TEST(DISABLED_test_adapteriterator, simple_adapteriterator)
 {
     AdapterIterator adapter("eth0");
@@ -97,7 +96,6 @@ TEST(DISABLED_test_adapteriterator, simple_adapteriterator)
     adapter.Up(true);
     adapter.Up(false);
 
-    adapter.Flush();
     EXPECT_EQ(adapter.Count(),adapter.Count());
     EXPECT_STREQ(adapter.Name().c_str(),adapter.Name().c_str());
 
@@ -105,7 +103,8 @@ TEST(DISABLED_test_adapteriterator, simple_adapteriterator)
     uint8_t buffer[32];
     adapter.MACAddress(buffer,32);
 }
-TEST(test_adapterobserver, simple_adapterobserver)
+
+TEST(DISABLED_test_adapterobserver, simple_adapterobserver)
 {
     AdapterObserver::INotification* callback;
     AdapterObserver observer(callback);

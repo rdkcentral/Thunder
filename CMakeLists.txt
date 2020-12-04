@@ -83,7 +83,7 @@ endif()
 add_subdirectory(Source)
 
 if(BUILD_TESTS)
-   add_subdirectory(Tests)
+    add_subdirectory(Tests/unit)
 endif()
 
 

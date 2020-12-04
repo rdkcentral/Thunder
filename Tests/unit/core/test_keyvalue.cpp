@@ -25,7 +25,6 @@
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
-
 TEST(test_keyvaluetype, simple_keyvaluetype)
 {
     string key = "Name";
@@ -46,6 +45,7 @@ TEST(test_keyvaluetype, simple_keyvaluetype)
     EXPECT_STREQ(keyvalue3.Value().c_str(),value.c_str());
     EXPECT_TRUE(keyvalue3.IsKey(key));
 }
+
 TEST(test_textkeyvaluetype, simple_textkeyvaluetype)
 {
    string buffer = "/Service/testing/test";

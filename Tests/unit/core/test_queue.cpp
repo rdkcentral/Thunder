@@ -25,7 +25,6 @@
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
-
 TEST(test_queue, simple_queue)
 {
     QueueType<int> obj1(20);

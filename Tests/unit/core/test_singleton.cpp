@@ -54,7 +54,6 @@ class SingletonTypeThree {
         }
 };
 
-
 TEST(test_singleton, simple_singleton)
 {
     static SingletonTypeOne& object1 = SingletonType<SingletonTypeOne>::Instance();
@@ -66,5 +65,5 @@ TEST(test_singleton, simple_singleton)
     EXPECT_STREQ(x->ImplementationName().c_str(),"SingletonTypeTwo");
     SingletonType<SingletonTypeThree>* y = (SingletonType<SingletonTypeThree>*)&object3;
     EXPECT_STREQ(y->ImplementationName().c_str(),"SingletonTypeThree");
-    Singleton::Dispose();
+   //Singleton::Dispose(); TODO
 }

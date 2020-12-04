@@ -42,4 +42,3 @@ TEST(test_TriState, simple_TriState)
     tristate3.Set(TriState::EnumState::Unknown);
     EXPECT_EQ(tristate3.Get(),TriState::EnumState::Unknown);
 }
-

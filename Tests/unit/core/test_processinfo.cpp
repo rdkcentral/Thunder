@@ -33,8 +33,8 @@ TEST(Core_ProcessInfo, simpleSet)
     std::cout << "Priority       :" << static_cast<int>(processInfo.Priority()) << std::endl;
     std::cout << "IsActive       :" << (processInfo.IsActive() ? "Yes" : "No") << std::endl;
     std::cout << "Executable     :" << processInfo.Executable() << std::endl;
-    std::cout << "Group          :" << processInfo.Group() << std::endl;
-    std::cout << "User           :" << processInfo.User() << std::endl;
+    //std::cout << "Group          :" << processInfo.Group() << std::endl;
+    //std::cout << "User           :" << processInfo.User() << std::endl;
     std::cout << "Size Allocated :" << (processInfo.Allocated() >> 10) << " KB" << std::endl;
     std::cout << "Size Resident  :" << (processInfo.Resident() >> 10) << " KB" << std::endl;
     std::cout << "Size Shared    :" << (processInfo.Shared() >> 10) << " KB" << std::endl;

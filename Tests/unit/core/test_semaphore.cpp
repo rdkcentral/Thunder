@@ -65,7 +65,6 @@ private:
     volatile bool _done;
 };
 
-
 TEST(test_criticalsection, simple_criticalsection)
 {
     Core::CriticalSection lock;
@@ -79,6 +78,7 @@ TEST(test_criticalsection, simple_criticalsection)
     object.Stop();
     EXPECT_EQ(g_shared,2);
 }
+
 TEST(test_binairysemaphore, simple_binairysemaphore_timeout)
 {
     BinairySemaphore bsem(true);
@@ -100,6 +100,7 @@ TEST(test_binairysemaphore, simple_binairysemaphore)
     bsem.Unlock();
     EXPECT_EQ(g_shared,4);
 }
+
 TEST(test_countingsemaphore, simple_countingsemaphore_timeout)
 {
     CountingSemaphore csem(1,5);
@@ -125,6 +126,7 @@ TEST(test_countingsemaphore, simple_countingsemaphore_timeout)
     } while (timeOut < Core::Time::Now().Ticks());
     EXPECT_EQ(g_shared,6);
 }
+
 TEST(test_countingsemaphore, simple_countingsemaphore)
 {
     CountingSemaphore csem(1,5);

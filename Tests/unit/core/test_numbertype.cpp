@@ -227,6 +227,7 @@ namespace Tests {
         EXPECT_EQ(Core::ToBase64(26), 'a');
         EXPECT_EQ(Core::ToDirect(97), 'a');
     }
+
     TEST(Core_NumberType, Fractional_test)
     {
         Core::Fractional fractional();

@@ -294,6 +294,7 @@ namespace Tests {
             EXPECT_EQ(error, Core::ERROR_NONE);
 
             factory->DestroyFactories();
+
             Core::Singleton::Dispose();
         }
         testAdmin.Sync("done testing");
@@ -354,10 +355,9 @@ namespace Tests {
             EXPECT_EQ(error, Core::ERROR_NONE);
 
             factory->DestroyFactories();
-            Core::Singleton::Dispose();
+            //Core::Singleton::Dispose(); TODO
 
             testAdmin.Sync("done testing");
-
         };
 
         static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
@@ -391,15 +391,18 @@ namespace Tests {
             testAdmin.Sync("setup client");
 
             testAdmin.Sync("setup server");
-        testAdmin.Sync("done testing");
-        error = continousChannel.Source().Close(1000); // Wait for 1 second
-        EXPECT_EQ(error, Core::ERROR_NONE);
-        continousChannel.Unregister(TripletResponse::Id());
-        continousChannel.Unregister(VoidTriplet::Id());
-        continousChannel.Unregister(TextText::Id());
 
-        factory->DestroyFactories();
+            testAdmin.Sync("done testing");
 
+            error = continousChannel.Source().Close(1000); // Wait for 1 second
+            EXPECT_EQ(error, Core::ERROR_NONE);
+            continousChannel.Unregister(TripletResponse::Id());
+            continousChannel.Unregister(VoidTriplet::Id());
+            continousChannel.Unregister(TextText::Id());
+
+            factory->DestroyFactories();
+
+            Core::Singleton::Dispose();
         }
     }
 
@@ -509,6 +512,7 @@ namespace Tests {
             factory->DestroyFactories();
             Core::Singleton::Dispose();
         }
+
         testAdmin.Sync("done testing");
     }
 
