@@ -26,7 +26,7 @@ if(${PKG_CONFIG_FOUND})
 
     # Just check if the libdrm.pc exist, and create the PkgConfig::libdrm target
     # No version requirement (yet)
-    pkg_check_modules(LIBDRM REQUIRED IMPORTED_TARGET libdrm)
+    pkg_check_modules(LIBDRM QUIET IMPORTED_TARGET libdrm)
 
     include(FindPackageHandleStandardArgs)
 
@@ -55,13 +55,13 @@ if(${PKG_CONFIG_FOUND})
             INTERFACE_INCLUDE_DIRECTORIES "${LIBDRM_INCLUDE_DIRS}"
             )
     else()
-        message(FATAL_ERROR "Some required variable(s) is (are) not found / set! Does libdrm.pc exist?")
+        message(STATUS "Some required variable(s) is (are) not found / set! Does libdrm.pc exist?")
     endif()
 
     mark_as_advanced(LIBDRM_INCLUDE_DIRS LIBDRM_LIBRARIES)
 
 else()
 
-    message(FATAL_ERROR "Unable to locate PkgConfig")
+    message(STATUS "Unable to locate PkgConfig")
 
 endif()
