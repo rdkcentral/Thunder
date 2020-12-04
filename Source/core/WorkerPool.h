@@ -149,14 +149,8 @@ namespace Core {
         };
 
     public:
-	    static WorkerPool& Instance() {
-            ASSERT(_instance != nullptr);
-            return (*_instance);
-	    }
-	    static bool IsAvailable() {
-            return (_instance != nullptr);
-	    }
-        ~WorkerPool();
+        WorkerPool(const WorkerPool&) = delete;
+        WorkerPool& operator=(const WorkerPool&) = delete;
 
         WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize)
             : _threadPool(threadCount, stackSize, queueSize)
@@ -185,10 +179,7 @@ namespace Core {
         {
             _timer.Schedule(time, Timer(this, job));
         }
-	    void Join() {
-            Process(0);
-	    }
-        void Run()
+        bool Reschedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) override
         {
             bool rescheduled = false;
             if (_timer.Revoke(Timer(this, job)) == true) {
