@@ -77,7 +77,16 @@ TEST(Core_CyclicBuffer, WithoutOverwrite)
         uint32_t cyclicBufferSize = 10;
         uint8_t loadBuffer[cyclicBufferSize + 1];
 
-        CyclicBuffer buffer(bufferName.c_str(), Core::File::USER_WRITE|Core::File::USER_READ|Core::File::SHAREABLE, cyclicBufferSize, false);
+        CyclicBuffer buffer(bufferName.c_str(),
+            Core::File::USER_READ    |
+            Core::File::USER_WRITE   |
+            Core::File::USER_EXECUTE |
+            Core::File::GROUP_READ   |
+            Core::File::GROUP_WRITE  |
+            Core::File::OTHERS_READ  |
+            Core::File::OTHERS_WRITE |
+            Core::File::SHAREABLE,
+            cyclicBufferSize, false);
 
         testAdmin.Sync("setup server");
 
@@ -124,7 +133,16 @@ TEST(Core_CyclicBuffer, WithoutOverwrite)
         uint32_t cyclicBufferSize = 10;
         uint8_t loadBuffer[cyclicBufferSize + 1];
 
-        CyclicBuffer buffer(bufferName.c_str(), Core::File::USER_WRITE|Core::File::USER_READ|Core::File::SHAREABLE, cyclicBufferSize, false);
+        CyclicBuffer buffer(bufferName.c_str(),
+            Core::File::USER_READ    |
+            Core::File::USER_WRITE   |
+            Core::File::USER_EXECUTE |
+            Core::File::GROUP_READ   |
+            Core::File::GROUP_WRITE  |
+            Core::File::OTHERS_READ  |
+            Core::File::OTHERS_WRITE |
+            Core::File::SHAREABLE,
+            cyclicBufferSize, false);
 
         testAdmin.Sync("setup client");
 
@@ -162,7 +180,16 @@ TEST(Core_CyclicBuffer, WithoutOverwriteReversed)
         uint32_t cyclicBufferSize = 10;
         uint8_t loadBuffer[cyclicBufferSize + 1];
 
-        CyclicBuffer buffer(bufferName.c_str(), Core::File::USER_WRITE|Core::File::USER_READ|Core::File::SHAREABLE, cyclicBufferSize, false);
+        CyclicBuffer buffer(bufferName.c_str(),
+            Core::File::USER_READ    |
+            Core::File::USER_WRITE   |
+            Core::File::USER_EXECUTE |
+            Core::File::GROUP_READ   |
+            Core::File::GROUP_WRITE  |
+            Core::File::OTHERS_READ  |
+            Core::File::OTHERS_WRITE |
+            Core::File::SHAREABLE,
+            cyclicBufferSize, false);
 
         testAdmin.Sync("setup server");
 
@@ -207,7 +234,16 @@ TEST(Core_CyclicBuffer, WithoutOverwriteReversed)
         uint32_t cyclicBufferSize = 10;
         uint8_t loadBuffer[cyclicBufferSize + 1];
 
-        CyclicBuffer buffer(bufferName.c_str(), Core::File::USER_WRITE|Core::File::USER_READ|Core::File::SHAREABLE, cyclicBufferSize, false);
+        CyclicBuffer buffer(bufferName.c_str(),
+            Core::File::USER_READ    |
+            Core::File::USER_WRITE   |
+            Core::File::USER_EXECUTE |
+            Core::File::GROUP_READ   |
+            Core::File::GROUP_WRITE  |
+            Core::File::OTHERS_READ  |
+            Core::File::OTHERS_WRITE |
+            Core::File::SHAREABLE,
+            cyclicBufferSize, false);
 
         testAdmin.Sync("setup client");
 
@@ -239,7 +275,7 @@ TEST(Core_CyclicBuffer, WithoutOverwriteReversed)
     Singleton::Dispose();
 }
 
-TEST(Core_CyclicBuffer, WithOverwrite)
+TEST(DISABLED_Core_CyclicBuffer, WithOverwrite)
 {
     std::string bufferName {"cyclicbuffer03"};
 
@@ -249,7 +285,16 @@ TEST(Core_CyclicBuffer, WithOverwrite)
         uint32_t cyclicBufferSize = 10;
         uint8_t loadBuffer[cyclicBufferSize + 1];
 
-        CyclicBuffer buffer(bufferName.c_str(), Core::File::USER_WRITE|Core::File::USER_READ|Core::File::SHAREABLE, cyclicBufferSize, true);
+        CyclicBuffer buffer(bufferName.c_str(),
+            Core::File::USER_READ    |
+            Core::File::USER_WRITE   |
+            Core::File::USER_EXECUTE |
+            Core::File::GROUP_READ   |
+            Core::File::GROUP_WRITE  |
+            Core::File::OTHERS_READ  |
+            Core::File::OTHERS_WRITE |
+            Core::File::SHAREABLE,
+            cyclicBufferSize, true);
 
         testAdmin.Sync("setup server");
 
@@ -293,7 +338,16 @@ TEST(Core_CyclicBuffer, WithOverwrite)
         uint32_t cyclicBufferSize = 10;
         uint8_t loadBuffer[cyclicBufferSize + 1];
 
-        CyclicBuffer buffer(bufferName.c_str(), Core::File::USER_WRITE|Core::File::USER_READ|Core::File::SHAREABLE, cyclicBufferSize, true);
+        CyclicBuffer buffer(bufferName.c_str(),
+            Core::File::USER_READ    |
+            Core::File::USER_WRITE   |
+            Core::File::USER_EXECUTE |
+            Core::File::GROUP_READ   |
+            Core::File::GROUP_WRITE  |
+            Core::File::OTHERS_READ  |
+            Core::File::OTHERS_WRITE |
+            Core::File::SHAREABLE,
+            cyclicBufferSize, true);
 
         testAdmin.Sync("setup client");
 
@@ -309,6 +363,7 @@ TEST(Core_CyclicBuffer, WithOverwrite)
         result = buffer.Reserve(8);
         result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
         EXPECT_EQ(result, data.size());
+
         data = "klmnopq";
         result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
         EXPECT_EQ(result, data.size());
@@ -335,7 +390,16 @@ TEST(Core_CyclicBuffer, WithOverwriteReversed)
         
         uint8_t loadBuffer[cyclicBufferSize + 1];
 
-        CyclicBuffer buffer(bufferName, Core::File::USER_WRITE|Core::File::USER_READ|Core::File::SHAREABLE, cyclicBufferSize, true);
+        CyclicBuffer buffer(bufferName,
+            Core::File::USER_READ    |
+            Core::File::USER_WRITE   |
+            Core::File::USER_EXECUTE |
+            Core::File::GROUP_READ   |
+            Core::File::GROUP_WRITE  |
+            Core::File::OTHERS_READ  |
+            Core::File::OTHERS_WRITE |
+            Core::File::SHAREABLE,
+            cyclicBufferSize, true);
 
         testAdmin.Sync("setup client");
 
@@ -369,7 +433,16 @@ TEST(Core_CyclicBuffer, WithOverwriteReversed)
     string data;
     uint8_t loadBuffer[cyclicBufferSize + 1];
 
-    CyclicBuffer buffer(bufferName, Core::File::USER_WRITE|Core::File::USER_READ|Core::File::SHAREABLE, cyclicBufferSize, true);
+    CyclicBuffer buffer(bufferName,
+        Core::File::USER_READ    |
+        Core::File::USER_WRITE   |
+        Core::File::USER_EXECUTE |
+        Core::File::GROUP_READ   |
+        Core::File::GROUP_WRITE  |
+        Core::File::OTHERS_READ  |
+        Core::File::OTHERS_WRITE |
+        Core::File::SHAREABLE,
+        cyclicBufferSize, true);
 
     testAdmin.Sync("setup server");
 
@@ -421,23 +494,42 @@ TEST(Core_CyclicBuffer, WithOverwriteReversed)
     Singleton::Dispose();
 }
 
-TEST(Core_CyclicBuffer, lock)
+TEST(DISABLED_Core_CyclicBuffer, lock)
 {
     char bufferName[] = "cyclicbuffer05";
     uint32_t cyclicBufferSize = 10;
 
-    CyclicBuffer buffer(bufferName, Core::File::USER_WRITE|Core::File::USER_READ|Core::File::SHAREABLE, cyclicBufferSize, true);
+    CyclicBuffer buffer(bufferName,
+        Core::File::USER_READ    |
+        Core::File::USER_WRITE   |
+        Core::File::USER_EXECUTE |
+        Core::File::GROUP_READ   |
+        Core::File::GROUP_WRITE  |
+        Core::File::OTHERS_READ  |
+        Core::File::OTHERS_WRITE |
+        Core::File::SHAREABLE,
+        cyclicBufferSize, true);
+
     buffer.Lock(false, 500);
     buffer.Unlock();
     buffer.Lock(true, 1000);
 }
 
-TEST(Core_CyclicBuffer, lock_unlock)
+TEST(DISABLED_Core_CyclicBuffer, lock_unlock)
 {
     char bufferName[] = "cyclicbuffer06";
     uint32_t bufferSize = 10;
 
-    CyclicBuffer buffer(bufferName, Core::File::USER_WRITE|Core::File::USER_READ|Core::File::SHAREABLE, bufferSize, true);
+    CyclicBuffer buffer(bufferName,
+        Core::File::USER_READ    |
+        Core::File::USER_WRITE   |
+        Core::File::USER_EXECUTE |
+        Core::File::GROUP_READ   |
+        Core::File::GROUP_WRITE  |
+        Core::File::OTHERS_READ  |
+        Core::File::OTHERS_WRITE |
+        Core::File::SHAREABLE,
+        bufferSize, true);
 
     volatile bool done = false;
     std::mutex mutex;
