@@ -39,8 +39,6 @@ namespace PluginHost {
         // There should be no need to call these methods from the implementation directly.
         virtual void Activate(IShell* service) = 0;
         virtual void Deactivate() = 0;
-        virtual void Closed(const uint32_t channelId) = 0;
-        virtual uint32_t Observers() const = 0;
     };
 
     class EXTERNAL JSONRPC : public IDispatcher {
@@ -244,13 +242,6 @@ namespace PluginHost {
 
             return (_service->Submit(channel.ChannelId(), Core::ProxyType<Core::JSON::IElement>(message)));
         }
-        uint32_t Observers() const override {
-            uint32_t result = 0;
-            for (const Core::JSONRPC::Handler& element : _handlers) {
-                result += element.Observers();
-            }
-            return(result);
-        }
 
     protected:
         virtual bool Exists(Core::JSONRPC::Handler& handler, const string& parameters)
@@ -405,15 +396,6 @@ namespace PluginHost {
 
             _handlers.front().Close();
             _service = nullptr;
-        }
-        void Closed(const uint32_t id) override
-        {
-            HandlerList::iterator index(_handlers.begin());
-
-            while (index != _handlers.end()) {
-                index->Close(id);
-                index++;
-            }
         }
 
     private:
