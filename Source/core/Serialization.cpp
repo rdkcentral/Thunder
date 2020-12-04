@@ -290,10 +290,6 @@ namespace Core {
             }
         }
 
-        if ((state != 0) && (filler < length)) {
-            object[filler++] = lastStuff;
-        
-		}
         length = filler;
 
         return (index);

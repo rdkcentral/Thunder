@@ -30,7 +30,7 @@ import copy
 import CppParser
 from collections import OrderedDict
 
-VERSION = "1.6.4"
+VERSION = "1.6.5"
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -46,7 +46,7 @@ EMIT_MODULE_NAME_DECLARATION = False
 EMIT_COMMENT_WITH_PROTOTYPE = True
 EMIT_COMMENT_WITH_STUB_ORDER = True
 STUB_NAMESPACE = "::WPEFramework::ProxyStubs"
-INTERFACE_NAMESPACE = "::WPEFramework::Exchange"
+INTERFACE_NAMESPACE = "::WPEFramework"
 CLASS_IUNKNOWN = "::WPEFramework::Core::IUnknown"
 PROXYSTUB_CPP_NAME = "ProxyStubs_%s.cpp"
 
@@ -236,6 +236,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
         emit.Line()
 
         emit.Line('#include <com/com.h>')
+        emit.Line()
 
         if EMIT_MODULE_NAME_DECLARATION:
             emit.Line("MODULE_NAME_DECLARATION(BUILDREF_WEBBRIDGE)")
@@ -246,8 +247,9 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
         emit.Line("namespace %s {" % STUB_NAMESPACE.split("::")[-1])
         emit.Line()
         emit.IndentInc()
-        emit.Line("using namespace %s;" % iface_namespace)
-        emit.Line()
+        if (iface_namespace != STUB_NAMESPACE.split("::")[-2]):
+            emit.Line("using namespace %s;" % iface_namespace)
+            emit.Line()
 
         announce_list = OrderedDict()
 
@@ -262,14 +264,9 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
             if (iface_namespace + "::") not in iface.obj.full_name:
                 continue # inteface in other namespace
 
-            name = iface.obj.full_name.split(iface_namespace + "::", 1)[1]
-            array_name = CreateName(name) + "StubMethods"
-            class_name = CreateName(name) + "Proxy"
-            stub_name = CreateName(name) + "Stub"
-            iface_name = iface.obj.type.split(iface_namespace + "::", 1)[1]
-
             # Cut out interface namespace from all identifiers found in a string
             def Strip(string, index=0):
+                a = string
                 pos = 0
                 idx = index
                 length = 0
@@ -280,8 +277,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                         while (True):
                             i = string.find(ps, idx)
                             if i != -1:
-                                if ((((length == 0) and (i == 0 or string[i - 1] in [" ", "(", ","]))
-                                     or (i == pos + length))):
+                                if (((length == 0) and (i == 0 or string[i - 1] in [" ", "(", ",", "<"])) or (i == pos + length)):
                                     if length == 0:
                                         pos = i
                                     length += len(ps)
@@ -302,7 +298,14 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                 string = Strip(string, pos + length + 1) if (length > 0) else string
                 if length > 2:
                     string = string[0:pos] + string[pos + length:]
+
                 return string
+
+            name = iface.obj.full_name.split(iface_namespace + "::", 1)[1]
+            array_name = CreateName(name) + "StubMethods"
+            class_name = CreateName(name) + "Proxy"
+            stub_name = CreateName(name) + "Stub"
+            iface_name = Strip(iface.obj.type.split(iface_namespace + "::", 1)[1])
 
             # Stringifies a type, omitting outer namespace if necessary
             def TypeStr(type):
@@ -937,7 +940,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
         for iface in interfaces:
             if (iface_namespace + "::") not in iface.obj.full_name:
                 continue
-            iface_name = iface.obj.type.split(INTERFACE_NAMESPACE + "::", 1)[1]
+            iface_name = Strip(iface.obj.type.split(INTERFACE_NAMESPACE + "::", 1)[1])
             if not iface_name in announce_list:
                 continue
 

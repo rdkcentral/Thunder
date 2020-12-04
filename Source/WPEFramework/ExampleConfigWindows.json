@@ -1,6 +1,6 @@
 {
     "port": 8080,
-    "interface": "LAN",
+    "bind": "127.0.0.1",
     "idletime": 60,
     "ipv6": false,
     "persistentpath": "C:/Projects/Domotica/artifacts/Persistent",
@@ -24,9 +24,24 @@
             }
         },
         {
+            "callsign": "Provisioning",
+            "locator": "libProvisioning.so",
+            "classname": "Provisioning",
+            "autostart": false,
+            "configuration": {
+                "provisionpath":  "127.0.0.1:7777"
+            }
+        },
+        {
             "callsign": "Butler",
             "locator": "libButler.so",
             "classname": "Butler",
+            "autostart": false
+        },
+        {
+            "callsign": "QuizzMaster",
+            "locator": "libQuizzMaster.so",
+            "classname": "QuizzMaster",
             "autostart": false
         },
         {
@@ -41,20 +56,37 @@
             "classname": "IOControl",
             "autostart": false,
             "configuration": {
+                "port": "\\\\.\\COM17",
                 "pins": [
                     {
                         "id": 14,
                         "comment": "B6",
-                        "port": "\\\\.\\COM16",
                         "mode": "Both"
                     },
                     {
                         "id": 15,
                         "comment": "B7",
-                        "port": "\\\\.\\COM16",
                         "mode": "Output"
                     }
                 ]
+            }
+        },
+        {
+            "callsign": "OneWireControl",
+            "locator": "libOneWireControl.so",
+            "classname": "OneWireControl",
+            "autostart": false,
+            "configuration": {
+                "port": "\\\\.\\COM17"
+            }
+        },
+        {
+            "callsign": "I2CControl",
+            "locator": "libI2CControl.so",
+            "classname": "I2CControl",
+            "autostart": false,
+            "configuration": {
+                "port": "\\\\.\\COM17"
             }
         },
         {
@@ -231,7 +263,7 @@
             }
         },
         {
-            "callsign": "Tracing",
+            "callsign": "TraceControl",
             "locator": "libtracecontrol.so",
             "classname": "TraceControl",
             "autostart": true
