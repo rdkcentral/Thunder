@@ -91,3 +91,7 @@ target_link_libraries(${TEST_RUNNER_NAME}
     WPEFrameworkTracing
     WPEFrameworkProtocols
 )
+
+install(
+    TARGETS ${TEST_RUNNER_NAME}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)

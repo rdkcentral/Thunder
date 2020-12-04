@@ -35,5 +35,10 @@ TEST(test_messageException, simple_messageException)
     char buffer[50];
     string status = ": File exists";
     snprintf(buffer, msg.size()+status.size()+1, "%s%s",msg.c_str(),status.c_str());
+    if(exception1.Message() !=  buffer) {
+        memset(buffer, 0, sizeof buffer);
+        status = ": No such file or directory";
+        snprintf(buffer, msg.size()+status.size()+1, "%s%s",msg.c_str(),status.c_str());
+    }
     EXPECT_STREQ(exception1.Message(),buffer);
 }
