@@ -63,7 +63,9 @@ std::string ExecuteCmd(const char* cmd, Purpose purpose, Funcion func) {
     std::string result = "";
     std::string word = "";
     FILE* pipe = popen(cmd, "r");
-//    if (!pipe) throw std::runtime_error("popen() failed!");
+
+    EXPECT_TRUE(pipe != nullptr);
+
 //    try {  //TODO
         while (fgets(buffer, sizeof buffer, pipe) != NULL) {
             result = buffer;
@@ -85,6 +87,7 @@ std::string ExecuteCmd(const char* cmd, Purpose purpose, Funcion func) {
         throw;
     }*/
     pclose(pipe);
+
     return word;
 }
 
@@ -113,7 +116,6 @@ TEST(Core_SystemInfo, systemInfo)
     EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetPageSize(),getpagesize());
     EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetTotalRam(), stoi(ExecuteCmd(cmd.c_str(), Purpose::MEM, Funcion::TOTAL)));
 
-    //EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetFreeRam(),stoi(ExecuteCmd(cmd.c_str(),Purpose::MEM, Funcion::FREE)));
     WPEFramework::Core::SystemInfo::Instance().GetFreeRam(); //Returns the instant snapshot of the free memory at that moment, hence can't verify it's value.
 
     EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetUpTime(),GetUpTime());
