@@ -92,7 +92,7 @@ namespace Tests {
 
             // call implementation
             IAdder* implementation = reinterpret_cast<IAdder*>(input.Implementation());
-            ASSERT((implementation != nullptr) && "Null IAdder implementation pointer");
+            EXPECT_TRUE((implementation != nullptr) && "Null IAdder implementation pointer");
             const uint32_t output = implementation->GetValue();
 
             // write return value
@@ -111,7 +111,7 @@ namespace Tests {
 
             // call implementation
             IAdder* implementation = reinterpret_cast<IAdder*>(input.Implementation());
-            ASSERT((implementation != nullptr) && "Null IAdder implementation pointer");
+            EXPECT_TRUE((implementation != nullptr) && "Null IAdder implementation pointer");
             implementation->Add(param0);
         },
 
@@ -122,7 +122,7 @@ namespace Tests {
 
             // call implementation
             IAdder* implementation = reinterpret_cast<IAdder*>(input.Implementation());
-            ASSERT((implementation != nullptr) && "Null IAdder implementation pointer");
+            EXPECT_TRUE((implementation != nullptr) && "Null IAdder implementation pointer");
             const uint32_t output = implementation->GetPid();
 
             // write return value
@@ -275,9 +275,9 @@ namespace Tests {
           Core::NodeId remoteNode(connector.c_str());
 
           Core::ProxyType<RPC::InvokeServerType<4, 0, 1>> engine = Core::ProxyType<RPC::InvokeServerType<4, 0, 1>>::Create();
-          ASSERT(engine != nullptr);
+          EXPECT_TRUE(engine != nullptr);
           Core::ProxyType<RPC::CommunicatorClient> client = Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, Core::ProxyType<Core::IIPCServer>(engine));
-          ASSERT(client != nullptr);
+          EXPECT_TRUE(client != nullptr);
           engine->Announcements(client->Announcement());
 
           // Create remote instance of "IAdder".

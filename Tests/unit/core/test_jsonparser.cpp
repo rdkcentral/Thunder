@@ -216,7 +216,7 @@ namespace Tests {
         data.valueToPutInJson = data.value;
         ExecutePrimitiveJsonTest<Core::JSON::ArrayType<Core::JSON::String>>(
             data, true, [](const Core::JSON::ArrayType<Core::JSON::String>& v) {
-            ASSERT_EQ(2u, v.Length());
+            EXPECT_EQ(2u, v.Length());
             EXPECT_NE(string{}, v[0].Value());
             EXPECT_NE(string{}, v[1].Value());
         });

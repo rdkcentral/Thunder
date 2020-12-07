@@ -137,29 +137,29 @@ TEST(Core_JSON, simpleSet)
         WPEFramework::Core::JSON::Tester<1, CommandRequest> parser;
         //ToString
         parser.ToString(command, output);
-        ASSERT_STREQ(inputRequired.c_str(), output.c_str());
+        EXPECT_STREQ(inputRequired.c_str(), output.c_str());
         //FromString
         WPEFramework::Core::ProxyType<CommandRequest> received = WPEFramework::Core::ProxyType<CommandRequest>::Create();
         parser.FromString(input, received);
         output.clear();
         parser.ToString(received, output);
-        ASSERT_STREQ(inputRequired.c_str(), output.c_str());
+        EXPECT_STREQ(inputRequired.c_str(), output.c_str());
 
         parser.FromString(inputRequired, received);
         output.clear();
         parser.ToString(received, output);
-        ASSERT_STREQ(inputRequired.c_str(), output.c_str());
+        EXPECT_STREQ(inputRequired.c_str(), output.c_str());
 
         //ArrayType Iterator
         WPEFramework::Core::JSON::ArrayType<Core::JSON::DecUInt16>::Iterator settings(command->F.J.Elements());
         for(int i = 0; settings.Next(); i++)
-            ASSERT_EQ(settings.Current().Value(), command->F.J[i]);
+            EXPECT_EQ(settings.Current().Value(), command->F.J[i]);
         //null test
         input = R"({"a":null,"b":null,"c":"0x5A","d":null,"f":{"g":"-014","h":-44}})";
         parser.FromString(input, received);
         output.clear();
         parser.ToString(received, output);
-        //ASSERT_STREQ(input.c_str(), output.c_str());
+        //EXPECT_STREQ(input.c_str(), output.c_str());
     }
     //JsonObject and JsonValue
     {
@@ -168,7 +168,7 @@ TEST(Core_JSON, simpleSet)
         command.FromString(input);
         string output;
         command.ToString(output);
-        ASSERT_STREQ(input.c_str(), output.c_str());
+        EXPECT_STREQ(input.c_str(), output.c_str());
 
         JsonObject object;
         object["g"] = "-014";
@@ -188,13 +188,13 @@ TEST(Core_JSON, simpleSet)
         demoObject["f"] = object;
         string serialized;
         demoObject.ToString(serialized);
-        ASSERT_STREQ(input.c_str(), serialized.c_str());
+        EXPECT_STREQ(input.c_str(), serialized.c_str());
 
         JsonObject::Iterator index = demoObject.Variants();
         while (index.Next()) {
             JsonValue value(demoObject.Get(index.Label()));
-            ASSERT_EQ(value.Content(), index.Current().Content());
-            ASSERT_STREQ(value.Value().c_str(), index.Current().Value().c_str());
+            EXPECT_EQ(value.Content(), index.Current().Content());
+            EXPECT_STREQ(value.Value().c_str(), index.Current().Value().c_str());
         }
     }
 }
