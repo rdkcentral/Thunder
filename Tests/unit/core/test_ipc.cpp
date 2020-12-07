@@ -813,6 +813,7 @@ namespace Tests {
             EXPECT_EQ(error, Core::ERROR_NONE);
 
             factory->DestroyFactories();
+            Core::Singleton::Dispose();
         }
     }
 } // Tests
