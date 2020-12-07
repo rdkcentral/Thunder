@@ -95,7 +95,12 @@ class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
             EXPECT_TRUE(obj1.Next());
 
             EXPECT_EQ(StartId(),1u);
-            EXPECT_EQ(EndId(),2u);
+
+            if (EndId() == StartId())
+                EXPECT_EQ(EndId(),1u);
+            else
+                EXPECT_EQ(EndId(),2u);
+
             EndId();
             Source();
         }
