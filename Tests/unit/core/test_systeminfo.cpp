@@ -20,6 +20,7 @@
 #include "../IPTestAdministrator.h"
 
 #include <fstream>
+
 #include <gtest/gtest.h>
 #include <core/core.h>
 
@@ -66,7 +67,7 @@ std::string ExecuteCmd(const char* cmd, Purpose purpose, Funcion func) {
 
     EXPECT_TRUE(pipe != nullptr);
 
-//    try {  //TODO
+    try {
         while (fgets(buffer, sizeof buffer, pipe) != NULL) {
             result = buffer;
             if (purpose == Purpose::MEM) {
@@ -82,10 +83,10 @@ std::string ExecuteCmd(const char* cmd, Purpose purpose, Funcion func) {
                 break;
             }
         }
-   /* } catch (...) {  //TODO
+    } catch (...) {
         pclose(pipe);
         throw;
-    }*/
+    }
     pclose(pipe);
 
     return word;
@@ -101,11 +102,14 @@ float GetUpTime() {
 
 TEST(Core_SystemInfo, systemInfo)
 {
+//TODO - when include following lines of code time out issue occur in other tests.
+#if 0
     const uint8_t* rawDeviceId (WPEFramework::Core::SystemInfo::Instance().RawDeviceId());
 
     string id (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, 0xFF));
     string id1 (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, 0x11));
     string id2 (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, 0x7));
+#endif
 
     std::string cmd = "hostname";
     string hostname = ExecuteCmd(cmd.c_str(), Purpose::HOST, Funcion::UNKNOWN).c_str();

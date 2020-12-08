@@ -20,8 +20,7 @@
 #include "../IPTestAdministrator.h"
 
 #include <gtest/gtest.h>
-#include <core/Time.h>
-#include <core/SystemInfo.h>
+#include <core/core.h>
 
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
