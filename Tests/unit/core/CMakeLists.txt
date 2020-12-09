@@ -52,7 +52,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_rangetype.cpp
    test_readwritelock.cpp
    test_rectangle.cpp
-   #test_rpc.cpp
+   test_rpc.cpp
    test_semaphore.cpp
    test_sharedbuffer.cpp
    test_singleton.cpp
@@ -68,7 +68,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_thread.cpp
    test_time.cpp
    test_timer.cpp
-   #test_tracing.cpp
+   test_tracing.cpp
    test_tristate.cpp
    test_valuerecorder.cpp
    test_weblinkjson.cpp
