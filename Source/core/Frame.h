@@ -357,9 +357,12 @@ namespace Core {
             }
 
             SetNumber<TYPENAME>(offset, length);
-            if (buffer) {
+
+            if (length != 0) {
+                ASSERT(buffer != nullptr);
                 ::memcpy(&(_data[offset + sizeof(TYPENAME)]), buffer, length);
             }
+
             return (requiredLength);
         }
 
