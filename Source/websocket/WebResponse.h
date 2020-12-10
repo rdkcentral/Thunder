@@ -264,7 +264,7 @@ namespace Web {
             friend class Core::ParserType<Core::TerminatorCarriageReturnLineFeed, Deserializer>;
 
             uint16_t Parse(const uint8_t stream[], const uint16_t maxLength);
-            void Parse(const string& buffer);
+            void Parse(const string& buffer, const bool /* quoted */);
             void EndOfLine();
             void EndOfPassThrough();
 

@@ -129,7 +129,7 @@ namespace Core {
         {
             // fprintf(stderr, "Entering Produced: %d %d %d\n", (int)_producer.IsLocked(), (int)_consumer.IsLocked(), static_cast<const uint32_t>(Size()));
 
-            _administration->_bytesWritten = static_cast<const uint32_t>(Size());
+            _administration->_bytesWritten = static_cast<uint32_t>(Size());
 
             uint32_t output = _consumer.Unlock();
 
@@ -156,7 +156,7 @@ namespace Core {
         {
             // fprintf(stderr, "Entering Consumed: %d %d\n", (int)_producer.IsLocked(), (int)_consumer.IsLocked());
 
-            _administration->_bytesWritten = static_cast<const uint32_t>(Size());
+            _administration->_bytesWritten = static_cast<uint32_t>(Size());
 
             // _administration->_bytesWritten = Size();
             uint32_t output = _producer.Unlock();

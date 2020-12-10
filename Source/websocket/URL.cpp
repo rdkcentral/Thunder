@@ -192,10 +192,6 @@ namespace Core
             }
         }
 
-        if ((state != 0) && (filler < destinationLength)) {
-            destination[filler++] = lastStuff;
-        }
-
         return (filler);
     }
 

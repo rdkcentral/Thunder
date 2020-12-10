@@ -661,7 +661,7 @@ namespace PluginHost {
 
                 return (result);
             }
-            inline Core::ProxyType<Core::JSON::IElement> Inbound(const uint32_t ID, const Core::JSON::IElement& element)
+            inline Core::ProxyType<Core::JSON::IElement> Inbound(const uint32_t ID, const Core::ProxyType<Core::JSON::IElement>& element)
             {
                 Core::ProxyType<Core::JSON::IElement> result;
 
@@ -2019,7 +2019,7 @@ namespace PluginHost {
                 }
                 Core::ProxyType<Core::JSON::IElement> Process(const Core::ProxyType<Core::JSON::IElement>& message)
                 {
-                    return (_service->Inbound(_ID, *message));
+                    return (_service->Inbound(_ID, message));
                 }
                 template <typename PACKAGE>
                 void Submit(PACKAGE package)

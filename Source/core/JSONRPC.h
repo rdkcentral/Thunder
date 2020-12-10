@@ -101,6 +101,9 @@ namespace Core {
                     case Core::ERROR_PRIVILIGED_REQUEST:
                         Code = -32604; // Priviliged
                         break;
+                    case Core::ERROR_TIMEDOUT:
+                        Code = -32000; // Server defined, now mapped to Timed out
+                        break;
                     default:
                         Code = static_cast<int32_t>(frameworkError);
                         break;
