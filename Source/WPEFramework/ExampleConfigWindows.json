@@ -1,6 +1,6 @@
 {
-    "port": 8080,
-    "bind": "127.0.0.1",
+    "port": 25555,
+    "bind": "0.0.0.0",
     "idletime": 60,
     "ipv6": false,
     "persistentpath": "C:/Projects/Domotica/artifacts/Persistent",
@@ -14,6 +14,11 @@
         {
             "module": "Plugin_SecurityAgent",
             "enabled": true
+        },
+        {
+            "module": "Plugin_DIALServer",
+            "category": "Protocol",
+            "enabled": true
         }
     ],
     "plugins": [
@@ -24,18 +29,37 @@
             }
         },
         {
+            "callsign": "Cobalt",
+            "locator": "liboutofprocessplugin.so",
+            "classname": "OutOfProcessPlugin",
+            "autostart": false,
+            "configuration": {
+                "outofprocess": true,
+                "url": "http://netflix.com/tv",
+                "sleep": "1",
+                "single": false,
+                "crash": false
+            }
+        },
+        {
             "callsign": "Provisioning",
             "locator": "libProvisioning.so",
             "classname": "Provisioning",
             "autostart": false,
             "configuration": {
-                "provisionpath":  "127.0.0.1:7777"
+                "provisionpath": "127.0.0.1:7777"
             }
         },
         {
             "callsign": "Butler",
             "locator": "libButler.so",
             "classname": "Butler",
+            "autostart": false
+        },
+        {
+            "callsign": "WebBridge",
+            "locator": "libWebBridge.so",
+            "classname": "WebBridge",
             "autostart": false
         },
         {
@@ -237,27 +261,31 @@
             "callsign": "DIALServer",
             "locator": "libdialserver.so",
             "classname": "DIALServer",
-            "autostart": false,
+            "autostart": true,
             "configuration": {
-                "browser": "WebKitBrowser",
-                "name": "Metro DIAL server",
-                "model": "MetroRefBoard",
-                "manufacturer": "BroadCOM",
-                "description": "Dial server running on Metro's reference hardware.",
+                "name": "ExploraUltra",
+                "model": "Generic Platform",
+                "manufacturer": "Metrological",
+                "description": "Metrological DIAL reference server.",
+                "interface": "192.168.1.129",
+                "deprecatedapi": false,
                 "apps": [
                     {
                         "name": "YouTube",
-                        "allowstop": true,
-                        "callsign": "WebKitBrowser",
+                        "hide": false,
+                        "runtimechange": true,
                         "url": "https://www.youtube.com/tv",
-                        "additionaldata": ""
+                        "origin": "youtube.com"
                     },
                     {
                         "name": "Netflix",
-                        "allowstop": false,
-                        "callsign": "Netflix",
-                        "url": "https://www.netflix.com",
-                        "additionaldata": ""
+                        "hide": true,
+                        "url": "https://www.netflix.com"
+                    },
+                    {
+                        "name": "AmazonInstantVideo",
+                        "hide": true,
+                        "url": "https://www.primevideo.com"
                     }
                 ]
             }
