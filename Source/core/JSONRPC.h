@@ -189,27 +189,86 @@ namespace Core {
                 }
                 return (designator.substr(pos == string::npos ? 0 : pos + 1));
             }
-            static uint8_t Version(const string& designator)
+            /**
+             * A helper function used in FindVersionNumber() to extraxt the version number
+             * from the right hand side of the delimiter (. [dot])
+             *
+             * @param designator Designator string for extracting the version number
+             * @param startPos Start position of the delimiter.
+             * @return A valid version number if found, ~0 when there is no valid number after starPos;
+             */
+            static uint8_t ExtractNumberFromRHS(const string& designator, size_t startPos)
             {
                 uint8_t result = ~0;
+
+                // move to the Right hand side until end of string reached
+                // or a non-numeric character found
+                size_t endPos = designator.length() - 1;
+
+                if (startPos == endPos) {
+                    //no more charcters on the right hand side
+                    return (result);
+                }
+
+                size_t index = startPos + 1;
+                while ((index <= endPos) && (isdigit(designator[index]))) {
+                    index++;
+                }
+
+                if (index > endPos) {
+                    // Found a valid digit on the RHS
+                    result = static_cast<uint8_t>(atoi(designator.substr(startPos + 1).c_str()));
+                }
+                return (result);
+            }
+            /**
+             * This function can be used to find the version number from the given Designator string.
+             * Parsing is done as per the Designator string format specified in WPEFramework::Core
+             * JSONRPC API call.
+             * This function looks for the delimiter (dot) in the reverse order (from right to left)
+             *
+             * @param designator Designator string for finding the version number
+             * @param startPos start index of the string value used for comparison, 0 by default.
+             * @return A valid version number if found, ~0 when there is no valid version number.
+             */
+            static uint8_t FindVersionNumber(const string& designator, size_t startPos)
+            {
+                uint8_t result = ~0;
+
                 size_t pos = designator.find_last_of('.', designator.find_last_of('@'));
 
                 if (pos != string::npos) {
+                    if (pos == startPos) {
+                        // No more character left on LHS. Try RHS
+                        return ExtractNumberFromRHS(designator, pos);
+                    }
+
                     size_t index = pos - 1;
-                    while ((index != 0) && (isdigit(designator[index]))) {
+
+                    while ((index > startPos) && (isdigit(designator[index]))) {
                         index--;
                     }
-                    if ((index != 0) && (designator[index] == '.')) {
+
+                    if (designator[index] == '.') {
                         index++;
-                    } else if ((index == 0) && (isdigit(designator[0]) == false)) {
-                        index = pos;
+                    }
+
+                    else if (!isdigit(designator[index])) {
+                        return ExtractNumberFromRHS(designator, pos);
                     }
 
                     if (index < pos) {
+                        // Found a valid digit on the LHS
                         result = static_cast<uint8_t>(atoi(designator.substr(index, pos - index).c_str()));
                     }
+
                 }
+
                 return (result);
+            }
+            static uint8_t Version(const string& designator)
+            {
+                return FindVersionNumber(designator, 0);
             }
             static string Index(const string& designator)
             {
