@@ -333,6 +333,7 @@ Use this method to recursively delete contents of a directory
 | Code | Message | Description |
 | :-------- | :-------- | :-------- |
 | 22 | ```ERROR_UNKNOWN_KEY``` | The given path was incorrect |
+| 17 | ```ERROR_DESTRUCTION_FAILED``` | Failed to delete given path |
 | 24 | ```ERROR_PRIVILEGED_REQUEST``` | The path points outside of persistent directory or some files/directories couldn't have been deleted |
 
 ### Example
