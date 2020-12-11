@@ -193,8 +193,9 @@ namespace Core {
             if (result[length - 1] != '/')
 #endif
             {
-                ASSERT(((Core::File(location).Exists() == true) && (Core::File(location).IsDirectory() == true)) || (Core::File(location).Exists() == false));
-                result += '/';
+                if (Core::File(location).IsDirectory() == true) {
+                    result += '/';
+                }
             }
         }
         return (result);
