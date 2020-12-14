@@ -52,10 +52,10 @@ namespace Logging {
     static bool _syslogging = DetectLoggingOutput();
     static bool _logInitialized = []()
     {
-        SYSLOG(LoggingType<Trace::Information>, (""));
-        SYSLOG(LoggingType<Trace::Warning>, (""));
-        SYSLOG(LoggingType<Trace::Error>, (""));
-        SYSLOG(LoggingType<Trace::Fatal>, (""));
+        LoggingType<Trace::Information>::Enable(true);
+        LoggingType<Trace::Warning>::Enable(true);
+        LoggingType<Trace::Error>::Enable(true);
+        LoggingType<Trace::Fatal>::Enable(true);
         return true;
     }();
 
