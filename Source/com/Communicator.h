@@ -306,6 +306,7 @@ namespace RPC {
 
             _options.Add(_T("-l")).Add(instance.Locator());
             _options.Add(_T("-c")).Add(instance.ClassName());
+            _options.Add(_T("-C")).Add(instance.Callsign());
             _options.Add(_T("-r")).Add(config.Connector());
             _options.Add(_T("-i")).Add(Core::NumberType<uint32_t>(instance.Interface()).Text());
             _options.Add(_T("-x")).Add(Core::NumberType<uint32_t>(sequenceNumber).Text());
