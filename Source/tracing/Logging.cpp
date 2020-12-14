@@ -50,14 +50,6 @@ namespace Logging {
     /* static */ const char* MODULE_LOGGING = _T("SysLog");
     static uint64_t _baseTime(Core::Time::Now().Ticks());
     static bool _syslogging = DetectLoggingOutput();
-    static bool _logInitialized = []()
-    {
-        LoggingType<Trace::Information>::Enable(true);
-        LoggingType<Trace::Warning>::Enable(true);
-        LoggingType<Trace::Error>::Enable(true);
-        LoggingType<Trace::Fatal>::Enable(true);
-        return true;
-    }();
 
     void SysLog(const bool toConsole)
     {
