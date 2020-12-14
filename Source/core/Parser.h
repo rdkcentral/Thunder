@@ -53,7 +53,8 @@ namespace WPEFramework {
 				LOWERCASE = 0x080,
 				SPLITCHAR = 0x100,
 				PARSESTOP = 0x200,
-				WAS_QUOTED = 0x400
+				WAS_QUOTED = 0x400,
+				SINGLE_QUOTED = 0x800
 			};
 
 			ParserType(HANDLER& parent)
@@ -180,21 +181,29 @@ namespace WPEFramework {
 							_state |= ESCAPED;
 							_buffer += character;
 						}
-						else if (character == '\"') {
+						else if ((character == '\"') || (character == '\'')) {
 							if ((_state & QUOTED) == QUOTED) {
-								_state &= (~QUOTED);
-								_state |= WAS_QUOTED;
-							}
-							else if (_buffer.size() == 0) {
-								_state |= (QUOTED);
-							}
-							else if (__Complete<TEXTTERMINATOR, HANDLER>(_buffer, character) == true) {
-								_parent.Parse(_buffer, ((_state & WAS_QUOTED) == WAS_QUOTED));
-								_state |= (QUOTED);
-								_buffer.clear();
+								// Depending on the quote type, we just add it, or we close the quotation
+								if ((((_state & SINGLE_QUOTED) != 0) && (character == '\'')) ||
+									(((_state & SINGLE_QUOTED) == 0) && (character == '\"'))) {
+									_state &= (~QUOTED);
+									_state |= WAS_QUOTED;
+								}
+								else {
+									_buffer += character;
+								}
 							}
 							else {
-								_buffer += character;
+								if (__Complete<TEXTTERMINATOR, HANDLER>(_buffer, character) == true) {
+									_parent.Parse(_buffer, false);
+									_buffer.clear();
+								}
+								if (_buffer.size() == 0) {
+									_state |= (QUOTED) | (character == '\'' ? SINGLE_QUOTED : 0);
+								}
+								else {
+									_buffer += character;
+								}
 							}
 						}
 						else if ((_state & QUOTED) == QUOTED) {
@@ -206,6 +215,7 @@ namespace WPEFramework {
 							if ((terminated & 0x80) == 0x80) {
 								_byteCounter = 0;
 								_parent.Parse(_buffer, ((_state & WAS_QUOTED) == WAS_QUOTED));
+								_state &= (~(WAS_QUOTED | SINGLE_QUOTED));
 								_parent.EndOfLine();
 								_state |= SKIP_WHITESPACE;
 								_buffer.clear();
@@ -219,7 +229,7 @@ namespace WPEFramework {
 										if ((_buffer.empty() == false) || ((_state & WAS_QUOTED) == WAS_QUOTED)) {
 											_parent.Parse(_buffer, ((_state & WAS_QUOTED) == WAS_QUOTED));
 											_buffer.clear();
-											_state &= (~WAS_QUOTED);
+											_state &= (~(WAS_QUOTED|SINGLE_QUOTED));
 										}
 
 										if ((_splitChar != character) && (character != ' ') && (character != '\t') && (character != '\r')) {
