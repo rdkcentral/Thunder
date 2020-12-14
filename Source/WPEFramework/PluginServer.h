@@ -2003,6 +2003,9 @@ namespace PluginHost {
                 {
                     _server->Dispatcher().Submit(_ID, package);
                 }
+                void RequestClose() {
+                    _server->Dispatcher().RequestClose(_ID);
+                }
 
             private:
                 uint32_t _ID;
@@ -2054,15 +2057,20 @@ namespace PluginHost {
                     Core::ProxyType<Web::Response> response;
 
                     if (_jsonrpc == true) {
-                        response = IFactories::Instance().Response();
                         Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
 
                         if (message->IsSet()) {
                             Core::ProxyType<Core::JSONRPC::Message> body = Job::Process(_token, message);
 
+                            // If we have no response body, it looks like an async-call...
                             if (body.IsValid() == false) {
-                                response->ErrorCode = Web::STATUS_BAD_REQUEST;
-                            } else {
+                                // It's a a-synchronous call, seems we should just queue this request, it will be answered later on..
+                                if (_request->Connection.Value() == Web::Request::CONNECTION_CLOSE) {
+                                    Job::RequestClose();
+                                }
+                            }
+                            else {
+                                response = IFactories::Instance().Response();
                                 response->Body(body);
                                 if (body->Error.IsSet() == false) {
                                     response->ErrorCode = Web::STATUS_OK;
@@ -2073,11 +2081,15 @@ namespace PluginHost {
                                 }
                             }
                         } else {
+                            response = IFactories::Instance().Response();
                             response->ErrorCode = Web::STATUS_ACCEPTED;
                             response->Message = _T("Failed to parse JSONRPC message");
                         }
                     } else {
                         response = Job::Process(_request);
+                        if (response.IsValid() == false) {
+                            response = _missingResponse;
+                        }
                     }
 
                     if (response.IsValid() == true) {
@@ -2089,13 +2101,10 @@ namespace PluginHost {
                             response->CacheControl = _T("no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0");
 
                         Job::Submit(response);
-                    } else {
-                        // Fire and forget, We are done !!!
-                        Job::Submit(_missingResponse);
-                    }
 
-                    if (_request->Connection.Value() == Web::Request::CONNECTION_CLOSE) {
-                        Job::Close();
+                        if (_request->Connection.Value() == Web::Request::CONNECTION_CLOSE) {
+                            Job::Close();
+                        }
                     }
 
                     // We are done, clear all info
@@ -2260,6 +2269,36 @@ namespace PluginHost {
                 }
 
                 PluginHost::Channel::Unlock();
+            }
+            inline void Submit(const string& text)
+            {
+                PluginHost::Channel::Submit(text);
+            }
+            inline void Submit(const Core::ProxyType<Web::Response>& entry)
+            {
+                PluginHost::Channel::Submit(entry);
+            }
+            void Submit(const Core::ProxyType<Core::JSON::IElement>& entry) 
+            {
+                if (State() == Channel::ChannelState::WEB) {
+                    Core::ProxyType<Web::Response> response = IFactories::Instance().Response();
+
+                    if (response->AccessControlOrigin.IsSet() == false)
+                        response->AccessControlOrigin = _T("*");
+
+                    if (response->CacheControl.IsSet() == false)
+                        response->CacheControl = _T("no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0");
+
+                    response->Body(entry);
+
+                    PluginHost::Channel::Submit(response);
+                }
+                else {
+                    PluginHost::Channel::Submit(entry);
+                }
+            }
+            inline void RequestClose() {
+                _requestClose = true;
             }
 
         private:
@@ -2440,6 +2479,9 @@ namespace PluginHost {
             }
             virtual void Send(const Core::ProxyType<Web::Response>& response)
             {
+                if (_requestClose == true) {
+                    PluginHost::Channel::Close(0);
+                }
                 TRACE(WebFlow, (response));
             }
 
@@ -2622,6 +2664,7 @@ namespace PluginHost {
             Server& _parent;
             PluginHost::ISecurity* _security;
             Core::ProxyType<Service> _service;
+            bool _requestClose;
 
             // Factories for creating jobs that can be placed on the PluginHost Worker pool.
             static Core::ProxyPoolType<WebRequestJob> _webJobs;
@@ -2737,6 +2780,13 @@ namespace PluginHost {
             inline uint32_t ActiveClients() const
             {
                 return (Core::SocketServerType<Channel>::Count());
+            }
+            inline void RequestClose(const uint32_t id) {
+                Core::ProxyType<Channel> client(BaseClass::Client(id));
+
+                if (client.IsValid() == true) {
+                    client->RequestClose();
+                }
             }
             void GetMetaData(Core::JSON::ArrayType<MetaData::Channel>& metaData) const;
 

@@ -539,6 +539,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         , _parent(static_cast<ChannelMap&>(*parent).Parent())
         , _security(_parent.Officer())
         , _service()
+        , _requestClose(false)
     {
         TRACE(Activity, (_T("Construct a link with ID: [%d] to [%s]"), Id(), remoteId.QualifiedName().c_str()));
     }
