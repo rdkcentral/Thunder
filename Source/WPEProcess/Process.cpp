@@ -565,6 +565,10 @@ int main(int argc, char** argv)
         Logging::LoggingType<Logging::Startup>::Enable((options.EnabledLoggings & 0x00000001) != 0);
         Logging::LoggingType<Logging::Shutdown>::Enable((options.EnabledLoggings & 0x00000002) != 0);
         Logging::LoggingType<Logging::Notification>::Enable((options.EnabledLoggings & 0x00000004) != 0);
+        Logging::LoggingType<Logging::Crash>::Enable((options.EnabledLoggings & 0x00000008) != 0);
+        Logging::LoggingType<Logging::ParsingError>::Enable((options.EnabledLoggings & 0x00000010) != 0);
+        Logging::LoggingType<Logging::Error>::Enable((options.EnabledLoggings & 0x00000020) != 0);
+        Logging::LoggingType<Logging::Fatal>::Enable((options.EnabledLoggings & 0x00000040) != 0);
 
         if (remoteNode.IsValid()) {
             void* base = nullptr;
