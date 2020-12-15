@@ -208,6 +208,23 @@ namespace Core {
             {
                 SocketListner::LocalNode(localNode);
             }
+            inline Core::ProxyType<HANDLECLIENT> Client(const uint32_t ID)
+            {
+                Core::ProxyType<HANDLECLIENT> result;
+
+                _lock.Lock();
+
+                typename ClientMap::iterator index = _clients.find(ID);
+
+                if (index != _clients.end()) {
+                    // Oke connection still exists, send the message..
+                    result = index->second;
+                }
+
+                _lock.Unlock();
+
+                return (result);
+            }
             inline void Suspend(const uint32_t ID)
             {
                 _lock.Lock();
@@ -347,6 +364,10 @@ namespace Core {
         inline void Cleanup()
         {
             _handler.Cleanup();
+        }
+        inline Core::ProxyType<CLIENT> Client(const uint32_t ID)
+        {
+            return (_handler.Client(ID));
         }
         inline void Suspend(const uint32_t ID)
         {
