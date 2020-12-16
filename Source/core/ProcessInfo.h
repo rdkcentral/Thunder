@@ -242,6 +242,7 @@ namespace Core {
         uint64_t Shared() const;
         uint64_t Jiffies() const;
         string Name() const;
+        void Name(const string& name);
         string Executable() const;
         std::list<string> CommandLine() const;
         void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
