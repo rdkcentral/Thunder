@@ -237,6 +237,7 @@ namespace Core {
         uint64_t Shared() const;
         uint64_t Jiffies() const;
         string Name() const;
+        void Name(const string& name);
         string Executable() const;
         std::list<string> CommandLine() const;
         uint32_t Group(const string& groupName);

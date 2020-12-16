@@ -29,6 +29,7 @@
 #include <limits.h>
 #include <pwd.h>
 #include <unistd.h>
+#include <sys/prctl.h>
 #endif
 
 #include <fstream>
@@ -525,6 +526,16 @@ namespace Core {
         return (Core::File::FileName(ExecutableName(_handle)));
 #else
         return (Core::File::FileName(ExecutableName(_pid)));
+#endif
+    }
+    void ProcessInfo::Name(const string& name) {
+#ifdef __WINDOWS__
+        if (GetCurrentProcessId() == _pid) {
+        }
+#else
+        if (static_cast<uint32_t>(::getpid()) == _pid) {
+          prctl(PR_SET_NAME, name.c_str(), 0, 0, 0, 0);
+        }
 #endif
     }
     string ProcessInfo::Executable() const

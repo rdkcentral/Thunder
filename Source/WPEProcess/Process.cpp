@@ -131,9 +131,10 @@ namespace Process {
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:"))
             , Locator(nullptr)
             , ClassName(nullptr)
+            , Callsign(nullptr)
             , RemoteChannel(nullptr)
             , InterfaceId(Core::IUnknown::ID)
             , Version(~0)
@@ -159,6 +160,7 @@ namespace Process {
     public:
         const TCHAR* Locator;
         const TCHAR* ClassName;
+        const TCHAR* Callsign;
         const TCHAR* RemoteChannel;
         uint32_t InterfaceId;
         uint32_t Version;
@@ -196,6 +198,9 @@ namespace Process {
                 break;
             case 'c':
                 ClassName = argument;
+                break;
+            case 'C':
+                Callsign = argument;
                 break;
             case 'r':
                 RemoteChannel = argument;
@@ -512,6 +517,7 @@ int main(int argc, char** argv)
         printf("Process [-h] \n");
         printf("         -l <locator>\n");
         printf("         -c <classname>\n");
+        printf("         -C <callsign>\n");
         printf("         -r <communication channel>\n");
         printf("         -x <eXchange identifier>\n");
         printf("        [-i <interface ID>]\n");
@@ -541,6 +547,16 @@ int main(int argc, char** argv)
             printf("Argument [%02d]: %s\n", teller, argv[teller]);
         }
     } else {
+        if (options.Callsign != nullptr) {
+            Core::ProcessInfo hostProcess;
+            const TCHAR* callsign = options.Callsign;
+            const TCHAR* lastEntry = ::strrchr(callsign, '.');
+            if (lastEntry != nullptr) {
+                callsign = &(lastEntry[1]);
+            }
+            hostProcess.Name(callsign);
+        }
+
         #ifdef USE_BREAKPAD
         google_breakpad::MinidumpDescriptor descriptor(options.PostMortemPath);
         google_breakpad::ExceptionHandler eh(descriptor, NULL,
