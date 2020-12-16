@@ -94,7 +94,7 @@ function(JsonGenerator)
     endif()
 
     foreach(_include_path ${Argument_INCLUDE_PATH})
-        list(APPEND _execute_command  "-I" "${Argument_INCLUDE_PATH}")
+        list(APPEND _execute_command  "-I" "${_include_path}")
     endforeach(_include_path)
 
     foreach(_input ${Argument_INPUT})

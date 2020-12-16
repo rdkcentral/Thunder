@@ -73,7 +73,7 @@ namespace Core {
 
                 if (KeyLength < (DeviceIdLength + SystemPrefixLength)) {
                     TRACE_L1("Losing uniqueness because the id is truncated from %d to the first %d chars of your given id!",
-                        DeviceIdLength, (KeyLength - SystemPrefixLength))
+                        DeviceIdLength, (KeyLength - SystemPrefixLength));
                     ::memcpy(&buffer[SystemPrefixLength], DeviceId, KeyLength - SystemPrefixLength);
                 } else {
                     if (KeyLength > (DeviceIdLength + SystemPrefixLength)) {

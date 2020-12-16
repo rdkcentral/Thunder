@@ -93,7 +93,7 @@ namespace Core {
     public:
         template <typename... Args>
         inline ProxyService(Args&&... args)
-            : CONTEXT(args...)
+            : CONTEXT(std::forward<Args>(args)...)
             , m_RefCount(0)
         {
             __Initialize<CONTEXT>();
