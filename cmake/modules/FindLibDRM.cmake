@@ -38,7 +38,6 @@ if(${PKG_CONFIG_FOUND})
             LIBDRM_CFLAGS
             LIBDRM_LDFLAGS
             LIBDRM_LIBRARIES
-            LIBDRM_LIBRARY_DIRS
         VERSION_VAR
             LIBDRM_VERSION
     )
