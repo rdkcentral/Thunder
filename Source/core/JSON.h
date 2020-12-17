@@ -1131,7 +1131,7 @@ namespace Core {
                 }
                 else
                 {
-                    val = std::strtod(str.c_str(), &end);
+                    val = static_cast<TYPE>(std::strtod(str.c_str(), &end));
                 }
 
                 if(end == str.c_str())
