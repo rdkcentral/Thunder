@@ -1322,7 +1322,7 @@ namespace Web
         return parsed;
     }
 
-    void Request::Deserializer::Parse(const string& buffer)
+    void Request::Deserializer::Parse(const string& buffer, const bool /* quoted */)
     {
 
         _lock.Lock();
@@ -1709,7 +1709,7 @@ namespace Web
         return parsed;
     }
 
-    void Response::Deserializer::Parse(const string& buffer)
+    void Response::Deserializer::Parse(const string& buffer, const bool /* quoted */)
     {
         _lock.Lock();
 

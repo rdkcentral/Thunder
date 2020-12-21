@@ -219,6 +219,78 @@ namespace Logging {
         std::string _text;
     };
 
+    class EXTERNAL Error {
+    private:
+        Error() = delete;
+        Error(const Error& a_Copy) = delete;
+        Error& operator=(const Error& a_RHS) = delete;
+
+    public:
+        Error(const TCHAR formatter[], ...)
+        {
+            va_list ap;
+            va_start(ap, formatter);
+            Trace::Format(_text, formatter, ap);
+            va_end(ap);
+        }
+        explicit Error(const string& text)
+            : _text(Core::ToString(text))
+        {
+        }
+        ~Error()
+        {
+        }
+
+    public:
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
+
+    private:
+        std::string _text;
+    };
+
+    class EXTERNAL Fatal {
+    private:
+        Fatal() = delete;
+        Fatal(const Fatal& a_Copy) = delete;
+        Fatal& operator=(const Fatal& a_RHS) = delete;
+
+    public:
+        Fatal(const TCHAR formatter[], ...)
+        {
+            va_list ap;
+            va_start(ap, formatter);
+            Trace::Format(_text, formatter, ap);
+            va_end(ap);
+        }
+        explicit Fatal(const string& text)
+            : _text(Core::ToString(text))
+        {
+        }
+        ~Fatal()
+        {
+        }
+
+    public:
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
+
+    private:
+        std::string _text;
+    };
+
     template <typename CATEGORY>
     class LoggingType : public Trace::ITrace {
     private:

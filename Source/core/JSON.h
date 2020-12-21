@@ -1131,7 +1131,7 @@ namespace Core {
                 }
                 else
                 {
-                    val = std::strtod(str.c_str(), &end);
+                    val = static_cast<TYPE>(std::strtod(str.c_str(), &end));
                 }
 
                 if(end == str.c_str())
@@ -1489,8 +1489,8 @@ namespace Core {
 
             String(const String& copy)
                 : _default(copy._default)
-                , _scopeCount(copy._scopeCount & (QuotedSerializeBit | SetBit))
-                , _unaccountedCount(0)
+                , _scopeCount(copy._scopeCount)
+                , _unaccountedCount(copy._unaccountedCount)
                 , _value(copy._value)
             {
             }
@@ -1529,7 +1529,8 @@ namespace Core {
             {
                 _default = RHS._default;
                 _value = RHS._value;
-                _scopeCount = (RHS._scopeCount & ~QuotedSerializeBit) | (_scopeCount & QuotedSerializeBit);
+                _scopeCount = RHS._scopeCount;
+                _unaccountedCount = RHS._unaccountedCount;
 
                 return (*this);
             }
@@ -3579,7 +3580,9 @@ namespace Core {
                 NUMBER,
                 STRING,
                 ARRAY,
-                OBJECT
+                OBJECT,
+                FLOAT,
+                DOUBLE
             };
 
         public:
@@ -3616,6 +3619,24 @@ namespace Core {
                 , _type(type::NUMBER)
             {
                 String::operator=(Core::NumberType<uint64_t, false, NumberBase::BASE_DECIMAL>(value).Text());
+            }
+
+            Variant(const float value)
+                : JSON::String(false)
+                , _type(type::FLOAT)
+            {
+                string result;
+                JSON::Float(value).ToString(result);
+                String::operator=(result);
+            }
+
+            Variant(const double value)
+                : JSON::String(false)
+                , _type(type::DOUBLE)
+            {
+                string result;
+                JSON::Double(value).ToString(result);
+                String::operator=(result);
             }
 
             Variant(const bool value)
@@ -3678,6 +3699,42 @@ namespace Core {
                 int64_t result = 0;
                 if (_type == type::NUMBER) {
                     result = Core::NumberType<int64_t>(Value().c_str(), static_cast<uint32_t>(Value().length()));
+                } else if (_type == type::FLOAT) {
+                    result = static_cast<int64_t>(Float());
+                } else if (_type == type::DOUBLE) {
+                    result = static_cast<int64_t>(Double());
+                }
+                return result;
+            }
+
+            float Float() const
+            {
+                float result = 0.0f;
+                if (_type == type::NUMBER) {
+                    result = static_cast<float>(Number());
+                } else if (_type == type::FLOAT) {
+                    JSON::Float value;
+                    if (value.FromString(Value())) {
+                        result = value.Value();
+                    }
+                } else if (_type == type::DOUBLE) {
+                    result = static_cast<float>(Double());
+                }
+                return result;
+            }
+
+            double Double() const
+            {
+                double result = 0.0;
+                if (_type == type::NUMBER) {
+                    result = static_cast<double>(Number());
+                } else if (_type == type::FLOAT) {
+                    result = static_cast<double>(Float());
+                } else if (_type == type::DOUBLE) {
+                    JSON::Double value;
+                    if (value.FromString(Value())) {
+                        result = value.Value();
+                    }
                 }
                 return result;
             }
@@ -3711,6 +3768,24 @@ namespace Core {
                 _type = type::NUMBER;
                 String::SetQuoted(false);
                 String::operator=(Core::NumberType<TYPE>(value).Text());
+            }
+
+            void Number(const float value)
+            {
+                _type = type::FLOAT;
+                String::SetQuoted(false);
+                string result;
+                JSON::Float(value).ToString(result);
+                String::operator=(result);
+            }
+
+            void Number(const double value)
+            {
+                _type = type::DOUBLE;
+                String::SetQuoted(false);
+                string result;
+                JSON::Double(value).ToString(result);
+                String::operator=(result);
             }
 
             void String(const TCHAR* value)
@@ -4131,7 +4206,8 @@ namespace Core {
                         String::operator=(str);
                     }
                 }
-            } else {
+            }
+            if (result == 0) {
                 result = String::Deserialize(stream, maxLength, offset, error);
 
                 _type = type::STRING;

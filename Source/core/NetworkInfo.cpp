@@ -1360,26 +1360,6 @@ namespace Core {
         return (IPNetworks::Instance().Exchange(modifier, modifier));
     }
 
-    NodeId Network::Broadcast() const
-    {
-        Core::NodeId result;
-
-        struct sockaddr_ll target;
-
-        memset(&target, 0, sizeof(target));
-        target.sll_family   = PF_PACKET;
-        target.sll_protocol = htons(ETH_P_IP);
-        target.sll_ifindex  = _index;
-        target.sll_hatype   = 0;
-        target.sll_pkttype  = PACKET_BROADCAST;
-        target.sll_halen    = ETH_ALEN;
-
-        // Fill with broadcast addr
-        memset(target.sll_addr, 0xff, ETH_ALEN);
-
-        return NodeId(target);
-    }
-            
     void Network::Update(const struct rtattr* rtatp, const uint16_t length)
     {
         uint16_t rtattrlen = length;

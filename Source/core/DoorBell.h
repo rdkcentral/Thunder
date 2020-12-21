@@ -49,7 +49,7 @@ namespace Core {
             bool Ring()
             {
                 const char message[] = { SIGNAL_DOORBELL };
-                int sendSize = ::sendto(_socket, message, sizeof(message), 0, static_cast<const NodeId&>(_doorbell), _doorbell.Size());
+                int sendSize = ::sendto(_sendSocket, message, sizeof(message), 0, static_cast<const NodeId&>(_doorbell), _doorbell.Size());
                 return (sendSize == sizeof(message));
             }
 
@@ -63,7 +63,7 @@ namespace Core {
                 char buffer[16];
 
                 do {
-                    size = ::recv(_socket, buffer, sizeof(buffer), 0);
+                    size = ::recv(_receiveSocket, buffer, sizeof(buffer), 0);
 
                     if (size != SOCKET_ERROR) {
                         for (int index = 0; index < size; index++) {
@@ -79,8 +79,9 @@ namespace Core {
         private:
             DoorBell& _parent;
             Core::NodeId _doorbell;
-            SOCKET _socket;
-            mutable uint16_t _bound;
+            SOCKET _sendSocket;
+            mutable SOCKET _receiveSocket;
+            mutable uint16_t _registered;
         };
 
     public:
