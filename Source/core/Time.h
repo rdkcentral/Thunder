@@ -206,6 +206,7 @@ namespace Core {
         uint8_t DayOfWeek() const;
         uint16_t DayOfYear() const;
         uint64_t NTPTime() const;
+        float JulianDate() const;
 
         int32_t DifferenceFromGMTSeconds() const;
 
@@ -220,6 +221,7 @@ namespace Core {
         string ToISO8601() const;
         string ToISO8601(const bool localTime) const;
         string ToTimeOnly(const bool localTime) const;
+        Time ToLocal() const;
 
         static Time Now();
         inline static bool FromString(const string& buffer, const bool localTime, Time& element)
