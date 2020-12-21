@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #ifndef __PROCESSINFO_H
 #define __PROCESSINFO_H
 
@@ -237,18 +237,31 @@ namespace Core {
 #endif
         }
 
+        inline void Kill(const bool hardKill)
+        {
+#ifdef __WINDOWS__
+            if (hardKill == true) {
+                TerminateProcess(_info.hProcess, 1234);
+            }
+#else
+            ::kill(_pid, (hardKill ? SIGKILL : SIGTERM));
+#endif
+        }
+
         uint64_t Allocated() const;
         uint64_t Resident() const;
         uint64_t Shared() const;
         uint64_t Jiffies() const;
         string Name() const;
+        void Name(const string& name);
         string Executable() const;
         std::list<string> CommandLine() const;
         void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
 
         static void FindByName(const string& name, const bool exact, std::list<ProcessInfo>& processInfos);
 
-        void Dump() {
+        void Dump()
+        {
             // The initial customer deploying this functionality sends a Floating Point Exception signal to
             // this process to indicate that it detected a hang and it requires a Dump for PostMortem analyses.
             // Agree, if there is a real Floating Point Exception causing the PostMortem, it can not
@@ -271,36 +284,37 @@ namespace Core {
 #endif
     }; // class ProcessInfo
 
-   class ProcessCurrent: public ProcessInfo {
-   public:
-       ProcessCurrent(const ProcessInfo&) = delete;
-       ProcessCurrent& operator= (const ProcessInfo&) = delete;
+    class EXTERNAL ProcessCurrent : public ProcessInfo {
+    public:
+        ProcessCurrent(const ProcessInfo&) = delete;
+        ProcessCurrent& operator=(const ProcessInfo&) = delete;
 
-       ProcessCurrent() : ProcessInfo() {
-       }
-       ~ProcessCurrent() = default;
+        ProcessCurrent()
+            : ProcessInfo()
+        {
+        }
+        ~ProcessCurrent() = default;
 
-   public:
-       string User() const;
-       uint32_t User(const string& userName);
-       string Group() const;
-       uint32_t Group(const string& groupName);
-   };
+    public:
+        string User() const;
+        uint32_t User(const string& userName);
+        string Group() const;
+        uint32_t Group(const string& groupName);
+    };
 
-   class ProcessTree
-   {
-      public:
-         explicit ProcessTree(const ProcessInfo& processInfo);
+    class EXTERNAL ProcessTree {
+    public:
+        explicit ProcessTree(const ProcessInfo& processInfo);
 
-         void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
-         bool ContainsProcess(ThreadId pid) const;
-         void GetProcessIds(std::list<ThreadId>& processIds) const;
-         ThreadId RootId() const;
-         uint64_t Jiffies() const;
+        void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
+        bool ContainsProcess(ThreadId pid) const;
+        void GetProcessIds(std::list<ThreadId>& processIds) const;
+        ThreadId RootId() const;
+        uint64_t Jiffies() const;
 
-      private:
-         std::list<ProcessInfo> _processes;
-   };
+    private:
+        std::list<ProcessInfo> _processes;
+    };
 
 } // namespace Core
 } // namespace WPEFramework

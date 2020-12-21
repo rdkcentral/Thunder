@@ -22,6 +22,7 @@
 #ifndef __WINDOWS__
 #include <dlfcn.h> // for dladdr
 #include <syslog.h>
+#include <regex>
 #endif
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
@@ -77,6 +78,9 @@ namespace PluginHost {
         AdapterObserver(const AdapterObserver&) = delete;
         AdapterObserver& operator=(const AdapterObserver&) = delete;
 
+        #ifdef __WINDOWS__
+        #pragma warning(disable: 4355)
+        #endif
         AdapterObserver(string interface)
             : _signal(false, true)
             , _interface(interface)
@@ -90,6 +94,9 @@ namespace PluginHost {
                 _signal.SetEvent();
             }
         }
+        #ifdef __WINDOWS__
+        #pragma warning(default: 4355)
+        #endif
         ~AdapterObserver() override
         {
             _observer.Close();
@@ -190,6 +197,10 @@ namespace PluginHost {
 #ifndef __WINDOWS__
                 closelog();
 #endif
+
+                // Do not forget to close the Tracing stuff...
+                Trace::TraceUnit::Instance().Close();
+
                 // Now clear all singeltons we created.
                 Core::Singleton::Dispose();
             }
@@ -219,6 +230,13 @@ namespace PluginHost {
         if ((signo == SIGTERM) || (signo == SIGQUIT)) {
             ExitHandler::Construct();
         }
+    }
+    // Workaround solution: OCDM plugin supports blacklist feature that uses regex.
+    // That prevents unloading of OCDM shared lib from memory after de-activation.
+    // Following is the workaround solution although it is not being called anywhere.
+    void RegexInit()
+    {
+        std::regex_match(std::string(""), std::regex(""));
     }
 
 #endif
@@ -596,6 +614,8 @@ namespace PluginHost {
                                 printf("Country:     %s\n", location->Country().c_str());
                                 printf("Region:      %s\n", location->Region().c_str());
                                 printf("City:        %s\n", location->City().c_str());
+                                printf("Latitude:    %u\n", location->Latitude());
+                                printf("Longitude:   %u\n", location->Longitude());
                             }
 
                             printf("------------------------------------------------------------\n");

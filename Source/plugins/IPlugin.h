@@ -59,7 +59,7 @@ namespace PluginHost {
             //! Whenever a plugin changes state, this is reported to an observer so proper actions could be taken
             //! on this state change.
             //! @}
-            virtual void StateChange(PluginHost::IShell* plugin) = 0;
+            virtual void StateChange(PluginHost::IShell* plugin, const string& callsign) = 0;
         };
 
         virtual ~IPlugin()
@@ -158,7 +158,7 @@ namespace PluginHost {
         //! Once the passed object from the previous method is filled (completed), this method allows it to be handled
         //! and to form an answer on the incoming JSON message(if needed).
         //! @}
-        virtual Core::ProxyType<Core::JSON::IElement> Inbound(const uint32_t ID, const Core::JSON::IElement& element) = 0;
+        virtual Core::ProxyType<Core::JSON::IElement> Inbound(const uint32_t ID, const Core::ProxyType<Core::JSON::IElement>& element) = 0;
     };
 
     struct ITextSocket

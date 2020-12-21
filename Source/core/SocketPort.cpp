@@ -41,7 +41,6 @@
 #ifdef __APPLE__
 #include <sys/event.h>
 #elif defined(__LINUX__)
-#include <execinfo.h>
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <sys/signalfd.h>
@@ -294,9 +293,9 @@ namespace Core {
         return (true);
     }
 
-    /* virtual */ bool SocketPort::Initialize()
+    /* virtual */ uint32_t SocketPort::Initialize()
     {
-        return (true);
+        return (Core::ERROR_NONE);
     }
 
     uint32_t SocketPort::Open(const uint32_t waitTime, const string& specificInterface)
@@ -323,7 +322,7 @@ namespace Core {
 
             m_Socket = ConstructSocket(m_LocalNode, specificInterface);
 
-            if ((m_Socket != INVALID_SOCKET) && (Initialize() == true)) {
+            if ((m_Socket != INVALID_SOCKET) && (Initialize() == Core::ERROR_NONE)) {
 
                 if ((m_SocketType == DATAGRAM) || ((m_SocketType == RAW) && (m_RemoteNode.IsValid() == false))) {
                     m_State = SocketPort::OPEN | SocketPort::READ;
@@ -527,8 +526,9 @@ namespace Core {
             // port, unless there is an active listening socket bound to the port already. This
             // enables you to get around those "Address already in use" error messages when you
             // try to restart your server after a crash.
+
             int optval = 1;
-            socklen_t optionLength = sizeof(int);
+            socklen_t optionLength = sizeof(optval);
 
             if (::setsockopt(l_Result, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength) < 0) {
                 TRACE_L1("Error on setting SO_REUSEADDR option. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
@@ -555,7 +555,7 @@ namespace Core {
         if ((l_Result != INVALID_SOCKET) && (specificInterface.empty() == false)) {
 
             struct ifreq interface;
-            strncpy(interface.ifr_ifrn.ifrn_name, specificInterface.c_str(), IFNAMSIZ);
+            strncpy(interface.ifr_ifrn.ifrn_name, specificInterface.c_str(), IFNAMSIZ - 1);
 
             if (::setsockopt(l_Result, SOL_SOCKET, SO_BINDTODEVICE, (const char*)&interface, sizeof(interface)) < 0) {
 
@@ -1151,5 +1151,6 @@ namespace Core {
     /* virtual */ SocketDatagram::~SocketDatagram()
     {
     }
+
 }
 } // namespace Solution::Core

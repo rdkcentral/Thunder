@@ -171,9 +171,9 @@ namespace Core {
 #endif
     }
 
-    /* static */ string Directory::Normalize(const string& input)
+    /* static */ string Directory::Normalize(const string& location)
     {
-        string result(input);
+        string result(location);
 
         // First see if we are not empy.
         if (result.empty() == false) {
@@ -218,7 +218,7 @@ namespace Core {
         size_t len;
 
         /* copy path */
-        strncpy(tmp, _name.c_str(), sizeof(tmp));
+        strncpy(tmp, _name.c_str(), sizeof(tmp) - 1);
         len = strlen(tmp);
         if (len >= sizeof(tmp)) {
             return false;

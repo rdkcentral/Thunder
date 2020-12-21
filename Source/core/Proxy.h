@@ -93,7 +93,7 @@ namespace Core {
     public:
         template <typename... Args>
         inline ProxyService(Args&&... args)
-            : CONTEXT(args...)
+            : CONTEXT(std::forward<Args>(args)...)
             , m_RefCount(0)
         {
             __Initialize<CONTEXT>();
@@ -179,24 +179,26 @@ namespace Core {
             Core::InterlockedDecrement(m_RefCount);
         }
 
+    private:
         // -----------------------------------------------------
         // Check for Initialize method on Object
         // -----------------------------------------------------
         HAS_MEMBER(Initialize, hasInitialize);
 
-        typedef hasInitialize<CONTEXT, void (CONTEXT::*)()> TraitInitialize;
+        typedef hasInitialize<CONTEXT, uint32_t (CONTEXT::*)()> TraitInitialize;
 
         template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<ProxyService<TYPE>::TraitInitialize::value, void>::type
+        inline typename Core::TypeTraits::enable_if<ProxyService<TYPE>::TraitInitialize::value, uint32_t>::type
         __Initialize()
         {
-            CONTEXT::Initialize();
+            return (CONTEXT::Initialize());
         }
 
         template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<!ProxyService<TYPE>::TraitInitialize::value, void>::type
+        inline typename Core::TypeTraits::enable_if<!ProxyService<TYPE>::TraitInitialize::value, uint32_t>::type
         __Initialize()
         {
+            return (Core::ERROR_NONE);
         }
 
         // -----------------------------------------------------
@@ -995,10 +997,6 @@ namespace Core {
         template <typename ELEMENT>
         class ProxyObjectType : public PoolElement<ELEMENT> {
         private:
-            HAS_MEMBER(Acquire, hasAcquire);
-
-            typedef hasAcquire<ELEMENT, void (ELEMENT::*)()> TraitAcquire;
-
             template <typename... Args>
             ProxyObjectType(ProxyPoolType<ELEMENT>* queue, Args&&... args)
                 : PoolElement<ELEMENT>(args...)
@@ -1072,6 +1070,10 @@ namespace Core {
             // -----------------------------------------------------
             // Check for Aquire method on Object
             // -----------------------------------------------------
+            HAS_MEMBER(Acquire, hasAcquire);
+
+            typedef hasAcquire<ELEMENT, void (ELEMENT::*)()> TraitAcquire;
+
             template <typename TYPE>
             inline typename Core::TypeTraits::enable_if<ProxyObjectType<TYPE>::TraitAcquire::value, void>::type
             __Acquire()
@@ -1208,37 +1210,28 @@ namespace Core {
     template <typename PROXYKEY, typename PROXYELEMENT>
     class ProxyMapType {
     private:
-        template <typename KEY, typename ELEMENT>
-        class ProxyObjectType : public Core::ProxyObject<ELEMENT> {
-        private:
-            typedef ProxyObjectType<KEY, ELEMENT> ThisClass;
+        template <typename ELEMENT>
+        using PoolElement = typename std::conditional<std::is_base_of<IReferenceCounted, ELEMENT>::value != 0, ProxyService<ELEMENT>, ProxyObject<ELEMENT>>::type;
 
+        template <typename KEY, typename ELEMENT>
+        class ProxyObjectType : public PoolElement<ELEMENT> {
+        public:
             ProxyObjectType() = delete;
             ProxyObjectType(const ProxyObjectType<KEY, ELEMENT>&) = delete;
             ProxyObjectType<KEY, ELEMENT>& operator=(const ProxyObjectType<KEY, ELEMENT>&) = delete;
 
-        public:
-            ProxyObjectType(ProxyMapType<KEY, ELEMENT>* parent, const KEY& key)
-                : Core::ProxyObject<ELEMENT>(key)
-                , _parent(*parent)
-            {
-                ASSERT(parent != nullptr);
-            }
-            template <typename Arg1>
-            ProxyObjectType(ProxyMapType<KEY, ELEMENT>* parent, const KEY& key, Arg1 a_Arg1)
-                : Core::ProxyObject<ELEMENT>(key, a_Arg1)
-                , _parent(*parent)
-            {
-                ASSERT(parent != nullptr);
-            }
-            ~ProxyObjectType()
+            template <typename... Args>
+            ProxyObjectType(ProxyMapType<KEY, ELEMENT>& parent, const KEY& key, Args&&... args)
+                : PoolElement<ELEMENT>(key, std::forward<Args>(args)...)
+                , _parent(parent)
             {
             }
+            ~ProxyObjectType() override = default;
 
         public:
-            virtual uint32_t Release() const
+            uint32_t Release() const override
             {
-                uint32_t result = Core::InterlockedDecrement(Core::ProxyObject<ELEMENT>::m_RefCount);
+                uint32_t result = Core::InterlockedDecrement(ProxyService<ELEMENT>::m_RefCount);
 
                 if (result == 1) {
                     // The Map is the only one still holding this proxy. Kill it....
@@ -1251,28 +1244,52 @@ namespace Core {
 
                 return (Core::ERROR_NONE);
             }
+            bool IsInitialized() const {
+                return (__IsInitialized<KEY, ELEMENT>());
+            }
+
+        private:
+            // -----------------------------------------------------
+            // Check for Relinquish method on Object
+            // -----------------------------------------------------
+            HAS_MEMBER(IsInitialized, hasIsInitialized);
+
+            typedef hasIsInitialized<ELEMENT, bool (ELEMENT::*)() const> TraitIsInitialized;
+
+            template <typename ID, typename TYPE>
+            inline typename Core::TypeTraits::enable_if<ProxyObjectType<ID,TYPE>::TraitIsInitialized::value, bool>::type
+                __IsInitialized() const
+            {
+                return (ELEMENT::IsInitialized());
+            }
+
+            template <typename ID, typename TYPE>
+            inline typename Core::TypeTraits::enable_if<!ProxyObjectType<ID,TYPE>::TraitIsInitialized::value, bool>::type
+                __IsInitialized() const
+            {
+                return (true);
+            }
 
         private:
             ProxyMapType<KEY, ELEMENT>& _parent;
         };
 
-    private:
-        typedef ProxyObjectType<PROXYKEY, PROXYELEMENT> ProxyMapElement;
+        using ProxyMapElement = ProxyObjectType<PROXYKEY, PROXYELEMENT>;
 
     public:
         ProxyMapType(const ProxyMapType<PROXYKEY, PROXYELEMENT>&) = delete;
         ProxyMapType<PROXYKEY, PROXYELEMENT>& operator=(const ProxyMapType<PROXYKEY, PROXYELEMENT>&) = delete;
+
         ProxyMapType()
             : _map()
             , _lock()
         {
         }
-        ~ProxyMapType()
-        {
-        }
+        ~ProxyMapType() = default;
 
     public:
-        Core::ProxyType<PROXYELEMENT> Instance(const PROXYKEY& key)
+        template <typename... Args>
+        Core::ProxyType<PROXYELEMENT> Instance(const PROXYKEY& key, Args&&... args)
         {
             Core::ProxyType<PROXYELEMENT> result;
 
@@ -1282,16 +1299,39 @@ namespace Core {
 
             if (index == _map.end()) {
                 // Oops we do not have such an element, create it...
-                ProxyObjectType<PROXYKEY, PROXYELEMENT>* newItem(new (0) ProxyObjectType<PROXYKEY, PROXYELEMENT>(this, key));
+                ProxyObjectType<PROXYKEY, PROXYELEMENT>* newItem(new (0) ProxyMapElement(*this, key, std::forward<Args>(args)...));
 
-                Core::ProxyType<ProxyMapElement> newElement(newItem, newItem);
+                if (newItem->IsInitialized() == false) {
+                    delete newItem;
+                }
+                else {
+                    Core::ProxyType<ProxyMapElement> newElement(static_cast<IReferenceCounted*>(newItem), newItem);
 
-                // Make sure the return value is already "accounted" for otherwise the copy of the
-                // element into the map will trigger the "last" on map reference.
-                result = proxy_cast<PROXYELEMENT>(newElement);
+                    // Make sure the return value is already "accounted" for otherwise the copy of the
+                    // element into the map will trigger the "last" on map reference.
+                    result = proxy_cast<PROXYELEMENT>(newElement);
 
-                _map.insert(std::pair<PROXYKEY, Core::ProxyType<ProxyMapElement>>(key, newElement));
+                    _map.emplace(std::piecewise_construct,
+                        std::forward_as_tuple(key),
+                        std::forward_as_tuple(newElement));
+                }
             } else {
+                result = proxy_cast<PROXYELEMENT>(index->second);
+            }
+
+            _lock.Unlock();
+
+            return (result);
+        }
+        Core::ProxyType<PROXYELEMENT> Find(const PROXYKEY& key)
+        {
+            Core::ProxyType<PROXYELEMENT> result;
+
+            _lock.Lock();
+
+            typename std::map<PROXYKEY, Core::ProxyType<ProxyMapElement>>::iterator index(_map.find(key));
+
+            if (index != _map.end()) {
                 result = proxy_cast<PROXYELEMENT>(index->second);
             }
 

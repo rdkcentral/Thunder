@@ -27,6 +27,43 @@
 #include <syslog.h>
 #endif
 
+namespace WPEFramework {
+    namespace Core {
+        template <typename T, size_t S>
+        inline constexpr size_t FileNameOffset(const T(&str)[S], size_t i = S - 1)
+        {
+            return (str[i] == '/' || str[i] == '\\') ? i + 1 : (i > 0 ? FileNameOffset(str, i - 1) : 0);
+        }
+
+        template <typename T>
+        inline constexpr size_t FileNameOffset(T(&str)[1])
+        {
+            return 0;
+        }
+    }
+}
+
+#ifdef __WINDOWS__
+#define TRACE_PROCESS_ID ::GetCurrentProcessId()
+#else
+#define TRACE_PROCESS_ID ::getpid()
+#endif
+
+#define TRACE_FORMATTING_IMPL(fmt, ...)                                                                            \
+    do {                                                                                                                                  \
+        fprintf(stderr, "\033[1;32m[%s:%d](%s)<%d>" fmt "\n\033[0m", &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, ##__VA_ARGS__);  \
+        fflush(stderr);                                                                                                                   \
+    } while (0)
+
+#if defined(CORE_TRACE_NOT_ALLOWED) && !defined(__WINDOWS__) 
+#define TRACE_FORMATTING(fmt, ...)                                                                            \
+    _Pragma ("GCC warning \"Using 'TRACE_Lx' outside of Thunder Core is deprecated\"")                        \
+    TRACE_FORMATTING_IMPL(fmt, ##__VA_ARGS__)
+#else
+#define TRACE_FORMATTING(fmt, ...)                                                                            \
+    TRACE_FORMATTING_IMPL(fmt, ##__VA_ARGS__)
+#endif
+
 #ifdef __WINDOWS__
 #define TRACE_PROCESS_ID ::GetCurrentProcessId()
 #define ASSERT_LOGGER(message, ...) fprintf(stderr, message, ##__VA_ARGS__)
@@ -44,41 +81,31 @@
 #endif
 
 #if _TRACE_LEVEL > 4
-#define TRACE_L5(x, ...)                                                         \
-    fprintf(stderr, "----- L5 [%d]: " #x "\n", TRACE_PROCESS_ID, ##__VA_ARGS__); \
-    fflush(stderr);
+#define TRACE_L5(x, ...) TRACE_FORMATTING("<5>: " x, ##__VA_ARGS__)
 #else
 #define TRACE_L5(x, ...)
 #endif
 
 #if _TRACE_LEVEL > 3
-#define TRACE_L4(x, ...)                                                         \
-    fprintf(stderr, "----  L4 [%d]: " #x "\n", TRACE_PROCESS_ID, ##__VA_ARGS__); \
-    fflush(stderr);
+#define TRACE_L4(x, ...) TRACE_FORMATTING("<4>: " x, ##__VA_ARGS__)
 #else
 #define TRACE_L4(x, ...)
 #endif
 
 #if _TRACE_LEVEL > 2
-#define TRACE_L3(x, ...)                                                         \
-    fprintf(stderr, "---   L3 [%d]: " #x "\n", TRACE_PROCESS_ID, ##__VA_ARGS__); \
-    fflush(stderr);
+#define TRACE_L3(x, ...) TRACE_FORMATTING("<3>: " x, ##__VA_ARGS__)
 #else
 #define TRACE_L3(x, ...)
 #endif
 
 #if _TRACE_LEVEL > 1
-#define TRACE_L2(x, ...)                                                         \
-    fprintf(stderr, "--    L2 [%d]: " #x "\n", TRACE_PROCESS_ID, ##__VA_ARGS__); \
-    fflush(stderr);
+#define TRACE_L2(x, ...) TRACE_FORMATTING("<2>: " x, ##__VA_ARGS__)
 #else
 #define TRACE_L2(x, ...)
 #endif
 
 #if _TRACE_LEVEL > 0
-#define TRACE_L1(x, ...)                                                         \
-    fprintf(stderr, "-     L1 [%d]: " #x "\n", TRACE_PROCESS_ID, ##__VA_ARGS__); \
-    fflush(stderr);
+#define TRACE_L1(x, ...) TRACE_FORMATTING("<1>: " x, ##__VA_ARGS__)
 #else
 #define TRACE_L1(x, ...)
 #endif

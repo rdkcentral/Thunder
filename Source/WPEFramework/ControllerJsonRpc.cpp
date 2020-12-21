@@ -35,6 +35,8 @@ namespace Plugin {
     {
         Register<ActivateParamsInfo,void>(_T("activate"), &Controller::endpoint_activate, this);
         Register<ActivateParamsInfo,void>(_T("deactivate"), &Controller::endpoint_deactivate, this);
+        Register<ActivateParamsInfo,void>(_T("suspend"), &Controller::endpoint_suspend, this);
+        Register<ActivateParamsInfo,void>(_T("resume"), &Controller::endpoint_resume, this);
         Register<StartdiscoveryParamsData,void>(_T("startdiscovery"), &Controller::endpoint_startdiscovery, this);
         Register<void,void>(_T("storeconfig"), &Controller::endpoint_storeconfig, this);
         Register<DeleteParamsData,void>(_T("delete"), &Controller::endpoint_delete, this);
@@ -55,6 +57,8 @@ namespace Plugin {
         Unregister(_T("delete"));
         Unregister(_T("storeconfig"));
         Unregister(_T("startdiscovery"));
+        Unregister(_T("suspend"));
+        Unregister(_T("resume"));
         Unregister(_T("deactivate"));
         Unregister(_T("activate"));
         Unregister(_T("configuration"));
@@ -147,6 +151,83 @@ namespace Plugin {
         return result;
     }
 
+    // Method: activate - Resume a plugin
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_PENDING_CONDITIONS: The plugin will be activated once its activation preconditions are met
+    //  - ERROR_INPROGRESS: The plugin is currently being activated
+    //  - ERROR_UNKNOWN_KEY: The plugin does not exist
+    //  - ERROR_OPENING_FAILED: Failed to activate the plugin
+    //  - ERROR_ILLEGAL_STATE: Current state of the plugin does not allow activation
+    //  - ERROR_PRIVILEGED_REQUEST: Activation of the plugin is not allowed (e.g. Controller)
+    uint32_t Controller::endpoint_resume(const ActivateParamsInfo& params)
+    {
+        uint32_t result = Core::ERROR_OPENING_FAILED;
+        const string& callsign = params.Callsign.Value();
+
+        ASSERT(_pluginServer != nullptr);
+
+        if (callsign != Callsign()) {
+            Core::ProxyType<PluginHost::Server::Service> service;
+
+            if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
+                ASSERT(service.IsValid());
+                result = service->Resume(PluginHost::IShell::REQUESTED);
+
+                // Normalise return code
+                if ((result != Core::ERROR_NONE) && (result != Core::ERROR_ILLEGAL_STATE) && (result !=  Core::ERROR_INPROGRESS) && (result != Core::ERROR_PENDING_CONDITIONS)) {
+                    result = Core::ERROR_OPENING_FAILED;
+                }
+            }
+            else {
+                result = Core::ERROR_UNKNOWN_KEY;
+            }
+        }
+        else {
+            result = Core::ERROR_PRIVILIGED_REQUEST;
+        }
+
+        return result;
+    }
+
+    // Method: suspend - Suspends a plugin
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_INPROGRESS: The plugin is currently being deactivated
+    //  - ERROR_UNKNOWN_KEY: The plugin does not exist
+    //  - ERROR_ILLEGAL_STATE: Current state of the plugin does not allow deactivation
+    //  - ERROR_CLOSING_FAILED: Failed to activate the plugin
+    //  - ERROR_PRIVILEGED_REQUEST: Deactivation of the plugin is not allowed (e.g. Controller)
+    uint32_t Controller::endpoint_suspend(const ActivateParamsInfo& params)
+    {
+        uint32_t result = Core::ERROR_OPENING_FAILED;
+        const string& callsign = params.Callsign.Value();
+
+        ASSERT(_pluginServer != nullptr);
+
+        if (callsign != Callsign()) {
+            Core::ProxyType<PluginHost::Server::Service> service;
+
+            if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
+                ASSERT(service.IsValid());
+                result = service->Suspend(PluginHost::IShell::REQUESTED);
+
+                // Normalise return code
+                if ((result != Core::ERROR_NONE) && (result != Core::ERROR_ILLEGAL_STATE) && (result !=  Core::ERROR_INPROGRESS)) {
+                    result = Core::ERROR_CLOSING_FAILED;
+                }
+            }
+            else {
+                result = Core::ERROR_UNKNOWN_KEY;
+            }
+        }
+        else {
+            result = Core::ERROR_PRIVILIGED_REQUEST;
+        }
+
+        return result;
+    }
+
     // Starts the network discovery.
     // Return codes:
     //  - ERROR_NONE: Success
@@ -154,8 +235,9 @@ namespace Plugin {
     {
         const uint8_t& ttl = params.Ttl.Value();
 
-        ASSERT(_probe != nullptr);
-        _probe->Ping(ttl);
+        if (_probe != nullptr) {
+            _probe->Ping(ttl);
+        }
 
         return Core::ERROR_NONE;
     }
@@ -182,6 +264,7 @@ namespace Plugin {
     // Return codes:
     //  - ERROR_NONE: Success
     //  - ERROR_UNKNOWN_KEY: The given path was incorrect
+    //  - ERROR_DESTRUCTION_FAILED : Failed to delete given path
     //  - ERROR_PRIVILEGED_REQUEST: The path points outside of persistent directory or some files/directories couldn't have been deleted
     uint32_t Controller::endpoint_delete(const DeleteParamsData& params)
     {
@@ -191,9 +274,17 @@ namespace Plugin {
         if (path.empty() == false) {
             if (path.find("..") == string::npos) {
                 ASSERT(_service != nullptr);
+                Core::File file(_service->PersistentPath() +  path);
 
-                Core::Directory((_service->PersistentPath() +  path).c_str()).Destroy(true);
-                result = Core::ERROR_NONE; // FIXME: return the real deletion result instead
+                if (file.Exists() == true) {
+                    if (file.IsDirectory() == true) {
+                        result = (Core::Directory((_service->PersistentPath() +  path).c_str()).Destroy(true) == true) ? Core::ERROR_NONE : Core::ERROR_DESTRUCTION_FAILED;
+                    } else {
+                        result = (file.Destroy() == true) ? Core::ERROR_NONE : Core::ERROR_DESTRUCTION_FAILED;
+                    }
+                } else {
+                    result = Core::ERROR_UNKNOWN_KEY;
+                }
             }
             else {
                 result = Core::ERROR_PRIVILIGED_REQUEST;
@@ -343,11 +434,14 @@ namespace Plugin {
     uint32_t Controller::get_discoveryresults(Core::JSON::ArrayType<PluginHost::MetaData::Bridge>& response) const
     {
         ASSERT(_probe != nullptr);
-        Probe::Iterator index(_probe->Instances());
 
-        while (index.Next() == true) {
-            PluginHost::MetaData::Bridge element((*index).URL().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure());
-            response.Add(element);
+        if (_probe != nullptr) {
+            Probe::Iterator index(_probe->Instances());
+
+            while (index.Next() == true) {
+                PluginHost::MetaData::Bridge element((*index).URL().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure());
+                response.Add(element);
+            }
         }
 
         return Core::ERROR_NONE;

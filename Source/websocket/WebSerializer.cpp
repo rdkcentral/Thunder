@@ -1322,7 +1322,7 @@ namespace Web
         return parsed;
     }
 
-    void Request::Deserializer::Parse(const string& buffer)
+    void Request::Deserializer::Parse(const string& buffer, const bool /* quoted */)
     {
 
         _lock.Lock();
@@ -1349,12 +1349,16 @@ namespace Web
 
             if ((query == string::npos) && (fragment == string::npos)) {
                 _current->Path = buffer;
+                _current->Query.Clear();
+                _current->Fragment.Clear();
             } else if (fragment == string::npos) {
                 _current->Path = buffer.substr(0, query);
                 _current->Query = buffer.substr(query + 1, buffer.size() - query);
+                _current->Fragment.Clear();
             } else if (query == string::npos) {
                 _current->Path = buffer.substr(0, fragment);
                 _current->Fragment = buffer.substr(fragment + 1, buffer.size() - fragment);
+                _current->Query.Clear();
             } else if (query < fragment) {
                 _current->Path = buffer.substr(0, query);
                 _current->Query = buffer.substr(query + 1, buffer.size() - query);
@@ -1709,7 +1713,7 @@ namespace Web
         return parsed;
     }
 
-    void Response::Deserializer::Parse(const string& buffer)
+    void Response::Deserializer::Parse(const string& buffer, const bool /* quoted */)
     {
         _lock.Lock();
 

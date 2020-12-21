@@ -219,7 +219,7 @@ namespace PluginHost {
                     : Locator("127.0.0.1:9631")
                     , Type(InputHandler::VIRTUAL)
 #else
-                    : Locator("/tmp/keyhandler|0760")
+                    : Locator("/tmp/keyhandler|0766")
                     , Type(InputHandler::VIRTUAL)
 #endif
                     , OutputEnabled(true)
@@ -318,6 +318,8 @@ namespace PluginHost {
                 , Configs()
                 , Environments()
                 , ExitReasons()
+                , Latitude(51832547) // Divider 1.000.000
+                , Longitude(5674899) // Divider 1.000.000
 #ifdef PROCESSCONTAINERS_ENABLED
                 , ProcessContainers()
 #endif
@@ -348,6 +350,8 @@ namespace PluginHost {
                 Add(_T("configs"), &Configs);
                 Add(_T("environments"), &Environments);
                 Add(_T("exitreasons"), &ExitReasons);
+                Add(_T("latitude"), &Latitude);
+                Add(_T("longitude"), &Longitude);
 #ifdef PROCESSCONTAINERS_ENABLED
                 Add(_T("processcontainers"), &ProcessContainers);
 #endif
@@ -381,6 +385,8 @@ namespace PluginHost {
             Core::JSON::ArrayType<Plugin::Config> Plugins;
             Core::JSON::ArrayType<Environment> Environments;
             Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::IShell::reason>> ExitReasons;
+            Core::JSON::DecSInt32 Latitude;
+            Core::JSON::DecSInt32 Longitude;
 #ifdef PROCESSCONTAINERS_ENABLED
             ProcessContainerConfig ProcessContainers;
 #endif
@@ -492,6 +498,9 @@ namespace PluginHost {
         Config(const Config&) = delete;
         Config& operator=(const Config&) = delete;
 
+        #ifdef __WINDOWS__
+        #pragma warning(disable: 4355)
+        #endif
         Config(Core::File& file, const bool background, Core::OptionalType<Core::JSON::Error>& error)
             : _background(background)
             , _security(nullptr)
@@ -530,6 +539,8 @@ namespace PluginHost {
                 _stackSize = config.Process.IsSet() ? config.Process.StackSize.Value() : 0;
                 _inputInfo.Set(config.Input);
                 _processInfo.Set(config.Process);
+                _latitude = config.Latitude.Value();
+                _longitude = config.Longitude.Value();
 
                 _traceCategoriesFile = config.DefaultTraceCategories.IsQuoted();
                 if (_traceCategoriesFile == true) {
@@ -577,6 +588,9 @@ namespace PluginHost {
                     _linkerPluginPaths.push_back(itr.Current().Value());
             }
         }
+        #ifdef __WINDOWS__
+        #pragma warning(default: 4355)
+        #endif
         ~Config()
         {
             ASSERT(_security != nullptr);
@@ -690,6 +704,12 @@ namespace PluginHost {
         }
         inline uint32_t StackSize() const {
             return (_stackSize);
+        }
+        inline int32_t Latitude() const {
+            return (_latitude);
+        }
+        inline int32_t Longitude() const {
+            return (_longitude);
         }
         inline const InputInfo& Input() const {
             return(_inputInfo);
@@ -847,6 +867,8 @@ namespace PluginHost {
         bool _IPV6;
         uint16_t _idleTime;
         uint32_t _stackSize;
+        int32_t _latitude;
+        int32_t _longitude;
         InputInfo _inputInfo;
         ProcessInfo _processInfo;
         Core::JSON::ArrayType<Plugin::Config> _plugins;

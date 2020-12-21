@@ -251,7 +251,6 @@ namespace Core {
         {
             return (IPV6AddressIterator(_index));
         }
-        NodeId Broadcast() const;
         bool IsUp() const;
         bool IsRunning() const;
         uint32_t Up(const bool enabled);
@@ -442,7 +441,6 @@ namespace Core {
         bool IsRunning() const;
         uint32_t Up(const bool enabled);
         uint32_t Broadcast(const Core::NodeId& address);
-        NodeId Broadcast() const;
         uint32_t Add(const IPNode& address);
         uint32_t Delete(const IPNode& address);
         uint32_t Gateway(const IPNode& network, const NodeId& gateway);
@@ -539,11 +537,6 @@ namespace Core {
             ASSERT(IsValid());
 
             return ((*_index)->Up(enabled));
-        }
-        inline NodeId Broadcast() const {
-            ASSERT(IsValid());
-
-            return ((*_index)->Broadcast());
         }
         inline uint32_t Broadcast(const Core::NodeId& address) {
             ASSERT(IsValid());

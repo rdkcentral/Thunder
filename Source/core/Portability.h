@@ -388,15 +388,18 @@ inline void EXTERNAL SleepS(unsigned int a_Time)
 #define WARNING_RESULT_NOT_USED
 #endif
 
+#if !defined(NDEBUG)
 #if defined(_THUNDER_DEBUG) || !defined(_THUNDER_NDEBUG)
 #define __DEBUG__
 #ifdef _THUNDER_PRODUCTION
 #error "Production and Debug is not a good match. Select Production or Debug, not both !!"
 #endif
 #endif
+#endif
 
 #ifdef __LINUX__
 #if !defined(OS_ANDROID) && !defined(OS_NACL) && defined(__GLIBC__)
+#define THUNDER_BACKTRACE 1
 #include <execinfo.h>
 #endif
 #endif

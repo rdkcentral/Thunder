@@ -27,14 +27,11 @@
 #include <string.h>
 #include <core/core.h>
 
-// TODO: What is going on here??
-//  https://github.com/google/googletest/issues/2328
-#include <cxxabi.h>
-__gnu_cxx::recursive_init_error::~recursive_init_error()
-{
-}
-
+#ifdef WITH_CODE_COVERAGE
 extern "C" void __gcov_flush();
+#endif
+
+
 const uint32_t g_maxTimeOut = 2; // In seconds.
 
 IPTestAdministrator::IPTestAdministrator(OtherSideMain otherSideMain)
@@ -67,7 +64,11 @@ IPTestAdministrator::IPTestAdministrator(OtherSideMain otherSideMain)
       // TODO: should we clean up stuff here or not?
       //WPEFramework::Core::Singleton::Dispose();
 
+      // Make sure no gtest cleanup code is called (summary etc).
+      #ifdef WITH_CODE_COVERAGE
       __gcov_flush();
+      #endif
+
       abort();
    } else {
       // In parent process, store child pid, so we can kill it later.

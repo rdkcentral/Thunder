@@ -162,7 +162,7 @@ namespace Core {
         m_hostName = RawName(m_structInfo);
     }
     
-    NodeId::NodeId(const uint16_t interfaceIndex, const uint16_t protocol, const uint8_t type, const uint8_t length, const uint8_t* address)
+    NodeId::NodeId(const uint16_t interfaceIndex, const uint16_t protocol, const uint8_t pkgType, const uint8_t haType, const uint8_t length, const uint8_t* address)
     {
         if (interfaceIndex == 0) {
             memset(&m_structInfo, 0xFF, sizeof(m_structInfo));
@@ -171,7 +171,8 @@ namespace Core {
             m_structInfo.RawSocket.sll_family = AF_PACKET;
             m_structInfo.RawSocket.sll_ifindex = interfaceIndex;
             m_structInfo.RawSocket.sll_protocol = htons(protocol);
-            m_structInfo.RawSocket.sll_hatype = type;
+            m_structInfo.RawSocket.sll_hatype = haType;
+            m_structInfo.RawSocket.sll_pkttype = pkgType;
             m_structInfo.RawSocket.sll_halen = length;
         
             if(length > 0){
@@ -181,8 +182,8 @@ namespace Core {
             m_hostName = RawName(m_structInfo);
         }
     }
-    NodeId::NodeId(const char interfaceName[], const uint16_t protocol, const uint8_t type, const uint8_t length, const uint8_t* address)
-        : NodeId(::if_nametoindex(interfaceName), protocol, type, length, address)
+    NodeId::NodeId(const char interfaceName[], const uint16_t protocol, const uint8_t pkgType, const uint8_t haType, const uint8_t length, const uint8_t* address)
+        : NodeId(::if_nametoindex(interfaceName), protocol, pkgType, haType, length, address)
     {
     }
 
@@ -260,7 +261,7 @@ namespace Core {
             }
 
             m_structInfo.DomainSocket.sun_family = AF_UNIX;
-            strncpy(m_structInfo.DomainSocket.sun_path, m_hostName.c_str(), sizeof(m_structInfo.DomainSocket.sun_path));
+            strncpy(m_structInfo.DomainSocket.sun_path, m_hostName.c_str(), sizeof(m_structInfo.DomainSocket.sun_path) - 1);
             m_structInfo.DomainSocket.sun_path[sizeof(m_structInfo.DomainSocket.sun_path) - 1] = '\0';
         } else
 #endif
@@ -553,6 +554,10 @@ namespace Core {
         }
 
         return (m_hostName);
+    }
+
+    void NodeId::HostName(const TCHAR strHostName[])
+    {
     }
 
     string

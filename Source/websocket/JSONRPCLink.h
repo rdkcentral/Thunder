@@ -580,7 +580,7 @@ namespace JSONRPC {
             : _adminLock()
             , _connectId(RemoteNodeId())
             , _channel(CommunicationChannel::Instance(_connectId, string("/jsonrpc/") + connectingCallsign, query))
-            , _handler([&](const uint32_t, const string&, const string&) {}, { DetermineVersion(callsign + '.') })
+            , _handler([&](const uint32_t, const string&, const string&) {}, { DetermineVersion(callsign) })
             , _callsign(callsign.empty() ? string() : Core::JSONRPC::Message::Callsign(callsign + '.'))
             , _localSpace()
             , _pendingQueue()
@@ -594,7 +594,7 @@ namespace JSONRPC {
                 _localSpace = localCallsign;
             }
 
-            uint8_t version = Core::JSONRPC::Message::Version(_callsign);
+            uint8_t version = Core::JSONRPC::Message::Version(callsign + '.');
             if( version != static_cast<uint8_t>(~0) ) {
                 _versionstring = '.' + Core::NumberType<uint8_t>(version).Text();
             }
@@ -676,6 +676,9 @@ namespace JSONRPC {
 
             if ((result != Core::ERROR_NONE) || (response.IsValid() == false) || (response->Error.IsSet() == true)) {
                 _handler.Unregister(eventName);
+                if ((result == Core::ERROR_NONE) && (response->Error.IsSet() == true)) {
+                    result = response->Error.Code.Value();
+                }
             }
 
             return (result);
@@ -691,6 +694,9 @@ namespace JSONRPC {
 
             if ((result != Core::ERROR_NONE) || (response.IsValid() == false) || (response->Error.IsSet() == true)) {
                 _handler.Unregister(eventName);
+                if ((result == Core::ERROR_NONE) && (response->Error.IsSet() == true)) {
+                    result = response->Error.Code.Value();
+                }
             }
 
             return (result);
@@ -1103,14 +1109,17 @@ namespace JSONRPC {
                 ASSERT(newElement.second == true);
 
                 if (newElement.second == true) {
+                    uint64_t expiry = newElement.first->second.Expiry();
+                    _adminLock.Unlock();
 
                     _channel->Submit(Core::ProxyType<INTERFACE>(message));
 
                     result = Core::ERROR_NONE;
 
                     message.Release();
-                    if ((_scheduledTime == 0) || (_scheduledTime > newElement.first->second.Expiry())) {
-                        _scheduledTime = newElement.first->second.Expiry();
+                    _adminLock.Lock();
+                    if ((_scheduledTime == 0) || (_scheduledTime > expiry)) {
+                        _scheduledTime = expiry;
                         CommunicationChannel::Trigger(_scheduledTime, this);
                     }
                 }
@@ -1229,7 +1238,6 @@ namespace JSONRPC {
     private:
         class Connection : public LinkType<INTERFACE> {
         private:
-            static constexpr uint32_t ConnectionWaitTime = 3000;
             using Base = LinkType<INTERFACE>;
         public:
             static constexpr uint32_t DefaultWaitTime = Base::DefaultWaitTime;
@@ -1365,7 +1373,7 @@ namespace JSONRPC {
             {
                 if (result == nullptr) {
                     string method = string("status@") + Base::Callsign();
-                    _monitor.template Dispatch<void>(ConnectionWaitTime, method, &Connection::monitor_response, this);
+                    _monitor.template Dispatch<void>(DefaultWaitTime, method, &Connection::monitor_response, this);
                 }
             }
             void next_event(const Core::JSON::String& parameters, const Core::JSONRPC::Error* result)
@@ -1374,7 +1382,7 @@ namespace JSONRPC {
                 if (_events.empty() == false) {
                     const string parameters("{ \"event\": \"" + _events.front() + "\", \"id\": \"" + Base::Namespace() + "\"}");
                     _events.pop_front();
-                    LinkType<INTERFACE>::Dispatch(ConnectionWaitTime, _T("register"), parameters, &Connection::next_event, this);
+                    LinkType<INTERFACE>::Dispatch(DefaultWaitTime, _T("register"), parameters, &Connection::next_event, this);
                 }
                 else {
                     SetState(JSONRPC::JSONPluginState::ACTIVATED);
@@ -1386,7 +1394,7 @@ namespace JSONRPC {
                 // Time to open up the monitor
                 const string parameters("{ \"event\": \"statechange\", \"id\": \"" + _monitor.Namespace() + "\"}");
 
-                _monitor.template Dispatch<string>(ConnectionWaitTime, "register", parameters, &Connection::monitor_on, this);
+                _monitor.template Dispatch<string>(DefaultWaitTime, "register", parameters, &Connection::monitor_on, this);
             }
 
         private:
