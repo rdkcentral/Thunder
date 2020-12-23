@@ -37,7 +37,7 @@ namespace Tests {
         system(systemCmd);
     }
 
-    TEST(Core_SharedBuffer, simpleSet)
+    TEST(DISABLED_Core_SharedBuffer, simpleSet)
     {
         std::string bufferName {"testbuffer01"} ;
         auto lambdaFunc = [bufferName](IPTestAdministrator & testAdmin) {
