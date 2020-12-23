@@ -169,7 +169,7 @@ TEST(Core_CyclicBuffer, WithoutOverwrite)
     Singleton::Dispose();
 }
 
-TEST(Core_CyclicBuffer, WithoutOverwriteReversed)
+TEST(DISABLED_Core_CyclicBuffer, WithoutOverwriteReversed)
 {
     std::string bufferName {"cyclicbuffer02"};
     auto lambdaFunc = [bufferName](IPTestAdministrator & testAdmin) {

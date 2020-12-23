@@ -100,7 +100,7 @@ float GetUpTime() {
     return 0;
 }
 
-TEST(Core_SystemInfo, systemInfo)
+TEST(DISABLED_Core_SystemInfo, systemInfo)
 {
 //TODO - when include following lines of code time out issue occur in other tests.
 #if 0

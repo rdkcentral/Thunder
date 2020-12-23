@@ -199,7 +199,7 @@ namespace Tests {
         }
     };
 
-    TEST(Core_IPC, ContinuousChannel)
+    TEST(DISABLED_Core_IPC, ContinuousChannel)
     {
         std::string connector = _T("/tmp/testserver0");
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
@@ -406,7 +406,7 @@ namespace Tests {
         }
     }
 
-    TEST(Core_IPC, FlashChannel)
+    TEST(DISABLED_Core_IPC, FlashChannel)
     {
         std::string connector = _T("/tmp/testserver2");
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
@@ -513,7 +513,7 @@ namespace Tests {
         testAdmin.Sync("done testing");
     }
 
-    TEST(Core_IPC, FlashChannelReversed)
+    TEST(DISABLED_Core_IPC, FlashChannelReversed)
     {
         std::string connector = _T("/tmp/testserver3");
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {

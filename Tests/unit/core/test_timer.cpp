@@ -108,7 +108,7 @@ namespace Tests {
         mutable Core::Event _event;
     };
 
-    TEST(Core_Timer, LoopedTimer)
+    TEST(DISABLED_Core_Timer, LoopedTimer)
     {
         Core::TimerType<TimeHandler> timer(Core::Thread::DefaultStackSize(), _T("LoopedTimer"));
         uint32_t time = 100;
