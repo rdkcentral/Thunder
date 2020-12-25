@@ -654,7 +654,7 @@ namespace RPC {
 #ifdef PROCESSCONTAINERS_ENABLED
                 result = Core::Service<ContainerProcess>::Create<RemoteConnection>(config, instance);
 #else
-                SYSLOG(Trace::Error, (_T("Cannot create Container process for %s, this version was not build with Container support"), instance.ClassName().c_str()));
+                SYSLOG(Logging::Error, (_T("Cannot create Container process for %s, this version was not build with Container support"), instance.ClassName().c_str()));
 #endif
             }
 
