@@ -602,6 +602,8 @@ namespace PluginHost {
                                 printf("Country:     %s\n", location->Country().c_str());
                                 printf("Region:      %s\n", location->Region().c_str());
                                 printf("City:        %s\n", location->City().c_str());
+                                printf("Latitude:    %u\n", location->Latitude());
+                                printf("Longitude:   %u\n", location->Longitude());
                             }
 
                             printf("------------------------------------------------------------\n");
