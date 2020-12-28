@@ -77,6 +77,9 @@ namespace PluginHost {
         AdapterObserver(const AdapterObserver&) = delete;
         AdapterObserver& operator=(const AdapterObserver&) = delete;
 
+        #ifdef __WINDOWS__
+        #pragma warning(disable: 4355)
+        #endif
         AdapterObserver(string interface)
             : _signal(false, true)
             , _interface(interface)
@@ -90,6 +93,9 @@ namespace PluginHost {
                 _signal.SetEvent();
             }
         }
+        #ifdef __WINDOWS__
+        #pragma warning(default: 4355)
+        #endif
         ~AdapterObserver() override
         {
             _observer.Close();
@@ -596,6 +602,8 @@ namespace PluginHost {
                                 printf("Country:     %s\n", location->Country().c_str());
                                 printf("Region:      %s\n", location->Region().c_str());
                                 printf("City:        %s\n", location->City().c_str());
+                                printf("Latitude:    %u\n", location->Latitude());
+                                printf("Longitude:   %u\n", location->Longitude());
                             }
 
                             printf("------------------------------------------------------------\n");

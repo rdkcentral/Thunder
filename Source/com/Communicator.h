@@ -306,6 +306,7 @@ namespace RPC {
 
             _options.Add(_T("-l")).Add(instance.Locator());
             _options.Add(_T("-c")).Add(instance.ClassName());
+            _options.Add(_T("-C")).Add(instance.Callsign());
             _options.Add(_T("-r")).Add(config.Connector());
             _options.Add(_T("-i")).Add(Core::NumberType<uint32_t>(instance.Interface()).Text());
             _options.Add(_T("-x")).Add(Core::NumberType<uint32_t>(sequenceNumber).Text());
@@ -356,7 +357,14 @@ namespace RPC {
         }
         uint32_t Launch(uint32_t& id)
         {
-            uint32_t loggingSettings = (Logging::LoggingType<Logging::Startup>::IsEnabled() ? 0x01 : 0) | (Logging::LoggingType<Logging::Shutdown>::IsEnabled() ? 0x02 : 0) | (Logging::LoggingType<Logging::Notification>::IsEnabled() ? 0x04 : 0);
+            uint32_t loggingSettings =
+                    (Logging::LoggingType<Logging::Startup>::IsEnabled() ? 0x01 : 0) |
+                    (Logging::LoggingType<Logging::Shutdown>::IsEnabled() ? 0x02 : 0) |
+                    (Logging::LoggingType<Logging::Notification>::IsEnabled() ? 0x04 : 0) |
+                    (Logging::LoggingType<Logging::Crash>::IsEnabled() ? 0x08 : 0) |
+                    (Logging::LoggingType<Logging::ParsingError>::IsEnabled() ? 0x10 : 0) |
+                    (Logging::LoggingType<Logging::Error>::IsEnabled() ? 0x20 : 0) |
+                    (Logging::LoggingType<Logging::Fatal>::IsEnabled() ? 0x40 : 0);
             _options.Add(_T("-e")).Add(Core::NumberType<uint32_t>(loggingSettings).Text());
 
             // Start the external process launch..
@@ -646,7 +654,7 @@ namespace RPC {
 #ifdef PROCESSCONTAINERS_ENABLED
                 result = Core::Service<ContainerProcess>::Create<RemoteConnection>(config, instance);
 #else
-                SYSLOG(Trace::Error, (_T("Cannot create Container process for %s, this version was not build with Container support"), instance.ClassName().c_str()));
+                SYSLOG(Logging::Error, (_T("Cannot create Container process for %s, this version was not build with Container support"), instance.ClassName().c_str()));
 #endif
             }
 

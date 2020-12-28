@@ -202,7 +202,6 @@ class Identifier():
         nest2 = 0
         array = False
         skip = 0
-        value_next = False
         self.value = []
 
         if string.count("*") > 1:
@@ -408,11 +407,15 @@ class Identifier():
                 typedef_match = [td for td in tree.typedefs if td.full_name.endswith(qualifiedT)]
                 class_match = [cl for cl in tree.classes if cl.full_name.endswith(qualifiedT)]
 
+                enumval_match = []
+                for en in tree.enums:
+                    enumval_match += ([e for e in en.items if e.full_name.endswith(qualifiedT)])
+
                 template_match = []
                 if isinstance(tree, TemplateClass):
                     template_match = [t for t in tree.parameters if t.full_name.endswith(qualifiedT)]
 
-                found += enum_match + typedef_match + class_match + template_match
+                found += enum_match + typedef_match + class_match + template_match + enumval_match
 
                 if isinstance(tree, (Namespace, Class)):
                     for c in tree.classes:
@@ -984,7 +987,7 @@ class Enumerator(Identifier, Name):
         self.parent.items.append(self)
 
     def Proto(self):
-        return self.name
+        return self.full_name
 
     def __str__(self):
         return "%s = %s" % (self.Proto(), ValueStr(self.value))

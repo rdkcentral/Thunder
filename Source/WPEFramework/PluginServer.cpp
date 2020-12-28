@@ -238,10 +238,14 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     {
 
         void* result = nullptr;
-        if ((id == Core::IUnknown::ID) || (id == PluginHost::IShell::ID)) {
+        if (id == Core::IUnknown::ID) {
             AddRef();
-            result = this;
-        } else {
+            result = static_cast<IUnknown*>(this);
+        } if (id == PluginHost::IShell::ID) {
+            AddRef();
+            result = static_cast<PluginHost::IShell*>(this);
+        }
+        else {
 
             _pluginHandling.Lock();
 
@@ -539,6 +543,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         , _parent(static_cast<ChannelMap&>(*parent).Parent())
         , _security(_parent.Officer())
         , _service()
+        , _requestClose(false)
     {
         TRACE(Activity, (_T("Construct a link with ID: [%d] to [%s]"), Id(), remoteId.QualifiedName().c_str()));
     }

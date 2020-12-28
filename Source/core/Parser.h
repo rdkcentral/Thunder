@@ -53,7 +53,8 @@ namespace WPEFramework {
 				LOWERCASE = 0x080,
 				SPLITCHAR = 0x100,
 				PARSESTOP = 0x200,
-				WAS_QUOTED = 0x400
+				WAS_QUOTED = 0x400,
+				SINGLE_QUOTED = 0x800
 			};
 
 			ParserType(HANDLER& parent)
@@ -180,16 +181,29 @@ namespace WPEFramework {
 							_state |= ESCAPED;
 							_buffer += character;
 						}
-						else if (character == '\"') {
+						else if ((character == '\"') || (character == '\'')) {
 							if ((_state & QUOTED) == QUOTED) {
-								_state &= (~QUOTED);
-								_state |= WAS_QUOTED;
-							}
-							else if (_buffer.size() == 0) {
-								_state |= (QUOTED);
+								// Depending on the quote type, we just add it, or we close the quotation
+								if ((((_state & SINGLE_QUOTED) != 0) && (character == '\'')) ||
+									(((_state & SINGLE_QUOTED) == 0) && (character == '\"'))) {
+									_state &= (~QUOTED);
+									_state |= WAS_QUOTED;
+								}
+								else {
+									_buffer += character;
+								}
 							}
 							else {
-								_buffer += character;
+								if (__Complete<TEXTTERMINATOR, HANDLER>(_buffer, character) == true) {
+									_parent.Parse(_buffer, false);
+									_buffer.clear();
+								}
+								if (_buffer.size() == 0) {
+									_state |= (QUOTED) | (character == '\'' ? SINGLE_QUOTED : 0);
+								}
+								else {
+									_buffer += character;
+								}
 							}
 						}
 						else if ((_state & QUOTED) == QUOTED) {
@@ -199,14 +213,15 @@ namespace WPEFramework {
 							int8_t terminated = _terminator.IsTerminated(character);
 
 							if ((terminated & 0x80) == 0x80) {
-								_parent.Parse(_buffer, ((_state & WAS_QUOTED) == WAS_QUOTED));
-								_parent.EndOfLine();
 								_byteCounter = 0;
+								_parent.Parse(_buffer, ((_state & WAS_QUOTED) == WAS_QUOTED));
+								_state &= (~(WAS_QUOTED | SINGLE_QUOTED));
+								_parent.EndOfLine();
 								_state |= SKIP_WHITESPACE;
 								_buffer.clear();
 							}
 							else if ((terminated & 0x40) != 0x40) {
-								if (((stream[current] == ' ') || (stream[current] == '\t')) || (__Complete<TEXTTERMINATOR, HANDLER>(_buffer, character))) {
+								if ((stream[current] == ' ') || (stream[current] == '\t') || (stream[current] == '\r') || (__Complete<TEXTTERMINATOR, HANDLER>(_buffer, character))) {
 									if ((_state & WORD_CAPTURE) == WORD_CAPTURE) {
 										if (_splitChar == character) {
 											_buffer += character;
@@ -214,10 +229,10 @@ namespace WPEFramework {
 										if ((_buffer.empty() == false) || ((_state & WAS_QUOTED) == WAS_QUOTED)) {
 											_parent.Parse(_buffer, ((_state & WAS_QUOTED) == WAS_QUOTED));
 											_buffer.clear();
-											_state &= (~WAS_QUOTED);
+											_state &= (~(WAS_QUOTED|SINGLE_QUOTED));
 										}
 
-										if ((_splitChar != character) && (character != ' ') && (character != '\t')) {
+										if ((_splitChar != character) && (character != ' ') && (character != '\t') && (character != '\r')) {
 											__Complete<TEXTTERMINATOR, HANDLER>(_buffer, character);
 											_buffer = string(&character, 1);
 										}
