@@ -549,13 +549,28 @@ namespace Core {
         : _isLocalTime(localTime)
     {
         _time.wYear = year;
-        _time.wMonth = month % 12;
-        _time.wDay = day % 31;
+        _time.wMonth = month;
+        _time.wDay = day;
         _time.wHour = hour % 24;
         _time.wMinute = minute % 60;
         _time.wSecond = second % 60;
         _time.wMilliseconds = millisecond;
         _time.wDayOfWeek = static_cast<WORD>(~0);
+    }
+
+    /**
+     * Get day count since Monday, January 1, 4713 BC
+     * https://en.wikipedia.org/wiki/Julian_day
+     */
+    double Time::JulianDate() const {
+        uint16_t year = _time.wYear;
+        WORD month = _time.wMonth;
+        WORD day = _time.wDay;
+        WORD hour = _time.wHour;
+        WORD minutes = _time.wMinute;
+        WORD seconds = _time.wSecond;
+
+        return JulianJDConverter(year, month, day, hour, minutes, seconds);
     }
 
     // Uint64 is the time in MicroSeconds !!!
@@ -584,6 +599,22 @@ namespace Core {
         , _isLocalTime(localTime)
     {
         ::FileTimeToSystemTime(&time, &_time);
+    }
+
+    Time Time::ToLocal() const {
+        FILETIME fileTime, localFileTime;
+        SYSTEMTIME local;
+        SystemTimeToFileTime(&_time, &fileTime);
+        FileTimeToLocalFileTime(&fileTime, &localFileTime);
+        FileTimeToSystemTime(&localFileTime, &local);
+        return (Time(
+            static_cast<uint16_t>(local.wYear), 
+            static_cast<uint8_t>(local.wMonth),
+            static_cast<uint8_t>(local.wDay),
+            static_cast<uint8_t>(local.wHour),
+            static_cast<uint8_t>(local.wMinute),
+            static_cast<uint8_t>(local.wSecond),
+            static_cast<uint16_t>(local.wMilliseconds), false));
     }
 
     // Return the time in MicroSeconds, since since January 1, 1970 00:00:00 (UTC)...
@@ -779,6 +810,21 @@ namespace Core {
         _ticks = (static_cast<uint64_t>(time.tv_sec) * MicroSecondsPerSecond) + (time.tv_nsec / NanoSecondsPerMicroSecond) + OffsetTicksForEpoch;
     }
 
+    Time Time::ToLocal() const {
+        struct tm local = _time;
+        time_t flatTime;
+        flatTime = mktime(&local);
+        localtime_r(&flatTime, &local);
+
+        return (Time(
+            static_cast<uint16_t>(local.tm_year + 1900),
+            static_cast<uint8_t>(local.tm_mon + 1),
+            static_cast<uint8_t>(local.tm_mday),
+            static_cast<uint8_t>(local.tm_hour),
+            static_cast<uint8_t>(local.tm_min),
+            static_cast<uint8_t>(local.tm_sec),
+            0, false));
+    }
 
     // Copyright (c) 2001-2006, NLnet Labs. All rights reserved.
     // Licensed under the BSD-3 License"
@@ -854,6 +900,21 @@ namespace Core {
 
         // Calculate ticks..
         _ticks = (static_cast<uint64_t>(flatTime) * static_cast<uint64_t>(MicroSecondsPerSecond)) + (static_cast<uint64_t>(millisecond) * static_cast<uint64_t>(MicroSecondsPerMilliSecond)) + OffsetTicksForEpoch;
+    }
+
+    /**
+     * Get day count since Monday, January 1, 4713 BC
+     * https://en.wikipedia.org/wiki/Julian_day
+     */
+    double Time::JulianDate() const {
+        uint16_t year = _time.tm_year + 1900;
+        uint8_t month = _time.tm_mon + 1;
+        uint8_t day = _time.tm_mday;
+        uint8_t hour = _time.tm_hour;
+        uint8_t minutes = _time.tm_min;
+        uint8_t seconds = _time.tm_sec;
+
+        return JulianJDConverter(year, month, day, hour, minutes, seconds);
     }
 
     Time::Time(const struct timeval& info)
