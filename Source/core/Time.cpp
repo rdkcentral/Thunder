@@ -562,7 +562,7 @@ namespace Core {
      * Get day count since Monday, January 1, 4713 BC
      * https://en.wikipedia.org/wiki/Julian_day
      */
-    float Time::JulianDate() const {
+    double Time::JulianDate() const {
         uint16_t year = _time.wYear;
         WORD month = _time.wMonth;
         WORD day = _time.wDay;
@@ -570,11 +570,7 @@ namespace Core {
         WORD minutes = _time.wMinute;
         WORD seconds = _time.wSecond;
 
-        // julian day number algorithm
-        uint32_t date = (1461 * (year + 4800 + (month - 14) / 12)) / 4 + (367 * (month - 2 - 12 * ((month - 14) / 12))) / 12 - (3 * ((year + 4900 + (month - 14) / 12) / 100)) / 4 + day - 32075;
-        uint32_t time = ((hour - 12) * 60 * 60) + (minutes * 60) + seconds;
-        // JDN to JD algorithm
-        return (static_cast<float>(date) + (static_cast<float>(time) / (24 * 60 * 60)));
+        return JulianJDConverter(year, month, day, hour, minutes, seconds);
     }
 
     // Uint64 is the time in MicroSeconds !!!
@@ -910,7 +906,7 @@ namespace Core {
      * Get day count since Monday, January 1, 4713 BC
      * https://en.wikipedia.org/wiki/Julian_day
      */
-    float Time::JulianDate() const {
+    double Time::JulianDate() const {
         uint16_t year = _time.tm_year + 1900;
         uint8_t month = _time.tm_mon + 1;
         uint8_t day = _time.tm_mday;
@@ -918,11 +914,7 @@ namespace Core {
         uint8_t minutes = _time.tm_min;
         uint8_t seconds = _time.tm_sec;
 
-        // julian day number algorithm
-        uint32_t JDN = (1461 * (year + 4800 + (month - 14) / 12)) / 4 + (367 * (month - 2 - 12 * ((month - 14) / 12))) / 12 - (3 * ((year + 4900 + (month - 14) / 12) / 100)) / 4 + day - 32075;
-
-        // JDN to JD algorithm
-        return (JDN + static_cast<float>(((hour - 12) + (minutes * 60) + (seconds * 60 * 60)) / (24.0 * 60.0 * 60.0)));
+        return JulianJDConverter(year, month, day, hour, minutes, seconds);
     }
 
     Time::Time(const struct timeval& info)

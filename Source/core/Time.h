@@ -206,7 +206,16 @@ namespace Core {
         uint8_t DayOfWeek() const;
         uint16_t DayOfYear() const;
         uint64_t NTPTime() const;
-        float JulianDate() const;
+
+        double JulianDate() const;
+        inline double JulianJDConverter(uint16_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t minutes, uint8_t seconds) const {
+            // julian day number algorithm
+            uint32_t JDN = (1461 * (year + 4800 + (month - 14) / 12)) / 4 + (367 * (month - 2 - 12 * ((month - 14) / 12))) / 12 - (3 * ((year + 4900 + (month - 14) / 12) / 100)) / 4 + day - 32075;
+            double time = (((hour - 12) * 60 * 60) + (minutes * 60) + seconds) / (static_cast<float>(24 * 60 * 60));
+
+            // JDN to JD algorithm
+            return (JDN + time);
+        }
 
         int32_t DifferenceFromGMTSeconds() const;
 
