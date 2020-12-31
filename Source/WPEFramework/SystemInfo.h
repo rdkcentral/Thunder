@@ -181,8 +181,8 @@ namespace PluginHost {
             string Country() const override;
             string Region() const override;
             string City() const override;
-            uint32_t Latitude() const override;
-            uint32_t Longitude() const override;
+            int32_t Latitude() const override;
+            int32_t Longitude() const override;
 
             bool Set(const PluginHost::ISubSystem::ILocation* info);
             inline bool Set(const string& timeZone,
