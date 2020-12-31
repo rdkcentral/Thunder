@@ -738,6 +738,7 @@ namespace PluginHost
     /* virtual */ IPCUserInput::~IPCUserInput()
     {
         ClearKeyMap();
+        _service.Cleanup();
     }
 
     /* virtual */ VirtualInput::Iterator IPCUserInput::Consumers() const
