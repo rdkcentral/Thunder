@@ -196,6 +196,10 @@ namespace PluginHost {
 #ifndef __WINDOWS__
                 closelog();
 #endif
+
+                // Do not forget to close the Tracing stuff...
+                Trace::TraceUnit::Instance().Close();
+
                 // Now clear all singeltons we created.
                 Core::Singleton::Dispose();
             }
