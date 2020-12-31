@@ -546,7 +546,6 @@ namespace Core {
 #ifdef __WINDOWS__
 
     Time::Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
-        : _isLocalTime(localTime)
     {
         _time.wYear = year;
         _time.wMonth = month;
@@ -556,6 +555,12 @@ namespace Core {
         _time.wSecond = second % 60;
         _time.wMilliseconds = millisecond;
         _time.wDayOfWeek = static_cast<WORD>(~0);
+
+        if (localTime) {
+            SYSTEMTIME convertedTime;
+            TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
+            _time = convertedTime;
+        }
     }
 
     /**
@@ -570,13 +575,12 @@ namespace Core {
         WORD minutes = _time.wMinute;
         WORD seconds = _time.wSecond;
 
-        return JulianJDConverter(year, month, day, hour, minutes, seconds);
+        return JulianJDConverter(static_cast<uint16_t>(year), static_cast<uint8_t>(month), static_cast<uint8_t>(day), static_cast<uint8_t>(hour), static_cast<uint8_t>(minutes), static_cast<uint8_t>(seconds));
     }
 
     // Uint64 is the time in MicroSeconds !!!
     Time::Time(const uint64_t time, bool localTime)
         : _time()
-        , _isLocalTime(localTime)
     {
         FILETIME fileTime;
         _ULARGE_INTEGER result;
@@ -587,18 +591,22 @@ namespace Core {
         fileTime.dwHighDateTime = result.HighPart;
 
         ::FileTimeToSystemTime(&fileTime, &_time);
-        if (IsLocalTime()) {
+        if (localTime) {
             SYSTEMTIME convertedTime;
-            SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
+            TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
             _time = convertedTime;
         }
     }
 
     Time::Time(const FILETIME& time, bool localTime /*= false*/)
         : _time()
-        , _isLocalTime(localTime)
     {
         ::FileTimeToSystemTime(&time, &_time);
+        if (localTime) {
+            SYSTEMTIME convertedTime;
+            TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
+            _time = convertedTime;
+        }
     }
 
     Time Time::ToLocal() const {
@@ -622,13 +630,7 @@ namespace Core {
     {
         // Contains a 64-bit value representing the number of 100-nanosecond intervals since January 1, 1601 (UTC).
         FILETIME fileTime{};
-        if (IsLocalTime()) {
-            SYSTEMTIME convertedTime;
-            TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
-            ::SystemTimeToFileTime(&convertedTime, &fileTime);
-        } else {
-            ::SystemTimeToFileTime(&_time, &fileTime);
-        }
+        ::SystemTimeToFileTime(&_time, &fileTime);
         _ULARGE_INTEGER result;
 
         result.LowPart = fileTime.dwLowDateTime;
@@ -704,13 +706,9 @@ namespace Core {
 
         const TCHAR* zone = (localTime == false ? _T(" GMT") : nullptr);
 
-        if (localTime != IsLocalTime()) {
+        if (localTime) {
             SYSTEMTIME convertedTime;
-            if (IsLocalTime()) {
-                TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
-            } else {
-                SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
-            }
+            SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
             Time converted(convertedTime, localTime);
             _stprintf(buffer, _T("%02d:%02d:%02d"), converted.Hours(), converted.Minutes(), converted.Seconds());
         } else
@@ -736,14 +734,10 @@ namespace Core {
 
         const TCHAR* zone = (localTime == false ? _T("GMT") : _T(""));
 
-        if (localTime != IsLocalTime()) {
+        if (localTime == true) {
             SYSTEMTIME convertedTime;
-            if (IsLocalTime()) {
-                TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
-            } else {
-                SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
-            }
-            Time converted(convertedTime, localTime);
+            SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
+           Time converted(convertedTime, localTime);
             _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d %s"), converted.WeekDayName(),
                 converted.Day(), converted.MonthName(), converted.Year(),
                 converted.Hours(), converted.Minutes(), converted.Seconds(), zone);
@@ -765,13 +759,9 @@ namespace Core {
 
         const TCHAR* zone = (localTime == false ? _T("Z") : _T(""));
 
-        if (localTime != IsLocalTime()) {
+        if (localTime == true) {
             SYSTEMTIME convertedTime;
-            if (IsLocalTime()) {
-                TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
-            } else {
-                SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
-            }
+            SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
 
             Time converted(convertedTime, localTime);
 #pragma warning(disable : 4996)
@@ -1064,26 +1054,26 @@ namespace Core {
 
     string Time::ToRFC1123() const
     {
-        return ToRFC1123(IsLocalTime());
+        return ToRFC1123(false);
     }
 
     string Time::ToISO8601() const
     {
-        return ToISO8601(IsLocalTime());
+        return ToISO8601(false);
     }
 
     Time& Time::Add(const uint32_t timeInMilliseconds)
     {
         // Calculate the new time !!
         uint64_t newTime = Ticks() + static_cast<uint64_t>(timeInMilliseconds) * MilliSecondsPerSecond;
-        return (operator=(Time(newTime, IsLocalTime())));
+        return (operator=(Time(newTime, false)));
     }
 
     Time& Time::Sub(const uint32_t timeInMilliseconds)
     {
         // Calculate the new time !!
         uint64_t newTime = Ticks() - static_cast<uint64_t>(timeInMilliseconds) * MilliSecondsPerSecond;
-        return (operator=(Time(newTime, IsLocalTime())));
+        return (operator=(Time(newTime, false)));
     }
 
     uint64_t Time::NTPTime() const

@@ -42,7 +42,6 @@ namespace Core {
         Time(const FILETIME& time, bool localTime = false);
         inline Time(const SYSTEMTIME& time, bool localTime = false)
             : _time(time)
-            , _isLocalTime(localTime)
         {
         }
 #endif
@@ -60,15 +59,10 @@ namespace Core {
             _time.wSecond = 0;
             _time.wMilliseconds = 0;
             _time.wDayOfWeek = 0;
-            _isLocalTime = false;
         }
         inline bool IsValid() const
         {
             return ((_time.wYear != 0) && (_time.wMonth != 0) && (_time.wDay != 0));
-        }
-        inline bool IsLocalTime() const
-        {
-            return (_isLocalTime == true);
         }
 #endif
 
@@ -95,8 +89,6 @@ namespace Core {
             : _time(copy._time)
 #ifndef __WINDOWS__
             , _ticks(copy._ticks)
-#else
-            , _isLocalTime(copy._isLocalTime)
 #endif
         {
         }
@@ -110,8 +102,6 @@ namespace Core {
 
 #ifndef __WINDOWS__
             _ticks = RHS._ticks;
-#else
-            _isLocalTime = RHS._isLocalTime;
 #endif
             return (*this);
         }
@@ -208,7 +198,7 @@ namespace Core {
         uint64_t NTPTime() const;
 
         double JulianDate() const;
-        inline double JulianJDConverter(uint16_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t minutes, uint8_t seconds) const {
+        inline double JulianJDConverter(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minutes, const uint8_t seconds) const {
             // julian day number algorithm
             uint32_t JDN = (1461 * (year + 4800 + (month - 14) / 12)) / 4 + (367 * (month - 2 - 12 * ((month - 14) / 12))) / 12 - (3 * ((year + 4900 + (month - 14) / 12) / 100)) / 4 + day - 32075;
             double time = (((hour - 12) * 60 * 60) + (minutes * 60) + seconds) / (static_cast<float>(24 * 60 * 60));
@@ -315,7 +305,6 @@ namespace Core {
     private:
 #ifdef __WINDOWS__
         mutable SYSTEMTIME _time;
-        bool _isLocalTime;
 #else
         struct tm _time;
         uint64_t _ticks;
