@@ -106,7 +106,7 @@ namespace RPC {
         LocalClosingInfo& operator=(const LocalClosingInfo& RHS) = delete;
 
         explicit LocalClosingInfo(const uint32_t pid)
-            : _process(pid)
+            : _process(false, pid)
         {
         }
         ~LocalClosingInfo() override = default;
