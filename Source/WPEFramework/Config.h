@@ -385,8 +385,8 @@ namespace PluginHost {
             Core::JSON::ArrayType<Plugin::Config> Plugins;
             Core::JSON::ArrayType<Environment> Environments;
             Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::IShell::reason>> ExitReasons;
-            Core::JSON::DecUInt32 Latitude;
-            Core::JSON::DecUInt32 Longitude;
+            Core::JSON::DecSInt32 Latitude;
+            Core::JSON::DecSInt32 Longitude;
 #ifdef PROCESSCONTAINERS_ENABLED
             ProcessContainerConfig ProcessContainers;
 #endif
@@ -705,10 +705,10 @@ namespace PluginHost {
         inline uint32_t StackSize() const {
             return (_stackSize);
         }
-        inline uint32_t Latitude() const {
+        inline int32_t Latitude() const {
             return (_latitude);
         }
-        inline uint32_t Longitude() const {
+        inline int32_t Longitude() const {
             return (_longitude);
         }
         inline const InputInfo& Input() const {
@@ -867,8 +867,8 @@ namespace PluginHost {
         bool _IPV6;
         uint16_t _idleTime;
         uint32_t _stackSize;
-        uint32_t _latitude;
-        uint32_t _longitude;
+        int32_t _latitude;
+        int32_t _longitude;
         InputInfo _inputInfo;
         ProcessInfo _processInfo;
         Core::JSON::ArrayType<Plugin::Config> _plugins;

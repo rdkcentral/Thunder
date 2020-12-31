@@ -155,12 +155,12 @@ namespace PluginHost {
         return (_city);
     }
 
-    /* virtual */ uint32_t SystemInfo::Location::Latitude() const
+    /* virtual */ int32_t SystemInfo::Location::Latitude() const
     {
         return (_latitude);
     }
 
-    /* virtual */ uint32_t SystemInfo::Location::Longitude() const
+    /* virtual */ int32_t SystemInfo::Location::Longitude() const
     {
         return (_longitude);
     }
