@@ -1068,7 +1068,6 @@ namespace Core {
             : _adminLock()
             , _channel(ProxyType<Channel>::Create())
             , _networks()
-            , _observer(*this)
             , _observers()
         {
             ASSERT(IsValid());
@@ -1195,7 +1194,6 @@ namespace Core {
         CriticalSection _adminLock;
         ProxyType<Channel> _channel;
         Map _networks;
-        Observer _observer;
         std::list<AdapterObserver::INotification*> _observers;
     };
 
