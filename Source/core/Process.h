@@ -220,7 +220,11 @@ namespace Core {
         Process(const Process&) = delete;
         Process& operator=(const Process&) = delete;
 
+#ifndef __WINDOWS__
+        Process(const bool capture, const process_t pid = 0)
+#else
         Process(const bool capture)
+#endif
             : _argc(0)
             , _parameters(nullptr)
             , _exitCode(static_cast<uint32_t>(~0))
@@ -228,7 +232,7 @@ namespace Core {
             , _stdin(capture ? -1 : 0)
             , _stdout(capture ? -1 : 0)
             , _stderr(capture ? -1 : 0)
-            , _PID(0)
+            , _PID(pid)
 #else
             , _stdin(capture ? reinterpret_cast<HANDLE>(~0) : nullptr)
             , _stdout(capture ? reinterpret_cast<HANDLE>(~0) : nullptr)
