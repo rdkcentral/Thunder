@@ -846,7 +846,7 @@ namespace Core {
                 SocketDatagram::Open(Core::infinite);
             }
             ~Observer() override {
-                Close(Core::infinite);
+                SocketDatagram::Close(Core::infinite);
             }
 
         public:
@@ -860,6 +860,16 @@ namespace Core {
             }
             void StateChange() override
             {
+            }
+            void Open()
+            {
+                if (SocketDatagram::IsOpen() != true) {
+                    SocketDatagram::Open(Core::infinite);
+                }
+            }
+            void Close()
+            {
+                SocketDatagram::Close(Core::infinite);
             }
 
         private:
@@ -1070,6 +1080,7 @@ namespace Core {
             , _networks()
             , _observer(*this)
             , _observers()
+            , _refCount(0)
         {
             ASSERT(IsValid());
 
@@ -1125,6 +1136,7 @@ namespace Core {
             std::list<AdapterObserver::INotification*>::iterator index (std::find(_observers.begin(), _observers.end(), client));
             if (index == _observers.end()) {
                 _observers.push_back(client);
+                AddRef();
             }
             _adminLock.Unlock();
         }
@@ -1133,6 +1145,7 @@ namespace Core {
             std::list<AdapterObserver::INotification*>::iterator index (std::find(_observers.begin(), _observers.end(), client));
             if (index != _observers.end()) {
                 _observers.erase(index);
+                Release();
             }
             _adminLock.Unlock();            
         }
@@ -1141,6 +1154,21 @@ namespace Core {
         }
 
     private:
+        inline void AddRef() {
+            if (Core::InterlockedIncrement(_refCount) == 1) {
+                _observer.Open();
+            }
+        }
+        inline uint32_t Release() {
+
+            ASSERT(_refCount > 0);
+            if (Core::InterlockedDecrement(_refCount) == 0) {
+                _observer.Close();
+            }
+
+            return Core::ERROR_NONE;
+        }
+
         void Add(const uint32_t id, const struct rtattr* data, const uint16_t length) {
             string interfaceName;
 
@@ -1197,6 +1225,7 @@ namespace Core {
         Map _networks;
         Observer _observer;
         std::list<AdapterObserver::INotification*> _observers;
+        uint32_t _refCount;
     };
 
     Network::Network(const uint32_t index, const struct rtattr* iface, const uint32_t length)
