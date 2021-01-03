@@ -160,7 +160,7 @@ namespace PluginHost {
             Location(const Location&) = delete;
             Location& operator=(const Location&) = delete;
 
-            Location(const uint32_t latitude, const uint32_t longitude)
+            Location(const int32_t latitude, const int32_t longitude)
                 : _timeZone()
                 , _country()
                 , _region()
@@ -189,8 +189,8 @@ namespace PluginHost {
                 const string& country,
                 const string& region,
                 const string& city,
-                const uint32_t latitude,
-                const uint32_t longitude)
+                const int32_t latitude,
+                const int32_t longitude)
             {
                 bool result(false);
 
@@ -219,8 +219,8 @@ namespace PluginHost {
             string _country;
             string _region;
             string _city;
-            uint32_t _latitude; // 1.000.000 divider
-            uint32_t _longitude; // 1.000.000 divider
+            int32_t _latitude; // 1.000.000 divider
+            int32_t _longitude; // 1.000.000 divider
         };
 
         class Time : public PluginHost::ISubSystem::ITime {
