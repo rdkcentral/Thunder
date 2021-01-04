@@ -24,8 +24,9 @@ namespace PluginHost {
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
-    SystemInfo::SystemInfo(Core::IDispatch* callback)
+    SystemInfo::SystemInfo(const Config& config, Core::IDispatch* callback)
         : _adminLock()
+        , _config(config)
         , _notificationClients()
         , _callback(callback)
         , _identifier(nullptr)
@@ -154,9 +155,19 @@ namespace PluginHost {
         return (_city);
     }
 
+    /* virtual */ int32_t SystemInfo::Location::Latitude() const
+    {
+        return (_latitude);
+    }
+
+    /* virtual */ int32_t SystemInfo::Location::Longitude() const
+    {
+        return (_longitude);
+    }
+
     bool SystemInfo::Location::Set(const PluginHost::ISubSystem::ILocation* info)
     {
-        return Set(info->TimeZone(), info->Country(), info->Region(), info->City());
+        return Set(info->TimeZone(), info->Country(), info->Region(), info->City(), info->Latitude(), info->Longitude());
     }
 
     // Device Identifier

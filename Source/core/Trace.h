@@ -49,11 +49,20 @@ namespace WPEFramework {
 #define TRACE_PROCESS_ID ::getpid()
 #endif
 
-#define TRACE_FORMATTING(fmt, ...)                                                                                                        \
+#define TRACE_FORMATTING_IMPL(fmt, ...)                                                                            \
     do {                                                                                                                                  \
         fprintf(stderr, "\033[1;32m[%s:%d](%s)<%d>" fmt "\n\033[0m", &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, ##__VA_ARGS__);  \
         fflush(stderr);                                                                                                                   \
     } while (0)
+
+#if defined(CORE_TRACE_NOT_ALLOWED) && !defined(__WINDOWS__) 
+#define TRACE_FORMATTING(fmt, ...)                                                                            \
+    _Pragma ("GCC warning \"Using 'TRACE_Lx' outside of Thunder Core is deprecated\"")                        \
+    TRACE_FORMATTING_IMPL(fmt, ##__VA_ARGS__)
+#else
+#define TRACE_FORMATTING(fmt, ...)                                                                            \
+    TRACE_FORMATTING_IMPL(fmt, ##__VA_ARGS__)
+#endif
 
 #ifdef __WINDOWS__
 #define TRACE_PROCESS_ID ::GetCurrentProcessId()
