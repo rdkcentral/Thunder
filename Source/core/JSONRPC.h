@@ -189,86 +189,54 @@ namespace Core {
                 }
                 return (designator.substr(pos == string::npos ? 0 : pos + 1));
             }
-            /**
-             * A helper function used in FindVersionNumber() to extraxt the version number
-             * from the right hand side of the delimiter (. [dot])
-             *
-             * @param designator Designator string for extracting the version number
-             * @param startPos Start position of the delimiter.
-             * @return A valid version number if found, ~0 when there is no valid number after starPos;
-             */
-            static uint8_t ExtractNumberFromRHS(const string& designator, size_t startPos)
+            static uint8_t TryGetVersion(const string& designator, string::size_type pos) {
+                // note: invalid version string will not be detected (> 254) as it is abuse, digits part of a methodname/callsign
+                // bigger will (but not to detect them as names consisting of only digits, see what is not allowed above)
+                uint8_t result = 0;
+                uint8_t multiplier = 1; // probably cheaper then using pow(10, (startpos-pos))
+
+                while ((isdigit(designator[pos]))) {
+                    result += ((designator[pos] - '0') * multiplier);
+                    if (pos-- == 0) {
+                        pos = string::npos;
+                        break;
+                    }
+                    multiplier *= 10;
+                }
+
+                return ((pos == string::npos) || (designator[pos] == '.') ? result : ~0);
+            }
+            static uint8_t Version(const string& designator, const bool fulldesignator = false)
             {
                 uint8_t result = ~0;
+                string::size_type pos = designator.find_last_of('@');
+                // optimization, no need to parse behind index. Biggest chance index would be a full number so parsing back to
+                // find out when hitting @ it is not the version would be useless
 
-                // move to the Right hand side until end of string reached
-                // or a non-numeric character found
-                size_t endPos = designator.length() - 1;
-
-                if (startPos == endPos) {
-                    //no more charcters on the right hand side
-                    return (result);
+                if ((pos == string::npos) && (fulldesignator == false)) { // when not found and no fulldesignator version can be at the end
+                    pos = designator.size();
+                    pos = ((pos > 1) && (designator[pos - 1] == '.') ? pos - 1 : pos); // this line caters for a possible '.' as last character,
+                                                                                    // can be removed probably
+                    if (pos-- > 2) { // smallest possible valid string would be "1.a" or "b.1" (a methodname, 1 version, b callsign), -- to set pos
+                                     // at last char (note not --pos > 1  to cater for pos == 0)
+                        result = TryGetVersion(designator, pos);
+                        // if no match at the end of the designator, then only one possibilty remains it is before the '.' before the current
+                        // position, will be picked up below
+                    }
                 }
 
-                size_t index = startPos + 1;
-                while ((index <= endPos) && (isdigit(designator[index]))) {
-                    index++;
+                if ((fulldesignator == true) || (pos != string::npos) && (pos > 1) && (result == static_cast<uint8_t>(~0)))
+                {
+                    // 1) we have an index then we must also have a full designator. Then version (if avaialble) must be before the previous '.'
+                    //    and that is the only possible option, otherwise it is not there and we found the callsign
+                    // 2) we could not find the version at the end of the designator, search before the . before that
+                    pos = designator.find_last_of('.', pos); // if pos == npos (could be in case of fulldesignator) then will search from the end as it should
+                    if ((pos != string::npos) && (pos > 0)) {
+                        result = TryGetVersion(designator, --pos);
+                    }
                 }
 
-                if (index > endPos) {
-                    // Found a valid digit on the RHS
-                    result = static_cast<uint8_t>(atoi(designator.substr(startPos + 1).c_str()));
-                }
-                return (result);
-            }
-            /**
-             * This function can be used to find the version number from the given Designator string.
-             * Parsing is done as per the Designator string format specified in WPEFramework::Core
-             * JSONRPC API call.
-             * This function looks for the delimiter (dot) in the reverse order (from right to left)
-             *
-             * @param designator Designator string for finding the version number
-             * @param startPos start index of the string value used for comparison, 0 by default.
-             * @return A valid version number if found, ~0 when there is no valid version number.
-             */
-            static uint8_t FindVersionNumber(const string& designator, size_t startPos)
-            {
-                uint8_t result = ~0;
-
-                size_t pos = designator.find_last_of('.', designator.find_last_of('@'));
-
-                if (pos != string::npos) {
-                    if (pos == startPos) {
-                        // No more character left on LHS. Try RHS
-                        return ExtractNumberFromRHS(designator, pos);
-                    }
-
-                    size_t index = pos - 1;
-
-                    while ((index > startPos) && (isdigit(designator[index]))) {
-                        index--;
-                    }
-
-                    if (designator[index] == '.') {
-                        index++;
-                    }
-
-                    else if (!isdigit(designator[index])) {
-                        return ExtractNumberFromRHS(designator, pos);
-                    }
-
-                    if (index < pos) {
-                        // Found a valid digit on the LHS
-                        result = static_cast<uint8_t>(atoi(designator.substr(index, pos - index).c_str()));
-                    }
-
-                }
-
-                return (result);
-            }
-            static uint8_t Version(const string& designator)
-            {
-                return FindVersionNumber(designator, 0);
+                return result;
             }
             static string Index(const string& designator)
             {
