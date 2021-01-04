@@ -26,6 +26,8 @@ add_library(${TARGET} SHARED
         ITracing.cpp
         IUnknown.cpp
         Module.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_COM.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Trace.cpp
         )
 
 set(PUBLIC_HEADERS
