@@ -79,7 +79,6 @@ namespace PluginHost {
             virtual void Updated() = 0;
         };
 
-        /* @stubgen:omit */
         struct EXTERNAL ISecurity
             : virtual public Core::IUnknown {
 
@@ -95,7 +94,6 @@ namespace PluginHost {
             virtual string Callsign() const = 0;
         };
 
-        /* @stubgen:omit */
         struct EXTERNAL IInternet
             : virtual public Core::IUnknown {
 
@@ -120,7 +118,6 @@ namespace PluginHost {
             static const TCHAR* ToString(const network_type value);
         };
 
-        /* @stubgen:omit */
         // Location information
         struct EXTERNAL ILocation
             : virtual public Core::IUnknown {
@@ -137,9 +134,10 @@ namespace PluginHost {
             virtual string Country() const = 0;
             virtual string Region() const = 0;
             virtual string City() const = 0;
+            virtual int32_t Latitude() const { return (51832547); }
+            virtual int32_t Longitude() const { return (5674899); }
         };
 
-        /* @stubgen:omit */
         // Device specific identification.
         struct EXTERNAL IIdentifier
             : virtual public Core::IUnknown {
@@ -152,10 +150,9 @@ namespace PluginHost {
                 SUBSYSTEM = IDENTIFIER
             };
             // Device specific identification.
-            virtual uint8_t Identifier(const uint8_t length, uint8_t buffer[]) const = 0;
+            virtual uint8_t Identifier(const uint8_t length, uint8_t buffer[] /*@maxlength:length @out*/) const = 0;
         };
 
-        /* @stubgen:omit */
         // Time synchronisation reporting
         struct EXTERNAL ITime
             : virtual public Core::IUnknown {
@@ -171,7 +168,6 @@ namespace PluginHost {
             virtual uint64_t TimeSync() const = 0;
         };
 
-        /* @stubgen:omit */
         // IProvisioning reporting
         struct EXTERNAL IProvisioning : public RPC::IStringIterator {
 
@@ -180,7 +176,6 @@ namespace PluginHost {
             };
         };
 
-        /* @stubgen:omit */
         // Decryption reporting
         struct EXTERNAL IDecryption : public RPC::IStringIterator {
 
