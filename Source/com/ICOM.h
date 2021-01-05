@@ -25,7 +25,7 @@
 // @stubgen:include "IRPCIterator.h"
 
 namespace WPEFramework {
-	namespace RPC {
+    namespace RPC {
 
         struct EXTERNAL IRemoteConnection : virtual public Core::IUnknown {
             enum { ID = ID_COMCONNECTION };
@@ -61,23 +61,7 @@ namespace WPEFramework {
             }
         };
 
-		typedef IIteratorType<string, ID_STRINGITERATOR> IStringIterator;
-		typedef IIteratorType<uint32_t, ID_VALUEITERATOR> IValueIterator;
-	}
-
-    namespace Trace {
-
-        struct EXTERNAL ITraceIterator : virtual public Core::IUnknown {
-            enum { ID = RPC::ID_TRACEITERATOR };
-
-            virtual void Reset() = 0;
-            virtual bool Info(bool& enabled /* @out */, string& module /* @out */, string& category /* @out */) const = 0;
-        };
-
-        struct EXTERNAL ITraceController : virtual public Core::IUnknown {
-            enum { ID = RPC::ID_TRACECONTROLLER };
-
-            virtual void Enable(const bool enabled, const string& module, const string& category) = 0;
-        };
+        typedef IIteratorType<string, ID_STRINGITERATOR> IStringIterator;
+        typedef IIteratorType<uint32_t, ID_VALUEITERATOR> IValueIterator;
     }
 }
