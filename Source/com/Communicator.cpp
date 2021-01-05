@@ -511,5 +511,9 @@ namespace RPC {
         // Set event so WaitForCompletion() can continue.
         _announceEvent.SetEvent();
     }
+
+    //We may eliminate the following statement when switched to C++17 compiler
+    constexpr uint32_t RPC::ProcessShutdown::DestructionStackSize;
+
 }
 }
