@@ -116,6 +116,7 @@ namespace Plugin {
 
         if (subSystems != nullptr) {
             subSystems->Unregister(&_systemInfoReport);
+            subSystems->Release();
         }
 
         if (_probe != nullptr) {
