@@ -25,6 +25,7 @@
 #include "Administrator.h"
 #include "IUnknown.h"
 #include "ICOM.h"
+#include "ITrace.h"
 
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
