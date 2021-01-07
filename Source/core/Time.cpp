@@ -546,22 +546,41 @@ namespace Core {
 #ifdef __WINDOWS__
 
     Time::Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
-        : _isLocalTime(localTime)
     {
         _time.wYear = year;
-        _time.wMonth = month % 12;
-        _time.wDay = day % 31;
+        _time.wMonth = month;
+        _time.wDay = day;
         _time.wHour = hour % 24;
         _time.wMinute = minute % 60;
         _time.wSecond = second % 60;
         _time.wMilliseconds = millisecond;
         _time.wDayOfWeek = static_cast<WORD>(~0);
+
+        if (localTime) {
+            SYSTEMTIME convertedTime;
+            TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
+            _time = convertedTime;
+        }
+    }
+
+    /**
+     * Get day count since Monday, January 1, 4713 BC
+     * https://en.wikipedia.org/wiki/Julian_day
+     */
+    double Time::JulianDate() const {
+        uint16_t year = _time.wYear;
+        WORD month = _time.wMonth;
+        WORD day = _time.wDay;
+        WORD hour = _time.wHour;
+        WORD minutes = _time.wMinute;
+        WORD seconds = _time.wSecond;
+
+        return JulianJDConverter(static_cast<uint16_t>(year), static_cast<uint8_t>(month), static_cast<uint8_t>(day), static_cast<uint8_t>(hour), static_cast<uint8_t>(minutes), static_cast<uint8_t>(seconds));
     }
 
     // Uint64 is the time in MicroSeconds !!!
     Time::Time(const uint64_t time, bool localTime)
         : _time()
-        , _isLocalTime(localTime)
     {
         FILETIME fileTime;
         _ULARGE_INTEGER result;
@@ -572,18 +591,38 @@ namespace Core {
         fileTime.dwHighDateTime = result.HighPart;
 
         ::FileTimeToSystemTime(&fileTime, &_time);
-        if (IsLocalTime()) {
+        if (localTime) {
             SYSTEMTIME convertedTime;
-            SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
+            TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
             _time = convertedTime;
         }
     }
 
     Time::Time(const FILETIME& time, bool localTime /*= false*/)
         : _time()
-        , _isLocalTime(localTime)
     {
         ::FileTimeToSystemTime(&time, &_time);
+        if (localTime) {
+            SYSTEMTIME convertedTime;
+            TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
+            _time = convertedTime;
+        }
+    }
+
+    Time Time::ToLocal() const {
+        FILETIME fileTime, localFileTime;
+        SYSTEMTIME local;
+        SystemTimeToFileTime(&_time, &fileTime);
+        FileTimeToLocalFileTime(&fileTime, &localFileTime);
+        FileTimeToSystemTime(&localFileTime, &local);
+        return (Time(
+            static_cast<uint16_t>(local.wYear), 
+            static_cast<uint8_t>(local.wMonth),
+            static_cast<uint8_t>(local.wDay),
+            static_cast<uint8_t>(local.wHour),
+            static_cast<uint8_t>(local.wMinute),
+            static_cast<uint8_t>(local.wSecond),
+            static_cast<uint16_t>(local.wMilliseconds), false));
     }
 
     // Return the time in MicroSeconds, since since January 1, 1970 00:00:00 (UTC)...
@@ -591,13 +630,7 @@ namespace Core {
     {
         // Contains a 64-bit value representing the number of 100-nanosecond intervals since January 1, 1601 (UTC).
         FILETIME fileTime{};
-        if (IsLocalTime()) {
-            SYSTEMTIME convertedTime;
-            TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
-            ::SystemTimeToFileTime(&convertedTime, &fileTime);
-        } else {
-            ::SystemTimeToFileTime(&_time, &fileTime);
-        }
+        ::SystemTimeToFileTime(&_time, &fileTime);
         _ULARGE_INTEGER result;
 
         result.LowPart = fileTime.dwLowDateTime;
@@ -673,13 +706,9 @@ namespace Core {
 
         const TCHAR* zone = (localTime == false ? _T(" GMT") : nullptr);
 
-        if (localTime != IsLocalTime()) {
+        if (localTime) {
             SYSTEMTIME convertedTime;
-            if (IsLocalTime()) {
-                TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
-            } else {
-                SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
-            }
+            SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
             Time converted(convertedTime, localTime);
             _stprintf(buffer, _T("%02d:%02d:%02d"), converted.Hours(), converted.Minutes(), converted.Seconds());
         } else
@@ -705,14 +734,10 @@ namespace Core {
 
         const TCHAR* zone = (localTime == false ? _T("GMT") : _T(""));
 
-        if (localTime != IsLocalTime()) {
+        if (localTime == true) {
             SYSTEMTIME convertedTime;
-            if (IsLocalTime()) {
-                TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
-            } else {
-                SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
-            }
-            Time converted(convertedTime, localTime);
+            SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
+           Time converted(convertedTime, localTime);
             _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d %s"), converted.WeekDayName(),
                 converted.Day(), converted.MonthName(), converted.Year(),
                 converted.Hours(), converted.Minutes(), converted.Seconds(), zone);
@@ -734,13 +759,9 @@ namespace Core {
 
         const TCHAR* zone = (localTime == false ? _T("Z") : _T(""));
 
-        if (localTime != IsLocalTime()) {
+        if (localTime == true) {
             SYSTEMTIME convertedTime;
-            if (IsLocalTime()) {
-                TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
-            } else {
-                SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
-            }
+            SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
 
             Time converted(convertedTime, localTime);
 #pragma warning(disable : 4996)
@@ -779,6 +800,21 @@ namespace Core {
         _ticks = (static_cast<uint64_t>(time.tv_sec) * MicroSecondsPerSecond) + (time.tv_nsec / NanoSecondsPerMicroSecond) + OffsetTicksForEpoch;
     }
 
+    Time Time::ToLocal() const {
+        struct tm local = _time;
+        time_t flatTime;
+        flatTime = mktime(&local);
+        localtime_r(&flatTime, &local);
+
+        return (Time(
+            static_cast<uint16_t>(local.tm_year + 1900),
+            static_cast<uint8_t>(local.tm_mon + 1),
+            static_cast<uint8_t>(local.tm_mday),
+            static_cast<uint8_t>(local.tm_hour),
+            static_cast<uint8_t>(local.tm_min),
+            static_cast<uint8_t>(local.tm_sec),
+            0, false));
+    }
 
     // Copyright (c) 2001-2006, NLnet Labs. All rights reserved.
     // Licensed under the BSD-3 License"
@@ -854,6 +890,21 @@ namespace Core {
 
         // Calculate ticks..
         _ticks = (static_cast<uint64_t>(flatTime) * static_cast<uint64_t>(MicroSecondsPerSecond)) + (static_cast<uint64_t>(millisecond) * static_cast<uint64_t>(MicroSecondsPerMilliSecond)) + OffsetTicksForEpoch;
+    }
+
+    /**
+     * Get day count since Monday, January 1, 4713 BC
+     * https://en.wikipedia.org/wiki/Julian_day
+     */
+    double Time::JulianDate() const {
+        uint16_t year = _time.tm_year + 1900;
+        uint8_t month = _time.tm_mon + 1;
+        uint8_t day = _time.tm_mday;
+        uint8_t hour = _time.tm_hour;
+        uint8_t minutes = _time.tm_min;
+        uint8_t seconds = _time.tm_sec;
+
+        return JulianJDConverter(year, month, day, hour, minutes, seconds);
     }
 
     Time::Time(const struct timeval& info)
@@ -1003,26 +1054,26 @@ namespace Core {
 
     string Time::ToRFC1123() const
     {
-        return ToRFC1123(IsLocalTime());
+        return ToRFC1123(false);
     }
 
     string Time::ToISO8601() const
     {
-        return ToISO8601(IsLocalTime());
+        return ToISO8601(false);
     }
 
     Time& Time::Add(const uint32_t timeInMilliseconds)
     {
         // Calculate the new time !!
         uint64_t newTime = Ticks() + static_cast<uint64_t>(timeInMilliseconds) * MilliSecondsPerSecond;
-        return (operator=(Time(newTime, IsLocalTime())));
+        return (operator=(Time(newTime, false)));
     }
 
     Time& Time::Sub(const uint32_t timeInMilliseconds)
     {
         // Calculate the new time !!
         uint64_t newTime = Ticks() - static_cast<uint64_t>(timeInMilliseconds) * MilliSecondsPerSecond;
-        return (operator=(Time(newTime, IsLocalTime())));
+        return (operator=(Time(newTime, false)));
     }
 
     uint64_t Time::NTPTime() const

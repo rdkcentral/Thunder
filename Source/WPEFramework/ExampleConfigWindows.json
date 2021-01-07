@@ -5,9 +5,9 @@
     "ipv6": false,
     "persistentpath": "C:/Projects/Domotica/artifacts/Persistent",
     "volatilepath": "C:/Projects/Domotica/artifacts/temp",
-    "datapath": "C:/Projects/Domotica/artifacts/Debug/Plugins",
-    "systempath": "C:/Projects/Domotica/artifacts/Debug",
-    "proxystubpath": "C:/Projects/Domotica/artifacts/ProxyStubs/Debug",
+    "datapath": "C:/Projects/Domotica/artifacts/Release/Plugins",
+    "systempath": "C:/Projects/Domotica/artifacts/Release",
+    "proxystubpath": "C:/Projects/Domotica/artifacts/ProxyStubs/Release",
     "communicator": "127.0.0.1:62000",
     "redirect": "Service/Controller/UI",
     "tracing": [
@@ -54,7 +54,7 @@
             "callsign": "Butler",
             "locator": "libButler.so",
             "classname": "Butler",
-            "autostart": false
+            "autostart": true
         },
         {
             "callsign": "WebBridge",
@@ -66,7 +66,7 @@
             "callsign": "QuizzMaster",
             "locator": "libQuizzMaster.so",
             "classname": "QuizzMaster",
-            "autostart": false
+            "autostart": true
         },
         {
             "callsign": "StateController",
@@ -75,12 +75,54 @@
             "autostart": false
         },
         {
+            "autostart": true,
+            "callsign": "VirtualControl",
+            "classname": "VirtualControl",
+            "locator": "libVirtualControl.so",
+            "configuration": {
+                "sunriseset": 365,
+                "virtuals": [
+                    {
+                        "id": 1,
+                        "passive": false,
+                        "min": "0",
+                        "max": "1"
+                    },
+                    {
+                        "id": 2,
+                        "passive": false,
+                        "min": "0",
+                        "max": "100"
+                    },
+                    {
+                        "id": 4,
+                        "passive": false,
+                        "min": "0",
+                        "max": "1"
+                    },
+                    {
+                        "id": 5,
+                        "passive": false,
+                        "min": "0",
+                        "max": "1"
+                    }
+
+                ]
+            }
+        },
+        {
+            "autostart": true,
+            "callsign": "ScriptEngine",
+            "classname": "ScriptEngine",
+            "locator": "libScriptEngine.so"
+        },
+        {
             "callsign": "IOControl",
             "locator": "libIOControl.so",
             "classname": "IOControl",
             "autostart": false,
             "configuration": {
-                "port": "\\\\.\\COM17",
+                "port": "\\\\.\\COM10",
                 "pins": [
                     {
                         "id": 14,
@@ -143,7 +185,7 @@
             "callsign": "JSONRPCPlugin",
             "locator": "libJSONRPCPlugin.so",
             "classname": "JSONRPCPlugin",
-            "autostart": true
+            "autostart": false
         },
         {
             "callsign": "OpenCDMi",
@@ -199,7 +241,7 @@
             "callsign": "DeviceInfo",
             "locator": "libdeviceinfo.so",
             "classname": "DeviceInfo",
-            "autostart": true,
+            "autostart": false,
             "configuration": {
                 "location": "external",
                 "identifier": "internal",
@@ -261,7 +303,7 @@
             "callsign": "DIALServer",
             "locator": "libdialserver.so",
             "classname": "DIALServer",
-            "autostart": true,
+            "autostart": false,
             "configuration": {
                 "name": "ExploraUltra",
                 "model": "Generic Platform",

@@ -134,6 +134,8 @@ namespace PluginHost {
             virtual string Country() const = 0;
             virtual string Region() const = 0;
             virtual string City() const = 0;
+            virtual int32_t Latitude() const { return (51832547); }
+            virtual int32_t Longitude() const { return (5674899); }
         };
 
         // Device specific identification.
