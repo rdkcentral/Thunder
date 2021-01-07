@@ -617,64 +617,69 @@ namespace Core {
         sprintf(pagemapPath, "/proc/%u/pagemap", _pid);
 
         FILE* pagemapFile = fopen(pagemapPath, "rb");
-        while (!is01.eof()) {
-            string readLine;
-            getline(is01, readLine);
-            if (readLine.empty())
-                continue;
+        if (pagemapFile == nullptr) {
+            TRACE_L1("Could not open pagemap file: %s", pagemapPath);
+        } else {
+            while (!is01.eof()) {
+                string readLine;
+                getline(is01, readLine);
+                if (readLine.empty()) {
+                    continue;
+                }
 
-            MemRange range(readLine);
-            uint32_t pageSize = Core::SystemInfo::Instance().GetPageSize();
-            uint64_t pageCount = (range.m_end - range.m_start) / pageSize;
-            uint64_t pageMapOffset = (range.m_start / pageSize) * sizeof(uint64_t);
-            int fseekStatus = fseek(pagemapFile, pageMapOffset, SEEK_SET);
-            if (fseekStatus != 0) {
-                TRACE_L1("Failed to seek in %s", pagemapPath);
-                continue;
+                MemRange range(readLine);
+                uint32_t pageSize = Core::SystemInfo::Instance().GetPageSize();
+                uint64_t pageCount = (range.m_end - range.m_start) / pageSize;
+                uint64_t pageMapOffset = (range.m_start / pageSize) * sizeof(uint64_t);
+                int fseekStatus = fseek(pagemapFile, pageMapOffset, SEEK_SET);
+                if (fseekStatus != 0) {
+                    TRACE_L1("Failed to seek in %s", pagemapPath);
+                    continue;
+                }
+
+                for (uint64_t i = 0; i < pageCount; i++) {
+                    uint64_t pageData = 0;
+                    size_t readCount = fread(&pageData, sizeof(uint64_t), 1, pagemapFile);
+                    if (readCount != 1) {
+                        TRACE_L1("Failed to read pageInfo from %s", pagemapPath);
+                        continue;
+                    }
+
+                    // Skip pages that are swapped out.
+                    bool isSwapped = ((pageData >> 62) & 1) != 0;
+                    if (isSwapped) {
+                        continue;
+                    }
+
+                    // Skip pages that aren't present.
+                    bool isPresent = ((pageData >> 63) & 1) != 0;
+                    if (!isPresent) {
+                        continue;
+                    }
+
+                    // Skip pages mapped to files.
+                    bool isFilePage = ((pageData >> 61) & 1) != 0;
+                    if (isFilePage) {
+                        continue;
+                    }
+
+                    // Lower 54 bits contain actual page frame number (PFN).
+                    uint64_t filter = (static_cast<uint64_t>(1) << 55) - 1;
+                    uint32_t pageFrameNumber = static_cast<uint32_t>(pageData & filter);
+
+                    uint32_t bufferIndex = pageFrameNumber / 32;
+                    if (bufferIndex > entryCount) {
+                        TRACE_L1("Tried to mark page outside of buffer: %u (%u)", bufferIndex, pageFrameNumber);
+                        continue;
+                    }
+
+                    uint32_t bitIndex = pageFrameNumber % 32;
+
+                    bitSet[bufferIndex] |= static_cast<uint32_t>(1) << bitIndex;
+                }
             }
-
-            for (uint64_t i = 0; i < pageCount; i++) {
-                uint64_t pageData = 0;
-                size_t readCount = fread(&pageData, sizeof(uint64_t), 1, pagemapFile);
-                if (readCount != 1) {
-                    TRACE_L1("Failed to read pageInfo from %s", pagemapPath);
-                }
-
-                // Skip pages that are swapped out.
-                bool isSwapped = ((pageData >> 62) & 1) != 0;
-                if (isSwapped) {
-                    continue;
-                }
-
-                // Skip pages that aren't present.
-                bool isPresent = ((pageData >> 63) & 1) != 0;
-                if (!isPresent) {
-                    continue;
-                }
-
-                // Skip pages mapped to files.
-                bool isFilePage = ((pageData >> 61) & 1) != 0;
-                if (isFilePage) {
-                    continue;
-                }
-
-                // Lower 54 bits contain actual page frame number (PFN).
-                uint64_t filter = (static_cast<uint64_t>(1) << 55) - 1;
-                uint32_t pageFrameNumber = static_cast<uint32_t>(pageData & filter);
-
-                uint32_t bufferIndex = pageFrameNumber / 32;
-                if (bufferIndex > entryCount) {
-                    TRACE_L1("Tried to mark page outside of buffer: %u (%u)", bufferIndex, pageFrameNumber);
-                    continue;
-                }
-
-                uint32_t bitIndex = pageFrameNumber % 32;
-
-                bitSet[bufferIndex] |= static_cast<uint32_t>(1) << bitIndex;
-            }
+            fclose(pagemapFile);
         }
-
-        fclose(pagemapFile);
 #endif // __WINDOWS__
     }
 
