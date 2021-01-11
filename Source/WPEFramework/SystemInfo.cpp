@@ -54,6 +54,7 @@ namespace PluginHost {
         ASSERT(std::find(_notificationClients.begin(), _notificationClients.end(), notification) == _notificationClients.end());
 
         _notificationClients.push_back(notification);
+        notification->AddRef();
 
         // Give the registering sink a chance to evaluate the current info before one actually changes.
         notification->Updated();
@@ -71,6 +72,7 @@ namespace PluginHost {
 
         if (index != _notificationClients.end()) {
             _notificationClients.erase(index);
+            notification->Release();
         } else {
             TRACE_L1("Notification(%p) not found.", notification);
         }
