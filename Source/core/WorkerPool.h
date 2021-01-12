@@ -227,7 +227,7 @@ namespace Core {
         {
 
             _metadata.Pending = _threadPool.Pending();
-            _metadata.Occupation = _threadPool.Active();
+            _metadata.Occupation = _threadPool.Active() + _external.IsActive();
             _metadata.Slot[0] = _external.Runs();
 
             _threadPool.Runs(_threadPool.Count(), &(_metadata.Slot[1]));
