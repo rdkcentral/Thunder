@@ -594,7 +594,7 @@ namespace JSONRPC {
                 _localSpace = localCallsign;
             }
 
-            uint8_t version = Core::JSONRPC::Message::Version(_callsign);
+            uint8_t version = Core::JSONRPC::Message::Version(callsign + '.');
             if( version != static_cast<uint8_t>(~0) ) {
                 _versionstring = '.' + Core::NumberType<uint8_t>(version).Text();
             }
@@ -1109,14 +1109,17 @@ namespace JSONRPC {
                 ASSERT(newElement.second == true);
 
                 if (newElement.second == true) {
+                    uint64_t expiry = newElement.first->second.Expiry();
+                    _adminLock.Unlock();
 
                     _channel->Submit(Core::ProxyType<INTERFACE>(message));
 
                     result = Core::ERROR_NONE;
 
                     message.Release();
-                    if ((_scheduledTime == 0) || (_scheduledTime > newElement.first->second.Expiry())) {
-                        _scheduledTime = newElement.first->second.Expiry();
+                    _adminLock.Lock();
+                    if ((_scheduledTime == 0) || (_scheduledTime > expiry)) {
+                        _scheduledTime = expiry;
                         CommunicationChannel::Trigger(_scheduledTime, this);
                     }
                 }
