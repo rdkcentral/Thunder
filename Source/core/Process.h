@@ -220,7 +220,7 @@ namespace Core {
         Process(const Process&) = delete;
         Process& operator=(const Process&) = delete;
 
-        Process(const bool capture)
+        explicit Process(const bool capture, const process_t pid = 0)
             : _argc(0)
             , _parameters(nullptr)
             , _exitCode(static_cast<uint32_t>(~0))
@@ -228,7 +228,7 @@ namespace Core {
             , _stdin(capture ? -1 : 0)
             , _stdout(capture ? -1 : 0)
             , _stderr(capture ? -1 : 0)
-            , _PID(0)
+            , _PID(pid)
 #else
             , _stdin(capture ? reinterpret_cast<HANDLE>(~0) : nullptr)
             , _stdout(capture ? reinterpret_cast<HANDLE>(~0) : nullptr)
@@ -594,28 +594,6 @@ namespace Core {
         {
             return (_exitCode);
         }
-
-        /*
-        Process(process_t pid)
-            : _argc(0)
-            , _parameters(nullptr)
-            , _exitCode(static_cast<uint32_t>(~0))
-#ifndef __WINDOWS__
-            , _stdin(0)
-            , _stdout(0)
-            , _stderr(0)
-            , _PID(pid)
-#else
-            , _stdin(nullptr)
-            , _stdout(nullptr)
-            , _stderr(nullptr)
-#endif
-        {
-#ifdef __WINDOWS__
-            ::memset(&_info, 0, sizeof(_info));
-#endif
-        }
-        */
 
     private:
         uint16_t _argc;
