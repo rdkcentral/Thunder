@@ -2126,7 +2126,7 @@ namespace PluginHost {
                         Job::Submit(response);
 
                         if (_request->Connection.Value() == Web::Request::CONNECTION_CLOSE) {
-                            Job::Close();
+                            Job::RequestClose();
                         }
                     }
 
