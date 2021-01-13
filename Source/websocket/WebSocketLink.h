@@ -643,7 +643,7 @@ namespace Web {
                 return (_handler.ReceiveInProgress() == false);
             }
             inline void Suspend() {
-                _state = SUSPENDED;
+                _state = static_cast<EnumlinkState>(_state | SUSPENDED);
             }
             inline const string& Path() const
             {
