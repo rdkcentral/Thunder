@@ -2503,7 +2503,7 @@ namespace PluginHost {
             virtual void Send(const Core::ProxyType<Web::Response>& response)
             {
                 if (_requestClose == true) {
-                    PluginHost::Channel::Close(0);
+                    PluginHost::Channel::Suspend();
                 }
                 TRACE(WebFlow, (response));
             }

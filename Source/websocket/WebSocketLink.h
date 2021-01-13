@@ -642,6 +642,9 @@ namespace Web {
             {
                 return (_handler.ReceiveInProgress() == false);
             }
+            inline void Suspend() {
+                _state = SUSPENDED;
+            }
             inline const string& Path() const
             {
                 return (_path);
@@ -1185,6 +1188,9 @@ namespace Web {
         inline bool IsSuspended() const
         {
             return (_channel.IsSuspended());
+        }
+        inline void Suspend() {
+            _channel.Suspend();
         }
         inline bool IsClosed() const
         {
