@@ -209,6 +209,7 @@ namespace Plugin {
                 } else {
                     subSystems->Unregister(&_systemInfoReport);
                 }
+                subSystems->Release();
             }
         }
         inline uint32_t Stopped()
