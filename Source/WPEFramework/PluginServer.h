@@ -1633,7 +1633,7 @@ namespace PluginHost {
                 sink->AddRef();
                 _notifiers.push_back(sink);
 
-                // Tell this "new" sink all our active/inactive plugins..
+                // Tell this "new" sink all our actived plugins..
                 std::map<const string, Core::ProxyType<Service>>::iterator index(_services.begin());
 
                 // Notifty all plugins that we have sofar..
@@ -1644,7 +1644,7 @@ namespace PluginHost {
 
                     ASSERT(service.IsValid());
 
-                    if (service.IsValid() == true) {
+                    if ( (service.IsValid() == true) && (service->State() == IShell::ACTIVATED) ) {
                         sink->StateChange(&(service.operator*()));
                     }
 
