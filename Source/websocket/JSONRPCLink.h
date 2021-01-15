@@ -676,6 +676,9 @@ namespace JSONRPC {
 
             if ((result != Core::ERROR_NONE) || (response.IsValid() == false) || (response->Error.IsSet() == true)) {
                 _handler.Unregister(eventName);
+                if ((result == Core::ERROR_NONE) && (response->Error.IsSet() == true)) {
+                    result = response->Error.Code.Value();
+                }
             }
 
             return (result);
@@ -691,6 +694,9 @@ namespace JSONRPC {
 
             if ((result != Core::ERROR_NONE) || (response.IsValid() == false) || (response->Error.IsSet() == true)) {
                 _handler.Unregister(eventName);
+                if ((result == Core::ERROR_NONE) && (response->Error.IsSet() == true)) {
+                    result = response->Error.Code.Value();
+                }
             }
 
             return (result);
