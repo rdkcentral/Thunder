@@ -60,8 +60,9 @@ if(NXCLIENT_FOUND)
     else()
         include(GetExternalCode)
         set(BROADCAST_IMPLEMENTATION_VERSION "master" CACHE STRING "broadcast implementation version")
+        set(BROADCAST_IMPLEMENTATION_REPOSITORY "https://code.rdkcentral.com/r/soc/broadcom/components/rdkcentral/thunder/broadcast" CACHE STRING "broadcast implementation repository")
         GetExternalCode(
-            GIT_REPOSITORY "https://code.rdkcentral.com/r/soc/broadcom/components/rdkcentral/thunder/broadcast"
+            GIT_REPOSITORY ${BROADCAST_IMPLEMENTATION_REPOSITORY}
             GIT_TAG ${BROADCAST_IMPLEMENTATION_VERSION}
             SOURCE_DIR "Implementation/Nexus"
         )
