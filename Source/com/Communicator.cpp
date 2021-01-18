@@ -106,7 +106,7 @@ namespace RPC {
         LocalClosingInfo& operator=(const LocalClosingInfo& RHS) = delete;
 
         explicit LocalClosingInfo(const uint32_t pid)
-            : _process(pid)
+            : _process(false, pid)
         {
         }
         ~LocalClosingInfo() override = default;
@@ -511,5 +511,9 @@ namespace RPC {
         // Set event so WaitForCompletion() can continue.
         _announceEvent.SetEvent();
     }
+
+    //We may eliminate the following statement when switched to C++17 compiler
+    constexpr uint32_t RPC::ProcessShutdown::DestructionStackSize;
+
 }
 }

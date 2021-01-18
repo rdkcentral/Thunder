@@ -167,14 +167,16 @@ namespace ProxyStub {
                 if (outbound == false) {
                     _mode |= CACHING_RELEASE;
                 }
+                else {
+                    // This is an additional call to an interface for which we already have a Proxy issued.
+                    // This is triggerd by the other side, offering us an interface. So once this proxy goes
+                    // out of scope, we also need to "release" the AddRef associated with this on the other
+                    // side..
+                    _remoteReferences++;
+                }
+
                 // This will increment the refcount of this PS, on behalf of the user.
                 result = _parent.QueryInterface(id);
-
-                // This is an additional call to an interface for which we already have a Proxy issued.
-                // This is triggerd by the other side, offering us an interface. So once this proxy goes
-                // out of scope, we also need to "release" the AddRef associated with this on the other
-                // side..
-                _remoteReferences++;
             }
             _adminLock.Unlock();
 

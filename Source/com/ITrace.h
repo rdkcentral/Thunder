@@ -17,7 +17,22 @@
  * limitations under the License.
  */
 
-#include "Module.h"
-#include "IUnknown.h"
+#pragma once
 
-#include "@PROXYSTUB_COM_SOURCE@"
+#include "Ids.h"
+
+namespace WPEFramework {
+    namespace Trace {
+        struct EXTERNAL ITraceIterator : virtual public Core::IUnknown {
+            enum { ID = RPC::ID_TRACEITERATOR };
+
+            virtual void Reset() = 0;
+            virtual bool Info(bool& enabled /* @out */, string& module /* @out */, string& category /* @out */) const = 0;
+        };
+        struct EXTERNAL ITraceController : virtual public Core::IUnknown {
+            enum { ID = RPC::ID_TRACECONTROLLER };
+
+            virtual void Enable(const bool enabled, const string& module, const string& category) = 0;
+        };
+    }
+}
