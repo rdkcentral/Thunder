@@ -45,12 +45,19 @@ namespace RPC {
     /* @stubgen:skip */
     template<typename INTERFACE>
     class IteratorType : public INTERFACE {
-    private:
+    public:
+        using Container = typename std::list<typename INTERFACE::Element>;
+
         IteratorType() = delete;
         IteratorType(const IteratorType&) = delete;
         IteratorType& operator=(const IteratorType&) = delete;
 
-    public:
+        explicit IteratorType(Container&& container)
+            : _container(std::forward(container))
+            , _index(0)
+        {
+            _iterator = _container.begin();
+        }
         template <typename CONTAINER, typename PREDICATE>
         IteratorType(const CONTAINER& container, PREDICATE predicate)
             : _container()
@@ -185,8 +192,8 @@ namespace RPC {
         END_INTERFACE_MAP
 
     private:
-        typename std::list<typename INTERFACE::Element> _container;
-        mutable typename std::list<typename INTERFACE::Element>::iterator _iterator;
+        Container _container;
+        mutable typename Container::iterator _iterator;
         mutable uint32_t _index;
     };
 }
