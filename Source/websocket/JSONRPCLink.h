@@ -1238,7 +1238,6 @@ namespace JSONRPC {
     private:
         class Connection : public LinkType<INTERFACE> {
         private:
-            static constexpr uint32_t ConnectionWaitTime = 3000;
             using Base = LinkType<INTERFACE>;
         public:
             static constexpr uint32_t DefaultWaitTime = Base::DefaultWaitTime;
@@ -1374,7 +1373,7 @@ namespace JSONRPC {
             {
                 if (result == nullptr) {
                     string method = string("status@") + Base::Callsign();
-                    _monitor.template Dispatch<void>(ConnectionWaitTime, method, &Connection::monitor_response, this);
+                    _monitor.template Dispatch<void>(DefaultWaitTime, method, &Connection::monitor_response, this);
                 }
             }
             void next_event(const Core::JSON::String& parameters, const Core::JSONRPC::Error* result)
@@ -1383,7 +1382,7 @@ namespace JSONRPC {
                 if (_events.empty() == false) {
                     const string parameters("{ \"event\": \"" + _events.front() + "\", \"id\": \"" + Base::Namespace() + "\"}");
                     _events.pop_front();
-                    LinkType<INTERFACE>::Dispatch(ConnectionWaitTime, _T("register"), parameters, &Connection::next_event, this);
+                    LinkType<INTERFACE>::Dispatch(DefaultWaitTime, _T("register"), parameters, &Connection::next_event, this);
                 }
                 else {
                     SetState(JSONRPC::JSONPluginState::ACTIVATED);
@@ -1395,7 +1394,7 @@ namespace JSONRPC {
                 // Time to open up the monitor
                 const string parameters("{ \"event\": \"statechange\", \"id\": \"" + _monitor.Namespace() + "\"}");
 
-                _monitor.template Dispatch<string>(ConnectionWaitTime, "register", parameters, &Connection::monitor_on, this);
+                _monitor.template Dispatch<string>(DefaultWaitTime, "register", parameters, &Connection::monitor_on, this);
             }
 
         private:

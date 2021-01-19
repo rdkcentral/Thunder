@@ -22,6 +22,7 @@
 #ifndef __WINDOWS__
 #include <dlfcn.h> // for dladdr
 #include <syslog.h>
+#include <regex>
 #endif
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
@@ -229,6 +230,13 @@ namespace PluginHost {
         if ((signo == SIGTERM) || (signo == SIGQUIT)) {
             ExitHandler::Construct();
         }
+    }
+    // Workaround solution: OCDM plugin supports blacklist feature that uses regex.
+    // That prevents unloading of OCDM shared lib from memory after de-activation.
+    // Following is the workaround solution although it is not being called anywhere.
+    void RegexInit()
+    {
+        std::regex_match(std::string(""), std::regex(""));
     }
 
 #endif
