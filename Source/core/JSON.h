@@ -1115,7 +1115,9 @@ namespace Core {
 
                 }
 
-                loaded++;
+                if (stream[loaded] == '\"') {
+                    loaded++;
+                }
 
                 if(str == IElement::NullTag)
                 {
