@@ -4,7 +4,16 @@
 			"path": ".."
 		},
 		{
+			"path": "../../ThunderInterfaces"
+		},
+		{
+			"path": "../../ThunderClientLibraries"
+		},
+		{
 			"path": "../../ThunderNanoServices"
+		},
+		{
+			"path": "../../rdkservices"
 		},
 		{
 			"path": "../Tools"
