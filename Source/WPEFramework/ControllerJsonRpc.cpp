@@ -182,6 +182,7 @@ namespace Plugin {
     // Return codes:
     //  - ERROR_NONE: Success
     //  - ERROR_UNKNOWN_KEY: The given path was incorrect
+    //  - ERROR_DESTRUCTION_FAILED : Failed to delete given path
     //  - ERROR_PRIVILEGED_REQUEST: The path points outside of persistent directory or some files/directories couldn't have been deleted
     uint32_t Controller::endpoint_delete(const DeleteParamsData& params)
     {
@@ -191,9 +192,17 @@ namespace Plugin {
         if (path.empty() == false) {
             if (path.find("..") == string::npos) {
                 ASSERT(_service != nullptr);
+                Core::File file(_service->PersistentPath() +  path);
 
-                Core::Directory((_service->PersistentPath() +  path).c_str()).Destroy(true);
-                result = Core::ERROR_NONE; // FIXME: return the real deletion result instead
+                if (file.Exists() == true) {
+                    if (file.IsDirectory() == true) {
+                        result = (Core::Directory((_service->PersistentPath() +  path).c_str()).Destroy(true) == true) ? Core::ERROR_NONE : Core::ERROR_DESTRUCTION_FAILED;
+                    } else {
+                        result = (file.Destroy() == true) ? Core::ERROR_NONE : Core::ERROR_DESTRUCTION_FAILED;
+                    }
+                } else {
+                    result = Core::ERROR_UNKNOWN_KEY;
+                }
             }
             else {
                 result = Core::ERROR_PRIVILIGED_REQUEST;
