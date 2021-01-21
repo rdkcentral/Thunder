@@ -78,7 +78,7 @@ namespace Plugin {
             // "239.255.255.250:1900";
             Core::NodeId node (config.Probe.Node.Value().c_str());
 
-            if (node.IsValid() == true) {
+            if (node.IsValid() == false) {
                 SYSLOG(Logging::Startup, (_T("Probing requested but invalid IP address [%s]"), config.Probe.Node.Value().c_str()));
             }
             else {

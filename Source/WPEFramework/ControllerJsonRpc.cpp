@@ -154,8 +154,9 @@ namespace Plugin {
     {
         const uint8_t& ttl = params.Ttl.Value();
 
-        ASSERT(_probe != nullptr);
-        _probe->Ping(ttl);
+        if (_probe != nullptr) {
+            _probe->Ping(ttl);
+        }
 
         return Core::ERROR_NONE;
     }
@@ -343,11 +344,14 @@ namespace Plugin {
     uint32_t Controller::get_discoveryresults(Core::JSON::ArrayType<PluginHost::MetaData::Bridge>& response) const
     {
         ASSERT(_probe != nullptr);
-        Probe::Iterator index(_probe->Instances());
 
-        while (index.Next() == true) {
-            PluginHost::MetaData::Bridge element((*index).URL().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure());
-            response.Add(element);
+        if (_probe != nullptr) {
+            Probe::Iterator index(_probe->Instances());
+
+            while (index.Next() == true) {
+                PluginHost::MetaData::Bridge element((*index).URL().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure());
+                response.Add(element);
+            }
         }
 
         return Core::ERROR_NONE;
