@@ -28,7 +28,8 @@ option(BLUETOOTH
         "Enable support for Bluetooth in the core." OFF)
 
 find_package(Threads REQUIRED)
-
+find_package(ExecInfo)
+find_package(LIBRT)
 
 add_library(${TARGET} SHARED
 	DoorBell.cpp
@@ -173,14 +174,13 @@ if(DEADLOCK_DETECTION)
     message(STATUS "Enabled deadlock detection.")
 endif()
 
+
 target_link_libraries(${TARGET}
         PUBLIC
           CompileSettings::CompileSettings
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
           ${CMAKE_DL_LIBS}
-	  ${LIBEXECINFO_LIBRARY}
-          LIBRT::LIBRT
           Threads::Threads
         )
 
@@ -199,11 +199,17 @@ target_include_directories( ${TARGET}
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../> #core.h
           $<INSTALL_INTERFACE:include/${NAMESPACE}>)
 
-find_package(LIBRT)
 if(LIBRT_FOUND)
     target_link_libraries(${TARGET}
             PRIVATE
               LIBRT::LIBRT
+            )
+endif()
+
+if(ExecInfo_FOUND)
+    target_link_libraries(${TARGET}
+            PRIVATE
+              ${LIBEXECINFO_LIBRARY}
             )
 endif()
 
