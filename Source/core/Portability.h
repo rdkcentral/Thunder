@@ -399,6 +399,7 @@ inline void EXTERNAL SleepS(unsigned int a_Time)
 
 #ifdef __LINUX__
 #if !defined(OS_ANDROID) && !defined(OS_NACL) && defined(__GLIBC__)
+#define THUNDER_BACKTRACE 1
 #include <execinfo.h>
 #endif
 #endif
