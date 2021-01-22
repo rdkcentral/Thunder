@@ -30,7 +30,7 @@ import copy
 import CppParser
 from collections import OrderedDict
 
-VERSION = "1.6.5"
+VERSION = "1.6.6"
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -229,10 +229,10 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
         emit.Line("//")
         emit.Line()
 
-        if os.path.isfile(os.path.join(os.path.dirname(source_file), interface_header_name)):
-            emit.Line('#include "%s"' % interface_header_name)
         if os.path.isfile(os.path.join(os.path.dirname(source_file), "Module.h")):
             emit.Line('#include "Module.h"')
+        if os.path.isfile(os.path.join(os.path.dirname(source_file), interface_header_name)):
+            emit.Line('#include "%s"' % interface_header_name)
         emit.Line()
 
         emit.Line('#include <com/com.h>')
