@@ -49,7 +49,7 @@ namespace Crypto {
             ~Handler();
 
         public:
-            bool Initialize() override;
+            uint32_t Initialize() override;
 
             int32_t Read(uint8_t buffer[], const uint16_t length) const override;
             int32_t Write(const uint8_t buffer[], const uint16_t length) override;
