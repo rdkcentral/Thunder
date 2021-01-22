@@ -341,8 +341,9 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
                 TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
-                // Fire up the interface. Let it handle the messages.
-                ErrorMessage(_handler->Initialize(this));
+                TRACE_DURATION(ErrorMessage(_handler->Initialize(this)); 
+                    , _T("Plugin [%s]:[%s] Initialize"), className.c_str(), callSign.c_str()
+                )
 
                 if (HasError() == true) {
                     result = Core::ERROR_GENERAL;
@@ -434,7 +435,9 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
                 TRACE(Activity, (_T("Deactivation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
-                _handler->Deinitialize(this);
+                TRACE_DURATION(_handler->Deinitialize(this);
+                    , _T("Plugin [%s]:[%s] Deinitialize"), className.c_str(), callSign.c_str()
+                )
 
                 Lock();
 

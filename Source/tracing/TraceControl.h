@@ -21,6 +21,7 @@
 #define __TRACECONTROL_H
 
 // ---- Include system wide include files ----
+#include <inttypes.h>
 
 // ---- Include local include files ----
 #include "ITraceControl.h"
@@ -51,6 +52,16 @@
             __FUNCTION__,                                                              \
             &__message__);                                                             \
     }
+
+#define TRACE_DURATION(CODE, ...)                                         \
+    WPEFramework::Core::Time start = WPEFramework::Core::Time::Now();     \
+    CODE                                                                  \
+    TRACE(WPEFramework::Trace::Duration, (start, ##__VA_ARGS__));
+
+#define TRACE_DURATION_GLOBAL(CODE, ...)                                  \
+    WPEFramework::Core::Time start = WPEFramework::Core::Time::Now();     \
+    CODE                                                                  \
+    TRACE_GLOBAL(WPEFramework::Trace::Duration, (start, ##__VA_ARGS__));
 
 // ---- Helper functions ----
 
