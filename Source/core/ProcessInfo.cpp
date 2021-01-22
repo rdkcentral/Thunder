@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include "ProcessInfo.h"
 #include "FileSystem.h"
 #include "SystemInfo.h"
@@ -28,43 +28,41 @@
 #include <grp.h>
 #include <limits.h>
 #include <pwd.h>
-#include <unistd.h>
 #include <sys/prctl.h>
+#include <unistd.h>
 #endif
 
+#include <algorithm>
 #include <fstream>
 #include <sstream>
-#include <algorithm>
 
 #ifdef __APPLE__
 #include <libproc.h>
 #endif
 
-namespace
-{
-    // Used to parse /proc/PID/maps
-    struct MemRange
+namespace {
+// Used to parse /proc/PID/maps
+struct MemRange {
+    uintptr_t m_start;
+    uintptr_t m_end;
+
+    explicit MemRange(const string& mapsLine)
+        : m_start(0)
+        , m_end(0)
     {
-        uintptr_t m_start;
-        uintptr_t m_end;
+        // TODO: sscanf seems to be perfect here
+        size_t spaceIndex = mapsLine.find(' ');
+        string rangeStr = mapsLine.substr(0, spaceIndex);
+        size_t dashIndex = rangeStr.find('-');
+        string startStr = rangeStr.substr(0, dashIndex);
+        string endStr = rangeStr.substr(dashIndex + 1);
 
-        explicit MemRange(const string & mapsLine)
-            : m_start(0)
-            , m_end(0)
-        {
-            // TODO: sscanf seems to be perfect here
-            size_t spaceIndex = mapsLine.find(' ');
-            string rangeStr = mapsLine.substr(0, spaceIndex);
-            size_t dashIndex = rangeStr.find('-');
-            string startStr = rangeStr.substr(0, dashIndex);
-            string endStr = rangeStr.substr(dashIndex + 1);
-
-            std::istringstream issStart(startStr);
-            issStart >> std::hex >> m_start;
-            std::istringstream issEnd(endStr);
-            issEnd >> std::hex >> m_end;
-        }
-    };
+        std::istringstream issStart(startStr);
+        issStart >> std::hex >> m_start;
+        std::istringstream issEnd(endStr);
+        issEnd >> std::hex >> m_end;
+    }
+};
 }
 
 namespace WPEFramework {
@@ -120,7 +118,7 @@ namespace Core {
                 if ((fd = open(procpath, O_RDONLY)) > 0) {
                     ssize_t size;
                     if ((size = read(fd, buffer, maxLength - 1)) > 0) {
-                        if(buffer[size - 1] == '\n') {
+                        if (buffer[size - 1] == '\n') {
                             buffer[size - 1] = '\0';
                         } else {
                             buffer[size] = '\0';
@@ -147,7 +145,7 @@ namespace Core {
     }
 
     // Iterate over Processes
-    template<typename ACCEPTFUNCTION>
+    template <typename ACCEPTFUNCTION>
     static void FindChildren(std::list<uint32_t>& children, ACCEPTFUNCTION acceptfunction)
     {
         DIR* dp;
@@ -175,7 +173,7 @@ namespace Core {
                             int ppid = 0;
                             sscanf(buffer, "%*d (%*[^)]) %*c %d", &ppid);
 
-                            if( acceptfunction(ppid, pid) == true ) {
+                            if (acceptfunction(ppid, pid) == true) {
                                 children.push_back(pid);
                             }
                         }
@@ -230,7 +228,7 @@ namespace Core {
     }
 
 #endif
-/*
+    /*
     // Get the Processes with this name.
     ProcessInfo::Iterator::Iterator(const string& name, const bool exact)
     {
@@ -263,9 +261,10 @@ namespace Core {
 
     // Get all processes
     ProcessInfo::Iterator::Iterator()
-    : _pids()
-    , _current()
-    , _index(0) {
+        : _pids()
+        , _current()
+        , _index(0)
+    {
 #ifndef __WINDOWS__
         FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) { return true; });
 #endif
@@ -274,20 +273,21 @@ namespace Core {
 
     // Get the Child Processes with a name name from a Parent with a certain name
     ProcessInfo::Iterator::Iterator(const string& parentname, const string& childname, const bool removepath)
-    : _pids()
-    , _current()
-    , _index(0) {
+        : _pids()
+        , _current()
+        , _index(0)
+    {
 #ifndef __WINDOWS__
         FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) {
             bool accept = false;
             char fullname[PATH_MAX];
             ProcessName(foundparentPID, fullname, sizeof(fullname));
 
-            accept = ( parentname == ( removepath == true ? Core::File::FileNameExtended(fullname) : fullname ) );
+            accept = (parentname == (removepath == true ? Core::File::FileNameExtended(fullname) : fullname));
 
-            if ( accept == true ) {
+            if (accept == true) {
                 ProcessName(childPID, fullname, sizeof(fullname));
-                accept = ( childname == ( removepath == true ? Core::File::FileNameExtended(fullname) : fullname ) );
+                accept = (childname == (removepath == true ? Core::File::FileNameExtended(fullname) : fullname));
             }
             return accept;
         });
@@ -296,18 +296,19 @@ namespace Core {
     }
 
     // Get the Child Processes with a name name from a Parent pid
-    ProcessInfo::Iterator::Iterator(const uint32_t parentPID, const string& childname, const bool removepath) 
-    : _pids()
-    , _current()
-    , _index(0) {
+    ProcessInfo::Iterator::Iterator(const uint32_t parentPID, const string& childname, const bool removepath)
+        : _pids()
+        , _current()
+        , _index(0)
+    {
 #ifndef __WINDOWS__
         FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) {
             bool accept = false;
 
-            if ( parentPID == foundparentPID ) {
+            if (parentPID == foundparentPID) {
                 char fullname[PATH_MAX];
                 ProcessName(childPID, fullname, sizeof(fullname));
-                accept = ( childname == ( removepath == true ? Core::File::FileNameExtended(fullname) : fullname ) );
+                accept = (childname == (removepath == true ? Core::File::FileNameExtended(fullname) : fullname));
             }
             return accept;
         });
@@ -487,7 +488,7 @@ namespace Core {
     {
         uint64_t result = 0;
 
-        #ifndef __WINDOWS__
+#ifndef __WINDOWS__
 
         int fd;
         TCHAR buffer[256];
@@ -496,7 +497,7 @@ namespace Core {
         if ((fd = open(buffer, O_RDONLY)) > 0) {
             if (read(fd, buffer, sizeof(buffer)) > 0) {
                 const int utimeIndex = 13;
-                const TCHAR * pointer = buffer;
+                const TCHAR* pointer = buffer;
 
                 // Skip to utime fields
                 for (int index = 0; index < utimeIndex; index++) {
@@ -528,13 +529,14 @@ namespace Core {
         return (Core::File::FileName(ExecutableName(_pid)));
 #endif
     }
-    void ProcessInfo::Name(const string& name) {
+    void ProcessInfo::Name(const string& name)
+    {
 #ifdef __WINDOWS__
         if (GetCurrentProcessId() == _pid) {
         }
 #else
         if (static_cast<uint32_t>(::getpid()) == _pid) {
-          prctl(PR_SET_NAME, name.c_str(), 0, 0, 0, 0);
+            prctl(PR_SET_NAME, name.c_str(), 0, 0, 0, 0);
         }
 #endif
     }
@@ -555,7 +557,7 @@ namespace Core {
 
         std::list<string> output;
 
-        FILE * cmdFile = fopen(procPath, "rb");
+        FILE* cmdFile = fopen(procPath, "rb");
         if (cmdFile == nullptr) {
             TRACE_L1("Failed to open /proc/.../cmdline for process %u", _pid);
         } else {
@@ -605,7 +607,7 @@ namespace Core {
     {
         uint32_t entryCount = size / sizeof(uint32_t);
 
-        #ifndef __WINDOWS__
+#ifndef __WINDOWS__
 
         char mapsPath[PATH_MAX];
         sprintf(mapsPath, "/proc/%u/maps", _pid);
@@ -614,66 +616,71 @@ namespace Core {
         char pagemapPath[PATH_MAX];
         sprintf(pagemapPath, "/proc/%u/pagemap", _pid);
 
-        FILE * pagemapFile = fopen(pagemapPath, "rb");
-        while (!is01.eof()) {
-            string readLine;
-            getline(is01, readLine);
-            if (readLine.empty())
-                continue;
+        FILE* pagemapFile = fopen(pagemapPath, "rb");
+        if (pagemapFile == nullptr) {
+            TRACE_L1("Could not open pagemap file: %s", pagemapPath);
+        } else {
+            while (!is01.eof()) {
+                string readLine;
+                getline(is01, readLine);
+                if (readLine.empty()) {
+                    continue;
+                }
 
-            MemRange range(readLine);
-            uint32_t pageSize = Core::SystemInfo::Instance().GetPageSize();
-            uint64_t pageCount = (range.m_end - range.m_start) / pageSize;
-            uint64_t pageMapOffset = (range.m_start / pageSize) * sizeof(uint64_t);
-            int fseekStatus = fseek(pagemapFile, pageMapOffset, SEEK_SET);
-            if (fseekStatus != 0) {
-                TRACE_L1("Failed to seek in %s", pagemapPath);
-                continue;
+                MemRange range(readLine);
+                uint32_t pageSize = Core::SystemInfo::Instance().GetPageSize();
+                uint64_t pageCount = (range.m_end - range.m_start) / pageSize;
+                uint64_t pageMapOffset = (range.m_start / pageSize) * sizeof(uint64_t);
+                int fseekStatus = fseek(pagemapFile, pageMapOffset, SEEK_SET);
+                if (fseekStatus != 0) {
+                    TRACE_L1("Failed to seek in %s", pagemapPath);
+                    continue;
+                }
+
+                for (uint64_t i = 0; i < pageCount; i++) {
+                    uint64_t pageData = 0;
+                    size_t readCount = fread(&pageData, sizeof(uint64_t), 1, pagemapFile);
+                    if (readCount != 1) {
+                        TRACE_L1("Failed to read pageInfo from %s", pagemapPath);
+                        continue;
+                    }
+
+                    // Skip pages that are swapped out.
+                    bool isSwapped = ((pageData >> 62) & 1) != 0;
+                    if (isSwapped) {
+                        continue;
+                    }
+
+                    // Skip pages that aren't present.
+                    bool isPresent = ((pageData >> 63) & 1) != 0;
+                    if (!isPresent) {
+                        continue;
+                    }
+
+                    // Skip pages mapped to files.
+                    bool isFilePage = ((pageData >> 61) & 1) != 0;
+                    if (isFilePage) {
+                        continue;
+                    }
+
+                    // Lower 54 bits contain actual page frame number (PFN).
+                    uint64_t filter = (static_cast<uint64_t>(1) << 55) - 1;
+                    uint32_t pageFrameNumber = static_cast<uint32_t>(pageData & filter);
+
+                    uint32_t bufferIndex = pageFrameNumber / 32;
+                    if (bufferIndex > entryCount) {
+                        TRACE_L1("Tried to mark page outside of buffer: %u (%u)", bufferIndex, pageFrameNumber);
+                        continue;
+                    }
+
+                    uint32_t bitIndex = pageFrameNumber % 32;
+
+                    bitSet[bufferIndex] |= static_cast<uint32_t>(1) << bitIndex;
+                }
             }
-
-            for (uint64_t i = 0; i < pageCount; i++) {
-                uint64_t pageData = 0;
-                size_t readCount = fread(&pageData, sizeof(uint64_t), 1, pagemapFile);
-                if (readCount != 1) {
-                    TRACE_L1("Failed to read pageInfo from %s", pagemapPath);
-                }
-
-                // Skip pages that are swapped out.
-                bool isSwapped = ((pageData >> 62) & 1) != 0;
-                if (isSwapped) {
-                    continue;
-                }
-
-                // Skip pages that aren't present.
-                bool isPresent = ((pageData >> 63) & 1) != 0;
-                if (!isPresent) {
-                    continue;
-                }
-
-                // Skip pages mapped to files.
-                bool isFilePage = ((pageData >> 61) & 1) != 0;
-                if (isFilePage) {
-                    continue;
-                }
-
-                // Lower 54 bits contain actual page frame number (PFN).
-                uint64_t filter = (static_cast<uint64_t>(1) << 55) - 1;
-                uint32_t pageFrameNumber = static_cast<uint32_t>(pageData & filter);
-
-                uint32_t bufferIndex = pageFrameNumber / 32;
-                if (bufferIndex > entryCount) {
-                   TRACE_L1("Tried to mark page outside of buffer: %u (%u)", bufferIndex, pageFrameNumber);
-                   continue;
-                }
-
-                uint32_t bitIndex = pageFrameNumber % 32;
-
-                bitSet[bufferIndex] |= static_cast<uint32_t>(1) << bitIndex;
-            }
+            fclose(pagemapFile);
         }
-
-        fclose(pagemapFile);
-        #endif // __WINDOWS__
+#endif // __WINDOWS__
     }
 
     /* static */ void ProcessInfo::FindByName(const string& name, const bool exact, std::list<ProcessInfo>& processInfos)
@@ -688,7 +695,6 @@ namespace Core {
         }
 
 #endif // !__WINDOWS__
-
     }
 
     string ProcessCurrent::User() const
@@ -769,13 +775,13 @@ namespace Core {
 
     bool ProcessTree::ContainsProcess(ThreadId pid) const
     {
-        #ifdef __WINDOWS__
-        #pragma warning(disable : 4312)
-        #endif
-        auto comparator = [pid](const ProcessInfo& processInfo){ return ((ThreadId)(processInfo.Id()) == pid); };
-        #ifdef __WINDOWS__
-        #pragma warning(default : 4312)
-        #endif
+#ifdef __WINDOWS__
+#pragma warning(disable : 4312)
+#endif
+        auto comparator = [pid](const ProcessInfo& processInfo) { return ((ThreadId)(processInfo.Id()) == pid); };
+#ifdef __WINDOWS__
+#pragma warning(default : 4312)
+#endif
 
         std::list<ProcessInfo>::const_iterator i = std::find_if(_processes.cbegin(), _processes.cend(), comparator);
         return (i != _processes.cend());
@@ -786,25 +792,25 @@ namespace Core {
         processIds.clear();
 
         for (const ProcessInfo& process : _processes) {
-            #ifdef __WINDOWS__
-            #pragma warning(disable : 4312)
-            #endif
+#ifdef __WINDOWS__
+#pragma warning(disable : 4312)
+#endif
             processIds.push_back((ThreadId)(process.Id()));
-            #ifdef __WINDOWS__
-            #pragma warning(default : 4312)
-            #endif
+#ifdef __WINDOWS__
+#pragma warning(default : 4312)
+#endif
         }
     }
 
     ThreadId ProcessTree::RootId() const
     {
-        #ifdef __WINDOWS__
-        #pragma warning(disable : 4312)
-        #endif
+#ifdef __WINDOWS__
+#pragma warning(disable : 4312)
+#endif
         return (ThreadId)(_processes.front().Id());
-        #ifdef __WINDOWS__
-        #pragma warning(default : 4312)
-        #endif
+#ifdef __WINDOWS__
+#pragma warning(default : 4312)
+#endif
     }
 
     uint64_t ProcessTree::Jiffies() const

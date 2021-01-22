@@ -93,6 +93,7 @@ namespace Core {
         inline void Clear()
         {
             m_Set = false;
+            m_Value = TYPE{};
         }
 
         operator TYPE&()
