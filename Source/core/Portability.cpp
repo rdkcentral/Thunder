@@ -27,7 +27,6 @@
 
 #ifdef __LINUX__
 #include <atomic>
-#include <execinfo.h>
 #include <signal.h>
 #endif
 
@@ -79,7 +78,7 @@ int clock_gettime(int, struct timespec*)
 }
 #endif
 
-#ifdef __LINUX__
+#if defined(__LINUX__) && defined(THUNDER_BACKTRACE)
 
 static std::atomic<bool> g_lock(false);
 static pthread_t g_targetThread;
@@ -184,7 +183,9 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
 
 uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize)
 {
+    #ifdef __WINDOWS__
     __debugbreak();
+    #endif
 
     return (0);
 }
