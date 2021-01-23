@@ -41,7 +41,6 @@
 #ifdef __APPLE__
 #include <sys/event.h>
 #elif defined(__LINUX__)
-#include <execinfo.h>
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <sys/signalfd.h>
@@ -556,7 +555,7 @@ namespace Core {
         if ((l_Result != INVALID_SOCKET) && (specificInterface.empty() == false)) {
 
             struct ifreq interface;
-            strncpy(interface.ifr_ifrn.ifrn_name, specificInterface.c_str(), IFNAMSIZ);
+            strncpy(interface.ifr_ifrn.ifrn_name, specificInterface.c_str(), IFNAMSIZ - 1);
 
             if (::setsockopt(l_Result, SOL_SOCKET, SO_BINDTODEVICE, (const char*)&interface, sizeof(interface)) < 0) {
 
