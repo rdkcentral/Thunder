@@ -293,9 +293,9 @@ namespace Core {
         return (true);
     }
 
-    /* virtual */ bool SocketPort::Initialize()
+    /* virtual */ uint32_t SocketPort::Initialize()
     {
-        return (true);
+        return (Core::ERROR_NONE);
     }
 
     uint32_t SocketPort::Open(const uint32_t waitTime, const string& specificInterface)
@@ -322,7 +322,7 @@ namespace Core {
 
             m_Socket = ConstructSocket(m_LocalNode, specificInterface);
 
-            if ((m_Socket != INVALID_SOCKET) && (Initialize() == true)) {
+            if ((m_Socket != INVALID_SOCKET) && (Initialize() == Core::ERROR_NONE)) {
 
                 if ((m_SocketType == DATAGRAM) || ((m_SocketType == RAW) && (m_RemoteNode.IsValid() == false))) {
                     m_State = SocketPort::OPEN | SocketPort::READ;

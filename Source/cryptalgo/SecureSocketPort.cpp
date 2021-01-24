@@ -57,7 +57,7 @@ SecureSocketPort::Handler::~Handler() {
     }
 }
 
-bool SecureSocketPort::Handler::Initialize() {
+uint32_t SecureSocketPort::Handler::Initialize() {
     // _context = SSL_CTX_new(TLS_method());
     _context = SSL_CTX_new(SSLv23_method());
     

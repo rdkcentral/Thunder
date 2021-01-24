@@ -151,7 +151,7 @@ namespace Core {
 
         stateObject.WaitState(INITIALIZED | DEACTIVATE | RUNNING | STOPPED | STOPPING, Core::infinite);
 
-        if (((stateObject & (STOPPED | STOPPING)) == 0) && (cClassPointer->Initialize())) {
+        if (((stateObject & (STOPPED | STOPPING)) == 0) && (cClassPointer->Initialize() == Core::ERROR_NONE)) {
             CriticalSection& adminLock = cClassPointer->m_syncAdmin;
 
             // O.K. befor using the state, lock it.
@@ -209,9 +209,9 @@ namespace Core {
 #endif
     }
 
-    bool Thread::Initialize()
+    uint32_t Thread::Initialize()
     {
-        return (true);
+        return (Core::ERROR_NONE);
     }
 
     void Thread::Terminate()
