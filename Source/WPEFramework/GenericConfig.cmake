@@ -57,7 +57,11 @@ map_set(${CONFIG} proxystubpath ${PROXYSTUB_PATH})
 map_set(${CONFIG} postmortempath ${POSTMORTEM_PATH})
 map_set(${CONFIG} redirect "/Service/Controller/UI")
 
+map_set(${CONFIG} communicator ${COMMUNICATOR})
+
 map()
+    kv(umask ${LINUXUMASK})
+    kv(group ${LINUXGROUP})
     kv(priority ${PRIORITY})
     kv(policy ${POLICY})
     kv(oomadjust ${OOMADJUST})
