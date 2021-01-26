@@ -46,7 +46,7 @@ namespace Core {
             if (demangledName == nullptr) {
                 strncpy(allocationName, name, allocationSize);
             } else {
-                allocationName = demangledName;
+                strncpy(allocationName, demangledName, allocationSize);
             }
 
             std::string newName(allocationName);
