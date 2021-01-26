@@ -396,6 +396,10 @@ namespace RPC {
             _handler = announces;
         }
 
+        inline void Submit(const Core::ProxyType<Core::IDispatch>& job, const uint32_t waitTime) {
+            _threadPoolEngine.Submit(job, waitTime);
+        }
+
     private:
         virtual void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& message)
         {
