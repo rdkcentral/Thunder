@@ -74,7 +74,7 @@ namespace Core {
 #ifdef __LINUX__
             virtual uint32_t Initialize()
             {
-                return ((Thread::Initialize() == true) && (_parent.Initialize() == true) ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
+                return ((Thread::Initialize() == Core::ERROR_NONE) && (_parent.Initialize() == Core::ERROR_NONE) ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
             }
 #endif
             virtual uint32_t Worker()
