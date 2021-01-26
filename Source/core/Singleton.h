@@ -91,6 +91,7 @@ namespace Core {
             : Singleton(reinterpret_cast<void**>(&g_TypedSingleton))
             , SINGLETON(std::forward<Args>(args)...)
         {
+            TRACE_L1("Singleton constructing %s", ClassNameOnly(typeid(SINGLETON).name()).Text().c_str());
         }
 
     public:
