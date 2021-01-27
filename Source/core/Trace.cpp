@@ -36,7 +36,7 @@ namespace Core {
         inline TextFragment Demangled(const char name[])
         {
             char allocationName[512];
-            size_t allocationSize = sizeof(allocationName);
+            size_t allocationSize = sizeof(allocationName) - 1;
 
 #ifdef __LINUX__
             int status;
