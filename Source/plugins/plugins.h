@@ -36,6 +36,7 @@
 #include "Request.h"
 #include "Service.h"
 #include "System.h"
+#include "Types.h"
 #include "VirtualInput.h"
 #include "IVirtualInput.h"
 
