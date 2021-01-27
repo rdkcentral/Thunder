@@ -55,6 +55,7 @@ namespace RPC {
             , _threads()
             , _priority()
             , _type(HostType::LOCAL)
+            , _linkLoaderPath()
             , _remoteAddress()
             , _configuration()
         {
@@ -70,6 +71,7 @@ namespace RPC {
             , _threads(copy._threads)
             , _priority(copy._priority)
             , _type(copy._type)
+            , _linkLoaderPath(copy._linkLoaderPath)
             , _remoteAddress(copy._remoteAddress)
             , _configuration(copy._configuration)
         {
@@ -84,6 +86,7 @@ namespace RPC {
             const uint8_t threads,
             const int8_t priority,
             const HostType type,
+            const string& linkLoaderPath,
             const string& remoteAddress,
             const string& configuration)
             : _locator(locator)
@@ -96,6 +99,7 @@ namespace RPC {
             , _threads(threads)
             , _priority(priority)
             , _type(type)
+            , _linkLoaderPath(linkLoaderPath)
             , _remoteAddress(remoteAddress)
             , _configuration(configuration)
         {
@@ -115,6 +119,7 @@ namespace RPC {
             _group = RHS._group;
             _threads = RHS._threads;
             _priority = RHS._priority;
+            _linkLoaderPath = RHS._linkLoaderPath;
             _type = RHS._type;
             _remoteAddress = RHS._remoteAddress;
             _configuration = RHS._configuration;
@@ -163,6 +168,10 @@ namespace RPC {
         {
             return (_type);
         }
+        inline const string& LinkLoaderPath() const
+        {
+            return (_linkLoaderPath);
+        }
         inline const Core::NodeId RemoteAddress() const
         {
             return (Core::NodeId(_remoteAddress.c_str()));
@@ -183,6 +192,7 @@ namespace RPC {
         uint8_t _threads;
         int8_t _priority;
         HostType _type;
+        string _linkLoaderPath;
         string _remoteAddress;
         string _configuration;
     };
@@ -341,6 +351,9 @@ namespace RPC {
             }
             if (config.PostMortemPath().empty() == false) {
                 _options.Add(_T("-P")).Add('"' + config.PostMortemPath() + '"');
+            }
+            if (instance.LinkLoaderPath().empty() == false) {
+                _options.Add(_T("-L")).Add('"' + instance.LinkLoaderPath() + '"');
             }
             if (instance.Threads() > 1) {
                 _options.Add(_T("-t")).Add(Core::NumberType<uint8_t>(instance.Threads()).Text());
