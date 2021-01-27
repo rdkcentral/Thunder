@@ -27,6 +27,7 @@
 #include "Portability.h"
 #include "Sync.h"
 #include "TextFragment.h"
+#include "Proxy.h"
 
 // ---- Referenced classes and types ----
 
@@ -132,6 +133,30 @@ namespace Core {
 
     template <typename SINGLETONTYPE>
     EXTERNAL_HIDDEN SINGLETONTYPE*  SingletonType<SINGLETONTYPE>::g_TypedSingleton = nullptr;
+
+    template <typename PROXYTYPE>
+    class SingletonProxyType {
+    private:
+        friend class SingletonType<SingletonProxyType<PROXYTYPE>>;
+        template <typename... Args>
+        SingletonProxyType(Args&&... args)
+            : _wrapped(ProxyType<PROXYTYPE>::Create(std::forward<Args>(args)...))
+        {
+        }
+
+    public:
+        SingletonProxyType(const SingletonProxyType<PROXYTYPE>&) = delete;
+        SingletonProxyType& operator=(const SingletonProxyType<PROXYTYPE>&) = delete;
+
+        template <typename... Args>
+        static ProxyType<PROXYTYPE> Instance()
+        {
+            return (SingletonType<SingletonProxyType<PROXYTYPE>>::Instance()._wrapped);
+        }
+
+    private:
+        ProxyType<PROXYTYPE> _wrapped;
+    };
 }
 } // namespace Core
 
