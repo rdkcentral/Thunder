@@ -407,6 +407,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             result = Core::ERROR_ILLEGAL_STATE;
         } else if (currentState == IShell::DEACTIVATED) {
             result = Activate(why);
+            currentState = State();
         } 
 
         if (currentState == IShell::ACTIVATED) {
