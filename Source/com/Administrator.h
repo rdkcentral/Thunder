@@ -201,11 +201,11 @@ namespace RPC {
         // ----------------------------------------------------------------------------------------------------
         // Stub method for entries that the Stub returns to the callee
         template <typename ACTUALINTERFACE>
-        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, ACTUALINTERFACE* reference)
+        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const ACTUALINTERFACE* reference)
         {
             RegisterInterface(channel, reference, ACTUALINTERFACE::ID);
         }
-        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, void* source, const uint32_t id) {
+        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const void* source, const uint32_t id) {
             RegisterUnknownInterface(channel, Convert(source, id), id);
         }
 
@@ -246,7 +246,7 @@ namespace RPC {
         // ----------------------------------------------------------------------------------------------------
         // Methods for the Stub Environment
         // ----------------------------------------------------------------------------------------------------
-        Core::IUnknown* Convert(void* rawImplementation, const uint32_t id);
+        Core::IUnknown* Convert(const void* rawImplementation, const uint32_t id);
         void RegisterUnknownInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* source, const uint32_t id);
 
     private:

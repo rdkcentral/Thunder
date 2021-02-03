@@ -264,7 +264,7 @@ namespace RPC {
         _adminLock.Unlock();
     }
 
-    Core::IUnknown* Administrator::Convert(void* rawImplementation, const uint32_t id) 
+    Core::IUnknown* Administrator::Convert(const void* rawImplementation, const uint32_t id)
     {
         std::map<uint32_t, ProxyStub::UnknownStub*>::const_iterator index (_stubs.find(id));
         return(index != _stubs.end() ? index->second->Convert(rawImplementation) : nullptr);

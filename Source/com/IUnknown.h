@@ -52,8 +52,8 @@ namespace ProxyStub {
         {
             return (3);
         }
-	virtual Core::IUnknown* Convert(void* incomingData) const {
-            return (reinterpret_cast<Core::IUnknown*>(incomingData));
+	virtual Core::IUnknown* Convert(const void* incomingData) const {
+            return (reinterpret_cast<Core::IUnknown*>(const_cast<void*>(incomingData)));
         }
 	virtual uint32_t InterfaceId() const {
             return (Core::IUnknown::ID);
