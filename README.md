@@ -32,7 +32,7 @@ $ pip install jsonref
 *  -DWCHAR_SUPPORT=ON ,Enable support for WCHAR in Thunder.
 
 **Internal plugins**
-* [Controller](Source/WPEFramework/ControllerPlugin.md)
+* [Controller](Source/WPEFramework/doc/ControllerPlugin.md)
 
 **WINDOWS Build, using Visual Studio 2019**
 
