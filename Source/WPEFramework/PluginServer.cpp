@@ -417,8 +417,8 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                 // We have a StateControl interface, so at least start suspending, if not already suspended :-)
                 if (stateControl->State() == PluginHost::IStateControl::SUSPENDED) {
                     result = stateControl->Request(PluginHost::IStateControl::RESUME);
-                    stateControl->Release();
                 }
+                stateControl->Release();
             }
         }
 
@@ -536,8 +536,8 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                     // We have a StateControl interface, so at least start suspending, if not already suspended :-)
                     if (stateControl->State() == PluginHost::IStateControl::RESUMED) {
                         result = stateControl->Request(PluginHost::IStateControl::SUSPEND);
-                        stateControl->Release();
                     }
+                    stateControl->Release();
                 }
             }
 
