@@ -295,6 +295,8 @@ namespace Plugin {
 
         void RegisterAll();
         void UnregisterAll();
+        uint32_t endpoint_suspend(const JsonData::Controller::ActivateParamsInfo& params);
+        uint32_t endpoint_resume(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_activate(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_clone(const JsonData::Controller::CloneParamsInfo& params, Core::JSON::String& response);
         uint32_t endpoint_deactivate(const JsonData::Controller::ActivateParamsInfo& params);
