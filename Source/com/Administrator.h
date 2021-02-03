@@ -201,7 +201,7 @@ namespace RPC {
         // ----------------------------------------------------------------------------------------------------
         // Stub method for entries that the Stub returns to the callee
         template <typename ACTUALINTERFACE>
-        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const ACTUALINTERFACE* reference)
+        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, ACTUALINTERFACE* reference)
         {
             RegisterInterface(channel, reference, ACTUALINTERFACE::ID);
         }
