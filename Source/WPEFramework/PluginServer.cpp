@@ -407,7 +407,9 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             result = Core::ERROR_ILLEGAL_STATE;
         } else if (currentState == IShell::DEACTIVATED) {
             result = Activate(why);
-        } else if (currentState == IShell::ACTIVATED) {
+        } 
+
+        if (currentState == IShell::ACTIVATED) {
             // See if we need can and should RESUME.
             IStateControl* stateControl = _handler->QueryInterface<PluginHost::IStateControl>();
             if (stateControl == nullptr) {
