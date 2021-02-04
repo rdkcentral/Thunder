@@ -1674,22 +1674,16 @@ namespace Core {
                         while ((result < maxLength) && (length > 0)) {
 
                             // See where we are and add...
-                            if ((*source != '\"') || (_unaccountedCount == 1)) {
+                            if (((*source == '\"') || (*source == '\\')) && (_unaccountedCount == 0)) {
+                                stream[result++] = '\\';
+                                _unaccountedCount = 1;
+                            }
+                            
+                            if (result < maxLength) {
+
                                 _unaccountedCount = 0;
                                 stream[result++] = *source++;
                                 length--;
-                            } else {
-                                // Check if we need to escape...
-                                if(*(source - 1) != '\\')
-                                {
-                                    stream[result++] = '\\';
-                                    _unaccountedCount = 1;
-                                }
-                                else
-                                {
-                                    stream[result++] = *source++;
-                                    length--;   
-                                }
                             }
                         }
                     }
