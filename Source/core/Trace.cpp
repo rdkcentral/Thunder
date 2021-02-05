@@ -26,46 +26,36 @@
 namespace WPEFramework {
 namespace Core {
     class Demangling {
-    private:
-        Demangling(const Demangling&);
-        Demangling& operator=(const Demangling&);
-
     public:
-        Demangling()
-            : _processLock()
-            , _allocatedSize(512)
-            , _allocationName(static_cast<char*>(malloc(_allocatedSize)))
-        {
-        }
-        ~Demangling()
-        {
-            if (_allocationName != nullptr) {
-                free(_allocationName);
-            }
-        }
+        Demangling(const Demangling&) = delete;
+        Demangling& operator=(const Demangling&) = delete;
+
+        Demangling() = default;
+        ~Demangling() = default;
 
         inline TextFragment Demangled(const char name[])
         {
-            _processLock.Lock();
+            char allocationName[512];
+            size_t allocationSize = sizeof(allocationName) - 1;
 
 #ifdef __LINUX__
             int status;
-            char* demangledName = abi::__cxa_demangle(name, _allocationName, &_allocatedSize, &status);
+            char* demangledName = abi::__cxa_demangle(name, allocationName, &allocationSize, &status);
 
             // Check for, and deal with, error.
             if (demangledName == nullptr) {
-                strncpy(_allocationName, name, _allocatedSize);
+                strncpy(allocationName, name, allocationSize);
             } else {
-                _allocationName = demangledName;
+                strncpy(allocationName, demangledName, allocationSize);
             }
 
-            std::string newName(_allocationName);
+            std::string newName(allocationName);
 #endif
 
 #ifdef __WINDOWS__
             uint16_t index = 0;
             uint16_t moveTo = 0;
-            while ((name[index] != '\0') && (moveTo < (_allocatedSize - 1))) {
+            while ((name[index] != '\0') && (moveTo < (allocationSize - 1))) {
                 if ((name[index] == 'c') && (name[index + 1] == 'l') && (name[index + 2] == 'a') && (name[index + 3] == 's') && (name[index + 4] == 's') && (name[index + 5] == ' ')) {
                     // we need to skip class :-)
                     index += 6;
@@ -76,14 +66,12 @@ namespace Core {
                     // We need to skip enum
                     index += 5;
                 } else {
-                    _allocationName[moveTo++] = name[index++];
+                    allocationName[moveTo++] = name[index++];
                 }
             }
-            _allocationName[moveTo++] = '\0';
-            std::string newName(_allocationName, moveTo);
+            allocationName[moveTo++] = '\0';
+            std::string newName(allocationName, moveTo);
 #endif
-
-            _processLock.Unlock();
 
             return (TextFragment(newName));
         }
@@ -103,11 +91,6 @@ namespace Core {
 
             return (lastIndex < (index - 1) ? TextFragment(result, lastIndex + 1, result.Length() - (lastIndex + 1)) : result);
         }
-
-    private:
-        CriticalSection _processLock;
-        size_t _allocatedSize;
-        char* _allocationName;
     };
 
     static Demangling demangleClassNames;

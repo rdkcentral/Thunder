@@ -34,6 +34,7 @@ set(PUBLIC_HEADERS
         Administrator.h
         com.h
         Communicator.h
+        ConnectorType.h
         Ids.h
         IRPCIterator.h
         IStringIterator.h

@@ -86,11 +86,11 @@ namespace Plugin {
             }
 
         private:
-            virtual void Updated() override
+            void Updated() override
             {
                 _decoupled->Schedule();
             }
-            virtual void StateChange(PluginHost::IShell* plugin) override
+            void StateChange(PluginHost::IShell* plugin, const string&) override
             {
                 _parent.StateChange(plugin);
             }
