@@ -41,15 +41,14 @@ namespace Core {
 #ifdef __LINUX__
             int status;
             char* demangledName = abi::__cxa_demangle(name, allocationName, &allocationSize, &status);
+            std::string newName;
 
             // Check for, and deal with, error.
             if (demangledName == nullptr) {
-                strncpy(allocationName, name, allocationSize);
+                newName = allocationName;
             } else {
-                strncpy(allocationName, demangledName, allocationSize);
+                newName = demangledName;
             }
-
-            std::string newName(allocationName);
 #endif
 
 #ifdef __WINDOWS__
