@@ -1638,12 +1638,14 @@ namespace PluginHost {
             }
             void StateChange(PluginHost::IShell* entry)
             {
+                string callsign = entry->Callsign();
+
                 _notificationLock.Lock();
 
                 std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
 
                 while (currentlist.size()) {
-                    currentlist.front()->StateChange(entry);
+                    currentlist.front()->StateChange(entry, callsign);
                     currentlist.pop_front();
                 }
 
@@ -1670,7 +1672,7 @@ namespace PluginHost {
                     ASSERT(service.IsValid());
 
                     if ( (service.IsValid() == true) && (service->State() == IShell::ACTIVATED) ) {
-                        sink->StateChange(&(service.operator*()));
+                        sink->StateChange(&(service.operator*()), service->Callsign());
                     }
 
                     index++;
