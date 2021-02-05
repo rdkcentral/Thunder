@@ -39,6 +39,11 @@
 #include <cinttypes>
 #include <cstdint>
 
+#include <linux/version.h>
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0)
+#include <sys/sysinfo.h>
+#else
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -51,6 +56,8 @@ long get_avphys_pages (void);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 #endif
