@@ -59,7 +59,7 @@ namespace PluginHost {
             //! Whenever a plugin changes state, this is reported to an observer so proper actions could be taken
             //! on this state change.
             //! @}
-            virtual void StateChange(PluginHost::IShell* plugin) = 0;
+            virtual void StateChange(PluginHost::IShell* plugin, const string& callsign) = 0;
         };
 
         virtual ~IPlugin()

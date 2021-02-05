@@ -205,8 +205,8 @@ namespace RPC {
         {
             RegisterInterface(channel, reference, ACTUALINTERFACE::ID);
         }
-        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, void* source, const uint32_t id) {
-            RegisterUnknownInterface(channel, Convert(source, id), id);
+        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const void* source, const uint32_t id) {
+            RegisterUnknownInterface(channel, Convert(const_cast<void*>(source), id), id);
         }
 
         void UnregisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const Core::IUnknown* source, const uint32_t interfaceId, const uint32_t dropCount)
@@ -338,7 +338,15 @@ namespace RPC {
         static Administrator& _administrator;
     };
 
-    class EXTERNAL InvokeServer : public Core::IIPCServer {
+    struct EXTERNAL IIPCServer : public Core::IIPCServer {
+        ~IIPCServer() override = default;
+
+        virtual void Announcements(Core::IIPCServer* announces) = 0;
+        virtual void Submit(const Core::ProxyType<Core::IDispatch>& job) = 0;
+        virtual void Revoke(const Core::ProxyType<Core::IDispatch>& job) = 0;
+    };
+
+    class EXTERNAL InvokeServer : public IIPCServer {
     public:
         InvokeServer(const InvokeServer&) = delete;
         InvokeServer& operator=(const InvokeServer&) = delete;
@@ -353,14 +361,20 @@ namespace RPC {
         {
         }
 
-        void Announcements(Core::IIPCServer* announces)
+        void Announcements(Core::IIPCServer* announces) override
         {
             ASSERT((announces != nullptr) ^ (_handler != nullptr));
             _handler = announces;
         }
+        void Submit(const Core::ProxyType<Core::IDispatch>& job) override {
+            _threadPoolEngine.Submit(job);
+        }
+        void Revoke(const Core::ProxyType<Core::IDispatch>& job) override {
+            _threadPoolEngine.Revoke(job);
+        }
 
     private:
-        virtual void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& message)
+        void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& message) override
         {
             Core::ProxyType<Job> job(Job::Instance());
 
@@ -374,7 +388,7 @@ namespace RPC {
     };
 
     template <const uint8_t THREADPOOLCOUNT, const uint32_t STACKSIZE, const uint32_t MESSAGESLOTS>
-    class InvokeServerType : public Core::IIPCServer {
+    class InvokeServerType : public IIPCServer {
     public:
         InvokeServerType(const InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&) = delete;
         InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>& operator = (const InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&) = delete;
@@ -385,19 +399,25 @@ namespace RPC {
         {
             _threadPoolEngine.Run();
         }
-        ~InvokeServerType()
+        ~InvokeServerType() override
         {
             _threadPoolEngine.Stop();
         }
 
-        void Announcements(Core::IIPCServer* announces)
+        void Announcements(Core::IIPCServer* announces) override
         {
             ASSERT((announces != nullptr) ^ (_handler != nullptr));
             _handler = announces;
         }
+        void Submit(const Core::ProxyType<Core::IDispatch>& job) override {
+            _threadPoolEngine.Submit(job, Core::infinite);
+        }
+        void Revoke(const Core::ProxyType<Core::IDispatch>& job) override {
+            _threadPoolEngine.Revoke(job, Core::infinite);
+        }
 
     private:
-        virtual void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& message)
+        void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& message) override
         {
             if (_threadPoolEngine.Pending() >= ((MESSAGESLOTS * 80) / 100)) {
                 TRACE_L1("_threadPoolEngine.Pending() == %d", _threadPoolEngine.Pending());
