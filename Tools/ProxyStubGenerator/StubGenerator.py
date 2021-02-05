@@ -30,7 +30,7 @@ import copy
 import CppParser
 from collections import OrderedDict
 
-VERSION = "1.6.6"
+VERSION = "1.6.7"
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -861,7 +861,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                 emit.Line("writer.%s(RPC::instance_cast<%s>(%s));" % (retval.RpcType(), retval.CppType(), retval.name))
                             else:
                                 emit.Line("writer.%s(%s);" % (retval.RpcType(), retval.name))
-                            if retval.is_interface and not retval.type.IsConst():
+                            if retval.is_interface:
                                 if isinstance(retval.type.Type(), CppParser.Void):
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s, %s);" %
                                               (retval.name, retval.interface_ref.length_name))

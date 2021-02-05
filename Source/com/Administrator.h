@@ -205,8 +205,8 @@ namespace RPC {
         {
             RegisterInterface(channel, reference, ACTUALINTERFACE::ID);
         }
-        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, void* source, const uint32_t id) {
-            RegisterUnknownInterface(channel, Convert(source, id), id);
+        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const void* source, const uint32_t id) {
+            RegisterUnknownInterface(channel, Convert(const_cast<void*>(source), id), id);
         }
 
         void UnregisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const Core::IUnknown* source, const uint32_t interfaceId, const uint32_t dropCount)

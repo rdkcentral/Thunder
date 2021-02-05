@@ -844,6 +844,8 @@ namespace PluginHost {
             // These are Blocking calls!!!!!
             virtual uint32_t Activate(const reason) override;
             virtual uint32_t Deactivate(const reason) override;
+            uint32_t Suspend(const reason);
+            uint32_t Resume(const reason);
             virtual reason Reason() const
             {
                 return (_reason);
