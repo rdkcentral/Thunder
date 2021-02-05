@@ -201,7 +201,7 @@ namespace Core {
 #endif
 
     protected:
-        virtual bool Initialize();
+        virtual uint32_t Initialize();
         virtual uint32_t Worker() = 0;
         void Terminate();
         bool State(thread_state enumState);

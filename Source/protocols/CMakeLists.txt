@@ -29,6 +29,7 @@ set(SOURCES_COM
         com/Administrator.h
         com/com.h
         com/Communicator.h
+        com/ConnectorType.h
         com/Ids.h
         com/ICOM.h
         com/IUnknown.h
@@ -76,6 +77,7 @@ set(COM_INCLUDES
         "${CMAKE_CURRENT_BINARY_DIR}/com/Administrator.h"
         "${CMAKE_CURRENT_BINARY_DIR}/com/com.h"
         "${CMAKE_CURRENT_BINARY_DIR}/com/Communicator.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/com/ConnectorType.h"
         "${CMAKE_CURRENT_BINARY_DIR}/com/Ids.h"
         "${CMAKE_CURRENT_BINARY_DIR}/com/ICOM.h"
         "${CMAKE_CURRENT_BINARY_DIR}/com/IUnknown.h"

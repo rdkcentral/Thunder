@@ -72,9 +72,9 @@ namespace Core {
 
         public:
 #ifdef __LINUX__
-            virtual bool Initialize()
+            virtual uint32_t Initialize()
             {
-                return ((Thread::Initialize() == true) && (_parent.Initialize() == true));
+                return ((Thread::Initialize() == Core::ERROR_NONE) && (_parent.Initialize() == Core::ERROR_NONE) ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
             }
 #endif
             virtual uint32_t Worker()
@@ -284,7 +284,7 @@ namespace Core {
 
     public:
 #ifdef __LINUX__
-        bool Initialize()
+        uint32_t Initialize()
         {
 #ifdef __APPLE__
 
@@ -328,7 +328,7 @@ namespace Core {
             _descriptorArray[0].events = POLLIN;
             _descriptorArray[0].revents = 0;
 
-            return (_signalDescriptor != -1);
+            return (_signalDescriptor != -1 ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
         }
 #endif
 

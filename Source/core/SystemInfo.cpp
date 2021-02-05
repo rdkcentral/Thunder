@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "Portability.h"
 #include "SystemInfo.h"
 #include "FileSystem.h"
 #include "NetworkInfo.h"
@@ -37,7 +38,28 @@
 #elif defined(__LINUX__)
 #include <cinttypes>
 #include <cstdint>
+
+#include <linux/version.h>
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0)
 #include <sys/sysinfo.h>
+#else
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int sysinfo (struct sysinfo *);
+int get_nprocs_conf (void);
+int get_nprocs (void);
+long get_phys_pages (void);
+long get_avphys_pages (void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+
 #endif
 
 namespace WPEFramework {

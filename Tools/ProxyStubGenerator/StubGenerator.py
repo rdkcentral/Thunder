@@ -30,7 +30,7 @@ import copy
 import CppParser
 from collections import OrderedDict
 
-VERSION = "1.6.5"
+VERSION = "1.6.7"
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -229,10 +229,10 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
         emit.Line("//")
         emit.Line()
 
-        if os.path.isfile(os.path.join(os.path.dirname(source_file), interface_header_name)):
-            emit.Line('#include "%s"' % interface_header_name)
         if os.path.isfile(os.path.join(os.path.dirname(source_file), "Module.h")):
             emit.Line('#include "Module.h"')
+        if os.path.isfile(os.path.join(os.path.dirname(source_file), interface_header_name)):
+            emit.Line('#include "%s"' % interface_header_name)
         emit.Line()
 
         emit.Line('#include <com/com.h>')
@@ -861,7 +861,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                 emit.Line("writer.%s(RPC::instance_cast<%s>(%s));" % (retval.RpcType(), retval.CppType(), retval.name))
                             else:
                                 emit.Line("writer.%s(%s);" % (retval.RpcType(), retval.name))
-                            if retval.is_interface and not retval.type.IsConst():
+                            if retval.is_interface:
                                 if isinstance(retval.type.Type(), CppParser.Void):
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s, %s);" %
                                               (retval.name, retval.interface_ref.length_name))
@@ -1341,7 +1341,8 @@ if __name__ == "__main__":
         print("   @stop               - skip parsing of the rest of the file")
         print("   @omit               - omit generating code for the next item (class or method)")
         print("   @stub               - generate empty stub for the next item (class or method)")
-        print("   @encompass \"file\"   - include another file, relative to the directory of the current file")
+        print("   @stubgen:include \"file\"   - include another file, relative to the directory of the current file")
+        print("   @stubgen:include <file>   - include another file, relative to the defined include directories")
         print("For non-const pointer and reference method parameters:")
         print("   @in                 - denotes an input parameter")
         print("   @out                - denotes an output parameter")

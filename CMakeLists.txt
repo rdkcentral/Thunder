@@ -38,7 +38,6 @@ set(CMAKE_MODULE_PATH
 
 include(platform)
 include(CmakeHelperFunctions)
-find_package(ExecInfo)
 
 set(PLATFORM "PC_UNIX" CACHE STRING
         "Defines on what platform the application will run")

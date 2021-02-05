@@ -844,6 +844,8 @@ namespace PluginHost {
             // These are Blocking calls!!!!!
             virtual uint32_t Activate(const reason) override;
             virtual uint32_t Deactivate(const reason) override;
+            uint32_t Suspend(const reason);
+            uint32_t Resume(const reason);
             virtual reason Reason() const
             {
                 return (_reason);
@@ -1636,12 +1638,14 @@ namespace PluginHost {
             }
             void StateChange(PluginHost::IShell* entry)
             {
+                string callsign = entry->Callsign();
+
                 _notificationLock.Lock();
 
                 std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
 
                 while (currentlist.size()) {
-                    currentlist.front()->StateChange(entry);
+                    currentlist.front()->StateChange(entry, callsign);
                     currentlist.pop_front();
                 }
 
@@ -1668,7 +1672,7 @@ namespace PluginHost {
                     ASSERT(service.IsValid());
 
                     if ( (service.IsValid() == true) && (service->State() == IShell::ACTIVATED) ) {
-                        sink->StateChange(&(service.operator*()));
+                        sink->StateChange(&(service.operator*()), service->Callsign());
                     }
 
                     index++;

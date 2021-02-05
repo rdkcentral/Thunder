@@ -341,8 +341,9 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
                 TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
-                // Fire up the interface. Let it handle the messages.
-                ErrorMessage(_handler->Initialize(this));
+                TRACE_DURATION(ErrorMessage(_handler->Initialize(this)); 
+                    , _T("Plugin [%s]:[%s] Initialize"), className.c_str(), callSign.c_str()
+                )
 
                 if (HasError() == true) {
                     result = Core::ERROR_GENERAL;
@@ -393,9 +394,41 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         return (result);
     }
 
+    uint32_t Server::Service::Resume(const reason why) {
+        uint32_t result = Core::ERROR_NONE;
+
+        Lock();
+
+        IShell::state currentState(State());
+
+        if (currentState == IShell::ACTIVATION) {
+            result = Core::ERROR_INPROGRESS;
+        } else if ((currentState == IShell::DEACTIVATION) || (currentState == IShell::DESTROYED)) {
+            result = Core::ERROR_ILLEGAL_STATE;
+        } else if (currentState == IShell::DEACTIVATED) {
+            result = Activate(why);
+        } else if (currentState == IShell::ACTIVATED) {
+            // See if we need can and should SUSPEND.
+            IStateControl* stateControl = _handler->QueryInterface<PluginHost::IStateControl>();
+            if (stateControl == nullptr) {
+                result = Core::ERROR_BAD_REQUEST;
+            }
+            else {
+                // We have a StateControl interface, so at least start suspending, if not already suspended :-)
+                if (stateControl->State() == PluginHost::IStateControl::SUSPENDED) {
+                    result = stateControl->Request(PluginHost::IStateControl::RESUME);
+                    stateControl->Release();
+                }
+            }
+        }
+
+        Unlock();
+
+        return (result);
+    }
+
     uint32_t Server::Service::Deactivate(const reason why)
     {
-
         uint32_t result = Core::ERROR_NONE;
 
         Lock();
@@ -434,7 +467,9 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
                 TRACE(Activity, (_T("Deactivation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
-                _handler->Deinitialize(this);
+                TRACE_DURATION(_handler->Deinitialize(this);
+                    , _T("Plugin [%s]:[%s] Deinitialize"), className.c_str(), callSign.c_str()
+                )
 
                 Lock();
 
@@ -470,6 +505,44 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         }
 
         Unlock();
+
+        return (result);
+    }
+
+    uint32_t Server::Service::Suspend(const reason why) {
+
+        uint32_t result = Core::ERROR_NONE;
+
+        if (AutoStart() == false) {
+            // We need to shutdown completely
+            result = Deactivate(why);
+        }
+        else {
+            Lock();
+
+            IShell::state currentState(State());
+
+            if (currentState == IShell::DEACTIVATION) {
+                result = Core::ERROR_INPROGRESS;
+            } else if ((currentState == IShell::ACTIVATION) || (currentState == IShell::DESTROYED)) {
+                result = Core::ERROR_ILLEGAL_STATE;
+            } else if ((currentState == IShell::ACTIVATED) || (currentState == IShell::PRECONDITION)) {
+                // See if we need can and should SUSPEND.
+                IStateControl* stateControl = _handler->QueryInterface<PluginHost::IStateControl>();
+                if (stateControl == nullptr) {
+                    result = Core::ERROR_BAD_REQUEST;
+                }
+                else {
+                    // We have a StateControl interface, so at least start suspending, if not already suspended :-)
+                    if (stateControl->State() == PluginHost::IStateControl::RESUMED) {
+                        result = stateControl->Request(PluginHost::IStateControl::SUSPEND);
+                        stateControl->Release();
+                    }
+                }
+            }
+
+            Unlock();
+        }
 
         return (result);
     }

@@ -224,7 +224,7 @@ namespace Core {
         SOCKET Accept(NodeId& remoteId);
 
     protected:
-        virtual bool Initialize();
+        virtual uint32_t Initialize();
         virtual int32_t Read(uint8_t buffer[], const uint16_t length) const;
         virtual int32_t Write(const uint8_t buffer[], const uint16_t length);
 

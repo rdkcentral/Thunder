@@ -1255,7 +1255,7 @@ namespace Core {
 
             _adminLock.Lock();
 
-            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ);
+            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ - 1);
 
             _adminLock.Unlock();
 
@@ -1285,7 +1285,7 @@ namespace Core {
 
             _adminLock.Lock();
 
-            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ);
+            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ - 1);
 
             _adminLock.Unlock();
 
@@ -1315,7 +1315,7 @@ namespace Core {
 
             _adminLock.Lock();
 
-            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ);
+            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ - 1);
 
             _adminLock.Unlock();
 
@@ -1351,7 +1351,7 @@ namespace Core {
 
             _adminLock.Lock();
 
-            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ);
+            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ - 1);
 
             _adminLock.Unlock();
 
