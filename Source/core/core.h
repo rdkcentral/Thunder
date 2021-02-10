@@ -72,7 +72,6 @@
 #include "Proxy.h"
 #include "Queue.h"
 #include "Range.h"
-#include "Rectangle.h"
 #include "ReadWriteLock.h"
 #include "ResourceMonitor.h"
 #include "SerialPort.h"
