@@ -92,7 +92,7 @@ endif()
 
 if(BUILD_TESTS)
   enable_testing()
-  add_subdirectory(Tests)
+  add_subdirectory(Tests/unit)
 endif()
 
 add_subdirectory(Source)
