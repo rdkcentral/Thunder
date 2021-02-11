@@ -52,10 +52,6 @@ option(PROCESSCONTAINERS
         "Include containerization in the build." OFF)
 option(TEST_APPS
         "Include test applications." OFF)
-option(UNIT_TESTS
-        "Include unit tests (new gtest based)." OFF)
-option(TEST_MEASUREMENTS
-        "Include code coverage measurments." OFF)
 option(STUB_HARDWARE
         "Use hardware stubs for unittests)." OFF)
 option(BUILD_TYPE
