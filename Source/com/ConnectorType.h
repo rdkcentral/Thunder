@@ -21,7 +21,6 @@ namespace RPC {
             Channel(const Core::NodeId& remoteNode, const Core::ProxyType<RPC::IIPCServer>& handler)
                 : CommunicatorClient(remoteNode, Core::ProxyType<Core::IIPCServer>(handler))
             {
-                handler->Announcements(CommunicatorClient::Announcement());
             }
             ~Channel() override = default;
 
@@ -35,6 +34,21 @@ namespace RPC {
                 CommunicatorClient::Close(Core::infinite);
             }
         };
+        class AnnouncementSink : public Core::IIPCServer {
+        public:
+            AnnouncementSink(const AnnouncementSink&) = delete;
+            AnnouncementSink& operator=(const AnnouncementSink&) = delete;
+
+            AnnouncementSink() = default;
+            ~AnnouncementSink() override = default;
+
+        public:
+            void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& message) override
+            {
+                CommunicatorClient* client = dynamic_cast<CommunicatorClient*>(&source);
+                client->Announcement()->Procedure(source, message);
+            }
+        };
 
     public:
         ConnectorType(const ConnectorType<ENGINE>&) = delete;
@@ -44,24 +58,31 @@ namespace RPC {
             : _comChannels()
         {
             if (_engine.IsValid() == false) {
+                static AnnouncementSink mySink;
                 _engine = ENGINE();
+                _engine->Announcements(&mySink);
             }
         }
         ~ConnectorType() = default;
 
     public:
         template <typename INTERFACE>
-        void Aquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string& className, const uint32_t version, INTERFACE*& result)
+        INTERFACE* Aquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version)
         {
-            result = nullptr;
+            INTERFACE* result = nullptr;
 
             ASSERT(_engine.IsValid() == true);
 
             Core::ProxyType<Channel> channel = _comChannels.Instance(nodeId, _engine);
 
             if (channel.IsValid() == true) {
-                result = channel->CommunicatorClient::Aquire<INTERFACE>(waitTime, className, version);
+                result = channel->template Aquire<INTERFACE>(waitTime, className, version);
             }
+
+            return (result);
+        }
+        Core::ProxyType<CommunicatorClient> Communicator(const Core::NodeId& nodeId){
+            return _comChannels.Find(nodeId);
         }
         RPC::IIPCServer& Engine()
         {
