@@ -125,6 +125,8 @@
 #include <WinSock2.h>
 #include <algorithm>
 #include <assert.h>
+#include <list>
+#include <map>
 #include <memory.h>
 #include <string>
 #include <windows.h>
@@ -241,7 +243,9 @@ typedef std::string string;
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <getopt.h>
+#include <list>
 #include <math.h>
+#include <map>
 #include <poll.h>
 #include <pthread.h>
 #include <sched.h>
