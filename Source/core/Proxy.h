@@ -21,10 +21,10 @@
 #define __PROXY_H
 
 // ---- Include system wide include files ----
-#include <map>
 #include <memory>
 
 // ---- Include local include files ----
+#include "Portability.h"
 #include "StateTrigger.h"
 #include "Sync.h"
 #include "TypeTraits.h"
@@ -1368,6 +1368,163 @@ namespace Core {
         mutable std::map<PROXYKEY, ProxyType<ProxyMapElement>> _map;
         mutable Core::CriticalSection _lock;
     };
+
+    template <typename PROXYELEMENT>
+    class ProxyListType {
+    private:
+        template <typename ELEMENT>
+        using PoolElement = typename std::conditional<std::is_base_of<IReferenceCounted, ELEMENT>::value != 0, ProxyService<ELEMENT>, ProxyObject<ELEMENT>>::type;
+
+        template <typename ELEMENT>
+        class ProxyObjectType : public PoolElement<ELEMENT> {
+        public:
+            ProxyObjectType() = delete;
+            ProxyObjectType(const ProxyObjectType<ELEMENT>&) = delete;
+            ProxyObjectType<ELEMENT>& operator=(const ProxyObjectType<ELEMENT>&) = delete;
+
+            template <typename... Args>
+            ProxyObjectType(ProxyListType<ELEMENT>& parent, Args&&... args)
+                : PoolElement<ELEMENT>(std::forward<Args>(args)...)
+                , _parent(parent)
+            {
+            }
+            ~ProxyObjectType() override = default;
+
+        public:
+            uint32_t Release() const override
+            {
+                uint32_t result = Core::InterlockedDecrement(ProxyService<ELEMENT>::m_RefCount);
+
+                if (result == 1) {
+                    // The list is the only one still holding this proxy. Kill it....
+                    _parent.RemoveObject(*this);
+                } else if (result == 0) {
+                    delete this;
+
+                    return (Core::ERROR_DESTRUCTION_SUCCEEDED);
+                }
+
+                return (Core::ERROR_NONE);
+            }
+            bool IsInitialized() const {
+                return (__IsInitialized<ELEMENT>());
+            }
+            void Clear(){
+                __Clear<ELEMENT>();
+            }
+        private:
+            // -----------------------------------------------------
+            // Check for IsInitialized method on Object
+            // -----------------------------------------------------
+            HAS_MEMBER(IsInitialized, hasIsInitialized);
+
+            typedef hasIsInitialized<ELEMENT, bool (ELEMENT::*)() const> TraitIsInitialized;
+
+            template <typename ID, typename TYPE>
+            inline typename Core::TypeTraits::enable_if<ProxyObjectType<TYPE>::TraitIsInitialized::value, bool>::type
+                __IsInitialized() const
+            {
+                return (ELEMENT::IsInitialized());
+            }
+
+            template <typename ID, typename TYPE>
+            inline typename Core::TypeTraits::enable_if<!ProxyObjectType<TYPE>::TraitIsInitialized::value, bool>::type
+                __IsInitialized() const
+            {
+                return (true);
+            }
+
+            // -----------------------------------------------------
+            // Check for Clear method on Object
+            // -----------------------------------------------------
+            HAS_MEMBER(Clear, hasClear);
+
+            typedef hasClear<ELEMENT, void (ELEMENT::*)()> TraitClear;
+
+            template <typename TYPE>
+            inline typename Core::TypeTraits::enable_if<ProxyObjectType<TYPE>::TraitClear::value, void>::type
+            __Clear()
+            {
+                ELEMENT::Clear();
+            }
+
+            template <typename TYPE>
+            inline typename Core::TypeTraits::enable_if<!ProxyObjectType<TYPE>::TraitClear::value, void>::type
+            __Clear()
+            {
+            }
+
+        private:
+            ProxyListType<ELEMENT>& _parent;
+        };
+
+        using ProxyListElement = ProxyObjectType<PROXYELEMENT>;
+
+    public:
+        ProxyListType(const ProxyListType<PROXYELEMENT>&) = delete;
+        ProxyListType<PROXYELEMENT>& operator=(const ProxyListType<PROXYELEMENT>&) = delete;
+
+        ProxyListType()
+            : _list()
+            , _lock()
+        {
+        }
+        ~ProxyListType() = default;
+
+    public:
+        template<typename REALTYPE, typename... Args>
+        Core::ProxyType<REALTYPE> Instance(Args&&... args)
+        {
+            Core::ProxyType<REALTYPE> result;
+
+            _lock.Lock();
+
+            ProxyObjectType<REALTYPE>* newItem(new (0) ProxyObjectType<REALTYPE>(*this, std::forward<Args>(args)...));
+
+            if (newItem->IsInitialized() == false) {
+                delete newItem;
+            }
+            else {
+                result = Core::ProxyType<REALTYPE>(static_cast<IReferenceCounted*>(newItem), newItem);
+
+                _list.emplace_back(Core::ProxyType<PROXYELEMENT>(static_cast<IReferenceCounted*>(newItem), newItem));
+            }
+
+            _lock.Unlock();
+
+            return (result);
+        }
+       
+        void Clear(){
+            _lock.Lock();
+            for(auto element : _list){
+                element->Clear();
+            }
+            _list.clear();
+            _lock.Unlock();
+        }
+    private:
+        void RemoveObject(const ProxyListElement& element) const
+        {
+            _lock.Lock();
+
+            // See if we did not hand it out before we reached the lock
+            if (element.LastRef() == true) {
+                auto index = std::find(_list.begin(), _list.end(), element);
+
+                ASSERT(index != _list.end());
+
+                if (index != _list.end()) {
+                    _list.erase(index);
+                }
+            }
+
+            _lock.Unlock();
+        }
+    private:
+        mutable std::list<ProxyType<ProxyListElement>> _list;
+        mutable Core::CriticalSection _lock;
+    };    
 }
 } // namespace Core
 
