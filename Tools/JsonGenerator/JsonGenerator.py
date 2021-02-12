@@ -33,7 +33,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pard
 import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 
-VERSION = "1.7.1"
+VERSION = "1.7.2"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
@@ -551,6 +551,7 @@ class JsonMethod(JsonObject):
             self.summary = schema["summary"]
         if "tags" in schema:
             self.tags = schema["tags"]
+        self.deprecated = "deprecated" in schema and schema["deprecated"];
 
     def Errors(self):
         return self.errors
@@ -558,8 +559,8 @@ class JsonMethod(JsonObject):
     def MethodName(self):
         return IMPL_ENDPOINT_PREFIX + JsonObject.JsonName(self)
 
-    def Summary(self):
-        return self.summary
+    def Headline(self):
+        return "%s%s%s" % (self.JsonName(), (" - " + self.summary.split(".", 1)[0]) if self.summary else "", " (DEPRECATED)" if self.deprecated else "")
 
 
 class JsonNotification(JsonMethod):
@@ -1028,6 +1029,8 @@ def LoadInterface(file, includePaths = []):
                     raise CppParseError(method, "method return type must be uint32_t (error code) or void (i.e. pass other return values by reference)")
 
             if obj:
+                if method.retval.meta.is_deprecated:
+                    obj["deprecated"] = True
                 if method.retval.meta.brief:
                     obj["summary"] = method.retval.meta.brief
                 if method.retval.meta.details:
@@ -1048,6 +1051,8 @@ def LoadInterface(file, includePaths = []):
                     obj = OrderedDict()
                     obj["cppname"] = method.name
                     params = BuildParameters(method.vars)
+                    if method.retval.meta.is_deprecated:
+                        obj["deprecated"] = True
                     if method.retval.meta.brief:
                         obj["summary"] = method.retval.meta.brief
                     if method.retval.meta.details:
@@ -1290,10 +1295,7 @@ def EmitEnumRegs(root, emit, header_file, if_file):
 #
 
 def EmitEvent(emit, root, event, static=False):
-    if event.Summary():
-        emit.Line("// Event: %s - %s" % (event.JsonName(), event.Summary().split(".", 1)[0]))
-    else:
-        emit.Line("// Event: %s" % event.JsonName())
+    emit.Line("// Event: %s" % event.Headline())
     params = event.Properties()[0].CppType()
     par = "const string& id, " if event.HasSendif() else ""
     par = par + ", ".join(
@@ -1383,15 +1385,11 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                 response = copy.deepcopy(m.Properties()[0]) if not m.writeonly else void
                 response.true_name = "result"
                 response.name = response.true_name
-                emit.Line(
-                    "// Property: '%s'%s%s%s" %
-                    (m.JsonName(), " (r/o)" if m.readonly else
-                     (" (w/o)" if m.writeonly else ""), " - " if m.summary else "", m.summary if m.summary else ""))
+                emit.Line("// Property: %s%s" % (m.Headline(), " (r/o)" if m.readonly else (" (w/o)" if m.writeonly else "")))
             else:
                 params = m.Properties()[0]
                 response = m.Properties()[1]
-                emit.Line("// Method: '%s'%s%s" %
-                          (m.JsonName(), " - " if m.summary else "", m.summary if m.summary else ""))
+                emit.Line("// Method: %s" % m.Headline())
             line = 'module.Register<%s,%s>(_T("%s"),' % (params.CppType(), response.CppType(), m.JsonName())
             emit.Line(line)
             emit.Indent()
@@ -1774,8 +1772,7 @@ def EmitHelperCode(root, emit, header_file):
             if not isinstance(method, JsonNotification) and not isinstance(method, JsonProperty):
                 trace.Log("Emitting method '{}'".format(method.JsonName()))
                 params = method.Properties()[0].CppType()
-                if method.Summary():
-                    emit.Line("// Method: %s - %s" % (method.JsonName(), method.Summary().split(".", 1)[0]))
+                emit.Line("// Method: %s" % method.Headline())
                 emit.Line("// Return codes:")
                 emit.Line("//  - ERROR_NONE: Success")
                 for e in method.Errors():
@@ -1818,8 +1815,7 @@ def EmitHelperCode(root, emit, header_file):
 
                 def EmitPropertyFc(method, name, getter):
                     params = method.Properties()[0].CppType()
-                    if method.Summary():
-                        emit.Line("// Property: %s - %s" % (method.JsonName(), method.Summary().split(".", 1)[0]))
+                    emit.Line("// Property: %s" % method.Headline())
                     emit.Line("// Return codes:")
                     emit.Line("//  - ERROR_NONE: Success")
                     for e in method.Errors():
@@ -2230,6 +2226,8 @@ def CreateDocument(schema, path):
                 elif "writeonly" in props and props["writeonly"] == True:
                     writeonly = True
                     MdParagraph("> This property is **write-only**.")
+            if "deprecated" in props:
+                MdParagraph("> This API is **deprecated**. It is no longer recommended for use in new implementations.")
             if "description" in props:
                 MdHeader("Description", 3)
                 MdParagraph(props["description"])
