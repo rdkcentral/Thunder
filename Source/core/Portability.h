@@ -622,7 +622,7 @@ namespace Core {
         virtual uint32_t Release() const = 0;
     };
 
-    struct EXTERNAL IUnknown : public IReferenceCounted  {
+    struct EXTERNAL IUnknown : virtual public IReferenceCounted  {
         enum { ID = 0x00000000 };
 
         ~IUnknown() override = default;
