@@ -41,10 +41,16 @@ namespace RPC {
         for (std::pair<uint32_t, ProxyStub::UnknownStub*> stub : _stubs) {
             delete stub.second;
         }
+
+        _proxy.clear();
+        _stubs.clear();
     }
 
     /* static */ Administrator& Administrator::Instance()
     {
+        // We tried this, but the proxy-stubs are not SingletonType. Turing proxy-stubs in to SingletonType 
+        // make them needless complex and require more memory.  
+        // static Administrator& systemAdministrator = Core::SingletonType<Administrator>::Instance();
         static Administrator systemAdministrator;
 
         return (systemAdministrator);

@@ -5,8 +5,40 @@ namespace WPEFramework {
 namespace RPC {
     static Core::ProxyType<RPC::IIPCServer> DefaultInvokeServer()
     {
-        static Core::ProxyType<RPC::IIPCServer> instance = Core::ProxyType<RPC::IIPCServer>(Core::SingletonProxyType<RPC::InvokeServerType<1, 0, 8>>::Instance());
-        return (instance);
+        class Engine : public RPC::InvokeServerType<1, 0, 8> {
+        private:
+            class AnnouncementSink : public Core::IIPCServer {
+            public:
+                AnnouncementSink(const AnnouncementSink&) = delete;
+                AnnouncementSink& operator=(const AnnouncementSink&) = delete;
+
+                AnnouncementSink() = default;
+                ~AnnouncementSink() override = default;
+
+            public:
+                void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& message) override
+                {
+                    CommunicatorClient* client = dynamic_cast<CommunicatorClient*>(&source);
+                    client->Announcement()->Procedure(source, message);
+                }
+            };
+
+        public:
+            Engine()
+            {
+                Announcements(&_sink);
+            }
+
+            ~Engine() override
+            {
+            }
+
+        private:
+            AnnouncementSink _sink;
+
+        };
+
+        return Core::ProxyType<RPC::IIPCServer>(Core::SingletonProxyType<Engine>::Instance());
     };
 
     template <Core::ProxyType<RPC::IIPCServer> ENGINE() = DefaultInvokeServer>
@@ -21,7 +53,6 @@ namespace RPC {
             Channel(const Core::NodeId& remoteNode, const Core::ProxyType<RPC::IIPCServer>& handler)
                 : CommunicatorClient(remoteNode, Core::ProxyType<Core::IIPCServer>(handler))
             {
-                handler->Announcements(CommunicatorClient::Announcement());
             }
             ~Channel() override = default;
 
@@ -35,7 +66,6 @@ namespace RPC {
                 CommunicatorClient::Close(Core::infinite);
             }
         };
-
     public:
         ConnectorType(const ConnectorType<ENGINE>&) = delete;
         ConnectorType<ENGINE>& operator=(const ConnectorType<ENGINE>&) = delete;
@@ -43,41 +73,34 @@ namespace RPC {
         ConnectorType()
             : _comChannels()
         {
-            if (_engine.IsValid() == false) {
-                _engine = ENGINE();
-            }
         }
         ~ConnectorType() = default;
 
     public:
         template <typename INTERFACE>
-        void Aquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string& className, const uint32_t version, INTERFACE*& result)
+        INTERFACE* Aquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version)
         {
-            result = nullptr;
+            INTERFACE* result = nullptr;
 
-            ASSERT(_engine.IsValid() == true);
-
-            Core::ProxyType<Channel> channel = _comChannels.Instance(nodeId, _engine);
+            Core::ProxyType<Channel> channel = _comChannels.Instance(nodeId, ENGINE());
 
             if (channel.IsValid() == true) {
-                result = channel->CommunicatorClient::Aquire<INTERFACE>(waitTime, className, version);
+                result = channel->template Aquire<INTERFACE>(waitTime, className, version);
             }
+
+            return (result);
+        }
+        Core::ProxyType<CommunicatorClient> Communicator(const Core::NodeId& nodeId){
+            return _comChannels.Find(nodeId);
         }
         RPC::IIPCServer& Engine()
         {
-            // The engine has to be running :-)
-            ASSERT(_engine.IsValid() == true);
-
-            return (*_engine);
+            return *ENGINE();
         }
 
     private:
         Core::ProxyMapType<Core::NodeId, Channel> _comChannels;
-
-        static Core::ProxyType<RPC::IIPCServer> _engine;
     };
 
-    template <Core::ProxyType<RPC::IIPCServer> ENGINE()>
-    EXTERNAL_HIDDEN typename Core::ProxyType<RPC::IIPCServer> ConnectorType<ENGINE>::_engine;
 } // namespace RPC
 } // namespace WPEFramework

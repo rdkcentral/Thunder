@@ -41,6 +41,27 @@ namespace RPC {
         private:
             PluginMonitorType<HANDLER, ENGINE>& _parent;
         };
+        class Job {
+        public:
+            Job() = delete;
+            Job(const Job&) = delete;
+            Job& operator=(const Job&) = delete;
+
+            Job(PluginMonitorType<HANDLER, ENGINE>& parent)
+                : _parent(parent)
+            {
+            }
+            ~Job() = default;
+
+        public:
+            void Dispatch()
+            {
+                _parent.Dispatch();
+            }
+
+        private:
+            PluginMonitorType<HANDLER, ENGINE>& _parent;
+        };
 
     public:
         PluginMonitorType() = delete;
@@ -54,7 +75,7 @@ namespace RPC {
             , _callsign()
             , _node()
             , _sink(*this)
-            , _designated(nullptr)
+            , _job(*this)
             , _controller(nullptr)
             , _state(UNKNOWN)
             , _administrator()
@@ -64,8 +85,6 @@ namespace RPC {
         {
             Close(Core::infinite);
         }
-
-        using controllerInterface = PluginHost::IShell;
 
     public:
         uint32_t Open(const uint32_t waitTime, const Core::NodeId& node, const string& callsign)
@@ -78,7 +97,7 @@ namespace RPC {
             if (_controller != nullptr) {
                 _adminLock.Unlock();
             } else {
-                _administrator.Aquire(waitTime, node, _T(""), ~0, _controller);
+                _controller = _administrator.template Aquire<PluginHost::IShell>(waitTime, node, _T(""), ~0);
 
                 if (_controller == nullptr) {
                     _adminLock.Unlock();
@@ -88,17 +107,15 @@ namespace RPC {
 
                     _adminLock.Unlock();
 
-                    ASSERT(_state == state::UNKNOWN);
-
                     _controller->Register(&_sink);
+                    Dispatch();
 
                     _adminLock.Lock();
 
-                    _state = state::DEACTIVATED;
-
+                    if (_state == state::UNKNOWN) {
+                        _state = state::DEACTIVATED;
+                    }
                     _adminLock.Unlock();
-
-                    Reevaluate();
                 }
             }
 
@@ -122,7 +139,10 @@ namespace RPC {
         template <typename INTERFACE>
         INTERFACE* Aquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version = ~0)
         {
-            return (_administrator.CommunicatorClient::Aquire<INTERFACE>(waitTime, nodeId, className, version));
+            return (_administrator.template Aquire<INTERFACE>(waitTime, nodeId, className, version));
+        }
+        Core::ProxyType<RPC::CommunicatorClient> Communicator(const Core::NodeId& nodeId){
+            return _administrator.Communicator(nodeId);
         }
         inline void Submit(const Core::ProxyType<Core::IDispatch>& job)
         {
@@ -130,27 +150,32 @@ namespace RPC {
         }
 
     private:
-        void Reevaluate()
+        void Dispatch()
         {
-            if (_designated != nullptr) {
 
-                PluginHost::IShell::state current = _designated->State();
+            _adminLock.Lock();
+            PluginHost::IShell* evaluate = _designated;
+            _designated = nullptr;
+            _adminLock.Unlock();
+
+            if (evaluate != nullptr) {
+
+                PluginHost::IShell::state current = evaluate->State();
 
                 if (current == PluginHost::IShell::ACTIVATED) {
-                    _reporter.Activated(_designated);
+                    _reporter.Activated(evaluate);
                     _adminLock.Lock();
                     _state = state::ACTIVATED;
                     _adminLock.Unlock();
                 } else if (current == PluginHost::IShell::DEACTIVATION) {
                     if (_state == state::ACTIVATED) {
-                        _reporter.Deactivated(_designated);
+                        _reporter.Deactivated(evaluate);
                     }
                     _adminLock.Lock();
                     _state = state::DEACTIVATED;
                     _adminLock.Unlock();
                 }
-                _designated->Release();
-                _designated = nullptr;
+                evaluate->Release();
             }
         }
         void StateChange(PluginHost::IShell* plugin, const string& callsign)
@@ -158,22 +183,15 @@ namespace RPC {
             if (callsign == _callsign) {
                 _adminLock.Lock();
 
-                if (_state != state::UNKNOWN) {
-
-                    PluginHost::IShell::state current = plugin->State();
-                    if (current == PluginHost::IShell::ACTIVATED) {
-                        _reporter.Activated(plugin);
-                        _state = state::ACTIVATED;
-                    } else if (current == PluginHost::IShell::DEACTIVATION) {
-                        if (_state == state::ACTIVATED) {
-                            _reporter.Deactivated(plugin);
-                        }
-                        _state = state::DEACTIVATED;
-                    }
-
-                } else if (_designated == nullptr) {
+                if (_designated == nullptr) {
                     _designated = plugin;
                     _designated->AddRef();
+                    if (_state != state::UNKNOWN) {
+                        Core::ProxyType<Core::IDispatch> job(_job.Aquire());
+                        if (job.IsValid() == true) {
+                            _administrator.Engine().Submit(job);
+                        }
+                    }
                 }
 
                 _adminLock.Unlock();
@@ -186,6 +204,7 @@ namespace RPC {
         string _callsign;
         Core::NodeId _node;
         Core::Sink<Sink> _sink;
+        Core::ThreadPool::JobType<Job> _job;
         PluginHost::IShell* _designated;
         PluginHost::IShell* _controller;
         state _state;
@@ -252,6 +271,12 @@ namespace RPC {
             }
 
             return (result);
+        }
+
+        template <typename EXPECTED_INTERFACE>
+        EXPECTED_INTERFACE* Aquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version = ~0)
+        {
+            return (_monitor.template Aquire<EXPECTED_INTERFACE>(waitTime, nodeId, className, version));
         }
 
         // Allow a derived class to take action on a new interface, or almost dissapeared interface..
