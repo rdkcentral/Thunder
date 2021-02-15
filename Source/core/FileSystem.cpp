@@ -171,9 +171,9 @@ namespace Core {
 #endif
     }
 
-    /* static */ string Directory::Normalize(const string& location)
+    /* static */ string Directory::Normalize(const string& input)
     {
-        string result(location);
+        string result(input);
 
         // First see if we are not empy.
         if (result.empty() == false) {
@@ -193,11 +193,7 @@ namespace Core {
             if (result[length - 1] != '/')
 #endif
             {
-                Core::File file(location);
-
-                if (file.IsDirectory() == true) {
-                    result += '/';
-                }
+                result += '/';
             }
         }
         return (result);
