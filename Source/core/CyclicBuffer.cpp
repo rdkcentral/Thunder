@@ -117,6 +117,7 @@ namespace Core {
     uint32_t CyclicBuffer::SignalLock(const uint32_t waitTime)
     {
 
+        AdminLock();
         uint32_t result = waitTime;
 
         if (waitTime != Core::infinite) {
@@ -159,6 +160,7 @@ namespace Core {
             ::WaitForSingleObjectEx(_signal, INFINITE, FALSE);
 #endif
         }
+        AdminUnlock();
         return (result);
     }
 
@@ -174,6 +176,14 @@ namespace Core {
     {
     }
 
+    void CyclicBuffer::Waiting()
+    {
+        // Wait till all waiters have seen the trigger..
+        while (_administration->_agents.load() > 0) {
+            SleepMs(0);
+        }
+    }
+
     void CyclicBuffer::Reevaluate()
     {
 
@@ -187,15 +197,10 @@ namespace Core {
 #else
             ReleaseSemaphore(_signal, _administration->_agents.load(), nullptr);
 #endif
-
-            // Wait till all waiters have seen the trigger..
-            while (_administration->_agents.load() > 0) {
-                SleepMs(0);
-            }
         }
     }
 
-    inline void CyclicBuffer::Alert()
+    void CyclicBuffer::Alert()
     {
 
         // Lock the administrator..
@@ -206,6 +211,7 @@ namespace Core {
         Reevaluate();
 
         AdminUnlock();
+        Waiting();
     }
 
     uint32_t CyclicBuffer::Read(uint8_t buffer[], const uint32_t length)
@@ -336,6 +342,7 @@ namespace Core {
                 DataAvailable();
 
                 AdminUnlock();
+                Waiting();
             }
         }
 
@@ -348,7 +355,7 @@ namespace Core {
         uint32_t tail = oldTail & _administration->_tailIndexMask;
         uint32_t free = Free(_administration->_head, tail);
 
-        while (free <= required) {
+        while (free < required) {
             uint32_t remaining = required - free;
             Cursor cursor(*this, oldTail, remaining);
             uint32_t offset = GetOverwriteSize(cursor);
@@ -469,7 +476,7 @@ namespace Core {
         }
 
         AdminUnlock();
-
+        Waiting();
         return (result);
     }
 
