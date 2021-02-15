@@ -169,7 +169,7 @@ TEST(Core_CyclicBuffer, WithoutOverwrite)
     Singleton::Dispose();
 }
 
-TEST(DISABLED_Core_CyclicBuffer, WithoutOverwriteReversed)
+TEST(Core_CyclicBuffer, WithoutOverwriteReversed)
 {
     std::string bufferName {"cyclicbuffer02"};
     auto lambdaFunc = [bufferName](IPTestAdministrator & testAdmin) {
@@ -275,7 +275,7 @@ TEST(DISABLED_Core_CyclicBuffer, WithoutOverwriteReversed)
     Singleton::Dispose();
 }
 
-TEST(DISABLED_Core_CyclicBuffer, WithOverwrite)
+TEST(Core_CyclicBuffer, WithOverwrite)
 {
     std::string bufferName {"cyclicbuffer03"};
 
@@ -494,7 +494,7 @@ TEST(Core_CyclicBuffer, WithOverwriteReversed)
     Singleton::Dispose();
 }
 
-TEST(DISABLED_Core_CyclicBuffer, lock)
+TEST(Core_CyclicBuffer, lock)
 {
     char bufferName[] = "cyclicbuffer05";
     uint32_t cyclicBufferSize = 10;
@@ -515,7 +515,7 @@ TEST(DISABLED_Core_CyclicBuffer, lock)
     buffer.Lock(true, 1000);
 }
 
-TEST(DISABLED_Core_CyclicBuffer, lock_unlock)
+TEST(Core_CyclicBuffer, lock_unlock)
 {
     char bufferName[] = "cyclicbuffer06";
     uint32_t bufferSize = 10;
