@@ -111,6 +111,16 @@ namespace Core {
             }
 
         private:
+            uint32_t GetCurrentTail() const
+            {
+                return GetCompleteTail(_Offset);
+            }
+
+            uint32_t GetRemainingRequired() const
+            {
+                return (_Size - _Offset);
+            }
+
             CyclicBuffer& _Parent;
             uint32_t _Tail;
 

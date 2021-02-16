@@ -195,7 +195,7 @@ namespace Core {
         }
     }
 
-    void CyclicBuffer::Alert()
+    inline void CyclicBuffer::Alert()
     {
 
         // Lock the administrator..
