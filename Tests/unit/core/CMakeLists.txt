@@ -97,4 +97,3 @@ target_link_libraries(${TEST_RUNNER_NAME}
 install(
     TARGETS ${TEST_RUNNER_NAME}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
-
