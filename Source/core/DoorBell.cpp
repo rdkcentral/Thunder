@@ -38,6 +38,10 @@ namespace Core {
         , _receiveSocket(INVALID_SOCKET)
         , _registered(0)
     {
+        int flags = fcntl(_sendSocket, F_GETFL, 0) | O_NONBLOCK;
+        if (fcntl(_sendSocket, F_SETFL, flags) != 0) {
+            TRACE_L1("SendSocket:Error on port socket F_SETFL call. Error %d", errno);
+        }
     }
     /* virtual */ DoorBell::Connector::~Connector()
     {
