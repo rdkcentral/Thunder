@@ -60,12 +60,10 @@ namespace Core {
     public:
         inline Singleton(void** realDeal) : _realDeal(realDeal)
         {
-            ListInstance().Register(this);
         }
 
         virtual ~Singleton()
         {
-            ListInstance().Unregister(this);
             (*_realDeal) = nullptr;
         }
 
@@ -75,9 +73,11 @@ namespace Core {
         }
         virtual string ImplementationName() const = 0;
 
+    protected:
+        static SingletonList& ListInstance();
+        
     private:
         void** _realDeal;
-        static SingletonList& ListInstance();
     };
 
     template <class SINGLETON>
@@ -92,12 +92,14 @@ namespace Core {
             : Singleton(reinterpret_cast<void**>(&g_TypedSingleton))
             , SINGLETON(std::forward<Args>(args)...)
         {
+            ListInstance().Register(this);
             TRACE_L1("Singleton constructing %s", ClassNameOnly(typeid(SINGLETON).name()).Text().c_str());
         }
 
     public:
         virtual ~SingletonType()
         {
+           ListInstance().Unregister(this);
            ASSERT(g_TypedSingleton != nullptr);
         }
 
