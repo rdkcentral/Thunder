@@ -355,7 +355,16 @@ namespace Core {
 
     public:
         bool IsValid() const {
-            return (Base::IsValid() && (Checksum() == reinterpret_cast<const udphdr*>(Base::Frame())->check));
+                bool result = false;
+                if (Base::IsValid()) {
+                   result = true;
+                   uint16_t csum = reinterpret_cast<const udphdr*>(Base::Frame())->check;
+                   //As per RFC768, If Checksum is transmitted as 0, then the transmitter generated no checksum and need not be verified.
+                   if(csum != 0) {
+                       result = (Checksum() == csum);
+                   }
+                }
+                return result;
         }
         uint16_t Load(const uint8_t buffer[], const uint16_t size) {
              uint16_t copySize = std::min(size, static_cast<uint16_t>(SIZE + HeaderSize));
