@@ -249,12 +249,10 @@ namespace Core {
         uint64_t Allocated() const;
         uint64_t Resident() const;
         uint64_t Shared() const;
-        uint64_t Jiffies() const;
         string Name() const;
         void Name(const string& name);
         string Executable() const;
         std::list<string> CommandLine() const;
-        void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
 
         static void FindByName(const string& name, const bool exact, std::list<ProcessInfo>& processInfos);
 
@@ -304,7 +302,6 @@ namespace Core {
     public:
         explicit ProcessTree(const ProcessInfo& processInfo);
 
-        void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
         bool ContainsProcess(ThreadId pid) const;
         void GetProcessIds(std::list<ThreadId>& processIds) const;
         ThreadId RootId() const;

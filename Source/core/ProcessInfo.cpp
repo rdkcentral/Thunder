@@ -40,31 +40,6 @@
 #include <libproc.h>
 #endif
 
-namespace {
-// Used to parse /proc/PID/maps
-struct MemRange {
-    uintptr_t m_start;
-    uintptr_t m_end;
-
-    explicit MemRange(const string& mapsLine)
-        : m_start(0)
-        , m_end(0)
-    {
-        // TODO: sscanf seems to be perfect here
-        size_t spaceIndex = mapsLine.find(' ');
-        string rangeStr = mapsLine.substr(0, spaceIndex);
-        size_t dashIndex = rangeStr.find('-');
-        string startStr = rangeStr.substr(0, dashIndex);
-        string endStr = rangeStr.substr(dashIndex + 1);
-
-        std::istringstream issStart(startStr);
-        issStart >> std::hex >> m_start;
-        std::istringstream issEnd(endStr);
-        issEnd >> std::hex >> m_end;
-    }
-};
-}
-
 namespace WPEFramework {
 namespace Core {
 #ifndef __WINDOWS__
@@ -144,7 +119,6 @@ namespace Core {
         return (string(fullname));
     }
 
-    // Iterate over Processes
     template <typename ACCEPTFUNCTION>
     static void FindChildren(std::list<uint32_t>& children, ACCEPTFUNCTION acceptfunction)
     {
@@ -187,7 +161,12 @@ namespace Core {
         }
     }
 
-    // Iterate over Processes
+    /**
+     * Find PID of processes with a name specified by *item*.
+     * If exact = true - search will match any process entry,
+     * that starts with value of *item*. The search is case-sensitive
+     * in both cases.
+     */
     static void FindPid(const string& item, const bool exact, std::list<uint32_t>& pids)
     {
         DIR* dp;
@@ -207,7 +186,6 @@ namespace Core {
                 pid = strtol(ep->d_name, &endptr, 10);
 
                 if ('\0' == endptr[0]) {
-                    // We have a valid PID, Find, the parent of this process..
                     TCHAR buffer[512];
                     ProcessName(pid, buffer, sizeof(buffer));
 
@@ -216,7 +194,8 @@ namespace Core {
                             pids.push_back(pid);
                         }
                     } else {
-                        if (fileName == Core::File::FileNameExtended(string(buffer))) {
+                        auto entry = Core::File::FileNameExtended(string(buffer));
+                        if (entry.rfind(item, 0) == 0) {
                             pids.push_back(pid);
                         }
                     }
@@ -484,43 +463,6 @@ namespace Core {
         return (result);
     }
 
-    uint64_t ProcessInfo::Jiffies() const
-    {
-        uint64_t result = 0;
-
-#ifndef __WINDOWS__
-
-        int fd;
-        TCHAR buffer[256];
-
-        snprintf(buffer, sizeof(buffer), "/proc/%d/stat", _pid);
-        if ((fd = open(buffer, O_RDONLY)) > 0) {
-            if (read(fd, buffer, sizeof(buffer)) > 0) {
-                const int utimeIndex = 13;
-                const TCHAR* pointer = buffer;
-
-                // Skip to utime fields
-                for (int index = 0; index < utimeIndex; index++) {
-                    pointer = strstr(pointer, " ");
-                    if (pointer == nullptr) {
-                        break;
-                    }
-                    pointer++;
-                }
-
-                if (pointer != nullptr) {
-                    uint32_t utime = 0, stime = 0;
-                    sscanf(pointer, "%d %d", &utime, &stime);
-                    result = static_cast<uint64_t>(utime) + static_cast<uint64_t>(stime);
-                }
-            }
-            close(fd);
-        }
-#endif
-
-        return (result);
-    }
-
     string ProcessInfo::Name() const
     {
 #ifdef __WINDOWS__
@@ -600,88 +542,6 @@ namespace Core {
         return output;
     }
 #endif
-
-    // pagemap file is documented here:
-    //   https://www.kernel.org/doc/Documentation/vm/pagemap.txt
-    void ProcessInfo::MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const
-    {
-        uint32_t entryCount = size / sizeof(uint32_t);
-
-#ifndef __WINDOWS__
-
-        char mapsPath[PATH_MAX];
-        sprintf(mapsPath, "/proc/%u/maps", _pid);
-        std::ifstream is01(mapsPath);
-
-        char pagemapPath[PATH_MAX];
-        sprintf(pagemapPath, "/proc/%u/pagemap", _pid);
-
-        FILE* pagemapFile = fopen(pagemapPath, "rb");
-        if (pagemapFile == nullptr) {
-            TRACE_L1("Could not open pagemap file: %s", pagemapPath);
-        } else {
-            while (!is01.eof()) {
-                string readLine;
-                getline(is01, readLine);
-                if (readLine.empty()) {
-                    continue;
-                }
-
-                MemRange range(readLine);
-                uint32_t pageSize = Core::SystemInfo::Instance().GetPageSize();
-                uint64_t pageCount = (range.m_end - range.m_start) / pageSize;
-                uint64_t pageMapOffset = (range.m_start / pageSize) * sizeof(uint64_t);
-                int fseekStatus = fseek(pagemapFile, pageMapOffset, SEEK_SET);
-                if (fseekStatus != 0) {
-                    TRACE_L1("Failed to seek in %s", pagemapPath);
-                    continue;
-                }
-
-                for (uint64_t i = 0; i < pageCount; i++) {
-                    uint64_t pageData = 0;
-                    size_t readCount = fread(&pageData, sizeof(uint64_t), 1, pagemapFile);
-                    if (readCount != 1) {
-                        TRACE_L1("Failed to read pageInfo from %s", pagemapPath);
-                        continue;
-                    }
-
-                    // Skip pages that are swapped out.
-                    bool isSwapped = ((pageData >> 62) & 1) != 0;
-                    if (isSwapped) {
-                        continue;
-                    }
-
-                    // Skip pages that aren't present.
-                    bool isPresent = ((pageData >> 63) & 1) != 0;
-                    if (!isPresent) {
-                        continue;
-                    }
-
-                    // Skip pages mapped to files.
-                    bool isFilePage = ((pageData >> 61) & 1) != 0;
-                    if (isFilePage) {
-                        continue;
-                    }
-
-                    // Lower 54 bits contain actual page frame number (PFN).
-                    uint64_t filter = (static_cast<uint64_t>(1) << 55) - 1;
-                    uint32_t pageFrameNumber = static_cast<uint32_t>(pageData & filter);
-
-                    uint32_t bufferIndex = pageFrameNumber / 32;
-                    if (bufferIndex > entryCount) {
-                        TRACE_L1("Tried to mark page outside of buffer: %u (%u)", bufferIndex, pageFrameNumber);
-                        continue;
-                    }
-
-                    uint32_t bitIndex = pageFrameNumber % 32;
-
-                    bitSet[bufferIndex] |= static_cast<uint32_t>(1) << bitIndex;
-                }
-            }
-            fclose(pagemapFile);
-        }
-#endif // __WINDOWS__
-    }
 
     /* static */ void ProcessInfo::FindByName(const string& name, const bool exact, std::list<ProcessInfo>& processInfos)
     {
@@ -766,13 +626,6 @@ namespace Core {
         EnumerateChildProcesses(processInfo, _processes);
     }
 
-    void ProcessTree::MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const
-    {
-        for (const ProcessInfo& process : _processes) {
-            process.MarkOccupiedPages(bitSet, size);
-        }
-    }
-
     bool ProcessTree::ContainsProcess(ThreadId pid) const
     {
 #ifdef __WINDOWS__
@@ -782,7 +635,6 @@ namespace Core {
 #ifdef __WINDOWS__
 #pragma warning(default : 4312)
 #endif
-
         std::list<ProcessInfo>::const_iterator i = std::find_if(_processes.cbegin(), _processes.cend(), comparator);
         return (i != _processes.cend());
     }
@@ -811,15 +663,6 @@ namespace Core {
 #ifdef __WINDOWS__
 #pragma warning(default : 4312)
 #endif
-    }
-
-    uint64_t ProcessTree::Jiffies() const
-    {
-        uint64_t output = 0;
-        for (const ProcessInfo process : _processes) {
-            output += process.Jiffies();
-        }
-        return output;
     }
 }
 }
