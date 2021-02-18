@@ -463,22 +463,22 @@ namespace Core {
 
     /* static */ bool SystemInfo::SetEnvironment(const string& name, const TCHAR* value, const bool forced)
     {
+        bool result = false;
 #ifdef __LINUX__
         if ((forced == true) || (::getenv(name.c_str()) == nullptr)) {
             if (value != nullptr) {
-                return (::setenv(name.c_str(), value, 1) == 0);
+                result = (::setenv(name.c_str(), value, 1) == 0);
             } else {
-                return (::unsetenv(name.c_str()));
+                result = (::unsetenv(name.c_str()) == 0);
             }
         }
 #else
         if ((forced == true) || (GetEnvironmentVariable(name.c_str(), nullptr, 0) == 0)) {
             // https://msdn.microsoft.com/en-us/library/windows/desktop/ms686206(v=vs.85).aspx
-            SetEnvironmentVariable(name.c_str(), value);
-            return (true);
+            result = SetEnvironmentVariable(name.c_str(), value);
         }
 #endif
-        return (false);
+        return (result);
     }
 
     /* static */ bool SystemInfo::SetEnvironment(const string& name, const string& value, const bool forced)
