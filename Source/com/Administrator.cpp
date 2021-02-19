@@ -283,8 +283,13 @@ namespace RPC {
 
                 // We will release on behalf of the other side :-)
                 do {
-                    result = loop->Unknown()->Release();
+                    Core::IUnknown* iface = loop->Unknown();
+                    
+                    ASSERT(iface != nullptr);
 
+                    if (iface != nullptr) {
+                        result = iface->Release();
+                    }
                 } while ((loop->Decrement()) && (result == Core::ERROR_NONE));
 
                 ASSERT (loop->Flushed() == true);
