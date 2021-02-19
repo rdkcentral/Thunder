@@ -95,9 +95,12 @@ TEST (test_file, directory)
 
     char buffer[15];
     string currenPath = "..";
-
+    snprintf(buffer,(path.size() + currenPath.size() + 2), "%s/%s",path.c_str(), currenPath.c_str());
+#ifdef BUILD_ARM
     if ((dirOne.Current(), buffer) == 0) {
-        snprintf(buffer,(path.size() + currenPath.size() + 2), "%s/%s",path.c_str(), currenPath.c_str());
+#else
+    if (strcmp(dirOne.Current().c_str(), buffer) == 0) {
+#endif
         EXPECT_EQ(dirOne.Current(), buffer);
         EXPECT_EQ(dirOne.Name(), currenPath.c_str());
     } else {

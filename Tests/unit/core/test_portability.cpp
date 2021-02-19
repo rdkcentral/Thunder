@@ -90,9 +90,9 @@ TEST(test_portability, simple_generic)
     ThreadClass object(parentId);
     object.Run();
 
-#ifdef __DEBUG__
-    DumpCallStack(object.Id(), nullptr);
-#endif
+//#ifdef __DEBUG__
+//    DumpCallStack(object.Id(), nullptr);
+//#endif
 
     object.Stop();
 
