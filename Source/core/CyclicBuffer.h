@@ -111,16 +111,6 @@ namespace Core {
             }
 
         private:
-            uint32_t GetCurrentTail() const
-            {
-                return GetCompleteTail(_Offset);
-            }
-
-            uint32_t GetRemainingRequired() const
-            {
-                return (_Size - _Offset);
-            }
-
             CyclicBuffer& _Parent;
             uint32_t _Tail;
 
@@ -249,6 +239,7 @@ namespace Core {
         void AdminUnlock();
         void Reevaluate();
         uint32_t SignalLock(const uint32_t waitTime);
+        void Waiting();
 
     private:
         enum state {
