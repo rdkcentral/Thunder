@@ -326,6 +326,7 @@ namespace Core {
         , _handle(OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, _pid))
 #else
         : _pid(getpid())
+        , _memory(_pid)
 #endif
     {
     }
@@ -333,6 +334,7 @@ namespace Core {
     // Copy Info
     ProcessInfo::ProcessInfo(const ProcessInfo& copy)
         : _pid(copy._pid)
+        , _memory(copy._memory)
 #ifdef __WINDOWS__
         , _handle(OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, _pid))
 #endif
@@ -341,6 +343,7 @@ namespace Core {
     // Specifice Process Info
     ProcessInfo::ProcessInfo(const uint32_t id)
         : _pid(id)
+        , _memory(id)
 #ifdef __WINDOWS__
         , _handle(OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, _pid))
 #endif
@@ -359,6 +362,7 @@ namespace Core {
     ProcessInfo& ProcessInfo::operator=(const ProcessInfo& rhs)
     {
         _pid = rhs._pid;
+        _memory = rhs._memory;
 
 #ifdef __WINDOWS__
         if (_handle) {
@@ -663,6 +667,42 @@ namespace Core {
 #ifdef __WINDOWS__
 #pragma warning(default : 4312)
 #endif
+    }
+
+    ProcessInfo::Memory::Memory(const process_t pid)
+        : _pid(pid)
+        , _uss(0)
+        , _pss(0)
+        , _rss(0)
+        , _vss(0)
+    {
+    }
+
+    ProcessInfo::Memory::Memory(const ProcessInfo::Memory& other)
+        : _pid(other._pid)
+        , _uss(0)
+        , _pss(0)
+        , _rss(0)
+        , _vss(0)
+    {
+    }
+
+    ProcessInfo::Memory& ProcessInfo::Memory::operator=(const ProcessInfo::Memory& other)
+    {
+        if (&other == this) {
+            return *this;
+        }
+        _pid = other._pid;
+        _uss = 0;
+        _pss = 0;
+        _rss = 0;
+        _vss = 0;
+        return *this;
+    }
+
+    void ProcessInfo::Memory::MemoryStats()
+    {
+        
     }
 }
 }

@@ -55,6 +55,44 @@ namespace Core {
         };
 #endif
 
+    private:
+        class Memory {
+        public:
+            Memory(const process_t pid);
+            ~Memory() = default;
+
+            Memory(const Memory&);
+            Memory& operator=(const Memory&);
+
+        public:
+            void MemoryStats();
+            inline uint64_t USS() const
+            {
+                return _uss;
+            }
+            inline uint64_t PSS() const
+            {
+                return _pss;
+            }
+            inline uint64_t RSS() const
+            {
+                return _rss;
+            }
+            inline uint64_t VSS() const
+            {
+                return _vss;
+            }
+
+        private:
+            process_t _pid;
+
+            uint64_t _uss;
+            uint64_t _pss;
+            uint64_t _rss;
+            uint64_t _vss;
+        };
+
+    public:
         class EXTERNAL Iterator {
         public:
             // Get all processes
@@ -246,7 +284,24 @@ namespace Core {
 #endif
         }
 
-        uint64_t Allocated() const;
+        inline uint64_t USS() const
+        {
+            return _memory.USS();
+        }
+        inline uint64_t PSS() const
+        {
+            return _memory.PSS();
+        }
+        inline uint64_t RSS() const
+        {
+            return _memory.RSS();
+        }
+        inline uint64_t VSS() const
+        {
+            return _memory.VSS();
+        }
+
+        uint64_t Allocated() const; //delete those three also, and use memory class instead?
         uint64_t Resident() const;
         uint64_t Shared() const;
         string Name() const;
@@ -274,6 +329,7 @@ namespace Core {
         }
 
     private:
+        Memory _memory;
         process_t _pid;
 #ifdef __WINDOWS__
         HANDLE _handle;
