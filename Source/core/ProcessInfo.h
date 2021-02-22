@@ -315,7 +315,7 @@ namespace Core {
         }
 #endif
         /**
-         * @brief On Linux, MemoryStats() is called inside, no need to call it beforehand
+         * @brief On Linux, MemoryStats() is called inside those 3 methods, no need to call it beforehand
          */
         uint64_t Allocated() const;
         uint64_t Resident() const;
@@ -378,7 +378,6 @@ namespace Core {
         bool ContainsProcess(ThreadId pid) const;
         void GetProcessIds(std::list<ThreadId>& processIds) const;
         ThreadId RootId() const;
-        uint64_t Jiffies() const;
 
     private:
         std::list<ProcessInfo> _processes;
