@@ -17,14 +17,14 @@
  * limitations under the License.
  */
 
-#ifndef __IPLUGIN_H
-#define __IPLUGIN_H
+#pragma once
 
 #include <com/ICOM.h>
 
 namespace WPEFramework {
 
 namespace Web {
+
     class Request;
 
     class Response;
@@ -36,35 +36,26 @@ namespace PluginHost {
 
     class Channel;
 
-    struct EXTERNAL IPlugin
-        : public virtual Core::IUnknown {
+    struct EXTERNAL IPlugin : public virtual Core::IUnknown {
 
-        enum {
-            ID = RPC::ID_PLUGIN
-        };
+        enum { ID = RPC::ID_PLUGIN };
 
-        struct INotification
-            : virtual public Core::IUnknown {
+        struct INotification : virtual public Core::IUnknown {
 
-            enum {
-                ID = RPC::ID_PLUGIN_NOTIFICATION
-            };
+            enum { ID = RPC::ID_PLUGIN_NOTIFICATION };
 
-            virtual ~INotification()
-            {
-            }
+            ~INotification() override = default;
 
             //! @{
             //! ================================== CALLED ON THREADPOOL THREAD =====================================
             //! Whenever a plugin changes state, this is reported to an observer so proper actions could be taken
             //! on this state change.
             //! @}
-            virtual void StateChange(PluginHost::IShell* plugin, const string& callsign) = 0;
+            virtual void Activated(const string& callsign, IShell* plugin) = 0;
+            virtual void Deactivated(const string& callsign, IShell* plugin) = 0;
         };
 
-        virtual ~IPlugin()
-        {
-        }
+        ~IPlugin() override = default;
 
         //! @{
         //! ==================================== CALLED ON THREADPOOL THREAD ======================================
@@ -95,16 +86,11 @@ namespace PluginHost {
     };
 
     /* @stubgen:skip */
-    struct IPluginExtended
-        : public IPlugin {
+    struct IPluginExtended : public IPlugin {
 
-        enum {
-            ID = RPC::ID_PLUGINEXTENDED
-        };
+        enum { ID = RPC::ID_PLUGINEXTENDED };
 
-        virtual ~IPluginExtended()
-        {
-        }
+        ~IPluginExtended() override = default;
 
         //! @{
         //! ================================== CALLED ON COMMUNICATION THREAD =====================================
@@ -115,11 +101,11 @@ namespace PluginHost {
         virtual void Detach(PluginHost::Channel& channel) = 0;
     };
 
-    struct IWeb
-        : virtual public Core::IUnknown {
-        enum {
-            ID = RPC::ID_WEB,
-        };
+    struct IWeb : virtual public Core::IUnknown {
+
+        enum { ID = RPC::ID_WEB };
+
+        ~IWeb() override = default;
 
         //! @{
         //! ================================== CALLED ON COMMUNICATION THREAD =====================================
@@ -138,11 +124,11 @@ namespace PluginHost {
         virtual Core::ProxyType<Web::Response> Process(const Web::Request& request) = 0;
     };
 
-    struct IWebSocket
-        : virtual public Core::IUnknown {
-        enum {
-            ID = RPC::ID_WEBSOCKET
-        };
+    struct IWebSocket : virtual public Core::IUnknown {
+
+        enum { ID = RPC::ID_WEBSOCKET };
+
+        ~IWebSocket() override = default;
 
         //! @{
         //! ================================== CALLED ON COMMUNICATION THREAD =====================================
@@ -161,11 +147,11 @@ namespace PluginHost {
         virtual Core::ProxyType<Core::JSON::IElement> Inbound(const uint32_t ID, const Core::ProxyType<Core::JSON::IElement>& element) = 0;
     };
 
-    struct ITextSocket
-        : virtual public Core::IUnknown {
-        enum {
-            ID = RPC::ID_TEXTSOCKET
-        };
+    struct ITextSocket : virtual public Core::IUnknown {
+
+        enum { ID = RPC::ID_TEXTSOCKET };
+
+        ~ITextSocket() override = default;
 
         //! @{
         //! ==================================== CALLED ON THREADPOOL THREAD ======================================
@@ -175,11 +161,11 @@ namespace PluginHost {
         virtual string Inbound(const uint32_t ID, const string& value) = 0;
     };
 
-    struct IChannel
-        : virtual public Core::IUnknown {
-        enum {
-            ID = RPC::ID_CHANNEL
-        };
+    struct IChannel : virtual public Core::IUnknown {
+
+        enum { ID = RPC::ID_CHANNEL };
+
+        ~IChannel() override = default;
 
         //! @{
         //! ================================== CALLED ON COMMUNICATION THREAD =====================================
@@ -197,9 +183,10 @@ namespace PluginHost {
     };
 
     struct ISecurity : virtual public Core::IUnknown {
-        enum {
-            ID = RPC::ID_SECURITY
-        };
+
+        enum { ID = RPC::ID_SECURITY };
+
+        ~ISecurity() override = default;
 
         //! Allow a websocket upgrade to be checked if it is allowed to be opened.
         virtual bool Allowed(const string& path) const = 0;
@@ -221,9 +208,9 @@ namespace PluginHost {
 
     struct IAuthenticate : virtual public Core::IUnknown {
 
-        enum {
-            ID = RPC::ID_AUTHENTICATE
-        };
+        enum { ID = RPC::ID_AUTHENTICATE };
+
+        ~IAuthenticate() override = default;
 
         virtual uint32_t CreateToken(const uint16_t length, const uint8_t buffer[], string& token) = 0;
         virtual ISecurity* Officer(const string& token) = 0;
@@ -231,8 +218,3 @@ namespace PluginHost {
 
 } // namespace PluginHost
 } // namespace WPEFramework
-
-// Needed for the ProxyStub generated files
-#include "IShell.h"
-
-#endif // __IPLUGIN_H
