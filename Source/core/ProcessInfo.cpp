@@ -390,8 +390,21 @@ namespace Core {
             }
         }
 #else
-        _memory.MemoryStats();
-        result = _memory.VSS();
+        int fd;
+        TCHAR buffer[128];
+        int VmSize = 0;
+
+        snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
+        if ((fd = open(buffer, O_RDONLY)) > 0) {
+            ssize_t readAmount = 0;
+            if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
+                ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
+                buffer[nulIndex] = '\0';
+                sscanf(buffer, "%d", &VmSize);
+                result = VmSize * PageSize;
+            }
+            close(fd);
+        }
 #endif
 
         return (result);
