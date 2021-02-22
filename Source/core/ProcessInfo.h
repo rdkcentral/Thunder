@@ -58,7 +58,7 @@ namespace Core {
     private:
         class Memory {
         public:
-            Memory(const process_t pid);
+            explicit Memory(const process_t pid);
             ~Memory() = default;
 
             Memory(const Memory&);
@@ -82,6 +82,12 @@ namespace Core {
             {
                 return _vss;
             }
+            
+            inline uint64_t Shared() const
+            {
+                return _shared;
+            }
+            
 
         private:
             process_t _pid;
@@ -90,6 +96,7 @@ namespace Core {
             uint64_t _pss;
             uint64_t _rss;
             uint64_t _vss;
+            uint64_t _shared;
         };
 
     public:
@@ -283,6 +290,7 @@ namespace Core {
             ::kill(_pid, (hardKill ? SIGKILL : SIGTERM));
 #endif
         }
+#ifdef __LINUX__
         /**
          * @brief After using this method user is supposed to retrieve memory stats via 
          *        methods below - USS, PSS, RSS, or VSS
@@ -307,10 +315,12 @@ namespace Core {
         {
             return _memory.VSS();
         }
+#endif
 
-        uint64_t Allocated() const; //delete those three also, and use memory class instead?
+        uint64_t Allocated() const; 
         uint64_t Resident() const;
         uint64_t Shared() const;
+
         string Name() const;
         void Name(const string& name);
         string Executable() const;

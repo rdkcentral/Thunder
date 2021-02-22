@@ -690,6 +690,7 @@ namespace Core {
         , _pss(0)
         , _rss(0)
         , _vss(0)
+        , _shared(0)
     {
     }
 
@@ -699,6 +700,7 @@ namespace Core {
         , _pss(0)
         , _rss(0)
         , _vss(0)
+        , _shared(0)
     {
     }
 
@@ -711,7 +713,7 @@ namespace Core {
         _uss = 0;
         _pss = 0;
         _rss = 0;
-        _vss = 0;
+        _shared = 0;
         return *this;
     }
 
@@ -734,6 +736,8 @@ namespace Core {
         uint64_t pss = 0;
         uint64_t rss = 0;
         uint64_t vss = 0;
+        uint64_t sharedClean = 0;
+        uint64_t sharedDirty = 0;
 
         std::getline(smaps, line);
         if (!smaps.good()) {
@@ -759,7 +763,13 @@ namespace Core {
             iss.str(line);
             iss >> fieldName >> pss;
 
-            Shift(smaps, 2, '\n');
+            std::getline(smaps, line);
+            iss.str(line);
+            iss >> fieldName >> sharedClean;
+
+            std::getline(smaps, line);
+            iss.str(line);
+            iss >> fieldName >> sharedDirty;
 
             std::getline(smaps, line);
             iss.str(line);
@@ -773,6 +783,7 @@ namespace Core {
             _pss += pss;
             _rss += rss;
             _vss += vss;
+            _shared += sharedClean + sharedDirty;
 
             Shift(smaps, 13, '\n');
             //try to read next memory range to set eof flag if not accessible
