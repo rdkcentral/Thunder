@@ -1297,7 +1297,7 @@ namespace Core {
                  _table = *((int *)RTA_DATA(rt_attr));
                  break;
             default:
-                 printf ("We also have: %u\n", rt_attr->rta_type);
+                 TRACE_L1("We also have: %u", rt_attr->rta_type);
                  break;
         }
     }
