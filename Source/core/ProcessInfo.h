@@ -82,12 +82,10 @@ namespace Core {
             {
                 return _vss;
             }
-            
             inline uint64_t Shared() const
             {
                 return _shared;
             }
-            
 
         private:
             process_t _pid;
@@ -316,8 +314,10 @@ namespace Core {
             return _memory.VSS();
         }
 #endif
-
-        uint64_t Allocated() const; 
+        /**
+         * @brief On Linux, MemoryStats() is called inside, no need to call it beforehand
+         */
+        uint64_t Allocated() const;
         uint64_t Resident() const;
         uint64_t Shared() const;
 

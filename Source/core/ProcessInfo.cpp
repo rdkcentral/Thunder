@@ -400,21 +400,8 @@ namespace Core {
             }
         }
 #else
-        int fd;
-        TCHAR buffer[128];
-        int VmSize = 0;
-
-        snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
-        if ((fd = open(buffer, O_RDONLY)) > 0) {
-            ssize_t readAmount = 0;
-            if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
-                ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
-                buffer[nulIndex] = '\0';
-                sscanf(buffer, "%d", &VmSize);
-                result = VmSize * PageSize;
-            }
-            close(fd);
-        }
+        _memory.MemoryStats();
+        result = _memory.VSS();
 #endif
 
         return (result);
@@ -431,21 +418,8 @@ namespace Core {
             }
         }
 #else
-        int fd;
-        TCHAR buffer[128];
-        int VmRSS = 0;
-
-        snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
-        if ((fd = open(buffer, O_RDONLY)) > 0) {
-            ssize_t readAmount = 0;
-            if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
-                ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
-                buffer[nulIndex] = '\0';
-                sscanf(buffer, "%*d %d", &VmRSS);
-                result = VmRSS * PageSize;
-            }
-            close(fd);
-        }
+        _memory.MemoryStats();
+        result = _memory.RSS();
 #endif
 
         return (result);
@@ -462,21 +436,8 @@ namespace Core {
             }
         }
 #else
-        int fd;
-        TCHAR buffer[128];
-        int Share = 0;
-
-        snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
-        if ((fd = open(buffer, O_RDONLY)) > 0) {
-            ssize_t readAmount = 0;
-            if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
-                ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
-                buffer[nulIndex] = '\0';
-                sscanf(buffer, "%*d %*d %d", &Share);
-                result = Share * PageSize;
-            }
-            close(fd);
-        }
+        _memory.MemoryStats();
+        result = _memory.Shared();
 #endif
 
         return (result);
