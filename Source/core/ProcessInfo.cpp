@@ -32,6 +32,7 @@
 #include <unistd.h>
 #endif
 
+#include "tracing/TraceCategories.h"
 #include <algorithm>
 #include <fstream>
 #include <sstream>
@@ -39,6 +40,16 @@
 #ifdef __APPLE__
 #include <libproc.h>
 #endif
+
+namespace {
+//Ignores n lines or words on the given stream, based on delimiter
+void Shift(std::istream& stream, uint32_t n, char delimiter)
+{
+    for (uint32_t i = 0; i < n; i++) {
+        stream.ignore(std::numeric_limits<std::streamsize>::max(), delimiter);
+    }
+}
+}
 
 namespace WPEFramework {
 namespace Core {
@@ -706,6 +717,67 @@ namespace Core {
 
     void ProcessInfo::Memory::MemoryStats()
     {
+        std::istringstream iss;
+        std::ostringstream pathToSmaps;
+        pathToSmaps << "/proc/" << _pid << "/smaps";
+
+        std::ifstream smaps(pathToSmaps.str());
+        if (!smaps.is_open()) {
+            TRACE(Trace::Error, (_T("Could not open /proc/%d/smaps. Memory monitoring of this process is unavailable!"), _pid));
+        }
+
+        std::string fieldName;
+        std::string line;
+        //values from single memory range in /proc/pid/smaps, to be added to member variables(total)
+        uint64_t privateClean = 0;
+        uint64_t privateDirty = 0;
+        uint64_t pss = 0;
+        uint64_t rss = 0;
+        uint64_t vss = 0;
+
+        std::getline(smaps, line);
+        if (!smaps.good()) {
+            TRACE(Trace::Error, (_T("Failed to read from /proc/%d/smaps. Memory capture of process failed!."), _pid));
+            _uss = 0;
+            _pss = 0;
+            _rss = 0;
+            _vss = 0;
+            return;
+        }
+        do {
+            std::getline(smaps, line);
+            iss.str(line);
+            iss >> fieldName >> vss;
+
+            Shift(smaps, 2, '\n');
+
+            std::getline(smaps, line);
+            iss.str(line);
+            iss >> fieldName >> rss;
+
+            std::getline(smaps, line);
+            iss.str(line);
+            iss >> fieldName >> pss;
+
+            Shift(smaps, 2, '\n');
+
+            std::getline(smaps, line);
+            iss.str(line);
+            iss >> fieldName >> privateClean;
+
+            std::getline(smaps, line);
+            iss.str(line);
+            iss >> fieldName >> privateDirty;
+
+            _uss += privateDirty + privateClean;
+            _pss += pss;
+            _rss += rss;
+            _vss += vss;
+
+            Shift(smaps, 13, '\n');
+            //try to read next memory range to set eof flag if not accessible
+            std::getline(smaps, line);
+        } while (!smaps.eof());
     }
 }
 }

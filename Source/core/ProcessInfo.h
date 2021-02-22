@@ -283,7 +283,14 @@ namespace Core {
             ::kill(_pid, (hardKill ? SIGKILL : SIGTERM));
 #endif
         }
-
+        /**
+         * @brief After using this method user is supposed to retrieve memory stats via 
+         *        methods below - USS, PSS, RSS, or VSS
+         */
+        inline void MemoryStats()
+        {
+            _memory.MemoryStats();
+        }
         inline uint64_t USS() const
         {
             return _memory.USS();
