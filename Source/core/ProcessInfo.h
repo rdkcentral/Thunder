@@ -287,7 +287,7 @@ namespace Core {
          * @brief After using this method user is supposed to retrieve memory stats via 
          *        methods below - USS, PSS, RSS, or VSS
          */
-        inline void MemoryStats()
+        inline void MemoryStats() const
         {
             _memory.MemoryStats();
         }
@@ -336,7 +336,7 @@ namespace Core {
         }
 
     private:
-        Memory _memory;
+        mutable Memory _memory;
         process_t _pid;
 #ifdef __WINDOWS__
         HANDLE _handle;
