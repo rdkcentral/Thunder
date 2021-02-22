@@ -341,7 +341,7 @@ namespace Core {
     {
     }
     // Specifice Process Info
-    ProcessInfo::ProcessInfo(const uint32_t id)
+    ProcessInfo::ProcessInfo(const process_t id)
         : _pid(id)
         , _memory(id)
 #ifdef __WINDOWS__
@@ -361,6 +361,10 @@ namespace Core {
 
     ProcessInfo& ProcessInfo::operator=(const ProcessInfo& rhs)
     {
+        if (&rhs == this) {
+            return *this;
+        }
+
         _pid = rhs._pid;
         _memory = rhs._memory;
 
@@ -702,7 +706,6 @@ namespace Core {
 
     void ProcessInfo::Memory::MemoryStats()
     {
-        
     }
 }
 }
