@@ -405,18 +405,21 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             result = Core::ERROR_ILLEGAL_STATE;
         } else if (currentState == IShell::DEACTIVATED) {
             result = Activate(why);
-        } else if (currentState == IShell::ACTIVATED) {
-            // See if we need can and should SUSPEND.
+            currentState = State();
+        } 
+
+        if (currentState == IShell::ACTIVATED) {
+            // See if we need can and should RESUME.
             IStateControl* stateControl = _handler->QueryInterface<PluginHost::IStateControl>();
             if (stateControl == nullptr) {
                 result = Core::ERROR_BAD_REQUEST;
             }
             else {
-                // We have a StateControl interface, so at least start suspending, if not already suspended :-)
+                // We have a StateControl interface, so at least start resuming, if not already resumed :-)
                 if (stateControl->State() == PluginHost::IStateControl::SUSPENDED) {
                     result = stateControl->Request(PluginHost::IStateControl::RESUME);
-                    stateControl->Release();
                 }
+                stateControl->Release();
             }
         }
 
@@ -532,8 +535,8 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                     // We have a StateControl interface, so at least start suspending, if not already suspended :-)
                     if (stateControl->State() == PluginHost::IStateControl::RESUMED) {
                         result = stateControl->Request(PluginHost::IStateControl::SUSPEND);
-                        stateControl->Release();
                     }
+                    stateControl->Release();
                 }
             }
 
