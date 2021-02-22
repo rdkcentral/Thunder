@@ -695,7 +695,7 @@ namespace PluginHost {
                             flags[7] = '\0';
 #endif
                       
-                            printf ("%6d [%s]: %s\n", info.descriptor, flags, Core::ClassNameOnly(info.classname).Text().c_str());
+                            printf ("%6d %s[%s]: %s\n", info.descriptor, info.filename, flags, Core::ClassNameOnly(info.classname).Text().c_str());
                             index++;
                         }
                         break;
