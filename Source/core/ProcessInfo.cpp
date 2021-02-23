@@ -683,6 +683,11 @@ namespace Core {
 
     void ProcessInfo::Memory::MemoryStats()
     {
+        _uss = 0;
+        _pss = 0;
+        _rss = 0;
+        _vss = 0;
+        _shared = 0;
         std::ostringstream pathToSmaps;
         pathToSmaps << "/proc/" << _pid << "/smaps";
 
