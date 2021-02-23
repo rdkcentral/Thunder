@@ -75,7 +75,7 @@ namespace Core {
 
     protected:
         static SingletonList& ListInstance();
-        
+
     private:
         void** _realDeal;
     };
@@ -151,9 +151,9 @@ namespace Core {
         SingletonProxyType& operator=(const SingletonProxyType<PROXYTYPE>&) = delete;
 
         template <typename... Args>
-        static ProxyType<PROXYTYPE> Instance()
+        static ProxyType<PROXYTYPE> Instance(Args&&... args)
         {
-            return (SingletonType<SingletonProxyType<PROXYTYPE>>::Instance()._wrapped);
+            return (SingletonType<SingletonProxyType<PROXYTYPE>>::Instance(std::forward<Args>(args)...)._wrapped);
         }
 
     private:
