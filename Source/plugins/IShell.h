@@ -69,6 +69,12 @@ namespace PluginHost {
             WATCHDOG_EXPIRED
         };
 
+        enum resumed : uint8_t {
+            UNDEFINED,
+            RESUMED,
+            SUSPENDED
+        };
+        
         /* @stubgen:omit */
         class EXTERNAL Job : public Core::IDispatch {
         protected:
@@ -184,7 +190,7 @@ namespace PluginHost {
         virtual bool AutoStart() const = 0;
 
         //! Resumed: boolean to inidcate wheter we need to start a plugin in a Resumed state, i.s.o. the Suspended state
-        virtual bool Resumed() const = 0;
+        virtual resumed Resumed() const = 0;
 
         virtual string HashKey() const = 0;
         virtual string ConfigLine() const = 0;
