@@ -1,7 +1,8 @@
 #pragma once
 
-#include "IPlugin.h"
 #include "Module.h"
+#include "IPlugin.h"
+#include "IShell.h"
 
 namespace WPEFramework {
 namespace PluginHost {
@@ -35,9 +36,9 @@ namespace PluginHost {
         public:
             bool IsOperational() const
             {
-                return (_desinated != nullptr);
+                return (_designated != nullptr);
             }
-            void Register(Plugin::IShell* controller, const string& callsign) 
+            void Register(IShell* controller, const string& callsign) 
             {
                 _adminLock.Lock();
                 _callsign = callsign;
@@ -57,10 +58,10 @@ namespace PluginHost {
                         _parent.Activated(entry);
                     }
                 }
-                _state = state:RUNNING;
+                _state = state::RUNNING;
                 _adminLock.Unlock();
             }
-            void Unregister(Plugin::IShell* controller) 
+            void Unregister(IShell* controller) 
             {
                 _adminLock.Lock();
 
@@ -153,7 +154,7 @@ namespace PluginHost {
             }
  
         private:
-            Core::CriticalSection _adminLock;
+            mutable Core::CriticalSection _adminLock;
             PluginMonitorType<INTERFACE, HANDLER>& _parent;
             state _state;
             string _callsign;
@@ -184,7 +185,7 @@ namespace PluginHost {
         }
         void Unregister(PluginHost::IShell* controller)
         {
-            _sink.Unregister(controller, callsign);
+            _sink.Unregister(controller);
         }
         INTERFACE* Interface()
         {
@@ -242,8 +243,6 @@ namespace RPC {
         }
         uint32_t Open(const uint32_t waitTime, const Core::NodeId& node, const string& callsign)
         {
-            _adminLock.Lock();
-            
             ASSERT(_controller == nullptr);
             
             if (_controller == nullptr) {
@@ -254,19 +253,16 @@ namespace RPC {
                     _monitor.Register(_controller, callsign);
                 }
             }
-            _adminLock.Unlock();
 
             return (_controller != nullptr ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
         }
         uint32_t Close(const uint32_t waitTime)
         {
-            _adminLock.Lock();
             if (_controller != nullptr) {
                 _monitor.Unregister(_controller);
                 _controller->Release();
                 _controller = nullptr;
             }
-            _adminLock.Unlock();
 
             return (Core::ERROR_NONE);
         }

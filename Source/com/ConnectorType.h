@@ -41,6 +41,43 @@ namespace RPC {
         return Core::ProxyType<RPC::IIPCServer>(Core::SingletonProxyType<Engine>::Instance());
     };
 
+    static Core::ProxyType<RPC::IIPCServer> WorkerPoolInvokeServer()
+    {
+        class Engine : public RPC::InvokeServer {
+        private:
+            class AnnouncementSink : public Core::IIPCServer {
+            public:
+                AnnouncementSink(const AnnouncementSink&) = delete;
+                AnnouncementSink& operator=(const AnnouncementSink&) = delete;
+
+                AnnouncementSink() = default;
+                ~AnnouncementSink() override = default;
+
+            public:
+                void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& message) override
+                {
+                    CommunicatorClient* client = dynamic_cast<CommunicatorClient*>(&source);
+                    client->Announcement()->Procedure(source, message);
+                }
+            };
+
+        public:
+            Engine(Core::IWorkerPool* workerPool) : RPC::InvokeServer(workerPool)
+            {
+                Announcements(&_sink);
+            }
+
+            ~Engine() override
+            {
+            }
+
+        private:
+            AnnouncementSink _sink;
+        };
+
+        return Core::ProxyType<RPC::IIPCServer>(Core::SingletonProxyType<Engine>::Instance(&Core::IWorkerPool::Instance()));
+    };
+
     template <Core::ProxyType<RPC::IIPCServer> ENGINE() = DefaultInvokeServer>
     class ConnectorType {
     private:
