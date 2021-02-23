@@ -17,7 +17,8 @@
  * limitations under the License.
  */
 
-#pragma once
+#ifndef __IPLUGIN_H__
+#define __IPLUGIN_H__
 
 #include <com/ICOM.h>
 
@@ -218,3 +219,5 @@ namespace PluginHost {
 
 } // namespace PluginHost
 } // namespace WPEFramework
+
+#endif
