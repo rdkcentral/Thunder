@@ -539,7 +539,6 @@ namespace PluginHost {
                 // It's reference counted, so just take it out of the list, state to DESTROYED
                 // Also unsubscribe all subscribers. They need to go..
                 State(DESTROYED);
-                _administrator.StateChange(this);
 
                 Unlock();
             }
@@ -1636,7 +1635,7 @@ namespace PluginHost {
             {
                 return (reinterpret_cast<ISubSystem*>(_subSystems.QueryInterface(ISubSystem::ID)));
             }
-            void StateChange(PluginHost::IShell* entry)
+            void Activated(PluginHost::IShell* entry)
             {
                 string callsign = entry->Callsign();
 
@@ -1645,7 +1644,22 @@ namespace PluginHost {
                 std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
 
                 while (currentlist.size()) {
-                    currentlist.front()->StateChange(entry, callsign);
+                    currentlist.front()->Activated(callsign, entry);
+                    currentlist.pop_front();
+                }
+
+                _notificationLock.Unlock();
+            }
+            void Deactivated(PluginHost::IShell* entry)
+            {
+                string callsign = entry->Callsign();
+
+                _notificationLock.Lock();
+
+                std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
+
+                while (currentlist.size()) {
+                    currentlist.front()->Deactivated(callsign, entry);
                     currentlist.pop_front();
                 }
 
@@ -1672,7 +1686,7 @@ namespace PluginHost {
                     ASSERT(service.IsValid());
 
                     if ( (service.IsValid() == true) && (service->State() == IShell::ACTIVATED) ) {
-                        sink->StateChange(&(service.operator*()), service->Callsign());
+                        sink->Activated(service->Callsign(), &(service.operator*()));
                     }
 
                     index++;
