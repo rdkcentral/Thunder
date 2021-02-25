@@ -388,8 +388,8 @@ namespace Plugin {
                     result->Message = _T("Discovery cycle initiated");
                 }
             } else if (index.Current() == _T("Persist")) {
-
-                _pluginServer->Services().Persist();
+                
+                _pluginServer->Persist();
 
                 result->ErrorCode = Web::STATUS_OK;
                 result->Message = _T("Current configuration stored");

@@ -250,7 +250,7 @@ namespace Plugin {
     {
         ASSERT(_pluginServer != nullptr);
 
-        uint32_t result = _pluginServer->Services().Persist();
+        uint32_t result = _pluginServer->Persist();
 
         // Normalise return code
         if (result != Core::ERROR_NONE) {

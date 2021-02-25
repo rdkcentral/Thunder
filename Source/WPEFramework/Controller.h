@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -166,9 +166,9 @@ namespace Plugin {
         Controller& operator=(const Controller&);
 
     protected:
-        #ifdef __WINDOWS__
-        #pragma warning(disable : 4355)
-        #endif
+#ifdef __WINDOWS__
+#pragma warning(disable : 4355)
+#endif
         Controller()
             : _adminLock()
             , _skipURL(0)
@@ -182,9 +182,9 @@ namespace Plugin {
         {
             RegisterAll();
         }
-        #ifdef __WINDOWS__
-        #pragma warning(default : 4355)
-        #endif
+#ifdef __WINDOWS__
+#pragma warning(default : 4355)
+#endif
 
     public:
         virtual ~Controller()
@@ -192,10 +192,11 @@ namespace Plugin {
             UnregisterAll();
             SetServer(nullptr);
         }
-		inline void Notification(const PluginHost::Server::ForwardMessage& message) {
+        inline void Notification(const PluginHost::Server::ForwardMessage& message)
+        {
             Notify("all", message);
-		}
-           
+        }
+
         inline void SetServer(PluginHost::Server* pluginServer)
         {
             ASSERT((_pluginServer == nullptr) ^ (pluginServer == nullptr));
@@ -276,8 +277,8 @@ namespace Plugin {
 
             return (service);
         }
-		void WorkerPoolMetaData(PluginHost::MetaData::Server& data) const
-		{
+        void WorkerPoolMetaData(PluginHost::MetaData::Server& data) const
+        {
             const Core::WorkerPool::Metadata& snapshot = Core::WorkerPool::Instance().Snapshot();
 
             data.PendingRequests = snapshot.Pending;
@@ -289,7 +290,7 @@ namespace Plugin {
                 newElement = snapshot.Slot[teller];
                 data.ThreadPoolRuns.Add(newElement);
             }
-		}
+        }
         void SubSystems();
         void SubSystems(Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator& index);
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;

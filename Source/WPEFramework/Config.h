@@ -515,7 +515,8 @@ namespace PluginHost {
             config.IElement::FromFile(file, error);
 
             if (error.IsSet() == false) {
-                _webPrefix = '/' + config.Prefix.Value();
+                _prefix = config.Prefix.Value();
+                _webPrefix = '/' + _prefix;
                 _JSONRPCPrefix = '/' + config.JSONRPC.Value();
 #ifdef PROCESSCONTAINERS_ENABLED
                 _ProcessContainersLogging = config.ProcessContainers.Logging.Value();
@@ -598,6 +599,10 @@ namespace PluginHost {
         }
 
     public:
+        inline const string& Prefix() const
+        {
+            return (_prefix);
+        }
         inline const string& Version() const
         {
             return (_version);
@@ -840,6 +845,7 @@ namespace PluginHost {
 
     private:
         const bool _background;
+        string _prefix; // store prefix to make it overridable
         string _webPrefix;
         string _JSONRPCPrefix;
         string _volatilePath;
