@@ -110,6 +110,7 @@ namespace Core {
                     {
                         printf("!!!!!! WSARecvMsg is not available !!!!!\n ");
                     }
+		    ::closesocket(sckt);
                 }
             }
 
