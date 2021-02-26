@@ -240,7 +240,11 @@ namespace Core {
 
         // Make sure the socket is closed before you destruct. Otherwise
         // the virtuals might be called, which are destructed at this point !!!!
-        ASSERT(m_Socket == INVALID_SOCKET);
+        ASSERT((m_Socket == INVALID_SOCKET) &&(m_State == 0));
+
+        if ((m_Socket != INVALID_SOCKET) || (m_State != 0)) {
+            ResourceMonitor::Instance().Unregister(*this);
+        }
 
         ::free(m_SendBuffer);
     }
@@ -946,6 +950,7 @@ namespace Core {
             result = false;
         } else {
             DestroySocket(m_Socket);
+            ResourceMonitor::Instance().Unregister(*this);
             // Remove socket descriptor for UNIX domain datagram socket.
             if ((m_LocalNode.Type() == NodeId::TYPE_DOMAIN) && ((m_SocketType == SocketPort::LISTEN) || (SocketMode() != SOCK_STREAM))) {
                 TRACE_L1("CLOSED: Remove socket descriptor %s", m_LocalNode.HostName().c_str());
