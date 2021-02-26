@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="Administrator.cpp" />
     <ClCompile Include="Communicator.cpp" />
+    <ClCompile Include="ConnectorType.cpp" />
     <ClCompile Include="generated\ProxyStubs_COM.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(FrameworkPath);$(WindowsPath);$(ProjectDir)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(FrameworkPath);$(WindowsPath);$(ProjectDir)</AdditionalIncludeDirectories>
@@ -40,6 +41,7 @@
     <ClInclude Include="Administrator.h" />
     <ClInclude Include="com.h" />
     <ClInclude Include="Communicator.h" />
+    <ClInclude Include="ConnectorType.h" />
     <ClInclude Include="Ids.h" />
     <ClInclude Include="ICOM.h" />
     <ClInclude Include="IStringIterator.h" />

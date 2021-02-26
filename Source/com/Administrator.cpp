@@ -285,7 +285,7 @@ namespace RPC {
         if (remotes != _channelReferenceMap.end()) {
             std::list<RecoverySet>::iterator loop(remotes->second.begin());
             while (loop != remotes->second.end()) {
-                uint32_t result;
+                uint32_t result = Core::ERROR_NONE;
 
                 // We will release on behalf of the other side :-)
                 do {
