@@ -28,6 +28,107 @@
 
 namespace WPEFramework {
 namespace Core {
+    class RoutingTable {
+    public:
+        class Route {
+        public:
+            Route()
+                : _source()
+                , _destination()
+                , _preferred()
+                , _gateway()
+                , _priority(0)
+                , _interface(0)
+                , _metrics(0)
+                , _table(0)
+                , _mask(0)
+                , _flags(0)
+                , _protocol(0)
+                , _scope(0) {
+            }
+            Route(const Route& copy)
+                : _source(copy._source)
+                , _destination(copy._destination)
+                , _preferred(copy._preferred)
+                , _gateway(copy._gateway)
+                , _priority(copy._priority)
+                , _interface(copy._interface)
+                , _metrics(copy._metrics)
+                , _table(copy._table)
+                , _mask(copy._mask)
+                , _flags(copy._flags)
+                , _protocol(copy._protocol)
+                , _scope(copy._scope) {
+            }
+            Route(const uint8_t stream[], const uint16_t length);
+            ~Route() = default;
+
+            Route& operator= (const Route& rhs) {
+                _source = rhs._source;
+                _destination = rhs._destination;
+                _preferred = rhs._preferred;
+                _gateway = rhs._gateway;
+                _priority = rhs._priority;
+                _interface = rhs._interface;
+                _metrics = rhs._metrics;
+                _table = rhs._table;
+                _mask = rhs._mask;
+                _flags = rhs._flags;
+                _protocol = rhs._protocol;
+                _scope = rhs._scope;
+
+                return (*this);
+            }
+ 
+        public:
+            inline const NodeId& Source() const {
+                return (_source);
+            }
+            inline const NodeId& Destination() const {
+                return (_destination);
+            }
+            inline const NodeId& Gateway() const {
+                return (_gateway);
+            }
+            inline const NodeId& Preferred() const {
+                return (_preferred);
+            }
+            inline int Metrics() const {
+                return (_metrics);
+            }
+            inline int Priority() const {
+                return (_priority);
+            }
+            inline string Interface() const;
+
+        private:
+            NodeId _source;
+            NodeId _destination;
+            NodeId _preferred;
+            NodeId _gateway;
+            int _priority;
+            int _interface;
+            int _metrics;
+            int _table;
+            uint8_t _mask;
+            uint8_t _flags;
+            uint8_t _protocol;
+            uint8_t _scope;
+        };
+    public:
+        RoutingTable() = delete;
+        RoutingTable(const RoutingTable&) = delete;
+        RoutingTable& operator= (const RoutingTable&) = delete;
+
+        RoutingTable(const bool ipv4);
+        ~RoutingTable() = default;
+
+    public:
+
+    private:
+        std::list<Route> _table;
+    };
+
 
     class EXTERNAL AdapterObserver {
     public:
