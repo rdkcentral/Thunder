@@ -285,12 +285,17 @@ namespace RPC {
         if (remotes != _channelReferenceMap.end()) {
             std::list<RecoverySet>::iterator loop(remotes->second.begin());
             while (loop != remotes->second.end()) {
-                uint32_t result;
+                uint32_t result = Core::ERROR_NONE;
 
                 // We will release on behalf of the other side :-)
                 do {
-                    result = loop->Unknown()->Release();
+                    Core::IUnknown* iface = loop->Unknown();
+                    
+                    ASSERT(iface != nullptr);
 
+                    if (iface != nullptr) {
+                        result = iface->Release();
+                    }
                 } while ((loop->Decrement()) && (result == Core::ERROR_NONE));
 
                 ASSERT (loop->Flushed() == true);

@@ -92,6 +92,7 @@ namespace Core {
             uint16_t monitor;
             uint16_t events;
             const char* classname;
+            char filename[128];
         };
 
     public:
@@ -179,10 +180,17 @@ namespace Core {
 #ifdef __LINUX__
                 info.monitor = _descriptorArray[position + 1].events;
                 info.events  = _descriptorArray[position + 1].revents;
+
+                char procfn[64];
+                sprintf(procfn, "/proc/self/fd/%d", info.descriptor);
+
+                size_t len = readlink(procfn, info.filename, sizeof(info.filename) - 1);
+                info.filename[len] = '\0';
 #endif
 #ifdef __WINDOWS__
                 info.monitor = 0;
                 info.events  = 0;
+                info.filename[0] = '\0';
 #endif
             }
 

@@ -335,7 +335,6 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             } else {
 
                 State(ACTIVATION);
-                _administrator.StateChange(this);
 
                 Unlock();
 
@@ -353,7 +352,6 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                     Lock();
                     ReleaseInterfaces();
                     State(DEACTIVATED);
-                    _administrator.StateChange(this);
                 } else {
                     const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
                     const string webUI(PluginHost::Service::Configuration().WebUI.Value());
@@ -371,7 +369,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                     SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
                     Lock();
                     State(ACTIVATED);
-                    _administrator.StateChange(this);
+                    _administrator.Activated(this);
 
 #if THUNDER_RESTFULL_API
                     _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
@@ -407,18 +405,21 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             result = Core::ERROR_ILLEGAL_STATE;
         } else if (currentState == IShell::DEACTIVATED) {
             result = Activate(why);
-        } else if (currentState == IShell::ACTIVATED) {
-            // See if we need can and should SUSPEND.
+            currentState = State();
+        } 
+
+        if (currentState == IShell::ACTIVATED) {
+            // See if we need can and should RESUME.
             IStateControl* stateControl = _handler->QueryInterface<PluginHost::IStateControl>();
             if (stateControl == nullptr) {
                 result = Core::ERROR_BAD_REQUEST;
             }
             else {
-                // We have a StateControl interface, so at least start suspending, if not already suspended :-)
+                // We have a StateControl interface, so at least start resuming, if not already resumed :-)
                 if (stateControl->State() == PluginHost::IStateControl::SUSPENDED) {
                     result = stateControl->Request(PluginHost::IStateControl::RESUME);
-                    stateControl->Release();
                 }
+                stateControl->Release();
             }
         }
 
@@ -452,7 +453,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
             if (currentState == IShell::ACTIVATED) {
                 State(DEACTIVATION);
-                _administrator.StateChange(this);
+                _administrator.Deactivated(this);
 
                 Unlock();
 
@@ -490,8 +491,6 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             TRACE(Activity, (Trace::Format(_T("Deactivate plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
 
             State(why == CONDITIONS? PRECONDITION : DEACTIVATED);
-
-            _administrator.StateChange(this);
 
 #if THUNDER_RESTFULL_API
             _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
@@ -536,8 +535,8 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                     // We have a StateControl interface, so at least start suspending, if not already suspended :-)
                     if (stateControl->State() == PluginHost::IStateControl::RESUMED) {
                         result = stateControl->Request(PluginHost::IStateControl::SUSPEND);
-                        stateControl->Release();
                     }
+                    stateControl->Release();
                 }
             }
 

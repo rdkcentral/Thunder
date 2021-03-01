@@ -427,11 +427,11 @@ namespace Plugin {
         return (result);
     }
 
-    void Controller::StateChange(PluginHost::IShell* plugin)
+    void Controller::Activated(const string& callsign, PluginHost::IShell* plugin)
     {
-        event_statechange(plugin->Callsign(), plugin->State(), plugin->Reason());
+        event_statechange(callsign, PluginHost::IShell::ACTIVATED, plugin->Reason());
 
-        if ((plugin->State() == PluginHost::IShell::ACTIVATED) && (_resumes.size() > 0)) {
+        if (_resumes.size() > 0) {
             string callsign(plugin->Callsign());
             std::list<string>::const_iterator index(_resumes.begin());
 
@@ -461,6 +461,12 @@ namespace Plugin {
             }
         }
     }
+
+    void Controller::Deactivated(const string& callsign, PluginHost::IShell* plugin)
+    {
+        event_statechange(callsign, PluginHost::IShell::DEACTIVATED, plugin->Reason());
+    }
+
 
     void Controller::SubSystems()
     {
