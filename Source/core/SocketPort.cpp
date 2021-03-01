@@ -244,6 +244,7 @@ namespace Core {
 
         if ((m_Socket != INVALID_SOCKET) || (m_State != 0)) {
             ResourceMonitor::Instance().Unregister(*this);
+            DestroySocket(m_Socket);
         }
 
         ::free(m_SendBuffer);
