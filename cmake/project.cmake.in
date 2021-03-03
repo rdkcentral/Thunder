@@ -19,7 +19,16 @@
 ##
 ## https://github.com/toeb/cmakepp
 ##
-cmake_minimum_required(VERSION 2.8.7)
+
+#macro(Version) 
+#    if(NOT ${ARGC} EQUAL 3) 
+#        message(FATAL_ERROR "Weird amount of arguments for Version macro")
+#    endif()
+#    set(VERSION_MAJOR ${ARGV0})
+#    set(VERSION_MINOR ${ARGV1})
+#    set(VERSION_PATCH ${ARGV2})
+#    set(VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
+#endmacro()
 
 get_property(is_included GLOBAL PROPERTY INCLUDE_GUARD)
 if(is_included)
@@ -27,14 +36,26 @@ if(is_included)
 endif()
 set_property(GLOBAL PROPERTY INCLUDE_GUARD true)
 
-cmake_policy(SET CMP0007 NEW)
-cmake_policy(SET CMP0012 NEW)
-if(POLICY CMP0054)
-  cmake_policy(SET CMP0054 OLD)
+if(POLICY CMP0007)
+    cmake_policy(SET CMP0007 NEW)
 endif()
-# installation dir of cmakepp
 
-set(NAMESPACE "@NAMESPACE@")
+if(POLICY CMP0012)
+    cmake_policy(SET CMP0012 NEW)
+endif()
+
+if(POLICY CMP0066)
+    cmake_policy(SET CMP0066 NEW)
+endif()
+
+if(POLICY CMP0054)
+  cmake_policy(SET CMP0054 NEW)
+endif()
+
+set(NAMESPACE "@NAMESPACE@" CACHE INTERNAL "" FORCE)
+set("${NAMESPACE}_FOUND" TRUE CACHE INTERNAL "" FORCE)
+
+string(TOLOWER ${NAMESPACE} STORAGE_DIRECTORY)
 
 option(HIDE_NON_EXTERNAL_SYMBOLS "Export all symbols that have been marked EXTERNAL" OFF)
 
@@ -47,10 +68,19 @@ if (HIDE_NON_EXTERNAL_SYMBOLS)
     set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 endif()
 
-set(MODULE_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}")
+set(MODULE_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}" CACHE INTERNAL "" FORCE)
 
-list(APPEND CMAKE_MODULE_PATH 
-            "${MODULE_BASE_DIR}/modules")
+list(APPEND CMAKE_MODULE_PATH "${MODULE_BASE_DIR}/common")
+
+list(REMOVE_DUPLICATES CMAKE_MODULE_PATH)
+list(SORT CMAKE_MODULE_PATH)
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} CACHE INTERNAL "" FORCE)
+
+get_directory_property(hasParent PARENT_DIRECTORY)
+if(hasParent) 
+    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} PARENT_SCOPE)
+endif()
 
 if(NOT COMMAND InstallCMakeConfig)
     include(CmakeHelperFunctions)
@@ -84,7 +114,7 @@ macro(write_config)
     IncludeConfig()
     
     foreach(plugin ${ARGV})
-        message("Writing configuration for ${plugin}")
+        message(STATUS "Writing configuration for ${plugin}")
 
         map()
         kv(locator lib${MODULE_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
@@ -193,7 +223,3 @@ function(print_target_properties tgt)
         endif()
     endforeach(prop)
 endfunction(print_target_properties)
-
-
-
-
