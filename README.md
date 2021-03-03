@@ -56,7 +56,7 @@ git clone https://github.com/rdkcentral/Thunder.git
 Build and install Tools
 
 ```shell
-cd Tools
+cd ${THUNDER_ROOT}/Thunder/Tools
 mkdir build
 cmake -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR} \
       -DGENERIC_CMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/include/WPEFramework/cmake/modules ..
