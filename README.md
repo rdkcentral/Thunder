@@ -75,6 +75,19 @@ cmake -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR} \
 make; make install
 ```
 
+**ThunderInterfaces**
+
+```shell
+cd ${THUNDER_ROOT}
+git clone https://github.com/rdkcentral/ThunderInterfaces
+cd ${THUNDER_ROOT}/ThunderInterfaces
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}  \
+      -DBUILD_TYPE=Debug\
+      -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/include/WPEFramework/cmake/modules ..
+make; make install
+
 **WINDOWS Build, using Visual Studio 2019**
 
 The default solution is setup in such away that it can run and load 
