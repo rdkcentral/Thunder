@@ -58,9 +58,11 @@ Build and install Tools
 ```shell
 cd ${THUNDER_ROOT}/Thunder/Tools
 mkdir build
+
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR} \
       -DGENERIC_CMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/include/WPEFramework/cmake/modules ..
+      
 make; make install
 ```
 
@@ -68,10 +70,12 @@ Build and install Thunder
 ```shell
 cd ${THUNDER_ROOT}/Thunder
 mkdir build
+
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR} \
       -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/include/WPEFramework/cmake/modules \
       -DBUILD_TYPE=Debug -DBINDING=127.0.0.1 -DVIRTUALINPUT=on ..
+      
 make; make install
 ```
 
