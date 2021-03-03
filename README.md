@@ -87,6 +87,7 @@ cmake -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}  \
       -DBUILD_TYPE=Debug\
       -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/include/WPEFramework/cmake/modules ..
 make; make install
+```
 
 **WINDOWS Build, using Visual Studio 2019**
 
