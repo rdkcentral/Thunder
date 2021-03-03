@@ -80,8 +80,10 @@ make; make install
 ```shell
 cd ${THUNDER_ROOT}
 git clone https://github.com/rdkcentral/ThunderInterfaces
+
 cd ${THUNDER_ROOT}/ThunderInterfaces
 mkdir build
+
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}  \
       -DBUILD_TYPE=Debug\
