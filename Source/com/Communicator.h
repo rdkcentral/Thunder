@@ -353,7 +353,6 @@ namespace RPC {
                 _options.Add(_T("-P")).Add('"' + config.PostMortemPath() + '"');
             }
             if (instance.LinkLoaderPath().empty() == false) {
-                _options.Add(_T("-L")).Add('"' + instance.LinkLoaderPath() + '"');
                 _linkLoaderPath = instance.LinkLoaderPath();
             }
             if (instance.Threads() > 1) {
