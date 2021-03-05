@@ -337,13 +337,17 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                 State(ACTIVATION);
                 _administrator.StateChange(this);
 
-                Unlock();
+                
 
                 TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
                 TRACE_DURATION(ErrorMessage(_handler->Initialize(this)); 
                     , _T("Plugin [%s]:[%s] Initialize"), className.c_str(), callSign.c_str()
                 )
+
+                Unlock();
+
+                
 
                 if (HasError() == true) {
                     result = Core::ERROR_GENERAL;
