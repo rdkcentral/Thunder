@@ -123,11 +123,11 @@ endmacro()
 #                the latest cmake project call.
 #    LOCATOR     Version of the package, defaults to PROJECT_VERSION
 #                of the latest cmake project call.
-#
+#    COMPONENT   The cmake component group defaults to PROJECT_NAME
 # ----------------------------------------------------------------------------------------
 macro(write_config)
     set(optionsArgs )
-    set(oneValueArgs CLASSNAME LOCATOR)
+    set(oneValueArgs CLASSNAME LOCATOR COMPONENT)
     set(multiValueArgs PLUGINS)
 
     cmake_parse_arguments(ARG "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
@@ -152,6 +152,12 @@ macro(write_config)
         set(_plugins ${ARG_PLUGINS})
     else()
         set(_plugins ${PROJECT_NAME})
+    endif() 
+
+    if(ARG_COMPONENT)
+        set(_component ${ARG_COMPONENT})
+    else()
+        set(_component ${PROJECT_NAME})
     endif() 
 
     IncludeConfig()
@@ -201,12 +207,12 @@ macro(write_config)
             endif()
         endif()
 
-        json_write("${CMAKE_CURRENT_LIST_DIR}/${plugin}.json" ${plugin_config})
+        json_write("${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}.json" ${plugin_config})
 
         install(
-                FILES ${plugin}.json DESTINATION
+                FILES ${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}.json DESTINATION
                 "${CMAKE_INSTALL_PREFIX}/../etc/${NAMESPACE}/plugins/"
-                COMPONENT ${MODULE_NAME})
+                COMPONENT ${_component})
     endforeach()
 endmacro()
 
