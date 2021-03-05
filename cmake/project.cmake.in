@@ -110,15 +110,58 @@ macro(IncludeConfig)
     endif()
 endmacro()
 
-macro(write_config)    
+# ----------------------------------------------------------------------------------------
+# write_config
+# ----------------------------------------------------------------------------------------
+# Writes and installs a json configs for a plugin. 
+#
+#    optional:
+#    PLUGINS     List of the config files to write without extention defaults to 
+#                PROJECT_NAME only
+#                e.g. "UX" will generate and install UX.json for the WebkitBrowser plugin.
+#    CLASSNAME   Name of the package, defaults to PROJECT_NAME of 
+#                the latest cmake project call.
+#    LOCATOR     Version of the package, defaults to PROJECT_VERSION
+#                of the latest cmake project call.
+#
+# ----------------------------------------------------------------------------------------
+macro(write_config)
+    set(optionsArgs )
+    set(oneValueArgs CLASSNAME LOCATOR)
+    set(multiValueArgs PLUGINS)
+
+    cmake_parse_arguments(ARG "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+    
+    if(ARG_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "Unknown keywords given to write_config(): \"${ARG_UNPARSED_ARGUMENTS}\"")
+    endif()
+
+    if(ARG_CLASSNAME)
+        set(_classname ${ARG_CLASSNAME})
+    else()
+        set(_classname ${PROJECT_NAME})
+    endif()
+
+    if(ARG_LOCATOR)
+        set(_locator ${ARG_LOCATOR})
+    else()
+        set(_locator lib${MODULE_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
+    endif()
+    
+    if(ARG_PLUGINS)
+        set(_plugins ${ARG_PLUGINS})
+    else()
+        set(_plugins ${PROJECT_NAME})
+    endif() 
+
     IncludeConfig()
     
-    foreach(plugin ${ARGV})
+    foreach(plugin ${_plugins})
         message(STATUS "Writing configuration for ${plugin}")
 
         map()
-        kv(locator lib${MODULE_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
-        kv(classname ${PLUGIN_NAME})
+        kv(locator ${_locator})
+        kv(classname ${_classname})
         end()
         ans(plugin_config) # default configuration
 
