@@ -24,8 +24,8 @@ macro(CreateDepPackage)
 
     cmake_parse_arguments(ARG "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
     
-    if(Argument_UNPARSED_ARGUMENTS)
-        message(FATAL_ERROR "Unknown keywords given to CreateDepPackage(): \"${Argument_UNPARSED_ARGUMENTS}\"")
+    if(ARG_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "Unknown keywords given to CreateDepPackage(): \"${ARG_UNPARSED_ARGUMENTS}\"")
     endif()
 
     list(LENGTH ARG_COMPONENTS _NCOMPONENTS)
