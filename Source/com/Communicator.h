@@ -312,7 +312,6 @@ namespace RPC {
 
         Process(const uint32_t sequenceNumber, const Config& config, const Object& instance)
             : _options(config.HostApplication())
-            , _adminLock()
         {
             ASSERT(instance.Locator().empty() == false);
             ASSERT(instance.ClassName().empty() == false);
@@ -383,10 +382,9 @@ namespace RPC {
                     (Logging::LoggingType<Logging::Fatal>::IsEnabled() ? 0x40 : 0);
             _options.Add(_T("-e")).Add(Core::NumberType<uint32_t>(loggingSettings).Text());           
 
-            _adminLock.Lock();
 
             string oldPath;
-            if (_linkLoaderPath.empty() == 0) {
+            if (_linkLoaderPath.empty() == false) {
                 Core::SystemInfo::GetEnvironment(_T("LD_LIBRARY_PATH"), oldPath);
                 string newPath = oldPath + ":" + _linkLoaderPath;
                 Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), newPath, true);
@@ -398,9 +396,9 @@ namespace RPC {
             uint32_t result = fork.Launch(_options, &id);
 
             //restore the original value
-            Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), oldPath, true);
-
-            _adminLock.Unlock();
+            if (_linkLoaderPath.empty() == false) {
+                Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), oldPath, true);
+            }
 
             if ((result == Core::ERROR_NONE) && (_priority != 0)) {
                 Core::ProcessInfo newProcess(id);
@@ -414,7 +412,7 @@ namespace RPC {
         Core::Process::Options _options;
         int8_t _priority;
         string _linkLoaderPath;
-        mutable Core::CriticalSection _adminLock;
+
     };
 
     struct EXTERNAL IMonitorableProcess : public virtual Core::IUnknown {
