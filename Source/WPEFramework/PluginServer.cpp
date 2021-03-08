@@ -345,6 +345,8 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                     , _T("Plugin [%s]:[%s] Initialize"), className.c_str(), callSign.c_str()
                 )
 
+                
+
                 if (HasError() == true) {
                     result = Core::ERROR_GENERAL;
 
