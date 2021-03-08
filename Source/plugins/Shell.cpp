@@ -211,6 +211,7 @@ namespace PluginHost
 
     void* IShell::Root(uint32_t & pid, const uint32_t waitTime, const string className, const uint32_t interface, const uint32_t version)
     {
+        pid = 0;
         void* result = nullptr;
         Object rootObject(this);
 
