@@ -125,7 +125,7 @@ endmacro()
 #                e.g. "UX" will generate and install UX.json for the WebkitBrowser plugin.
 #    CLASSNAME   Name of the package, defaults to PROJECT_NAME of 
 #                the latest cmake project call.
-#    LOCATOR     Version of the package, defaults to PROJECT_VERSION
+#    LOCATOR     Version of the package, defaults to lib + MODULE_NAME + CMAKE_SHARED_LIBRARY_SUFFIX
 #                of the latest cmake project call.
 #    COMPONENT   The cmake component group defaults to PROJECT_NAME
 # ----------------------------------------------------------------------------------------
@@ -147,8 +147,12 @@ macro(write_config)
             endif()
             message(DEPRECATION "======DEPRECATION=DETECTED==================================================\nPROPOSED FIX:\n${CMAKE_CURRENT_LIST_FILE}\n\"write_config(${ARGN})\" --> \"${_fix}\"\n\============================================================================")
             set(_plugins ${ARG_UNPARSED_ARGUMENTS})
-            set(_classname ${ARG_UNPARSED_ARGUMENTS})
+            set(_classname ${PLUGIN_NAME})
             set(_component ${ARG_UNPARSED_ARGUMENTS})
+            message(STATUS "Assuming:")
+            message(STATUS "Plugin: ${_plugins}")
+            message(STATUS "Classname: ${_classname}")
+            message(STATUS "Component: ${_component}")
         endif()
     endif()
 
