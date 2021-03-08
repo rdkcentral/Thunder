@@ -384,11 +384,11 @@ namespace RPC {
 
 
             string oldPath;
-
             _ldLibLock.Lock();
             if (_linkLoaderPath.empty() == false) {
+                
                 Core::SystemInfo::GetEnvironment(_T("LD_LIBRARY_PATH"), oldPath);
-                string newPath = oldPath + ":" + _linkLoaderPath;
+                string newPath = _linkLoaderPath+':'+oldPath ;
                 Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), newPath, true);
             }
 
@@ -400,9 +400,10 @@ namespace RPC {
             //restore the original value
             if (_linkLoaderPath.empty() == false) {
                 Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), oldPath, true);
+                
             }
+            _ldLibLock.UnLock();
 
-            _ldLibLock.Unlock();
 
             if ((result == Core::ERROR_NONE) && (_priority != 0)) {
                 Core::ProcessInfo newProcess(id);
@@ -416,7 +417,7 @@ namespace RPC {
         Core::Process::Options _options;
         int8_t _priority;
         string _linkLoaderPath;
-        static  Core::CriticalSection _ldLibLock;
+        static  Core::CriticalSection git;
 
     };
 
