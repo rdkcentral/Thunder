@@ -315,6 +315,7 @@ namespace Core {
         , m_ReceivedNode()
         , m_SendBuffer(nullptr)
         , m_ReceiveBuffer(nullptr)
+	, m_Interface(~0)
     {
         TRACE_L5("Constructor SocketPort (NodeId&) <%p>", (this));
     }
@@ -336,6 +337,7 @@ namespace Core {
         , m_ReceivedNode()
         , m_SendBuffer(nullptr)
         , m_ReceiveBuffer(nullptr)
+	, m_Interface(~0)
     {
         NodeId::SocketInfo localAddress;
         socklen_t localSize = sizeof(localAddress);
