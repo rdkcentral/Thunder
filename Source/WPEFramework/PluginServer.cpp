@@ -335,7 +335,6 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             } else {
 
                 State(ACTIVATION);
-                _administrator.StateChange(this);
 
                 Unlock();
 
@@ -355,7 +354,6 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                     Lock();
                     ReleaseInterfaces();
                     State(DEACTIVATED);
-                    _administrator.StateChange(this);
                 } else {
                     const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
                     const string webUI(PluginHost::Service::Configuration().WebUI.Value());
@@ -373,7 +371,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                     SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
                     Lock();
                     State(ACTIVATED);
-                    _administrator.StateChange(this);
+                    _administrator.Activated(this);
 
 #if THUNDER_RESTFULL_API
                     _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
@@ -396,9 +394,44 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         return (result);
     }
 
+    uint32_t Server::Service::Resume(const reason why) {
+        uint32_t result = Core::ERROR_NONE;
+
+        Lock();
+
+        IShell::state currentState(State());
+
+        if (currentState == IShell::ACTIVATION) {
+            result = Core::ERROR_INPROGRESS;
+        } else if ((currentState == IShell::DEACTIVATION) || (currentState == IShell::DESTROYED)) {
+            result = Core::ERROR_ILLEGAL_STATE;
+        } else if (currentState == IShell::DEACTIVATED) {
+            result = Activate(why);
+            currentState = State();
+        } 
+
+        if (currentState == IShell::ACTIVATED) {
+            // See if we need can and should RESUME.
+            IStateControl* stateControl = _handler->QueryInterface<PluginHost::IStateControl>();
+            if (stateControl == nullptr) {
+                result = Core::ERROR_BAD_REQUEST;
+            }
+            else {
+                // We have a StateControl interface, so at least start resuming, if not already resumed :-)
+                if (stateControl->State() == PluginHost::IStateControl::SUSPENDED) {
+                    result = stateControl->Request(PluginHost::IStateControl::RESUME);
+                }
+                stateControl->Release();
+            }
+        }
+
+        Unlock();
+
+        return (result);
+    }
+
     uint32_t Server::Service::Deactivate(const reason why)
     {
-
         uint32_t result = Core::ERROR_NONE;
 
         Lock();
@@ -422,7 +455,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
             if (currentState == IShell::ACTIVATED) {
                 State(DEACTIVATION);
-                _administrator.StateChange(this);
+                _administrator.Deactivated(this);
 
                 Unlock();
 
@@ -461,8 +494,6 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
             State(why == CONDITIONS? PRECONDITION : DEACTIVATED);
 
-            _administrator.StateChange(this);
-
 #if THUNDER_RESTFULL_API
             _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
 #endif
@@ -475,6 +506,44 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         }
 
         Unlock();
+
+        return (result);
+    }
+
+    uint32_t Server::Service::Suspend(const reason why) {
+
+        uint32_t result = Core::ERROR_NONE;
+
+        if (AutoStart() == false) {
+            // We need to shutdown completely
+            result = Deactivate(why);
+        }
+        else {
+            Lock();
+
+            IShell::state currentState(State());
+
+            if (currentState == IShell::DEACTIVATION) {
+                result = Core::ERROR_INPROGRESS;
+            } else if ((currentState == IShell::ACTIVATION) || (currentState == IShell::DESTROYED)) {
+                result = Core::ERROR_ILLEGAL_STATE;
+            } else if ((currentState == IShell::ACTIVATED) || (currentState == IShell::PRECONDITION)) {
+                // See if we need can and should SUSPEND.
+                IStateControl* stateControl = _handler->QueryInterface<PluginHost::IStateControl>();
+                if (stateControl == nullptr) {
+                    result = Core::ERROR_BAD_REQUEST;
+                }
+                else {
+                    // We have a StateControl interface, so at least start suspending, if not already suspended :-)
+                    if (stateControl->State() == PluginHost::IStateControl::RESUMED) {
+                        result = stateControl->Request(PluginHost::IStateControl::SUSPEND);
+                    }
+                    stateControl->Release();
+                }
+            }
+
+            Unlock();
+        }
 
         return (result);
     }

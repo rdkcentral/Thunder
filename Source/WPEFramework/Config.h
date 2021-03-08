@@ -219,7 +219,7 @@ namespace PluginHost {
                     : Locator("127.0.0.1:9631")
                     , Type(InputHandler::VIRTUAL)
 #else
-                    : Locator("/tmp/keyhandler|0760")
+                    : Locator("/tmp/keyhandler|0766")
                     , Type(InputHandler::VIRTUAL)
 #endif
                     , OutputEnabled(true)

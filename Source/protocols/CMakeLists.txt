@@ -29,6 +29,7 @@ set(SOURCES_COM
         com/Administrator.h
         com/com.h
         com/Communicator.h
+        com/ConnectorType.h
         com/Ids.h
         com/ICOM.h
         com/IUnknown.h
@@ -36,6 +37,7 @@ set(SOURCES_COM
         com/Messages.h
         com/Administrator.cpp
         com/Communicator.cpp
+        com/ConnectorType.cpp
         com/ITracing.cpp
         com/IValueIterator.h
         com/IUnknown.cpp
@@ -76,6 +78,7 @@ set(COM_INCLUDES
         "${CMAKE_CURRENT_BINARY_DIR}/com/Administrator.h"
         "${CMAKE_CURRENT_BINARY_DIR}/com/com.h"
         "${CMAKE_CURRENT_BINARY_DIR}/com/Communicator.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/com/ConnectorType.h"
         "${CMAKE_CURRENT_BINARY_DIR}/com/Ids.h"
         "${CMAKE_CURRENT_BINARY_DIR}/com/ICOM.h"
         "${CMAKE_CURRENT_BINARY_DIR}/com/IUnknown.h"
@@ -113,6 +116,7 @@ add_library(${TARGET} SHARED
         "${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Trace.cpp"
         "${CMAKE_CURRENT_BINARY_DIR}/com/Administrator.cpp"
         "${CMAKE_CURRENT_BINARY_DIR}/com/Communicator.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/com/ConnectorType.cpp"
         "${CMAKE_CURRENT_BINARY_DIR}/com/ITracing.cpp"
         "${CMAKE_CURRENT_BINARY_DIR}/com/IUnknown.cpp"
         "${CMAKE_CURRENT_BINARY_DIR}/websocket/URL.cpp"

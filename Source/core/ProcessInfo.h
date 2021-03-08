@@ -17,13 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef __PROCESSINFO_H
-#define __PROCESSINFO_H
+#pragma once
 
-#include <list>
-
-#include "IIterator.h"
 #include "Module.h"
+#include "IIterator.h"
 #include "Portability.h"
 
 namespace WPEFramework {
@@ -237,6 +234,18 @@ namespace Core {
 #endif
         }
 
+        inline void Kill(const bool hardKill)
+        {
+            
+#ifdef __WINDOWS__
+            if (hardKill == true) {
+                TerminateProcess(_handle, 1234);
+            }
+#else
+            ::kill(_pid, (hardKill ? SIGKILL : SIGTERM));
+#endif
+        }
+
         uint64_t Allocated() const;
         uint64_t Resident() const;
         uint64_t Shared() const;
@@ -308,4 +317,3 @@ namespace Core {
 } // namespace Core
 } // namespace WPEFramework
 
-#endif // __PROCESSINFO_H

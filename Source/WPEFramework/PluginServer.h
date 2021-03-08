@@ -539,7 +539,6 @@ namespace PluginHost {
                 // It's reference counted, so just take it out of the list, state to DESTROYED
                 // Also unsubscribe all subscribers. They need to go..
                 State(DESTROYED);
-                _administrator.StateChange(this);
 
                 Unlock();
             }
@@ -844,6 +843,8 @@ namespace PluginHost {
             // These are Blocking calls!!!!!
             virtual uint32_t Activate(const reason) override;
             virtual uint32_t Deactivate(const reason) override;
+            uint32_t Suspend(const reason);
+            uint32_t Resume(const reason);
             virtual reason Reason() const
             {
                 return (_reason);
@@ -1636,14 +1637,31 @@ namespace PluginHost {
             {
                 return (reinterpret_cast<ISubSystem*>(_subSystems.QueryInterface(ISubSystem::ID)));
             }
-            void StateChange(PluginHost::IShell* entry)
+            void Activated(PluginHost::IShell* entry)
             {
+                string callsign = entry->Callsign();
+
                 _notificationLock.Lock();
 
                 std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
 
                 while (currentlist.size()) {
-                    currentlist.front()->StateChange(entry);
+                    currentlist.front()->Activated(callsign, entry);
+                    currentlist.pop_front();
+                }
+
+                _notificationLock.Unlock();
+            }
+            void Deactivated(PluginHost::IShell* entry)
+            {
+                string callsign = entry->Callsign();
+
+                _notificationLock.Lock();
+
+                std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
+
+                while (currentlist.size()) {
+                    currentlist.front()->Deactivated(callsign, entry);
                     currentlist.pop_front();
                 }
 
@@ -1670,7 +1688,7 @@ namespace PluginHost {
                     ASSERT(service.IsValid());
 
                     if ( (service.IsValid() == true) && (service->State() == IShell::ACTIVATED) ) {
-                        sink->StateChange(&(service.operator*()));
+                        sink->Activated(service->Callsign(), &(service.operator*()));
                     }
 
                     index++;

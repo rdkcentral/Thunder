@@ -1448,8 +1448,6 @@ namespace RPC {
         {
             INTERFACE* result(nullptr);
 
-            ASSERT(className.empty() == false);
-
             if (BaseClass::IsOpen() == true) {
 
                 _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), className, INTERFACE::ID, versionId);
