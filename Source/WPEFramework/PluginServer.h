@@ -2644,6 +2644,7 @@ namespace PluginHost {
                     }
 
                     State(CLOSED, false);
+                    _parent.Dispatcher().TriggerCleanup();
                 } else if (IsWebSocket() == true) {
                     ASSERT(_service.IsValid() == false);
                     bool serviceCall;
@@ -2780,6 +2781,11 @@ namespace PluginHost {
 #ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
+            void TriggerCleanup()
+            {
+                _parent.Revoke(_job);
+                _parent.Submit(_job);
+            }
             ~ChannelMap()
             {
 
@@ -2836,10 +2842,6 @@ namespace PluginHost {
             {
                 TRACE(Activity, (string(_T("Cleanup job running..\n"))));
 
-                Core::Time NextTick(Core::Time::Now());
-
-                NextTick.Add(_connectionCheckTimer);
-
                 // First clear all shit from last time..
                 Cleanup();
 
@@ -2859,7 +2861,13 @@ namespace PluginHost {
                     }
                 }
 
-                _parent.Schedule(NextTick.Ticks(), _job);
+                if (_connectionCheckTimer) {
+
+                    Core::Time NextTick(Core::Time::Now());
+                    NextTick.Add(_connectionCheckTimer);
+
+                    _parent.Schedule(NextTick.Ticks(), _job);
+                }
             }
 
         private:
