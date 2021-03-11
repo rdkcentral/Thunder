@@ -53,12 +53,13 @@ namespace PluginHost {
                     INTERFACE* entry = _designated->QueryInterface<INTERFACE>();
                     _designated->Release();
                     _designated = entry;
-
+                    _state = state::RUNNING;
                     if (entry != nullptr) {
                         _parent.Activated(entry);
                     }
+                } else {
+                    _state = state::RUNNING;
                 }
-                _state = state::RUNNING;
                 _adminLock.Unlock();
             }
             void Unregister(IShell* controller) 
