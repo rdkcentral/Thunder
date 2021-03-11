@@ -2748,7 +2748,6 @@ namespace PluginHost {
             public:
                 virtual void Dispatch() override
                 {
-
                     return (_parent.Timed());
                 }
 
@@ -2766,6 +2765,7 @@ namespace PluginHost {
 #endif
             ChannelMap(Server& parent, const Core::NodeId& listeningNode, const uint16_t connectionCheckTimer)
                 : Core::SocketServerType<Channel>(listeningNode)
+                , _triggered(false)
                 , _parent(parent)
                 , _connectionCheckTimer(connectionCheckTimer * 1000)
                 , _job(Core::ProxyType<Job>::Create(this))
@@ -2784,6 +2784,7 @@ namespace PluginHost {
             void TriggerCleanup()
             {
                 _parent.Revoke(_job);
+                _triggered = true;
                 _parent.Submit(_job);
             }
             ~ChannelMap()
@@ -2845,23 +2846,26 @@ namespace PluginHost {
                 // First clear all shit from last time..
                 Cleanup();
 
-                // Now suspend those that have no activity.
-                BaseClass::Iterator index(BaseClass::Clients());
-
-                while (index.Next() == true) {
-                    if (index.Client()->HasActivity() == false) {
-                        TRACE(Activity, (_T("Client close without activity on ID [%d]"), index.Client()->Id()));
-
-                        // Oops nothing hapened for a long time, kill the connection
-                        // Give it all the time (0) if it i not yet suspended to close. If it is
-                        // suspended, force the close down if not closed in 100ms.
-                        index.Client()->Close(0);
-                    } else {
-                        index.Client()->ResetActivity();
-                    }
-                }
-
                 if (_connectionCheckTimer) {
+                    if (_triggered == false) {
+                        // Now suspend those that have no activity.
+                        BaseClass::Iterator index(BaseClass::Clients());
+
+                        while (index.Next() == true) {
+                            if (index.Client()->HasActivity() == false) {
+                                TRACE(Activity, (_T("Client close without activity on ID [%d]"), index.Client()->Id()));
+
+                                // Oops nothing hapened for a long time, kill the connection
+                                // Give it all the time (0) if it i not yet suspended to close. If it is
+                                // suspended, force the close down if not closed in 100ms.
+                                index.Client()->Close(0);
+                            } else {
+                                index.Client()->ResetActivity();
+                            }
+                        }
+                    } else {
+                        _triggered = false;
+                    }
 
                     Core::Time NextTick(Core::Time::Now());
                     NextTick.Add(_connectionCheckTimer);
@@ -2871,6 +2875,7 @@ namespace PluginHost {
             }
 
         private:
+            bool _triggered;
             Server& _parent;
             const uint32_t _connectionCheckTimer;
             Core::ProxyType<Core::IDispatchType<void>> _job;
