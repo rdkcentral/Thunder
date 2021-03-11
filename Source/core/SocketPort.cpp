@@ -222,23 +222,27 @@ namespace Core {
             .msg_control = cmbuf,
             .msg_controllen = sizeof(cmbuf),
         };
+
         result = recvmsg(handle, &mh, 0);
-        for ( // iterate through all the control headers
-            struct cmsghdr* cmsg = CMSG_FIRSTHDR(&mh);
-            cmsg != NULL;
-            cmsg = CMSG_NXTHDR(&mh, cmsg))
-        {
-            if ((cmsg->cmsg_level == IPPROTO_IP) && (cmsg->cmsg_type == IP_PKTINFO) && (remote->sa_family == AF_INET))
+        if ((static_cast<signed int>(result) != SOCKET_ERROR) && ((mh.msg_flags & MSG_CTRUNC) == 0)) {
+            for ( // iterate through the control headers
+                struct cmsghdr* cmsg = CMSG_FIRSTHDR(&mh);
+                cmsg != NULL;
+                cmsg = CMSG_NXTHDR(&mh, cmsg))
             {
-                const struct in_pktinfo* info = reinterpret_cast<const struct in_pktinfo*>CMSG_DATA(cmsg);
-                interfaceId = info->ipi_ifindex;
-            }
-            else if ((cmsg->cmsg_level == IPPROTO_IPV6) && (cmsg->cmsg_type == IPV6_PKTINFO) && (remote->sa_family == AF_INET6))
-            {
-                const struct in6_pktinfo* info = reinterpret_cast<const struct in6_pktinfo*>CMSG_DATA(cmsg);
-                interfaceId = info->ipi6_ifindex;
+                if ((cmsg->cmsg_level == IPPROTO_IP) && (cmsg->cmsg_type == IP_PKTINFO) && (remote->sa_family == AF_INET)) {
+                    const struct in_pktinfo* info = reinterpret_cast<const struct in_pktinfo*>CMSG_DATA(cmsg);
+                    interfaceId = info->ipi_ifindex;
+                    break;
+                }
+                else if ((cmsg->cmsg_level == IPPROTO_IPV6) && (cmsg->cmsg_type == IPV6_PKTINFO) && (remote->sa_family == AF_INET6)) {
+                    const struct in6_pktinfo* info = reinterpret_cast<const struct in6_pktinfo*>CMSG_DATA(cmsg);
+                    interfaceId = info->ipi6_ifindex;
+                    break;
+                }
             }
         }
+
         return (result);
     }
 
