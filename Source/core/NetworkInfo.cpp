@@ -1487,6 +1487,11 @@ namespace Core {
         _index = _list.begin();
     }
 
+    AdapterIterator::AdapterIterator(const uint16_t index)
+        : AdapterIterator() {
+        while ( (Next() == true) && (Index() != index) ) { /* Intentionally left empty */ }
+    }
+
     AdapterIterator::AdapterIterator(const string& name) 
         : AdapterIterator() {
         while ( (Next() == true) && (Name() != name) ) { /* Intentionally left empty */ }

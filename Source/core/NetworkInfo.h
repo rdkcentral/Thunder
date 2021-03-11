@@ -196,6 +196,16 @@ namespace Core {
             : _index(static_cast<uint16_t>(~0))
         {
         }
+        inline AdapterIterator(const uint16_t index)
+            : _index(static_cast<uint16_t>(~0))
+        {
+            while ((Next() == true) && (Index() != index)) /* intentionally left blank */
+                ;
+
+            if (IsValid() == false) {
+                Reset();
+            }
+        }
         inline AdapterIterator(const string& name)
             : _index(static_cast<uint16_t>(~0))
         {
@@ -460,6 +470,7 @@ namespace Core {
     class EXTERNAL AdapterIterator {
     public:
         AdapterIterator();
+        AdapterIterator(const uint16_t index);
         AdapterIterator(const string& name);
         AdapterIterator(const AdapterIterator& copy);
         ~AdapterIterator() = default;
@@ -488,6 +499,10 @@ namespace Core {
         }
         inline uint16_t Count() const {
             return (_list.size());
+        }
+        inline uint16_t Index() const {
+            ASSERT (IsValid());
+            return ((*_index)->Id());
         }
 
         inline string Name() const {
