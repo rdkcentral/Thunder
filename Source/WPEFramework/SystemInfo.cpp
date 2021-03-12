@@ -45,6 +45,18 @@ namespace PluginHost {
 
     /* virtual */ SystemInfo::~SystemInfo()
     {
+      if (_identifier)
+        _identifier->Release();
+      if (_location)
+        _location->Release();
+      if (_internet)
+        _internet->Release();
+      if (_security)
+        _security->Release();
+      if (_time)
+        _time->Release();
+      if (_provisioning)
+        _provisioning->Release();
     }
 
     void SystemInfo::Register(PluginHost::ISubSystem::INotification* notification)

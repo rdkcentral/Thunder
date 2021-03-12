@@ -41,7 +41,11 @@ namespace PluginHost {
                 : _identifier(nullptr)
             {
             }
-            ~Id() override = default;
+
+            ~Id() override
+            {
+              delete [] _identifier;
+            }
 
         public:
             BEGIN_INTERFACE_MAP(Id)
@@ -57,7 +61,7 @@ namespace PluginHost {
                 bool result(true);
 
                 if (_identifier != nullptr) {
-                    delete (_identifier);
+                    delete [] _identifier;
                 }
 
                 _identifier = new uint8_t[length + 2];
