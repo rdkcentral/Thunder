@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Module.h"
+
 #include "IPlugin.h"
 #include "IShell.h"
 
@@ -38,7 +39,7 @@ namespace PluginHost {
             {
                 return (_designated != nullptr);
             }
-            void Register(IShell* controller, const string& callsign) 
+            void Register(IShell* controller, const string& callsign)
             {
                 _adminLock.Lock();
                 _callsign = callsign;
@@ -62,13 +63,13 @@ namespace PluginHost {
                 }
                 _adminLock.Unlock();
             }
-            void Unregister(IShell* controller) 
+            void Unregister(IShell* controller)
             {
                 _adminLock.Lock();
 
                 controller->Unregister(this);
                 _callsign.clear();
-                
+
                 if (_designated != nullptr) {
 
                     _designated->Release();
@@ -76,7 +77,7 @@ namespace PluginHost {
 
                     _parent.Deactivated();
                 }
-               
+
                 _adminLock.Unlock();
             }
             INTERFACE* Interface()
@@ -84,7 +85,7 @@ namespace PluginHost {
                 INTERFACE* result = nullptr;
 
                 Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
-                if ( (_state == state::RUNNING) && (_designated != nullptr) )  {
+                if ((_state == state::RUNNING) && (_designated != nullptr)) {
                     result = _designated->QueryInterface<INTERFACE>();
                 }
 
@@ -95,15 +96,15 @@ namespace PluginHost {
                 const INTERFACE* result = nullptr;
 
                 Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
-                if ( (_state == state::RUNNING) && (_designated != nullptr) )  {
+                if ((_state == state::RUNNING) && (_designated != nullptr)) {
                     result = _designated->QueryInterface<INTERFACE>();
                 }
 
                 return (result);
             }
- 
+
             BEGIN_INTERFACE_MAP(Sink)
-                INTERFACE_ENTRY(PluginHost::IPlugin::INotification)
+            INTERFACE_ENTRY(PluginHost::IPlugin::INotification)
             END_INTERFACE_MAP
 
         private:
@@ -111,7 +112,7 @@ namespace PluginHost {
             {
                 if (_callsign == name) {
 
-                    ASSERT (_designated == nullptr);
+                    ASSERT(_designated == nullptr);
 
                     _adminLock.Lock();
                     if (_state == state::REGISTRING) {
@@ -119,12 +120,11 @@ namespace PluginHost {
                         _state = state::LOADED;
                         _designated = plugin;
                         _designated->AddRef();
-                    }
-                    else {
+                    } else {
                         INTERFACE* entry = plugin->QueryInterface<INTERFACE>();
                         _designated = entry;
 
-                        ASSERT (_state == state::RUNNING);
+                        ASSERT(_state == state::RUNNING);
 
                         if (entry != nullptr) {
                             _parent.Activated(entry);
@@ -145,15 +145,14 @@ namespace PluginHost {
 
                         if (_state != state::RUNNING) {
                             _state = state::REGISTRING;
-                        }
-                        else {
+                        } else {
                             _parent.Deactivated();
                         }
                     }
                     _adminLock.Unlock();
                 }
             }
- 
+
         private:
             mutable Core::CriticalSection _adminLock;
             PluginMonitorType<INTERFACE, HANDLER>& _parent;
@@ -164,8 +163,8 @@ namespace PluginHost {
 
     public:
         PluginMonitorType() = delete;
-        PluginMonitorType(const PluginMonitorType<INTERFACE,HANDLER>&) = delete;
-        PluginMonitorType<INTERFACE,HANDLER>& operator=(const PluginMonitorType<INTERFACE,HANDLER>&) = delete;
+        PluginMonitorType(const PluginMonitorType<INTERFACE, HANDLER>&) = delete;
+        PluginMonitorType<INTERFACE, HANDLER>& operator=(const PluginMonitorType<INTERFACE, HANDLER>&) = delete;
 
         template <typename... Args>
         PluginMonitorType(Args&&... args)
@@ -196,13 +195,13 @@ namespace PluginHost {
         {
             return (_sink.Interface());
         }
-      
+
     private:
         void Activated(INTERFACE* element)
         {
             _reporter.Activated(element);
         }
-        void Deactivated() 
+        void Deactivated()
         {
             _reporter.Deactivated();
         }
@@ -221,34 +220,35 @@ namespace RPC {
         using Monitor = PluginHost::PluginMonitorType<INTERFACE, SmartInterfaceType<INTERFACE, ENGINE>&>;
 
     public:
-        SmartInterfaceType(const SmartInterfaceType<INTERFACE,ENGINE>&) = delete;
-        SmartInterfaceType<INTERFACE,ENGINE>& operator= (const SmartInterfaceType<INTERFACE,ENGINE>&) = delete;
+        SmartInterfaceType(const SmartInterfaceType<INTERFACE, ENGINE>&) = delete;
+        SmartInterfaceType<INTERFACE, ENGINE>& operator=(const SmartInterfaceType<INTERFACE, ENGINE>&) = delete;
 
-        #ifdef __WINDOWS__
-        #pragma warning(disable : 4355)
-        #endif
+#ifdef __WINDOWS__
+#pragma warning(disable : 4355)
+#endif
         SmartInterfaceType()
             : _controller(nullptr)
             , _administrator()
             , _monitor(*this)
         {
         }
-        #ifdef __WINDOWS__
-        #pragma warning(default : 4355)
-        #endif
+#ifdef __WINDOWS__
+#pragma warning(default : 4355)
+#endif
         virtual ~SmartInterfaceType() = default;
 
     public:
-        bool IsOperational() const {
+        bool IsOperational() const
+        {
             return (_monitor.IsOperational());
         }
         uint32_t Open(const uint32_t waitTime, const Core::NodeId& node, const string& callsign)
         {
             ASSERT(_controller == nullptr);
-            
+
             if (_controller == nullptr) {
                 _controller = _administrator.template Aquire<PluginHost::IShell>(waitTime, node, _T(""), ~0);
-                
+
                 if (_controller != nullptr) {
 
                     _monitor.Register(_controller, callsign);
@@ -281,10 +281,25 @@ namespace RPC {
         {
             return (_monitor.Interface());
         }
- 
+
         // Allow a derived class to take action on a new interface, or almost dissapeared interface..
         virtual void Operational(const bool upAndRunning)
         {
+        }
+
+        static Core::NodeId DefaultConnector()
+        {
+            const TCHAR* comPath = ::getenv(_T("COMMUNICATOR_PATH"));
+
+            if (comPath == nullptr) {
+#ifdef __WINDOWS__
+                comPath = _T("127.0.0.1:62000");
+#else
+                comPath = _T("/tmp/communicator");
+#endif
+            }
+
+            return Core::NodeId(comPath);
         }
 
     private:
