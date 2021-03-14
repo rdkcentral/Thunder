@@ -287,11 +287,11 @@ namespace RPC {
         {
         }
 
-        static Core::NodeId DefaultConnector()
+        static Core::NodeId Connector()
         {
-            const TCHAR* comPath = ::getenv(_T("COMMUNICATOR_PATH"));
+            string comPath;
 
-            if (comPath == nullptr) {
+            if (Core::SystemInfo::GetEnvironment(_T("COMMUNICATOR_CONNECTOR"), comPath) == false) {
 #ifdef __WINDOWS__
                 comPath = _T("127.0.0.1:62000");
 #else
@@ -299,7 +299,7 @@ namespace RPC {
 #endif
             }
 
-            return Core::NodeId(comPath);
+            return Core::NodeId(comPath.c_str());
         }
 
     private:
