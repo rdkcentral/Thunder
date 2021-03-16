@@ -402,8 +402,7 @@ namespace RPC {
                 Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), oldPath, true);
                 
             }
-            _ldLibLock.UnLock();
-
+            _ldLibLock.Unlock();
 
             if ((result == Core::ERROR_NONE) && (_priority != 0)) {
                 Core::ProcessInfo newProcess(id);
@@ -417,8 +416,7 @@ namespace RPC {
         Core::Process::Options _options;
         int8_t _priority;
         string _linkLoaderPath;
-        static  Core::CriticalSection git;
-
+        static Core::CriticalSection _ldLibLock;
     };
 
     struct EXTERNAL IMonitorableProcess : public virtual Core::IUnknown {
