@@ -532,6 +532,7 @@ namespace PluginHost {
                 _communicator = Core::NodeId(config.Communicator.Value().c_str());
                 _redirect = config.Redirect.Value();
                 _version = config.Version.Value();
+                _idleTime = config.IdleTime.Value();
                 _IPV6 = config.IPV6.Value();
                 _binding = config.Binding.Value();
                 _interface = config.Interface.Value();
