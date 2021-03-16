@@ -92,6 +92,7 @@ namespace Core {
             uint16_t monitor;
             uint16_t events;
             const char* classname;
+            char filename[128];
         };
 
     public:
@@ -179,10 +180,17 @@ namespace Core {
 #ifdef __LINUX__
                 info.monitor = _descriptorArray[position + 1].events;
                 info.events  = _descriptorArray[position + 1].revents;
+
+                char procfn[64];
+                sprintf(procfn, "/proc/self/fd/%d", info.descriptor);
+
+                size_t len = readlink(procfn, info.filename, sizeof(info.filename) - 1);
+                info.filename[len] = '\0';
 #endif
 #ifdef __WINDOWS__
                 info.monitor = 0;
                 info.events  = 0;
+                info.filename[0] = '\0';
 #endif
             }
 
@@ -222,12 +230,8 @@ namespace Core {
             typename std::list<RESOURCE*>::iterator index(std::find(_resourceList.begin(), _resourceList.end(), &resource));
 
             if (index != _resourceList.end()) {
-#ifdef __WINDOWS__
-                _resourceList.erase(index);
-#else
                 *index = nullptr;
                 Break();
-#endif
             }
 
             _adminLock.Unlock();
@@ -455,11 +459,9 @@ namespace Core {
 
                 RESOURCE* entry = (*index);
 
-                ASSERT(entry != nullptr);
+                uint16_t events;
 
-                uint16_t events = entry->Events();
-
-                if (events == 0) {
+                if ((entry == nullptr) || ((events = entry->Events()) == 0)) {
                     index = _resourceList.erase(index);
                 } else {
                     if ((events & 0x8000) != 0) {
@@ -485,23 +487,22 @@ namespace Core {
                 while (index != _resourceList.end()) {
                     RESOURCE* entry = (*index);
 
-                    ASSERT(index != _resourceList.end());
-                    ASSERT(entry != nullptr);
+                    if (entry != nullptr) {
 
-                    WSANETWORKEVENTS networkEvents;
+                        WSANETWORKEVENTS networkEvents;
 
-                    // Re-enable monitoring for the next round..
-                    ::WSAEnumNetworkEvents(entry->Descriptor(), nullptr, &networkEvents);
+                        // Re-enable monitoring for the next round..
+                        ::WSAEnumNetworkEvents(entry->Descriptor(), nullptr, &networkEvents);
 
-                    uint16_t flagsSet = static_cast<uint16_t>(networkEvents.lNetworkEvents);
+                        uint16_t flagsSet = static_cast<uint16_t>(networkEvents.lNetworkEvents);
 
-                    Arm<WATCHDOG>();
+                        Arm<WATCHDOG>();
 
-                    // Event if the flagsSet == 0, call handle, maybe a break was issued by this RESOURCE..
-                    entry->Handle(flagsSet);
+                        // Event if the flagsSet == 0, call handle, maybe a break was issued by this RESOURCE..
+                        entry->Handle(flagsSet);
 
-                    Reset<WATCHDOG>();
-
+                        Reset<WATCHDOG>();
+                    }
                     index++;
                 }
             } else {

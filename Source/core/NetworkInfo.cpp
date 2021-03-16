@@ -1228,6 +1228,154 @@ namespace Core {
         uint32_t _refCount;
     };
 
+    RoutingTable::Route::Route(const uint8_t stream[], const uint16_t length) 
+        : _source()
+        , _destination()
+        , _preferred()
+        , _gateway()
+        , _priority(0)
+        , _interface(0)
+        , _metrics(0)
+        , _table(0)
+        , _mask(0)
+        , _flags(0)
+        , _protocol(0)
+        , _scope(0) {
+        const struct rtmsg* r = reinterpret_cast<const struct rtmsg*>(stream);
+        const struct rtattr* rt_attr = RTM_RTA(r);
+        int rtl = length - sizeof(struct rtmsg);
+
+        _mask = r->rtm_dst_len;
+        _flags = r->rtm_flags;
+        _scope = r->rtm_scope;
+        _protocol = r->rtm_protocol;
+
+        for (; RTA_OK(rt_attr, rtl); rt_attr = RTA_NEXT(rt_attr, rtl))
+            switch (rt_attr->rta_type) {
+            case RTA_DST:
+                 if (r->rtm_family == AF_INET6) {
+                     _destination = Core::NodeId(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rt_attr)));
+                 }
+                 else {
+                     _destination = Core::NodeId(*reinterpret_cast<const struct in_addr*>(RTA_DATA(rt_attr)));
+                 }
+                 break;
+            case RTA_SRC:
+                 if (r->rtm_family == AF_INET6) {
+                     _source = Core::NodeId(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rt_attr)));
+                 }
+                 else {
+                     _source = Core::NodeId(*reinterpret_cast<const struct in_addr*>(RTA_DATA(rt_attr)));
+                 }
+                 break;
+            case RTA_GATEWAY:
+                 if (r->rtm_family == AF_INET6) {
+                     _gateway = Core::NodeId(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rt_attr)));
+                 }
+                 else {
+                     _gateway = Core::NodeId(*reinterpret_cast<const struct in_addr*>(RTA_DATA(rt_attr)));
+                 }
+                 break;
+            case RTA_PREFSRC:
+                 if (r->rtm_family == AF_INET6) {
+                     _preferred = Core::NodeId(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rt_attr)));
+                 }
+                 else {
+                     _preferred = Core::NodeId(*reinterpret_cast<const struct in_addr*>(RTA_DATA(rt_attr)));
+                 }
+                 break;
+            case RTA_OIF:
+                 _interface = *((int *)RTA_DATA(rt_attr));
+                 break;
+            case RTA_METRICS:
+                 _metrics = *((int *)RTA_DATA(rt_attr));
+                 break;
+            case RTA_PRIORITY:
+                 _priority = *((int *)RTA_DATA(rt_attr));
+                 break;
+            case RTA_TABLE:
+                 _table = *((int *)RTA_DATA(rt_attr));
+                 break;
+            default:
+                 TRACE_L1("We also have: %u", rt_attr->rta_type);
+                 break;
+        }
+    }
+
+    string RoutingTable::Route::Interface() const {
+        string result;
+        if (_interface != 0) {
+            char buffer[IF_NAMESIZE + 1];
+
+            if_indextoname(_interface, buffer);
+
+            ToString(buffer, result);
+        }
+
+        return (result);
+    }
+
+    RoutingTable::RoutingTable(const bool ipv4) {
+        class IPRouteTable : public Netlink {
+        public:
+            IPRouteTable() = delete;
+            IPRouteTable(const IPRouteTable&) = delete;
+            IPRouteTable& operator=(const IPRouteTable&) = delete;
+
+            IPRouteTable(std::list<Route>& table, const bool ipv4)
+                : _ipv4(ipv4)
+                , _table(table)
+            {
+            }
+            ~IPRouteTable() override = default;
+
+        private:
+            uint16_t Write(uint8_t stream[], const uint16_t length) const override
+            {
+                Flags(NLM_F_REQUEST | NLM_F_DUMP);
+                Type(RTM_GETROUTE);
+
+                struct rtmsg message;
+
+                ::memset(&message, 0, sizeof(message));
+
+                message.rtm_family = (_ipv4 == true ?  AF_INET : AF_INET6);
+                message.rtm_table = RT_TABLE_MAIN;
+
+                uint16_t copyLength = std::min(length, static_cast<uint16_t>(sizeof(struct rtmsg)));
+                memcpy (stream, &message, copyLength);
+                _table.clear();
+
+                return (copyLength);
+            }
+            uint16_t Read(const uint8_t stream[], const uint16_t length) override
+            {
+                if ( (Type() == RTM_GETROUTE) && (length > 0)) {
+                    _table.emplace_back(stream, length);
+
+                } else if (Type() == NLMSG_ERROR) {
+                    const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
+
+                    if (error->error != 0) {
+                        TRACE_L1("IPRouteTable: Request failed with code %d", error->error);
+                    } 
+                }
+                else if (Type() != NLMSG_DONE) {
+                    TRACE_L1("IPRouteTable: Read unexpected type: %d", Type());
+                }
+
+                return (length);
+            }
+
+        private:
+            bool _ipv4;
+            std::list<Route>& _table;
+        } collector (_table, ipv4);
+
+        IPNetworks::Instance().Exchange(collector, collector);
+    }
+
+
     Network::Network(const uint32_t index, const struct rtattr* iface, const uint32_t length)
         : _adminLock()
         , _index(index)
@@ -1485,6 +1633,11 @@ namespace Core {
         // Time to get the current set of networks..
         IPNetworks::Instance().Load(_list);
         _index = _list.begin();
+    }
+
+    AdapterIterator::AdapterIterator(const uint16_t index)
+        : AdapterIterator() {
+        while ( (Next() == true) && (Index() != index) ) { /* Intentionally left empty */ }
     }
 
     AdapterIterator::AdapterIterator(const string& name) 
