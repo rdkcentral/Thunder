@@ -23,14 +23,14 @@ add_executable(${TEST_RUNNER_NAME}
    test_databuffer.cpp
    test_dataelement.cpp
    test_dataelementfile.cpp
-   test_doorbell.cpp
+   #test_doorbell.cpp
    test_enumerate.cpp
    test_event.cpp
    test_hex2strserialization.cpp
    test_filesystem.cpp
    test_frametype.cpp
-   test_ipc.cpp
-   test_ipcclient.cpp
+   #test_ipc.cpp
+   #test_ipcclient.cpp
    test_iso639.cpp
    test_iterator.cpp
    test_json.cpp
@@ -62,7 +62,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_stopwatch.cpp
    test_synchronize.cpp
    test_synchronous.cpp
-   test_systeminfo.cpp
+   #test_systeminfo.cpp
    test_textfragment.cpp
    test_textreader.cpp
    test_thread.cpp
@@ -70,7 +70,7 @@ add_executable(${TEST_RUNNER_NAME}
    #test_timer.cpp
    test_tracing.cpp
    test_tristate.cpp
-   test_valuerecorder.cpp
+   #test_valuerecorder.cpp
    test_weblinkjson.cpp
    test_weblinktext.cpp
    test_websocketjson.cpp

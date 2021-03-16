@@ -134,4 +134,6 @@ TEST(test_workerpool, simple_workerpool)
     EXPECT_TRUE(workerpool->IsAvailable());
     workerpool->Stop();
     object.Stop();
+
+    Core::Singleton::Dispose();
 }

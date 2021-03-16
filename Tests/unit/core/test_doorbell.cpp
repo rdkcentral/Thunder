@@ -39,6 +39,7 @@ namespace Tests {
             doorBell.Ring();
             testAdmin.Sync("Second ring");
         }
+        Core::Singleton::Dispose();
     }
 
     TEST(Core_DoorBell, simpleSetReversed)
@@ -74,7 +75,7 @@ namespace Tests {
             }
             doorBell.Relinquish();
         }
-        Core::Singleton::Dispose();
+       // Core::Singleton::Dispose();
     }
 
 } // Tests
