@@ -41,10 +41,16 @@ namespace RPC {
         for (std::pair<uint32_t, ProxyStub::UnknownStub*> stub : _stubs) {
             delete stub.second;
         }
+
+        _proxy.clear();
+        _stubs.clear();
     }
 
     /* static */ Administrator& Administrator::Instance()
     {
+        // We tried this, but the proxy-stubs are not SingletonType. Turing proxy-stubs in to SingletonType 
+        // make them needless complex and require more memory.  
+        // static Administrator& systemAdministrator = Core::SingletonType<Administrator>::Instance();
         static Administrator systemAdministrator;
 
         return (systemAdministrator);
@@ -279,12 +285,17 @@ namespace RPC {
         if (remotes != _channelReferenceMap.end()) {
             std::list<RecoverySet>::iterator loop(remotes->second.begin());
             while (loop != remotes->second.end()) {
-                uint32_t result;
+                uint32_t result = Core::ERROR_NONE;
 
                 // We will release on behalf of the other side :-)
                 do {
-                    result = loop->Unknown()->Release();
+                    Core::IUnknown* iface = loop->Unknown();
+                    
+                    ASSERT(iface != nullptr);
 
+                    if (iface != nullptr) {
+                        result = iface->Release();
+                    }
                 } while ((loop->Decrement()) && (result == Core::ERROR_NONE));
 
                 ASSERT (loop->Flushed() == true);

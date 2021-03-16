@@ -225,7 +225,7 @@ namespace Core {
                     }
                 }
 
-                if ((fulldesignator == true) || (pos != string::npos) && (pos > 1) && (result == static_cast<uint8_t>(~0)))
+                if ((fulldesignator == true) || ((pos != string::npos) && (pos > 1) && (result == static_cast<uint8_t>(~0))))
                 {
                     // 1) we have an index then we must also have a full designator. Then version (if avaialble) must be before the previous '.'
                     //    and that is the only possible option, otherwise it is not there and we found the callsign

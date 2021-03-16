@@ -173,6 +173,9 @@ namespace Core {
         {
             return (m_ReceivedNode);
         }
+        inline uint32_t ReceivedInterface() const {
+            return (m_Interface);
+        }
         inline uint16_t SendBufferSize() const
         {
             return (m_SendBufferSize);
@@ -265,6 +268,7 @@ namespace Core {
         uint16_t m_ReadBytes;
         uint16_t m_SendBytes;
         uint16_t m_SendOffset;
+        uint32_t m_Interface;
     };
 
     class EXTERNAL SocketStream : public SocketPort {

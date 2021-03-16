@@ -47,24 +47,24 @@ namespace Core {
             }
 
         public:
-            void Submit()
+            bool Submit()
             {
                 Core::ProxyType<Core::IDispatch> job(ThreadPool::JobType<IMPLEMENTATION>::Aquire());
 
                 if (job.IsValid()) {
                     Core::IWorkerPool::Instance().Submit(job);
                 }
+             
+                return (job.IsValid());
             }
             bool Schedule(const Core::Time& time)
             {
-                bool result = false;
                 Core::ProxyType<Core::IDispatch> job(ThreadPool::JobType<IMPLEMENTATION>::Aquire());
 
                 if (job.IsValid()) {
                     Core::IWorkerPool::Instance().Schedule(time, job);
-                    result = true;
                 }
-                return (result);
+                return (job.IsValid());
             }
             bool Reschedule(const Core::Time& time)
             {
