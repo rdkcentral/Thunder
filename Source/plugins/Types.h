@@ -1,37 +1,106 @@
 #pragma once
-#include "IPlugin.h"
+
 #include "Module.h"
 
+#include "IPlugin.h"
+#include "IShell.h"
+
 namespace WPEFramework {
-namespace RPC {
-    template <typename HANDLER, Core::ProxyType<RPC::IIPCServer> ENGINE() = DefaultInvokeServer>
+namespace PluginHost {
+
+    template <typename INTERFACE, typename HANDLER>
     class PluginMonitorType {
     private:
-        enum state : uint8_t {
-            UNKNOWN,
-            DEACTIVATED,
-            ACTIVATED
-        };
         class Sink : public PluginHost::IPlugin::INotification {
+        private:
+            enum state : uint8_t {
+                RUNNING,
+                REGISTRING,
+                LOADED
+            };
+
         public:
             Sink() = delete;
             Sink(const Sink&) = delete;
             Sink& operator=(const Sink&) = delete;
 
-            Sink(PluginMonitorType<HANDLER, ENGINE>& parent)
-                : _parent(parent)
+            Sink(PluginMonitorType<INTERFACE, HANDLER>& parent)
+                : _adminLock()
+                , _parent(parent)
+                , _state(state::RUNNING)
+                , _callsign()
+                , _designated(nullptr)
             {
             }
             ~Sink() override = default;
 
         public:
-            void StateChange(PluginHost::IShell* plugin, const string& name) override
+            bool IsOperational() const
             {
-                _parent.StateChange(plugin, name);
+                return (_designated != nullptr);
             }
-            void Dispatch()
+            void Register(IShell* controller, const string& callsign)
             {
-                _parent.Dispatch();
+                _adminLock.Lock();
+                _callsign = callsign;
+                _state = state::REGISTRING;
+                _adminLock.Unlock();
+
+                controller->Register(this);
+
+                _adminLock.Lock();
+                if (_state == state::LOADED) {
+
+                    INTERFACE* entry = _designated->QueryInterface<INTERFACE>();
+                    _designated->Release();
+                    _designated = entry;
+                    _state = state::RUNNING;
+                    if (entry != nullptr) {
+                        _parent.Activated(entry);
+                    }
+                } else {
+                    _state = state::RUNNING;
+                }
+                _adminLock.Unlock();
+            }
+            void Unregister(IShell* controller)
+            {
+                _adminLock.Lock();
+
+                controller->Unregister(this);
+                _callsign.clear();
+
+                if (_designated != nullptr) {
+
+                    _designated->Release();
+                    _designated = nullptr;
+
+                    _parent.Deactivated();
+                }
+
+                _adminLock.Unlock();
+            }
+            INTERFACE* Interface()
+            {
+                INTERFACE* result = nullptr;
+
+                Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
+                if ((_state == state::RUNNING) && (_designated != nullptr)) {
+                    result = _designated->QueryInterface<INTERFACE>();
+                }
+
+                return (result);
+            }
+            const INTERFACE* Interface() const
+            {
+                const INTERFACE* result = nullptr;
+
+                Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
+                if ((_state == state::RUNNING) && (_designated != nullptr)) {
+                    result = _designated->QueryInterface<INTERFACE>();
+                }
+
+                return (result);
             }
 
             BEGIN_INTERFACE_MAP(Sink)
@@ -39,83 +108,150 @@ namespace RPC {
             END_INTERFACE_MAP
 
         private:
-            PluginMonitorType<HANDLER, ENGINE>& _parent;
-        };
-        class Job {
-        public:
-            Job() = delete;
-            Job(const Job&) = delete;
-            Job& operator=(const Job&) = delete;
-
-            Job(PluginMonitorType<HANDLER, ENGINE>& parent)
-                : _parent(parent)
+            void Activated(const string& name, PluginHost::IShell* plugin) override
             {
+                if (_callsign == name) {
+
+                    ASSERT(_designated == nullptr);
+
+                    _adminLock.Lock();
+                    if (_state == state::REGISTRING) {
+
+                        _state = state::LOADED;
+                        _designated = plugin;
+                        _designated->AddRef();
+                    } else {
+                        INTERFACE* entry = plugin->QueryInterface<INTERFACE>();
+                        _designated = entry;
+
+                        ASSERT(_state == state::RUNNING);
+
+                        if (entry != nullptr) {
+                            _parent.Activated(entry);
+                        }
+                    }
+                    _adminLock.Unlock();
+                }
             }
-            ~Job() = default;
-
-        public:
-            void Dispatch()
+            void Deactivated(const string& name, PluginHost::IShell* plugin) override
             {
-                _parent.Dispatch();
+                if (_callsign == name) {
+
+                    _adminLock.Lock();
+                    if (_designated != nullptr) {
+
+                        _designated->Release();
+                        _designated = nullptr;
+
+                        if (_state != state::RUNNING) {
+                            _state = state::REGISTRING;
+                        } else {
+                            _parent.Deactivated();
+                        }
+                    }
+                    _adminLock.Unlock();
+                }
             }
 
         private:
-            PluginMonitorType<HANDLER, ENGINE>& _parent;
+            mutable Core::CriticalSection _adminLock;
+            PluginMonitorType<INTERFACE, HANDLER>& _parent;
+            state _state;
+            string _callsign;
+            Core::IUnknown* _designated;
         };
 
     public:
         PluginMonitorType() = delete;
-        PluginMonitorType(const PluginMonitorType<HANDLER, ENGINE>&) = delete;
-        PluginMonitorType<HANDLER, ENGINE>& operator=(const PluginMonitorType<HANDLER, ENGINE>&) = delete;
+        PluginMonitorType(const PluginMonitorType<INTERFACE, HANDLER>&) = delete;
+        PluginMonitorType<INTERFACE, HANDLER>& operator=(const PluginMonitorType<INTERFACE, HANDLER>&) = delete;
 
         template <typename... Args>
         PluginMonitorType(Args&&... args)
-            : _adminLock()
-            , _reporter(std::forward<Args>(args)...)
-            , _callsign()
-            , _node()
+            : _reporter(std::forward<Args>(args)...)
             , _sink(*this)
-            , _job(*this)
-            , _controller(nullptr)
-            , _state(UNKNOWN)
-            , _administrator()
         {
         }
-        ~PluginMonitorType()
-        {
-            Close(Core::infinite);
-        }
+        ~PluginMonitorType() = default;
 
     public:
+        inline bool IsOperational() const
+        {
+            return (_sink.IsOperational());
+        }
+        void Register(PluginHost::IShell* controller, const string& callsign)
+        {
+            _sink.Register(controller, callsign);
+        }
+        void Unregister(PluginHost::IShell* controller)
+        {
+            _sink.Unregister(controller);
+        }
+        INTERFACE* Interface()
+        {
+            return (_sink.Interface());
+        }
+        const INTERFACE* Interface() const
+        {
+            return (_sink.Interface());
+        }
+
+    private:
+        void Activated(INTERFACE* element)
+        {
+            _reporter.Activated(element);
+        }
+        void Deactivated()
+        {
+            _reporter.Deactivated();
+        }
+
+    private:
+        HANDLER _reporter;
+        Core::Sink<Sink> _sink;
+    };
+}
+
+namespace RPC {
+
+    template <typename INTERFACE, Core::ProxyType<RPC::IIPCServer> ENGINE() = DefaultInvokeServer>
+    class SmartInterfaceType {
+    private:
+        using Monitor = PluginHost::PluginMonitorType<INTERFACE, SmartInterfaceType<INTERFACE, ENGINE>&>;
+
+    public:
+        SmartInterfaceType(const SmartInterfaceType<INTERFACE, ENGINE>&) = delete;
+        SmartInterfaceType<INTERFACE, ENGINE>& operator=(const SmartInterfaceType<INTERFACE, ENGINE>&) = delete;
+
+#ifdef __WINDOWS__
+#pragma warning(disable : 4355)
+#endif
+        SmartInterfaceType()
+            : _controller(nullptr)
+            , _administrator()
+            , _monitor(*this)
+        {
+        }
+#ifdef __WINDOWS__
+#pragma warning(default : 4355)
+#endif
+        virtual ~SmartInterfaceType() = default;
+
+    public:
+        bool IsOperational() const
+        {
+            return (_monitor.IsOperational());
+        }
         uint32_t Open(const uint32_t waitTime, const Core::NodeId& node, const string& callsign)
         {
-
-            _adminLock.Lock();
-
             ASSERT(_controller == nullptr);
 
-            if (_controller != nullptr) {
-                _adminLock.Unlock();
-            } else {
+            if (_controller == nullptr) {
                 _controller = _administrator.template Aquire<PluginHost::IShell>(waitTime, node, _T(""), ~0);
 
-                if (_controller == nullptr) {
-                    _adminLock.Unlock();
-                } else {
-                    _node = node;
-                    _callsign = callsign;
+                if (_controller != nullptr) {
 
-                    _adminLock.Unlock();
-
-                    _controller->Register(&_sink);
-                    Dispatch();
-
-                    _adminLock.Lock();
-
-                    if (_state == state::UNKNOWN) {
-                        _state = state::DEACTIVATED;
-                    }
-                    _adminLock.Unlock();
+                    _monitor.Register(_controller, callsign);
                 }
             }
 
@@ -123,160 +259,27 @@ namespace RPC {
         }
         uint32_t Close(const uint32_t waitTime)
         {
-            _adminLock.Lock();
             if (_controller != nullptr) {
-                _controller->Unregister(&_sink);
-                if (_state == state::ACTIVATED) {
-                    _reporter.Deactivated(nullptr);
-                }
+                _monitor.Unregister(_controller);
                 _controller->Release();
                 _controller = nullptr;
             }
-            _state = state::UNKNOWN;
-            _adminLock.Unlock();
+
             return (Core::ERROR_NONE);
         }
-        template <typename INTERFACE>
-        INTERFACE* Aquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version = ~0)
-        {
-            return (_administrator.template Aquire<INTERFACE>(waitTime, nodeId, className, version));
-        }
-        Core::ProxyType<RPC::CommunicatorClient> Communicator(const Core::NodeId& nodeId){
-            return _administrator.Communicator(nodeId);
-        }
-        inline void Submit(const Core::ProxyType<Core::IDispatch>& job)
-        {
-            _administrator.Engine().Submit(job);
-        }
-
-    private:
-        void Dispatch()
-        {
-
-            _adminLock.Lock();
-            PluginHost::IShell* evaluate = _designated;
-            _designated = nullptr;
-            _adminLock.Unlock();
-
-            if (evaluate != nullptr) {
-
-                PluginHost::IShell::state current = evaluate->State();
-
-                if (current == PluginHost::IShell::ACTIVATED) {
-                    _reporter.Activated(evaluate);
-                    _adminLock.Lock();
-                    _state = state::ACTIVATED;
-                    _adminLock.Unlock();
-                } else if (current == PluginHost::IShell::DEACTIVATION) {
-                    if (_state == state::ACTIVATED) {
-                        _reporter.Deactivated(evaluate);
-                    }
-                    _adminLock.Lock();
-                    _state = state::DEACTIVATED;
-                    _adminLock.Unlock();
-                }
-                evaluate->Release();
-            }
-        }
-        void StateChange(PluginHost::IShell* plugin, const string& callsign)
-        {
-            if (callsign == _callsign) {
-                _adminLock.Lock();
-
-                if (_designated == nullptr) {
-                    _designated = plugin;
-                    _designated->AddRef();
-                    if (_state != state::UNKNOWN) {
-                        Core::ProxyType<Core::IDispatch> job(_job.Aquire());
-                        if (job.IsValid() == true) {
-                            _administrator.Engine().Submit(job);
-                        }
-                    }
-                }
-
-                _adminLock.Unlock();
-            }
-        }
-
-    private:
-        Core::CriticalSection _adminLock;
-        HANDLER _reporter;
-        string _callsign;
-        Core::NodeId _node;
-        Core::Sink<Sink> _sink;
-        Core::ThreadPool::JobType<Job> _job;
-        PluginHost::IShell* _designated;
-        PluginHost::IShell* _controller;
-        state _state;
-        ConnectorType<ENGINE> _administrator;
-    };
-
-    template <typename INTERFACE, Core::ProxyType<RPC::IIPCServer> ENGINE() = DefaultInvokeServer>
-    class SmartInterfaceType {
-    public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
-        SmartInterfaceType()
-            : _adminLock()
-            , _monitor(*this)
-            , _smartType(nullptr)
-        {
-        }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
-
-        virtual ~SmartInterfaceType()
-        {
-            Close(Core::infinite);
-        }
-
-    public:
-        inline bool IsOperational() const
-        {
-            return (_smartType != nullptr);
-        }
-        uint32_t Open(const uint32_t waitTime, const Core::NodeId& node, const string& callsign)
-        {
-            return (_monitor.Open(waitTime, node, callsign));
-        }
-        uint32_t Close(const uint32_t waitTime)
-        {
-            return (_monitor.Close(waitTime));
-        }
-
-        // IMPORTANT NOTE:
-        // If you aquire the interface here, take action on the interface and release it. Do not maintain/stash it
-        // since the interface might require to be dropped in the mean time.
-        // So usage on the interface should be deterministic and short !!!
-        INTERFACE* Interface()
-        {
-            Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
-            INTERFACE* result = _smartType;
-
-            if (result != nullptr) {
-                result->AddRef();
-            }
-
-            return (result);
-        }
-        const INTERFACE* Interface() const
-        {
-            Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
-            const INTERFACE* result = _smartType;
-
-            if (result != nullptr) {
-                result->AddRef();
-            }
-
-            return (result);
-        }
-
         template <typename EXPECTED_INTERFACE>
         EXPECTED_INTERFACE* Aquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version = ~0)
         {
-            return (_monitor.template Aquire<EXPECTED_INTERFACE>(waitTime, nodeId, className, version));
+            return (_administrator.template Aquire<EXPECTED_INTERFACE>(waitTime, nodeId, className, version));
+        }
+
+        INTERFACE* Interface()
+        {
+            return (_monitor.Interface());
+        }
+        const INTERFACE* Interface() const
+        {
+            return (_monitor.Interface());
         }
 
         // Allow a derived class to take action on a new interface, or almost dissapeared interface..
@@ -284,36 +287,37 @@ namespace RPC {
         {
         }
 
-    private:
-        friend class PluginMonitorType<SmartInterfaceType<INTERFACE, ENGINE>&, ENGINE>;
-        void Activated(PluginHost::IShell* plugin)
+        static Core::NodeId Connector()
         {
-            ASSERT(plugin != nullptr);
-            _adminLock.Lock();
-            DropInterface();
-            _smartType = plugin->QueryInterface<INTERFACE>();
-            _adminLock.Unlock();
-            Operational(true);
-        }
-        void Deactivated(PluginHost::IShell* /* plugin */)
-        {
-            Operational(false);
-            _adminLock.Lock();
-            DropInterface();
-            _adminLock.Unlock();
-        }
-        void DropInterface()
-        {
-            if (_smartType != nullptr) {
-                _smartType->Release();
-                _smartType = nullptr;
+            string comPath;
+
+            if (Core::SystemInfo::GetEnvironment(_T("COMMUNICATOR_CONNECTOR"), comPath) == false) {
+#ifdef __WINDOWS__
+                comPath = _T("127.0.0.1:62000");
+#else
+                comPath = _T("/tmp/communicator");
+#endif
             }
+
+            return Core::NodeId(comPath.c_str());
         }
 
     private:
-        mutable Core::CriticalSection _adminLock;
-        PluginMonitorType<SmartInterfaceType<INTERFACE, ENGINE>&, ENGINE> _monitor;
-        INTERFACE* _smartType;
+        friend Monitor;
+
+        void Activated(INTERFACE* plugin)
+        {
+            Operational(true);
+        }
+        void Deactivated()
+        {
+            Operational(false);
+        }
+
+    private:
+        PluginHost::IShell* _controller;
+        ConnectorType<ENGINE> _administrator;
+        Monitor _monitor;
     };
 }
 }

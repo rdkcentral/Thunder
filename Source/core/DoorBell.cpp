@@ -38,10 +38,17 @@ namespace Core {
         , _receiveSocket(INVALID_SOCKET)
         , _registered(0)
     {
+        #ifdef __WINDOWS__
+        unsigned long l_Value = 1;
+        if (ioctlsocket(_sendSocket, FIONBIO, &l_Value) != 0) {
+            TRACE_L1("Error on port socket NON_BLOCKING call. Error %d", ::WSAGetLastError());
+        }
+        #else
         int flags = fcntl(_sendSocket, F_GETFL, 0) | O_NONBLOCK;
         if (fcntl(_sendSocket, F_SETFL, flags) != 0) {
             TRACE_L1("SendSocket:Error on port socket F_SETFL call. Error %d", errno);
         }
+        #endif  
     }
     /* virtual */ DoorBell::Connector::~Connector()
     {

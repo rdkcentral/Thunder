@@ -335,7 +335,6 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             } else {
 
                 State(ACTIVATION);
-                _administrator.StateChange(this);
 
                 Unlock();
 
@@ -345,6 +344,8 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                     , _T("Plugin [%s]:[%s] Initialize"), className.c_str(), callSign.c_str()
                 )
 
+                
+
                 if (HasError() == true) {
                     result = Core::ERROR_GENERAL;
 
@@ -353,7 +354,6 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                     Lock();
                     ReleaseInterfaces();
                     State(DEACTIVATED);
-                    _administrator.StateChange(this);
                 } else {
                     const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
                     const string webUI(PluginHost::Service::Configuration().WebUI.Value());
@@ -371,7 +371,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                     SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
                     Lock();
                     State(ACTIVATED);
-                    _administrator.StateChange(this);
+                    _administrator.Activated(this);
 
 #if THUNDER_RESTFULL_API
                     _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
@@ -455,7 +455,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
             if (currentState == IShell::ACTIVATED) {
                 State(DEACTIVATION);
-                _administrator.StateChange(this);
+                _administrator.Deactivated(this);
 
                 Unlock();
 
@@ -493,8 +493,6 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             TRACE(Activity, (Trace::Format(_T("Deactivate plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
 
             State(why == CONDITIONS? PRECONDITION : DEACTIVATED);
-
-            _administrator.StateChange(this);
 
 #if THUNDER_RESTFULL_API
             _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
