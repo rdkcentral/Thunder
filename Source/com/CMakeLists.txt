@@ -25,6 +25,7 @@ add_library(${TARGET} SHARED
         Communicator.cpp
         ITracing.cpp
         IUnknown.cpp
+        ConnectorType.cpp
         Module.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_COM.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Trace.cpp

@@ -17,14 +17,12 @@
  * limitations under the License.
  */
  
-#ifndef __PROCESS_H__
-#define __PROCESS_H__
+#pragma once
 
 /// https://msdn.microsoft.com/nl-nl/library/windows/desktop/ms682499(v=vs.85).aspx
 
 #include "Module.h"
 #include "Portability.h"
-#include "Process.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -613,5 +611,3 @@ namespace Core {
     };
 }
 }
-
-#endif // __PROCESS_H__

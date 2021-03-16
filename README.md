@@ -32,7 +32,68 @@ $ pip install jsonref
 *  -DWCHAR_SUPPORT=ON ,Enable support for WCHAR in Thunder.
 
 **Internal plugins**
-* [Controller](Source/WPEFramework/ControllerPlugin.md)
+* [Controller](Source/WPEFramework/doc/ControllerPlugin.md)
+
+**Linux (Desktop) Build**
+
+These instructions should work on Raspberry PI or any Linux distro. 
+
+Setup root build and install
+
+```shell
+export THUNDER_ROOT=$HOME/thunder
+export THUNDER_INSTALL_DIR=${THUNDER_ROOT}/install
+mkdir -p ${THUNDER_INSTALL_DIR}
+```
+
+Clone source
+
+```shell
+cd ${THUNDER_ROOT}
+git clone https://github.com/rdkcentral/Thunder.git
+```
+
+Build and install Tools
+
+```shell
+cd ${THUNDER_ROOT}/Thunder/Tools
+mkdir build
+
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR} \
+      -DGENERIC_CMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/include/WPEFramework/cmake/modules ..
+      
+make; make install
+```
+
+Build and install Thunder
+```shell
+cd ${THUNDER_ROOT}/Thunder
+mkdir build
+
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR} \
+      -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/include/WPEFramework/cmake/modules \
+      -DBUILD_TYPE=Debug -DBINDING=127.0.0.1 -DVIRTUALINPUT=on ..
+      
+make; make install
+```
+
+**ThunderInterfaces**
+
+```shell
+cd ${THUNDER_ROOT}
+git clone https://github.com/rdkcentral/ThunderInterfaces
+
+cd ${THUNDER_ROOT}/ThunderInterfaces
+mkdir build
+
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}  \
+      -DBUILD_TYPE=Debug\
+      -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/include/WPEFramework/cmake/modules ..
+make; make install
+```
 
 **WINDOWS Build, using Visual Studio 2019**
 

@@ -31,10 +31,10 @@ if (BUILD_REFERENCE)
     add_definitions (-DBUILD_REFERENCE=${BUILD_REFERENCE})
 endif()
 
-set(CMAKE_MODULE_PATH
-        ${CMAKE_MODULE_PATH}
-        "${CMAKE_SOURCE_DIR}/cmake"
-        "${CMAKE_SOURCE_DIR}/cmake/modules")
+list(APPEND CMAKE_MODULE_PATH
+    "${CMAKE_SOURCE_DIR}/cmake"
+    "${CMAKE_SOURCE_DIR}/cmake/common"
+    "${CMAKE_SOURCE_DIR}/cmake/modules")
 
 include(platform)
 include(CmakeHelperFunctions)
@@ -64,9 +64,9 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
         DESTINATION lib/cmake/${NAMESPACE})
 
 install(DIRECTORY
+            "${CMAKE_SOURCE_DIR}/cmake/common"
             "${CMAKE_SOURCE_DIR}/cmake/config"
             "${CMAKE_SOURCE_DIR}/cmake/templates"
-            "${CMAKE_SOURCE_DIR}/cmake/modules"
         DESTINATION lib/cmake/${NAMESPACE})
 
 if(APPLE)

@@ -1797,6 +1797,7 @@ namespace Web
                     // Dispatch the Response
                     Deserialized(*_current);
                     _current = nullptr;
+                    _parser.Reset();
                     _state = VERSION;
                 }
                 break;
@@ -2002,6 +2003,7 @@ namespace Web
             // Dispatch the Response
             Deserialized(*_current);
             _current = nullptr;
+            _parser.Reset();
             _state = VERSION;
         }
     }
@@ -2052,6 +2054,7 @@ namespace Web
             // Dispatch the Response
             Deserialized(*_current);
             _current = nullptr;
+            _parser.Reset();
             _state = VERSION;
             break;
         }
