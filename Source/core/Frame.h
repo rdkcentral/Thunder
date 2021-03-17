@@ -85,6 +85,7 @@ namespace Core {
             inline void RealAllocate(const uint32_t requiredSize, const TemplateIntToType<NONZEROSIZE>& /* For compile time diffrentiation */)
             {
                 if (requiredSize > _bufferSize) {
+                    ASSERT(_data != nullptr);
 
                     _bufferSize = static_cast<uint16_t>(((requiredSize / (STARTSIZE ? STARTSIZE : 1)) + 1) * STARTSIZE);
 
