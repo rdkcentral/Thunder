@@ -34,11 +34,7 @@ namespace Core {
     DoorBell::Connector::Connector(DoorBell& parent, const Core::NodeId& node)
         : _parent(parent)
         , _doorbell(node)
-        #ifdef __LINUX__
         , _sendSocket(::socket(_doorbell.Type(), SOCK_DGRAM|SOCK_CLOEXEC, 0))
-        #else
-        , _sendSocket(::socket(_doorbell.Type(), SOCK_DGRAM, 0))
-        #endif
         , _receiveSocket(INVALID_SOCKET)
         , _registered(0)
     {
