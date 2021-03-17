@@ -644,12 +644,7 @@ namespace Core {
         }
 #endif
 
-        #ifdef __LINUX__
-        if ((l_Result = ::socket(localNode.Type(), SocketMode() | SOCK_CLOEXEC, localNode.Extension())) == INVALID_SOCKET)
-        #else
-        if ((l_Result = ::socket(localNode.Type(), SocketMode(), localNode.Extension())) == INVALID_SOCKET)
-        #endif
-        {
+        if ((l_Result = ::socket(localNode.Type(), SocketMode() | SOCK_CLOEXEC, localNode.Extension())) == INVALID_SOCKET) {
             TRACE_L1("Error on creating socket SOCKET. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
         } else if (SetNonBlocking(l_Result) == false) {
 #ifdef __WINDOWS__
@@ -1138,11 +1133,7 @@ namespace Core {
         socklen_t size = sizeof(address);
         SOCKET result;
 
-        #ifdef __LINUX__
         if ((result = ::accept4(m_Socket, (struct sockaddr*)&address, &size, SOCK_CLOEXEC)) != SOCKET_ERROR) {
-        #else
-        if ((result = ::accept(m_Socket, (struct sockaddr*)&address, &size)) != SOCKET_ERROR) {
-        #endif
             // Align the buffer to what is requested
             BufferAlignment(result);
 
