@@ -640,7 +640,12 @@ namespace Core {
         }
 #endif
 
-        if ((l_Result = ::socket(localNode.Type(), SocketMode(), localNode.Extension())) == INVALID_SOCKET) {
+        #ifdef __LINUX__
+        if ((l_Result = ::socket(localNode.Type(), SocketMode() | SOCK_CLOEXEC, localNode.Extension())) == INVALID_SOCKET)
+        #else
+        if ((l_Result = ::socket(localNode.Type(), SocketMode(), localNode.Extension())) == INVALID_SOCKET)
+        #endif
+        {
             TRACE_L1("Error on creating socket SOCKET. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
         } else if (SetNonBlocking(l_Result) == false) {
 #ifdef __WINDOWS__
@@ -662,6 +667,7 @@ namespace Core {
                 TRACE_L1("Error on setting SO_REUSEADDR option. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
             }
         }
+
 #ifndef __WINDOWS__
         else if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (m_SocketType == SocketPort::LISTEN)) {
             // The effect of SO_REUSEADDR  but then on Domain Sockets :-)
@@ -1127,7 +1133,11 @@ namespace Core {
         socklen_t size = sizeof(address);
         SOCKET result;
 
+        #ifdef __LINUX__
+        if ((result = ::accept4(m_Socket, (struct sockaddr*)&address, &size, SOCK_CLOEXEC)) != SOCKET_ERROR) {
+        #else
         if ((result = ::accept(m_Socket, (struct sockaddr*)&address, &size)) != SOCKET_ERROR) {
+        #endif
             // Align the buffer to what is requested
             BufferAlignment(result);
 

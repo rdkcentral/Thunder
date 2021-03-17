@@ -318,7 +318,7 @@ namespace Core {
             assert(err == 0);
 
             /* Create the signalfd */
-            _signalDescriptor = signalfd(-1, &sigset, 0);
+            _signalDescriptor = signalfd(-1, &sigset, SFD_CLOEXEC);
 
 #endif
 
