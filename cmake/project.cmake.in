@@ -236,6 +236,11 @@ macro(write_config)
                 "${CMAKE_INSTALL_PREFIX}/../etc/${NAMESPACE}/plugins/"
                 COMPONENT ${_component})
     endforeach()
+
+    unset(_plugins)
+    unset(_classname)
+    unset(_component)
+
 endmacro()
 
 function(add_compiler_flags modulename options)
