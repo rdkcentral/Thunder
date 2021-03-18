@@ -505,7 +505,7 @@ namespace PluginHost
                 }
             } else {
                 ASSERT (_pressedCode == code);
-                sendCode = _repeatKey.Reset();
+                _repeatKey.Reset();
                 _pressedCode = ~0;
                 TRACE_L1("Released: keyCode: %d, sending: %d", code, sendCode);
             }
