@@ -32,7 +32,6 @@
 #include <unistd.h>
 #endif
 
-#include "tracing/TraceCategories.h"
 #include <algorithm>
 #include <fstream>
 #include <sstream>
@@ -693,7 +692,7 @@ namespace Core {
 
         std::ifstream smaps(pathToSmaps.str());
         if (!smaps.is_open()) {
-            TRACE(Trace::Error, (_T("Could not open /proc/%d/smaps. Memory monitoring of this process is unavailable!"), _pid));
+            TRACE_L1(_T("Could not open /proc/%d/smaps. Memory monitoring of this process is unavailable!"), _pid);
         }
 
         std::string line;
