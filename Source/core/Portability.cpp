@@ -300,5 +300,86 @@ namespace Core {
     /* virtual */ IIPC::~IIPC() {}
     /* virtual */ IIPCServer::~IIPCServer() {}
     /* virtual */ IPCChannel::~IPCChannel() {}
+
+
+
+    // In windows you need the newest compiler for this...
+    //template <typename First, typename... Rest> const string Format(const First* first, const Rest&... rest) {
+    //	TCHAR buffer[2057];
+
+    //	::vsnprintf_s (buffer, sizeof(buffer),sizeof(buffer), first, rest...);
+
+    //	return (string(buffer));
+    //}
+
+#ifndef va_copy
+#ifdef _MSC_VER
+#define va_copy(dst, src) dst = src
+#elif !(__cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__))
+#define va_copy(dst, src) memcpy((void*)dst, (void*)src, sizeof(*src))
+#endif
+#endif
+
+    ///
+    /// \brief Format message
+    /// \param dst String to store formatted message
+    /// \param format Format of message
+    /// \param ap Variable argument list
+    ///
+    static void toString(string& dst, const TCHAR format[], va_list ap)
+    {
+        int length;
+        va_list apStrLen;
+        va_copy(apStrLen, ap);
+        length = vsnprintf(nullptr, 0, format, apStrLen);
+        va_end(apStrLen);
+        if (length > 0) {
+            dst.resize(length);
+            vsnprintf((char*)dst.data(), dst.size() + 1, format, ap);
+        } else {
+            dst = "Format error! format: ";
+            dst.append(format);
+        }
+    }
+
+
+    ///
+    /// \brief Format message
+    /// \param dst String to store formatted message
+    /// \param format Format of message
+    /// \param ... Variable argument list
+    ///
+    void Format(string& dst, const TCHAR format[], ...)
+    {
+        va_list ap;
+        va_start(ap, format);
+        toString(dst, format, ap);
+        va_end(ap);
+    }
+
+    ///
+    /// \brief Format message
+    /// \param format Format of message
+    /// \param ... Variable argument list
+    ///
+    string Format(const TCHAR format[], ...)
+    {
+        string dst;
+        va_list ap;
+        va_start(ap, format);
+        toString(dst, format, ap);
+        va_end(ap);
+        return dst;
+    }
+
+    ///
+    /// \brief Format message
+    /// \param format Format of message
+    /// \param ap Variable argument list
+    ///
+    void Format(string& dst, const TCHAR format[], va_list ap)
+    {
+        toString(dst, format, ap);
+    }
 }
 }

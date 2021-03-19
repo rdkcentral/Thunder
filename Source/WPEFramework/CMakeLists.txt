@@ -54,6 +54,13 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
         )
+        
+if (WARNING_REPORTING)
+    target_link_libraries(${TARGET}
+            PRIVATE
+              ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting
+            )
+endif()
 
 if(PROCESSCONTAINERS)
     target_link_libraries(${TARGET}

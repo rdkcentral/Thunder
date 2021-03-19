@@ -24,6 +24,8 @@ option(WCHAR_SUPPORT
         "Enable support for WCHAR." OFF)
 option(DISABLE_TRACING 
         "Disable tracing in debug" OFF)
+option(WARNING_REPORTING 
+        "Enable warning reporting" OFF)
 option(BLUETOOTH
         "Enable support for Bluetooth in the core." OFF)
 
@@ -65,6 +67,12 @@ add_library(${TARGET} SHARED
         XGetopt.cpp
         ResourceMonitor.cpp
         )
+
+if(WARNING_REPORTING)
+    target_sources(${TARGET} PRIVATE 
+                WarningReportingControl.cpp
+                )
+endif(WARNING_REPORTING)
 
 #TODO: Remove all non public headers from this list,
 # All the interface headers are here, these will be installed to staging
@@ -144,6 +152,9 @@ set(PUBLIC_HEADERS
         ValueRecorder.h
         XGetopt.h
         WorkerPool.h
+        IWarningReportingControl.h
+        WarningReportingControl.h
+        WarningReportingCategories.h
         Module.h
         )
 
@@ -151,6 +162,11 @@ set(PUBLIC_HEADERS
 if(DISABLE_TRACING)
     target_compile_definitions(${TARGET} PUBLIC _TRACE_LEVEL=0)
     message(STATUS "Force trace level to 0")
+endif()
+
+if(WARNING_REPORTING)
+    target_compile_definitions(${TARGET} PUBLIC WARNING_REPORTING)
+    message(STATUS "Warning reporting enabled")
 endif()
 
 target_compile_definitions(${TARGET} PRIVATE CORE_EXPORTS)

@@ -133,6 +133,7 @@
 #include <unordered_map>
 #include <atomic>
 #include <array>
+#include <stdarg.h> /* va_list, va_start, va_arg, va_end */
 
 #define AF_NETLINK 16
 #define AF_PACKET  17
@@ -266,6 +267,7 @@ typedef std::string string;
 #include <typeinfo>
 #include <unistd.h>
 #include <unordered_map>
+#include <stdarg.h> /* va_list, va_start, va_arg, va_end */
 
 #ifdef __APPLE__
 #include <pthread_impl.h>
@@ -541,6 +543,7 @@ uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const
 #endif
 
 namespace WPEFramework {
+
 namespace Core {
 
     inline void* Alignment(size_t alignment, void* incoming)
@@ -599,6 +602,10 @@ namespace Core {
     {
         std::transform(inplace.begin(), inplace.end(), inplace.begin(), ::tolower);
     }
+
+    string EXTERNAL Format(const TCHAR formatter[], ...);
+    void EXTERNAL Format(string& dst, const TCHAR format[], ...);
+    void EXTERNAL Format(string& dst, const TCHAR format[], va_list ap);
 
     const uint32_t infinite = -1;
     static const string emptyString;

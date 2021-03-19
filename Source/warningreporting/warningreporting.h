@@ -19,23 +19,9 @@
 
 #pragma once
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Application
+#include "IWarningReportingMedia.h"
+#include "WarningReportingUnit.h"
+
+#ifdef __WINDOWS__
+#pragma comment(lib, "warningreporting.lib")
 #endif
-
-#include <core/core.h>
-#include <cryptalgo/cryptalgo.h>
-#include <plugins/plugins.h>
-#include <tracing/tracing.h>
-#include <websocket/websocket.h>
-
-#ifdef WARNING_REPORTING
-    #include <warningreporting/warningreporting.h>
-#endif
-
-#ifndef TREE_REFERENCE
-#define TREE_REFERENCE engineering_build_for_debug_purpose_only
-#endif
-
-#undef EXTERNAL
-#define EXTERNAL

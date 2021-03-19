@@ -1,4 +1,4 @@
-/*
+ /*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -19,23 +19,15 @@
 
 #pragma once
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Application
-#endif
+#include "Module.h"
 
-#include <core/core.h>
-#include <cryptalgo/cryptalgo.h>
-#include <plugins/plugins.h>
-#include <tracing/tracing.h>
-#include <websocket/websocket.h>
+namespace WPEFramework {
+namespace WarningReporting {
+    struct EXTERNAL IWarningReportingMedia {
+        virtual ~IWarningReportingMedia() = default;
+        virtual void Output(const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information) = 0; 
+    };
+}
+} 
 
-#ifdef WARNING_REPORTING
-    #include <warningreporting/warningreporting.h>
-#endif
 
-#ifndef TREE_REFERENCE
-#define TREE_REFERENCE engineering_build_for_debug_purpose_only
-#endif
-
-#undef EXTERNAL
-#define EXTERNAL

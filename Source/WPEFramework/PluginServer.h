@@ -24,6 +24,7 @@
 #include "SystemInfo.h"
 #include "Config.h"
 #include "IRemoteInstantiation.h"
+#include "WarningReportingCategories.h"
 
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
@@ -173,7 +174,7 @@ namespace PluginHost {
             {
                 va_list ap;
                 va_start(ap, formatter);
-                Trace::Format(_text, formatter, ap);
+                Core::Format(_text, formatter, ap);
                 va_end(ap);
             }
             Activity(const string& text)
@@ -2025,19 +2026,27 @@ namespace PluginHost {
                 }
                 string Process(const string& message)
                 {
-                    return (_service->Inbound(_ID, message));
+                    string result;
+                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, message);  
+                    return result;
                 }
                 Core::ProxyType<Core::JSONRPC::Message> Process(const string& token, const Core::ProxyType<Core::JSONRPC::Message>& message)
                 {
-                    return (_service->Invoke(token, _ID, *message));
+                    Core::ProxyType<Core::JSONRPC::Message> result;
+                    REPORT_DURATION_WARNING( { result = _service->Invoke(token, _ID, *message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    return result;
                 }
                 Core::ProxyType<Web::Response> Process(const Core::ProxyType<Web::Request>& message)
                 {
-                    return (_service->Process(*message));
+                    Core::ProxyType<Web::Response> result;
+                    REPORT_DURATION_WARNING( { result = _service->Process(*message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    return result;
                 }
                 Core::ProxyType<Core::JSON::IElement> Process(const Core::ProxyType<Core::JSON::IElement>& message)
                 {
-                    return (_service->Inbound(_ID, message));
+                    Core::ProxyType<Core::JSON::IElement> result;
+                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    return result;
                 }
                 template <typename PACKAGE>
                 void Submit(PACKAGE package)
@@ -2046,6 +2055,10 @@ namespace PluginHost {
                 }
                 void RequestClose() {
                     _server->Dispatcher().RequestClose(_ID);
+                }
+                string Callsign() const {
+                    ASSERT(_service.IsValid() == true);
+                    return _service->Callsign();
                 }
 
             private:
@@ -2092,8 +2105,11 @@ namespace PluginHost {
                 }
                 void Dispatch() override
                 {
+                    
                     ASSERT(_request.IsValid());
                     ASSERT(Job::HasService() == true);
+
+                    WARNING_REPORTING_THREAD_SETCALLSIGN(Callsign().c_str())
 
                     Core::ProxyType<Web::Response> response;
 
@@ -2152,6 +2168,7 @@ namespace PluginHost {
                     _request.Release();
 
                     Job::Clear();
+                    
                 }
 
             private:
@@ -2197,6 +2214,8 @@ namespace PluginHost {
                 {
                     ASSERT(Job::HasService() == true);
                     ASSERT(_element.IsValid() == true);
+
+                    WARNING_REPORTING_THREAD_SETCALLSIGN(Callsign().c_str())
 
                     if (_jsonrpc == true) {
 #if THUNDER_PERFORMANCE
@@ -2255,6 +2274,8 @@ namespace PluginHost {
                 void Dispatch() override
                 {
                     ASSERT(HasService() == true);
+
+                    WARNING_REPORTING_THREAD_SETCALLSIGN(Callsign().c_str())
 
                     _text = Job::Process(_text);
 

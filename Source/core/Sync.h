@@ -22,6 +22,8 @@
 
 #include "Module.h"
 #include "Trace.h"
+#include "WarningReportingControl.h"
+#include "WarningReportingCategories.h"
 
 #include <list>
 
@@ -51,9 +53,14 @@ namespace Core {
 #if defined(CRITICAL_SECTION_LOCK_LOG)
             TryLock();
 #else
-            if (pthread_mutex_lock(&m_syncMutex) != 0) {
+
+            int result  = 0;
+
+            REPORT_DURATION_WARNING( { result = pthread_mutex_lock(&m_syncMutex); }, WarningReporting::TooLongWaitingForLock);
+            if (result != 0) {
                 TRACE_L1("Probably creating a deadlock situation. <%d>", 0);
             }
+
 #endif
 #endif
 

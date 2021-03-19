@@ -68,6 +68,7 @@ namespace Process {
         };
 
     public:
+
         WorkerPoolImplementation() = delete;
         WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
         WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
@@ -76,7 +77,7 @@ namespace Process {
 #pragma warning(disable : 4355)
 #endif
         WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize)
-            : WorkerPool(threads - 1, stackSize, queueSize)
+            : WorkerPool(threads - 1, stackSize, queueSize, Core::ProcessInfo().Name().c_str())  // HPL todo: perhaps we could use this in the deeper layers, but doubt, need to discuss
             , _announceHandler(nullptr)
             , _sink(*this)
         {
@@ -557,6 +558,10 @@ int main(int argc, char** argv)
             hostProcess.Name(callsign);
         }
 
+        // set for the main thread
+        WARNING_REPORTING_THREAD_SETCALLSIGN(options.Callsign);
+
+
         #ifdef USE_BREAKPAD
         google_breakpad::MinidumpDescriptor descriptor(options.PostMortemPath);
         google_breakpad::ExceptionHandler eh(descriptor, NULL,
@@ -585,6 +590,10 @@ int main(int argc, char** argv)
         Logging::LoggingType<Logging::ParsingError>::Enable((options.EnabledLoggings & 0x00000010) != 0);
         Logging::LoggingType<Logging::Error>::Enable((options.EnabledLoggings & 0x00000020) != 0);
         Logging::LoggingType<Logging::Fatal>::Enable((options.EnabledLoggings & 0x00000040) != 0);
+
+#ifdef WARNING_REPORTING
+        WarningReporting::WarningReportingUnit::Instance().Open(options.Exchange);
+#endif
 
         if (remoteNode.IsValid()) {
             void* base = nullptr;
