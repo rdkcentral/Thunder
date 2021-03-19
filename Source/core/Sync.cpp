@@ -54,6 +54,15 @@
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 
+#if BUILD_TESTS
+// TODO: What is going on here??
+//  https://github.com/google/googletest/issues/2328
+#include <cxxabi.h>
+__gnu_cxx::recursive_init_error::~recursive_init_error()
+{
+}
+#endif
+
 namespace WPEFramework {
 namespace Core {
 
