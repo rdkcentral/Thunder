@@ -323,6 +323,11 @@ namespace Core {
 #error "Come up with an implementation of a High Resolution tick counter for the compiler you are using."
 #endif
 
+    public:
+        const string Architecture() const;
+        const string Chipset() const;
+        const string FirmwareVersion() const;
+
     private:
         const string m_HostName;
 
