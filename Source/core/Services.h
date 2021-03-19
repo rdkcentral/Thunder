@@ -30,6 +30,9 @@
 #include "Trace.h"
 #include "Proxy.h"
 
+#include "WarningReportingControl.h"
+#include "WarningReportingCategories.h"
+
 namespace WPEFramework {
 namespace Core {
 
@@ -177,6 +180,8 @@ namespace Core {
         }
         ~Sink()
         {
+            REPORT_OUTOFBOUNDS_WARNING(WarningReporting::SinkStillHasReference, _referenceCount);
+
             if (_referenceCount != 0) {
                 TRACE_L1("Oops this is scary, destructing a (%s) sink that still is being refered by something", typeid(ACTUALSINK).name());
 

@@ -29,6 +29,10 @@
 #include <tracing/tracing.h>
 #include <websocket/websocket.h>
 
+#ifdef WARNING_REPORTING
+    #include <warningreporting/warningreporting.h>
+#endif
+
 #if defined(__WINDOWS__) && defined(PLUGINS_EXPORTS)
 #undef EXTERNAL
 #define EXTERNAL EXTERNAL_EXPORT

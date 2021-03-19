@@ -210,9 +210,10 @@ namespace Core {
             Executor(const Executor&) = delete;
             Executor& operator=(const Executor&) = delete;
 
-            Executor(MessageQueue* queue, const uint32_t stackSize, const TCHAR* name)
+            Executor(MessageQueue* queue, const uint32_t stackSize, const TCHAR* name, const char* identifier = nullptr)
                 : Core::Thread(stackSize == 0 ? Core::Thread::DefaultStackSize() : stackSize, name)
                 , _minion(*queue)
+                , _identifier(identifier)
             {
             }
             ~Executor() override
@@ -241,6 +242,7 @@ namespace Core {
         private:
             uint32_t Worker() override
             {
+                WARNING_REPORTING_THREAD_SETCALLSIGN(_identifier);
                 _minion.Process();
                 Core::Thread::Block();
                 return (Core::infinite);
@@ -248,18 +250,19 @@ namespace Core {
 
         private:
             Minion _minion;
+            const char* _identifier;
         };
 
     public:
         ThreadPool(const ThreadPool& a_Copy) = delete;
         ThreadPool& operator=(const ThreadPool& a_RHS) = delete;
 
-        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize) 
+        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, const char* identifier = nullptr) 
             : _queue(queueSize)
         {
             const TCHAR* name = _T("WorkerPool::Thread");
             for (uint8_t index = 0; index < count; index++) {
-                _units.emplace_back(&_queue, stackSize, name);
+                _units.emplace_back(&_queue, stackSize, name, identifier);
             }
         }
         ~ThreadPool() {

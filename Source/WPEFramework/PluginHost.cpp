@@ -190,6 +190,14 @@ namespace PluginHost {
 #ifndef __WINDOWS__
                 closelog();
 #endif
+
+                // Do not forget to close the Tracing stuff...
+                Trace::TraceUnit::Instance().Close();
+
+#ifdef WARNING_REPORTING
+                WarningReporting::WarningReportingUnit::Instance().Close();
+#endif
+
                 // Now clear all singeltons we created.
                 Core::Singleton::Dispose();
             }
@@ -432,6 +440,21 @@ namespace PluginHost {
             else {
                 Trace::TraceUnit::Instance().Defaults(_config->TraceCategories());
             }
+
+#ifdef WARNING_REPORTING
+            if ( WarningReporting::WarningReportingUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE){
+#ifndef __WINDOWS__
+                if (_background == true) {
+                    syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable issue reporting functionality!");
+                } else
+#endif
+                {
+                    fprintf(stdout, "Could not enable issue reporting functionality!\n");
+                }
+            }
+
+            WarningReporting::WarningReportingUnit::Instance().Defaults(_config->WarningReportingCategories()); 
+#endif
 
             SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
             SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));

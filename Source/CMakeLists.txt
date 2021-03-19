@@ -32,6 +32,8 @@ option(PROTOCOLS
         "Include the protocols library." ON)
 option(TRACING
         "Include the tracing library." ON)
+option(WARNING_REPORTING
+        "Include warning reporting in the build." OFF)
 option(PROFILER
         "Include the profiler library." OFF)
 option(COM
@@ -122,6 +124,10 @@ endif()
 
 if(TRACING)
     add_subdirectory(tracing)
+endif()
+
+if(WARNING_REPORTING)
+    add_subdirectory(warningreporting)
 endif()
 
 if(BLUETOOTH)

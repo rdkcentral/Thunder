@@ -20,9 +20,6 @@
 #ifndef __TRACECATEGORIES_H
 #define __TRACECATEGORIES_H
 
-// ---- Include system wide include files ----
-#include <stdarg.h> /* va_list, va_start, va_arg, va_end */
-
 // ---- Include local include files ----
 #include "Module.h"
 #include "TraceControl.h"
@@ -36,9 +33,11 @@
 namespace WPEFramework {
 namespace Trace {
 
-    string EXTERNAL Format(const TCHAR formatter[], ...);
-    void EXTERNAL Format(string& dst, const TCHAR format[], ...);
-    void EXTERNAL Format(string& dst, const TCHAR format[], va_list ap);
+    // for backwards compatibility 
+    template <typename... Args>
+    inline void Format(string& dst, Args&&... args) { Core::Format(dst, std::forward<Args>(args)...); }
+    template <typename... Args>
+    inline string Format(Args&&... args) { return Core::Format(std::forward<Args>(args)...); }
 
     class EXTERNAL Text {
     private:
@@ -60,7 +59,7 @@ namespace Trace {
         {
             va_list ap;
             va_start(ap, formatter);
-            Format(_text, formatter, ap);
+            Core::Format(_text, formatter, ap);
             va_end(ap);
         }
         inline Text(const std::string& text)
@@ -346,7 +345,7 @@ namespace Trace {
         {
             va_list ap;
             va_start(ap, formatter);
-            Format(_text, formatter, ap);
+            Core::Format(_text, formatter, ap);
             va_end(ap);
         }
         explicit Information(const string& text)
@@ -389,7 +388,7 @@ namespace Trace {
         {
             va_list ap;
             va_start(ap, formatter);
-            Format(_text, formatter, ap);
+            Core::Format(_text, formatter, ap);
             va_end(ap);
         }
         explicit Warning(const string& text)
@@ -432,7 +431,7 @@ namespace Trace {
         {
             va_list ap;
             va_start(ap, formatter);
-            Format(_text, formatter, ap);
+            Core::Format(_text, formatter, ap);
             va_end(ap);
         }
         explicit Error(const string& text)
@@ -475,7 +474,7 @@ namespace Trace {
         {
             va_list ap;
             va_start(ap, formatter);
-            Format(_text, formatter, ap);
+            Core::Format(_text, formatter, ap);
             va_end(ap);
         }
         explicit Fatal(const string& text)
@@ -518,7 +517,7 @@ namespace Trace {
         {
             va_list ap;
             va_start(ap, formatter);
-            Format(_text, formatter, ap);
+            Core::Format(_text, formatter, ap);
             va_end(ap);
         }
         explicit Initialisation(const string& text)
@@ -564,7 +563,7 @@ namespace Trace {
         {
             va_list ap;
             va_start(ap, formatter);
-            Format(_text, formatter, ap);
+            Core::Format(_text, formatter, ap);
             va_end(ap);
         }
         explicit Assert(const string& text)
@@ -586,6 +585,54 @@ namespace Trace {
         }
 
     private:
+        std::string _text;
+    };
+
+    class EXTERNAL Duration {
+    public:
+        Duration() = delete;
+        Duration(const Duration& a_Copy) = delete;
+        Duration& operator=(const Duration& a_RHS) = delete;
+
+        Duration(const Core::Time& startTime, const TCHAR formatter[], ...)
+        : _text()
+        {
+            uint64_t duration(Core::Time::Now().Ticks() - startTime.Ticks());
+
+            std::string message;
+
+            va_list ap;
+            va_start(ap, formatter);
+            Core::Format(message, formatter, ap);
+            va_end(ap);
+            
+            Message(_T("%" PRIu64 "us, %s"), duration, message.c_str());
+        }
+        explicit Duration(const Core::Time& startTime)
+        : _text()
+        {
+            uint64_t duration(Core::Time::Now().Ticks() - startTime.Ticks());
+            Message(_T("%" PRIu64 "us"), duration);
+        }
+        ~Duration()
+        {
+        }
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
+    private:
+        void Message(const TCHAR formatter[], ...)
+        {
+            va_list ap;
+            va_start(ap, formatter);
+            Core::Format(_text, formatter, ap);
+            va_end(ap);
+        }
         std::string _text;
     };
 }

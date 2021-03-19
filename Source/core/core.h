@@ -103,6 +103,9 @@
 #include "ValueRecorder.h"
 #include "XGetopt.h"
 #include "WorkerPool.h"
+#include "IWarningReportingControl.h"
+#include "WarningReportingControl.h"
+#include "WarningReportingCategories.h"
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "core.lib")

@@ -40,6 +40,13 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
         )
+        
+if (WARNING_REPORTING)
+    target_link_libraries(${TARGET}
+            PRIVATE
+              ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting
+            )
+endif()
 
 if (PROTOCOLS)
     target_link_libraries(${TARGET}

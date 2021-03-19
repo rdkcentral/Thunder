@@ -341,8 +341,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
                 TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
-                // Fire up the interface. Let it handle the messages.
-                ErrorMessage(_handler->Initialize(this));
+                REPORT_DURATION_WARNING( { ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
 
                 if (HasError() == true) {
                     result = Core::ERROR_GENERAL;
@@ -434,7 +433,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
                 TRACE(Activity, (_T("Deactivation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
-                _handler->Deinitialize(this);
+                REPORT_DURATION_WARNING( { _handler->Deinitialize(this); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::DEACTIVATION, callSign.c_str());
 
                 Lock();
 
@@ -452,7 +451,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
             SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
-            TRACE(Activity, (Trace::Format(_T("Deactivate plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
+            TRACE(Activity, (Core::Format(_T("Deactivate plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
 
             State(why == CONDITIONS? PRECONDITION : DEACTIVATED);
 

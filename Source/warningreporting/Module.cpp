@@ -1,4 +1,4 @@
-/*
+ /*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -17,25 +17,6 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "Module.h"
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Application
-#endif
-
-#include <core/core.h>
-#include <cryptalgo/cryptalgo.h>
-#include <plugins/plugins.h>
-#include <tracing/tracing.h>
-#include <websocket/websocket.h>
-
-#ifdef WARNING_REPORTING
-    #include <warningreporting/warningreporting.h>
-#endif
-
-#ifndef TREE_REFERENCE
-#define TREE_REFERENCE engineering_build_for_debug_purpose_only
-#endif
-
-#undef EXTERNAL
-#define EXTERNAL
+MODULE_NAME_DECLARATION(BUILD_REFERENCE)
