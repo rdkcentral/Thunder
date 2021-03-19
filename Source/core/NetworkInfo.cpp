@@ -885,7 +885,7 @@ namespace Core {
             Channel()
                 : _adminLock()
             {
-                _fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+                _fd = socket(PF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, NETLINK_ROUTE);
 
                 if (_fd != -1) {
                     sockaddr_nl netlinkSocket;
@@ -1391,7 +1391,7 @@ namespace Core {
         bool result = false;
         int sockfd;
 
-        sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+        sockfd = ::socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC, 0);
 
         if (sockfd >= 0) {
 
@@ -1421,7 +1421,7 @@ namespace Core {
         bool result = false;
         int sockfd;
 
-        sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+        sockfd = ::socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC, 0);
 
         if (sockfd >= 0) {
 
@@ -1451,7 +1451,7 @@ namespace Core {
         uint32_t result = Core::ERROR_GENERAL;
         int sockfd;
 
-        sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+        sockfd = ::socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC, 0);
 
         if (sockfd >= 0) {
 
@@ -1489,7 +1489,7 @@ namespace Core {
         int sockfd;
         struct ifreq ifr;
 
-        sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+        sockfd = ::socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC, 0);
 
         if (sockfd >= 0) {
 
