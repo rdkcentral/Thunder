@@ -38,16 +38,16 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     { Core::ProcessInfo::ROUNDROBIN, _TXT("RoundRobin") },
     { Core::ProcessInfo::OTHER, _TXT("Other") },
 
-    ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
+ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
 
-        ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
+ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
 
-            { PluginHost::InputHandler::DEVICE, _TXT("device") },
+    { PluginHost::InputHandler::DEVICE, _TXT("device") },
     { PluginHost::InputHandler::VIRTUAL, _TXT("virtual") },
 
-    ENUM_CONVERSION_END(PluginHost::InputHandler::type)
+ENUM_CONVERSION_END(PluginHost::InputHandler::type)
 
-        namespace PluginHost
+namespace PluginHost
 {
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_missingCallsign(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_incorrectVersion(Core::ProxyType<Web::Response>::Create());
@@ -158,6 +158,22 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         const string _jsonrpcPath;
         const string _controllerName;
     };
+
+    void Server::WorkerPoolImplementation::Dispatcher::Dispatch(Core::IDispatch*& job) /* override */ {
+    #ifdef __CORE_EXCEPTION_CATCHING__
+        try {
+            job->Dispatch();
+        }
+        catch (const std::exception& type) {
+            Logging::DumpException(type.what());
+        }
+        catch (...) {
+            Logging::DumpException(_T("Unknown"));
+        }
+    #else
+        job->Dispatch();
+    #endif
+    }
 
     void Server::ChannelMap::GetMetaData(Core::JSON::ArrayType<MetaData::Channel> & metaData) const
     {
@@ -666,10 +682,8 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     void Server::Notification(const ForwardMessage& data)
     {
         Plugin::Controller* controller;
-        if ((_controller.IsValid() == false) || ((controller = (_controller->ClassType<Plugin::Controller>())) == nullptr)) {
-            DumpCallStack(0, nullptr);
-        } else {
-
+        if ((_controller.IsValid() == true) && ((controller = (_controller->ClassType<Plugin::Controller>())) != nullptr)) {
+            
             controller->Notification(data);
 
 #if THUNDER_RESTFULL_API

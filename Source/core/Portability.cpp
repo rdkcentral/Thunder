@@ -206,18 +206,18 @@ void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
 
 extern "C" {
 
-void DumpCallStack(const ThreadId threadId, FILE* feed)
+void DumpCallStack(const ThreadId threadId, std::list<string>& stackList)
 {
 #ifdef __DEBUG__
 #ifdef __LINUX__
     void* callstack[32];
-    FILE* output = (feed == nullptr ? stderr : feed);
 
     uint32_t entries = GetCallStack(threadId, callstack, (sizeof(callstack) / sizeof(callstack[0])));
 
     char** symbols = backtrace_symbols(callstack, entries);
 
     for (uint32_t i = 0; i < entries; i++) {
+        char  buffer[1024];
         Dl_info info;
         if (dladdr(callstack[i], &info) && info.dli_sname) {
             char* demangled = NULL;
@@ -225,17 +225,18 @@ void DumpCallStack(const ThreadId threadId, FILE* feed)
             if (info.dli_sname[0] == '_') {
                 demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
             }
-            fprintf(output, "%-3d %*p %s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i],
+            snprintf(buffer, sizeof(buffer), "%-3d %*p %s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i],
                 status == 0 ? demangled : info.dli_sname == 0 ? symbols[i] : info.dli_sname,
                 (char*)callstack[i] - (char*)info.dli_saddr);
+
             free(demangled);
         } else {
-            fprintf(output, "%-3d %*p %s\n",
+            snprintf(buffer, sizeof(buffer), "%-3d %*p %s\n",
             i, int(2 + sizeof(void*) * 2), callstack[i], symbols[i]);
         }
+        stackList.push_back(ToString(buffer));
     }
     free(symbols);
-    fflush(output);
 #else
     __debugbreak();
 #endif

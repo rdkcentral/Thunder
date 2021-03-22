@@ -20,7 +20,6 @@
 #pragma once
 
 #include "Module.h"
-#include "IWarningReportingControl.h" 
 
 namespace WPEFramework {
 namespace WarningReporting {
@@ -36,18 +35,18 @@ namespace WarningReporting {
 
         ~TooLongWaitingForLock() = default;
 
-        void Serialize(const IWarningEvent::SerializeVisitor& visitor) const {
+        uint16_t Serialize(uint8_t[], const uint16_t) const {
             // HPL Todo: implement
-            visitor(nullptr, 0); 
+            return(0); 
         }
 
-        void Deserialize(const uint8_t[], const uint16_t) {
+        uint16_t Deserialize(const uint8_t[], const uint16_t) {
             // HPL Todo: implement
+            return(0);
         }
 
-        void ToString(const IWarningEvent::ToStringVisitor& visitor) const {
-            string text(_T("it took suspiciously long to aquire a critical section"));
-            visitor(text);
+        void ToString(string& visitor) const {
+            visitor = (_T("it took suspiciously long to aquire a critical section"));
         };
 
         static constexpr uint32_t DefaultWarningBound = {1000};
@@ -65,18 +64,18 @@ namespace WarningReporting {
 
         ~SinkStillHasReference() = default;
 
-        void Serialize(const IWarningEvent::SerializeVisitor& visitor) const {
+        uint16_t Serialize(uint8_t[], const uint16_t) const {
             // HPL Todo: implement
-            visitor(nullptr, 0); 
+            return(0); 
         }
 
-        void Deserialize(const uint8_t[], const uint16_t) {
+        uint16_t Deserialize(const uint8_t[], const uint16_t) {
             // HPL Todo: implement
+            return(0); 
         }
 
-        void ToString(const IWarningEvent::ToStringVisitor& visitor) const {
-            string text(_T("A sink still holds a reference when it is being destructed"));
-            visitor(text);
+        void ToString(string& visitor) const {
+            visitor = (_T("A sink still holds a reference when it is being destructed"));
         };
 
         static constexpr uint32_t DefaultWarningBound = {0};

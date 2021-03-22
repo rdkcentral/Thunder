@@ -278,6 +278,7 @@ namespace Core {
 
     private:
         process_t _pid;
+        mutable Memory _memory;
 #ifdef __WINDOWS__
         HANDLE _handle;
 #endif

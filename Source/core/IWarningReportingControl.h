@@ -28,14 +28,11 @@ namespace WarningReporting {
 
     struct IWarningEvent { 
 
-        using SerializeVisitor = std::function<void(const uint8_t[], const uint16_t)>;
-        using ToStringVisitor = std::function<void(const string&)>;
-
         virtual ~IWarningEvent() = default;
         virtual const char* Category() const = 0;
-        virtual void Serialize(const SerializeVisitor& visitor) const = 0;
-        virtual void Deserialize(const uint8_t[], const uint16_t) = 0;
-        virtual void ToString(const ToStringVisitor& visitor) const = 0;
+        virtual uint16_t Serialize(uint8_t[], const uint16_t) const = 0;
+        virtual uint16_t Deserialize(const uint8_t[], const uint16_t) = 0;
+        virtual void ToString(string& text) const = 0;
         virtual bool IsWarning() const = 0; 
     };
 

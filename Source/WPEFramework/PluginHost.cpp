@@ -194,7 +194,7 @@ namespace PluginHost {
                 // Do not forget to close the Tracing stuff...
                 Trace::TraceUnit::Instance().Close();
 
-#ifdef WARNING_REPORTING
+#ifdef __CORE_WARNING_REPORTING__
                 WarningReporting::WarningReportingUnit::Instance().Close();
 #endif
 
@@ -285,6 +285,10 @@ namespace PluginHost {
     }
 #endif
 
+    static void UncaughtExceptions () {
+        Logging::DumpException(_T("General"));
+    }
+
 #ifdef __WINDOWS__
     int _tmain(int argc, _TCHAR* argv[])
 #else
@@ -338,6 +342,8 @@ namespace PluginHost {
             syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon starting");
         } else
 #endif
+
+        std::set_terminate(UncaughtExceptions);
 
         Logging::SysLog(!_background);
 
@@ -441,7 +447,7 @@ namespace PluginHost {
                 Trace::TraceUnit::Instance().Defaults(_config->TraceCategories());
             }
 
-#ifdef WARNING_REPORTING
+#ifdef __CORE_WARNING_REPORTING__
             if ( WarningReporting::WarningReportingUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE){
 #ifndef __WINDOWS__
                 if (_background == true) {
@@ -708,7 +714,11 @@ namespace PluginHost {
                     case 'R': {
                         printf("\nMonitor callstack:\n");
                         printf("============================================================\n");
-                        ::DumpCallStack(Core::ResourceMonitor::Instance().Id(), stdout);
+                        std::list<string> stackList;
+                        ::DumpCallStack(Core::ResourceMonitor::Instance().Id(), stackList);
+                        for (const string& entry : stackList) {
+                            printf("%s\n", entry.c_str());
+                        }
                         break;
                     }
                     case '0':
@@ -725,7 +735,11 @@ namespace PluginHost {
                         printf("\nThreadPool thread[%c] callstack:\n", keyPress);
                         printf("============================================================\n");
                         if (threadId != (ThreadId)(~0)) {
-                            ::DumpCallStack(threadId, stdout);
+                            std::list<string> stackList;
+                            ::DumpCallStack(threadId, stackList);
+                            for (const string& entry : stackList) {
+                                printf("%s\n", entry.c_str());
+                            }
                         } else {
                            printf("The given Thread ID is not in a valid range, please give thread id between 0 and %d\n", THREADPOOL_COUNT);
                         }
@@ -753,6 +767,7 @@ namespace PluginHost {
         }
 
         ExitHandler::Destruct();
+        std::set_terminate(nullptr);
         return 0;
 
     } // End main.

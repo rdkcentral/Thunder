@@ -44,20 +44,20 @@ namespace WarningReporting {
             return true;
         }
 
-        void Serialize(const IWarningEvent::SerializeVisitor& visitor) const {
+        uint16_t Serialize(uint8_t[], const uint16_t) const {
             // HPL Todo: implement
-            visitor(nullptr, 0); 
+            return(0); 
         }
 
-        void Deserialize(const uint8_t[], const uint16_t) {
+        uint16_t Deserialize(const uint8_t[], const uint16_t) {
             // HPL Todo: implement
+            return(0); 
         }
 
-        void ToString(const IWarningEvent::ToStringVisitor& visitor) const {
-            string text(Core::Format(_T("it took suspiciously long to switch plugin [%s] to state %s"), 
-            _callsign.c_str(),
-            (_stateChange == StateChange::ACTIVATION ? _T("Activated") : _T("Deactivated") )));
-            visitor(text);
+        void ToString(string& visitor) const {
+            visitor = Core::Format(_T("it took suspiciously long to switch plugin [%s] to state %s"), 
+                _callsign.c_str(),
+                (_stateChange == StateChange::ACTIVATION ? _T("Activated") : _T("Deactivated") ));
         };
 
         static void Configure(const string& configuration) {
@@ -118,20 +118,20 @@ namespace WarningReporting {
             return true;
         }
 
-        void Serialize(const IWarningEvent::SerializeVisitor& visitor) const {
+        uint16_t Serialize(uint8_t[], const uint16_t) const {
             // HPL Todo: implement
-            visitor(nullptr, 0); 
+            return(0); 
         }
 
-        void Deserialize(const uint8_t[], const uint16_t) {
+        uint16_t Deserialize(const uint8_t[], const uint16_t) {
             // HPL Todo: implement
+            return(0); 
         }
 
-        void ToString(const IWarningEvent::ToStringVisitor& visitor) const {
-            string text(Core::Format(_T("it took suspiciously long to handle an incoming type %s message with content [%s]"),  
+        void ToString(string& visitor) const {
+            visitor = Core::Format(_T("it took suspiciously long to handle an incoming type %s message with content [%s]"),  
             TypeAsString(_type), 
-            ( _content.c_str() == nullptr ? _T("<empty>") : _content.c_str() )));
-            visitor(text);
+            ( _content.c_str() == nullptr ? _T("<empty>") : _content.c_str() ));
         };
 
         static constexpr uint32_t DefaultWarningBound = {500}; 

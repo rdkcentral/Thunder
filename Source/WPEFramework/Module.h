@@ -29,10 +29,6 @@
 #include <tracing/tracing.h>
 #include <websocket/websocket.h>
 
-#ifdef WARNING_REPORTING
-    #include <warningreporting/warningreporting.h>
-#endif
-
 #ifndef TREE_REFERENCE
 #define TREE_REFERENCE engineering_build_for_debug_purpose_only
 #endif

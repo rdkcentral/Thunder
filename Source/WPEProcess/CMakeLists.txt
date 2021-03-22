@@ -19,6 +19,10 @@ get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 find_package(Breakpad QUIET)
 
+if(EXCEPTION_CATCHING)
+    set_source_files_properties( Process.cpp PROPERTIES COMPILE_FLAGS "-fexceptions" )
+endif()
+
 add_executable(${TARGET}
         Process.cpp
         )

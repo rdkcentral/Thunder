@@ -152,9 +152,9 @@ namespace Core {
         WorkerPool(const WorkerPool&) = delete;
         WorkerPool& operator=(const WorkerPool&) = delete;
 
-        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, const char* identifier = nullptr)
-            : _threadPool(threadCount, stackSize, queueSize, identifier)
-            , _external(_threadPool.Queue())
+        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, Core::ThreadPool::IDispatcher* dispatcher, const char* identifier = nullptr)
+            : _threadPool(threadCount, stackSize, queueSize, dispatcher, identifier)
+            , _external(_threadPool.Queue(), dispatcher)
             , _timer(1024 * 1024, _T("WorkerPoolType::Timer"))
             , _metadata()
             , _joined(0)

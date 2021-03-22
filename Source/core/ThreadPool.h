@@ -29,6 +29,7 @@ namespace Core {
     class EXTERNAL ThreadPool {
     public:
         typedef Core::QueueType< Core::ProxyType<IDispatch> > MessageQueue;
+        typedef Core::IDispatchType<Core::IDispatchType<void>*> IDispatcher;
 
         template<typename IMPLEMENTATION>
         class JobType {
@@ -132,14 +133,16 @@ namespace Core {
             Minion(const Minion&) = delete;
             Minion& operator=(const Minion&) = delete;
 
-            Minion(MessageQueue& queue)
-                : _queue(queue)
+            Minion(MessageQueue& queue, IDispatcher* dispatcher)
+                : _dispatcher(dispatcher)
+                , _queue(queue)
                 , _adminLock()
                 , _signal(false, false)
                 , _interestCount(0)
                 , _currentRequest()
                 , _runs(0)
             {
+		ASSERT(dispatcher != nullptr);
             }
             ~Minion() = default;
 
@@ -175,7 +178,8 @@ namespace Core {
 
                     _runs++;
 
-                    _currentRequest->Dispatch();
+                    Core::IDispatch* request = &(*_currentRequest);
+                    _dispatcher->Dispatch(request);
                     _currentRequest.Release();
 
                     // if someone is observing this run, (WaitForCompletion) make sure that
@@ -196,6 +200,7 @@ namespace Core {
             }
 
         private:
+            IDispatcher* _dispatcher;
             MessageQueue& _queue;
             Core::CriticalSection _adminLock;
             Core::Event _signal;
@@ -207,12 +212,13 @@ namespace Core {
     private:
         class EXTERNAL Executor : public Core::Thread {
         public:
+            Executor() = delete;
             Executor(const Executor&) = delete;
             Executor& operator=(const Executor&) = delete;
 
-            Executor(MessageQueue* queue, const uint32_t stackSize, const TCHAR* name, const char* identifier = nullptr)
+            Executor(MessageQueue& queue, IDispatcher* dispatcher, const uint32_t stackSize, const TCHAR* name, const char* identifier = nullptr)
                 : Core::Thread(stackSize == 0 ? Core::Thread::DefaultStackSize() : stackSize, name)
-                , _minion(*queue)
+                , _minion(queue, dispatcher)
                 , _identifier(identifier)
             {
             }
@@ -257,12 +263,12 @@ namespace Core {
         ThreadPool(const ThreadPool& a_Copy) = delete;
         ThreadPool& operator=(const ThreadPool& a_RHS) = delete;
 
-        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, const char* identifier = nullptr) 
+        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, const char* identifier = nullptr) 
             : _queue(queueSize)
         {
             const TCHAR* name = _T("WorkerPool::Thread");
             for (uint8_t index = 0; index < count; index++) {
-                _units.emplace_back(&_queue, stackSize, name, identifier);
+                _units.emplace_back(_queue, dispatcher, stackSize, name, identifier);
             }
         }
         ~ThreadPool() {
@@ -368,7 +374,7 @@ namespace Core {
             }
         }
 
-   private:
+    private:
         MessageQueue _queue;
         std::list<Executor> _units;
     };

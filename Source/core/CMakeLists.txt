@@ -18,17 +18,6 @@
 set(TARGET ${NAMESPACE}Core)
 include(CompileSettings)
 
-option(DEADLOCK_DETECTION 
-        "Enable deadlock detection tooling." OFF)
-option(WCHAR_SUPPORT 
-        "Enable support for WCHAR." OFF)
-option(DISABLE_TRACING 
-        "Disable tracing in debug" OFF)
-option(WARNING_REPORTING 
-        "Enable warning reporting" OFF)
-option(BLUETOOTH
-        "Enable support for Bluetooth in the core." OFF)
-
 find_package(Threads REQUIRED)
 
 
@@ -67,11 +56,6 @@ add_library(${TARGET} SHARED
         ResourceMonitor.cpp
         )
 
-if(WARNING_REPORTING)
-    target_sources(${TARGET} PRIVATE 
-                WarningReportingControl.cpp
-                )
-endif(WARNING_REPORTING)
 
 #TODO: Remove all non public headers from this list,
 # All the interface headers are here, these will be installed to staging
@@ -157,21 +141,29 @@ set(PUBLIC_HEADERS
         Module.h
         )
 
-#non-buildable interfce target to carry the definitions
+# non-buildable interface target to carry the definitions
+# All build flags that are applicable to the whole system should be set here in the 
+# core since the core is included everywhere so if they are set here, they are 
+# picked up everywhere!
 if(DISABLE_TRACING)
     target_compile_definitions(${TARGET} PUBLIC _TRACE_LEVEL=0)
     message(STATUS "Force trace level to 0")
 endif()
 
 if(WARNING_REPORTING)
-    target_compile_definitions(${TARGET} PUBLIC WARNING_REPORTING)
+    target_sources(${TARGET} PRIVATE WarningReportingControl.cpp)
+    target_compile_definitions(${TARGET} PUBLIC __CORE_WARNING_REPORTING__)
     message(STATUS "Warning reporting enabled")
 endif()
 
-target_compile_definitions(${TARGET} PRIVATE CORE_EXPORTS)
+if (EXCEPTION_CATCHING)
+    target_compile_definitions(${TARGET} PUBLIC __CORE_EXCEPTION_CATCHING__)
+    message(STATUS "Unhandled Exception catching enabled")
+endif()
 
-if(BUILD_TESTS)
-    target_compile_definitions(${TARGET} PRIVATE BUILD_TESTS)
+if(DEADLOCK_DETECTION)
+    target_compile_definitions(${TARGET} PUBLIC CRITICAL_SECTION_LOCK_LOG)
+    message(STATUS "Enabled deadlock detection.")
 endif()
 
 if(NOT WCHAR_SUPPORT)
@@ -181,12 +173,15 @@ endif()
 
 if (BLUETOOTH)
     target_compile_definitions(${TARGET} PUBLIC CORE_BLUETOOTH)
-    message(STATUS "Enable Bluetooth support.")
+    message(STATUS "Enable bluetooth support.")
 endif()
 
-if(DEADLOCK_DETECTION)
-    target_compile_definitions(${TARGET} PUBLIC CRITICAL_SECTION_LOCK_LOG)
-    message(STATUS "Enabled deadlock detection.")
+# ==================================================================================
+
+target_compile_definitions(${TARGET} PRIVATE CORE_EXPORTS)
+
+if(BUILD_TESTS)
+    target_compile_definitions(${TARGET} PRIVATE BUILD_TESTS)
 endif()
 
 target_link_libraries(${TARGET}
