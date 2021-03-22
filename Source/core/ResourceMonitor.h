@@ -230,12 +230,8 @@ namespace Core {
             typename std::list<RESOURCE*>::iterator index(std::find(_resourceList.begin(), _resourceList.end(), &resource));
 
             if (index != _resourceList.end()) {
-#ifdef __WINDOWS__
-                _resourceList.erase(index);
-#else
                 *index = nullptr;
                 Break();
-#endif
             }
 
             _adminLock.Unlock();
@@ -326,7 +322,7 @@ namespace Core {
             assert(err == 0);
 
             /* Create the signalfd */
-            _signalDescriptor = signalfd(-1, &sigset, 0);
+            _signalDescriptor = signalfd(-1, &sigset, SFD_CLOEXEC);
 
 #endif
 
@@ -463,11 +459,9 @@ namespace Core {
 
                 RESOURCE* entry = (*index);
 
-                ASSERT(entry != nullptr);
+                uint16_t events;
 
-                uint16_t events = entry->Events();
-
-                if (events == 0) {
+                if ((entry == nullptr) || ((events = entry->Events()) == 0)) {
                     index = _resourceList.erase(index);
                 } else {
                     if ((events & 0x8000) != 0) {
@@ -493,23 +487,22 @@ namespace Core {
                 while (index != _resourceList.end()) {
                     RESOURCE* entry = (*index);
 
-                    ASSERT(index != _resourceList.end());
-                    ASSERT(entry != nullptr);
+                    if (entry != nullptr) {
 
-                    WSANETWORKEVENTS networkEvents;
+                        WSANETWORKEVENTS networkEvents;
 
-                    // Re-enable monitoring for the next round..
-                    ::WSAEnumNetworkEvents(entry->Descriptor(), nullptr, &networkEvents);
+                        // Re-enable monitoring for the next round..
+                        ::WSAEnumNetworkEvents(entry->Descriptor(), nullptr, &networkEvents);
 
-                    uint16_t flagsSet = static_cast<uint16_t>(networkEvents.lNetworkEvents);
+                        uint16_t flagsSet = static_cast<uint16_t>(networkEvents.lNetworkEvents);
 
-                    Arm<WATCHDOG>();
+                        Arm<WATCHDOG>();
 
-                    // Event if the flagsSet == 0, call handle, maybe a break was issued by this RESOURCE..
-                    entry->Handle(flagsSet);
+                        // Event if the flagsSet == 0, call handle, maybe a break was issued by this RESOURCE..
+                        entry->Handle(flagsSet);
 
-                    Reset<WATCHDOG>();
-
+                        Reset<WATCHDOG>();
+                    }
                     index++;
                 }
             } else {

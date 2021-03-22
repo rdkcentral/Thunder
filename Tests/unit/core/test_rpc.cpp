@@ -25,8 +25,6 @@
 #include <com/com.h>
 #include <core/Portability.h>
 
-static string g_connectorName = _T("/tmp/wperpc01");
-
 namespace WPEFramework {
 namespace Exchange {
     struct IAdder : virtual public Core::IUnknown {
@@ -35,45 +33,42 @@ namespace Exchange {
         virtual void Add(uint32_t value) = 0;
         virtual uint32_t GetPid() = 0;
     };
-}
-}
+} // Exchange
 
-using namespace WPEFramework;
-using namespace std;
+namespace Tests {
 
-class Adder : public Exchange::IAdder
-{
-public:
-    Adder()
-        : m_value(0)
+    class Adder : public Exchange::IAdder
     {
-    }
+    public:
+        Adder()
+            : m_value(0)
+        {
+        }
 
-    uint32_t GetValue()
-    {
-        return m_value;
-    }
+        uint32_t GetValue()
+        {
+            return m_value;
+        }
 
-    void Add(uint32_t value)
-    {
-        m_value += value;
-    }
+        void Add(uint32_t value)
+        {
+            m_value += value;
+        }
 
-    uint32_t GetPid()
-    {
-        return getpid();
-    }
+        uint32_t GetPid()
+        {
+            return getpid();
+        }
 
-    BEGIN_INTERFACE_MAP(Adder)
-        INTERFACE_ENTRY(Exchange::IAdder)
-    END_INTERFACE_MAP
+        BEGIN_INTERFACE_MAP(Adder)
+            INTERFACE_ENTRY(Exchange::IAdder)
+        END_INTERFACE_MAP
 
-private:
-    uint32_t m_value;
-};
+    private:
+        uint32_t m_value;
+    };
 
-// Proxystubs.
-namespace WPEFramework {
+    // Proxystubs.
     using namespace Exchange;
 
     // -----------------------------------------------------------------
@@ -96,8 +91,8 @@ namespace WPEFramework {
             RPC::Data::Input& input(message->Parameters());
 
             // call implementation
-            IAdder* implementation = input.Implementation<IAdder>();
-            ASSERT((implementation != nullptr) && "Null IAdder implementation pointer");
+            IAdder* implementation = reinterpret_cast<IAdder*>(input.Implementation());
+            EXPECT_TRUE((implementation != nullptr) && "Null IAdder implementation pointer");
             const uint32_t output = implementation->GetValue();
 
             // write return value
@@ -115,8 +110,8 @@ namespace WPEFramework {
             const uint32_t param0 = reader.Number<uint32_t>();
 
             // call implementation
-            IAdder* implementation = input.Implementation<IAdder>();
-            ASSERT((implementation != nullptr) && "Null IAdder implementation pointer");
+            IAdder* implementation = reinterpret_cast<IAdder*>(input.Implementation());
+            EXPECT_TRUE((implementation != nullptr) && "Null IAdder implementation pointer");
             implementation->Add(param0);
         },
 
@@ -126,8 +121,8 @@ namespace WPEFramework {
             RPC::Data::Input& input(message->Parameters());
 
             // call implementation
-            IAdder* implementation = input.Implementation<IAdder>();
-            ASSERT((implementation != nullptr) && "Null IAdder implementation pointer");
+            IAdder* implementation = reinterpret_cast<IAdder*>(input.Implementation());
+            EXPECT_TRUE((implementation != nullptr) && "Null IAdder implementation pointer");
             const uint32_t output = implementation->GetPid();
 
             // write return value
@@ -153,7 +148,7 @@ namespace WPEFramework {
 
     class AdderProxy final : public ProxyStub::UnknownProxyType<IAdder> {
     public:
-        AdderProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+        AdderProxy(const Core::ProxyType<Core::IPCChannel>& channel, RPC::instance_id implementation, const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
         {
         }
@@ -218,90 +213,93 @@ namespace WPEFramework {
         } ProxyStubRegistration;
 
     } // namespace
-}
 
-namespace {
-class ExternalAccess : public RPC::Communicator
-{
-private:
-    ExternalAccess() = delete;
-    ExternalAccess(const ExternalAccess &) = delete;
-    ExternalAccess & operator=(const ExternalAccess &) = delete;
+    namespace {
+        class ExternalAccess : public RPC::Communicator
+        {
+        public:
+            ExternalAccess() = delete;
+            ExternalAccess(const ExternalAccess &) = delete;
+            ExternalAccess & operator=(const ExternalAccess &) = delete;
 
-public:
-    ExternalAccess(const Core::NodeId & source)
-        : RPC::Communicator(source, _T(""))
-    {
-        Open(Core::infinite);
+            ExternalAccess(const Core::NodeId & source)
+                : RPC::Communicator(source, _T(""))
+            {
+                Open(Core::infinite);
+            }
+
+            ~ExternalAccess()
+            {
+                Close(Core::infinite);
+            }
+
+        private:
+            virtual void* Aquire(const string& className, const uint32_t interfaceId, const uint32_t versionId)
+            {
+                void* result = nullptr;
+
+                if (interfaceId == Exchange::IAdder::ID) {
+                    Exchange::IAdder * newAdder = Core::Service<Adder>::Create<Exchange::IAdder>();
+                    result = newAdder;
+                }
+
+                return result;
+            }
+        };
     }
 
-    ~ExternalAccess()
+    TEST(Core_RPC, adder)
     {
-        Close(Core::infinite);
+       std::string connector{"/tmp/wperpc01"};
+       auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+          Core::NodeId remoteNode(connector.c_str());
+
+          ExternalAccess communicator(remoteNode);
+
+          testAdmin.Sync("setup server");
+
+          testAdmin.Sync("done testing");
+
+          communicator.Close(Core::infinite);
+       };
+
+       static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+       IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
+       IPTestAdministrator testAdmin(otherSide);
+
+       testAdmin.Sync("setup server");
+
+       {
+          Core::NodeId remoteNode(connector.c_str());
+
+          Core::ProxyType<RPC::InvokeServerType<4, 0, 1>> engine = Core::ProxyType<RPC::InvokeServerType<4, 0, 1>>::Create();
+          EXPECT_TRUE(engine != nullptr);
+          Core::ProxyType<RPC::CommunicatorClient> client = Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, Core::ProxyType<Core::IIPCServer>(engine));
+          EXPECT_TRUE(client != nullptr);
+          engine->Announcements(client->Announcement());
+
+          // Create remote instance of "IAdder".
+          Exchange::IAdder * adder = client->Open<Exchange::IAdder>(_T("Adder"));
+
+          // Perform some arithmatic.
+          EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(0));
+          adder->Add(20);
+          EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(20));
+          adder->Add(22);
+          EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(42));
+
+          // Make sure other side is indeed running in other process.
+          EXPECT_NE(adder->GetPid(), (uint32_t)getpid());
+
+          adder->Release();
+
+          client->Close(Core::infinite);
+       }
+
+       testAdmin.Sync("done testing");
+       Core::Singleton::Dispose();
     }
-
-private:
-    virtual void* Aquire(const string& className, const uint32_t interfaceId, const uint32_t versionId)
-    {
-        void* result = nullptr;
-
-        if (interfaceId == Exchange::IAdder::ID) {
-            Exchange::IAdder * newAdder = Core::Service<Adder>::Create<Exchange::IAdder>();
-            result = newAdder;
-        }
-
-        return result;
-    }
-};
-}
-
-TEST(Core_RPC, adder)
-{
-   IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-      Core::NodeId remoteNode(g_connectorName.c_str());
-
-      ExternalAccess communicator(remoteNode);
-
-      testAdmin.Sync("setup server");
-
-      testAdmin.Sync("done testing");
-
-      communicator.Close(Core::infinite);
-   };
-
-   IPTestAdministrator testAdmin(otherSide);
-
-   testAdmin.Sync("setup server");
-
-   {
-      Core::NodeId remoteNode(g_connectorName.c_str());
-
-      Core::ProxyType<RPC::InvokeServerType<4, 1>> engine(Core::ProxyType<RPC::InvokeServerType<4, 1>>::Create(Core::Thread::DefaultStackSize()));
-      Core::ProxyType<RPC::CommunicatorClient> client(
-           Core::ProxyType<RPC::CommunicatorClient>::Create(
-               remoteNode,
-               Core::ProxyType<Core::IIPCServer>(engine)
-           ));
-      engine->Announcements(client->Announcement());
-
-      // Create remote instance of "IAdder".
-      Exchange::IAdder * adder = client->Open<Exchange::IAdder>(_T("Adder"));
-
-      // Perform some arithmatic.
-      EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(0));
-      adder->Add(20);
-      EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(20));
-      adder->Add(22);
-      EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(42));
-
-      // Make sure other side is indeed running in other process.
-      EXPECT_NE(adder->GetPid(), getpid());
-
-      adder->Release();
-
-      client->Close(Core::infinite);
-   }
-
-   testAdmin.Sync("done testing");
-   Core::Singleton::Dispose();
-}
+} // Tests
+} // WPEFramework

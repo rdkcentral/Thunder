@@ -1085,6 +1085,7 @@ namespace PluginHost {
                                     _object.Version(),
                                     _object.User(),
                                     _object.Group(),
+                                    _object.LinkLoaderPath(),
                                     _object.Threads(),
                                     _object.Priority(),
                                     _object.Configuration());
@@ -1267,6 +1268,7 @@ namespace PluginHost {
                     const uint32_t version,
                     const string& user,
                     const string& group,
+                    const string& linkLoaderPath,
                     const uint8_t threads,
                     const int8_t priority,
                     const string configuration) override
@@ -1283,7 +1285,7 @@ namespace PluginHost {
 
                     uint32_t id;
                     RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath());
-                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, _T(""), configuration);
+                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, linkLoaderPath, _T(""), configuration);
 
                     RPC::Process process(requestId, config, instance);
 
@@ -2665,6 +2667,7 @@ namespace PluginHost {
                     }
 
                     State(CLOSED, false);
+                    _parent.Dispatcher().TriggerCleanup();
                 } else if (IsWebSocket() == true) {
                     ASSERT(_service.IsValid() == false);
                     bool serviceCall;
@@ -2768,7 +2771,6 @@ namespace PluginHost {
             public:
                 virtual void Dispatch() override
                 {
-
                     return (_parent.Timed());
                 }
 
@@ -2801,6 +2803,12 @@ namespace PluginHost {
 #ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
+            void TriggerCleanup()
+            {
+                if (_connectionCheckTimer == 0) {
+                    _parent.Submit(_job);
+                }
+            }
             ~ChannelMap()
             {
 
@@ -2857,30 +2865,31 @@ namespace PluginHost {
             {
                 TRACE(Activity, (string(_T("Cleanup job running..\n"))));
 
-                Core::Time NextTick(Core::Time::Now());
-
-                NextTick.Add(_connectionCheckTimer);
-
                 // First clear all shit from last time..
                 Cleanup();
 
-                // Now suspend those that have no activity.
-                BaseClass::Iterator index(BaseClass::Clients());
+                if (_connectionCheckTimer != 0) {
+                    // Now suspend those that have no activity.
+                    BaseClass::Iterator index(BaseClass::Clients());
 
-                while (index.Next() == true) {
-                    if (index.Client()->HasActivity() == false) {
-                        TRACE(Activity, (_T("Client close without activity on ID [%d]"), index.Client()->Id()));
+                    while (index.Next() == true) {
+                        if (index.Client()->HasActivity() == false) {
+                            TRACE(Activity, (_T("Client close without activity on ID [%d]"), index.Client()->Id()));
 
-                        // Oops nothing hapened for a long time, kill the connection
-                        // Give it all the time (0) if it i not yet suspended to close. If it is
-                        // suspended, force the close down if not closed in 100ms.
-                        index.Client()->Close(0);
-                    } else {
-                        index.Client()->ResetActivity();
+                            // Oops nothing hapened for a long time, kill the connection
+                            // Give it all the time (0) if it i not yet suspended to close. If it is
+                            // suspended, force the close down if not closed in 100ms.
+                            index.Client()->Close(0);
+                        } else {
+                            index.Client()->ResetActivity();
+                        }
                     }
-                }
 
-                _parent.Schedule(NextTick.Ticks(), _job);
+                    Core::Time NextTick(Core::Time::Now());
+                    NextTick.Add(_connectionCheckTimer);
+
+                    _parent.Schedule(NextTick.Ticks(), _job);
+                }
             }
 
         private:

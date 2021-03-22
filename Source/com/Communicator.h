@@ -21,11 +21,14 @@
 #define __COM_PROCESSLAUNCH_H
 
 #include "Module.h"
-#include "Ids.h"
+
+
 #include "Administrator.h"
-#include "IUnknown.h"
 #include "ICOM.h"
 #include "ITrace.h"
+#include "IUnknown.h"
+#include "Ids.h"
+
 
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
@@ -55,6 +58,7 @@ namespace RPC {
             , _threads()
             , _priority()
             , _type(HostType::LOCAL)
+            , _linkLoaderPath()
             , _remoteAddress()
             , _configuration()
         {
@@ -70,6 +74,7 @@ namespace RPC {
             , _threads(copy._threads)
             , _priority(copy._priority)
             , _type(copy._type)
+            , _linkLoaderPath(copy._linkLoaderPath)
             , _remoteAddress(copy._remoteAddress)
             , _configuration(copy._configuration)
         {
@@ -84,6 +89,7 @@ namespace RPC {
             const uint8_t threads,
             const int8_t priority,
             const HostType type,
+            const string& linkLoaderPath,
             const string& remoteAddress,
             const string& configuration)
             : _locator(locator)
@@ -96,6 +102,7 @@ namespace RPC {
             , _threads(threads)
             , _priority(priority)
             , _type(type)
+            , _linkLoaderPath(linkLoaderPath)
             , _remoteAddress(remoteAddress)
             , _configuration(configuration)
         {
@@ -115,6 +122,7 @@ namespace RPC {
             _group = RHS._group;
             _threads = RHS._threads;
             _priority = RHS._priority;
+            _linkLoaderPath = RHS._linkLoaderPath;
             _type = RHS._type;
             _remoteAddress = RHS._remoteAddress;
             _configuration = RHS._configuration;
@@ -163,6 +171,10 @@ namespace RPC {
         {
             return (_type);
         }
+        inline const string& LinkLoaderPath() const
+        {
+            return (_linkLoaderPath);
+        }
         inline const Core::NodeId RemoteAddress() const
         {
             return (Core::NodeId(_remoteAddress.c_str()));
@@ -183,6 +195,7 @@ namespace RPC {
         uint8_t _threads;
         int8_t _priority;
         HostType _type;
+        string _linkLoaderPath;
         string _remoteAddress;
         string _configuration;
     };
@@ -279,7 +292,6 @@ namespace RPC {
             return (_postMortem);
         }
 
-
     private:
         string _connector;
         string _hostApplication;
@@ -311,7 +323,7 @@ namespace RPC {
             _options.Add(_T("-r")).Add(config.Connector());
             _options.Add(_T("-i")).Add(Core::NumberType<uint32_t>(instance.Interface()).Text());
             _options.Add(_T("-x")).Add(Core::NumberType<uint32_t>(sequenceNumber).Text());
-            
+
             if (instance.Version() != static_cast<uint32_t>(~0)) {
                 _options.Add(_T("-V")).Add(Core::NumberType<uint32_t>(instance.Version()).Text());
             }
@@ -342,10 +354,12 @@ namespace RPC {
             if (config.PostMortemPath().empty() == false) {
                 _options.Add(_T("-P")).Add('"' + config.PostMortemPath() + '"');
             }
+            if (instance.LinkLoaderPath().empty() == false) {
+                _linkLoaderPath = instance.LinkLoaderPath();
+            }
             if (instance.Threads() > 1) {
                 _options.Add(_T("-t")).Add(Core::NumberType<uint8_t>(instance.Threads()).Text());
             }
-
             _priority = instance.Priority();
         }
         const string& Command() const
@@ -358,7 +372,7 @@ namespace RPC {
         }
         uint32_t Launch(uint32_t& id)
         {
-            uint32_t loggingSettings =
+             uint32_t loggingSettings =
                     (Logging::LoggingType<Logging::Startup>::IsEnabled() ? 0x01 : 0) |
                     (Logging::LoggingType<Logging::Shutdown>::IsEnabled() ? 0x02 : 0) |
                     (Logging::LoggingType<Logging::Notification>::IsEnabled() ? 0x04 : 0) |
@@ -366,12 +380,29 @@ namespace RPC {
                     (Logging::LoggingType<Logging::ParsingError>::IsEnabled() ? 0x10 : 0) |
                     (Logging::LoggingType<Logging::Error>::IsEnabled() ? 0x20 : 0) |
                     (Logging::LoggingType<Logging::Fatal>::IsEnabled() ? 0x40 : 0);
-            _options.Add(_T("-e")).Add(Core::NumberType<uint32_t>(loggingSettings).Text());
+            _options.Add(_T("-e")).Add(Core::NumberType<uint32_t>(loggingSettings).Text());           
+
+
+            string oldPath;
+            _ldLibLock.Lock();
+            if (_linkLoaderPath.empty() == false) {
+                
+                Core::SystemInfo::GetEnvironment(_T("LD_LIBRARY_PATH"), oldPath);
+                string newPath = _linkLoaderPath+':'+oldPath ;
+                Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), newPath, true);
+            }
 
             // Start the external process launch..
             Core::Process fork(false);
 
             uint32_t result = fork.Launch(_options, &id);
+
+            //restore the original value
+            if (_linkLoaderPath.empty() == false) {
+                Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), oldPath, true);
+                
+            }
+            _ldLibLock.Unlock();
 
             if ((result == Core::ERROR_NONE) && (_priority != 0)) {
                 Core::ProcessInfo newProcess(id);
@@ -384,6 +415,8 @@ namespace RPC {
     private:
         Core::Process::Options _options;
         int8_t _priority;
+        string _linkLoaderPath;
+        static Core::CriticalSection _ldLibLock;
     };
 
     struct EXTERNAL IMonitorableProcess : public virtual Core::IUnknown {
@@ -466,7 +499,7 @@ namespace RPC {
             }
 
             BEGIN_INTERFACE_MAP(RemoteConnection)
-                INTERFACE_ENTRY(IRemoteConnection)
+            INTERFACE_ENTRY(IRemoteConnection)
             END_INTERFACE_MAP
 
         private:
@@ -514,8 +547,8 @@ namespace RPC {
 
         private:
             BEGIN_INTERFACE_MAP(LocalProcess)
-                INTERFACE_ENTRY(IRemoteConnection)
-                INTERFACE_ENTRY(IMonitorableProcess)
+            INTERFACE_ENTRY(IRemoteConnection)
+            INTERFACE_ENTRY(IMonitorableProcess)
             END_INTERFACE_MAP
 
             void Terminate() override;
@@ -528,7 +561,7 @@ namespace RPC {
         };
 #ifdef PROCESSCONTAINERS_ENABLED
 
-        class EXTERNAL ContainerProcess  : public RemoteConnection, public IMonitorableProcess {
+        class EXTERNAL ContainerProcess : public RemoteConnection, public IMonitorableProcess {
         private:
             class ContainerConfig : public Core::JSON::Container {
             public:
@@ -615,8 +648,8 @@ namespace RPC {
                     Core::IteratorType<std::vector<string>, const string> temp(params);
                     if (_container->Start(_process.Command(), temp) == true) {
                         result = Core::ERROR_NONE;
-                    } 
-                } 
+                    }
+                }
 
                 return result;
             }
@@ -624,8 +657,8 @@ namespace RPC {
 
         private:
             BEGIN_INTERFACE_MAP(ContainerProcess)
-                INTERFACE_ENTRY(IRemoteConnection)
-                INTERFACE_ENTRY(IMonitorableProcess)
+            INTERFACE_ENTRY(IRemoteConnection)
+            INTERFACE_ENTRY(IMonitorableProcess)
             END_INTERFACE_MAP
             void Terminate() override;
 
@@ -650,8 +683,7 @@ namespace RPC {
 
             if (instance.Type() == Object::HostType::LOCAL) {
                 result = Core::Service<LocalProcess>::Create<RemoteConnection>(config, instance);
-            }
-            else if (instance.Type() == Object::HostType::CONTAINER) {
+            } else if (instance.Type() == Object::HostType::CONTAINER) {
 #ifdef PROCESSCONTAINERS_ENABLED
                 result = Core::Service<ContainerProcess>::Create<RemoteConnection>(config, instance);
 #else
@@ -670,20 +702,23 @@ namespace RPC {
 
             class Info {
             public:
-                Info () = delete;
-                Info (const Info&) = delete;
-                Info (Core::Event& event, const uint32_t id) 
-                    : _event(event) 
+                Info() = delete;
+                Info(const Info&) = delete;
+                Info(Core::Event& event, const uint32_t id)
+                    : _event(event)
                     , _id(id)
-                    , _interface(nullptr) {
+                    , _interface(nullptr)
+                {
                 }
-                ~Info() {
+                ~Info()
+                {
                 }
 
             public:
-                inline void Implementation(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& implementation) {
+                inline void Implementation(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& implementation)
+                {
 
-                    ASSERT (_interface == nullptr);
+                    ASSERT(_interface == nullptr);
 
                     // Get the interface pointer that was stored during the triggering of the event...
                     // It is reference counted so it has to be dereferenced by the caller.
@@ -691,7 +726,8 @@ namespace RPC {
 
                     _event.SetEvent();
                 }
-                inline void* Interface() {
+                inline void* Interface()
+                {
                     return (_interface);
                 }
 

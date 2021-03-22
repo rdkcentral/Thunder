@@ -535,6 +535,7 @@ namespace PluginHost {
                 _communicator = Core::NodeId(config.Communicator.Value().c_str());
                 _redirect = config.Redirect.Value();
                 _version = config.Version.Value();
+                _idleTime = config.IdleTime.Value();
                 _IPV6 = config.IPV6.Value();
                 _binding = config.Binding.Value();
                 _interface = config.Interface.Value();
@@ -757,7 +758,6 @@ namespace PluginHost {
             return (added);
         }
         void UpdateAccessor() {
-            bool validAccessor = true;
             Core::NodeId result(_binding.c_str());
 
             if (_interface.empty() == false) {
@@ -788,27 +788,19 @@ namespace PluginHost {
                 value.sin_port = htons(_portNumber);
 
                 _accessor = value;
-                _URL.clear();
-                validAccessor = false;
+                SYSLOG(Logging::Startup, ("Invalid config information could not resolve to a proper IP"));
+            }
+
+            if (_portNumber == 80) {
+                _URL = string(_T("http://")) + _accessor.HostAddress() + _webPrefix;
             } else {
-                if (_portNumber == 80) {
-                    _URL = string(_T("http://")) + _accessor.HostAddress() + _webPrefix;
-                } else {
-                    _URL = string(_T("http://")) + _accessor.HostAddress() + ':' + Core::NumberType<uint16_t>(_portNumber).Text() + _webPrefix;
-                }
-
-                _accessor.PortNumber(_portNumber);
+                _URL = string(_T("http://")) + _accessor.HostAddress() + ':' + Core::NumberType<uint16_t>(_portNumber).Text() + _webPrefix;
             }
 
-            if (validAccessor == false) {
-                SYSLOG(Logging::Startup, ("Invalid config information could not resolve to a proper IP set to: (%s:%d)", _accessor.HostAddress().c_str(), _accessor.PortNumber()));
-            }
-            else {
-                SYSLOG(Logging::Startup, (_T("Accessor: %s"), _URL.c_str()));
-                SYSLOG(Logging::Startup, (_T("Interface IP: %s"), _accessor.HostAddress().c_str()));
-            }
+            _accessor.PortNumber(_portNumber);
 
-            return;
+            SYSLOG(Logging::Startup, (_T("Accessor: %s"), _URL.c_str()));
+            SYSLOG(Logging::Startup, (_T("Interface IP: %s"), _accessor.HostAddress().c_str()));
         }
 
         inline const std::vector<std::string>& LinkerPluginPaths() const

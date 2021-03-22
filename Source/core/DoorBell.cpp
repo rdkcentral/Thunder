@@ -34,7 +34,7 @@ namespace Core {
     DoorBell::Connector::Connector(DoorBell& parent, const Core::NodeId& node)
         : _parent(parent)
         , _doorbell(node)
-        , _sendSocket(::socket(_doorbell.Type(), SOCK_DGRAM, 0))
+        , _sendSocket(::socket(_doorbell.Type(), SOCK_DGRAM|SOCK_CLOEXEC, 0))
         , _receiveSocket(INVALID_SOCKET)
         , _registered(0)
     {
@@ -71,7 +71,7 @@ namespace Core {
     bool DoorBell::Connector::Bind() const
     {
         if (_receiveSocket == INVALID_SOCKET) {
-            _receiveSocket = ::socket(_doorbell.Type(), SOCK_DGRAM, 0);
+            _receiveSocket = ::socket(_doorbell.Type(), SOCK_DGRAM|SOCK_CLOEXEC, 0);
 
 #ifndef __WINDOWS__
             // Check if domain path already exists, if so remove.

@@ -342,6 +342,8 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
                 REPORT_DURATION_WARNING( { ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
 
+                
+
                 if (HasError() == true) {
                     result = Core::ERROR_GENERAL;
 
