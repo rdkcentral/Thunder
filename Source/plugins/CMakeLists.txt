@@ -74,6 +74,13 @@ else()
             )
 endif()
 
+if (WARNING_REPORTING)
+    target_link_libraries(${TARGET}
+           PUBLIC 
+              ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting
+            )
+endif()
+
 target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

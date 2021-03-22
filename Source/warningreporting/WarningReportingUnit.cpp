@@ -349,14 +349,14 @@ namespace WarningReporting {
 
         if ( ( m_DirectOut == true ) && ( information.IsWarning() == true ) ) {
 
-            information.ToString( [&](const string& text) {
-                string time(Core::Time::Now().ToRFC1123(true));
-                Core::TextFragment cleanClassName(Core::ClassNameOnly(className));
+            string text;
+            string time(Core::Time::Now().ToRFC1123(true));
+            Core::TextFragment cleanClassName(Core::ClassNameOnly(className));
 
-                fprintf(stdout, "\033[1;32mSUSPICIOUS [%s]: [%s:%s]: %s\n\033[0m", time.c_str(), identifier, information.Category(), text.c_str());
-                fflush(stdout);
-              }  );
+            information.ToString(text);
 
+            fprintf(stdout, "\033[1;32mSUSPICIOUS [%s]: [%s:%s]: %s\n\033[0m", time.c_str(), identifier, information.Category(), text.c_str());
+            fflush(stdout);
         }
 
         m_Admin.Unlock();

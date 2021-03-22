@@ -531,7 +531,7 @@ inline void SleepUs(unsigned int a_Time)
 }
 
 
-void EXTERNAL DumpCallStack(const ThreadId threadId, FILE* output);
+void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<string>& stack);
 uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
 
 }

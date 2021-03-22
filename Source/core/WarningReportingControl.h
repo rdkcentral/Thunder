@@ -31,7 +31,7 @@
 #include "Optional.h"
 #include <vector>
 
-#ifndef WARNING_REPORTING
+#ifndef __CORE_WARNING_REPORTING__
 
 #define WARNING_REPORTING_THREAD_SETCALLSIGN(CALLSIGN)
 
@@ -54,9 +54,9 @@
 // - <optional> bool Analyze(const char modulename[], const char identifier[], EXTRA_PARAMETERS);  // needs to return true if needs to be Reported
 // - <optional> static void Configure(const string& settings); 
 // - constructor ()
-// - void Serialize(const std::function<void(const uint8_t[], const uint16_t)>& visitor) const; (note use SerializeVisitor type for function parameter)
-// - void Deserialize(const uint8_t[], const uint16_t); 
-// - void ToString(const std::function<void(const string&)>& visitor) const; (note use ToStringVisitor type for function parameter)
+// - uint16_t Serialize(uint8_t[], const uint16_t) const; (note use the return parameter to indicate how much of the buffer is written)
+// - uint16_t Deserialize(const uint8_t[], const uint16_t); (note use the return parameter to indicate how much of the buffer is read)
+// - void ToString(string& visitor) const; 
 // - <optional> bool IsWarning() const; (if not available uit will always be a warning)
 // Constants:
 // - if a Duration or OutOfBounds warning category:
@@ -285,22 +285,20 @@ namespace WarningReporting {
             return report;
         }
         
-        void Serialize(const IWarningEvent::SerializeVisitor& visitor) const {
+        uint16_t Serialize(uint8_t buffer[], const uint16_t length) const {
             // HPL Todo: not implemented yet: we should also serialize our part, then only pass on to the actual class
-            _category.Serialize(visitor);
+            return (_category.Serialize(buffer, length));
         }
 
-        void Deserialize(const uint8_t data[], const uint16_t size) {
+        uint16_t Deserialize(const uint8_t data[], const uint16_t size) {
             // HPL Todo: not implemented yet: we should also extract our part then pass on the rest to tyhe actual category
-            _category.Deserialize(data, size);
+            return (_category.Deserialize(data, size));
         }
 
-        void ToString(const IWarningEvent::ToStringVisitor& visitor) const {
-            // HPL todo: perhaps giove the Catagoryb to influence this, e.g. add unit (ms)
-            string text;
-            _category.ToString([&](const string& cattext){ text = cattext; });
-            text += Core::Format(_T(", value %u, max allowed %u"), _actualvalue, _warningbound.load(std::memory_order_relaxed));
-            visitor(text);
+        void ToString(string& visitor) const {
+            // HPL todo: perhaps give the Catagoryb to influence this, e.g. add unit (ms)
+            _category.ToString(visitor);
+            visitor += Core::Format(_T(", value %u, max allowed %u"), _actualvalue, _warningbound.load(std::memory_order_relaxed));
         }
 
         bool IsWarning() const {
@@ -506,15 +504,15 @@ namespace WarningReporting {
             return (s_control.Category());
         }
 
-        void Serialize(const IWarningEvent::SerializeVisitor& visitor) const override {
-            _info.Serialize(visitor);
+        uint16_t Serialize(uint8_t data[], const uint16_t size) const override {
+            return(_info.Serialize(data, size));
         }
 
-        void Deserialize(const uint8_t data[], const uint16_t size) override {
-            _info.Deserialize(data, size);
+        uint16_t Deserialize(const uint8_t data[], const uint16_t size) override {
+            return(_info.Deserialize(data, size));
         }
 
-        void ToString(const ToStringVisitor& visitor) const override {
+        void ToString(string& visitor) const override {
             _info.ToString(visitor);
         }
 

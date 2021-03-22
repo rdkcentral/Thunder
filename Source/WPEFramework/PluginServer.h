@@ -100,18 +100,34 @@ namespace PluginHost {
 
     private:
         class WorkerPoolImplementation : public Core::WorkerPool {
+        private:
+            class Dispatcher : public Core::ThreadPool::IDispatcher {
+            public:
+                Dispatcher(const Dispatcher&) = delete;
+                Dispatcher& operator=(const Dispatcher&) = delete;
+
+                Dispatcher() = default;
+                ~Dispatcher() override = default;
+
+            private:
+                void Dispatch(Core::IDispatch*& job) override;
+            };
+
         public:
             WorkerPoolImplementation() = delete;
             WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
             WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
             WorkerPoolImplementation(const uint32_t stackSize)
-                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 16)
+                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 16, &_dispatch)
             {
             }
             virtual ~WorkerPoolImplementation()
             {
             }
+
+        private:
+            Dispatcher _dispatch;
         };
 
         class FactoriesImplementation : public IFactories {

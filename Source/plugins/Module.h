@@ -29,7 +29,7 @@
 #include <tracing/tracing.h>
 #include <websocket/websocket.h>
 
-#ifdef WARNING_REPORTING
+#ifdef __CORE_WARNING_REPORTING__
     #include <warningreporting/warningreporting.h>
 #endif
 

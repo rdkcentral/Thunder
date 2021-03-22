@@ -15,6 +15,32 @@ namespace Process {
 
     class WorkerPoolImplementation : public Core::IIPCServer, public Core::WorkerPool {
     private:
+        class Dispatcher : public Core::ThreadPool::IDispatcher {
+        public:
+            Dispatcher(const Dispatcher&) = delete;
+            Dispatcher& operator=(const Dispatcher&) = delete;
+
+            Dispatcher() = default;
+            ~Dispatcher() override = default;
+
+        private:
+            void Dispatch(Core::IDispatch*& job) override {
+            #ifdef __CORE_EXCEPTION_CATCHING__
+            try {
+                job->Dispatch();
+            }
+            catch (const std::exception& type) {
+                Logging::DumpException(type.what());
+            }
+            catch (...) {
+                Logging::DumpException(_T("Unknown"));
+            }
+            #else
+            job->Dispatch();
+            #endif
+            }
+        };
+
         class Sink : public Core::ServiceAdministrator::ICallback {
         public:
             Sink() = delete;
@@ -68,7 +94,6 @@ namespace Process {
         };
 
     public:
-
         WorkerPoolImplementation() = delete;
         WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
         WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
@@ -77,7 +102,8 @@ namespace Process {
 #pragma warning(disable : 4355)
 #endif
         WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize)
-            : WorkerPool(threads - 1, stackSize, queueSize, Core::ProcessInfo().Name().c_str())  // HPL todo: perhaps we could use this in the deeper layers, but doubt, need to discuss
+            : WorkerPool(threads - 1, stackSize, queueSize, &_dispatcher, Core::ProcessInfo().Name().c_str())  // HPL todo: perhaps we could use this in the deeper layers, but doubt, need to discuss
+            , _dispatcher()
             , _announceHandler(nullptr)
             , _sink(*this)
         {
@@ -125,6 +151,7 @@ namespace Process {
             WorkerPool::Submit(Core::ProxyType<Core::IDispatch>(job));
         }
     private:
+        Dispatcher _dispatcher;
         Core::IIPCServer* _announceHandler;
         Sink _sink;
     };
@@ -349,6 +376,9 @@ private:
         Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> _jsonRPCFactory;
     };
 
+    static void UncaughtExceptions () {
+        Logging::DumpException(_T("General"));
+    }
 
 public:
     ProcessFlow(const ProcessFlow&) = delete;
@@ -374,6 +404,7 @@ public:
         sigaction(SIGTERM, &sa, nullptr);
         sigaction(SIGQUIT, &sa, nullptr);
         #endif
+        std::set_terminate(UncaughtExceptions);
     }
     virtual ~ProcessFlow()
     {
@@ -407,6 +438,7 @@ public:
         PluginHost::IFactories::Assign(nullptr);
 
         Core::Singleton::Dispose();
+        std::set_terminate(nullptr);
         TRACE_L1("Leaving Shutdown. Cleaned up process: %d.", Core::ProcessInfo().Id());
     }
 
@@ -474,7 +506,7 @@ private:
             ProcessFlow::Abort();
 
         } else if (signo == SIGSEGV) {
-            DumpCallStack(0, nullptr);
+            Logging::DumpException(_T("SEIGSEGV"));
             // now invoke the default segfault handler
             signal(signo, SIG_DFL);
             kill(getpid(), signo);
@@ -591,7 +623,7 @@ int main(int argc, char** argv)
         Logging::LoggingType<Logging::Error>::Enable((options.EnabledLoggings & 0x00000020) != 0);
         Logging::LoggingType<Logging::Fatal>::Enable((options.EnabledLoggings & 0x00000040) != 0);
 
-#ifdef WARNING_REPORTING
+#ifdef __CORE_WARNING_REPORTING__
         WarningReporting::WarningReportingUnit::Instance().Open(options.Exchange);
 #endif
 
