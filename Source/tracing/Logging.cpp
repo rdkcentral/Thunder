@@ -74,7 +74,7 @@ namespace Logging {
     }
 
     #ifdef __CORE_WARNING_REPORTING__
-    static const TCHAR* UnknownCallsign = _T("Unknown");
+    static const TCHAR* UnknownCallsign = _T("NoTLSCallsign");
     #endif
 
     void DumpException(const string& exceptionType) {
@@ -85,7 +85,7 @@ namespace Logging {
         #else
         const TCHAR* callsign = UnknownCallsign;
         #endif
-        SYSLOG (Logging::Crash, ("-== Unhandled exception in: %s [%s] ==-\n", callsign, exceptionType.c_str()));
+        SYSLOG (Logging::Crash, (_T("-== Unhandled exception in: %s [%s] ==-\n"), callsign, exceptionType.c_str()));
         for (const string& line : stack)
         {
             SYSLOG(Logging::Crash, (line));

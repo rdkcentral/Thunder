@@ -124,11 +124,11 @@ namespace PluginHost {
 
             WorkerPoolImplementation(const uint32_t stackSize)
                 : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 16, &_dispatch)
+                , _dispatch()
             {
+                Run();
             }
-            virtual ~WorkerPoolImplementation()
-            {
-            }
+            ~WorkerPoolImplementation() override = default;
 
         private:
             Dispatcher _dispatch;
@@ -1978,7 +1978,7 @@ namespace PluginHost {
         // (is closed) during the service process, the ChannelMap will
         // not find it and just "flush" the presented work.
         class Channel : public PluginHost::Channel {
-        private:
+        public:
             class Job : public Core::IDispatch {
             public:
                 Job() = delete;
@@ -2111,8 +2111,6 @@ namespace PluginHost {
                     ASSERT(_request.IsValid());
                     ASSERT(Job::HasService() == true);
 
-                    WARNING_REPORTING_THREAD_SETCALLSIGN(Callsign().c_str())
-
                     Core::ProxyType<Web::Response> response;
 
                     if (_jsonrpc == true) {
@@ -2217,8 +2215,6 @@ namespace PluginHost {
                     ASSERT(Job::HasService() == true);
                     ASSERT(_element.IsValid() == true);
 
-                    WARNING_REPORTING_THREAD_SETCALLSIGN(Callsign().c_str())
-
                     if (_jsonrpc == true) {
 #if THUNDER_PERFORMANCE
                         Core::ProxyType<TrackingJSONRPC> tracking (Core::proxy_cast<TrackingJSONRPC>(_element));
@@ -2276,8 +2272,6 @@ namespace PluginHost {
                 void Dispatch() override
                 {
                     ASSERT(HasService() == true);
-
-                    WARNING_REPORTING_THREAD_SETCALLSIGN(Callsign().c_str())
 
                     _text = Job::Process(_text);
 

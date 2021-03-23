@@ -161,6 +161,14 @@ namespace PluginHost
 
     void Server::WorkerPoolImplementation::Dispatcher::Dispatch(Core::IDispatch* job) /* override */ {
     #ifdef __CORE_EXCEPTION_CATCHING__
+        string callsign(_T("Unknown"));
+        Channel::Job* rootObject = dynamic_cast<Channel::Job*>(job);
+        if (rootObject != nullptr) {
+            callsign = rootObject->Callsign();
+        }
+
+        WARNING_REPORTING_THREAD_SETCALLSIGN(callsign.c_str());
+
         try {
             job->Dispatch();
         }

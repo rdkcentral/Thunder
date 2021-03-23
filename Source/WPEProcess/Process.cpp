@@ -27,12 +27,13 @@ namespace Process {
 
         private:
             void Initialize() override {
-                WARNING_REPORTING_THREAD_SETCALLSIGN(_identifier.c_str());
             }
             void Deinitialize() override {
             }
             void Dispatch(Core::IDispatch* job) override {
             #ifdef __CORE_EXCEPTION_CATCHING__
+            // HPL: This should not be RAII, this can be done in Initialize and Deinitialize
+            WARNING_REPORTING_THREAD_SETCALLSIGN(_identifier.c_str());
             try {
                 job->Dispatch();
             }
@@ -111,9 +112,9 @@ namespace Process {
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
-        WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize)
+        WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize, const string& callsign)
             : WorkerPool(threads - 1, stackSize, queueSize, &_dispatcher)
-            , _dispatcher(Core::ProcessInfo().Name())
+            , _dispatcher(callsign)
             , _announceHandler(nullptr)
             , _sink(*this)
         {
@@ -463,10 +464,10 @@ public:
 
         _lock.Unlock();
     }
-    void Startup(const uint8_t threadCount, const Core::NodeId& remoteNode)
+    void Startup(const uint8_t threadCount, const Core::NodeId& remoteNode, const string& callsign)
     {
         // Seems like we have enough information, open up the Process communcication Channel.
-        _engine = Core::ProxyType<Process::WorkerPoolImplementation>::Create(threadCount, Core::Thread::DefaultStackSize(), 16);
+        _engine = Core::ProxyType<Process::WorkerPoolImplementation>::Create(threadCount, Core::Thread::DefaultStackSize(), 16, callsign);
 
         // Whenever someone is looking for a WorkerPool, here it is, register it..
         Core::IWorkerPool::Assign(&(*_engine));
@@ -590,19 +591,21 @@ int main(int argc, char** argv)
             printf("Argument [%02d]: %s\n", teller, argv[teller]);
         }
     } else {
+        string callsign;
         if (options.Callsign != nullptr) {
             Core::ProcessInfo hostProcess;
-            const TCHAR* callsign = options.Callsign;
-            const TCHAR* lastEntry = ::strrchr(callsign, '.');
+            const TCHAR* local = options.Callsign;
+            const TCHAR* lastEntry = ::strrchr(local, '.');
             if (lastEntry != nullptr) {
-                callsign = &(lastEntry[1]);
+                local = &(lastEntry[1]);
             }
-            hostProcess.Name(callsign);
+  
+            hostProcess.Name(local);
+            callsign = local;
         }
 
         // set for the main thread
-        WARNING_REPORTING_THREAD_SETCALLSIGN(options.Callsign);
-
+        WARNING_REPORTING_THREAD_SETCALLSIGN(callsign.c_str());
 
         #ifdef USE_BREAKPAD
         google_breakpad::MinidumpDescriptor descriptor(options.PostMortemPath);
@@ -650,7 +653,7 @@ int main(int argc, char** argv)
                 Core::ProcessCurrent().User(string(options.User));
             }
 
-            process.Startup(options.Threads, remoteNode);
+            process.Startup(options.Threads, remoteNode, callsign);
 
             // Register an interface to handle incoming requests for interfaces.
             if ((base = Process::AquireInterfaces(options)) != nullptr) {
