@@ -210,6 +210,7 @@ typedef std::string string;
 
 // This is an HTTP keyword (VERB) Let's undefine it from windows headers..
 #define _CRT_SECURE_NO_WARNINGS 1
+#define SOCK_CLOEXEC 0
 #undef DELETE
 #undef min
 #undef max

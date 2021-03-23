@@ -326,8 +326,8 @@ namespace Core {
         , _handle(OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, _pid))
 #else
         : _pid(getpid())
-        , _memory(_pid)
 #endif
+        , _memory(_pid)
     {
     }
 
