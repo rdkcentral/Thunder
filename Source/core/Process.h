@@ -473,7 +473,7 @@ namespace Core {
                 stderrfd[1] = -1;
 
                 /* Create the pipe and set non-blocking on the readable end. */
-                if ((_stdin == -1) && (pipe(stdinfd) == 0) && (pipe(stdoutfd) == 0) && (pipe(stderrfd) == 0)) {
+                if ((_stdin == -1) && (pipe2(stdinfd, O_CLOEXEC) == 0) && (pipe2(stdoutfd, O_CLOEXEC) == 0) && (pipe2(stderrfd, O_CLOEXEC) == 0)) {
                     // int flags = ( fcntl(p[0], F_GETFL, 0) & (~O_NONBLOCK) );
                     int input = (fcntl(stdinfd[1], F_GETFL, 0) | O_NONBLOCK);
                     int output = (fcntl(stdoutfd[0], F_GETFL, 0) | O_NONBLOCK);
@@ -507,11 +507,12 @@ namespace Core {
                         /* Make stdout into writable end */
                         dup2(stderrfd[1], 2);
                     }
+
                     /* fork a child process           */
                     if (execvp(*actualParameters, actualParameters) < 0) {
                         // TRACE_L1("Failed to start process: %s.", explain_execvp(*actualParameters, actualParameters));
                         int result = errno;
-                        TRACE_L1("Failed to start process: %d - %d.", getpid(), result);
+                        TRACE_L1("Failed to start process: %d - %s.", getpid(), strerror(result));
                         // No glory, so lets quit our selves, avoid the _atexit handlers they should not be there yet...
                         _exit(result);
                     }
