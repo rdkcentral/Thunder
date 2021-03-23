@@ -399,7 +399,11 @@ namespace RPC {
             ~Dispatcher() override = default;
 
         private:
-            void Dispatch(Core::IDispatchType<void>*& job) override {
+            void Initialize() override {
+            }
+            void Deinitialize() override {
+            }
+            void Dispatch(Core::IDispatchType<void>* job) override {
                 job->Dispatch();
             }
         };

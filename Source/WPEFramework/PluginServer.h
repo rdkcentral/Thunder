@@ -110,7 +110,11 @@ namespace PluginHost {
                 ~Dispatcher() override = default;
 
             private:
-                void Dispatch(Core::IDispatch*& job) override;
+                void Initialize() override {
+                }
+                void Deinitialize() override {
+                }
+                void Dispatch(Core::IDispatch* job) override;
             };
 
         public:

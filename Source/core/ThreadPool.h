@@ -29,7 +29,14 @@ namespace Core {
     class EXTERNAL ThreadPool {
     public:
         typedef Core::QueueType< Core::ProxyType<IDispatch> > MessageQueue;
-        typedef Core::IDispatchType<Core::IDispatchType<void>*> IDispatcher;
+
+        struct IDispatcher {
+            virtual ~IDispatcher() = default;
+
+            virtual void Initialize() = 0;
+            virtual void Deinitialize() = 0;
+            virtual void Dispatch(Core::IDispatchType<void>*) = 0;
+        };
 
         template<typename IMPLEMENTATION>
         class JobType {
@@ -172,6 +179,8 @@ namespace Core {
             }
             void Process()
             {
+		_dispatcher->Initialize();
+
                 while (_queue.Extract(_currentRequest, Core::infinite) == true) {
 
                     ASSERT(_currentRequest.IsValid() == true);
@@ -197,6 +206,8 @@ namespace Core {
                     }
                     _adminLock.Unlock();
                 }
+
+		_dispatcher->Deinitialize();
             }
 
         private:
@@ -216,10 +227,9 @@ namespace Core {
             Executor(const Executor&) = delete;
             Executor& operator=(const Executor&) = delete;
 
-            Executor(MessageQueue& queue, IDispatcher* dispatcher, const uint32_t stackSize, const TCHAR* name, const char* identifier = nullptr)
+            Executor(MessageQueue& queue, IDispatcher* dispatcher, const uint32_t stackSize, const TCHAR* name)
                 : Core::Thread(stackSize == 0 ? Core::Thread::DefaultStackSize() : stackSize, name)
                 , _minion(queue, dispatcher)
-                , _identifier(identifier)
             {
             }
             ~Executor() override
@@ -248,7 +258,6 @@ namespace Core {
         private:
             uint32_t Worker() override
             {
-                WARNING_REPORTING_THREAD_SETCALLSIGN(_identifier);
                 _minion.Process();
                 Core::Thread::Block();
                 return (Core::infinite);
@@ -256,19 +265,18 @@ namespace Core {
 
         private:
             Minion _minion;
-            const char* _identifier;
         };
 
     public:
         ThreadPool(const ThreadPool& a_Copy) = delete;
         ThreadPool& operator=(const ThreadPool& a_RHS) = delete;
 
-        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, const char* identifier = nullptr) 
+        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher) 
             : _queue(queueSize)
         {
             const TCHAR* name = _T("WorkerPool::Thread");
             for (uint8_t index = 0; index < count; index++) {
-                _units.emplace_back(_queue, dispatcher, stackSize, name, identifier);
+                _units.emplace_back(_queue, dispatcher, stackSize, name);
             }
         }
         ~ThreadPool() {
