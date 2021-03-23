@@ -1133,7 +1133,11 @@ namespace Core {
         socklen_t size = sizeof(address);
         SOCKET result;
 
+        #ifdef __WINDOWS__
+        if ((result = ::accept(m_Socket, (struct sockaddr*)&address, &size)) != SOCKET_ERROR) {
+        #else
         if ((result = ::accept4(m_Socket, (struct sockaddr*)&address, &size, SOCK_CLOEXEC)) != SOCKET_ERROR) {
+        #endif  
             // Align the buffer to what is requested
             BufferAlignment(result);
 

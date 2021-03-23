@@ -73,9 +73,7 @@ namespace Logging {
         }
     }
 
-    #ifdef __CORE_WARNING_REPORTING__
     static const TCHAR* UnknownCallsign = _T("NoTLSCallsign");
-    #endif
 
     void DumpException(const string& exceptionType) {
         std::list<string> stack;

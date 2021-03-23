@@ -123,7 +123,6 @@ namespace WPEFramework {
     do {                                                                                                        \
         if (!(expr)) {                                                                                          \
             ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
-            DumpCallStack(0, nullptr);                                                                          \
             abort();                                                                                            \
         }                                                                                                       \
     } while(0)
@@ -132,7 +131,6 @@ namespace WPEFramework {
     do {                                                                                                                                             \
         if (!(expr)) {                                                                                                                               \
             ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n         " #format "\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr, ##__VA_ARGS__); \
-            DumpCallStack(0, nullptr);                                                                                                               \
             abort();                                                                                                                                 \
         }                                                                                                                                            \
     } while(0)

@@ -390,7 +390,7 @@ namespace RPC {
     template <const uint8_t THREADPOOLCOUNT, const uint32_t STACKSIZE, const uint32_t MESSAGESLOTS>
     class InvokeServerType : public IIPCServer {
     private:
-        class EXTERNAL Dispatcher : public Core::ThreadPool::IDispatcher {
+        class Dispatcher : public Core::ThreadPool::IDispatcher {
         public:
             Dispatcher(const Dispatcher&) = delete;
             Dispatcher& operator=(const Dispatcher&) = delete;
