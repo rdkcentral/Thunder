@@ -403,19 +403,23 @@ namespace Core {
 
             return (IPV6AddressIterator(_ipv6Nodes));
         }
-        inline void Added(const IPNode& address) {
+        inline bool Added(const IPNode& address) {
+            bool result = false;
+
             _adminLock.Lock();
 
             if (address.Type() == Core::NodeId::TYPE_IPV4) {
                 std::list<IPNode>::iterator index (std::find(_ipv4Nodes.begin(), _ipv4Nodes.end(), address));
                 if (index == _ipv4Nodes.end()) {
                     _ipv4Nodes.push_back(address);
+                    result = true;
                 }
             }
             else if (address.Type() == Core::NodeId::TYPE_IPV6) {
                 std::list<IPNode>::iterator index (std::find(_ipv6Nodes.begin(), _ipv6Nodes.end(), address));
                 if (index == _ipv6Nodes.end()) {
                     _ipv6Nodes.push_back(address);
+                    result = true;
                 }
             }
             else {
@@ -423,8 +427,11 @@ namespace Core {
             }
 
             _adminLock.Unlock();
+
+            return (result);
         }
-        inline void Removed(const IPNode& address) {
+        inline bool Removed(const IPNode& address) {
+            bool result = false;
 
             _adminLock.Lock();
 
@@ -432,19 +439,22 @@ namespace Core {
                 std::list<IPNode>::iterator index (std::find(_ipv4Nodes.begin(), _ipv4Nodes.end(), address));
                 if (index != _ipv4Nodes.end()) {
                     _ipv4Nodes.erase(index);
+                    result = true;
                 }
             }
             else if (address.Type() == Core::NodeId::TYPE_IPV6) {
                 std::list<IPNode>::iterator index (std::find(_ipv6Nodes.begin(), _ipv6Nodes.end(), address));
                 if (index != _ipv6Nodes.end()) {
                     _ipv6Nodes.erase(index);
+                    result = true;
                 }
             }
             else {
                 TRACE_L1("Network::Added: Unexpected node type: %d", address.Type()); 
             }
-
             _adminLock.Unlock();
+
+            return (result);
         }
 
         bool IsUp() const;
