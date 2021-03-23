@@ -159,7 +159,7 @@ namespace PluginHost
         const string _controllerName;
     };
 
-    void Server::WorkerPoolImplementation::Dispatcher::Dispatch(Core::IDispatch*& job) /* override */ {
+    void Server::WorkerPoolImplementation::Dispatcher::Dispatch(Core::IDispatch* job) /* override */ {
     #ifdef __CORE_EXCEPTION_CATCHING__
         try {
             job->Dispatch();

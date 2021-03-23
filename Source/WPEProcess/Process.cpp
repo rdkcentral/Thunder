@@ -20,11 +20,18 @@ namespace Process {
             Dispatcher(const Dispatcher&) = delete;
             Dispatcher& operator=(const Dispatcher&) = delete;
 
-            Dispatcher() = default;
+            Dispatcher(const string& identifier) 
+                : _identifier(identifier) {
+            }
             ~Dispatcher() override = default;
 
         private:
-            void Dispatch(Core::IDispatch*& job) override {
+            void Initialize() override {
+                WARNING_REPORTING_THREAD_SETCALLSIGN(_identifier.c_str());
+            }
+            void Deinitialize() override {
+            }
+            void Dispatch(Core::IDispatch* job) override {
             #ifdef __CORE_EXCEPTION_CATCHING__
             try {
                 job->Dispatch();
@@ -39,6 +46,9 @@ namespace Process {
             job->Dispatch();
             #endif
             }
+
+        private:
+            string _identifier;
         };
 
         class Sink : public Core::ServiceAdministrator::ICallback {
@@ -102,8 +112,8 @@ namespace Process {
 #pragma warning(disable : 4355)
 #endif
         WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize)
-            : WorkerPool(threads - 1, stackSize, queueSize, &_dispatcher, Core::ProcessInfo().Name().c_str())  // HPL todo: perhaps we could use this in the deeper layers, but doubt, need to discuss
-            , _dispatcher()
+            : WorkerPool(threads - 1, stackSize, queueSize, &_dispatcher)
+            , _dispatcher(Core::ProcessInfo().Name())
             , _announceHandler(nullptr)
             , _sink(*this)
         {
