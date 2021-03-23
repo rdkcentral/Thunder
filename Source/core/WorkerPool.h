@@ -161,8 +161,6 @@ namespace Core {
         {
             _metadata.Slots = threadCount + 1;
             _metadata.Slot = new uint32_t[threadCount + 1];
-
-            _threadPool.Run();
         }
         ~WorkerPool()
         {
