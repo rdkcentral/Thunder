@@ -138,10 +138,13 @@ namespace Core {
                     ASSERT(loaded <= payload);
                     DEBUG_VARIABLE(loaded);
 
+                    if (loaded == 0) {
+                        break;
+                    }
 		    handled += loaded;
                 }
 
-                if (offset != 0 && error.IsSet() == false) {
+                if ((offset != 0 || handled < size) && error.IsSet() == false) {
                     error = Error{ "Malformed JSON. Missing closing quotes or brackets" };
                     realObject.Clear();
                 }
