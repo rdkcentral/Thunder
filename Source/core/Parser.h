@@ -62,6 +62,7 @@ namespace WPEFramework {
 				, _byteCounter(0)
 				, _buffer()
 				, _parent(parent)
+				, _splitChar(0)
 				, _terminator()
 			{
 			}
@@ -74,6 +75,7 @@ namespace WPEFramework {
 			{
 				_state = SKIP_WHITESPACE | WORD_CAPTURE;
 				_byteCounter = 0;
+				_splitChar = 0;
 			}
 			inline uint32_t Position() const {
 				return (_byteCounter);
