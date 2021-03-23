@@ -50,7 +50,7 @@ namespace Core {
         inline void Lock()
         {
 #ifdef __LINUX__
-#if defined(CRITICAL_SECTION_LOCK_LOG)
+#if defined(__CORE_CRITICAL_SECTION_LOG__)
             TryLock();
 #else
 
@@ -92,7 +92,7 @@ namespace Core {
 
     private:
 #ifdef __LINUX__
-#if defined(CRITICAL_SECTION_LOCK_LOG)
+#if defined(__CORE_CRITICAL_SECTION_LOG__)
         void TryLock();
 
         static const int _AllocatedStackEntries = 20;
@@ -104,7 +104,7 @@ namespace Core {
         static int StripStackTop(void** stack, int stackEntries, int stripped);
 
         static CriticalSection _StdErrDumpMutex;
-#endif // CRITICAL_SECTION_LOCK_LOG
+#endif // __CORE_CRITICAL_SECTION_LOG__
 #endif
     };
 

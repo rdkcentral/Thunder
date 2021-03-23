@@ -25,7 +25,7 @@ namespace Core {
 #pragma warning(disable : 4996)
 #endif
 
-#ifndef __NO_WCHAR_SUPPORT__
+#ifndef __CORE_NO_WCHAR_SUPPORT__
     void ToString(const wchar_t realString[], std::string& result)
     {
 #if defined(__WINDOWS__) || defined(__LINUX__)
@@ -126,7 +126,7 @@ namespace Core {
 #endif // _UNICODE
     }
 
-#endif // __NO_WCHAR_SUPPORT__
+#endif // __CORE_NO_WCHAR_SUPPORT__
 
     string ToString(const char realString[], unsigned int length)
     {

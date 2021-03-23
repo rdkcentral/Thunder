@@ -163,17 +163,17 @@ if (EXCEPTION_CATCHING)
 endif()
 
 if(DEADLOCK_DETECTION)
-    target_compile_definitions(${TARGET} PUBLIC CRITICAL_SECTION_LOCK_LOG)
+    target_compile_definitions(${TARGET} PUBLIC __CORE_CRITICAL_SECTION_LOG__)
     message(STATUS "Enabled deadlock detection.")
 endif()
 
 if(NOT WCHAR_SUPPORT)
-    target_compile_definitions(${TARGET} PUBLIC __NO_WCHAR_SUPPORT__)
+    target_compile_definitions(${TARGET} PUBLIC __CORE_NO_WCHAR_SUPPORT__)
     message(STATUS "Disabled WCHAR support.")
 endif()
 
 if (BLUETOOTH)
-    target_compile_definitions(${TARGET} PUBLIC CORE_BLUETOOTH)
+    target_compile_definitions(${TARGET} PUBLIC __CORE_BLUETOOTH_SUPPORT__)
     message(STATUS "Enable bluetooth support.")
 endif()
 

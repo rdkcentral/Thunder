@@ -70,7 +70,7 @@ namespace Trace {
             : _text(Core::ToString(text))
         {
         }
-#ifndef __NO_WCHAR_SUPPORT__
+#ifndef __CORE_NO_WCHAR_SUPPORT__
         inline Text(const std::wstring& text)
             : _text(Core::ToString(text.c_str()))
         {
@@ -251,7 +251,7 @@ namespace Trace {
         MethodEntry& operator=(const MethodEntry& a_RHS) = delete;
 
     public:
-#ifndef __NO_WCHAR_SUPPORT__
+#ifndef __CORE_NO_WCHAR_SUPPORT__
         MethodEntry(const wchar_t MethodName[])
             : _text("Entered Method: ")
         {
@@ -296,7 +296,7 @@ namespace Trace {
         MethodExit& operator=(const MethodExit& a_RHS) = delete;
 
     public:
-#ifndef __NO_WCHAR_SUPPORT__
+#ifndef __CORE_NO_WCHAR_SUPPORT__
         MethodExit(const wchar_t MethodName[])
             : _text("Exit Method: ")
         {
