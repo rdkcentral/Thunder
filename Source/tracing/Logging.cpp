@@ -73,6 +73,25 @@ namespace Logging {
         }
     }
 
+    #ifdef __CORE_WARNING_REPORTING__
+    static const TCHAR* UnknownCallsign = _T("NoTLSCallsign");
+    #endif
+
+    void DumpException(const string& exceptionType) {
+        std::list<string> stack;
+        DumpCallStack(Core::Thread::ThreadId(), stack);
+        #ifdef __CORE_WARNING_REPORTING__
+        const TCHAR* callsign = WarningReporting::CallsignTLS::CallsignAccess<&UnknownCallsign>::Callsign();
+        #else
+        const TCHAR* callsign = UnknownCallsign;
+        #endif
+        SYSLOG (Logging::Crash, (_T("-== Unhandled exception in: %s [%s] ==-\n"), callsign, exceptionType.c_str()));
+        for (const string& line : stack)
+        {
+            SYSLOG(Logging::Crash, (line));
+        }
+    }
+
     void DumpSystemFiles(const Core::process_t pid)
     {
         static auto logProcPath = [](const std::string& path)
