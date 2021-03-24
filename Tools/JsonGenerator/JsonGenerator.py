@@ -47,12 +47,12 @@ class Trace:
         if os.name == "posix":
             self.cwarn = "\033[33mWARNING"
             self.cerror = "\033[31mERROR"
-            self.cstyle = "\033[37mSTYLE"
+            self.cdocissue = "\033[37mDOC-ISSUE"
             self.creset = "\033[0m"
         else:
             self.cwarn = "WARNING:"
             self.cerror = "ERROR:"
-            self.cstyle = "STYLE:"
+            self.cstyle = "DOC-ISSUE:"
             self.creset = ""
 
     def __Print(self, text):
@@ -69,9 +69,9 @@ class Trace:
     def Warn(self, text):
         self.__Print("%s: %s%s %s" % (self.file, self.cwarn, self.creset, text))
 
-    def Style(self, text):
-        if VERIFY and VERBOSE:
-            self.__Print("%s: %s%s %s" % (self.file, self.cstyle, self.creset, text))
+    def DocIssue(self, text):
+        if DOCISSUES:
+            self.__Print("%s: %s%s %s" % (self.file, self.cdocissue, self.creset, text))
 
     def Error(self, text):
         self.errors += 1
@@ -80,6 +80,11 @@ class Trace:
     def Success(self, text):
         self.__Print("Success: {}".format(text))
 
+    def Ellipsis(text, front=True):
+        if front:
+            return (text[:32] + '...') if len(text) > 32 else text
+        else:
+            return ("..." + text[-32:]) if len(text) > 32 else text
 
 trace = Trace()
 
@@ -91,7 +96,7 @@ except:
     sys.exit(1)
 
 INDENT_SIZE = 4
-VERIFY = True
+DOCISSUES = True
 ALWAYS_COPYCTOR = False
 KEEP_EMPTY = False
 CLASSNAME_FROM_REF = True
@@ -148,7 +153,7 @@ class JsonType():
     def __init__(self, name, parent, schema, included=None):
         self.name = schema["original"] if "original" in schema else name
         if parent and not self.name.islower():
-            trace.Warn("Mixed case identifiers are supported, however all-lowercase names are recommended ('%s')" % self.name)
+            trace.Warn("'%s': mixed case identifiers are supported, however all-lowercase names are recommended " % self.name)
         self.true_name = name
         self.schema = schema
         self.duplicate = False
@@ -167,16 +172,16 @@ class JsonType():
         if isinstance(schema, jsonref.JsonRef) and "description" in schema.__reference__:
             self.description = schema.__reference__["description"]
         # do some sanity check on the description text
-        if self.name.endswith(" "):
-            trace.Style("Item '%s' name ends with a whitespace" % self.name)
+        if self.name.endswith(" ") or self.name.startswith(" "):
+            trace.DocIssue("'%s': item name should not begin or end with a space" % self.name)
         if self.description and not isinstance(self, JsonMethod):
             if self.description.endswith("."):
-                trace.Style("Item '%s' description ends with a dot (\"%s\")" % (self.name, self.description))
-            if self.description.endswith(" "):
-                trace.Style("Item '%s' description ends with a whitespace" % self.name)
+                trace.DocIssue("'%s': item description should not end with a dot (\"%s\")" % (self.name, Trace.Ellipsis(self.description, False)))
+            if self.description.endswith(" ") or self.description.startswith(" "):
+                trace.DocIssue("'%s': item description should not begin or end with at space" % self.name)
             if not self.description[0].isupper() and self.description[0].isalpha():
-                trace.Style("Item '%s' description does not start with a capital letter (\"%s\")" %
-                            (self.name, self.description))
+                trace.DocIssue("'%s': item description should begin with a capital letter (\"%s\")" %
+                            (self.name, Trace.Ellipsis(self.description)))
         if "default" in schema:
             self.default = schema["default"]
 
@@ -532,7 +537,7 @@ class JsonArray(JsonType):
 class JsonMethod(JsonObject):
     def __init__(self, name, parent, schema, included=None):
         if '.' in name:
-            trace.Warn("Methods names containing full designator are deprecated, include name only ('%s')" % name)
+            trace.Warn("'%s': method names containing full designator are deprecated (include name only)" % name)
             objName = name.rsplit(".", 1)[1]
         else:
             objName = name
@@ -917,16 +922,16 @@ def LoadInterface(file, includePaths = []):
                     if var.meta.input or not var.meta.output:
                         if not var.type.IsConst():
                             if not var.meta.input:
-                                trace.Warn("%s: non-const parameter assumed to be input (forgot 'const'?)" % var.name)
+                                trace.Warn("'%s': non-const parameter assumed to be input (forgot 'const'?)" % var.name)
                             elif not var.meta.output:
-                                trace.Warn("%s: non-const parameter marked with @in tag (forgot 'const'?)" % var.name)
+                                trace.Warn("'%s': non-const parameter marked with @in tag (forgot 'const'?)" % var.name)
                         var_name = var.meta.text if var.meta.text else var.name.lower()
                         if var_name.startswith("__unnamed"):
                             raise CppParseError(var, "unnamed parameter, can't deduce parameter name")
                         properties[var_name] = ConvertParameter(var)
                         properties[var_name]["original"] = var.name
                         if not prop and "description" not in properties[var_name]:
-                            trace.Style("%s: parameter missing description" % var_name)
+                            trace.DocIssue("'%s': parameter missing description" % var_name)
                         required.append(var_name)
                 params["properties"] = properties
                 params["required"] = required
@@ -1046,7 +1051,7 @@ def LoadInterface(file, includePaths = []):
                 if method.retval.meta.brief:
                     obj["summary"] = method.retval.meta.brief
                 elif (prefix + method_name_lower) not in properties:
-                    trace.Style("%s: %s missing brief description" % (method.name, "property" if method.retval.meta.is_property else "method"))
+                    trace.DocIssue("'%s': %s missing brief description" % (method.name, "property" if method.retval.meta.is_property else "method"))
                 if method.retval.meta.details:
                     obj["description"] = method.retval.meta.details
                 if method.retval.meta.retval:
@@ -1070,7 +1075,7 @@ def LoadInterface(file, includePaths = []):
                     if method.retval.meta.brief:
                         obj["summary"] = method.retval.meta.brief
                     else:
-                        trace.Style("%s: event missing brief description" % method.name)
+                        trace.DocIssue("'%s': event missing brief description" % method.name)
                     if method.retval.meta.details:
                         obj["description"] = method.retval.meta.details
                     if params:
@@ -1457,7 +1462,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                     if isinstance(t[0], JsonString) and "length" in t[0].schema:
                         for w, q in vars.items():
                             if w == t[0].schema["length"] and q[1] == 2:
-                                trace.Warn("%s: parameter marked pointed to by @length is output only" % q[0].name)
+                                trace.Warn("'%s': parameter marked pointed to by @length is output only" % q[0].name)
 
                 # Emit temporary variables and deserializing of JSON data
                 for v, t in vars.items():
@@ -2182,7 +2187,7 @@ def CreateDocument(schema, path):
                     MdRow([prefix, obj["type"], row])
                 if obj["type"] == "object":
                     if "required" not in obj and name and len(obj["properties"]) > 1:
-                        trace.Warn('No "required" field for object "%s" (assuming all members optional)' % name)
+                        trace.Warn("'%s': no 'required' field present (assuming all members optional)" % name)
                     for pname, props in obj["properties"].items():
                         __TableObj(pname, props, parentName + "/" + name, obj, prefix, False)
                 elif obj["type"] == "array":
@@ -2860,7 +2865,7 @@ if __name__ == "__main__":
                            dest="no_style_warnings",
                            action="store_true",
                            default=False,
-                           help="suppress style/wording warnings (default: show all warnings)")
+                           help="suppress documentation issues (default: show all warnings)")
     argparser.add_argument("--include",
                            dest="extra_include",
                            metavar="FILE",
@@ -2882,7 +2887,7 @@ if __name__ == "__main__":
     args = argparser.parse_args(sys.argv[1:])
 
     VERBOSE = args.verbose
-    VERIFY = not args.no_style_warnings
+    DOCISSUES = not args.no_style_warnings
     INDENT_SIZE = args.indent_size
     ALWAYS_COPYCTOR = args.copy_ctor
     KEEP_EMPTY = args.keep_empty
