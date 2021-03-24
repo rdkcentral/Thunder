@@ -85,8 +85,8 @@ namespace PluginHost {
         JSONRPC& operator=(const JSONRPC&) = delete;
         JSONRPC();
         JSONRPC(const TokenCheckFunction& validation);
-        JSONRPC(const std::vector<uint8_t> versions);
-        JSONRPC(const std::vector<uint8_t> versions, const TokenCheckFunction& validation);
+        JSONRPC(const std::vector<uint8_t>& versions);
+        JSONRPC(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation);
         ~JSONRPC() override;
 
     public:
@@ -413,8 +413,8 @@ namespace PluginHost {
 
         JSONRPCSupportsEventStatus() = default;
         JSONRPCSupportsEventStatus(const TokenCheckFunction& validation) : JSONRPC(validation) {}
-        JSONRPCSupportsEventStatus(const std::vector<uint8_t> versions) : JSONRPC(versions) {}
-        JSONRPCSupportsEventStatus(const std::vector<uint8_t> versions, const TokenCheckFunction& validation) : JSONRPC(versions, validation) {}
+        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions) : JSONRPC(versions) {}
+        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation) : JSONRPC(versions, validation) {}
         virtual ~JSONRPCSupportsEventStatus() = default;
 
         enum class Status { registered,
