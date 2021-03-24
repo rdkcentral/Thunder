@@ -556,10 +556,6 @@ namespace Core {
         return (m_hostName);
     }
 
-    void NodeId::HostName(const TCHAR strHostName[])
-    {
-    }
-
     string
     NodeId::HostAddress() const
     {

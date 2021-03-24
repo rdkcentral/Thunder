@@ -737,7 +737,7 @@ namespace Core {
                 }
 
             private:
-                uint16_t Write(uint8_t stream[], const uint16_t length) const override
+                uint16_t Write(uint8_t[], const uint16_t) const override
                 {
                     ASSERT(false);
                     return (0);
@@ -843,7 +843,7 @@ namespace Core {
                     }
 
                 private:
-                    uint16_t Read(const uint8_t stream[], const uint16_t length) override
+                    uint16_t Read(const uint8_t[], const uint16_t length) override
                     {
                         ASSERT(false);
                         return (length);
