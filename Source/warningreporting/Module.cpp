@@ -1,4 +1,4 @@
-/*
+ /*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -17,24 +17,6 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "Module.h"
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Plugins
-#endif
-
-#include <core/core.h>
-#include <com/com.h>
-#include <cryptalgo/cryptalgo.h>
-#include <tracing/tracing.h>
-#include <websocket/websocket.h>
-
-#ifdef __CORE_WARNING_REPORTING__
-    #include <warningreporting/warningreporting.h>
-#endif
-
-#if defined(__WINDOWS__) && defined(PLUGINS_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
-#endif
-
+MODULE_NAME_DECLARATION(BUILD_REFERENCE)

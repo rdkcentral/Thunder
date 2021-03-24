@@ -45,6 +45,10 @@ if (TREE_REFERENCE)
             )
 endif()
 
+if(EXCEPTION_CATCHING) 
+    set_source_files_properties( PluginServer.cpp PROPERTIES COMPILE_FLAGS "-fexceptions" )
+endif()
+
 target_link_libraries(${TARGET}
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
@@ -54,7 +58,7 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
         )
-
+        
 if(PROCESSCONTAINERS)
     target_link_libraries(${TARGET}
         PUBLIC

@@ -19,22 +19,9 @@
 
 #pragma once
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Plugins
+#include "IWarningReportingMedia.h"
+#include "WarningReportingUnit.h"
+
+#ifdef __WINDOWS__
+#pragma comment(lib, "warningreporting.lib")
 #endif
-
-#include <core/core.h>
-#include <com/com.h>
-#include <cryptalgo/cryptalgo.h>
-#include <tracing/tracing.h>
-#include <websocket/websocket.h>
-
-#ifdef __CORE_WARNING_REPORTING__
-    #include <warningreporting/warningreporting.h>
-#endif
-
-#if defined(__WINDOWS__) && defined(PLUGINS_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
-#endif
-

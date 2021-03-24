@@ -22,6 +22,8 @@
 
 #include "Module.h"
 #include "Trace.h"
+#include "WarningReportingControl.h"
+#include "WarningReportingCategories.h"
 
 #include <list>
 
@@ -48,12 +50,17 @@ namespace Core {
         inline void Lock()
         {
 #ifdef __LINUX__
-#if defined(CRITICAL_SECTION_LOCK_LOG)
+#if defined(__CORE_CRITICAL_SECTION_LOG__)
             TryLock();
 #else
-            if (pthread_mutex_lock(&m_syncMutex) != 0) {
+
+            int result  = 0;
+
+            REPORT_DURATION_WARNING( { result = pthread_mutex_lock(&m_syncMutex); }, WarningReporting::TooLongWaitingForLock);
+            if (result != 0) {
                 TRACE_L1("Probably creating a deadlock situation. <%d>", 0);
             }
+
 #endif
 #endif
 
@@ -85,7 +92,7 @@ namespace Core {
 
     private:
 #ifdef __LINUX__
-#if defined(CRITICAL_SECTION_LOCK_LOG)
+#if defined(__CORE_CRITICAL_SECTION_LOG__)
         void TryLock();
 
         static const int _AllocatedStackEntries = 20;
@@ -97,7 +104,7 @@ namespace Core {
         static int StripStackTop(void** stack, int stackEntries, int stripped);
 
         static CriticalSection _StdErrDumpMutex;
-#endif // CRITICAL_SECTION_LOCK_LOG
+#endif // __CORE_CRITICAL_SECTION_LOG__
 #endif
     };
 

@@ -1481,7 +1481,7 @@ namespace Core {
                 Core::ToString(Value, _default);
             }
 
-#ifndef __NO_WCHAR_SUPPORT__
+#ifndef __CORE_NO_WCHAR_SUPPORT__
             explicit String(const wchar_t Value[], const bool quoted = true)
                 : _default()
                 , _scopeCount(quoted ? QuotedSerializeBit : None)
@@ -1490,7 +1490,7 @@ namespace Core {
             {
                 Core::ToString(Value, _default);
             }
-#endif // __NO_WCHAR_SUPPORT__
+#endif // __CORE_NO_WCHAR_SUPPORT__
 
             String(const String& copy)
                 : _default(copy._default)
@@ -1520,7 +1520,7 @@ namespace Core {
                 return (*this);
             }
 
-#ifndef __NO_WCHAR_SUPPORT__
+#ifndef __CORE_NO_WCHAR_SUPPORT__
             String& operator=(const wchar_t RHS[])
             {
                 Core::ToString(RHS, _value);
@@ -1528,7 +1528,7 @@ namespace Core {
 
                 return (*this);
             }
-#endif // __NO_WCHAR_SUPPORT__
+#endif // __CORE_NO_WCHAR_SUPPORT__
 
             String& operator=(const String& RHS)
             {
@@ -1560,7 +1560,7 @@ namespace Core {
                 return (!operator==(RHS));
             }
 
-#ifndef __NO_WCHAR_SUPPORT__
+#ifndef __CORE_NO_WCHAR_SUPPORT__
             inline bool operator==(const wchar_t RHS[]) const
             {
                 std::string comparator;
@@ -1572,7 +1572,7 @@ namespace Core {
             {
                 return (!operator==(RHS));
             }
-#endif // __NO_WCHAR_SUPPORT__
+#endif // __CORE_NO_WCHAR_SUPPORT__
 
             inline bool operator<(const String& RHS) const
             {

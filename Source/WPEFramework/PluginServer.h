@@ -24,6 +24,7 @@
 #include "SystemInfo.h"
 #include "Config.h"
 #include "IRemoteInstantiation.h"
+#include "WarningReportingCategories.h"
 
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
@@ -99,18 +100,38 @@ namespace PluginHost {
 
     private:
         class WorkerPoolImplementation : public Core::WorkerPool {
+        private:
+            class Dispatcher : public Core::ThreadPool::IDispatcher {
+            public:
+                Dispatcher(const Dispatcher&) = delete;
+                Dispatcher& operator=(const Dispatcher&) = delete;
+
+                Dispatcher() = default;
+                ~Dispatcher() override = default;
+
+            private:
+                void Initialize() override {
+                }
+                void Deinitialize() override {
+                }
+                void Dispatch(Core::IDispatch* job) override;
+            };
+
         public:
             WorkerPoolImplementation() = delete;
             WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
             WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
             WorkerPoolImplementation(const uint32_t stackSize)
-                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 16)
+                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 16, &_dispatch)
+                , _dispatch()
             {
+                Run();
             }
-            virtual ~WorkerPoolImplementation()
-            {
-            }
+            ~WorkerPoolImplementation() override = default;
+
+        private:
+            Dispatcher _dispatch;
         };
 
         class FactoriesImplementation : public IFactories {
@@ -173,7 +194,7 @@ namespace PluginHost {
             {
                 va_list ap;
                 va_start(ap, formatter);
-                Trace::Format(_text, formatter, ap);
+                Core::Format(_text, formatter, ap);
                 va_end(ap);
             }
             Activity(const string& text)
@@ -1977,7 +1998,7 @@ namespace PluginHost {
         // (is closed) during the service process, the ChannelMap will
         // not find it and just "flush" the presented work.
         class Channel : public PluginHost::Channel {
-        private:
+        public:
             class Job : public Core::IDispatch {
             public:
                 Job() = delete;
@@ -2027,19 +2048,27 @@ namespace PluginHost {
                 }
                 string Process(const string& message)
                 {
-                    return (_service->Inbound(_ID, message));
+                    string result;
+                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, message);  
+                    return result;
                 }
                 Core::ProxyType<Core::JSONRPC::Message> Process(const string& token, const Core::ProxyType<Core::JSONRPC::Message>& message)
                 {
-                    return (_service->Invoke(token, _ID, *message));
+                    Core::ProxyType<Core::JSONRPC::Message> result;
+                    REPORT_DURATION_WARNING( { result = _service->Invoke(token, _ID, *message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    return result;
                 }
                 Core::ProxyType<Web::Response> Process(const Core::ProxyType<Web::Request>& message)
                 {
-                    return (_service->Process(*message));
+                    Core::ProxyType<Web::Response> result;
+                    REPORT_DURATION_WARNING( { result = _service->Process(*message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    return result;
                 }
                 Core::ProxyType<Core::JSON::IElement> Process(const Core::ProxyType<Core::JSON::IElement>& message)
                 {
-                    return (_service->Inbound(_ID, message));
+                    Core::ProxyType<Core::JSON::IElement> result;
+                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    return result;
                 }
                 template <typename PACKAGE>
                 void Submit(PACKAGE package)
@@ -2048,6 +2077,10 @@ namespace PluginHost {
                 }
                 void RequestClose() {
                     _server->Dispatcher().RequestClose(_ID);
+                }
+                string Callsign() const {
+                    ASSERT(_service.IsValid() == true);
+                    return _service->Callsign();
                 }
 
             private:
@@ -2094,6 +2127,7 @@ namespace PluginHost {
                 }
                 void Dispatch() override
                 {
+                    
                     ASSERT(_request.IsValid());
                     ASSERT(Job::HasService() == true);
 
@@ -2154,6 +2188,7 @@ namespace PluginHost {
                     _request.Release();
 
                     Job::Clear();
+                    
                 }
 
             private:
