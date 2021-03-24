@@ -33,7 +33,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pard
 import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 
-VERSION = "1.7.2"
+VERSION = "1.8"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
@@ -924,6 +924,9 @@ def LoadInterface(file, includePaths = []):
                         if var_name.startswith("__unnamed"):
                             raise CppParseError(var, "unnamed parameter, can't deduce parameter name")
                         properties[var_name] = ConvertParameter(var)
+                        properties[var_name]["original"] = var.name
+                        if not prop and "description" not in properties[var_name]:
+                            trace.Style("%s: parameter missing description" % var_name)
                         required.append(var_name)
                 params["properties"] = properties
                 params["required"] = required
@@ -936,7 +939,13 @@ def LoadInterface(file, includePaths = []):
                     else:
                         return None
                 else:
-                    return params
+                    if (len(properties) == 0):
+                        return {}
+                    elif (len(properties) == 1) and not face.obj.is_json_extended:
+                        # New way of things: if only one parameter present then omit the outer object
+                        return list(properties.values())[0]
+                    else:
+                        return params
 
             def BuildResult(vars, prop = False):
                 params = {"type": "object"}
@@ -973,7 +982,9 @@ def LoadInterface(file, includePaths = []):
 
             event_params = EventParameters(method.vars)
             for e in event_params:
-                event_interfaces.add(ProxyStubGenerator.Interface.Interface(ResolveTypedef(e).type, 0, file))
+                exists = any(x.obj.type == e.type.type for x in event_interfaces)
+                if not exists:
+                    event_interfaces.add(ProxyStubGenerator.Interface.Interface(ResolveTypedef(e).type, 0, file))
 
             obj = None
 
@@ -1021,6 +1032,7 @@ def LoadInterface(file, includePaths = []):
                     if "properties" in params and params["properties"]:
                         if method.name.lower() in [x.lower() for x in params["required"]]:
                             raise CppParseError(method, "parameters must not use the same name as the method")
+                    if params:
                         obj["params"] = params
                     obj["result"] = BuildResult(method.vars)
                     obj["cppname"] = method_name
@@ -1033,6 +1045,8 @@ def LoadInterface(file, includePaths = []):
                     obj["deprecated"] = True
                 if method.retval.meta.brief:
                     obj["summary"] = method.retval.meta.brief
+                elif (prefix + method_name_lower) not in properties:
+                    trace.Style("%s: %s missing brief description" % (method.name, "property" if method.retval.meta.is_property else "method"))
                 if method.retval.meta.details:
                     obj["description"] = method.retval.meta.details
                 if method.retval.meta.retval:
@@ -1055,9 +1069,11 @@ def LoadInterface(file, includePaths = []):
                         obj["deprecated"] = True
                     if method.retval.meta.brief:
                         obj["summary"] = method.retval.meta.brief
+                    else:
+                        trace.Style("%s: event missing brief description" % method.name)
                     if method.retval.meta.details:
                         obj["description"] = method.retval.meta.details
-                    if "properties" in params and params["properties"]:
+                    if params:
                         obj["params"] = params
                     events[prefix + method.name.lower()] = obj
 
@@ -1297,10 +1313,16 @@ def EmitEnumRegs(root, emit, header_file, if_file):
 def EmitEvent(emit, root, event, static=False):
     emit.Line("// Event: %s" % event.Headline())
     params = event.Properties()[0].CppType()
-    par = "const string& id, " if event.HasSendif() else ""
-    par = par + ", ".join(
-        map(lambda x: "const " + (GetNamespace(root, x, False) if not static else "") + x.CppStdClass() + "& " + x.JsonName(),
-            event.Properties()[0].Properties()))
+    par = ""
+    if params != "void":
+        par = "const string& id, " if event.HasSendif() else ""
+        if event.Properties()[0].Properties():
+            par = par + ", ".join(
+                map(lambda x: "const " + (GetNamespace(root, x, False) if not static else "") + x.CppStdClass() + "& " + x.JsonName(),
+                    event.Properties()[0].Properties()))
+        else:
+            x = event.Properties()[0]
+            par = par + "const " + (GetNamespace(root, x, False) if not static else "") + x.CppStdClass() + "& " + x.JsonName()
     if not static:
         line = "void %s::%s(%s)" % (root.JsonName(), event.MethodName(), par)
     else:
@@ -1310,13 +1332,17 @@ def EmitEvent(emit, root, event, static=False):
     emit.Line(line)
     emit.Line("{")
     emit.Indent()
+
     if params != "void":
         emit.Line("%s params;" % params)
-        for p in event.Properties()[0].Properties():
-            if isinstance(p, JsonEnum):
-                emit.Line("params.%s = static_cast<%s>(%s);" % (p.CppName(), GetNamespace(root, p, False) + p.CppClass(), p.JsonName()))
-            else:
-                emit.Line("params.%s = %s;" % (p.CppName(), p.JsonName()))
+        if event.Properties()[0].Properties():
+            for p in event.Properties()[0].Properties():
+                if isinstance(p, JsonEnum):
+                    emit.Line("params.%s = static_cast<%s>(%s);" % (p.CppName(), GetNamespace(root, p, False) + p.CppClass(), p.JsonName()))
+                else:
+                    emit.Line("params.%s = %s;" % (p.CppName(), p.JsonName()))
+        else:
+            emit.Line("params = %s;" % event.Properties()[0].JsonName())
         emit.Line()
     if event.HasSendif():
         emit.Line('Notify(_T("%s")%s, [&](const string& designator) -> bool {' %
@@ -1433,7 +1459,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                             if w == t[0].schema["length"] and q[1] == 2:
                                 trace.Warn("%s: parameter marked pointed to by @length is output only" % q[0].name)
 
-                # Emit temporary variables and deserializing off JSON data
+                # Emit temporary variables and deserializing of JSON data
                 for v, t in vars.items():
                     # C-style buffers
                     if isinstance(t[0], JsonString) and "length" in t[0].schema:
@@ -1541,7 +1567,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                 if not m.writeonly:
                     Invoke(void, response, not m.readonly)
             else:
-                Invoke(params, response, False, params.CppName() + '.')
+                Invoke(params, response, False, (params.CppName() + '.') if isinstance(params, JsonObject) else None)
 
             if isinstance(m, JsonProperty) and not m.readonly:
                 if not m.writeonly:
@@ -1688,7 +1714,11 @@ def EmitHelperCode(root, emit, header_file):
                 params = __NsName(method.Properties()[0])
                 par = ""
                 if params != "void":
-                    par = ", ".join(map(lambda x: "const " + GetNamespace(root, x) + x.CppStdClass() + "& " + x.JsonName(), method.Properties()[0].Properties()))
+                    if method.Properties()[0].Properties():
+                        par = ", ".join(map(lambda x: "const " + GetNamespace(root, x) + x.CppStdClass() + "& " + x.JsonName(), method.Properties()[0].Properties()))
+                    else:
+                        x = method.Properties()[0]
+                        par = "const " + GetNamespace(root, x) + x.CppStdClass() + "& " + x.JsonName()
                 line = ('void %s(%s%s);' %
                         (method.MethodName(), "const string& id, " if method.HasSendif() else "", par))
                 if method.included_from:
@@ -2580,8 +2610,6 @@ def CreateDocument(schema, path):
                                 if "i.e" in descr:
                                     descr = descr[0:descr.index("i.e") - 1]
                                 descr = descr.split(".", 1)[0] if "." in descr else descr
-                            else:
-                                trace.Warn("No description for '%s' %s provided" % (method, header))
                             MdRow([link(header + "." + (method.rsplit(".", 1)[1] if "." in method else method)) + access, descr])
                             emitted = True
                         skip_list.append(method)
