@@ -17,14 +17,12 @@
  * limitations under the License.
  */
  
-#ifndef __PROCESS_H__
-#define __PROCESS_H__
+#pragma once
 
 /// https://msdn.microsoft.com/nl-nl/library/windows/desktop/ms682499(v=vs.85).aspx
 
 #include "Module.h"
 #include "Portability.h"
-#include "Process.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -220,7 +218,7 @@ namespace Core {
         Process(const Process&) = delete;
         Process& operator=(const Process&) = delete;
 
-        Process(const bool capture)
+        explicit Process(const bool capture, const process_t pid = 0)
             : _argc(0)
             , _parameters(nullptr)
             , _exitCode(static_cast<uint32_t>(~0))
@@ -228,7 +226,7 @@ namespace Core {
             , _stdin(capture ? -1 : 0)
             , _stdout(capture ? -1 : 0)
             , _stderr(capture ? -1 : 0)
-            , _PID(0)
+            , _PID(pid)
 #else
             , _stdin(capture ? reinterpret_cast<HANDLE>(~0) : nullptr)
             , _stdout(capture ? reinterpret_cast<HANDLE>(~0) : nullptr)
@@ -475,7 +473,7 @@ namespace Core {
                 stderrfd[1] = -1;
 
                 /* Create the pipe and set non-blocking on the readable end. */
-                if ((_stdin == -1) && (pipe(stdinfd) == 0) && (pipe(stdoutfd) == 0) && (pipe(stderrfd) == 0)) {
+                if ((_stdin == -1) && (pipe2(stdinfd, O_CLOEXEC) == 0) && (pipe2(stdoutfd, O_CLOEXEC) == 0) && (pipe2(stderrfd, O_CLOEXEC) == 0)) {
                     // int flags = ( fcntl(p[0], F_GETFL, 0) & (~O_NONBLOCK) );
                     int input = (fcntl(stdinfd[1], F_GETFL, 0) | O_NONBLOCK);
                     int output = (fcntl(stdoutfd[0], F_GETFL, 0) | O_NONBLOCK);
@@ -509,11 +507,12 @@ namespace Core {
                         /* Make stdout into writable end */
                         dup2(stderrfd[1], 2);
                     }
+
                     /* fork a child process           */
                     if (execvp(*actualParameters, actualParameters) < 0) {
                         // TRACE_L1("Failed to start process: %s.", explain_execvp(*actualParameters, actualParameters));
                         int result = errno;
-                        TRACE_L1("Failed to start process: %d - %d.", getpid(), result);
+                        TRACE_L1("Failed to start process: %d - %s.", getpid(), strerror(result));
                         // No glory, so lets quit our selves, avoid the _atexit handlers they should not be there yet...
                         _exit(result);
                     }
@@ -595,28 +594,6 @@ namespace Core {
             return (_exitCode);
         }
 
-        /*
-        Process(process_t pid)
-            : _argc(0)
-            , _parameters(nullptr)
-            , _exitCode(static_cast<uint32_t>(~0))
-#ifndef __WINDOWS__
-            , _stdin(0)
-            , _stdout(0)
-            , _stderr(0)
-            , _PID(pid)
-#else
-            , _stdin(nullptr)
-            , _stdout(nullptr)
-            , _stderr(nullptr)
-#endif
-        {
-#ifdef __WINDOWS__
-            ::memset(&_info, 0, sizeof(_info));
-#endif
-        }
-        */
-
     private:
         uint16_t _argc;
         void* _parameters;
@@ -635,5 +612,3 @@ namespace Core {
     };
 }
 }
-
-#endif // __PROCESS_H__

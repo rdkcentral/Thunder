@@ -320,7 +320,7 @@ namespace Core {
         bool Create(const uint32_t mode, const bool exclusive = false)
         {
 #ifdef __POSIX__
-            _handle = open(_name.c_str(), O_RDWR | O_CREAT | O_TRUNC | (exclusive ? O_EXCL : 0), mode);
+            _handle = open(_name.c_str(), O_CLOEXEC | O_RDWR | O_CREAT | O_TRUNC | (exclusive ? O_EXCL : 0), mode);
 #endif
 #ifdef __WINDOWS__
             _handle = ::CreateFile(_name.c_str(), (GENERIC_READ | GENERIC_WRITE), (exclusive ? 0 : (FILE_SHARE_READ | FILE_SHARE_WRITE)), nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -332,7 +332,7 @@ namespace Core {
         bool Open() const
         {
 #ifdef __POSIX__
-            _handle = open(_name.c_str(), O_RDONLY);
+            _handle = open(_name.c_str(), O_RDONLY | O_CLOEXEC);
 #endif
 #ifdef __WINDOWS__
             _handle = ::CreateFile(_name.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -343,7 +343,7 @@ namespace Core {
         bool Open(bool readOnly)
         {
 #ifdef __POSIX__
-            _handle = open(_name.c_str(), (readOnly ? O_RDONLY : O_RDWR));
+            _handle = open(_name.c_str(), O_CLOEXEC | (readOnly ? O_RDONLY : O_RDWR));
 #endif
 #ifdef __WINDOWS__
             _handle = ::CreateFile(_name.c_str(), (readOnly ? GENERIC_READ : GENERIC_READ | GENERIC_WRITE), FILE_SHARE_READ | (readOnly ? 0 : FILE_SHARE_WRITE), nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -354,7 +354,7 @@ namespace Core {
         bool Append()
         {
 #ifdef __POSIX__
-            _handle = open(_name.c_str(), O_RDWR | O_APPEND);
+            _handle = open(_name.c_str(), O_CLOEXEC| O_RDWR | O_APPEND);
 
             if ((_handle == -1) && (errno == ENOENT)) {
                 return (Create());
@@ -724,6 +724,7 @@ namespace Core {
                              ((name.length() == 2) && !((name[0] == '.') && (name[1] == '.'))) ) {
                             Directory deleteIt(Current().c_str());
                             deleteIt.Destroy(false);
+                            file.Destroy();
                         }
                     } else {
                         file.Destroy();

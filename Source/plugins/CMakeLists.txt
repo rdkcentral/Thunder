@@ -46,7 +46,9 @@ set(PUBLIC_HEADERS
         Request.h
         Service.h
         System.h
+        Types.h
         VirtualInput.h
+        IVirtualInput.h
         Module.h
         )
 
@@ -69,6 +71,13 @@ else()
             PUBLIC
               ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
               ${NAMESPACE}COM::${NAMESPACE}COM
+            )
+endif()
+
+if (WARNING_REPORTING)
+    target_link_libraries(${TARGET}
+           PUBLIC 
+              ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting
             )
 endif()
 

@@ -22,8 +22,6 @@ option(CORE
         "Include the core library." ON)
 option(CRYPTALGO
         "Include the encyption algorithm library." ON)
-option(CRYPTOGRAPHY
-        "Include the cryptography library." OFF)
 option(BLUETOOTH
         "Include the bluetooth library." OFF)
 option(BROADCAST
@@ -36,49 +34,41 @@ option(TRACING
         "Include the tracing library." ON)
 option(PROFILER
         "Include the profiler library." OFF)
-option(PROVISIONPROXY
-        "Include the provisionproxy library." OFF)
-option(SECURITYAGENT
-        "Include the securityagent library." OFF)
-option(DISPLAYINFO
-        "Include the displayinfo COMRPC abstraction library." OFF)
 option(COM
         "Include the COM library." OFF)
 option(PROTOCOLS
         "Include Protocols lib." ON)
-option(CDMI
-        "Include OpenCDM interface." OFF)
 option(PROCESS
         "Include the COM hosting process executable." ON)
 option(PROXY_STUB
         "Include proxy/stubs." ON)
 option(PLUGINS
         "Include plugins library." ON)
-option(INTERFACES
-        "Include interfaces library." ON)
 option(EXECUTABLE
         "Include the hosting executable." ON)
 option(VIRTUALINPUT
         "Include VirtualInput for external applications." OFF)
-option(COMPOSITORCLIENT
-        "Include a graphics backend abstraction for external applications." OFF)
-option(GSTREAMERCLIENT
-        "Include a gstreamer sink abstraction for external applications." OFF)
 option(PROCESSCONTAINERS
         "Include containerization in the build." OFF)
 option(TEST_APPS
         "Include test applications." OFF)
-option(UNIT_TESTS
-        "Include unit tests (new gtest based)." OFF)
-option(TEST_MEASUREMENTS
-        "Include code coverage measurments." OFF)
 option(STUB_HARDWARE
         "Use hardware stubs for unittests)." OFF)
 option(BUILD_TYPE
         "How do you want to build it, Production, Release or Debug" Production)
+option(WCHAR_SUPPORT
+        "Enable support for WCHAR." OFF)
+option(DISABLE_TRACING
+        "Disable tracing in debug" OFF)
 option(HIDE_NON_EXTERNAL_SYMBOLS 
         "Hide all non EXTERNAL tagged symbols" OFF)
 
+option(EXCEPTION_CATCHING
+        "Enable unhandled exception handling catching." OFF)
+option(DEADLOCK_DETECTION
+        "Enable deadlock detection tooling." OFF)
+option(WARNING_REPORTING
+        "Include warning reporting in the build." OFF)
 #
 # Build type specific options
 #
@@ -108,13 +98,7 @@ endif()
 set(EXTERN_EVENTS ${EXTERN_EVENTS} CACHE INTERNAL
         "List of events assumed to be provided by other plugins.")
 string(REPLACE " " ";" EXTERN_EVENT_LIST "${EXTERN_EVENTS}")
-message("-- Assuming external events: ${EXTERN_EVENT_LIST}")
-
-#FIXME: We shouldn't touch cflags...
-if(TEST_MEASUREMENTS)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
-    set(CMAKE_EXE_LINKER_FLAGS -lgcov)
-endif ()
+message(STATUS "Assuming external events: ${EXTERN_EVENT_LIST}")
 
 if(CORE)
     add_subdirectory(core)
@@ -132,18 +116,6 @@ if(BROADCAST)
     add_subdirectory(broadcast)
 endif()
 
-if(PROVISIONPROXY)
-    add_subdirectory(provisionproxy)
-endif()
-
-if(SECURITYAGENT)
-    add_subdirectory(securityagent)
-endif()
-
-if(CDMI)
-    add_subdirectory(ocdm)
-endif()
-
 if(WEBSOCKET)
     add_subdirectory(websocket)
 endif()
@@ -152,12 +124,12 @@ if(TRACING)
     add_subdirectory(tracing)
 endif()
 
-if(BLUETOOTH)
-    add_subdirectory(bluetooth)
+if(WARNING_REPORTING)
+    add_subdirectory(warningreporting)
 endif()
 
-if(CRYPTOGRAPHY)
-    add_subdirectory(cryptography)
+if(BLUETOOTH)
+    add_subdirectory(bluetooth)
 endif()
 
 if(PROFILER)
@@ -180,26 +152,6 @@ endif()
 
 if(PLUGINS)
     add_subdirectory(plugins)
-endif()
-
-if(INTERFACES)
-    add_subdirectory(interfaces)
-endif()
-
-if(VIRTUALINPUT)
-    add_subdirectory(virtualinput)
-endif()
-
-if(COMPOSITORCLIENT)
-    add_subdirectory(compositorclient)
-endif()
-
-if(GSTREAMERCLIENT)
-    add_subdirectory(gstreamerclient)
-endif()
-
-if(DISPLAYINFO)
-    add_subdirectory(displayinfo)
 endif()
 
 if(PROCESS)

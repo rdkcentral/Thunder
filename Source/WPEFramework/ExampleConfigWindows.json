@@ -1,21 +1,26 @@
 {
-  "port": 8080,
-  "interface": "LAN",
-  "idletime": 60,
-  "ipv6": false,
-  "persistentpath": "C:/Projects/artifacts/Persistent",
-  "volatilepath": "C:/Projects/artifacts/temp",
-  "datapath": "C:/Projects/artifacts/Debug/Plugins",
-  "systempath": "C:/Projects/artifacts/Debug",
-  "proxystubpath": "C:/Projects/artifacts/ProxyStubs/Debug",
-  "communicator": "127.0.0.1:62000",
-  "redirect": "Service/Controller/UI",
-  "tracing": [
-    {
-      "module": "Plugin_SecurityAgent",
-      "enabled": true
-    }
-  ],
+    "port": 25555,
+    "bind": "0.0.0.0",
+    "idletime": 60,
+    "ipv6": false,
+    "persistentpath": "C:/Projects/Domotica/artifacts/Persistent",
+    "volatilepath": "C:/Projects/Domotica/artifacts/temp",
+    "datapath": "C:/Projects/Domotica/artifacts/Release/Plugins",
+    "systempath": "C:/Projects/Domotica/artifacts/Release",
+    "proxystubpath": "C:/Projects/Domotica/artifacts/ProxyStubs/Release",
+    "communicator": "127.0.0.1:62000",
+    "redirect": "Service/Controller/UI",
+    "tracing": [
+        {
+            "module": "Plugin_SecurityAgent",
+            "enabled": true
+        },
+        {
+            "module": "Plugin_DIALServer",
+            "category": "Protocol",
+            "enabled": true
+        }
+    ],
     "plugins": [
         {
             "callsign": "Controller",
@@ -24,16 +29,92 @@
             }
         },
         {
+            "callsign": "Cobalt",
+            "locator": "liboutofprocessplugin.so",
+            "classname": "OutOfProcessPlugin",
+            "autostart": false,
+            "configuration": {
+                "outofprocess": true,
+                "url": "http://netflix.com/tv",
+                "sleep": "1",
+                "single": false,
+                "crash": false
+            }
+        },
+        {
+            "callsign": "Provisioning",
+            "locator": "libProvisioning.so",
+            "classname": "Provisioning",
+            "autostart": false,
+            "configuration": {
+                "provisionpath": "127.0.0.1:7777"
+            }
+        },
+        {
             "callsign": "Butler",
             "locator": "libButler.so",
             "classname": "Butler",
+            "autostart": true
+        },
+        {
+            "callsign": "WebBridge",
+            "locator": "libWebBridge.so",
+            "classname": "WebBridge",
             "autostart": false
+        },
+        {
+            "callsign": "QuizzMaster",
+            "locator": "libQuizzMaster.so",
+            "classname": "QuizzMaster",
+            "autostart": true
         },
         {
             "callsign": "StateController",
             "locator": "libStateController.so",
             "classname": "StateController",
-            "autostart": true
+            "autostart": false
+        },
+        {
+            "autostart": true,
+            "callsign": "VirtualControl",
+            "classname": "VirtualControl",
+            "locator": "libVirtualControl.so",
+            "configuration": {
+                "sunriseset": 365,
+                "virtuals": [
+                    {
+                        "id": 1,
+                        "passive": false,
+                        "min": "0",
+                        "max": "1"
+                    },
+                    {
+                        "id": 2,
+                        "passive": false,
+                        "min": "0",
+                        "max": "100"
+                    },
+                    {
+                        "id": 4,
+                        "passive": false,
+                        "min": "0",
+                        "max": "1"
+                    },
+                    {
+                        "id": 5,
+                        "passive": false,
+                        "min": "0",
+                        "max": "1"
+                    }
+
+                ]
+            }
+        },
+        {
+            "autostart": true,
+            "callsign": "ScriptEngine",
+            "classname": "ScriptEngine",
+            "locator": "libScriptEngine.so"
         },
         {
             "callsign": "IOControl",
@@ -41,27 +122,44 @@
             "classname": "IOControl",
             "autostart": false,
             "configuration": {
+                "port": "\\\\.\\COM10",
                 "pins": [
                     {
                         "id": 14,
                         "comment": "B6",
-                        "port": "\\\\.\\COM16",
                         "mode": "Both"
                     },
                     {
                         "id": 15,
                         "comment": "B7",
-                        "port": "\\\\.\\COM16",
                         "mode": "Output"
                     }
                 ]
             }
         },
         {
+            "callsign": "OneWireControl",
+            "locator": "libOneWireControl.so",
+            "classname": "OneWireControl",
+            "autostart": false,
+            "configuration": {
+                "port": "\\\\.\\COM17"
+            }
+        },
+        {
+            "callsign": "I2CControl",
+            "locator": "libI2CControl.so",
+            "classname": "I2CControl",
+            "autostart": false,
+            "configuration": {
+                "port": "\\\\.\\COM17"
+            }
+        },
+        {
             "callsign": "OutOfProcessPlugin",
             "locator": "libOutOfProcessPlugin.so",
             "classname": "OutOfProcessPlugin",
-            "autostart": true,
+            "autostart": false,
             "configuration": {
                 "outofprocess": true,
                 "url": "http://netflix.com/tv",
@@ -143,7 +241,7 @@
             "callsign": "DeviceInfo",
             "locator": "libdeviceinfo.so",
             "classname": "DeviceInfo",
-            "autostart": true,
+            "autostart": false,
             "configuration": {
                 "location": "external",
                 "identifier": "internal",
@@ -207,31 +305,35 @@
             "classname": "DIALServer",
             "autostart": false,
             "configuration": {
-                "browser": "WebKitBrowser",
-                "name": "Metro DIAL server",
-                "model": "MetroRefBoard",
-                "manufacturer": "BroadCOM",
-                "description": "Dial server running on Metro's reference hardware.",
+                "name": "ExploraUltra",
+                "model": "Generic Platform",
+                "manufacturer": "Metrological",
+                "description": "Metrological DIAL reference server.",
+                "interface": "192.168.1.129",
+                "deprecatedapi": false,
                 "apps": [
                     {
                         "name": "YouTube",
-                        "allowstop": true,
-                        "callsign": "WebKitBrowser",
+                        "hide": false,
+                        "runtimechange": true,
                         "url": "https://www.youtube.com/tv",
-                        "additionaldata": ""
+                        "origin": "youtube.com"
                     },
                     {
                         "name": "Netflix",
-                        "allowstop": false,
-                        "callsign": "Netflix",
-                        "url": "https://www.netflix.com",
-                        "additionaldata": ""
+                        "hide": true,
+                        "url": "https://www.netflix.com"
+                    },
+                    {
+                        "name": "AmazonInstantVideo",
+                        "hide": true,
+                        "url": "https://www.primevideo.com"
                     }
                 ]
             }
         },
         {
-            "callsign": "Tracing",
+            "callsign": "TraceControl",
             "locator": "libtracecontrol.so",
             "classname": "TraceControl",
             "autostart": true

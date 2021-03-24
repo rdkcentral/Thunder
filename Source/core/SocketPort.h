@@ -173,6 +173,9 @@ namespace Core {
         {
             return (m_ReceivedNode);
         }
+        inline uint32_t ReceivedInterface() const {
+            return (m_Interface);
+        }
         inline uint16_t SendBufferSize() const
         {
             return (m_SendBufferSize);
@@ -224,7 +227,7 @@ namespace Core {
         SOCKET Accept(NodeId& remoteId);
 
     protected:
-        virtual bool Initialize();
+        virtual uint32_t Initialize();
         virtual int32_t Read(uint8_t buffer[], const uint16_t length) const;
         virtual int32_t Write(const uint8_t buffer[], const uint16_t length);
 
@@ -265,6 +268,7 @@ namespace Core {
         uint16_t m_ReadBytes;
         uint16_t m_SendBytes;
         uint16_t m_SendOffset;
+        uint32_t m_Interface;
     };
 
     class EXTERNAL SocketStream : public SocketPort {

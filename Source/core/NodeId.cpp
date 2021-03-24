@@ -57,7 +57,7 @@ namespace Core {
     }
 #endif
 
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
     static string BTName(const NodeId::SocketInfo& input)
     {
         static TCHAR _hexArray[] = "0123456789ABCDEF";
@@ -162,7 +162,7 @@ namespace Core {
         m_hostName = RawName(m_structInfo);
     }
     
-    NodeId::NodeId(const uint16_t interfaceIndex, const uint16_t protocol, const uint8_t type, const uint8_t length, const uint8_t* address)
+    NodeId::NodeId(const uint16_t interfaceIndex, const uint16_t protocol, const uint8_t pkgType, const uint8_t haType, const uint8_t length, const uint8_t* address)
     {
         if (interfaceIndex == 0) {
             memset(&m_structInfo, 0xFF, sizeof(m_structInfo));
@@ -171,7 +171,8 @@ namespace Core {
             m_structInfo.RawSocket.sll_family = AF_PACKET;
             m_structInfo.RawSocket.sll_ifindex = interfaceIndex;
             m_structInfo.RawSocket.sll_protocol = htons(protocol);
-            m_structInfo.RawSocket.sll_hatype = type;
+            m_structInfo.RawSocket.sll_hatype = haType;
+            m_structInfo.RawSocket.sll_pkttype = pkgType;
             m_structInfo.RawSocket.sll_halen = length;
         
             if(length > 0){
@@ -181,14 +182,14 @@ namespace Core {
             m_hostName = RawName(m_structInfo);
         }
     }
-    NodeId::NodeId(const char interfaceName[], const uint16_t protocol, const uint8_t type, const uint8_t length, const uint8_t* address)
-        : NodeId(::if_nametoindex(interfaceName), protocol, type, length, address)
+    NodeId::NodeId(const char interfaceName[], const uint16_t protocol, const uint8_t pkgType, const uint8_t haType, const uint8_t length, const uint8_t* address)
+        : NodeId(::if_nametoindex(interfaceName), protocol, pkgType, haType, length, address)
     {
     }
 
 #endif
 
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
     NodeId::NodeId(const uint16_t device, const uint16_t channel)
     {
 
@@ -260,7 +261,7 @@ namespace Core {
             }
 
             m_structInfo.DomainSocket.sun_family = AF_UNIX;
-            strncpy(m_structInfo.DomainSocket.sun_path, m_hostName.c_str(), sizeof(m_structInfo.DomainSocket.sun_path));
+            strncpy(m_structInfo.DomainSocket.sun_path, m_hostName.c_str(), sizeof(m_structInfo.DomainSocket.sun_path) - 1);
             m_structInfo.DomainSocket.sun_path[sizeof(m_structInfo.DomainSocket.sun_path) - 1] = '\0';
         } else
 #endif
@@ -343,7 +344,7 @@ namespace Core {
                 return ((m_structInfo.NetlinkSocket.nl_destination == rInfo.m_structInfo.NetlinkSocket.nl_destination) && (m_structInfo.NetlinkSocket.nl_pid == rInfo.m_structInfo.NetlinkSocket.nl_pid) && (m_structInfo.NetlinkSocket.nl_groups == rInfo.m_structInfo.NetlinkSocket.nl_groups));
             }
 #endif
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
             else if (m_structInfo.DomainSocket.sun_family == AF_BLUETOOTH) {
                 if (m_structInfo.L2Socket.l2_type == rInfo.m_structInfo.L2Socket.l2_type) {
                     if (m_structInfo.L2Socket.l2_type == BTPROTO_HCI) {
@@ -437,7 +438,7 @@ namespace Core {
     }
 #endif
 
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
     NodeId&
     NodeId::operator=(const struct sockaddr_hci& rInfo)
     {
@@ -478,7 +479,7 @@ namespace Core {
         } else if (m_structInfo.DomainSocket.sun_family == AF_UNIX) {
             m_hostName = m_structInfo.DomainSocket.sun_path;
         }
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
         else if (m_structInfo.BTSocket.hci_family == AF_BLUETOOTH) {
             m_hostName = BTName(m_structInfo);
         }
@@ -487,7 +488,7 @@ namespace Core {
             m_hostName.clear();
         }
 #else
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
         if (m_structInfo.BTSocket.hci_family == AF_BLUETOOTH) {
             m_hostName = BTName(m_structInfo);
             else
@@ -553,6 +554,10 @@ namespace Core {
         }
 
         return (m_hostName);
+    }
+
+    void NodeId::HostName(const TCHAR strHostName[])
+    {
     }
 
     string

@@ -41,7 +41,6 @@
 #ifdef __APPLE__
 #include <sys/event.h>
 #elif defined(__LINUX__)
-#include <execinfo.h>
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <sys/signalfd.h>
@@ -50,6 +49,7 @@
 #ifdef __WINDOWS__
 #include <Winsock2.h>
 #include <ws2tcpip.h>
+#include <Mswsock.h>
 #define __ERRORRESULT__ ::WSAGetLastError()
 #define __ERROR_WOULDBLOCK__ WSAEWOULDBLOCK
 #define __ERROR_AGAIN__ WSAEALREADY
@@ -79,6 +79,7 @@ namespace Core {
         public:
             WinSocketInitializer()
             {
+                _lpWSARecvMsg = nullptr;
                 WORD requestedVersion;
                 WSADATA winsockInfo;
                 int retCode;
@@ -101,7 +102,14 @@ namespace Core {
                     WSACleanup();
                     exit(1);
                 } else {
-                    printf("Winsock 2.2 DLL success\n");
+                    SOCKET sckt = ::socket(AF_INET, SOCK_DGRAM, 0);
+                    GUID guid = WSAID_WSARECVMSG;
+                    DWORD dwBytesReturned = 0;
+                    if (WSAIoctl(sckt, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid), &_lpWSARecvMsg, sizeof(_lpWSARecvMsg), &dwBytesReturned, NULL, NULL) != 0)
+                    {
+                        printf("!!!!!! WSARecvMsg is not available !!!!!\n ");
+                    }
+		    ::closesocket(sckt);
                 }
             }
 
@@ -115,11 +123,127 @@ namespace Core {
             {
                 return (true);
             }
+
+            LPFN_WSARECVMSG _lpWSARecvMsg;
         };
 
         static WinSocketInitializer g_SocketInitializer;
 
+        
+
     } // Nameless namespace
+
+    static uint32_t ReceiveFrom(SOCKET handle, char* buffer, int bufferSize, struct sockaddr* remote, socklen_t* remoteLength, uint32_t& interfaceId) {
+
+        DWORD dwBytesRecv = 0;
+        char controlBuffer[256];
+
+        WSABUF msgbuf;
+        msgbuf.len = bufferSize;
+        msgbuf.buf = buffer;
+
+        WSAMSG msg;
+        memset(&msg, 0, sizeof(msg));
+        msg.name = (struct sockaddr*)remote;
+        msg.namelen = *remoteLength;
+        msg.lpBuffers = &msgbuf;
+        msg.dwBufferCount = 1;
+        msg.Control.len = sizeof(controlBuffer);
+        msg.Control.buf = controlBuffer;
+
+        if (g_SocketInitializer._lpWSARecvMsg(handle, &msg, &dwBytesRecv, NULL, NULL) != 0)
+        {
+            dwBytesRecv = -1;
+        }
+        else
+        {
+            WSACMSGHDR* msghdr = WSA_CMSG_FIRSTHDR(&msg);
+            while (msghdr)
+            {
+                switch (msghdr->cmsg_type)
+                {
+                case IP_PKTINFO: // also IPV6_PKTINF
+                {
+                    // must call setsockopt(sckt, IPPROTO_IP, IP_PKTINFO, TRUE) beforehand to receive this for IPv4
+                    // must call setsockopt(sckt, IPPROTO_IPV6, IPV6_PKTINFO, TRUE) beforehand to receive this for IPv6
+
+                    switch (remote->sa_family)
+                    {
+                    case AF_INET:
+                    {
+                        struct in_pktinfo* pktinfo = (struct in_pktinfo*)WSA_CMSG_DATA(msghdr);
+                        // use pktinfo as needed...
+                        interfaceId = pktinfo->ipi_ifindex;
+                        break;
+                    }
+
+                    case AF_INET6:
+                    {
+                        struct in6_pktinfo* pktinfo = (struct in6_pktinfo*)WSA_CMSG_DATA(msghdr);
+                        // use pktinfo as needed...
+                        interfaceId = pktinfo->ipi6_ifindex;
+                        break;
+                    }
+                    }
+
+                    break;
+                }
+
+                // other packet options as needed...
+                }
+
+                msghdr = WSA_CMSG_NXTHDR(&msg, msghdr);
+            }
+        }
+
+        return (dwBytesRecv);
+    }
+
+#else
+
+    static uint32_t ReceiveFrom(SOCKET handle, char* buffer, int bufferSize, struct sockaddr* remote, socklen_t* remoteLength, uint32_t& interfaceId) {
+        uint32_t result;
+
+        // the control data is dumped here
+        char cmbuf[256];
+
+        struct iovec msgbuf = {
+            .iov_base = buffer,
+            .iov_len = static_cast<size_t>(bufferSize),
+        };
+
+        // if you want access to the data you need to init the msg_iovec fields
+        struct msghdr mh = {
+            .msg_name = remote,
+            .msg_namelen = *remoteLength,
+            .msg_iov = &msgbuf,
+            .msg_iovlen = 1,
+            .msg_control = cmbuf,
+            .msg_controllen = sizeof(cmbuf),
+        };
+
+        result = recvmsg(handle, &mh, 0);
+        if ((static_cast<signed int>(result) != SOCKET_ERROR) && ((mh.msg_flags & MSG_CTRUNC) == 0)) {
+            for ( // iterate through the control headers
+                struct cmsghdr* cmsg = CMSG_FIRSTHDR(&mh);
+                cmsg != NULL;
+                cmsg = CMSG_NXTHDR(&mh, cmsg))
+            {
+                if ((cmsg->cmsg_level == IPPROTO_IP) && (cmsg->cmsg_type == IP_PKTINFO) && (remote->sa_family == AF_INET)) {
+                    const struct in_pktinfo* info = reinterpret_cast<const struct in_pktinfo*>CMSG_DATA(cmsg);
+                    interfaceId = info->ipi_ifindex;
+                    break;
+                }
+                else if ((cmsg->cmsg_level == IPPROTO_IPV6) && (cmsg->cmsg_type == IPV6_PKTINFO) && (remote->sa_family == AF_INET6)) {
+                    const struct in6_pktinfo* info = reinterpret_cast<const struct in6_pktinfo*>CMSG_DATA(cmsg);
+                    interfaceId = info->ipi6_ifindex;
+                    break;
+                }
+            }
+        }
+
+        return (result);
+    }
 
 #endif
 
@@ -195,6 +319,7 @@ namespace Core {
         , m_ReceivedNode()
         , m_SendBuffer(nullptr)
         , m_ReceiveBuffer(nullptr)
+	, m_Interface(~0)
     {
         TRACE_L5("Constructor SocketPort (NodeId&) <%p>", (this));
     }
@@ -216,6 +341,7 @@ namespace Core {
         , m_ReceivedNode()
         , m_SendBuffer(nullptr)
         , m_ReceiveBuffer(nullptr)
+	, m_Interface(~0)
     {
         NodeId::SocketInfo localAddress;
         socklen_t localSize = sizeof(localAddress);
@@ -241,7 +367,12 @@ namespace Core {
 
         // Make sure the socket is closed before you destruct. Otherwise
         // the virtuals might be called, which are destructed at this point !!!!
-        ASSERT(m_Socket == INVALID_SOCKET);
+        ASSERT((m_Socket == INVALID_SOCKET) &&(m_State == 0));
+
+        if ((m_Socket != INVALID_SOCKET) || (m_State != 0)) {
+            ResourceMonitor::Instance().Unregister(*this);
+            DestroySocket(m_Socket);
+        }
 
         ::free(m_SendBuffer);
     }
@@ -294,9 +425,9 @@ namespace Core {
         return (true);
     }
 
-    /* virtual */ bool SocketPort::Initialize()
+    /* virtual */ uint32_t SocketPort::Initialize()
     {
-        return (true);
+        return (Core::ERROR_NONE);
     }
 
     uint32_t SocketPort::Open(const uint32_t waitTime, const string& specificInterface)
@@ -323,7 +454,7 @@ namespace Core {
 
             m_Socket = ConstructSocket(m_LocalNode, specificInterface);
 
-            if ((m_Socket != INVALID_SOCKET) && (Initialize() == true)) {
+            if ((m_Socket != INVALID_SOCKET) && (Initialize() == Core::ERROR_NONE)) {
 
                 if ((m_SocketType == DATAGRAM) || ((m_SocketType == RAW) && (m_RemoteNode.IsValid() == false))) {
                     m_State = SocketPort::OPEN | SocketPort::READ;
@@ -513,7 +644,7 @@ namespace Core {
         }
 #endif
 
-        if ((l_Result = ::socket(localNode.Type(), SocketMode(), localNode.Extension())) == INVALID_SOCKET) {
+        if ((l_Result = ::socket(localNode.Type(), SocketMode() | SOCK_CLOEXEC, localNode.Extension())) == INVALID_SOCKET) {
             TRACE_L1("Error on creating socket SOCKET. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
         } else if (SetNonBlocking(l_Result) == false) {
 #ifdef __WINDOWS__
@@ -527,13 +658,15 @@ namespace Core {
             // port, unless there is an active listening socket bound to the port already. This
             // enables you to get around those "Address already in use" error messages when you
             // try to restart your server after a crash.
+
             int optval = 1;
-            socklen_t optionLength = sizeof(int);
+            socklen_t optionLength = sizeof(optval);
 
             if (::setsockopt(l_Result, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength) < 0) {
                 TRACE_L1("Error on setting SO_REUSEADDR option. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
             }
         }
+
 #ifndef __WINDOWS__
         else if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (m_SocketType == SocketPort::LISTEN)) {
             // The effect of SO_REUSEADDR  but then on Domain Sockets :-)
@@ -555,7 +688,7 @@ namespace Core {
         if ((l_Result != INVALID_SOCKET) && (specificInterface.empty() == false)) {
 
             struct ifreq interface;
-            strncpy(interface.ifr_ifrn.ifrn_name, specificInterface.c_str(), IFNAMSIZ);
+            strncpy(interface.ifr_ifrn.ifrn_name, specificInterface.c_str(), IFNAMSIZ - 1);
 
             if (::setsockopt(l_Result, SOL_SOCKET, SO_BINDTODEVICE, (const char*)&interface, sizeof(interface)) < 0) {
 
@@ -565,7 +698,23 @@ namespace Core {
                 l_Result = INVALID_SOCKET;
             }
         }
+        else 
 #endif
+        if ((localNode.IsAnyInterface() == true) && (SocketMode() != SOCK_STREAM)) {
+
+            int optval = 1;
+
+            if (localNode.Type() == NodeId::TYPE_IPV4) {
+                if (::setsockopt(l_Result, IPPROTO_IP, IP_PKTINFO, (const char*)&optval, sizeof(optval)) != 0) {
+                    TRACE_L1("Error getting additional info on received packages. Error %d", __ERRORRESULT__);
+                }
+            }
+            else if (localNode.Type() == NodeId::TYPE_IPV6) {
+                if (::setsockopt(l_Result, IPPROTO_IPV6, IPV6_PKTINFO, (const char*)&optval, sizeof(optval)) != 0) {
+                    TRACE_L1("Error getting additional info on received packages. Error %d", __ERRORRESULT__);
+                }
+            }
+        }
 
         if (l_Result != INVALID_SOCKET) {
             // Do we need to find something to bind to or is it pre-destined
@@ -880,10 +1029,10 @@ namespace Core {
                 NodeId::SocketInfo l_Remote;
                 socklen_t l_Address = sizeof(l_Remote);
 
-                l_Size = ::recvfrom(m_Socket,
+                l_Size = ReceiveFrom(m_Socket,
                     reinterpret_cast<char*>(&m_ReceiveBuffer[m_ReadBytes]),
-                    m_ReceiveBufferSize - m_ReadBytes, 0, (struct sockaddr*)&l_Remote,
-                    &l_Address);
+                    m_ReceiveBufferSize - m_ReadBytes, (struct sockaddr*)&l_Remote,
+                    &l_Address, m_Interface);
 
                 m_ReceivedNode = l_Remote;
             } else {
@@ -946,6 +1095,7 @@ namespace Core {
             result = false;
         } else {
             DestroySocket(m_Socket);
+            ResourceMonitor::Instance().Unregister(*this);
             // Remove socket descriptor for UNIX domain datagram socket.
             if ((m_LocalNode.Type() == NodeId::TYPE_DOMAIN) && ((m_SocketType == SocketPort::LISTEN) || (SocketMode() != SOCK_STREAM))) {
                 TRACE_L1("CLOSED: Remove socket descriptor %s", m_LocalNode.HostName().c_str());
@@ -983,7 +1133,11 @@ namespace Core {
         socklen_t size = sizeof(address);
         SOCKET result;
 
+        #ifdef __WINDOWS__
         if ((result = ::accept(m_Socket, (struct sockaddr*)&address, &size)) != SOCKET_ERROR) {
+        #else
+        if ((result = ::accept4(m_Socket, (struct sockaddr*)&address, &size, SOCK_CLOEXEC)) != SOCKET_ERROR) {
+        #endif  
             // Align the buffer to what is requested
             BufferAlignment(result);
 
@@ -1151,5 +1305,6 @@ namespace Core {
     /* virtual */ SocketDatagram::~SocketDatagram()
     {
     }
+
 }
 } // namespace Solution::Core

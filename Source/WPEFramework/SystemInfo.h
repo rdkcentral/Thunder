@@ -21,6 +21,7 @@
 #define __CONTROLLER_SYSTEMINFO_H__
 
 #include "Module.h"
+#include "Config.h"
 
 namespace WPEFramework {
 namespace PluginHost {
@@ -33,14 +34,18 @@ namespace PluginHost {
 
         class Id : public PluginHost::ISubSystem::IIdentifier {
         public:
+            Id(const Id&) = delete;
+            Id& operator=(const Id&) = delete;
+
             Id()
                 : _identifier(nullptr)
             {
             }
 
-        private:
-            Id(const Id&) = delete;
-            Id& operator=(const Id&) = delete;
+            ~Id() override
+            {
+              delete [] _identifier;
+            }
 
         public:
             BEGIN_INTERFACE_MAP(Id)
@@ -48,15 +53,19 @@ namespace PluginHost {
             END_INTERFACE_MAP
 
         public:
-            virtual uint8_t Identifier(const uint8_t length, uint8_t buffer[]) const override;
+            uint8_t Identifier(const uint8_t length, uint8_t buffer[]) const override;
 
             bool Set(const PluginHost::ISubSystem::IIdentifier* info);
-            inline bool Set(const uint8_t length, const uint8_t buffer[])
+            
+            inline bool Set(const uint8_t length, const uint8_t buffer[],
+                            const string& architecture,
+                            const string& chipset,
+                            const string& firmwareversion)
             {
                 bool result(true);
 
                 if (_identifier != nullptr) {
-                    delete (_identifier);
+                    delete [] _identifier;
                 }
 
                 _identifier = new uint8_t[length + 2];
@@ -68,6 +77,15 @@ namespace PluginHost {
                 _identifier[0] = length;
                 _identifier[length + 1] = '\0';
 
+                if ((_architecture != architecture) || 
+                    (_chipset != chipset) || 
+                    (_firmwareVersion != firmwareversion))
+                {
+                    _architecture = architecture;
+                    _chipset = chipset;
+                    _firmwareVersion = firmwareversion;
+                }
+
                 return result;
             }
 
@@ -76,23 +94,29 @@ namespace PluginHost {
                 return (_identifier != nullptr) ? Core::SystemInfo::Instance().Id(_identifier, ~0) : string();
             }
 
+            string Architecture() const override;
+            string Chipset() const override;
+            string FirmwareVersion() const override;
+
         private:
             uint8_t* _identifier;
+            string _architecture;
+            string _chipset;
+            string _firmwareVersion;
         };
-
 
         typedef RPC::IteratorType<PluginHost::ISubSystem::IProvisioning> Provisioning;
 
         class Internet : public PluginHost::ISubSystem::IInternet {
         public:
+            Internet(const Internet&) = delete;
+            Internet& operator=(const Internet&) = delete;
+
             Internet()
                 : _ipAddress()
             {
             }
-
-        private:
-            Internet(const Internet&) = delete;
-            Internet& operator=(const Internet&) = delete;
+            ~Internet() override = default;
 
         public:
             BEGIN_INTERFACE_MAP(Internet)
@@ -100,8 +124,8 @@ namespace PluginHost {
             END_INTERFACE_MAP
 
         public:
-            virtual string PublicIPAddress() const override;
-            virtual PluginHost::ISubSystem::IInternet::network_type NetworkType() const override;
+            string PublicIPAddress() const override;
+            PluginHost::ISubSystem::IInternet::network_type NetworkType() const override;
 
             bool Set(const PluginHost::ISubSystem::IInternet* info);
             inline bool Set(const string& ip)
@@ -120,7 +144,6 @@ namespace PluginHost {
         };
 
         class Security : public PluginHost::ISubSystem::ISecurity {
-        private:
         public:
             Security(const Security&) = delete;
             Security& operator=(const Security&) = delete;
@@ -129,6 +152,7 @@ namespace PluginHost {
                 : _callsign()
             {
             }
+            ~Security() override = default;
 
         public:
             BEGIN_INTERFACE_MAP(Security)
@@ -136,7 +160,7 @@ namespace PluginHost {
             END_INTERFACE_MAP
 
         public:
-            virtual string Callsign() const override;
+            string Callsign() const override;
 
             bool Set(const PluginHost::ISubSystem::ISecurity* info);
             inline bool Set(const string& callsign)
@@ -156,17 +180,20 @@ namespace PluginHost {
 
         class Location : public PluginHost::ISubSystem::ILocation {
         public:
-            Location()
+            Location() = delete;
+            Location(const Location&) = delete;
+            Location& operator=(const Location&) = delete;
+
+            Location(const int32_t latitude, const int32_t longitude)
                 : _timeZone()
                 , _country()
                 , _region()
                 , _city()
+                , _latitude(latitude)
+                , _longitude(longitude)
             {
             }
-
-        private:
-            Location(const Location&) = delete;
-            Location& operator=(const Location&) = delete;
+            ~Location() override = default;
 
         public:
             BEGIN_INTERFACE_MAP(Location)
@@ -174,25 +201,36 @@ namespace PluginHost {
             END_INTERFACE_MAP
 
         public:
-            virtual string TimeZone() const override;
-            virtual string Country() const override;
-            virtual string Region() const override;
-            virtual string City() const override;
+            string TimeZone() const override;
+            string Country() const override;
+            string Region() const override;
+            string City() const override;
+            int32_t Latitude() const override;
+            int32_t Longitude() const override;
 
             bool Set(const PluginHost::ISubSystem::ILocation* info);
             inline bool Set(const string& timeZone,
                 const string& country,
                 const string& region,
-                const string& city)
+                const string& city,
+                const int32_t latitude,
+                const int32_t longitude)
             {
                 bool result(false);
 
-                if (_timeZone != timeZone || _country != country || _region != region || _city != city) {
+                if (_timeZone  != timeZone || 
+                    _country   != country  || 
+                    _region    != region   || 
+                    _city      != city     || 
+                    _latitude  != latitude || 
+                    _longitude != longitude) {
 
                     _timeZone = timeZone;
                     _country = country;
                     _region = region;
                     _city = city;
+                    _latitude = latitude;
+                    _longitude = longitude;
 
                     result = true;
                 }
@@ -205,18 +243,20 @@ namespace PluginHost {
             string _country;
             string _region;
             string _city;
+            int32_t _latitude; // 1.000.000 divider
+            int32_t _longitude; // 1.000.000 divider
         };
 
         class Time : public PluginHost::ISubSystem::ITime {
         public:
+            Time(const Time&) = delete;
+            Time& operator=(const Time&) = delete;
+
             Time()
                 : _timeSync()
             {
             }
-
-        private:
-            Time(const Time&) = delete;
-            Time& operator=(const Time&) = delete;
+            ~Time() override = default;
 
         public:
             BEGIN_INTERFACE_MAP(Time)
@@ -224,7 +264,7 @@ namespace PluginHost {
             END_INTERFACE_MAP
 
         public:
-            virtual uint64_t TimeSync() const;
+            uint64_t TimeSync() const;
 
             bool Set(const PluginHost::ISubSystem::ITime* info);
             inline bool Set(const uint64_t ticks)
@@ -245,7 +285,7 @@ namespace PluginHost {
         };
 
     public:
-        SystemInfo(Core::IDispatch* callback);
+        SystemInfo(const Config& config, Core::IDispatch* callback);
         virtual ~SystemInfo();
 
     public:
@@ -307,7 +347,11 @@ namespace PluginHost {
 
                     _identifier = Core::Service<Id>::Create<Id>();
                     const uint8_t* id(Core::SystemInfo::Instance().RawDeviceId());
-                    _identifier->Set(id[0], &id[1]);
+                    _identifier->Set(id[0], &id[1], 
+                            Core::SystemInfo::Instance().Architecture(), 
+                            Core::SystemInfo::Instance().Chipset(), 
+                            Core::SystemInfo::Instance().FirmwareVersion()
+                    );
 
                     _adminLock.Unlock();
                 } else {
@@ -327,6 +371,9 @@ namespace PluginHost {
                 }
 
                 SYSLOG(Logging::Startup, (_T("EVENT: Identifier: %s"), _identifier->Identifier().c_str()));
+                SYSLOG(Logging::Startup, (_T("EVENT: Architecture: %s"), _identifier->Architecture().c_str()));
+                SYSLOG(Logging::Startup, (_T("EVENT: Chipset: %s"), _identifier->Chipset().c_str()));
+                SYSLOG(Logging::Startup, (_T("EVENT: FirmwareVersion: %s"), _identifier->FirmwareVersion().c_str()));
                 break;
             }
             case NOT_IDENTIFIER: {
@@ -383,11 +430,11 @@ namespace PluginHost {
                         _location->Release();
                     }
 
-                    _location = Core::Service<Location>::Create<Location>();
+                    _location = Core::Service<Location>::Create<Location>(_config.Latitude(), _config.Longitude());
 
                     _adminLock.Unlock();
                 } else {
-                    Location* location = Core::Service<Location>::Create<Location>();
+                    Location* location = Core::Service<Location>::Create<Location>(_config.Latitude(), _config.Longitude());
                     sendUpdate = location->Set(info) || sendUpdate;
 
                     info->Release();
@@ -667,6 +714,7 @@ namespace PluginHost {
 
     private:
         mutable Core::CriticalSection _adminLock;
+        const Config& _config;
         std::list<PluginHost::ISubSystem::INotification*> _notificationClients;
         Core::IDispatch* _callback;
         Id* _identifier;

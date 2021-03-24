@@ -16,14 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-#ifndef __PROCESSINFO_H
-#define __PROCESSINFO_H
 
-#include <list>
+#pragma once
 
-#include "IIterator.h"
 #include "Module.h"
+#include "IIterator.h"
 #include "Portability.h"
 
 namespace WPEFramework {
@@ -58,6 +55,49 @@ namespace Core {
         };
 #endif
 
+    private:
+        class Memory {
+        public:
+            explicit Memory(const process_t pid);
+            ~Memory() = default;
+
+            Memory(const Memory&);
+            Memory& operator=(const Memory&);
+
+        public:
+            void MemoryStats();
+            inline uint64_t USS() const
+            {
+                return _uss;
+            }
+            inline uint64_t PSS() const
+            {
+                return _pss;
+            }
+            inline uint64_t RSS() const
+            {
+                return _rss;
+            }
+            inline uint64_t VSS() const
+            {
+                return _vss;
+            }
+            inline uint64_t Shared() const
+            {
+                return _shared;
+            }
+
+        private:
+            process_t _pid;
+
+            uint64_t _uss;
+            uint64_t _pss;
+            uint64_t _rss;
+            uint64_t _vss;
+            uint64_t _shared;
+        };
+
+    public:
         class EXTERNAL Iterator {
         public:
             // Get all processes
@@ -196,8 +236,11 @@ namespace Core {
             return (0);
 #else
             int8_t result = 0;
-            FILE* fp = fopen(_T("/proc/self/oom_adj"), _T("r"));
 
+            TCHAR buffer[128];
+            snprintf(buffer, sizeof(buffer), "/proc/%d/oom_adj", _pid);
+
+            FILE* fp = fopen(buffer, _T("r"));
             if (fp) {
                 int number;
                 fscanf(fp, "%d", &number);
@@ -210,8 +253,10 @@ namespace Core {
         inline void OOMAdjust(const int8_t adjust)
         {
 #ifndef __WINDOWS__
-            FILE* fp = fopen(_T("/proc/self/oom_adj"), _T("w"));
+            TCHAR buffer[128];
+            snprintf(buffer, sizeof(buffer), "/proc/%d/oom_adj", _pid);
 
+            FILE* fp = fopen(buffer, _T("w"));
             if (fp) {
                 fprintf(fp, "%d", adjust);
                 fclose(fp);
@@ -232,24 +277,59 @@ namespace Core {
 #endif
         }
 
+        inline void Kill(const bool hardKill)
+        {
+            
+#ifdef __WINDOWS__
+            if (hardKill == true) {
+                TerminateProcess(_handle, 1234);
+            }
+#else
+            ::kill(_pid, (hardKill ? SIGKILL : SIGTERM));
+#endif
+        }
+#ifdef __LINUX__
+        /**
+         * @brief After using this method user is supposed to retrieve memory stats via 
+         *        methods below - USS, PSS, RSS, or VSS
+         */
+        inline void MemoryStats() const
+        {
+            _memory.MemoryStats();
+        }
+        inline uint64_t USS() const
+        {
+            return _memory.USS();
+        }
+        inline uint64_t PSS() const
+        {
+            return _memory.PSS();
+        }
+        inline uint64_t RSS() const
+        {
+            return _memory.RSS();
+        }
+        inline uint64_t VSS() const
+        {
+            return _memory.VSS();
+        }
+#endif
         uint64_t Allocated() const;
+        /**
+         * @brief On Linux, MemoryStats() is called inside those 2 methods, no need to call it beforehand
+         */
         uint64_t Resident() const;
         uint64_t Shared() const;
-        uint64_t Jiffies() const;
+
         string Name() const;
+        void Name(const string& name);
         string Executable() const;
         std::list<string> CommandLine() const;
-        uint32_t Group(const string& groupName);
-        string Group() const;
-        void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
 
-        // Setting, or getting, the user can onl be done for the
-        // current process, hence why they are static.
-        static uint32_t User(const string& userName);
-        static string User();
         static void FindByName(const string& name, const bool exact, std::list<ProcessInfo>& processInfos);
 
-        void Dump() {
+        void Dump()
+        {
             // The initial customer deploying this functionality sends a Floating Point Exception signal to
             // this process to indicate that it detected a hang and it requires a Dump for PostMortem analyses.
             // Agree, if there is a real Floating Point Exception causing the PostMortem, it can not
@@ -267,27 +347,42 @@ namespace Core {
 
     private:
         process_t _pid;
+        mutable Memory _memory;
 #ifdef __WINDOWS__
         HANDLE _handle;
 #endif
     }; // class ProcessInfo
 
-   class ProcessTree
-   {
-      public:
-         explicit ProcessTree(const ProcessInfo& processInfo);
+    class EXTERNAL ProcessCurrent : public ProcessInfo {
+    public:
+        ProcessCurrent(const ProcessInfo&) = delete;
+        ProcessCurrent& operator=(const ProcessInfo&) = delete;
 
-         void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
-         bool ContainsProcess(ThreadId pid) const;
-         void GetProcessIds(std::list<ThreadId>& processIds) const;
-         ThreadId RootId() const;
-         uint64_t Jiffies() const;
+        ProcessCurrent()
+            : ProcessInfo()
+        {
+        }
+        ~ProcessCurrent() = default;
 
-      private:
-         std::list<ProcessInfo> _processes;
-   };
+    public:
+        string User() const;
+        uint32_t User(const string& userName);
+        string Group() const;
+        uint32_t Group(const string& groupName);
+    };
+
+    class EXTERNAL ProcessTree {
+    public:
+        explicit ProcessTree(const ProcessInfo& processInfo);
+
+        bool ContainsProcess(ThreadId pid) const;
+        void GetProcessIds(std::list<ThreadId>& processIds) const;
+        ThreadId RootId() const;
+
+    private:
+        std::list<ProcessInfo> _processes;
+    };
 
 } // namespace Core
 } // namespace WPEFramework
 
-#endif // __PROCESSINFO_H

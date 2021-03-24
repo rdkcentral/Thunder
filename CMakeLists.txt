@@ -31,19 +31,17 @@ if (BUILD_REFERENCE)
     add_definitions (-DBUILD_REFERENCE=${BUILD_REFERENCE})
 endif()
 
-set(CMAKE_MODULE_PATH
-        ${CMAKE_MODULE_PATH}
-        "${CMAKE_SOURCE_DIR}/cmake"
-        "${CMAKE_SOURCE_DIR}/cmake/modules")
+list(APPEND CMAKE_MODULE_PATH
+    "${CMAKE_SOURCE_DIR}/cmake"
+    "${CMAKE_SOURCE_DIR}/cmake/common"
+    "${CMAKE_SOURCE_DIR}/cmake/modules")
 
 include(platform)
 include(CmakeHelperFunctions)
-find_package(ExecInfo)
 
 set(PLATFORM "PC_UNIX" CACHE STRING
         "Defines on what platform the application will run")
 
-option(CODE_FROM_EXTERNAL_REPOSITORY "Include code from External Repository" ON)
 option(INSTALL_LOCALLY "Install this project locally" OFF)
 
 set(NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")
@@ -66,9 +64,9 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
         DESTINATION lib/cmake/${NAMESPACE})
 
 install(DIRECTORY
+            "${CMAKE_SOURCE_DIR}/cmake/common"
             "${CMAKE_SOURCE_DIR}/cmake/config"
             "${CMAKE_SOURCE_DIR}/cmake/templates"
-            "${CMAKE_SOURCE_DIR}/cmake/modules"
         DESTINATION lib/cmake/${NAMESPACE})
 
 if(APPLE)
@@ -89,11 +87,12 @@ if (ENABLE_CODE_COVERAGE)
     "${CMAKE_CURRENT_BINARY_DIR}/Tests/unit/core/*")
   setup_target_for_coverage_gcovr_html(NAME "coverage")
   setup_target_for_coverage_gcovr_xml(NAME "coverage-report")
+  add_definitions(-DWITH_CODE_COVERAGE=1)
 endif()
 
 if(BUILD_TESTS)
   enable_testing()
+  add_subdirectory(Tests/unit)
 endif()
 
 add_subdirectory(Source)
-add_subdirectory(Tests)

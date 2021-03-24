@@ -30,7 +30,7 @@ import copy
 import CppParser
 from collections import OrderedDict
 
-VERSION = "1.6.4"
+VERSION = "1.6.7"
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -46,7 +46,7 @@ EMIT_MODULE_NAME_DECLARATION = False
 EMIT_COMMENT_WITH_PROTOTYPE = True
 EMIT_COMMENT_WITH_STUB_ORDER = True
 STUB_NAMESPACE = "::WPEFramework::ProxyStubs"
-INTERFACE_NAMESPACE = "::WPEFramework::Exchange"
+INTERFACE_NAMESPACE = "::WPEFramework"
 CLASS_IUNKNOWN = "::WPEFramework::Core::IUnknown"
 PROXYSTUB_CPP_NAME = "ProxyStubs_%s.cpp"
 
@@ -229,10 +229,13 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
         emit.Line("//")
         emit.Line()
 
-        if os.path.isfile(os.path.join(os.path.dirname(source_file), interface_header_name)):
-            emit.Line('#include "%s"' % interface_header_name)
         if os.path.isfile(os.path.join(os.path.dirname(source_file), "Module.h")):
             emit.Line('#include "Module.h"')
+        if os.path.isfile(os.path.join(os.path.dirname(source_file), interface_header_name)):
+            emit.Line('#include "%s"' % interface_header_name)
+        emit.Line()
+
+        emit.Line('#include <com/com.h>')
         emit.Line()
 
         if EMIT_MODULE_NAME_DECLARATION:
@@ -244,8 +247,9 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
         emit.Line("namespace %s {" % STUB_NAMESPACE.split("::")[-1])
         emit.Line()
         emit.IndentInc()
-        emit.Line("using namespace %s;" % iface_namespace)
-        emit.Line()
+        if (iface_namespace != STUB_NAMESPACE.split("::")[-2]):
+            emit.Line("using namespace %s;" % iface_namespace)
+            emit.Line()
 
         announce_list = OrderedDict()
 
@@ -260,14 +264,9 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
             if (iface_namespace + "::") not in iface.obj.full_name:
                 continue # inteface in other namespace
 
-            name = iface.obj.full_name.split(iface_namespace + "::", 1)[1]
-            array_name = CreateName(name) + "StubMethods"
-            class_name = CreateName(name) + "Proxy"
-            stub_name = CreateName(name) + "Stub"
-            iface_name = iface.obj.type.split(iface_namespace + "::", 1)[1]
-
             # Cut out interface namespace from all identifiers found in a string
             def Strip(string, index=0):
+                a = string
                 pos = 0
                 idx = index
                 length = 0
@@ -278,8 +277,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                         while (True):
                             i = string.find(ps, idx)
                             if i != -1:
-                                if ((((length == 0) and (i == 0 or string[i - 1] in [" ", "(", ","]))
-                                     or (i == pos + length))):
+                                if (((length == 0) and (i == 0 or string[i - 1] in [" ", "(", ",", "<"])) or (i == pos + length)):
                                     if length == 0:
                                         pos = i
                                     length += len(ps)
@@ -300,7 +298,14 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                 string = Strip(string, pos + length + 1) if (length > 0) else string
                 if length > 2:
                     string = string[0:pos] + string[pos + length:]
+
                 return string
+
+            name = iface.obj.full_name.split(iface_namespace + "::", 1)[1]
+            array_name = CreateName(name) + "StubMethods"
+            class_name = CreateName(name) + "Proxy"
+            stub_name = CreateName(name) + "Stub"
+            iface_name = Strip(iface.obj.type.split(iface_namespace + "::", 1)[1])
 
             # Stringifies a type, omitting outer namespace if necessary
             def TypeStr(type):
@@ -856,7 +861,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                 emit.Line("writer.%s(RPC::instance_cast<%s>(%s));" % (retval.RpcType(), retval.CppType(), retval.name))
                             else:
                                 emit.Line("writer.%s(%s);" % (retval.RpcType(), retval.name))
-                            if retval.is_interface and not retval.type.IsConst():
+                            if retval.is_interface:
                                 if isinstance(retval.type.Type(), CppParser.Void):
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s, %s);" %
                                               (retval.name, retval.interface_ref.length_name))
@@ -935,7 +940,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
         for iface in interfaces:
             if (iface_namespace + "::") not in iface.obj.full_name:
                 continue
-            iface_name = iface.obj.type.split(INTERFACE_NAMESPACE + "::", 1)[1]
+            iface_name = Strip(iface.obj.type.split(INTERFACE_NAMESPACE + "::", 1)[1])
             if not iface_name in announce_list:
                 continue
 
@@ -1336,7 +1341,8 @@ if __name__ == "__main__":
         print("   @stop               - skip parsing of the rest of the file")
         print("   @omit               - omit generating code for the next item (class or method)")
         print("   @stub               - generate empty stub for the next item (class or method)")
-        print("   @encompass \"file\"   - include another file, relative to the directory of the current file")
+        print("   @stubgen:include \"file\"   - include another file, relative to the directory of the current file")
+        print("   @stubgen:include <file>   - include another file, relative to the defined include directories")
         print("For non-const pointer and reference method parameters:")
         print("   @in                 - denotes an input parameter")
         print("   @out                - denotes an output parameter")

@@ -28,7 +28,9 @@
     <ClCompile Include="JSONRPC.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="System.cpp" />
+    <ClCompile Include="System.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Channel.h">
@@ -73,8 +75,15 @@
     <ClInclude Include="JSONRPC.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="IRemoteInstantiation.h" />
-    <ClInclude Include="System.h" />
+    <ClInclude Include="Types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IRemoteInstantiation.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="System.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">

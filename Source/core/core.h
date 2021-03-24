@@ -72,6 +72,7 @@
 #include "Proxy.h"
 #include "Queue.h"
 #include "Range.h"
+#include "Rectangle.h"
 #include "ReadWriteLock.h"
 #include "ResourceMonitor.h"
 #include "SerialPort.h"
@@ -103,6 +104,9 @@
 #include "ValueRecorder.h"
 #include "XGetopt.h"
 #include "WorkerPool.h"
+#include "IWarningReportingControl.h"
+#include "WarningReportingControl.h"
+#include "WarningReportingCategories.h"
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "core.lib")

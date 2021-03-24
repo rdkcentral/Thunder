@@ -313,6 +313,8 @@ namespace Web {
 
                     dataToRead -= (realReadData == 0) ? dataToRead: realReadData;
                 }
+                // Set back file position to the end of file to append from there
+                Core::File::Position(false, (static_cast<int64_t>(Core::File::Size()) - 1));
             }
         }
 
@@ -388,7 +390,7 @@ namespace Web {
     private:
         mutable uint32_t _lastPosition;
         mutable string _body;
-        uint16_t _offset;
+        uint32_t _offset;
     };
 
     template <typename JSONOBJECT, typename HASHALGORITHM>

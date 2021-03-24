@@ -21,7 +21,10 @@
 
 #include <limits>
 #include <memory>
+
+#ifdef PROCESSCONTAINERS_ENABLED
 #include "ProcessInfo.h"
+#endif
 
 namespace WPEFramework {
 namespace RPC {
@@ -29,6 +32,8 @@ namespace RPC {
     class ProcessShutdown;
 
     static Core::ProxyPoolType<RPC::AnnounceMessage> AnnounceMessageFactory(2);
+
+    /* static */ Core::CriticalSection Process::_ldLibLock ;
 
     class ProcessShutdown {
     public:
@@ -103,7 +108,7 @@ namespace RPC {
         LocalClosingInfo& operator=(const LocalClosingInfo& RHS) = delete;
 
         explicit LocalClosingInfo(const uint32_t pid)
-            : _process(pid)
+            : _process(false, pid)
         {
         }
         ~LocalClosingInfo() override = default;
@@ -491,6 +496,7 @@ namespace RPC {
         if (announceMessage->Response().IsSet() == true) {
             // Is result of an announce message, contains default trace categories in JSON format.
             string jsonDefaultCategories(announceMessage->Response().TraceCategories());
+            // HPL todo: we need to extend sending this info here, or just pass the complete config and have it parsed here (nothing would need to be dynamicaly changed, we will not suport that)
 
             if (jsonDefaultCategories.empty() == false) {
                 Trace::TraceUnit::Instance().Defaults(jsonDefaultCategories);
@@ -508,5 +514,9 @@ namespace RPC {
         // Set event so WaitForCompletion() can continue.
         _announceEvent.SetEvent();
     }
+
+    //We may eliminate the following statement when switched to C++17 compiler
+    constexpr uint32_t RPC::ProcessShutdown::DestructionStackSize;
+
 }
 }

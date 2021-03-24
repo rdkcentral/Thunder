@@ -24,6 +24,7 @@
 #include "SystemInfo.h"
 #include "Config.h"
 #include "IRemoteInstantiation.h"
+#include "WarningReportingCategories.h"
 
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
@@ -99,18 +100,38 @@ namespace PluginHost {
 
     private:
         class WorkerPoolImplementation : public Core::WorkerPool {
+        private:
+            class Dispatcher : public Core::ThreadPool::IDispatcher {
+            public:
+                Dispatcher(const Dispatcher&) = delete;
+                Dispatcher& operator=(const Dispatcher&) = delete;
+
+                Dispatcher() = default;
+                ~Dispatcher() override = default;
+
+            private:
+                void Initialize() override {
+                }
+                void Deinitialize() override {
+                }
+                void Dispatch(Core::IDispatch* job) override;
+            };
+
         public:
             WorkerPoolImplementation() = delete;
             WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
             WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
             WorkerPoolImplementation(const uint32_t stackSize)
-                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 16)
+                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 16, &_dispatch)
+                , _dispatch()
             {
+                Run();
             }
-            virtual ~WorkerPoolImplementation()
-            {
-            }
+            ~WorkerPoolImplementation() override = default;
+
+        private:
+            Dispatcher _dispatch;
         };
 
         class FactoriesImplementation : public IFactories {
@@ -173,7 +194,7 @@ namespace PluginHost {
             {
                 va_list ap;
                 va_start(ap, formatter);
-                Trace::Format(_text, formatter, ap);
+                Core::Format(_text, formatter, ap);
                 va_end(ap);
             }
             Activity(const string& text)
@@ -539,7 +560,6 @@ namespace PluginHost {
                 // It's reference counted, so just take it out of the list, state to DESTROYED
                 // Also unsubscribe all subscribers. They need to go..
                 State(DESTROYED);
-                _administrator.StateChange(this);
 
                 Unlock();
             }
@@ -661,7 +681,7 @@ namespace PluginHost {
 
                 return (result);
             }
-            inline Core::ProxyType<Core::JSON::IElement> Inbound(const uint32_t ID, const Core::JSON::IElement& element)
+            inline Core::ProxyType<Core::JSON::IElement> Inbound(const uint32_t ID, const Core::ProxyType<Core::JSON::IElement>& element)
             {
                 Core::ProxyType<Core::JSON::IElement> result;
 
@@ -844,6 +864,8 @@ namespace PluginHost {
             // These are Blocking calls!!!!!
             virtual uint32_t Activate(const reason) override;
             virtual uint32_t Deactivate(const reason) override;
+            uint32_t Suspend(const reason);
+            uint32_t Resume(const reason);
             virtual reason Reason() const
             {
                 return (_reason);
@@ -855,6 +877,30 @@ namespace PluginHost {
             }
 
         private:
+            virtual std::vector<string> GetLibrarySearchPaths(const string& locator) const override
+            {
+                std::vector<string> all_paths;
+
+                const std::vector<string> temp = _administrator.Configuration().LinkerPluginPaths();
+                if (!temp.empty())
+                {
+                    // additionaly defined user paths
+                    for (const string& s : temp)
+                        all_paths.push_back(Core::Directory::Normalize(s) + locator);
+                }
+                else
+                {
+                    string className = PluginHost::Service::Configuration().ClassName.Value() + _T("/");
+                    // system configured paths
+                    all_paths.push_back(_administrator.Configuration().DataPath() + className + locator);
+                    all_paths.push_back(_administrator.Configuration().PersistentPath() + className + locator);
+                    all_paths.push_back(_administrator.Configuration().SystemPath() + locator);
+                    all_paths.push_back(_administrator.Configuration().AppPath() + _T("Plugins/") + locator);
+                }
+
+                return all_paths;
+            }
+
             inline IPlugin* CheckLibrary(const string& name, const TCHAR* className, const uint32_t version)
             {
                 IPlugin* newIF = nullptr;
@@ -906,11 +952,10 @@ namespace PluginHost {
                     Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
                     newIF = admin.Instantiate<IPlugin>(Core::Library(), className, version);
                 } else {
-                    if ((newIF = CheckLibrary((_administrator.Configuration().PersistentPath() + locator), className, version)) == nullptr) {
-                        if ((newIF = CheckLibrary((_administrator.Configuration().SystemPath() + locator), className, version)) == nullptr) {
-                            newIF = CheckLibrary((_administrator.Configuration().AppPath() + _T("Plugins/") + locator), className, version);
-                        }
-                    }
+                    std::vector<string> all_paths = GetLibrarySearchPaths(locator);
+                    std::vector<string>::const_iterator iter = std::begin(all_paths);
+                    while ((iter != std::end(all_paths)) && ((newIF = CheckLibrary(*iter, className, version)) == nullptr))
+                        ++iter;
                 }
 
                 if (newIF != nullptr) {
@@ -1060,6 +1105,7 @@ namespace PluginHost {
                                     _object.Version(),
                                     _object.User(),
                                     _object.Group(),
+                                    _object.LinkLoaderPath(),
                                     _object.Threads(),
                                     _object.Priority(),
                                     _object.Configuration());
@@ -1242,6 +1288,7 @@ namespace PluginHost {
                     const uint32_t version,
                     const string& user,
                     const string& group,
+                    const string& linkLoaderPath,
                     const uint8_t threads,
                     const int8_t priority,
                     const string configuration) override
@@ -1258,7 +1305,7 @@ namespace PluginHost {
 
                     uint32_t id;
                     RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath());
-                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, _T(""), configuration);
+                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, linkLoaderPath, _T(""), configuration);
 
                     RPC::Process process(requestId, config, instance);
 
@@ -1487,7 +1534,7 @@ namespace PluginHost {
 #pragma warning(disable : 4355)
 #endif
                 SubSystems(ServiceMap* parent)
-                    : SystemInfo(this)
+                    : SystemInfo(parent->Configuration(), this)
                     , _parent(*parent)
                     , _decoupling(Core::ProxyType<Job>::Create(this))
                 {
@@ -1611,14 +1658,31 @@ namespace PluginHost {
             {
                 return (reinterpret_cast<ISubSystem*>(_subSystems.QueryInterface(ISubSystem::ID)));
             }
-            void StateChange(PluginHost::IShell* entry)
+            void Activated(PluginHost::IShell* entry)
             {
+                string callsign = entry->Callsign();
+
                 _notificationLock.Lock();
 
                 std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
 
                 while (currentlist.size()) {
-                    currentlist.front()->StateChange(entry);
+                    currentlist.front()->Activated(callsign, entry);
+                    currentlist.pop_front();
+                }
+
+                _notificationLock.Unlock();
+            }
+            void Deactivated(PluginHost::IShell* entry)
+            {
+                string callsign = entry->Callsign();
+
+                _notificationLock.Lock();
+
+                std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
+
+                while (currentlist.size()) {
+                    currentlist.front()->Deactivated(callsign, entry);
                     currentlist.pop_front();
                 }
 
@@ -1633,7 +1697,7 @@ namespace PluginHost {
                 sink->AddRef();
                 _notifiers.push_back(sink);
 
-                // Tell this "new" sink all our active/inactive plugins..
+                // Tell this "new" sink all our actived plugins..
                 std::map<const string, Core::ProxyType<Service>>::iterator index(_services.begin());
 
                 // Notifty all plugins that we have sofar..
@@ -1644,8 +1708,8 @@ namespace PluginHost {
 
                     ASSERT(service.IsValid());
 
-                    if (service.IsValid() == true) {
-                        sink->StateChange(&(service.operator*()));
+                    if ( (service.IsValid() == true) && (service->State() == IShell::ACTIVATED) ) {
+                        sink->Activated(service->Callsign(), &(service.operator*()));
                     }
 
                     index++;
@@ -1934,7 +1998,7 @@ namespace PluginHost {
         // (is closed) during the service process, the ChannelMap will
         // not find it and just "flush" the presented work.
         class Channel : public PluginHost::Channel {
-        private:
+        public:
             class Job : public Core::IDispatch {
             public:
                 Job() = delete;
@@ -1984,24 +2048,39 @@ namespace PluginHost {
                 }
                 string Process(const string& message)
                 {
-                    return (_service->Inbound(_ID, message));
+                    string result;
+                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, message);  
+                    return result;
                 }
                 Core::ProxyType<Core::JSONRPC::Message> Process(const string& token, const Core::ProxyType<Core::JSONRPC::Message>& message)
                 {
-                    return (_service->Invoke(token, _ID, *message));
+                    Core::ProxyType<Core::JSONRPC::Message> result;
+                    REPORT_DURATION_WARNING( { result = _service->Invoke(token, _ID, *message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    return result;
                 }
                 Core::ProxyType<Web::Response> Process(const Core::ProxyType<Web::Request>& message)
                 {
-                    return (_service->Process(*message));
+                    Core::ProxyType<Web::Response> result;
+                    REPORT_DURATION_WARNING( { result = _service->Process(*message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    return result;
                 }
                 Core::ProxyType<Core::JSON::IElement> Process(const Core::ProxyType<Core::JSON::IElement>& message)
                 {
-                    return (_service->Inbound(_ID, *message));
+                    Core::ProxyType<Core::JSON::IElement> result;
+                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    return result;
                 }
                 template <typename PACKAGE>
                 void Submit(PACKAGE package)
                 {
                     _server->Dispatcher().Submit(_ID, package);
+                }
+                void RequestClose() {
+                    _server->Dispatcher().RequestClose(_ID);
+                }
+                string Callsign() const {
+                    ASSERT(_service.IsValid() == true);
+                    return _service->Callsign();
                 }
 
             private:
@@ -2048,21 +2127,27 @@ namespace PluginHost {
                 }
                 void Dispatch() override
                 {
+                    
                     ASSERT(_request.IsValid());
                     ASSERT(Job::HasService() == true);
 
                     Core::ProxyType<Web::Response> response;
 
                     if (_jsonrpc == true) {
-                        response = IFactories::Instance().Response();
                         Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
 
                         if (message->IsSet()) {
                             Core::ProxyType<Core::JSONRPC::Message> body = Job::Process(_token, message);
 
+                            // If we have no response body, it looks like an async-call...
                             if (body.IsValid() == false) {
-                                response->ErrorCode = Web::STATUS_BAD_REQUEST;
-                            } else {
+                                // It's a a-synchronous call, seems we should just queue this request, it will be answered later on..
+                                if (_request->Connection.Value() == Web::Request::CONNECTION_CLOSE) {
+                                    Job::RequestClose();
+                                }
+                            }
+                            else {
+                                response = IFactories::Instance().Response();
                                 response->Body(body);
                                 if (body->Error.IsSet() == false) {
                                     response->ErrorCode = Web::STATUS_OK;
@@ -2073,11 +2158,15 @@ namespace PluginHost {
                                 }
                             }
                         } else {
+                            response = IFactories::Instance().Response();
                             response->ErrorCode = Web::STATUS_ACCEPTED;
                             response->Message = _T("Failed to parse JSONRPC message");
                         }
                     } else {
                         response = Job::Process(_request);
+                        if (response.IsValid() == false) {
+                            response = _missingResponse;
+                        }
                     }
 
                     if (response.IsValid() == true) {
@@ -2089,19 +2178,17 @@ namespace PluginHost {
                             response->CacheControl = _T("no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0");
 
                         Job::Submit(response);
-                    } else {
-                        // Fire and forget, We are done !!!
-                        Job::Submit(_missingResponse);
-                    }
 
-                    if (_request->Connection.Value() == Web::Request::CONNECTION_CLOSE) {
-                        Job::Close();
+                        if (_request->Connection.Value() == Web::Request::CONNECTION_CLOSE) {
+                            Job::Close();
+                        }
                     }
 
                     // We are done, clear all info
                     _request.Release();
 
                     Job::Clear();
+                    
                 }
 
             private:
@@ -2260,6 +2347,36 @@ namespace PluginHost {
                 }
 
                 PluginHost::Channel::Unlock();
+            }
+            inline void Submit(const string& text)
+            {
+                PluginHost::Channel::Submit(text);
+            }
+            inline void Submit(const Core::ProxyType<Web::Response>& entry)
+            {
+                PluginHost::Channel::Submit(entry);
+            }
+            void Submit(const Core::ProxyType<Core::JSON::IElement>& entry) 
+            {
+                if (State() == Channel::ChannelState::WEB) {
+                    Core::ProxyType<Web::Response> response = IFactories::Instance().Response();
+
+                    if (response->AccessControlOrigin.IsSet() == false)
+                        response->AccessControlOrigin = _T("*");
+
+                    if (response->CacheControl.IsSet() == false)
+                        response->CacheControl = _T("no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0");
+
+                    response->Body(entry);
+
+                    PluginHost::Channel::Submit(response);
+                }
+                else {
+                    PluginHost::Channel::Submit(entry);
+                }
+            }
+            inline void RequestClose() {
+                _requestClose = true;
             }
 
         private:
@@ -2440,6 +2557,9 @@ namespace PluginHost {
             }
             virtual void Send(const Core::ProxyType<Web::Response>& response)
             {
+                if (_requestClose == true) {
+                    PluginHost::Channel::Close(0);
+                }
                 TRACE(WebFlow, (response));
             }
 
@@ -2561,6 +2681,7 @@ namespace PluginHost {
                     }
 
                     State(CLOSED, false);
+                    _parent.Dispatcher().TriggerCleanup();
                 } else if (IsWebSocket() == true) {
                     ASSERT(_service.IsValid() == false);
                     bool serviceCall;
@@ -2622,6 +2743,7 @@ namespace PluginHost {
             Server& _parent;
             PluginHost::ISecurity* _security;
             Core::ProxyType<Service> _service;
+            bool _requestClose;
 
             // Factories for creating jobs that can be placed on the PluginHost Worker pool.
             static Core::ProxyPoolType<WebRequestJob> _webJobs;
@@ -2663,7 +2785,6 @@ namespace PluginHost {
             public:
                 virtual void Dispatch() override
                 {
-
                     return (_parent.Timed());
                 }
 
@@ -2696,6 +2817,12 @@ namespace PluginHost {
 #ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
+            void TriggerCleanup()
+            {
+                if (_connectionCheckTimer == 0) {
+                    _parent.Submit(_job);
+                }
+            }
             ~ChannelMap()
             {
 
@@ -2738,6 +2865,13 @@ namespace PluginHost {
             {
                 return (Core::SocketServerType<Channel>::Count());
             }
+            inline void RequestClose(const uint32_t id) {
+                Core::ProxyType<Channel> client(BaseClass::Client(id));
+
+                if (client.IsValid() == true) {
+                    client->RequestClose();
+                }
+            }
             void GetMetaData(Core::JSON::ArrayType<MetaData::Channel>& metaData) const;
 
         private:
@@ -2745,30 +2879,31 @@ namespace PluginHost {
             {
                 TRACE(Activity, (string(_T("Cleanup job running..\n"))));
 
-                Core::Time NextTick(Core::Time::Now());
-
-                NextTick.Add(_connectionCheckTimer);
-
                 // First clear all shit from last time..
                 Cleanup();
 
-                // Now suspend those that have no activity.
-                BaseClass::Iterator index(BaseClass::Clients());
+                if (_connectionCheckTimer != 0) {
+                    // Now suspend those that have no activity.
+                    BaseClass::Iterator index(BaseClass::Clients());
 
-                while (index.Next() == true) {
-                    if (index.Client()->HasActivity() == false) {
-                        TRACE(Activity, (_T("Client close without activity on ID [%d]"), index.Client()->Id()));
+                    while (index.Next() == true) {
+                        if (index.Client()->HasActivity() == false) {
+                            TRACE(Activity, (_T("Client close without activity on ID [%d]"), index.Client()->Id()));
 
-                        // Oops nothing hapened for a long time, kill the connection
-                        // Give it all the time (0) if it i not yet suspended to close. If it is
-                        // suspended, force the close down if not closed in 100ms.
-                        index.Client()->Close(0);
-                    } else {
-                        index.Client()->ResetActivity();
+                            // Oops nothing hapened for a long time, kill the connection
+                            // Give it all the time (0) if it i not yet suspended to close. If it is
+                            // suspended, force the close down if not closed in 100ms.
+                            index.Client()->Close(0);
+                        } else {
+                            index.Client()->ResetActivity();
+                        }
                     }
-                }
 
-                _parent.Schedule(NextTick.Ticks(), _job);
+                    Core::Time NextTick(Core::Time::Now());
+                    NextTick.Add(_connectionCheckTimer);
+
+                    _parent.Schedule(NextTick.Ticks(), _job);
+                }
             }
 
         private:

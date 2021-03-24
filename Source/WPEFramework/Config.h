@@ -219,7 +219,7 @@ namespace PluginHost {
                     : Locator("127.0.0.1:9631")
                     , Type(InputHandler::VIRTUAL)
 #else
-                    : Locator("/tmp/keyhandler|0760")
+                    : Locator("/tmp/keyhandler|0766")
                     , Type(InputHandler::VIRTUAL)
 #endif
                     , OutputEnabled(true)
@@ -313,14 +313,18 @@ namespace PluginHost {
                 , IdleTime(0)
                 , IPV6(false)
                 , DefaultTraceCategories(false)
+                , DefaultWarningReportingCategories(false)
                 , Process()
                 , Input()
                 , Configs()
                 , Environments()
                 , ExitReasons()
+                , Latitude(51832547) // Divider 1.000.000
+                , Longitude(5674899) // Divider 1.000.000
 #ifdef PROCESSCONTAINERS_ENABLED
                 , ProcessContainers()
 #endif
+                , LinkerPluginPaths()
             {
                 // No IdleTime
                 Add(_T("version"), &Version);
@@ -339,7 +343,8 @@ namespace PluginHost {
                 Add(_T("signature"), &Signature);
                 Add(_T("idletime"), &IdleTime);
                 Add(_T("ipv6"), &IPV6);
-                Add(_T("tracing"), &DefaultTraceCategories);
+                Add(_T("tracing"), &DefaultTraceCategories); 
+                Add(_T("warningreporting"), &DefaultWarningReportingCategories); 
                 Add(_T("redirect"), &Redirect);
                 Add(_T("process"), &Process);
                 Add(_T("input"), &Input);
@@ -347,9 +352,12 @@ namespace PluginHost {
                 Add(_T("configs"), &Configs);
                 Add(_T("environments"), &Environments);
                 Add(_T("exitreasons"), &ExitReasons);
+                Add(_T("latitude"), &Latitude);
+                Add(_T("longitude"), &Longitude);
 #ifdef PROCESSCONTAINERS_ENABLED
                 Add(_T("processcontainers"), &ProcessContainers);
 #endif
+                Add(_T("linkerpluginpaths"), &LinkerPluginPaths);
             }
             ~JSONConfig() override = default;
 
@@ -373,15 +381,19 @@ namespace PluginHost {
             Core::JSON::DecUInt16 IdleTime;
             Core::JSON::Boolean IPV6;
             Core::JSON::String DefaultTraceCategories;
+            Core::JSON::String DefaultWarningReportingCategories; 
             ProcessSet Process;
             InputConfig Input;
             Core::JSON::String Configs;
             Core::JSON::ArrayType<Plugin::Config> Plugins;
             Core::JSON::ArrayType<Environment> Environments;
             Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::IShell::reason>> ExitReasons;
+            Core::JSON::DecSInt32 Latitude;
+            Core::JSON::DecSInt32 Longitude;
 #ifdef PROCESSCONTAINERS_ENABLED
             ProcessContainerConfig ProcessContainers;
 #endif
+            Core::JSON::ArrayType<Core::JSON::String> LinkerPluginPaths;
         };
 
     public:
@@ -489,6 +501,9 @@ namespace PluginHost {
         Config(const Config&) = delete;
         Config& operator=(const Config&) = delete;
 
+        #ifdef __WINDOWS__
+        #pragma warning(disable: 4355)
+        #endif
         Config(Core::File& file, const bool background, Core::OptionalType<Core::JSON::Error>& error)
             : _background(background)
             , _security(nullptr)
@@ -520,6 +535,7 @@ namespace PluginHost {
                 _communicator = Core::NodeId(config.Communicator.Value().c_str());
                 _redirect = config.Redirect.Value();
                 _version = config.Version.Value();
+                _idleTime = config.IdleTime.Value();
                 _IPV6 = config.IPV6.Value();
                 _binding = config.Binding.Value();
                 _interface = config.Interface.Value();
@@ -527,12 +543,16 @@ namespace PluginHost {
                 _stackSize = config.Process.IsSet() ? config.Process.StackSize.Value() : 0;
                 _inputInfo.Set(config.Input);
                 _processInfo.Set(config.Process);
+                _latitude = config.Latitude.Value();
+                _longitude = config.Longitude.Value();
 
                 _traceCategoriesFile = config.DefaultTraceCategories.IsQuoted();
                 if (_traceCategoriesFile == true) {
                     config.DefaultTraceCategories.SetQuoted(true);
                 }
                 _traceCategories = config.DefaultTraceCategories.Value();
+
+                _warningReportingCategories = config.DefaultWarningReportingCategories.Value();
 
                 if (config.Model.IsSet()) {
                     _model = config.Model.Value();
@@ -568,8 +588,15 @@ namespace PluginHost {
 
                 // Get all in the config configure Plugins..
                 _plugins = config.Plugins;
+
+                Core::JSON::ArrayType<Core::JSON::String>::Iterator itr(config.LinkerPluginPaths.Elements());
+                while (itr.Next())
+                    _linkerPluginPaths.push_back(itr.Current().Value());
             }
         }
+        #ifdef __WINDOWS__
+        #pragma warning(default: 4355)
+        #endif
         ~Config()
         {
             ASSERT(_security != nullptr);
@@ -592,6 +619,10 @@ namespace PluginHost {
         inline const string& TraceCategories() const
         {
             return (_traceCategories);
+        }
+        inline const string& WarningReportingCategories() const
+        {
+            return (_warningReportingCategories);
         }
         inline const string& Redirect() const
         {
@@ -684,6 +715,12 @@ namespace PluginHost {
         inline uint32_t StackSize() const {
             return (_stackSize);
         }
+        inline int32_t Latitude() const {
+            return (_latitude);
+        }
+        inline int32_t Longitude() const {
+            return (_longitude);
+        }
         inline const InputInfo& Input() const {
             return(_inputInfo);
         }
@@ -721,7 +758,6 @@ namespace PluginHost {
             return (added);
         }
         void UpdateAccessor() {
-            bool validAccessor = true;
             Core::NodeId result(_binding.c_str());
 
             if (_interface.empty() == false) {
@@ -752,27 +788,24 @@ namespace PluginHost {
                 value.sin_port = htons(_portNumber);
 
                 _accessor = value;
-                _URL.clear();
-                validAccessor = false;
+                SYSLOG(Logging::Startup, ("Invalid config information could not resolve to a proper IP"));
+            }
+
+            if (_portNumber == 80) {
+                _URL = string(_T("http://")) + _accessor.HostAddress() + _webPrefix;
             } else {
-                if (_portNumber == 80) {
-                    _URL = string(_T("http://")) + _accessor.HostAddress() + _webPrefix;
-                } else {
-                    _URL = string(_T("http://")) + _accessor.HostAddress() + ':' + Core::NumberType<uint16_t>(_portNumber).Text() + _webPrefix;
-                }
-
-                _accessor.PortNumber(_portNumber);
+                _URL = string(_T("http://")) + _accessor.HostAddress() + ':' + Core::NumberType<uint16_t>(_portNumber).Text() + _webPrefix;
             }
 
-            if (validAccessor == false) {
-                SYSLOG(Logging::Startup, ("Invalid config information could not resolve to a proper IP set to: (%s:%d)", _accessor.HostAddress().c_str(), _accessor.PortNumber()));
-            }
-            else {
-                SYSLOG(Logging::Startup, (_T("Accessor: %s"), _URL.c_str()));
-                SYSLOG(Logging::Startup, (_T("Interface IP: %s"), _accessor.HostAddress().c_str()));
-            }
+            _accessor.PortNumber(_portNumber);
 
-            return;
+            SYSLOG(Logging::Startup, (_T("Accessor: %s"), _URL.c_str()));
+            SYSLOG(Logging::Startup, (_T("Interface IP: %s"), _accessor.HostAddress().c_str()));
+        }
+
+        inline const std::vector<std::string>& LinkerPluginPaths() const
+        {
+            return _linkerPluginPaths;
         }
 
     private:
@@ -828,6 +861,7 @@ namespace PluginHost {
         string _model;
         string _traceCategories;
         bool _traceCategoriesFile;
+        string _warningReportingCategories;
         string _binding;
         string _interface;
         string _URL;
@@ -835,6 +869,8 @@ namespace PluginHost {
         bool _IPV6;
         uint16_t _idleTime;
         uint32_t _stackSize;
+        int32_t _latitude;
+        int32_t _longitude;
         InputInfo _inputInfo;
         ProcessInfo _processInfo;
         Core::JSON::ArrayType<Plugin::Config> _plugins;
@@ -843,6 +879,7 @@ namespace PluginHost {
 #ifdef PROCESSCONTAINERS_ENABLED
         string _ProcessContainersLogging;
 #endif
+        std::vector<std::string> _linkerPluginPaths;
     };
 }
 }

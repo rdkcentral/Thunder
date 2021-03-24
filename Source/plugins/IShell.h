@@ -256,6 +256,20 @@ namespace PluginHost {
 
             return (handler == nullptr ? nullptr : handler->RemoteConnection(connectionId));
         }
+        inline uint32_t EnablePersistentStorage() {
+            uint32_t result = Core::ERROR_NONE;
+
+            // Make sure there is a path to the persitent infmration
+            Core::File path(PersistentPath(), true);
+
+            if (path.IsDirectory() == false) {
+                if (Core::Directory(PersistentPath().c_str()).Create() != true) {
+                    result = Core::ERROR_BAD_REQUEST;
+                }
+            }
+
+            return (result);
+        }
 
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* Root(uint32_t& pid, const uint32_t waitTime, const string className, const uint32_t version = ~0)
@@ -281,31 +295,14 @@ namespace PluginHost {
             return (nullptr);
         }
 
-        /* 
-        template <typename REQUESTEDINTERFACE>
-        REQUESTEDINTERFACE* Instantiate(const uint32_t waitTime, const string className, const uint32_t version, uint32_t& connecionId, const string& locator)
-        {
-            ICOMLink* handler(COMLink());
-
-            // This method can only be used in the main process. Only this process, can instantiate a new process
-            ASSERT(handler != nullptr);
-
-            if (handler != nullptr) {
-                RPC::Object definition(Callsign(), locator, className, REQUESTEDINTERFACE::ID, version, string(), string(), 1, RPC::Object::HostType::DISTRIBUTED, string());
-
-                void* baseptr = handler->Instantiate(definition, waitTime, connecionId, ClassName(), Callsign());
-
-                REQUESTEDINTERFACE* result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
-
-                return (result);
-            }
-
-            return (nullptr);
-        }
-        */
-
     private:
         void* Root(uint32_t& pid, const uint32_t waitTime, const string className, const uint32_t interface, const uint32_t version = ~0);
+
+        /* @stubgen:omit */
+        virtual std::vector<string> GetLibrarySearchPaths(const string& locator) const
+        {
+            return std::vector<string> {};
+        }
     };
 } // namespace PluginHost
 

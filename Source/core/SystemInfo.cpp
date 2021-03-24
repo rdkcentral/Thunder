@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "Portability.h"
 #include "SystemInfo.h"
 #include "FileSystem.h"
 #include "NetworkInfo.h"
@@ -29,15 +30,39 @@
 #include <cstdio>
 #include <ctime>
 #include <fstream>
+#include <iostream>
 
 #ifdef __APPLE__
 #import <mach/host_info.h>
 #import <mach/mach_host.h>
+#include <sys/utsname.h>
 #include <sys/sysctl.h>
 #elif defined(__LINUX__)
 #include <cinttypes>
 #include <cstdint>
+#include <sys/utsname.h>
+
+#include <linux/version.h>
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0)
 #include <sys/sysinfo.h>
+#else
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int sysinfo (struct sysinfo *);
+int get_nprocs_conf (void);
+int get_nprocs (void);
+long get_phys_pages (void);
+long get_avphys_pages (void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+
 #endif
 
 namespace WPEFramework {
@@ -73,7 +98,7 @@ namespace Core {
 
                 if (KeyLength < (DeviceIdLength + SystemPrefixLength)) {
                     TRACE_L1("Losing uniqueness because the id is truncated from %d to the first %d chars of your given id!",
-                        DeviceIdLength, (KeyLength - SystemPrefixLength))
+                        DeviceIdLength, (KeyLength - SystemPrefixLength));
                     ::memcpy(&buffer[SystemPrefixLength], DeviceId, KeyLength - SystemPrefixLength);
                 } else {
                     if (KeyLength > (DeviceIdLength + SystemPrefixLength)) {
@@ -441,22 +466,22 @@ namespace Core {
 
     /* static */ bool SystemInfo::SetEnvironment(const string& name, const TCHAR* value, const bool forced)
     {
+        bool result = false;
 #ifdef __LINUX__
         if ((forced == true) || (::getenv(name.c_str()) == nullptr)) {
             if (value != nullptr) {
-                return (::setenv(name.c_str(), value, 1) == 0);
+                result = (::setenv(name.c_str(), value, 1) == 0);
             } else {
-                return (::unsetenv(name.c_str()));
+                result = (::unsetenv(name.c_str()) == 0);
             }
         }
 #else
         if ((forced == true) || (GetEnvironmentVariable(name.c_str(), nullptr, 0) == 0)) {
             // https://msdn.microsoft.com/en-us/library/windows/desktop/ms686206(v=vs.85).aspx
-            SetEnvironmentVariable(name.c_str(), value);
-            return (true);
+            result = SetEnvironmentVariable(name.c_str(), value);
         }
 #endif
-        return (false);
+        return (result);
     }
 
     /* static */ bool SystemInfo::SetEnvironment(const string& name, const string& value, const bool forced)
@@ -470,6 +495,74 @@ namespace Core {
         return (_systemInfo);
     }
 #endif
+
+
+    const string SystemInfo::Architecture() const
+    {
+        string result;
+#if defined(__LINUX__) || defined(__APPLE__)
+        struct utsname buf;
+        if (uname(&buf) == 0) {
+            result = buf.machine;
+        }
+#endif
+        return result;
+    }
+    
+    const string SystemInfo::Chipset() const
+    {
+        string result;
+#if defined(__LINUX__)
+            string line;
+            std::ifstream file("/proc/cpuinfo");
+
+            if (file.is_open()) {
+                while (getline(file, line)) {
+                    if (line.find("Hardware") != std::string::npos) {
+                        std::size_t position = line.find(':');
+                        if (position != std::string::npos) {
+                            result.assign(line.substr(position + 1, string::npos));
+                        }
+                    }
+                }
+                
+                if(result.empty() == true)
+                {
+                    file.clear();
+                    file.seekg(0, file.beg);
+
+                    while (getline(file, line))
+                    {
+                        if (line.find("model name") != std::string::npos) {
+                            std::size_t position = line.find(':');
+                            if (position != std::string::npos) {
+                                result.assign(line.substr(position + 1, string::npos));
+                            }
+                        }
+                    }
+                }
+                file.close();
+            }
+#elif defined(__APPLE__)
+        char buffer[128];
+        size_t bufferlen = sizeof(buffer);
+        sysctlbyname("machdep.cpu.brand_string", &buffer, &bufferlen, NULL, 0);
+        result = string(buffer, bufferlen);
+#endif
+        return result;
+    }
+    
+    const string SystemInfo::FirmwareVersion() const
+    {
+        string result;
+#if defined(__LINUX__) || defined(__APPLE__)
+        struct utsname buf;
+        if (uname(&buf) == 0) {
+            result = buf.release;
+        }
+#endif
+        return result;
+    }
 
     namespace System {
 

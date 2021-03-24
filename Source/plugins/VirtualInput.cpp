@@ -405,7 +405,9 @@ namespace PluginHost
         event.Code = code;
         Send(event);
         if (--_repeatCounter == 0) {
+             _lock.Lock();
             DispatchRegisteredKey(IVirtualInput::KeyData::RELEASED, _pressedCode);
+             _lock.Unlock();
         }
     }
 
@@ -503,7 +505,7 @@ namespace PluginHost
                 }
             } else {
                 ASSERT (_pressedCode == code);
-                sendCode = _repeatKey.Reset();
+                _repeatKey.Reset();
                 _pressedCode = ~0;
                 TRACE_L1("Released: keyCode: %d, sending: %d", code, sendCode);
             }
@@ -736,6 +738,7 @@ namespace PluginHost
     /* virtual */ IPCUserInput::~IPCUserInput()
     {
         ClearKeyMap();
+        _service.Cleanup();
     }
 
     /* virtual */ VirtualInput::Iterator IPCUserInput::Consumers() const

@@ -15,6 +15,43 @@ namespace Process {
 
     class WorkerPoolImplementation : public Core::IIPCServer, public Core::WorkerPool {
     private:
+        class Dispatcher : public Core::ThreadPool::IDispatcher {
+        public:
+            Dispatcher(const Dispatcher&) = delete;
+            Dispatcher& operator=(const Dispatcher&) = delete;
+
+            Dispatcher(const string& identifier) 
+                : _identifier(identifier) {
+            }
+            ~Dispatcher() override = default;
+
+        private:
+            void Initialize() override {
+            }
+            void Deinitialize() override {
+            }
+            void Dispatch(Core::IDispatch* job) override {
+            #ifdef __CORE_EXCEPTION_CATCHING__
+            // HPL: This should not be RAII, this can be done in Initialize and Deinitialize
+            WARNING_REPORTING_THREAD_SETCALLSIGN(_identifier.c_str());
+            try {
+                job->Dispatch();
+            }
+            catch (const std::exception& type) {
+                Logging::DumpException(type.what());
+            }
+            catch (...) {
+                Logging::DumpException(_T("Unknown"));
+            }
+            #else
+            job->Dispatch();
+            #endif
+            }
+
+        private:
+            string _identifier;
+        };
+
         class Sink : public Core::ServiceAdministrator::ICallback {
         public:
             Sink() = delete;
@@ -75,8 +112,9 @@ namespace Process {
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
-        WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize)
-            : WorkerPool(threads - 1, stackSize, queueSize)
+        WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize, const string& callsign)
+            : WorkerPool(threads - 1, stackSize, queueSize, &_dispatcher)
+            , _dispatcher(callsign)
             , _announceHandler(nullptr)
             , _sink(*this)
         {
@@ -124,6 +162,7 @@ namespace Process {
             WorkerPool::Submit(Core::ProxyType<Core::IDispatch>(job));
         }
     private:
+        Dispatcher _dispatcher;
         Core::IIPCServer* _announceHandler;
         Sink _sink;
     };
@@ -131,9 +170,10 @@ namespace Process {
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:"))
             , Locator(nullptr)
             , ClassName(nullptr)
+            , Callsign(nullptr)
             , RemoteChannel(nullptr)
             , InterfaceId(Core::IUnknown::ID)
             , Version(~0)
@@ -159,6 +199,7 @@ namespace Process {
     public:
         const TCHAR* Locator;
         const TCHAR* ClassName;
+        const TCHAR* Callsign;
         const TCHAR* RemoteChannel;
         uint32_t InterfaceId;
         uint32_t Version;
@@ -196,6 +237,9 @@ namespace Process {
                 break;
             case 'c':
                 ClassName = argument;
+                break;
+            case 'C':
+                Callsign = argument;
                 break;
             case 'r':
                 RemoteChannel = argument;
@@ -343,6 +387,9 @@ private:
         Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> _jsonRPCFactory;
     };
 
+    static void UncaughtExceptions () {
+        Logging::DumpException(_T("General"));
+    }
 
 public:
     ProcessFlow(const ProcessFlow&) = delete;
@@ -368,6 +415,7 @@ public:
         sigaction(SIGTERM, &sa, nullptr);
         sigaction(SIGQUIT, &sa, nullptr);
         #endif
+        std::set_terminate(UncaughtExceptions);
     }
     virtual ~ProcessFlow()
     {
@@ -401,6 +449,7 @@ public:
         PluginHost::IFactories::Assign(nullptr);
 
         Core::Singleton::Dispose();
+        std::set_terminate(nullptr);
         TRACE_L1("Leaving Shutdown. Cleaned up process: %d.", Core::ProcessInfo().Id());
     }
 
@@ -415,10 +464,10 @@ public:
 
         _lock.Unlock();
     }
-    void Startup(const uint8_t threadCount, const Core::NodeId& remoteNode)
+    void Startup(const uint8_t threadCount, const Core::NodeId& remoteNode, const string& callsign)
     {
         // Seems like we have enough information, open up the Process communcication Channel.
-        _engine = Core::ProxyType<Process::WorkerPoolImplementation>::Create(threadCount, Core::Thread::DefaultStackSize(), 16);
+        _engine = Core::ProxyType<Process::WorkerPoolImplementation>::Create(threadCount, Core::Thread::DefaultStackSize(), 16, callsign);
 
         // Whenever someone is looking for a WorkerPool, here it is, register it..
         Core::IWorkerPool::Assign(&(*_engine));
@@ -468,7 +517,7 @@ private:
             ProcessFlow::Abort();
 
         } else if (signo == SIGSEGV) {
-            DumpCallStack(0, nullptr);
+            Logging::DumpException(_T("SEIGSEGV"));
             // now invoke the default segfault handler
             signal(signo, SIG_DFL);
             kill(getpid(), signo);
@@ -512,6 +561,7 @@ int main(int argc, char** argv)
         printf("Process [-h] \n");
         printf("         -l <locator>\n");
         printf("         -c <classname>\n");
+        printf("         -C <callsign>\n");
         printf("         -r <communication channel>\n");
         printf("         -x <eXchange identifier>\n");
         printf("        [-i <interface ID>]\n");
@@ -541,6 +591,22 @@ int main(int argc, char** argv)
             printf("Argument [%02d]: %s\n", teller, argv[teller]);
         }
     } else {
+        string callsign;
+        if (options.Callsign != nullptr) {
+            Core::ProcessInfo hostProcess;
+            const TCHAR* local = options.Callsign;
+            const TCHAR* lastEntry = ::strrchr(local, '.');
+            if (lastEntry != nullptr) {
+                local = &(lastEntry[1]);
+            }
+  
+            hostProcess.Name(local);
+            callsign = local;
+        }
+
+        // set for the main thread
+        WARNING_REPORTING_THREAD_SETCALLSIGN(callsign.c_str());
+
         #ifdef USE_BREAKPAD
         google_breakpad::MinidumpDescriptor descriptor(options.PostMortemPath);
         google_breakpad::ExceptionHandler eh(descriptor, NULL,
@@ -565,6 +631,14 @@ int main(int argc, char** argv)
         Logging::LoggingType<Logging::Startup>::Enable((options.EnabledLoggings & 0x00000001) != 0);
         Logging::LoggingType<Logging::Shutdown>::Enable((options.EnabledLoggings & 0x00000002) != 0);
         Logging::LoggingType<Logging::Notification>::Enable((options.EnabledLoggings & 0x00000004) != 0);
+        Logging::LoggingType<Logging::Crash>::Enable((options.EnabledLoggings & 0x00000008) != 0);
+        Logging::LoggingType<Logging::ParsingError>::Enable((options.EnabledLoggings & 0x00000010) != 0);
+        Logging::LoggingType<Logging::Error>::Enable((options.EnabledLoggings & 0x00000020) != 0);
+        Logging::LoggingType<Logging::Fatal>::Enable((options.EnabledLoggings & 0x00000040) != 0);
+
+#ifdef __CORE_WARNING_REPORTING__
+        WarningReporting::WarningReportingUnit::Instance().Open(options.Exchange);
+#endif
 
         if (remoteNode.IsValid()) {
             void* base = nullptr;
@@ -572,15 +646,14 @@ int main(int argc, char** argv)
             TRACE_L1("Spawning a new plugin %s.", options.ClassName);
 
             // Firts make sure we apply the correct rights to our selves..
-            if (options.User != nullptr) {
-                Core::ProcessInfo::User(string(options.User));
-            }
-
             if (options.Group != nullptr) {
-                Core::ProcessInfo().Group(string(options.Group));
+                Core::ProcessCurrent().Group(string(options.Group));
+            }
+            if (options.User != nullptr) {
+                Core::ProcessCurrent().User(string(options.User));
             }
 
-            process.Startup(options.Threads, remoteNode);
+            process.Startup(options.Threads, remoteNode, callsign);
 
             // Register an interface to handle incoming requests for interfaces.
             if ((base = Process::AquireInterfaces(options)) != nullptr) {

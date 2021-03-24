@@ -22,6 +22,7 @@
 #ifndef __WINDOWS__
 #include <dlfcn.h> // for dladdr
 #include <syslog.h>
+#include <regex>
 #endif
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
@@ -77,6 +78,9 @@ namespace PluginHost {
         AdapterObserver(const AdapterObserver&) = delete;
         AdapterObserver& operator=(const AdapterObserver&) = delete;
 
+        #ifdef __WINDOWS__
+        #pragma warning(disable: 4355)
+        #endif
         AdapterObserver(string interface)
             : _signal(false, true)
             , _interface(interface)
@@ -90,6 +94,9 @@ namespace PluginHost {
                 _signal.SetEvent();
             }
         }
+        #ifdef __WINDOWS__
+        #pragma warning(default: 4355)
+        #endif
         ~AdapterObserver() override
         {
             _observer.Close();
@@ -190,6 +197,14 @@ namespace PluginHost {
 #ifndef __WINDOWS__
                 closelog();
 #endif
+
+                // Do not forget to close the Tracing stuff...
+                Trace::TraceUnit::Instance().Close();
+
+#ifdef __CORE_WARNING_REPORTING__
+        WarningReporting::WarningReportingUnit::Instance().Close();
+#endif
+
                 // Now clear all singeltons we created.
                 Core::Singleton::Dispose();
             }
@@ -219,6 +234,13 @@ namespace PluginHost {
         if ((signo == SIGTERM) || (signo == SIGQUIT)) {
             ExitHandler::Construct();
         }
+    }
+    // Workaround solution: OCDM plugin supports blacklist feature that uses regex.
+    // That prevents unloading of OCDM shared lib from memory after de-activation.
+    // Following is the workaround solution although it is not being called anywhere.
+    void RegexInit()
+    {
+        std::regex_match(std::string(""), std::regex(""));
     }
 
 #endif
@@ -277,6 +299,10 @@ namespace PluginHost {
     }
 #endif
 
+    static void UncaughtExceptions () {
+        Logging::DumpException(_T("General"));
+    }
+
 #ifdef __WINDOWS__
     int _tmain(int argc, _TCHAR* argv[])
 #else
@@ -331,6 +357,8 @@ namespace PluginHost {
         } else
 #endif
 
+        std::set_terminate(UncaughtExceptions);
+
         Logging::SysLog(!_background);
 
         // Read the config file, to instantiate the proper plugins and for us to open up the right listening ear.
@@ -361,7 +389,7 @@ namespace PluginHost {
 
             if (_config->Process().IsSet() == true) {
 
-                Core::ProcessInfo myself;
+                Core::ProcessCurrent myself;
 
                 if (_config->Process().OOMAdjust() != 0) {
                     myself.OOMAdjust(_config->Process().OOMAdjust());
@@ -432,6 +460,21 @@ namespace PluginHost {
             else {
                 Trace::TraceUnit::Instance().Defaults(_config->TraceCategories());
             }
+
+#ifdef __CORE_WARNING_REPORTING__
+            if ( WarningReporting::WarningReportingUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE){
+#ifndef __WINDOWS__
+                if (_background == true) {
+                    syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable issue reporting functionality!");
+                } else
+#endif
+                {
+                    fprintf(stdout, "Could not enable issue reporting functionality!\n");
+                }
+            }
+
+            WarningReporting::WarningReportingUnit::Instance().Defaults(_config->WarningReportingCategories()); 
+#endif
 
             SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
             SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
@@ -512,8 +555,9 @@ namespace PluginHost {
 
 #if THUNDER_RUNTIME_STATISTICS
                             printf("Requests:   %d\n", index.Current().ProcessedRequests.Value());
-                            printf("JSON:       %d\n\n", index.Current().ProcessedObjects.Value());
+                            printf("JSON:       %d\n", index.Current().ProcessedObjects.Value());
 #endif
+                            printf("\n");
                         }
                         break;
                     }
@@ -595,6 +639,8 @@ namespace PluginHost {
                                 printf("Country:     %s\n", location->Country().c_str());
                                 printf("Region:      %s\n", location->Region().c_str());
                                 printf("City:        %s\n", location->City().c_str());
+                                printf("Latitude:    %u\n", location->Latitude());
+                                printf("Longitude:   %u\n", location->Longitude());
                             }
 
                             printf("------------------------------------------------------------\n");
@@ -674,7 +720,7 @@ namespace PluginHost {
                             flags[7] = '\0';
 #endif
                       
-                            printf ("%6d [%s]: %s\n", info.descriptor, flags, Core::ClassNameOnly(info.classname).Text().c_str());
+                            printf ("%6d %s[%s]: %s\n", info.descriptor, info.filename, flags, Core::ClassNameOnly(info.classname).Text().c_str());
                             index++;
                         }
                         break;
@@ -684,7 +730,11 @@ namespace PluginHost {
                     case 'R': {
                         printf("\nMonitor callstack:\n");
                         printf("============================================================\n");
-                        ::DumpCallStack(Core::ResourceMonitor::Instance().Id(), stdout);
+                        std::list<string> stackList;
+                        ::DumpCallStack(Core::ResourceMonitor::Instance().Id(), stackList);
+                        for (const string& entry : stackList) {
+                            printf("%s\n", entry.c_str());
+                        }
                         break;
                     }
                     case '0':
@@ -701,7 +751,11 @@ namespace PluginHost {
                         printf("\nThreadPool thread[%c] callstack:\n", keyPress);
                         printf("============================================================\n");
                         if (threadId != (ThreadId)(~0)) {
-                            ::DumpCallStack(threadId, stdout);
+                            std::list<string> stackList;
+                            ::DumpCallStack(threadId, stackList);
+                            for (const string& entry : stackList) {
+                                printf("%s\n", entry.c_str());
+                            }
                         } else {
                            printf("The given Thread ID is not in a valid range, please give thread id between 0 and %d\n", THREADPOOL_COUNT);
                         }
@@ -729,6 +783,7 @@ namespace PluginHost {
         }
 
         ExitHandler::Destruct();
+        std::set_terminate(nullptr);
         return 0;
 
     } // End main.

@@ -78,7 +78,7 @@ namespace Plugin {
             // "239.255.255.250:1900";
             Core::NodeId node (config.Probe.Node.Value().c_str());
 
-            if (node.IsValid() == true) {
+            if (node.IsValid() == false) {
                 SYSLOG(Logging::Startup, (_T("Probing requested but invalid IP address [%s]"), config.Probe.Node.Value().c_str()));
             }
             else {
@@ -116,6 +116,7 @@ namespace Plugin {
 
         if (subSystems != nullptr) {
             subSystems->Unregister(&_systemInfoReport);
+            subSystems->Release();
         }
 
         if (_probe != nullptr) {
@@ -426,11 +427,11 @@ namespace Plugin {
         return (result);
     }
 
-    void Controller::StateChange(PluginHost::IShell* plugin)
+    void Controller::Activated(const string& callsign, PluginHost::IShell* plugin)
     {
-        event_statechange(plugin->Callsign(), plugin->State(), plugin->Reason());
+        event_statechange(callsign, PluginHost::IShell::ACTIVATED, plugin->Reason());
 
-        if ((plugin->State() == PluginHost::IShell::ACTIVATED) && (_resumes.size() > 0)) {
+        if (_resumes.size() > 0) {
             string callsign(plugin->Callsign());
             std::list<string>::const_iterator index(_resumes.begin());
 
@@ -460,6 +461,12 @@ namespace Plugin {
             }
         }
     }
+
+    void Controller::Deactivated(const string& callsign, PluginHost::IShell* plugin)
+    {
+        event_statechange(callsign, PluginHost::IShell::DEACTIVATED, plugin->Reason());
+    }
+
 
     void Controller::SubSystems()
     {

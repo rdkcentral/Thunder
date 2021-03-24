@@ -17,32 +17,31 @@
 
 set(TARGET ${NAMESPACE}COM)
 
-ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ICOM.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs")
-
-set(PROXYSTUB_COM_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_COM.cpp")
-
-configure_file( "${CMAKE_CURRENT_LIST_DIR}/ProxyStubs.cpp.in"
-                "${CMAKE_CURRENT_BINARY_DIR}/ProxyStubs.cpp"
-                @ONLY)
+ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ICOM.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+ProxyStubGenerator(NAMESPACE "WPEFramework::Trace" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ITrace.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 add_library(${TARGET} SHARED
         Administrator.cpp
         Communicator.cpp
-        "${CMAKE_CURRENT_BINARY_DIR}/ProxyStubs.cpp"
         ITracing.cpp
         IUnknown.cpp
+        ConnectorType.cpp
         Module.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_COM.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Trace.cpp
         )
 
 set(PUBLIC_HEADERS
         Administrator.h
         com.h
         Communicator.h
+        ConnectorType.h
         Ids.h
         IRPCIterator.h
         IStringIterator.h
         IValueIterator.h
         ICOM.h
+        ITrace.h
         IUnknown.h
         Messages.h
         Module.h
@@ -60,6 +59,7 @@ target_link_libraries(${TARGET}
 target_include_directories(${TARGET} 
         PRIVATE
           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         )
 
 target_compile_definitions(${TARGET} PRIVATE COM_EXPORTS)

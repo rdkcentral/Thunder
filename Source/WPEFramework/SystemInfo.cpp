@@ -24,8 +24,9 @@ namespace PluginHost {
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
-    SystemInfo::SystemInfo(Core::IDispatch* callback)
+    SystemInfo::SystemInfo(const Config& config, Core::IDispatch* callback)
         : _adminLock()
+        , _config(config)
         , _notificationClients()
         , _callback(callback)
         , _identifier(nullptr)
@@ -44,6 +45,18 @@ namespace PluginHost {
 
     /* virtual */ SystemInfo::~SystemInfo()
     {
+      if (_identifier)
+        _identifier->Release();
+      if (_location)
+        _location->Release();
+      if (_internet)
+        _internet->Release();
+      if (_security)
+        _security->Release();
+      if (_time)
+        _time->Release();
+      if (_provisioning)
+        _provisioning->Release();
     }
 
     void SystemInfo::Register(PluginHost::ISubSystem::INotification* notification)
@@ -53,6 +66,7 @@ namespace PluginHost {
         ASSERT(std::find(_notificationClients.begin(), _notificationClients.end(), notification) == _notificationClients.end());
 
         _notificationClients.push_back(notification);
+        notification->AddRef();
 
         // Give the registering sink a chance to evaluate the current info before one actually changes.
         notification->Updated();
@@ -70,6 +84,7 @@ namespace PluginHost {
 
         if (index != _notificationClients.end()) {
             _notificationClients.erase(index);
+            notification->Release();
         } else {
             TRACE_L1("Notification(%p) not found.", notification);
         }
@@ -154,9 +169,19 @@ namespace PluginHost {
         return (_city);
     }
 
+    /* virtual */ int32_t SystemInfo::Location::Latitude() const
+    {
+        return (_latitude);
+    }
+
+    /* virtual */ int32_t SystemInfo::Location::Longitude() const
+    {
+        return (_longitude);
+    }
+
     bool SystemInfo::Location::Set(const PluginHost::ISubSystem::ILocation* info)
     {
-        return Set(info->TimeZone(), info->Country(), info->Region(), info->City());
+        return Set(info->TimeZone(), info->Country(), info->Region(), info->City(), info->Latitude(), info->Longitude());
     }
 
     // Device Identifier
@@ -171,15 +196,27 @@ namespace PluginHost {
 
         return (result);
     }
+    /* virtual */ string SystemInfo::Id::Architecture() const
+    {
+        return _architecture;
+    }
+        /* virtual */ string SystemInfo::Id::Chipset() const
+    {
+        return _chipset;
+    }
+
+    /* virtual */ string SystemInfo::Id::FirmwareVersion() const
+    {
+        return _firmwareVersion;
+    }
 
     bool SystemInfo::Id::Set(const PluginHost::ISubSystem::IIdentifier* info)
     {
-
         uint8_t buffer[119];
 
         uint8_t length = info->Identifier(sizeof(buffer), buffer);
 
-        return Set(length, buffer);
+        return Set(length, buffer, info->Architecture(), info->Chipset(), info->FirmwareVersion());
     }
 
     // Time synchronisation

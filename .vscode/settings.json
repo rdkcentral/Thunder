@@ -1,0 +1,13 @@
+{
+    "cmake.configureSettings": {
+        "EXTERN_EVENTS":"",
+        "PORT":"55555",
+        "BINDING":"0.0.0.0",
+        "IDLE_TIME":"180",
+        "PERSISTENT_PATH":"${env:HOME}/Thunder/persistent",
+        "VOLATILE_PATH":"/tmp",
+        "DATA_PATH":"${env:HOME}/Thunder/install/usr/share/WPEFramework",
+        "SYSTEM_PATH":"${env:HOME}/Thunder/install/usr/lib/wpeframework/plugins",
+        "PROXYSTUB_PATH":"${env:HOME}/Thunder/install/usr/lib/wpeframework/proxystubs",
+    }
+}

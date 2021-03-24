@@ -39,7 +39,6 @@ namespace PluginHost {
         // There should be no need to call these methods from the implementation directly.
         virtual void Activate(IShell* service) = 0;
         virtual void Deactivate() = 0;
-        virtual void Closed(const uint32_t channelId) = 0;
     };
 
     class EXTERNAL JSONRPC : public IDispatcher {
@@ -378,7 +377,7 @@ namespace PluginHost {
 
             _service->Submit(id, Core::ProxyType<Core::JSON::IElement>(message));
         }
-        virtual void Activate(IShell* service) override
+        void Activate(IShell* service) override
         {
             ASSERT(_service == nullptr);
             ASSERT(service != nullptr);
@@ -386,7 +385,7 @@ namespace PluginHost {
             _service = service;
             _callsign = _service->Callsign();
         }
-        virtual void Deactivate() override
+        void Deactivate() override
         {
             HandlerList::iterator index(_handlers.begin());
 
@@ -397,15 +396,6 @@ namespace PluginHost {
 
             _handlers.front().Close();
             _service = nullptr;
-        }
-        virtual void Closed(const uint32_t id) override
-        {
-            HandlerList::iterator index(_handlers.begin());
-
-            while (index != _handlers.end()) {
-                index->Close(id);
-                index++;
-            }
         }
 
     private:
@@ -470,7 +460,7 @@ namespace PluginHost {
         virtual void Unsubscribe(Core::JSONRPC::Handler& handler, const uint32_t channelId, const string& eventName, const string& callsign, Core::JSONRPC::Message& response)
         {
             NotifyObservers(eventName, callsign, Status::unregistered);
-            JSONRPC::Subscribe(handler, channelId, eventName, callsign, response);
+            JSONRPC::Unsubscribe(handler, channelId, eventName, callsign, response);
         }
 
     private:

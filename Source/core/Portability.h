@@ -125,12 +125,15 @@
 #include <WinSock2.h>
 #include <algorithm>
 #include <assert.h>
+#include <list>
+#include <map>
 #include <memory.h>
 #include <string>
 #include <windows.h>
 #include <unordered_map>
 #include <atomic>
 #include <array>
+#include <stdarg.h> /* va_list, va_start, va_arg, va_end */
 
 #define AF_NETLINK 16
 #define AF_PACKET  17
@@ -207,9 +210,11 @@ typedef std::string string;
 
 // This is an HTTP keyword (VERB) Let's undefine it from windows headers..
 #define _CRT_SECURE_NO_WARNINGS 1
+#define SOCK_CLOEXEC 0
 #undef DELETE
 #undef min
 #undef max
+#undef ERROR_NOT_SUPPORTED
 
 //#if _MSC_VER >= 1600
 //const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) - 1;
@@ -240,7 +245,9 @@ typedef std::string string;
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <getopt.h>
+#include <list>
 #include <math.h>
+#include <map>
 #include <poll.h>
 #include <pthread.h>
 #include <sched.h>
@@ -261,6 +268,7 @@ typedef std::string string;
 #include <typeinfo>
 #include <unistd.h>
 #include <unordered_map>
+#include <stdarg.h> /* va_list, va_start, va_arg, va_end */
 
 #ifdef __APPLE__
 #include <pthread_impl.h>
@@ -387,15 +395,18 @@ inline void EXTERNAL SleepS(unsigned int a_Time)
 #define WARNING_RESULT_NOT_USED
 #endif
 
+#if !defined(NDEBUG)
 #if defined(_THUNDER_DEBUG) || !defined(_THUNDER_NDEBUG)
 #define __DEBUG__
 #ifdef _THUNDER_PRODUCTION
 #error "Production and Debug is not a good match. Select Production or Debug, not both !!"
 #endif
 #endif
+#endif
 
 #ifdef __LINUX__
 #if !defined(OS_ANDROID) && !defined(OS_NACL) && defined(__GLIBC__)
+#define THUNDER_BACKTRACE 1
 #include <execinfo.h>
 #endif
 #endif
@@ -521,7 +532,7 @@ inline void SleepUs(unsigned int a_Time)
 }
 
 
-void EXTERNAL DumpCallStack(const ThreadId threadId, FILE* output);
+void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<string>& stack);
 uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
 
 }
@@ -533,6 +544,7 @@ uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const
 #endif
 
 namespace WPEFramework {
+
 namespace Core {
 
     inline void* Alignment(size_t alignment, void* incoming)
@@ -592,6 +604,10 @@ namespace Core {
         std::transform(inplace.begin(), inplace.end(), inplace.begin(), ::tolower);
     }
 
+    string EXTERNAL Format(const TCHAR formatter[], ...);
+    void EXTERNAL Format(string& dst, const TCHAR format[], ...);
+    void EXTERNAL Format(string& dst, const TCHAR format[], va_list ap);
+
     const uint32_t infinite = -1;
     static const string emptyString;
 
@@ -614,7 +630,7 @@ namespace Core {
         virtual uint32_t Release() const = 0;
     };
 
-    struct EXTERNAL IUnknown : public IReferenceCounted  {
+    struct EXTERNAL IUnknown : virtual public IReferenceCounted  {
         enum { ID = 0x00000000 };
 
         ~IUnknown() override = default;
