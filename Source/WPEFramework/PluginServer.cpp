@@ -173,9 +173,11 @@ namespace PluginHost
             job->Dispatch();
         }
         catch (const std::exception& type) {
+            REPORT_WARNING(WarningReporting::UncaughtException, type.what());
             Logging::DumpException(type.what());
         }
         catch (...) {
+            REPORT_WARNING(WarningReporting::UncaughtException, _T("UnknownSource"));
             Logging::DumpException(_T("Unknown"));
         }
     #else

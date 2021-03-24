@@ -162,6 +162,37 @@ namespace WarningReporting {
         string _content;
     };
 
+    class EXTERNAL UncaughtException {
+    public:
+        UncaughtException(const UncaughtException& a_Copy) = delete;
+        UncaughtException& operator=(const UncaughtException& a_RHS) = delete;
+
+        UncaughtException() = default;
+        ~UncaughtException() = default;
+
+        bool Analyze(const char modulename[], const char identifier[], const string& exceptionInfo) 
+            _exceptionInfo = exceptionInfo;
+            return true;
+        }
+
+        uint16_t Serialize(uint8_t[], const uint16_t) const {
+            // HPL Todo: implement
+            return(0); 
+        }
+
+        uint16_t Deserialize(const uint8_t[], const uint16_t) {
+            // HPL Todo: implement
+            return(0); 
+        }
+
+        void ToString(string& visitor) const {
+            visitor = core::Format("An uncaught exception has been caught: %s", _exceptionInfo);
+        };
+
+    private:
+        string _exceptionInfo;
+    };
+
 }
 } 
 

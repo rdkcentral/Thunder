@@ -300,6 +300,7 @@ namespace PluginHost {
 #endif
 
     static void UncaughtExceptions () {
+        REPORT_WARNING_GLOBAL(WarningReporting::UncaughtException, _T("Global cught, unhandled exception"));
         Logging::DumpException(_T("General"));
     }
 
