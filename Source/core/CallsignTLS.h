@@ -29,12 +29,11 @@
 
 #else
 
-#define WARNING_REPORTING_THREAD_SETCALLSIGN(CALLSIGN)    \
+#define WARNING_REPORTING_THREAD_SETCALLSIGN_GUARD(CALLSIGN) \
     WPEFramework::Core::CallsignTLS::CallSignTLSGuard callsignguard(CALLSIGN); 
 
-#define WARNING_REPORTING_THREAD_SETCALLSIGN_GUARD(CALLSIGN) \
+#define WARNING_REPORTING_THREAD_SETCALLSIGN(CALLSIGN)    \
     WPEFramework::Core::CallsignTLS::Callsign(CALLSIGN);
-
 
 namespace WPEFramework {
 
