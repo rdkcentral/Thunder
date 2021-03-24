@@ -866,7 +866,7 @@ namespace Core {
                     uint16_t Write(uint8_t stream[], const uint16_t maxLength) const override
                     {
                         const uint16_t length = sizeof(struct rtgenmsg);
-                        ASSERT(length >= maxLength);
+                        ASSERT(length <= maxLength);
 
                         struct rtgenmsg* message(reinterpret_cast<struct rtgenmsg*>(stream));
                         ::memset(message, 0, sizeof(struct rtgenmsg));
@@ -895,7 +895,7 @@ namespace Core {
                     uint16_t Write(uint8_t stream[], const uint16_t maxLength) const override
                     {
                         const uint16_t length = sizeof(struct ifaddrmsg);
-                        ASSERT(length >= maxLength);
+                        ASSERT(length <= maxLength);
 
                         struct ifaddrmsg* message(reinterpret_cast<struct ifaddrmsg*>(stream));
                         ::memset(message, 0, sizeof(struct ifaddrmsg));
