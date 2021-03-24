@@ -79,7 +79,7 @@ namespace Logging {
         std::list<string> stack;
         DumpCallStack(Core::Thread::ThreadId(), stack);
         #ifdef __CORE_WARNING_REPORTING__
-        const TCHAR* callsign = WarningReporting::CallsignTLS::CallsignAccess<&UnknownCallsign>::Callsign();
+        const TCHAR* callsign = Core::CallsignTLS::CallsignAccess<&UnknownCallsign>::Callsign();
         #else
         const TCHAR* callsign = UnknownCallsign;
         #endif
