@@ -24,6 +24,7 @@
 #include "Portability.h"
 #include "Sync.h"
 #include "SystemInfo.h"
+#include "Serialization.h"
 
 #ifdef __LINUX__
 #include <atomic>
@@ -234,7 +235,7 @@ void DumpCallStack(const ThreadId threadId, std::list<string>& stackList)
             snprintf(buffer, sizeof(buffer), "%-3d %*p %s\n",
             i, int(2 + sizeof(void*) * 2), callstack[i], symbols[i]);
         }
-        stackList.push_back(ToString(buffer));
+        stackList.push_back(Core::ToString(buffer));
     }
     free(symbols);
 #else

@@ -63,7 +63,7 @@
 #define B4000000 4000000
 #endif
 
-#if defined(WIN32) || defined(_WINDOWS) || defined (__CYGWIN__)
+#if defined(WIN32) || defined(_WINDOWS) || defined (__CYGWIN__) || defined(_WIN64)
     #ifdef __GNUC__
         #define EXTERNAL        __attribute__ ((dllimport))
         #define EXTERNAL_EXPORT __attribute__ ((dllexport))
@@ -78,6 +78,7 @@
     #endif
 
     #define EXTERNAL_HIDDEN
+    #define __WINDOWS__
 #else
   #if __GNUC__ >= 4 && !defined(__mips__)
     #define EXTERNAL_HIDDEN __attribute__ ((visibility ("hidden")))
@@ -231,6 +232,8 @@ typedef std::string string;
 #include <algorithm>
 #include <atomic>
 #include <array>
+#include <map>
+#include <list>
 #include <alloca.h>
 #include <arpa/inet.h>
 #include <assert.h>
