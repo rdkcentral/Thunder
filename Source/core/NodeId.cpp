@@ -261,7 +261,7 @@ namespace Core {
             }
 
             m_structInfo.DomainSocket.sun_family = AF_UNIX;
-            strncpy(m_structInfo.DomainSocket.sun_path, m_hostName.c_str(), sizeof(m_structInfo.DomainSocket.sun_path));
+            strncpy(m_structInfo.DomainSocket.sun_path, m_hostName.c_str(), sizeof(m_structInfo.DomainSocket.sun_path)-1);
             m_structInfo.DomainSocket.sun_path[sizeof(m_structInfo.DomainSocket.sun_path) - 1] = '\0';
         } else
 #endif

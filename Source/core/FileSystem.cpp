@@ -218,7 +218,7 @@ namespace Core {
         size_t len;
 
         /* copy path */
-        strncpy(tmp, _name.c_str(), sizeof(tmp));
+        strncpy(tmp, _name.c_str(), sizeof(tmp)-1);
         len = strlen(tmp);
         if (len >= sizeof(tmp)) {
             return false;

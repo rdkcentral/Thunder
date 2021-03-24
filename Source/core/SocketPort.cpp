@@ -684,7 +684,7 @@ namespace Core {
         if ((l_Result != INVALID_SOCKET) && (specificInterface.empty() == false)) {
 
             struct ifreq interface;
-            strncpy(interface.ifr_ifrn.ifrn_name, specificInterface.c_str(), IFNAMSIZ);
+            strncpy(interface.ifr_ifrn.ifrn_name, specificInterface.c_str(), IFNAMSIZ-1);
 
             if (::setsockopt(l_Result, SOL_SOCKET, SO_BINDTODEVICE, (const char*)&interface, sizeof(interface)) < 0) {
 
