@@ -331,17 +331,16 @@ namespace Core {
             // -----------------------------------------------------
             HAS_MEMBER(Clear, hasClear);
 
-            typedef hasClear<PACKAGE, void (PACKAGE::*)()> TraitClear;
 
-            template <typename SUBJECT, const uint32_t ID>
-            inline typename Core::TypeTraits::enable_if<RawSerializedType<SUBJECT, ID>::TraitClear::value, void>::type
+            template <typename SUBJECT=PACKAGE, const uint32_t ID>
+            inline typename Core::TypeTraits::enable_if<hasClear<SUBJECT, void (SUBJECT::*)()>::value, void>::type
             __Clear()
             {
                 _package.Clear();
             }
 
-            template <typename SUBJECT, const uint32_t ID>
-            inline typename Core::TypeTraits::enable_if<!RawSerializedType<SUBJECT, ID>::TraitClear::value, void>::type
+            template <typename SUBJECT=PACKAGE, const uint32_t ID>
+            inline typename Core::TypeTraits::enable_if<!hasClear<SUBJECT, void (SUBJECT::*)()>::value, void>::type
             __Clear()
             {
             }
