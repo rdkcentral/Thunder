@@ -326,9 +326,7 @@ namespace Web {
         }
  
     private:
-        HAS_MEMBER(Hash, hasHash);
-
-        typedef hasHash<FILEBODY, typename FILEBODY::HashType& (FILEBODY::*)() const> TraitHasHash;
+    
 
         inline void EndTransfer(const Core::ProxyType<Web::Response>& response)
         {
@@ -378,8 +376,11 @@ namespace Web {
                 _fileBody.Release();
             }
         }
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type
+
+        HAS_MEMBER(Hash, hasHash);
+
+        template <typename ACTUALLINK = LINK, typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _CalculateHash(Web::Request& request)
         {
             uint8_t   buffer[64];
@@ -402,22 +403,22 @@ namespace Web {
             request.ContentSignature = Signature(hash.HashType(), hash.Result());
         }
 
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<!ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type
+        template <typename ACTUALLINK = LINK, typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _CalculateHash()
         {
         }
 
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, bool>::type
+        template <typename ACTUALLINK = LINK, typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             // See if this is a valid. frame
             return ((signature.IsSet() == false) || (signature.Value().Equal(_fileBody.HashType(), _fileBody.Hash().Result()) == true));
         }
 
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<!ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, bool>::type
+        template <typename ACTUALLINK = LINK, typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             return (true);
