@@ -78,8 +78,8 @@ namespace Logging {
     void DumpException(const string& exceptionType) {
         std::list<string> stack;
         DumpCallStack(Core::Thread::ThreadId(), stack);
-        #ifdef __CORE_WARNING_REPORTING__
-        const TCHAR* callsign = WarningReporting::CallsignTLS::CallsignAccess<&UnknownCallsign>::Callsign();
+        #if defined(__CORE_EXCEPTION_CATCHING__) || defined(__CORE_WARNING_REPORTING__)
+        const TCHAR* callsign = Core::CallsignTLS::CallsignAccess<&UnknownCallsign>::Callsign();
         #else
         const TCHAR* callsign = UnknownCallsign;
         #endif
