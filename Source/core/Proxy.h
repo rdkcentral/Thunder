@@ -185,7 +185,6 @@ namespace Core {
         // -----------------------------------------------------
         HAS_MEMBER(Initialize, hasInitialize);
 
-
         template <typename TYPE=CONTEXT>
         inline typename Core::TypeTraits::enable_if<hasInitialize<TYPE, uint32_t (TYPE::*)()>::value, uint32_t>::type
         __Initialize()
@@ -204,7 +203,6 @@ namespace Core {
         // Check for Deinitialize method on Object
         // -----------------------------------------------------
         HAS_MEMBER(Deinitialize, hasDeinitialize);
-
 
         template <typename TYPE=CONTEXT>
         inline typename Core::TypeTraits::enable_if<hasDeinitialize<TYPE, void (TYPE::*)()>::value, void>::type
@@ -1053,7 +1051,6 @@ namespace Core {
             // -----------------------------------------------------
             HAS_MEMBER(Clear, hasClear);
 
-
             template <typename TYPE=ELEMENT>
             inline typename Core::TypeTraits::enable_if<hasClear<TYPE, void (TYPE::*)()>::value, void>::type
             __Clear()
@@ -1071,7 +1068,6 @@ namespace Core {
             // Check for Aquire method on Object
             // -----------------------------------------------------
             HAS_MEMBER(Acquire, hasAcquire);
-
 
             template <typename TYPE=ELEMENT>
             inline typename Core::TypeTraits::enable_if<hasAcquire<TYPE, void (TYPE::*)()>::value, void>::type
@@ -1441,17 +1437,15 @@ namespace Core {
             // -----------------------------------------------------
             HAS_MEMBER(Clear, hasClear);
 
-            typedef hasClear<LISTTYPE, void (LISTTYPE::*)()> TraitClear;
-
-            template <typename TYPE1, typename TYPE2>
-            inline typename Core::TypeTraits::enable_if<ListElementType<TYPE1, TYPE2>::TraitClear::value, void>::type
+            template <typename TYPE1, typename TYPE2=LISTTYPE>
+            inline typename Core::TypeTraits::enable_if<hasClear<TYPE2, void (TYPE2::*)()>::value, void>::type
             __Clear()
             {
                 REALTYPE::Clear();
             }
 
-            template <typename TYPE1, typename TYPE2>
-            inline typename Core::TypeTraits::enable_if<!ListElementType<TYPE1, TYPE2>::TraitClear::value, void>::type
+            template <typename TYPE1, typename TYPE2=LISTTYPE>
+            inline typename Core::TypeTraits::enable_if<!hasClear<TYPE2, void (TYPE2::*)()>::value, void>::type
             __Clear()
             {
             }

@@ -549,8 +549,6 @@ namespace Web {
     private:
         HAS_MEMBER(Hash, hasHash);
 
-        typedef hasHash<FILEBODY, typename FILEBODY::HashType& (FILEBODY::*)() const> TraitHasHash;
-
         template <typename ACTUALLINK, typename ACTUALFILEBODY>
         inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type
         _CalculateHash(Web::Response& request)

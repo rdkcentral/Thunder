@@ -390,7 +390,6 @@ namespace Core {
 
             HAS_MEMBER(Deserialize, hasDeserialize);
 
-            typedef hasDeserialize<PACKAGE, uint16_t (PACKAGE::*)(const uint8_t[], const uint16_t, const uint32_t)> TraitDeserialize;
 
             template <typename SUBJECT=PACKAGE, const uint32_t ID>
             inline typename Core::TypeTraits::enable_if<hasDeserialize<SUBJECT, uint16_t (SUBJECT::*)(const uint8_t[], const uint16_t, const uint32_t)>::value, uint16_t>::type
@@ -1040,8 +1039,6 @@ namespace Core {
 
     private:
         HAS_MEMBER(StateChange, hasStateChange);
-
-        typedef hasStateChange<EXTENSION, void (EXTENSION::*)()> TraitStateChange;
 
         template <typename A=ACTUALSOURCE, typename B=EXTENSION>
         inline typename Core::TypeTraits::enable_if<hasStateChange<B, void (B::*)()> ::value, void>::type
