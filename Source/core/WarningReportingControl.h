@@ -29,11 +29,10 @@
 #include "Time.h"
 #include "TypeTraits.h"
 #include "Optional.h"
+#include "CallsignTLS.h"
 #include <vector>
 
 #ifndef __CORE_WARNING_REPORTING__
-
-#define WARNING_REPORTING_THREAD_SETCALLSIGN(CALLSIGN)
 
 #define REPORT_WARNING(CATEGORY, ...)                                                  
 
@@ -66,18 +65,15 @@
 // OutOfBounds warning category:
 //  - BoundsType to indicate type for boubnds values
 
-#define WARNING_REPORTING_THREAD_SETCALLSIGN(CALLSIGN)    \
-    WPEFramework::WarningReporting::CallsignTLS::CallSignTLSGuard callsignguard(CALLSIGN); 
-
 #define REPORT_WARNING(CATEGORY, ...)                                                    \
     if (WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled() == true) { \
         CATEGORY __data__ ;  \
         if( WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::CallAnalyzeIfAvailable(__data__, WPEFramework::Core::System::MODULE_NAME,  \
-                             WPEFramework::WarningReporting::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
+                             WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
                             ##__VA_ARGS__) == true ) {                           \
             WPEFramework::WarningReporting::WarningReportingType<CATEGORY> __message__(__data__);  \
             WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                            \
-                WPEFramework::WarningReporting::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
+                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
                 __FILE__,                                                                  \
                 __LINE__,                                                                  \
                 typeid(*this).name(),                                                      \
@@ -89,11 +85,11 @@
     if (WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled() == true) { \
         CATEGORY __data__ ;  \
         if( WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::CallAnalyzeIfAvailable(__data__, WPEFramework::Core::System::MODULE_NAME,  \
-                             WPEFramework::WarningReporting::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
+                             WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
                             ##__VA_ARGS__) == true ) {                           \
             WPEFramework::WarningReporting::WarningReportingType<CATEGORY> __message__(__data__);  \
             WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                            \
-                WPEFramework::WarningReporting::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
+                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
                 __FILE__,                                                                  \
                 __LINE__,                                                                  \
             __FUNCTION__,                                                              \
@@ -105,12 +101,12 @@
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t>>::IsEnabled() == true) { \
         WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t> __data__ ;  \
         if( __data__.Analyze(WPEFramework::Core::System::MODULE_NAME,  \
-                             WPEFramework::WarningReporting::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
+                             WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
                             ACTUALVALUE,  \
                             ##__VA_ARGS__) == true ) {                           \
             WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t>> __message__(__data__);  \
             WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                            \
-                WPEFramework::WarningReporting::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
+                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
                 __FILE__,                                                                  \
                 __LINE__,                                                                  \
                 typeid(*this).name(),                                                      \
@@ -125,12 +121,12 @@
         uint32_t duration( (Core::Time::Now().Ticks() - start.Ticks()) / Core::Time::TicksPerMillisecond);              \
         WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t> __data__ ;  \
         if( __data__.Analyze(WPEFramework::Core::System::MODULE_NAME,  \
-                             WPEFramework::WarningReporting::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
+                             WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
                             duration,  \
                             ##__VA_ARGS__) == true ) {                           \
             WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t>> __message__(__data__);  \
             WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                            \
-                WPEFramework::WarningReporting::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
+                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
                 __FILE__,                                                                  \
                 __LINE__,                                                                  \
                 typeid(*this).name(),                                                      \
@@ -149,62 +145,6 @@ namespace Core {
 }
 
 namespace WarningReporting {
-
-    class CallsignTLS {
-    public:
-
-        template <const char** MODULENAME>
-        struct CallsignAccess {
-            static const char* Callsign() {
-                const char* callsign = CallsignTLS::Callsign();
-                if( callsign == nullptr ) {
-                    callsign = *MODULENAME;
-                }
-                return callsign;
-            }
-        };
-
-        class CallSignTLSGuard {
-        public:
-            CallSignTLSGuard(const CallSignTLSGuard&) = delete;
-            CallSignTLSGuard& operator=(const CallSignTLSGuard&) = delete;
-
-            explicit CallSignTLSGuard(const char* callsign) {
-                CallsignTLS::Callsign(callsign);
-            }
-
-            ~CallSignTLSGuard() {
-                CallsignTLS::Callsign(nullptr);
-            }
-
-        };
-
-        static const char* Callsign();
-        static void Callsign(const char* callsign);
-
-    private:
-        friend class Core::ThreadLocalStorageType<CallsignTLS>;
-    
-        CallsignTLS(const CallsignTLS&) = delete;
-        CallsignTLS& operator=(const CallsignTLS&) = delete;
-
-        CallsignTLS() : _name() {};
-        ~CallsignTLS() = default;
-
-        void Name(const char* name) {  
-            if ( name != nullptr ) {
-                _name = name; 
-            } else {
-                _name.clear(); 
-            }
-        }
-        const char* Name() const { 
-            return ( _name.empty() == false ? _name.c_str() : nullptr ); 
-        }
-
-    private:
-        string _name;
-    };
 
     class WarningReportingUnitProxy {
     public:

@@ -54,20 +54,6 @@ namespace {
 namespace WPEFramework {
 namespace WarningReporting {
 
-    const char* CallsignTLS::Callsign() {
-
-        Core::ThreadLocalStorageType<CallsignTLS>& instance = Core::ThreadLocalStorageType<CallsignTLS>::Instance();
-        const char* name = nullptr;
-        if( ( instance.IsSet() == true ) && ( instance.Context().Name() != nullptr ) ) {
-            name = instance.Context().Name(); // should be safe, nobody should for this thread be able to change this while we are using it 
-        }
-        return name;
-    }
-
-    void CallsignTLS::Callsign(const char* callsign) {
-        Core::ThreadLocalStorageType<CallsignTLS>::Instance().Context().Name(callsign);
-    }
-
     WarningReportingUnitProxy& WarningReportingUnitProxy::Instance()
     {
         return (Core::SingletonType<WarningReportingUnitProxy>::Instance());
