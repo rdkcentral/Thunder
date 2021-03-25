@@ -140,6 +140,7 @@ set(PUBLIC_HEADERS
         WarningReportingControl.h
         WarningReportingCategories.h
         Module.h
+        CallsignTLS.h
         )
 
 # non-buildable interface target to carry the definitions
@@ -160,6 +161,10 @@ endif()
 if (EXCEPTION_CATCHING)
     target_compile_definitions(${TARGET} PUBLIC __CORE_EXCEPTION_CATCHING__)
     message(STATUS "Unhandled Exception catching enabled")
+endif()
+
+if(WARNING_REPORTING OR EXCEPTION_CATCHING)
+    target_sources(${TARGET} PRIVATE CallsignTLS.cpp)
 endif()
 
 if(DEADLOCK_DETECTION)
