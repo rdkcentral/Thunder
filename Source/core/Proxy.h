@@ -185,17 +185,16 @@ namespace Core {
         // -----------------------------------------------------
         HAS_MEMBER(Initialize, hasInitialize);
 
-        typedef hasInitialize<CONTEXT, uint32_t (CONTEXT::*)()> TraitInitialize;
 
-        template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<ProxyService<TYPE>::TraitInitialize::value, uint32_t>::type
+        template <typename TYPE=CONTEXT>
+        inline typename Core::TypeTraits::enable_if<hasInitialize<TYPE, uint32_t (TYPE::*)()>::value, uint32_t>::type
         __Initialize()
         {
             return (CONTEXT::Initialize());
         }
 
-        template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<!ProxyService<TYPE>::TraitInitialize::value, uint32_t>::type
+        template <typename TYPE=CONTEXT>
+        inline typename Core::TypeTraits::enable_if<!hasInitialize<TYPE, uint32_t (TYPE::*)()>::value, uint32_t>::type
         __Initialize()
         {
             return (Core::ERROR_NONE);
@@ -206,17 +205,17 @@ namespace Core {
         // -----------------------------------------------------
         HAS_MEMBER(Deinitialize, hasDeinitialize);
 
-        typedef hasDeinitialize<CONTEXT, void (CONTEXT::*)()> TraitDeinitialize;
 
-        template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<ProxyService<TYPE>::TraitDeinitialize::value, void>::type
+        template <typename TYPE=CONTEXT>
+        inline typename Core::TypeTraits::enable_if<hasDeinitialize<TYPE, void (TYPE::*)()>::value, void>::type
         __Deinitialize()
         {
             CONTEXT::Deinitialize();
         }
 
-        template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<!ProxyService<TYPE>::TraitDeinitialize::value, void>::type
+
+        template <typename TYPE=CONTEXT>
+        inline typename Core::TypeTraits::enable_if<!hasDeinitialize<TYPE, void (TYPE::*)()>::value, void>::type
         __Deinitialize()
         {
         }
@@ -1054,17 +1053,16 @@ namespace Core {
             // -----------------------------------------------------
             HAS_MEMBER(Clear, hasClear);
 
-            typedef hasClear<ELEMENT, void (ELEMENT::*)()> TraitClear;
 
-            template <typename TYPE>
-            inline typename Core::TypeTraits::enable_if<ProxyObjectType<TYPE>::TraitClear::value, void>::type
+            template <typename TYPE=ELEMENT>
+            inline typename Core::TypeTraits::enable_if<hasClear<TYPE, void (TYPE::*)()>::value, void>::type
             __Clear()
             {
                 ELEMENT::Clear();
             }
 
             template <typename TYPE>
-            inline typename Core::TypeTraits::enable_if<!ProxyObjectType<TYPE>::TraitClear::value, void>::type
+            inline typename Core::TypeTraits::enable_if<!hasClear<TYPE, void (TYPE::*)()>::value, void>::type
             __Clear()
             {
             }
@@ -1074,17 +1072,16 @@ namespace Core {
             // -----------------------------------------------------
             HAS_MEMBER(Acquire, hasAcquire);
 
-            typedef hasAcquire<ELEMENT, void (ELEMENT::*)()> TraitAcquire;
 
-            template <typename TYPE>
-            inline typename Core::TypeTraits::enable_if<ProxyObjectType<TYPE>::TraitAcquire::value, void>::type
+            template <typename TYPE=ELEMENT>
+            inline typename Core::TypeTraits::enable_if<hasAcquire<TYPE, void (TYPE::*)()>::value, void>::type
             __Acquire()
             {
                 ELEMENT::Acquire();
             }
 
-            template <typename TYPE>
-            inline typename Core::TypeTraits::enable_if<!ProxyObjectType<TYPE>::TraitAcquire::value, void>::type
+            template <typename TYPE=ELEMENT>
+            inline typename Core::TypeTraits::enable_if<!hasAcquire<TYPE, void (TYPE::*)()>::value, void>::type
             __Acquire()
             {
             }
@@ -1094,17 +1091,15 @@ namespace Core {
             // -----------------------------------------------------
             HAS_MEMBER(Relinquish, hasRelinquish);
 
-            typedef hasRelinquish<ELEMENT, void (ELEMENT::*)()> TraitRelinquish;
-
-            template <typename TYPE>
-            inline typename Core::TypeTraits::enable_if<ProxyObjectType<TYPE>::TraitRelinquish::value, void>::type
+            template <typename TYPE=ELEMENT>
+            inline typename Core::TypeTraits::enable_if<hasRelinquish<TYPE, void (TYPE::*)()>::value, void>::type
             __Relinquish()
             {
                 ELEMENT::Relinquish();
             }
 
             template <typename TYPE>
-            inline typename Core::TypeTraits::enable_if<!ProxyObjectType<TYPE>::TraitRelinquish::value, void>::type
+            inline typename Core::TypeTraits::enable_if<!hasRelinquish<TYPE, void (TYPE::*)()>::value, void>::type
             __Relinquish()
             {
             }
@@ -1256,17 +1251,15 @@ namespace Core {
             // -----------------------------------------------------
             HAS_MEMBER(IsInitialized, hasIsInitialized);
 
-            typedef hasIsInitialized<ELEMENT, bool (ELEMENT::*)() const> TraitIsInitialized;
-
-            template <typename ID, typename TYPE>
-            inline typename Core::TypeTraits::enable_if<ProxyObjectType<ID, TYPE>::TraitIsInitialized::value, bool>::type
+            template <typename ID, typename TYPE=ELEMENT>
+            inline typename Core::TypeTraits::enable_if<hasIsInitialized<TYPE, bool (TYPE::*)() const>::value, bool>::type
             __IsInitialized() const
             {
                 return (ELEMENT::IsInitialized());
             }
 
-            template <typename ID, typename TYPE>
-            inline typename Core::TypeTraits::enable_if<!ProxyObjectType<ID, TYPE>::TraitIsInitialized::value, bool>::type
+            template <typename ID, typename TYPE=ELEMENT>
+            inline typename Core::TypeTraits::enable_if<!hasIsInitialized<TYPE, bool (TYPE::*)() const>::value, bool>::type
             __IsInitialized() const
             {
                 return (true);
@@ -1429,17 +1422,15 @@ namespace Core {
             // -----------------------------------------------------
             HAS_MEMBER(IsInitialized, hasIsInitialized);
 
-            typedef hasIsInitialized<REALTYPE, bool (REALTYPE::*)() const> TraitIsInitialized;
-
-            template <typename TYPE1, typename TYPE2>
-            inline typename Core::TypeTraits::enable_if<ListElementType<TYPE1, TYPE2>::TraitIsInitialized::value, bool>::type
+            template <typename TYPE1, typename TYPE2=REALTYPE>
+            inline typename Core::TypeTraits::enable_if<hasIsInitialized<TYPE2, bool (TYPE2::*)() const>::value, bool>::type
             __IsInitialized() const
             {
                 return (REALTYPE::IsInitialized());
             }
 
-            template <typename TYPE1, typename TYPE2>
-            inline typename Core::TypeTraits::enable_if<!ListElementType<TYPE1, TYPE2>::TraitIsInitialized::value, bool>::type
+            template <typename TYPE1, typename TYPE2=REALTYPE>
+            inline typename Core::TypeTraits::enable_if<!hasIsInitialized<TYPE2, bool (TYPE2::*)() const>::value, bool>::type
             __IsInitialized() const
             {
                 return (true);
