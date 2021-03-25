@@ -389,12 +389,32 @@ namespace RPC {
 
     template <const uint8_t THREADPOOLCOUNT, const uint32_t STACKSIZE, const uint32_t MESSAGESLOTS>
     class InvokeServerType : public IIPCServer {
+    private:
+        class Dispatcher : public Core::ThreadPool::IDispatcher {
+        public:
+            Dispatcher(const Dispatcher&) = delete;
+            Dispatcher& operator=(const Dispatcher&) = delete;
+
+            Dispatcher() = default;
+            ~Dispatcher() override = default;
+
+        private:
+            void Initialize() override {
+            }
+            void Deinitialize() override {
+            }
+            void Dispatch(Core::IDispatchType<void>* job) override {
+                job->Dispatch();
+            }
+        };
+
     public:
         InvokeServerType(const InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&) = delete;
         InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>& operator = (const InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&) = delete;
 
         InvokeServerType()
-            : _threadPoolEngine(THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS)
+            : _dispatcher()
+            , _threadPoolEngine(THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS, &_dispatcher)
             , _handler(nullptr)
         {
             _threadPoolEngine.Run();
@@ -435,6 +455,7 @@ namespace RPC {
         }
 
     private:
+        Dispatcher _dispatcher;
         Core::ThreadPool _threadPoolEngine;
         Core::IIPCServer* _handler;
     };

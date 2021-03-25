@@ -1100,7 +1100,7 @@ namespace RPC {
             {
                 return (_connectionMap != nullptr);
             }
-            const uint32_t Id() const
+            uint32_t Id() const
             {
                 return _id;
             }

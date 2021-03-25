@@ -245,7 +245,7 @@ namespace Core {
         , _index(0)
     {
 #ifndef __WINDOWS__
-        FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) { return true; });
+        FindChildren(_pids, [=](const uint32_t, const uint32_t) { return true; });
 #endif
         Reset();
     }
@@ -311,7 +311,7 @@ namespace Core {
             }
         }
 #else
-        FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) {
+        FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t) {
             return parentPID == foundparentPID;
         });
 #endif
@@ -326,8 +326,8 @@ namespace Core {
         , _handle(OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, _pid))
 #else
         : _pid(getpid())
-        , _memory(_pid)
 #endif
+        , _memory(_pid)
     {
     }
 

@@ -38,16 +38,16 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     { Core::ProcessInfo::ROUNDROBIN, _TXT("RoundRobin") },
     { Core::ProcessInfo::OTHER, _TXT("Other") },
 
-    ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
+ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
 
-        ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
+ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
 
-            { PluginHost::InputHandler::DEVICE, _TXT("device") },
+    { PluginHost::InputHandler::DEVICE, _TXT("device") },
     { PluginHost::InputHandler::VIRTUAL, _TXT("virtual") },
 
-    ENUM_CONVERSION_END(PluginHost::InputHandler::type)
+ENUM_CONVERSION_END(PluginHost::InputHandler::type)
 
-        namespace PluginHost
+namespace PluginHost
 {
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_missingCallsign(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_incorrectVersion(Core::ProxyType<Web::Response>::Create());
@@ -158,6 +158,30 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         const string _jsonrpcPath;
         const string _controllerName;
     };
+
+    void Server::WorkerPoolImplementation::Dispatcher::Dispatch(Core::IDispatch* job) /* override */ {
+    #ifdef __CORE_EXCEPTION_CATCHING__
+        string callsign(_T("Unknown"));
+        Channel::Job* rootObject = dynamic_cast<Channel::Job*>(job);
+        if (rootObject != nullptr) {
+            callsign = rootObject->Callsign();
+        }
+
+        WARNING_REPORTING_THREAD_SETCALLSIGN_GUARD(callsign.c_str());
+
+        try {
+            job->Dispatch();
+        }
+        catch (const std::exception& type) {
+            Logging::DumpException(type.what());
+        }
+        catch (...) {
+            Logging::DumpException(_T("Unknown"));
+        }
+    #else
+        job->Dispatch();
+    #endif
+    }
 
     void Server::ChannelMap::GetMetaData(Core::JSON::ArrayType<MetaData::Channel> & metaData) const
     {
@@ -340,9 +364,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
                 TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
-                TRACE_DURATION(ErrorMessage(_handler->Initialize(this)); 
-                    , _T("Plugin [%s]:[%s] Initialize"), className.c_str(), callSign.c_str()
-                )
+                REPORT_DURATION_WARNING( { ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
 
                 
 
@@ -470,9 +492,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
                 TRACE(Activity, (_T("Deactivation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
-                TRACE_DURATION(_handler->Deinitialize(this);
-                    , _T("Plugin [%s]:[%s] Deinitialize"), className.c_str(), callSign.c_str()
-                )
+                REPORT_DURATION_WARNING( { _handler->Deinitialize(this); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::DEACTIVATION, callSign.c_str());
 
                 Lock();
 
@@ -490,7 +510,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
             SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
-            TRACE(Activity, (Trace::Format(_T("Deactivate plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
+            TRACE(Activity, (Core::Format(_T("Deactivate plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
 
             State(why == CONDITIONS? PRECONDITION : DEACTIVATED);
 
@@ -648,7 +668,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         : _dispatcher(configuration.StackSize())
         , _connections(*this, configuration.Binder(), configuration.IdleTime())
         , _config(configuration)
-        , _services(*this, _config, configuration.StackSize())
+        , _services(*this, _config)
         , _controller()
         , _factoriesImplementation()
     {
@@ -741,10 +761,8 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     void Server::Notification(const ForwardMessage& data)
     {
         Plugin::Controller* controller;
-        if ((_controller.IsValid() == false) || ((controller = (_controller->ClassType<Plugin::Controller>())) == nullptr)) {
-            DumpCallStack(0, nullptr);
-        } else {
-
+        if ((_controller.IsValid() == true) && ((controller = (_controller->ClassType<Plugin::Controller>())) != nullptr)) {
+            
             controller->Notification(data);
 
 #if THUNDER_RESTFULL_API

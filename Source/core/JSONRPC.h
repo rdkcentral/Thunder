@@ -609,7 +609,7 @@ namespace Core {
             }
             template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
             typename std::enable_if<(std::is_same<std::nullptr_t, typename std::remove_cv<GET_METHOD>::type>::value && !std::is_same<std::nullptr_t, typename std::remove_cv<SET_METHOD>::type>::value), void>::type
-            Property(const string& methodName, GET_METHOD getMethod, SET_METHOD setMethod, REALOBJECT* objectPtr)
+            Property(const string& methodName, GET_METHOD, SET_METHOD setMethod, REALOBJECT* objectPtr)
             {
                 using COUNT = Core::TypeTraits::func_traits<SET_METHOD>;
 
@@ -619,7 +619,7 @@ namespace Core {
             }
             template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
             typename std::enable_if<(!std::is_same<std::nullptr_t, typename std::remove_cv<GET_METHOD>::type>::value && std::is_same<std::nullptr_t, typename std::remove_cv<SET_METHOD>::type>::value), void>::type
-            Property(const string& methodName, GET_METHOD getMethod, SET_METHOD setMethod, REALOBJECT* objectPtr)
+            Property(const string& methodName, GET_METHOD getMethod, SET_METHOD, REALOBJECT* objectPtr)
             {
                 using COUNT = Core::TypeTraits::func_traits<GET_METHOD>;
 

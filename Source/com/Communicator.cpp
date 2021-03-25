@@ -496,6 +496,7 @@ namespace RPC {
         if (announceMessage->Response().IsSet() == true) {
             // Is result of an announce message, contains default trace categories in JSON format.
             string jsonDefaultCategories(announceMessage->Response().TraceCategories());
+            // HPL todo: we need to extend sending this info here, or just pass the complete config and have it parsed here (nothing would need to be dynamicaly changed, we will not suport that)
 
             if (jsonDefaultCategories.empty() == false) {
                 Trace::TraceUnit::Instance().Defaults(jsonDefaultCategories);
