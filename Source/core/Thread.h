@@ -40,12 +40,25 @@ namespace Core {
 #ifdef __POSIX__
         static void destruct(void* value)
         {
-            printf("Destructor ThreadControlBlockInfo <0x%p>\n", value);
             if (value != nullptr) {
                 delete reinterpret_cast<THREADLOCALSTORAGE*>(value);
             }
         }
 #endif
+        void Delete() { 
+#ifdef __WINDOWS__
+            if (m_Index != -1) {
+                void* l_Result = TlsGetValue(m_Index);
+                delete reinterpret_cast<THREADLOCALSTORAGE*>(l_Result);
+                TlsFree(m_Index);
+            }
+#endif
+
+#ifdef __POSIX__
+          pthread_key_delete(m_Key);
+#endif
+
+        }
 
         ThreadLocalStorageType()
         {
@@ -65,19 +78,15 @@ namespace Core {
         }
 
     public:
+
+        // not very convenient if these can be copied, it will delete the key
+        ThreadLocalStorageType(const ThreadLocalStorageType&) = delete;
+        ThreadLocalStorageType& operator=(const ThreadLocalStorageType&) = delete;
+
         ~ThreadLocalStorageType()
         {
             TRACE_L5("Destructor ThreadControlBlockInfo <%p>", (this));
-
-#ifdef __WINDOWS__
-            if (m_Index != -1) {
-                TlsFree(m_Index);
-            }
-#endif
-
-#ifdef __POSIX__
-            pthread_key_delete(m_Key);
-#endif
+            Delete();
         }
 
         static ThreadLocalStorageType<THREADLOCALSTORAGE>& Instance()
@@ -108,6 +117,20 @@ namespace Core {
 #endif
 
             return *(reinterpret_cast<THREADLOCALSTORAGE*>(l_Result));
+        }
+
+        bool IsSet() const {
+            bool isset = false;
+#ifdef __WINDOWS__
+            void* l_Result = TlsGetValue(m_Index);
+            isset = (l_Result != nullptr);
+#endif
+
+#ifdef __POSIX__
+            void* l_Result = pthread_getspecific(m_Key);
+            isset = (l_Result != nullptr);
+#endif
+            return isset;
         }
 
     private:

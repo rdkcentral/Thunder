@@ -19,6 +19,10 @@ get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 find_package(Breakpad QUIET)
 
+if(EXCEPTION_CATCHING)
+    set_source_files_properties( Process.cpp PROPERTIES COMPILE_FLAGS "-fexceptions" )
+endif()
+
 add_executable(${TARGET}
         Process.cpp
         )
@@ -40,6 +44,13 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
         )
+        
+if (WARNING_REPORTING)
+    target_link_libraries(${TARGET}
+            PRIVATE
+              ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting
+            )
+endif()
 
 if (PROTOCOLS)
     target_link_libraries(${TARGET}

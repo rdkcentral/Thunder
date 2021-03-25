@@ -30,6 +30,14 @@ namespace Core {
     public:
         typedef Core::QueueType< Core::ProxyType<IDispatch> > MessageQueue;
 
+        struct IDispatcher {
+            virtual ~IDispatcher() = default;
+
+            virtual void Initialize() = 0;
+            virtual void Deinitialize() = 0;
+            virtual void Dispatch(Core::IDispatchType<void>*) = 0;
+        };
+
         template<typename IMPLEMENTATION>
         class JobType {
         private:
@@ -132,14 +140,16 @@ namespace Core {
             Minion(const Minion&) = delete;
             Minion& operator=(const Minion&) = delete;
 
-            Minion(MessageQueue& queue)
-                : _queue(queue)
+            Minion(MessageQueue& queue, IDispatcher* dispatcher)
+                : _dispatcher(dispatcher)
+                , _queue(queue)
                 , _adminLock()
                 , _signal(false, false)
                 , _interestCount(0)
                 , _currentRequest()
                 , _runs(0)
             {
+		ASSERT(dispatcher != nullptr);
             }
             ~Minion() = default;
 
@@ -169,13 +179,16 @@ namespace Core {
             }
             void Process()
             {
+		_dispatcher->Initialize();
+
                 while (_queue.Extract(_currentRequest, Core::infinite) == true) {
 
                     ASSERT(_currentRequest.IsValid() == true);
 
                     _runs++;
 
-                    _currentRequest->Dispatch();
+                    Core::IDispatch* request = &(*_currentRequest);
+                    _dispatcher->Dispatch(request);
                     _currentRequest.Release();
 
                     // if someone is observing this run, (WaitForCompletion) make sure that
@@ -193,9 +206,12 @@ namespace Core {
                     }
                     _adminLock.Unlock();
                 }
+
+		_dispatcher->Deinitialize();
             }
 
         private:
+            IDispatcher* _dispatcher;
             MessageQueue& _queue;
             Core::CriticalSection _adminLock;
             Core::Event _signal;
@@ -207,12 +223,13 @@ namespace Core {
     private:
         class EXTERNAL Executor : public Core::Thread {
         public:
+            Executor() = delete;
             Executor(const Executor&) = delete;
             Executor& operator=(const Executor&) = delete;
 
-            Executor(MessageQueue* queue, const uint32_t stackSize, const TCHAR* name)
+            Executor(MessageQueue& queue, IDispatcher* dispatcher, const uint32_t stackSize, const TCHAR* name)
                 : Core::Thread(stackSize == 0 ? Core::Thread::DefaultStackSize() : stackSize, name)
-                , _minion(*queue)
+                , _minion(queue, dispatcher)
             {
             }
             ~Executor() override
@@ -254,12 +271,12 @@ namespace Core {
         ThreadPool(const ThreadPool& a_Copy) = delete;
         ThreadPool& operator=(const ThreadPool& a_RHS) = delete;
 
-        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize) 
+        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher) 
             : _queue(queueSize)
         {
             const TCHAR* name = _T("WorkerPool::Thread");
             for (uint8_t index = 0; index < count; index++) {
-                _units.emplace_back(&_queue, stackSize, name);
+                _units.emplace_back(_queue, dispatcher, stackSize, name);
             }
         }
         ~ThreadPool() {
@@ -365,7 +382,7 @@ namespace Core {
             }
         }
 
-   private:
+    private:
         MessageQueue _queue;
         std::list<Executor> _units;
     };

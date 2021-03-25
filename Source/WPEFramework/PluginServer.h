@@ -24,6 +24,7 @@
 #include "SystemInfo.h"
 #include "Config.h"
 #include "IRemoteInstantiation.h"
+#include "WarningReportingCategories.h"
 
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
@@ -99,18 +100,38 @@ namespace PluginHost {
 
     private:
         class WorkerPoolImplementation : public Core::WorkerPool {
+        private:
+            class Dispatcher : public Core::ThreadPool::IDispatcher {
+            public:
+                Dispatcher(const Dispatcher&) = delete;
+                Dispatcher& operator=(const Dispatcher&) = delete;
+
+                Dispatcher() = default;
+                ~Dispatcher() override = default;
+
+            private:
+                void Initialize() override {
+                }
+                void Deinitialize() override {
+                }
+                void Dispatch(Core::IDispatch* job) override;
+            };
+
         public:
             WorkerPoolImplementation() = delete;
             WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
             WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
             WorkerPoolImplementation(const uint32_t stackSize)
-                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 16)
+                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 16, &_dispatch)
+                , _dispatch()
             {
+                Run();
             }
-            virtual ~WorkerPoolImplementation()
-            {
-            }
+            ~WorkerPoolImplementation() override = default;
+
+        private:
+            Dispatcher _dispatch;
         };
 
         class FactoriesImplementation : public IFactories {
@@ -173,7 +194,7 @@ namespace PluginHost {
             {
                 va_list ap;
                 va_start(ap, formatter);
-                Trace::Format(_text, formatter, ap);
+                Core::Format(_text, formatter, ap);
                 va_end(ap);
             }
             Activity(const string& text)
@@ -816,11 +837,11 @@ namespace PluginHost {
             IShell::ICOMLink* COMLink() override {
                 return (this);
             }
-            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign) override
+            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId) override
             {
                 ASSERT(_connection == nullptr);
 
-                void* result(_administrator.Instantiate(object, waitTime, sessionId, className, callsign, DataPath(), PersistentPath(), VolatilePath()));
+                void* result(_administrator.Instantiate(object, waitTime, sessionId, DataPath(), PersistentPath(), VolatilePath()));
 
                 _connection = _administrator.RemoteConnection(sessionId);
 
@@ -883,7 +904,7 @@ namespace PluginHost {
             inline IPlugin* CheckLibrary(const string& name, const TCHAR* className, const uint32_t version)
             {
                 IPlugin* newIF = nullptr;
-                Core::File libraryToLoad(name, true);
+                Core::File libraryToLoad(name);
 
                 if (libraryToLoad.Exists() != true) {
                     if (HasError() == false) {
@@ -1148,7 +1169,7 @@ namespace PluginHost {
                 }
 
             public:
-                void* Create(uint32_t& connectionId, const RPC::Object& instance, const string& classname, const string& callsign, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath)
+                void* Create(uint32_t& connectionId, const RPC::Object& instance, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath)
                 {
                     return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, volatilePath, _appPath, _proxyStubPath, _postMortemPath), waitTime));
                 }
@@ -1561,7 +1582,7 @@ namespace PluginHost {
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
-            ServiceMap(Server& server, Config& config, const uint32_t stackSize)
+            ServiceMap(Server& server, Config& config)
                 : _webbridgeConfig(config)
                 , _adminLock()
                 , _notificationLock()
@@ -1726,9 +1747,9 @@ namespace PluginHost {
                 return (result);
             }
 
-            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign, const string& dataPath, const string& persistentPath, const string& volatilePath)
+            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& dataPath, const string& persistentPath, const string& volatilePath)
             {
-                return (_processAdministrator.Create(sessionId, object, className, callsign, waitTime, dataPath, persistentPath, volatilePath));
+                return (_processAdministrator.Create(sessionId, object, waitTime, dataPath, persistentPath, volatilePath));
             }
             void Register(RPC::IRemoteConnection::INotification* sink)
             {
@@ -1977,7 +1998,7 @@ namespace PluginHost {
         // (is closed) during the service process, the ChannelMap will
         // not find it and just "flush" the presented work.
         class Channel : public PluginHost::Channel {
-        private:
+        public:
             class Job : public Core::IDispatch {
             public:
                 Job() = delete;
@@ -2027,19 +2048,27 @@ namespace PluginHost {
                 }
                 string Process(const string& message)
                 {
-                    return (_service->Inbound(_ID, message));
+                    string result;
+                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, message);  
+                    return result;
                 }
                 Core::ProxyType<Core::JSONRPC::Message> Process(const string& token, const Core::ProxyType<Core::JSONRPC::Message>& message)
                 {
-                    return (_service->Invoke(token, _ID, *message));
+                    Core::ProxyType<Core::JSONRPC::Message> result;
+                    REPORT_DURATION_WARNING( { result = _service->Invoke(token, _ID, *message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    return result;
                 }
                 Core::ProxyType<Web::Response> Process(const Core::ProxyType<Web::Request>& message)
                 {
-                    return (_service->Process(*message));
+                    Core::ProxyType<Web::Response> result;
+                    REPORT_DURATION_WARNING( { result = _service->Process(*message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    return result;
                 }
                 Core::ProxyType<Core::JSON::IElement> Process(const Core::ProxyType<Core::JSON::IElement>& message)
                 {
-                    return (_service->Inbound(_ID, message));
+                    Core::ProxyType<Core::JSON::IElement> result;
+                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    return result;
                 }
                 template <typename PACKAGE>
                 void Submit(PACKAGE package)
@@ -2048,6 +2077,10 @@ namespace PluginHost {
                 }
                 void RequestClose() {
                     _server->Dispatcher().RequestClose(_ID);
+                }
+                string Callsign() const {
+                    ASSERT(_service.IsValid() == true);
+                    return _service->Callsign();
                 }
 
             private:
@@ -2094,6 +2127,7 @@ namespace PluginHost {
                 }
                 void Dispatch() override
                 {
+                    
                     ASSERT(_request.IsValid());
                     ASSERT(Job::HasService() == true);
 
@@ -2154,6 +2188,7 @@ namespace PluginHost {
                     _request.Release();
 
                     Job::Clear();
+                    
                 }
 
             private:

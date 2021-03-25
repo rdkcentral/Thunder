@@ -220,6 +220,7 @@ namespace Core {
             .msg_iovlen = 1,
             .msg_control = cmbuf,
             .msg_controllen = sizeof(cmbuf),
+            .msg_flags = 0
         };
 
         result = recvmsg(handle, &mh, 0);
@@ -1133,7 +1134,11 @@ namespace Core {
         socklen_t size = sizeof(address);
         SOCKET result;
 
+        #ifdef __WINDOWS__
+        if ((result = ::accept(m_Socket, (struct sockaddr*)&address, &size)) != SOCKET_ERROR) {
+        #else
         if ((result = ::accept4(m_Socket, (struct sockaddr*)&address, &size, SOCK_CLOEXEC)) != SOCKET_ERROR) {
+        #endif  
             // Align the buffer to what is requested
             BufferAlignment(result);
 

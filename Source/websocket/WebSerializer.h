@@ -152,8 +152,8 @@ namespace Web {
             , _startPosition(0)
         {
         }
-        FileBody(const string& path, const bool sharable)
-            : Core::File(path, sharable)
+        FileBody(const string& path)
+            : Core::File(path)
             , _opened(false)
             , _startPosition(0)
         {

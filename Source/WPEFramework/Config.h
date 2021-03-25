@@ -313,6 +313,7 @@ namespace PluginHost {
                 , IdleTime(0)
                 , IPV6(false)
                 , DefaultTraceCategories(false)
+                , DefaultWarningReportingCategories(false)
                 , Process()
                 , Input()
                 , Configs()
@@ -342,7 +343,8 @@ namespace PluginHost {
                 Add(_T("signature"), &Signature);
                 Add(_T("idletime"), &IdleTime);
                 Add(_T("ipv6"), &IPV6);
-                Add(_T("tracing"), &DefaultTraceCategories);
+                Add(_T("tracing"), &DefaultTraceCategories); 
+                Add(_T("warningreporting"), &DefaultWarningReportingCategories); 
                 Add(_T("redirect"), &Redirect);
                 Add(_T("process"), &Process);
                 Add(_T("input"), &Input);
@@ -379,6 +381,7 @@ namespace PluginHost {
             Core::JSON::DecUInt16 IdleTime;
             Core::JSON::Boolean IPV6;
             Core::JSON::String DefaultTraceCategories;
+            Core::JSON::String DefaultWarningReportingCategories; 
             ProcessSet Process;
             InputConfig Input;
             Core::JSON::String Configs;
@@ -549,6 +552,8 @@ namespace PluginHost {
                 }
                 _traceCategories = config.DefaultTraceCategories.Value();
 
+                _warningReportingCategories = config.DefaultWarningReportingCategories.Value();
+
                 if (config.Model.IsSet()) {
                     _model = config.Model.Value();
                 } else if (Core::SystemInfo::GetEnvironment(_T("MODEL_NAME"), _model) == false) {
@@ -615,6 +620,10 @@ namespace PluginHost {
         {
             return (_traceCategories);
         }
+        inline const string& WarningReportingCategories() const
+        {
+            return (_warningReportingCategories);
+        }
         inline const string& Redirect() const
         {
             return (_redirect);
@@ -676,7 +685,7 @@ namespace PluginHost {
         {
             return (_postMortemPath);
         }
-        inline const bool PostMortemAllowed(PluginHost::IShell::reason why) const
+        inline bool PostMortemAllowed(PluginHost::IShell::reason why) const
         {
             std::list<PluginHost::IShell::reason>::const_iterator index(std::find(_reasons.begin(), _reasons.end(), why));
             return ((index != _reasons.end()) ? true: false);
@@ -852,6 +861,7 @@ namespace PluginHost {
         string _model;
         string _traceCategories;
         bool _traceCategoriesFile;
+        string _warningReportingCategories;
         string _binding;
         string _interface;
         string _URL;

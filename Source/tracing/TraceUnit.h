@@ -115,10 +115,10 @@ namespace Trace {
             }
 
         public:
-            const bool HasModule() const {
+            bool HasModule() const {
                 return (_module.IsSet());
             }
-            const bool HasCategory() const {
+            bool HasCategory() const {
                 return (_category.IsSet());
             }
             const string& Module() const {
