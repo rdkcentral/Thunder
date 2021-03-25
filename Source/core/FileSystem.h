@@ -122,8 +122,8 @@ namespace Core {
 #endif
 
     public:
-        explicit File(const bool sharable = false);
-        explicit File(const string& fileName, const bool sharable = false);
+        explicit File();
+        explicit File(const string& fileName);
         explicit File(const File& copy);
         ~File();
 

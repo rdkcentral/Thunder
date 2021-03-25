@@ -30,16 +30,16 @@ include(CMakePackageConfigHelpers)
 #
 if("${BUILD_TYPE}" STREQUAL "Debug")
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR ${CMAKE_COMPILER_IS_GNUCXX} )
-        target_compile_options(CompileSettingsDebug INTERFACE -O0 -g)
+        target_compile_options(CompileSettingsDebug INTERFACE -O0 -g -Wextra)
     endif()
 
 elseif("${BUILD_TYPE}" STREQUAL "DebugOptimized")
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR ${CMAKE_COMPILER_IS_GNUCXX} )
-        target_compile_options(CompileSettingsDebug INTERFACE -O2 -g)
+        target_compile_options(CompileSettingsDebug INTERFACE -O2 -g -Wextra)
     endif()
 
 elseif("${BUILD_TYPE}" STREQUAL "ReleaseSymbols")
-    target_compile_options(CompileSettingsDebug INTERFACE "${CMAKE_C_FLAGS_DEBUG}")
+    target_compile_options(CompileSettingsDebug INTERFACE "${CMAKE_C_FLAGS_DEBUG}" -Wextra)
 endif()
 
 install(TARGETS CompileSettingsDebug EXPORT CompileSettingsDebugTargets)

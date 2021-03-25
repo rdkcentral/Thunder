@@ -236,7 +236,7 @@ namespace PluginHost
                 std::vector<string> all_paths = GetLibrarySearchPaths(locator);
                 std::vector<string>::const_iterator index = all_paths.begin();
                 while ((result == nullptr) && (index != all_paths.end())) {
-                    Core::File file(index->c_str(), false);
+                    Core::File file(index->c_str());
                     if (file.Exists())
                     {
                         Core::Library resource(index->c_str());
@@ -275,7 +275,7 @@ namespace PluginHost
                     rootObject.RemoteAddress.Value(),
                     rootObject.Configuration.Value());
 
-                result = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());
+                result = handler->Instantiate(definition, waitTime, pid);
             }
         }
 

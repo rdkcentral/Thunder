@@ -251,7 +251,7 @@ namespace PluginHost {
 
         while (pluginDirectory.Next() == true) {
 
-            Core::File file(pluginDirectory.Current(), true);
+            Core::File file(pluginDirectory.Current());
 
             if (file.Exists()) {
                 if (file.IsDirectory()) {
@@ -362,7 +362,7 @@ namespace PluginHost {
         Logging::SysLog(!_background);
 
         // Read the config file, to instantiate the proper plugins and for us to open up the right listening ear.
-        Core::File configFile(string(options.configFile), false);
+        Core::File configFile(string(options.configFile));
         if (configFile.Open(true) == true) {
             Core::OptionalType<Core::JSON::Error> error;
             _config = new Config(configFile, _background, error);
@@ -451,7 +451,7 @@ namespace PluginHost {
 
                 traceSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + _config->TraceCategories();
 
-                Core::File input (traceSettings, true);
+                Core::File input (traceSettings);
 
                 if (input.Open(true)) {
                     Trace::TraceUnit::Instance().Defaults(input);

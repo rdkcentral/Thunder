@@ -38,7 +38,7 @@ namespace WarningReporting {
 
         ~TooLongPluginState() = default;
 
-        bool Analyze(const char modulename[], const char identifier[], const StateChange change, const char* callsignforstatechange) {
+        bool Analyze(const char[], const char[], const StateChange change, const char* callsignforstatechange) {
             _callsign = callsignforstatechange;
             _stateChange = change;
             return true;
@@ -91,27 +91,27 @@ namespace WarningReporting {
 
         // HPL todo: we might want to change the data being captured, or the logging
 
-        bool Analyze(const char modulename[], const char identifier[], const string& message) {
+        bool Analyze(const char[], const char[], const string& message) {
             _type = Type::STRING;
             _content = message.substr(0, 20); 
             
             return true;
         }
 
-        bool Analyze(const char modulename[], const char identifier[], const Core::JSONRPC::Message& message) {
+        bool Analyze(const char[], const char[], const Core::JSONRPC::Message& message) {
             _type = Type::JSONRPC;
             _content = message.Designator.Value(); 
             return true;
         }
 
-        bool Analyze(const char modulename[], const char identifier[], const Web::Request& message) {
+        bool Analyze(const char[], const char[], const Web::Request& message) {
             _type = Type::WEBREQUEST;
             message.ToString(_content);
             _content = _content.substr(0, 40);
             return true;
         }
 
-        bool Analyze(const char modulename[], const char identifier[], const Core::JSON::IElement& message) {
+        bool Analyze(const char[], const char[], const Core::JSON::IElement& message) {
             _type = Type::JSON;
             message.ToString(_content);
             _content = _content.substr(0, 40); 

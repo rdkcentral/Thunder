@@ -837,11 +837,11 @@ namespace PluginHost {
             IShell::ICOMLink* COMLink() override {
                 return (this);
             }
-            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign) override
+            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId) override
             {
                 ASSERT(_connection == nullptr);
 
-                void* result(_administrator.Instantiate(object, waitTime, sessionId, className, callsign, DataPath(), PersistentPath(), VolatilePath()));
+                void* result(_administrator.Instantiate(object, waitTime, sessionId, DataPath(), PersistentPath(), VolatilePath()));
 
                 _connection = _administrator.RemoteConnection(sessionId);
 
@@ -904,7 +904,7 @@ namespace PluginHost {
             inline IPlugin* CheckLibrary(const string& name, const TCHAR* className, const uint32_t version)
             {
                 IPlugin* newIF = nullptr;
-                Core::File libraryToLoad(name, true);
+                Core::File libraryToLoad(name);
 
                 if (libraryToLoad.Exists() != true) {
                     if (HasError() == false) {
@@ -1169,7 +1169,7 @@ namespace PluginHost {
                 }
 
             public:
-                void* Create(uint32_t& connectionId, const RPC::Object& instance, const string& classname, const string& callsign, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath)
+                void* Create(uint32_t& connectionId, const RPC::Object& instance, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath)
                 {
                     return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, volatilePath, _appPath, _proxyStubPath, _postMortemPath), waitTime));
                 }
@@ -1582,7 +1582,7 @@ namespace PluginHost {
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
-            ServiceMap(Server& server, Config& config, const uint32_t stackSize)
+            ServiceMap(Server& server, Config& config)
                 : _webbridgeConfig(config)
                 , _adminLock()
                 , _notificationLock()
@@ -1747,9 +1747,9 @@ namespace PluginHost {
                 return (result);
             }
 
-            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign, const string& dataPath, const string& persistentPath, const string& volatilePath)
+            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& dataPath, const string& persistentPath, const string& volatilePath)
             {
-                return (_processAdministrator.Create(sessionId, object, className, callsign, waitTime, dataPath, persistentPath, volatilePath));
+                return (_processAdministrator.Create(sessionId, object, waitTime, dataPath, persistentPath, volatilePath));
             }
             void Register(RPC::IRemoteConnection::INotification* sink)
             {

@@ -668,7 +668,7 @@ namespace PluginHost
         : _dispatcher(configuration.StackSize())
         , _connections(*this, configuration.Binder(), configuration.IdleTime())
         , _config(configuration)
-        , _services(*this, _config, configuration.StackSize())
+        , _services(*this, _config)
         , _controller()
         , _factoriesImplementation()
     {
