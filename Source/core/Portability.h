@@ -134,6 +134,7 @@
 #include <unordered_map>
 #include <atomic>
 #include <array>
+#include <thread>
 #include <stdarg.h> /* va_list, va_start, va_arg, va_end */
 
 #define AF_NETLINK 16
@@ -271,6 +272,7 @@ typedef std::string string;
 #include <typeinfo>
 #include <unistd.h>
 #include <unordered_map>
+#include <thread>
 #include <stdarg.h> /* va_list, va_start, va_arg, va_end */
 
 #ifdef __APPLE__
