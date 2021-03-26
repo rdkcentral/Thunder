@@ -21,7 +21,7 @@
 
 namespace WPEFramework {
 namespace Core {
-    File::File(const bool sharable)
+    File::File()
         : _name()
         , _size(0)
         , _attributes(0)
@@ -31,7 +31,7 @@ namespace Core {
         , _handle(INVALID_HANDLE_VALUE)
     {
     }
-    File::File(const string& fileName, const bool sharable)
+    File::File(const string& fileName)
         : _name(fileName)
         , _size(0)
         , _attributes(0)

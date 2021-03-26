@@ -224,7 +224,7 @@ namespace WarningReporting {
         }
 
     private:
-        inline uint32_t Open(const string& doorBell, const string& fileName) 
+        inline uint32_t Open(const string& , const string& ) 
         {
 
             /*  HPL Todo: only direct output supported at the moment

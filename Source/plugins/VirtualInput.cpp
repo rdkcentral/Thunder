@@ -139,7 +139,7 @@ namespace PluginHost
     {
         uint32_t result = Core::ERROR_ILLEGAL_STATE;
 
-        Core::File mappingFile(keyMap, true);
+        Core::File mappingFile(keyMap);
         Core::JSON::ArrayType<KeyMapEntry> mappingTable;
 
         if (mappingFile.Create() == true) {
@@ -622,11 +622,11 @@ namespace PluginHost
         return (Core::ERROR_NONE);
     }
 
-    /* virtual */ void LinuxKeyboardInput::LookupChanges(const string& source)
+    /* virtual */ void LinuxKeyboardInput::LookupChanges(const string& )
     {
     }
 
-    /* virtual */ void LinuxKeyboardInput::MapChanges(ChangeIterator & updated)
+    /* virtual */ void LinuxKeyboardInput::MapChanges(ChangeIterator& updated)
     {
         _lock.Lock();
 
@@ -673,11 +673,11 @@ namespace PluginHost
         }
     }
 
-    /* virtual */ void LinuxKeyboardInput::Send(const IVirtualInput::MouseData& data)
+    /* virtual */ void LinuxKeyboardInput::Send(const IVirtualInput::MouseData&)
     {
     }
 
-    /* virtual */ void LinuxKeyboardInput::Send(const IVirtualInput::TouchData& data)
+    /* virtual */ void LinuxKeyboardInput::Send(const IVirtualInput::TouchData&)
     {
     }
 

@@ -27,13 +27,13 @@ namespace Process {
 
         private:
             void Initialize() override {
+                WARNING_REPORTING_THREAD_SETCALLSIGN(_identifier.c_str());
             }
             void Deinitialize() override {
+                WARNING_REPORTING_THREAD_SETCALLSIGN(nullptr);
             }
             void Dispatch(Core::IDispatch* job) override {
             #ifdef __CORE_EXCEPTION_CATCHING__
-            // HPL: This should not be RAII, this can be done in Initialize and Deinitialize
-            WARNING_REPORTING_THREAD_SETCALLSIGN(_identifier.c_str());
             try {
                 job->Dispatch();
             }
@@ -605,7 +605,7 @@ int main(int argc, char** argv)
         }
 
         // set for the main thread
-        WARNING_REPORTING_THREAD_SETCALLSIGN(callsign.c_str());
+        WARNING_REPORTING_THREAD_SETCALLSIGN_GUARD(callsign.c_str());
 
         #ifdef USE_BREAKPAD
         google_breakpad::MinidumpDescriptor descriptor(options.PostMortemPath);

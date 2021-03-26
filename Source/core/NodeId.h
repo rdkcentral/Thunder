@@ -243,7 +243,6 @@ namespace Core {
         }
 
         string HostName() const;
-        void HostName(const TCHAR strHostName[]);
 
         NodeId AnyInterface() const;
         string HostAddress() const;

@@ -16,23 +16,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-#include "TextReader.h"
+
+#include "CallsignTLS.h"
+#include "Thread.h"
 
 namespace WPEFramework {
 namespace Core {
-    TextFragment TextReader::ReadLine() const
-    {
-        const uint64_t location = m_Index;
-        m_Index = static_cast<uint32_t>(m_DataBlock.SearchNumber<TCHAR, ENDIAN_PLATFORM>(location, static_cast<TCHAR>('\n')));
-        uint32_t length = m_Index - static_cast<uint32_t>(location);
 
-        if (m_Index < m_DataBlock.Size()) {
-            // Seems we did not end up at the end so we found the EOLN marker. Jump over it.
-            m_Index += sizeof(TCHAR);
+    const char* CallsignTLS::Callsign() {
+
+        Core::ThreadLocalStorageType<CallsignTLS>& instance = Core::ThreadLocalStorageType<CallsignTLS>::Instance();
+        const char* name = nullptr;
+        if( ( instance.IsSet() == true ) && ( instance.Context().Name() != nullptr ) ) {
+            name = instance.Context().Name(); // should be safe, nobody should for this thread be able to change this while we are using it 
         }
+        return name;
+    }
 
-        return (length == 0 ? TextFragment() : TextFragment(reinterpret_cast<const TCHAR*>(&(m_DataBlock[static_cast<uint32_t>(location)])), length));
+    void CallsignTLS::Callsign(const char* callsign) {
+        Core::ThreadLocalStorageType<CallsignTLS>::Instance().Context().Name(callsign);
     }
 }
-} //namespace Solution::Core
+} 
