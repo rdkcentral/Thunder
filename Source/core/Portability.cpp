@@ -219,19 +219,25 @@ void DumpCallStack(const ThreadId threadId, FILE* feed)
 
     for (uint32_t i = 0; i < entries; i++) {
         Dl_info info;
+        char msg[256];
         if (dladdr(callstack[i], &info) && info.dli_sname) {
             char* demangled = NULL;
             int status = -1;
             if (info.dli_sname[0] == '_') {
                 demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
             }
-            fprintf(output, "%-3d %*p %s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i],
+            sprintf(msg, "%-3d %*p %.*s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i], 200,
                 status == 0 ? demangled : info.dli_sname == 0 ? symbols[i] : info.dli_sname,
                 (char*)callstack[i] - (char*)info.dli_saddr);
+            fputs(msg, output);
+            syslog(LOG_INFO, "%s\n", msg);
             free(demangled);
         } else {
-            fprintf(output, "%-3d %*p %s\n",
-            i, int(2 + sizeof(void*) * 2), callstack[i], symbols[i]);
+            sprintf(msg, "%-3d %*p %.*s\n",
+                i, int(2 + sizeof(void*) * 2), callstack[i], 200, symbols[i]);
+            fputs(msg, output);
+            syslog(LOG_INFO, "%s\n", msg);
+
         }
     }
     free(symbols);

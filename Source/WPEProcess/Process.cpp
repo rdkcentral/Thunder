@@ -24,9 +24,9 @@ namespace Process {
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
-            Sink(WorkerPoolImplementation& parent) 
+            Sink(WorkerPoolImplementation& parent)
                 : _parent(parent)
-                , _job(*this) 
+                , _job(*this)
             {
             }
 #ifdef __WINDOWS__
@@ -46,7 +46,7 @@ namespace Process {
                     TRACE_L1("We still have living object [%d].", instances);
                 }
                 else {
-                    
+
                     TRACE_L1("All living objects are killed. Time for HaraKiri!!.");
 
                     // Seems there is no more live here, time to signal the
@@ -388,7 +388,7 @@ public:
             // We are done, close the channel and unregister all shit we added...
             #ifdef __DEBUG__
             _server->Close(RPC::CommunicationTimeOut);
-            #else       
+            #else
             _server->Close(2 * RPC::CommunicationTimeOut);
             #endif
 
@@ -452,7 +452,7 @@ public:
                 }
             }
         }
- 
+
         if ((result = _server->Open(waitTime, interfaceId, base, sequenceId)) == Core::ERROR_NONE) {
             TRACE_L1("Process up and running: %d.", Core::ProcessInfo().Id());
             _engine->Run();
@@ -472,6 +472,8 @@ private:
 
             ProcessFlow::Abort();
 
+        } else if (signo == SIGINT) {
+            DumpCallStack(0, nullptr);
         } else if (signo == SIGSEGV) {
             DumpCallStack(0, nullptr);
             // now invoke the default segfault handler
