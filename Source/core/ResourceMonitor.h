@@ -258,14 +258,14 @@ namespace Core {
     private:
         HAS_MEMBER(Arm, hasArm);
 
-        template <typename TYPE>
+        template <typename TYPE=WATCHDOG>
         inline typename Core::TypeTraits::enable_if<hasArm<TYPE, void (TYPE::*)()>::value, void>::type
         Arm()
         {
             _watchDog.Arm();
         }
 
-        template <typename TYPE>
+        template <typename TYPE=WATCHDOG>
         inline typename Core::TypeTraits::enable_if<!hasArm<TYPE, void (TYPE::*)()>::value, void>::type
         Arm()
         {

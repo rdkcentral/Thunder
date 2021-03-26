@@ -352,14 +352,14 @@ namespace Core {
 
 
             template <typename SUBJECT=PACKAGE, const uint32_t ID>
-            inline typename Core::TypeTraits::enable_if<hasLength<SUBJECT, uint32_t (PACKAGE::*)() const>::value, uint32_t>::type
+            inline typename Core::TypeTraits::enable_if<hasLength<SUBJECT, uint32_t (SUBJECT::*)() const>::value, uint32_t>::type
             _Length() const
             {
                 return (_package.Length());
             }
 
             template <typename SUBJECT=PACKAGE, const uint32_t ID>
-            inline typename Core::TypeTraits::enable_if<!hasLength<SUBJECT, uint32_t (PACKAGE::*)() const>::value, uint32_t>::type
+            inline typename Core::TypeTraits::enable_if<!hasLength<SUBJECT, uint32_t (SUBJECT::*)() const>::value, uint32_t>::type
             _Length() const
             {
                 return (sizeof(PACKAGE));
