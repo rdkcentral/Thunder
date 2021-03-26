@@ -386,7 +386,7 @@ namespace PluginHost {
                     myself.Group(_config->Process().Group());
                 }
                 if (_config->StackSize() != 0) {
-                    Core::Thread::DefaultStackSize(_config->StackSize()); 
+                    Core::Thread::DefaultStackSize(_config->StackSize());
                 }
 
 #ifndef __WINDOWS__
@@ -409,7 +409,7 @@ namespace PluginHost {
             }
 
             string traceSettings (options.configFile);
- 
+
             // Create PostMortem path
             Core::Directory postMortemPath(_config->PostMortemPath().c_str());
             if (postMortemPath.Next() != true) {
@@ -483,7 +483,12 @@ namespace PluginHost {
                 char keyPress;
 
                 do {
-                    keyPress = toupper(getchar());
+                    string option;
+                    std::getline (std::cin, option);
+                    if (!option.empty())
+                        keyPress = toupper(option.at(0));
+                    else
+                        keyPress = 0;
 
                     switch (keyPress) {
                     case 'C': {
@@ -686,7 +691,7 @@ namespace PluginHost {
                             flags[6] = (info.events & POLLHUP    ? 'H' : '-');
                             flags[7] = '\0';
 #endif
-                      
+
                             printf ("%6d [%s]: %s\n", info.descriptor, flags, Core::ClassNameOnly(info.classname).Text().c_str());
                             index++;
                         }
@@ -708,7 +713,7 @@ namespace PluginHost {
                     case '5':
                     case '6':
                     case '7':
-                    case '8': 
+                    case '8':
                     case '9': {
                         ThreadId threadId = _dispatcher->WorkerPool().Id(keyPress - '0');
                         printf("\nThreadPool thread[%c] callstack:\n", keyPress);
@@ -721,6 +726,35 @@ namespace PluginHost {
 
                         break;
                     }
+                    case 'O': {
+                        if ((option.size() > 3) && (option.at(1) == ' ')) {
+                            pid_t pid = atoi(option.substr(2).c_str());
+                            if (pid > 0) {
+                                printf("\nOut of process(%d) Callstack\n", pid);
+                                printf("============================================================\n");
+                                kill(pid, SIGINT);
+                            }
+                        } else {
+                            const string processName = "WPEProcess-1.0.0";
+                            string callsign;
+
+                            printf("\nOut of process(s)\n");
+                            printf("pid\tcallsign\n");
+                            printf("---\t--------\n");
+                            std::list<Core::ProcessInfo> processes;
+                            Core::ProcessInfo::FindByName(processName, false, processes);
+                            for (const Core::ProcessInfo& processInfo : processes) {
+                                std::list<string> commandLine = processInfo.CommandLine();
+                                std::list<string>::const_iterator i = std::find(commandLine.cbegin(), commandLine.cend(), "-C");
+                                if (++i != commandLine.cend()) {
+                                    callsign = *i;
+                                }
+
+                                printf("%d\t%s\n", processInfo.Id(), callsign.c_str());
+                            }
+                        }
+                        break;
+                    }
                     case '?':
                         printf("\nOptions are: \n");
                         printf("  [P]lugins\n");
@@ -730,6 +764,7 @@ namespace PluginHost {
                         printf("  [M]etadata resource monitor\n");
                         printf("  [R]esource monitor stack\n");
                         printf("  [0..%d] Workerpool stacks\n", THREADPOOL_COUNT);
+                        printf("  [O]ut process stack [<pid]>\n");
                         printf("  [Q]uit\n\n");
                         break;
 
