@@ -999,7 +999,7 @@ namespace Core {
             // Make sure all threads are in running mode, place our request
             // for sync at the end of the FIFO-queue for syncConditionMutex.
             pthread_mutex_unlock(&m_syncAdminLock);
-            ::SleepMs(0);
+            std::this_thread::yield();
             pthread_mutex_lock(&m_syncAdminLock);
 
             // They all had a change to continue so, now it is over, we can
@@ -1034,7 +1034,7 @@ namespace Core {
         // Make sure all threads are in running mode, place our request
         // for sync at the end of the FIFO-queue for syncConditionMutex.
         pthread_mutex_unlock(&m_syncAdminLock);
-        ::SleepMs(0);
+        std::this_thread::yield();
         pthread_mutex_lock(&m_syncAdminLock);
 
         // They all had a change to continue so, now it is over, we can
