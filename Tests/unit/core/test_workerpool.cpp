@@ -33,7 +33,7 @@ public:
     WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
     WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize)
-        : WorkerPool(threads, stackSize, queueSize)
+        : WorkerPool(threads, stackSize, queueSize, &_dispatcher)
     {
     }
 
@@ -54,6 +54,23 @@ public:
     {
         Core::WorkerPool::Stop();
     }
+private:
+    class Dispatcher : public Core::ThreadPool::IDispatcher {
+    public:
+      Dispatcher(const Dispatcher&) = delete;
+      Dispatcher& operator=(const Dispatcher&) = delete;
+
+      Dispatcher() = default;
+      ~Dispatcher() override = default;
+
+    private:
+      void Initialize() override { }
+      void Deinitialize() override { }
+      void Dispatch(Core::IDispatch* job) override
+        { job->Dispatch(); }
+    };
+
+    Dispatcher _dispatcher;
 };
 
 Core::ProxyType<WorkerPoolImplementation> workerpool = Core::ProxyType<WorkerPoolImplementation>::Create(2, Core::Thread::DefaultStackSize(), 8);
