@@ -1111,6 +1111,7 @@ namespace Core {
             }
             else {
                 index->second->Update(data, length);
+                Notify(index->second->Name());
             }
             _adminLock.Unlock();
         }
