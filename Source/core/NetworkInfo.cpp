@@ -1132,17 +1132,13 @@ namespace Core {
         void Added(const uint32_t id, const Core::IPNode& node) {
             Map::iterator index(_networks.find(id));
             if (index != _networks.end()) {
-                if (index->second->Added(node) == true) {
-                    Notify(index->second->Name());
-                }
+                index->second->Added(node);
             }
         }
         void Removed(const uint32_t id, const Core::IPNode& node) {
             Map::iterator index(_networks.find(id));
             if (index != _networks.end()) {
-                if (index->second->Removed(node) == true) {
-                    Notify(index->second->Name());
-                }
+                index->second->Removed(node);
             }
         }
 
