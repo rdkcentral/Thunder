@@ -345,7 +345,7 @@ namespace Web {
                            (((Transferred() == 0) && (FileSize() == 0)) || (FileSize() < Transferred()))) {
                     errorCode = Core::ERROR_WRITE_ERROR;
                 } else if ((response->ErrorCode == Web::STATUS_UNAUTHORIZED) || 
-                          ((_state == TRANSFER_DOWNLOAD) && (_ValidateHash<LINK, FILEBODY>(response->ContentSignature) == false))) {
+                          ((_state == TRANSFER_DOWNLOAD) && (_ValidateHash(response->ContentSignature) == false))) {
                     errorCode = Core::ERROR_INCORRECT_HASH;
                 } else if (response->ErrorCode == Web::STATUS_REQUEST_RANGE_NOT_SATISFIABLE) {
                     errorCode = Core::ERROR_INVALID_RANGE;
@@ -379,7 +379,7 @@ namespace Web {
 
         HAS_MEMBER(Hash, hasHash);
 
-        template <typename ACTUALLINK = LINK, typename ACTUALFILEBODY = FILEBODY>
+        template < typename ACTUALFILEBODY = FILEBODY>
         inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _CalculateHash(Web::Request& request)
         {
@@ -403,13 +403,13 @@ namespace Web {
             request.ContentSignature = Signature(hash.HashType(), hash.Result());
         }
 
-        template <typename ACTUALLINK = LINK, typename ACTUALFILEBODY = FILEBODY>
+        template < typename ACTUALFILEBODY = FILEBODY>
         inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _CalculateHash()
         {
         }
 
-        template <typename ACTUALLINK = LINK, typename ACTUALFILEBODY = FILEBODY>
+        template <typename ACTUALFILEBODY = FILEBODY>
         inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
@@ -417,7 +417,7 @@ namespace Web {
             return ((signature.IsSet() == false) || (signature.Value().Equal(_fileBody.HashType(), _fileBody.Hash().Result()) == true));
         }
 
-        template <typename ACTUALLINK = LINK, typename ACTUALFILEBODY = FILEBODY>
+        template < typename ACTUALFILEBODY = FILEBODY>
         inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
@@ -514,7 +514,7 @@ namespace Web {
                     string message = Authorize(*element);
 
                     if (message.empty() == true) {
-                        _CalculateHash<LINK, FILEBODY>(*_response);
+                        _CalculateHash(*_response);
                         _response->Body(_fileBody);
                     } else {
                         // Somehow we are not Authorzed. Kill it....

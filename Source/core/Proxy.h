@@ -1029,7 +1029,7 @@ namespace Core {
                     ProxyObjectType* baseElement(const_cast<ProxyObjectType*>(this));
 
                     baseElement->__Relinquish<ELEMENT>();
-                    baseElement->__Clear<ELEMENT>();
+                    baseElement->__Clear();
 
                     Core::ProxyType<ProxyObjectType> returnObject(static_cast<IReferenceCounted*>(baseElement), baseElement);
 
@@ -1058,7 +1058,7 @@ namespace Core {
                 ELEMENT::Clear();
             }
 
-            template <typename TYPE>
+            template <typename TYPE=ELEMENT>
             inline typename Core::TypeTraits::enable_if<!hasClear<TYPE, void (TYPE::*)()>::value, void>::type
             __Clear()
             {
@@ -1238,7 +1238,7 @@ namespace Core {
             }
             bool IsInitialized() const
             {
-                return (__IsInitialized<KEY, ELEMENT>());
+                return (__IsInitialized());
             }
 
         private:
@@ -1247,14 +1247,14 @@ namespace Core {
             // -----------------------------------------------------
             HAS_MEMBER(IsInitialized, hasIsInitialized);
 
-            template <typename ID, typename TYPE=ELEMENT>
+            template  <typename TYPE=ELEMENT>
             inline typename Core::TypeTraits::enable_if<hasIsInitialized<TYPE, bool (TYPE::*)() const>::value, bool>::type
             __IsInitialized() const
             {
                 return (ELEMENT::IsInitialized());
             }
 
-            template <typename ID, typename TYPE=ELEMENT>
+            template < typename TYPE=ELEMENT>
             inline typename Core::TypeTraits::enable_if<!hasIsInitialized<TYPE, bool (TYPE::*)() const>::value, bool>::type
             __IsInitialized() const
             {
@@ -1400,7 +1400,7 @@ namespace Core {
             }
             bool IsInitialized() const
             {
-                return (__IsInitialized<LISTTYPE, REALTYPE>());
+                return (__IsInitialized());
             }
             void Clear()
             {
@@ -1408,7 +1408,7 @@ namespace Core {
                 // ListObject
                 Core::InterlockedIncrement(ProxyService<REALTYPE>::m_RefCount);
                 _parent = nullptr;
-                __Clear<LISTTYPE, REALTYPE>();
+                __Clear();
                 Core::InterlockedDecrement(ProxyService<REALTYPE>::m_RefCount);
             }
 
@@ -1418,15 +1418,15 @@ namespace Core {
             // -----------------------------------------------------
             HAS_MEMBER(IsInitialized, hasIsInitialized);
 
-            template <typename TYPE1, typename TYPE2=REALTYPE>
-            inline typename Core::TypeTraits::enable_if<hasIsInitialized<TYPE2, bool (TYPE2::*)() const>::value, bool>::type
+            template <typename TYPE=REALTYPE>
+            inline typename Core::TypeTraits::enable_if<hasIsInitialized<TYPE, bool (TYPE::*)() const>::value, bool>::type
             __IsInitialized() const
             {
                 return (REALTYPE::IsInitialized());
             }
 
-            template <typename TYPE1, typename TYPE2=REALTYPE>
-            inline typename Core::TypeTraits::enable_if<!hasIsInitialized<TYPE2, bool (TYPE2::*)() const>::value, bool>::type
+            template <typename TYPE=REALTYPE>
+            inline typename Core::TypeTraits::enable_if<!hasIsInitialized<TYPE, bool (TYPE::*)() const>::value, bool>::type
             __IsInitialized() const
             {
                 return (true);
@@ -1437,14 +1437,14 @@ namespace Core {
             // -----------------------------------------------------
             HAS_MEMBER(Clear, hasClear);
 
-            template <typename TYPE1, typename TYPE2=LISTTYPE>
+            template <typename TYPE2=LISTTYPE>
             inline typename Core::TypeTraits::enable_if<hasClear<TYPE2, void (TYPE2::*)()>::value, void>::type
             __Clear()
             {
                 REALTYPE::Clear();
             }
 
-            template <typename TYPE1, typename TYPE2=LISTTYPE>
+            template <typename TYPE2=LISTTYPE>
             inline typename Core::TypeTraits::enable_if<!hasClear<TYPE2, void (TYPE2::*)()>::value, void>::type
             __Clear()
             {
