@@ -123,6 +123,9 @@ namespace WPEFramework {
     do {                                                                                                        \
         if (!(expr)) {                                                                                          \
             ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
+            std::list<string> entries;                                                                          \
+            DumpCallStack(0, entries);                                                                          \
+            for(const string& entry : entries) { fprintf(stderr, "%s", entry.c_str()); } fflush(stderr);        \
             abort();                                                                                            \
         }                                                                                                       \
     } while(0)
@@ -131,6 +134,9 @@ namespace WPEFramework {
     do {                                                                                                                                             \
         if (!(expr)) {                                                                                                                               \
             ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n         " #format "\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr, ##__VA_ARGS__); \
+            std::list<string> entries;                                                                                                               \
+            DumpCallStack(0, entries);                                                                                                               \
+            for(const string& entry : entries) { fprintf(stderr, "%s", entry.c_str()); } fflush(stderr);                                             \
             abort();                                                                                                                                 \
         }                                                                                                                                            \
     } while(0)

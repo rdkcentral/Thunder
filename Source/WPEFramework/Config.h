@@ -685,7 +685,7 @@ namespace PluginHost {
         {
             return (_postMortemPath);
         }
-        inline const bool PostMortemAllowed(PluginHost::IShell::reason why) const
+        inline bool PostMortemAllowed(PluginHost::IShell::reason why) const
         {
             std::list<PluginHost::IShell::reason>::const_iterator index(std::find(_reasons.begin(), _reasons.end(), why));
             return ((index != _reasons.end()) ? true: false);

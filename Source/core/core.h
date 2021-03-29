@@ -107,6 +107,7 @@
 #include "IWarningReportingControl.h"
 #include "WarningReportingControl.h"
 #include "WarningReportingCategories.h"
+#include "CallsignTLS.h"
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "core.lib")

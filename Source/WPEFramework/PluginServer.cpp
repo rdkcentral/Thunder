@@ -167,7 +167,7 @@ namespace PluginHost
             callsign = rootObject->Callsign();
         }
 
-        WARNING_REPORTING_THREAD_SETCALLSIGN(callsign.c_str());
+        WARNING_REPORTING_THREAD_SETCALLSIGN_GUARD(callsign.c_str());
 
         try {
             job->Dispatch();
@@ -668,7 +668,7 @@ namespace PluginHost
         : _dispatcher(configuration.StackSize())
         , _connections(*this, configuration.Binder(), configuration.IdleTime())
         , _config(configuration)
-        , _services(*this, _config, configuration.StackSize())
+        , _services(*this, _config)
         , _controller()
         , _factoriesImplementation()
     {
