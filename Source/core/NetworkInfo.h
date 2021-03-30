@@ -136,6 +136,7 @@ namespace Core {
             virtual ~INotification() = default;
 
             virtual void Event(const string&) = 0;
+            virtual void AddressEvent(const string&) {}
         };
 
     public:
