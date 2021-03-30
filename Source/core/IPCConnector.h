@@ -365,7 +365,7 @@ namespace Core {
                 return (sizeof(PACKAGE));
             }
 
-            HAS_MEMBER_NAME(Serialize, hasSerialize);
+            HAS_MEMBER(Serialize, hasSerialize);
 
             template <typename SUBJECT= PACKAGE>
             inline typename Core::TypeTraits::enable_if<hasSerialize<PACKAGE, uint16_t (SUBJECT::*)(uint8_t[], const uint16_t, const uint32_t) const> ::value, uint16_t>::type
@@ -388,7 +388,7 @@ namespace Core {
                 return (result);
             }
 
-            HAS_MEMBER_NAME(Deserialize, hasDeserialize);
+            HAS_MEMBER(Deserialize, hasDeserialize);
 
 
             template <typename SUBJECT=PACKAGE>
