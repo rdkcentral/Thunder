@@ -294,7 +294,7 @@ namespace Core {
         public:
             inline void Clear()
             {
-                __Clear<PACKAGE>();
+                __Clear();
             }
             inline PACKAGE& Package()
             {
@@ -348,7 +348,7 @@ namespace Core {
             // -----------------------------------------------------
             // Search for custom handling, Compile time !!!
             // -----------------------------------------------------
-            HAS_MEMBER(Length, hasLength);
+            HAS_MEMBER_NAME(Length, hasLength);
 
 
             template <typename SUBJECT=PACKAGE>
@@ -365,7 +365,7 @@ namespace Core {
                 return (sizeof(PACKAGE));
             }
 
-            HAS_MEMBER(Serialize, hasSerialize);
+            HAS_MEMBER_NAME(Serialize, hasSerialize);
 
             template <typename SUBJECT= PACKAGE>
             inline typename Core::TypeTraits::enable_if<hasSerialize<PACKAGE, uint16_t (SUBJECT::*)(uint8_t[], const uint16_t, const uint32_t) const> ::value, uint16_t>::type
@@ -388,7 +388,7 @@ namespace Core {
                 return (result);
             }
 
-            HAS_MEMBER(Deserialize, hasDeserialize);
+            HAS_MEMBER_NAME(Deserialize, hasDeserialize);
 
 
             template <typename SUBJECT=PACKAGE>
