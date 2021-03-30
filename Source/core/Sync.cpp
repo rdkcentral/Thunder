@@ -958,11 +958,7 @@ namespace Core {
 #endif
 
 #ifdef __WINDOWS__
-        if (m_blManualReset) {
-            ::SetEvent(m_syncEvent);
-        } else {
-            ::PulseEvent(m_syncEvent);
-        }
+        ::SetEvent(m_syncEvent);
 #endif
 
         return (nResult);
@@ -1026,39 +1022,6 @@ namespace Core {
 #endif
     }
 
-    void
-    Event::PulseEvent()
-    {
-#ifdef __POSIX__
-        // See if we can get access to the data members of this object.
-        pthread_mutex_lock(&m_syncAdminLock);
-
-        // Yep, that's it we are signalled, Broadcast the change.
-        m_blCondition = true;
-
-        // O.K. that is arranged, Now we should at least signal waiting
-        // process that the event has occured.
-        pthread_cond_broadcast(&m_syncCondition);
-
-        // Make sure all threads are in running mode, place our request
-        // for sync at the end of the FIFO-queue for syncConditionMutex.
-        pthread_mutex_unlock(&m_syncAdminLock);
-        std::this_thread::yield();
-        pthread_mutex_lock(&m_syncAdminLock);
-
-        // They all had a change to continue so, now it is over, we can
-        // not wait forever......
-        m_blCondition = false;
-
-        // Now that we are done with the variablegive other threads access
-        // to the object again.
-        pthread_mutex_unlock(&m_syncAdminLock);
-#endif
-
-#ifdef __WINDOWS__
-        ::PulseEvent(m_syncEvent);
-#endif
-    }
 #ifndef __WINDOWS__
 #if defined(__CORE_CRITICAL_SECTION_LOG__)
     CriticalSection CriticalSection::_StdErrDumpMutex;
