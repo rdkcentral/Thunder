@@ -84,7 +84,7 @@ TEST(test_portability, simple_generic)
 {
     SleepS(1);
     SleepMs(1);
-    EXPECT_EQ(htonll(12345),ntohll(12345));
+    EXPECT_EQ(htonl(12345),ntohl(12345));
 
     std::thread::id parentId;
     ThreadClass object(parentId);
