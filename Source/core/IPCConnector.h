@@ -348,7 +348,7 @@ namespace Core {
             // -----------------------------------------------------
             // Search for custom handling, Compile time !!!
             // -----------------------------------------------------
-            HAS_MEMBER_NAME(Length, hasLength);
+            HAS_MEMBER(Length, hasLength);
 
 
             template <typename SUBJECT=PACKAGE>
