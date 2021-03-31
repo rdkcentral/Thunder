@@ -83,6 +83,8 @@ if (ENABLE_CODE_COVERAGE)
   include (CodeCoverage)
   append_coverage_compiler_flags()
   set(COVERAGE_EXCLUDES
+    "Tests/unit/*"
+    "Tests/*"
     "${CMAKE_CURRENT_BINARY_DIR}/Tests/unit*"
     "${CMAKE_CURRENT_BINARY_DIR}/Tests/unit/core/*")
   setup_target_for_coverage_gcovr_html(NAME "coverage")
