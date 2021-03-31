@@ -30,3 +30,5 @@ target_link_libraries(${TEST_RUNNER_NAME}
     WPEFrameworkTracing
     WPEFrameworkProtocols
 )
+
+add_test(${TEST_RUNNER_NAME} ${TEST_RUNNER_NAME})
