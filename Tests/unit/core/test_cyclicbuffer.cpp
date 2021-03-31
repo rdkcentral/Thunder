@@ -382,7 +382,7 @@ TEST(Core_CyclicBuffer, WithOverwriteReversed)
     constexpr char bufferName[] = "cyclicbuffer04";
     constexpr uint32_t cyclicBufferSize = 20;
 
-    IPTestAdministrator::OtherSideMain lambdaFunc = [](IPTestAdministrator & testAdmin) {
+    auto lambdaFunc = [bufferName, cyclicBufferSize](IPTestAdministrator & testAdmin) {
         testAdmin.Sync("setup server");
 
         uint32_t result;
@@ -426,8 +426,10 @@ TEST(Core_CyclicBuffer, WithOverwriteReversed)
 
     static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
 
+    IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
     // This side (tested) acts as server
-    IPTestAdministrator testAdmin(lambdaFunc);
+    IPTestAdministrator testAdmin(otherSide);
 
     uint32_t result;
     string data;

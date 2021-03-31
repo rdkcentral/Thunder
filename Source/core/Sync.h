@@ -201,7 +201,6 @@ namespace Core {
         uint32_t Lock(unsigned int nTime);
         void ResetEvent();
         void SetEvent();
-        void PulseEvent();
         bool IsSet() const;
 
     protected: // Members

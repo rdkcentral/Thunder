@@ -28,7 +28,7 @@ using namespace WPEFramework::Core;
 TEST (DISABLED_test_file, file)
 {
     File file;
-    File fileObj1("Sample.txt", true);
+    File fileObj1("Sample.txt");
     fileObj1.Create(true);
     File fileObj2(fileObj1);
     fileObj2.SetSize(150);
@@ -60,7 +60,7 @@ TEST (DISABLED_test_file, file)
 
 TEST (test_file, file_functions)
 {
-    File fileObj1("Sample2.txt", true);
+    File fileObj1("Sample2.txt");
     fileObj1.Create(true);
     char buffer[] = "Sample2.txt is moved to newFile.txt";
     fileObj1.Write(reinterpret_cast<uint8_t*>(buffer), sizeof(buffer));
