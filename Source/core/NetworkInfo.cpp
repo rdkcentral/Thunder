@@ -1130,16 +1130,20 @@ namespace Core {
                 callback->Event(name);
             }
         }
-        void NotifyAddressUpdate(const string& name) {
+        void NotifyAddressUpdate(const string& name, const Core::IPNode& address, const bool added) {
             for (AdapterObserver::INotification* callback : _observers) {
-                callback->AddressEvent(name);
+                if (added == true) {
+                    callback->Added(name, address);
+                } else {
+                    callback->Removed(name, address);
+                }
             }
         }
         void Added(const uint32_t id, const Core::IPNode& node) {
             Map::iterator index(_networks.find(id));
             if (index != _networks.end()) {
                 if (index->second->Added(node) == true) {
-                    NotifyAddressUpdate(index->second->Name());
+                    NotifyAddressUpdate(index->second->Name(), node, true);
                 }
             }
         }
@@ -1147,7 +1151,7 @@ namespace Core {
             Map::iterator index(_networks.find(id));
             if (index != _networks.end()) {
                 if (index->second->Removed(node) == true ) {
-                    NotifyAddressUpdate(index->second->Name());
+                    NotifyAddressUpdate(index->second->Name(), node, false);
                 }
             }
         }

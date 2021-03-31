@@ -136,7 +136,8 @@ namespace Core {
             virtual ~INotification() = default;
 
             virtual void Event(const string&) = 0;
-            virtual void AddressEvent(const string&) {}
+            virtual void Added(const string&, const Core::IPNode&) {}
+            virtual void Removed(const string&, const Core::IPNode&) {}
         };
 
     public:
