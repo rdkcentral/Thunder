@@ -95,6 +95,41 @@ cmake -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}  \
 make; make install
 ```
 
+**UnitTests and Code Coverage**
+
+Append -DBUILD_TESTS=yes to your cmake configuration step. To enable code coverage, also include
+-DENABLE_CODE_COVERAGE=yes. 
+
+To enable code coverage, you'll have to first install gcovr
+
+```shell
+sudo apt install gcovr
+```
+
+Configure, build and run the UnitTests
+
+```shell
+cd ${THUNDER_ROOT}/Thunder
+mkdir build
+
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR} \
+      -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/include/WPEFramework/cmake/modules \
+      -DBUILD_TYPE=Debug -DBINDING=127.0.0.1 -DVIRTUALINPUT=on -DBUILD_TESTS=yes -DENABLE_CODE_COVERAGE=yes ..
+      
+make; make test
+```
+
+If you've configured code coverage, running the unit tests will create a bunch of files with .gcno and .gcda extensions under your build/ 
+directory. You can now generate an HTML report.
+
+```shell
+make coverage
+```
+
+This will create a directory name coverage/ in your build directory that contains the .html files you can view in a browser. Simply load
+index.html file to browse the coverage report
+
 **WINDOWS Build, using Visual Studio 2019**
 
 The default solution is setup in such away that it can run and load 
