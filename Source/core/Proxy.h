@@ -55,7 +55,7 @@ namespace Core {
             : CONTEXT(copy)
             , m_RefCount(0)
         {
-            __Initialize<CONTEXT>();
+            __Initialize();
         }
 
     public:
@@ -96,11 +96,11 @@ namespace Core {
             : CONTEXT(std::forward<Args>(args)...)
             , m_RefCount(0)
         {
-            __Initialize<CONTEXT>();
+            __Initialize();
         }
         virtual ~ProxyService()
         {
-            __Deinitialize<CONTEXT>();
+            __Deinitialize();
 
             /* Hotfix for gcc linker issue preventing debug builds.
              *
@@ -1028,7 +1028,7 @@ namespace Core {
 
                     ProxyObjectType* baseElement(const_cast<ProxyObjectType*>(this));
 
-                    baseElement->__Relinquish<ELEMENT>();
+                    baseElement->__Relinquish();
                     baseElement->__Clear();
 
                     Core::ProxyType<ProxyObjectType> returnObject(static_cast<IReferenceCounted*>(baseElement), baseElement);
@@ -1042,7 +1042,7 @@ namespace Core {
             }
             inline void HandOut()
             {
-                __Acquire<ELEMENT>();
+                __Acquire();
             }
 
         private:
@@ -1094,7 +1094,7 @@ namespace Core {
                 ELEMENT::Relinquish();
             }
 
-            template <typename TYPE>
+            template <typename TYPE=ELEMENT>
             inline typename Core::TypeTraits::enable_if<!hasRelinquish<TYPE, void (TYPE::*)()>::value, void>::type
             __Relinquish()
             {

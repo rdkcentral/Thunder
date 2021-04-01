@@ -196,7 +196,7 @@ namespace Web {
             uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) override
             {
                 _activity = true;
-                return (_parent.SendData(_parent, dataFrame, maxSendSize));
+                return (_parent.SendData( dataFrame, maxSendSize));
             }
             uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize) override
             {
@@ -338,15 +338,15 @@ namespace Web {
         }
 
         template <typename CLASSNAME=TRANSFORM>
-        inline typename Core::TypeTraits::enable_if<hasTransform<CLASSNAME, uint16_t (CLASSNAME::*)(BaseSerializer&, uint8_t* data, const uint16_t maxSize)>::value, uint16_t>::type
-        SendData(const CLASSNAME&, uint8_t* dataFrame, const uint16_t receivedSize)
+        inline typename Core::TypeTraits::enable_if<hasTransform<CLASSNAME, uint16_t (CLASSNAME::*)(uint8_t* data, const uint16_t maxSize)>::value, uint16_t>::type
+        SendData(uint8_t* dataFrame, const uint16_t receivedSize)
         {
             return (_transformer.Transform(_serializerImpl, dataFrame, receivedSize));
         }
 
         template <typename CLASSNAME=TRANSFORM>
-        inline typename Core::TypeTraits::enable_if<!hasTransform<CLASSNAME, uint16_t (CLASSNAME::*)(BaseSerializer&, uint8_t* data, const uint16_t maxSize)>::value, uint16_t>::type
-        SendData(const CLASSNAME&, uint8_t* dataFrame, const uint16_t receivedSize)
+        inline typename Core::TypeTraits::enable_if<!hasTransform<CLASSNAME, uint16_t (CLASSNAME::*)(uint8_t* data, const uint16_t maxSize)>::value, uint16_t>::type
+        SendData(uint8_t* dataFrame, const uint16_t receivedSize)
         {
             return (_serializerImpl.Serialize(dataFrame, receivedSize));
         }

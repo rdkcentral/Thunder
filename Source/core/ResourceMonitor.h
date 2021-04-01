@@ -420,7 +420,7 @@ namespace Core {
 
                         uint16_t flagsSet = _descriptorArray[fd_index].revents;
 
-                        Arm<WATCHDOG>();
+                        Arm();
 
                         // Event if the flagsSet == 0, call handle, maybe a break was issued by this RESOURCE..
                         entry->Handle(flagsSet);
@@ -496,7 +496,7 @@ namespace Core {
 
                         uint16_t flagsSet = static_cast<uint16_t>(networkEvents.lNetworkEvents);
 
-                        Arm<WATCHDOG>();
+                        Arm();
 
                         // Event if the flagsSet == 0, call handle, maybe a break was issued by this RESOURCE..
                         entry->Handle(flagsSet);
