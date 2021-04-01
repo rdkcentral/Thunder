@@ -28,6 +28,107 @@
 
 namespace WPEFramework {
 namespace Core {
+    class RoutingTable {
+    public:
+        class Route {
+        public:
+            Route()
+                : _source()
+                , _destination()
+                , _preferred()
+                , _gateway()
+                , _priority(0)
+                , _interface(0)
+                , _metrics(0)
+                , _table(0)
+                , _mask(0)
+                , _flags(0)
+                , _protocol(0)
+                , _scope(0) {
+            }
+            Route(const Route& copy)
+                : _source(copy._source)
+                , _destination(copy._destination)
+                , _preferred(copy._preferred)
+                , _gateway(copy._gateway)
+                , _priority(copy._priority)
+                , _interface(copy._interface)
+                , _metrics(copy._metrics)
+                , _table(copy._table)
+                , _mask(copy._mask)
+                , _flags(copy._flags)
+                , _protocol(copy._protocol)
+                , _scope(copy._scope) {
+            }
+            Route(const uint8_t stream[], const uint16_t length);
+            ~Route() = default;
+
+            Route& operator= (const Route& rhs) {
+                _source = rhs._source;
+                _destination = rhs._destination;
+                _preferred = rhs._preferred;
+                _gateway = rhs._gateway;
+                _priority = rhs._priority;
+                _interface = rhs._interface;
+                _metrics = rhs._metrics;
+                _table = rhs._table;
+                _mask = rhs._mask;
+                _flags = rhs._flags;
+                _protocol = rhs._protocol;
+                _scope = rhs._scope;
+
+                return (*this);
+            }
+ 
+        public:
+            inline const NodeId& Source() const {
+                return (_source);
+            }
+            inline const NodeId& Destination() const {
+                return (_destination);
+            }
+            inline const NodeId& Gateway() const {
+                return (_gateway);
+            }
+            inline const NodeId& Preferred() const {
+                return (_preferred);
+            }
+            inline int Metrics() const {
+                return (_metrics);
+            }
+            inline int Priority() const {
+                return (_priority);
+            }
+            inline string Interface() const;
+
+        private:
+            NodeId _source;
+            NodeId _destination;
+            NodeId _preferred;
+            NodeId _gateway;
+            int _priority;
+            int _interface;
+            int _metrics;
+            int _table;
+            uint8_t _mask;
+            uint8_t _flags;
+            uint8_t _protocol;
+            uint8_t _scope;
+        };
+    public:
+        RoutingTable() = delete;
+        RoutingTable(const RoutingTable&) = delete;
+        RoutingTable& operator= (const RoutingTable&) = delete;
+
+        RoutingTable(const bool ipv4);
+        ~RoutingTable() = default;
+
+    public:
+
+    private:
+        std::list<Route> _table;
+    };
+
 
     class EXTERNAL AdapterObserver {
     public:
@@ -195,6 +296,16 @@ namespace Core {
         inline AdapterIterator()
             : _index(static_cast<uint16_t>(~0))
         {
+        }
+        inline AdapterIterator(const uint16_t index)
+            : _index(static_cast<uint16_t>(~0))
+        {
+            while ((Next() == true) && (Index() != index)) /* intentionally left blank */
+                ;
+
+            if (IsValid() == false) {
+                Reset();
+            }
         }
         inline AdapterIterator(const string& name)
             : _index(static_cast<uint16_t>(~0))
@@ -393,19 +504,23 @@ namespace Core {
 
             return (IPV6AddressIterator(_ipv6Nodes));
         }
-        inline void Added(const IPNode& address) {
+        inline bool Added(const IPNode& address) {
+            bool result = false;
+
             _adminLock.Lock();
 
             if (address.Type() == Core::NodeId::TYPE_IPV4) {
                 std::list<IPNode>::iterator index (std::find(_ipv4Nodes.begin(), _ipv4Nodes.end(), address));
                 if (index == _ipv4Nodes.end()) {
                     _ipv4Nodes.push_back(address);
+                    result = true;
                 }
             }
             else if (address.Type() == Core::NodeId::TYPE_IPV6) {
                 std::list<IPNode>::iterator index (std::find(_ipv6Nodes.begin(), _ipv6Nodes.end(), address));
                 if (index == _ipv6Nodes.end()) {
                     _ipv6Nodes.push_back(address);
+                    result = true;
                 }
             }
             else {
@@ -413,8 +528,11 @@ namespace Core {
             }
 
             _adminLock.Unlock();
+
+            return (result);
         }
-        inline void Removed(const IPNode& address) {
+        inline bool Removed(const IPNode& address) {
+            bool result = false;
 
             _adminLock.Lock();
 
@@ -422,19 +540,22 @@ namespace Core {
                 std::list<IPNode>::iterator index (std::find(_ipv4Nodes.begin(), _ipv4Nodes.end(), address));
                 if (index != _ipv4Nodes.end()) {
                     _ipv4Nodes.erase(index);
+                    result = true;
                 }
             }
             else if (address.Type() == Core::NodeId::TYPE_IPV6) {
                 std::list<IPNode>::iterator index (std::find(_ipv6Nodes.begin(), _ipv6Nodes.end(), address));
                 if (index != _ipv6Nodes.end()) {
                     _ipv6Nodes.erase(index);
+                    result = true;
                 }
             }
             else {
                 TRACE_L1("Network::Added: Unexpected node type: %d", address.Type()); 
             }
-
             _adminLock.Unlock();
+
+            return (result);
         }
 
         bool IsUp() const;
@@ -460,6 +581,7 @@ namespace Core {
     class EXTERNAL AdapterIterator {
     public:
         AdapterIterator();
+        AdapterIterator(const uint16_t index);
         AdapterIterator(const string& name);
         AdapterIterator(const AdapterIterator& copy);
         ~AdapterIterator() = default;
@@ -488,6 +610,10 @@ namespace Core {
         }
         inline uint16_t Count() const {
             return (_list.size());
+        }
+        inline uint16_t Index() const {
+            ASSERT (IsValid());
+            return ((*_index)->Id());
         }
 
         inline string Name() const {

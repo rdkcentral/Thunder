@@ -109,7 +109,7 @@ void ReadDirectory (const string& name) {
 
     while (pluginDirectory.Next() == true) {
 
-        WPEFramework::Core::File file (pluginDirectory.Current(), true);
+        WPEFramework::Core::File file (pluginDirectory.Current());
 
         if (file.Exists()) {
             if (file.IsDirectory()) {

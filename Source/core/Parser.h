@@ -62,6 +62,7 @@ namespace WPEFramework {
 				, _byteCounter(0)
 				, _buffer()
 				, _parent(parent)
+				, _splitChar(0)
 				, _terminator()
 			{
 			}
@@ -74,6 +75,7 @@ namespace WPEFramework {
 			{
 				_state = SKIP_WHITESPACE | WORD_CAPTURE;
 				_byteCounter = 0;
+				_splitChar = 0;
 			}
 			inline uint32_t Position() const {
 				return (_byteCounter);
@@ -267,17 +269,15 @@ namespace WPEFramework {
 			// -----------------------------------------------------
 			HAS_MEMBER(Complete, hasComplete);
 
-			typedef hasComplete<HANDLER, bool (HANDLER::*)(const string&, const TCHAR)> TraitComplete;
-
-			template <typename TEXTTERMINATOR2, typename HANDLER2>
-			inline typename Core::TypeTraits::enable_if<ParserType<TEXTTERMINATOR2, HANDLER2>::TraitComplete::value, bool>::type
+			template <typename TEXTTERMINATOR2, typename T=HANDLER>
+			inline typename Core::TypeTraits::enable_if<hasComplete<T, bool (T::*)(const string&, const TCHAR)>::value, bool>::type
 				__Complete(const string& buffer, const TCHAR character)
 			{
 				return (_parent.Complete(buffer, character));
 			}
 
-			template <typename TEXTTERMINATOR2, typename HANDLER2>
-			inline typename Core::TypeTraits::enable_if<!ParserType<TEXTTERMINATOR2, HANDLER2>::TraitComplete::value, bool>::type
+			template <typename TEXTTERMINATOR2, typename T=HANDLER>
+			inline typename Core::TypeTraits::enable_if<!hasComplete<T, bool (T::*)(const string&, const TCHAR)>::value, bool>::type
 				__Complete(const string& /* buffer */, const TCHAR character)
 			{
 				return (((_state & SPLITCHAR) == SPLITCHAR) && (character == _splitChar));

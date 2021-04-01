@@ -534,79 +534,6 @@ namespace Core {
 
 #elif defined(__POSIX__)
 
-    static IPNode ToIPNode(const bool IPV6, const struct rtattr* rtatp, const uint8_t prefixlen) {
-
-        IPNode result;
-
-        /* Here we hit the fist chunk of the message. Time to validate the    *
-        * the type. For more info on the different types see man(7) rtnetlink*
-        * The table below is taken from man pages.                           *
-        * Attributes                                                         *
-        * rta_type        value type             description                 *
-        * -------------------------------------------------------------      *
-        * IFA_UNSPEC      -                      unspecified.                *
-        * IFA_ADDRESS     raw protocol address   interface address           *
-        * IFA_LOCAL       raw protocol address   local address               *
-        * IFA_LABEL       asciiz string          name of the interface       *
-        * IFA_BROADCAST   raw protocol address   broadcast address.          *
-        * IFA_ANYCAST     raw protocol address   anycast address             *
-        * IFA_CACHEINFO   struct ifa_cacheinfo   Address information.        */
-        if ( ((RTA_PAYLOAD(rtatp) == 4) && (IPV6 == false)) || ((RTA_PAYLOAD(rtatp) == 6) && (IPV6 == true)) ) {
-            switch (rtatp->rta_type) {
-            case IFA_CACHEINFO: {
-                // const struct ifa_cacheinfo* cache_info = reinterpret_cast<const struct ifa_cacheinfo *>(RTA_DATA(rtatp));
-                // cache_info->ifa_valid == InfiniteLifeTime)
-
-                // cache_info->ifa_prefered == InfiniteLifeTime)
-                break;
-            }
-            case IFA_ADDRESS: /* POINT-TO-POINT destination address */
-                if (IPV6 == false)
-                    result = IPNode(*reinterpret_cast<const struct in_addr *>(RTA_DATA(rtatp)), prefixlen);
-                else 
-                    result = IPNode(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rtatp)), prefixlen);
-                break;
-            case IFA_LOCAL:
-                if (IPV6 == false)
-                    result = IPNode(*reinterpret_cast<const struct in_addr *>(RTA_DATA(rtatp)), prefixlen);
-                else 
-                    result = IPNode(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rtatp)), prefixlen);
-                break;
-            case IFA_BROADCAST:
-                if (IPV6 == false)
-                    result = IPNode(*reinterpret_cast<const struct in_addr *>(RTA_DATA(rtatp)), prefixlen);
-                else 
-                    result = IPNode(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rtatp)), prefixlen);
-                break;
-            case IFA_ANYCAST:
-                if (IPV6 == false)
-                    result = IPNode(*reinterpret_cast<const struct in_addr *>(RTA_DATA(rtatp)), prefixlen);
-                else 
-                    result = IPNode(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rtatp)), prefixlen);
-                break;
-            case IFA_MULTICAST:
-                if (IPV6 == false)
-                    result = IPNode(*reinterpret_cast<const struct in_addr *>(RTA_DATA(rtatp)), prefixlen);
-                else 
-                    result = IPNode(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rtatp)), prefixlen);
-                break;
-            case IFA_LABEL:
-                //   _name = string(reinterpret_cast<const char*>(RTA_DATA(rtatp)), (RTA_PAYLOAD(rtatp) - 1));
-                break;
-                /* Only RPI newer kernels work with this flag. Skip it for now, it is not used. Yet!!!! 
-                case IFA_FLAGS: 
-                printf("Flags: %X\n", *reinterpret_cast<const uint32_t*>(RTA_DATA(rtatp)));
-                break;
-                */
-            default:
-                TRACE_L1("ToIPNode: Not handling: %d\n", rtatp->rta_type);
-                break;
-            }
-        }
-
-        return (result);
-    }
-
     template <const bool ADD>
     class IPAddressModifyType : public Netlink {
     public:
@@ -790,90 +717,255 @@ namespace Core {
     };
 
     class IPNetworks {
-    private:        
+    private:
         using Map = std::map<uint32_t, Core::ProxyType<Network> >;
         using Element = std::pair<uint32_t, Core::ProxyType<Network> >;
         using Iterator = IteratorMapType<Map, const Core::ProxyType<const Network>&, uint32_t>;
 
-        class Observer : public SocketDatagram {
+        class LinkSocket : public SocketNetlink {
         private:
-            class Message : public Netlink {
+            class Sink : public Netlink {
             public:
-                Message() = delete;
-                Message(const Message&) = delete;
-                Message& operator=(const Message&) = delete;
+                Sink() = delete;
+                Sink(const Sink&) = delete;
+                Sink& operator=(const Sink&) = delete;
+                ~Sink() = default;
 
-                Message(IPNetworks& parent)
-                    : _parent(parent) {
-                }
-                ~Message() override = default;
-
-            public:
-                uint16_t Write(uint8_t stream[], const uint16_t length) const override
+                Sink(IPNetworks& ipnetworks)
+                    : _ipnetworks(ipnetworks)
                 {
+                }
+
+            private:
+                uint16_t Write(uint8_t[], const uint16_t) const override
+                {
+                    ASSERT(false);
                     return (0);
                 }
                 uint16_t Read(const uint8_t stream[], const uint16_t length) override
                 {
-                    const struct ifinfomsg* ifi = reinterpret_cast<const struct ifinfomsg*>(stream);
+                    ASSERT(stream != nullptr);
 
-                    if (Type() == RTM_NEWLINK) {
-                        _parent.Add(ifi->ifi_index, reinterpret_cast<const struct rtattr*>(IFLA_RTA(ifi)), length - sizeof(struct ifinfomsg));
-                    } else if (Type() == RTM_DELLINK) {
-                        _parent.Remove(ifi->ifi_index);
+                    uint16_t result = length;
+
+                    switch (Type()) {
+                    case RTM_NEWLINK:
+                        result = Update(true, reinterpret_cast<const struct ifinfomsg*>(stream), length);
+                        break;
+                    case RTM_DELLINK:
+                        result = Update(false, reinterpret_cast<const struct ifinfomsg*>(stream), length);
+                        break;
+                    case RTM_NEWADDR:
+                        result = Update(true, reinterpret_cast<const struct ifaddrmsg*>(stream), length);
+                        break;
+                    case RTM_DELADDR:
+                        result = Update(false, reinterpret_cast<const struct ifaddrmsg*>(stream), length);
+                        break;
+                    default:
+                        break;
+                    }
+
+                    return (result);
+                }
+
+            private:
+                uint16_t Update(const bool added, const struct ifinfomsg* ifi, const uint16_t length)
+                {
+                    if (length >= (sizeof(struct ifinfomsg) + (added == true? sizeof(struct rtattr) : 0))) {
+                        if (added == true) {
+                            const struct rtattr* rta = reinterpret_cast<const struct rtattr*>(IFLA_RTA(ifi));
+                            const uint16_t size = (length - sizeof(struct ifinfomsg));
+                            _ipnetworks.Add(ifi->ifi_index, rta, size);
+                        } else {
+                            _ipnetworks.Remove(ifi->ifi_index);
+                        }
+                    } else {
+                        TRACE_L1("NetworkInfo: Truncated link information received via Netlink");
+                    }
+
+                    return (length);
+                }
+                uint16_t Update(const bool added, const struct ifaddrmsg* ifa, const uint16_t length)
+                {
+                    if (length >= (sizeof(struct ifaddrmsg) + sizeof(struct rtattr))) {
+                        const struct rtattr* rta = reinterpret_cast<const struct rtattr*>(IFA_RTA(ifa));
+                        uint16_t size = (length - sizeof(struct ifaddrmsg));
+
+                        for (; RTA_OK(rta, size); rta = RTA_NEXT(rta, size)) {
+                            if ((rta->rta_type == IFA_ADDRESS) || (rta->rta_type == IFA_LOCAL)) {
+
+                                IPNode node([](const struct ifaddrmsg* ifa, const struct rtattr* rta) {
+                                    if (ifa->ifa_family == AF_INET) {
+                                        return (NodeId(*reinterpret_cast<const struct in_addr *>(RTA_DATA(rta))));
+                                    } else if (ifa->ifa_family == AF_INET6) {
+                                        return (NodeId(*reinterpret_cast<const struct in6_addr *>(RTA_DATA(rta))));
+                                    } else {
+                                        return (NodeId());
+                                    }
+                                } (ifa, rta) /* node */, static_cast<uint8_t>(ifa->ifa_prefixlen) /* mask */);
+
+                                if (node.IsValid() == true) {
+                                    if (added == true) {
+                                        _ipnetworks.Added(ifa->ifa_index, node);
+                                    } else {
+                                        _ipnetworks.Removed(ifa->ifa_index, node);
+                                    }
+                                } else {
+                                    TRACE_L1("NetworkInfo: Invalid address information received via Netlink");
+                                }
+                            }
+                        }
+                    } else {
+                        TRACE_L1("NetworkInfo: Truncated address information received via Netlink");
                     }
 
                     return (length);
                 }
 
             private:
-                IPNetworks& _parent;
-            };
+                IPNetworks& _ipnetworks;
+            }; // class Sink
+
+        private:
+            struct Message {
+            private:
+                class Command : public Netlink {
+                protected:
+                    Command() = delete;
+                    Command(const Command&) = delete;
+                    Command& operator=(const Command&) = delete;
+                    ~Command() = default;
+
+                    Command(const uint32_t type)
+                    {
+                        Flags(NLM_F_REQUEST | NLM_F_DUMP | NLM_F_ACK);
+                        Type(type);
+                    }
+
+                private:
+                    uint16_t Read(const uint8_t[], const uint16_t length) override
+                    {
+                        ASSERT(false);
+                        return (length);
+                    }
+                };
+
+            public:
+                class GetLink : public Command {
+                public:
+                    GetLink(const GetLink&) = delete;
+                    GetLink& operator=(const GetLink&) = delete;
+                    ~GetLink() = default;
+
+                    GetLink()
+                        : Command(RTM_GETLINK)
+                    {
+                    }
+
+                private:
+                    uint16_t Write(uint8_t stream[], const uint16_t maxLength) const override
+                    {
+                        const uint16_t length = sizeof(struct rtgenmsg);
+                        ASSERT(length <= maxLength);
+
+                        struct rtgenmsg* message(reinterpret_cast<struct rtgenmsg*>(stream));
+                        ::memset(message, 0, sizeof(struct rtgenmsg));
+                        message->rtgen_family = AF_UNSPEC;
+
+                        return (length);
+                    }
+                };
+
+                class GetAddress : public Command {
+                public:
+                    static constexpr uint32_t ALL = 0;
+
+                public:
+                    GetAddress(const GetAddress&) = delete;
+                    GetAddress& operator=(const GetAddress&) = delete;
+                    ~GetAddress() = default;
+
+                    GetAddress(const uint32_t interface = ALL)
+                        : Command(RTM_GETADDR)
+                        , _interface(interface)
+                    {
+                    }
+
+                private:
+                    uint16_t Write(uint8_t stream[], const uint16_t maxLength) const override
+                    {
+                        const uint16_t length = sizeof(struct ifaddrmsg);
+                        ASSERT(length <= maxLength);
+
+                        struct ifaddrmsg* message(reinterpret_cast<struct ifaddrmsg*>(stream));
+                        ::memset(message, 0, sizeof(struct ifaddrmsg));
+                        message->ifa_family = AF_UNSPEC;
+                        message->ifa_index = _interface;
+
+                        return (length);
+                    }
+
+                private:
+                    uint32_t _interface;
+                };
+            }; // struct Message
 
         public:
-            Observer() = delete;
-            Observer(const Observer&) = delete;
-            Observer& operator=(const Observer&) = delete;
+            LinkSocket() = delete;
+            LinkSocket(const LinkSocket&) = delete;
+            LinkSocket& operator=(const LinkSocket&) = delete;
 
-            Observer(IPNetworks& parent)
-                : SocketDatagram(
-                    true,
-                    NodeId(NETLINK_ROUTE, 0, RTMGRP_LINK),
-                    NodeId(),
-                    64,
-                    4000)
-                , _parser(parent) {
-                SocketDatagram::Open(Core::infinite);
+            LinkSocket(IPNetworks& parent)
+                : SocketNetlink(NodeId(NETLINK_ROUTE, 0, (RTMGRP_LINK | RTMGRP_IPV4_IFADDR | RTMGRP_IPV6_IFADDR)))
+                , _messageSink(parent)
+            {
             }
-            ~Observer() override {
-                SocketDatagram::Close(Core::infinite);
+            ~LinkSocket() override
+            {
+                Close();
             }
 
         public:
-            uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) override
-            {
-                return (0);
-            }
-            uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize) override
-            {
-                return (_parser.Deserialize(dataFrame, receivedSize));
-            }
-            void StateChange() override
-            {
-            }
             void Open()
             {
                 if (SocketDatagram::IsOpen() != true) {
-                    SocketDatagram::Open(Core::infinite);
+                    if (SocketDatagram::Open(1000) == ERROR_NONE) {
+                        // Must request the complete interface structure first, synchronously,
+                        // further updates are only notifications of changes.
+                        RequestUpdate();
+                    }
                 }
             }
             void Close()
             {
-                SocketDatagram::Close(Core::infinite);
+                if (SocketDatagram::IsOpen() == true) {
+                    SocketDatagram::Close(Core::infinite);
+                }
             }
 
         private:
-            Message _parser;
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t length) override
+            {
+                // Spontaneous notification...
+                return (_messageSink.Deserialize(stream, length));
+            }
+
+        private:
+            void RequestUpdate()
+            {
+                TRACE_L1("NetworkInfo: Requesting interface information update via Netlink...");
+
+                if (Exchange(Message::GetLink(), _messageSink, 500) != ERROR_NONE) {
+                    TRACE_L1("NetworkInfo: Failed to retrieve interface information");
+                } else {
+                    if (Exchange(Message::GetAddress(), _messageSink, 500) != ERROR_NONE) {
+                        TRACE_L1("NetworkInfo: Failed to retrieve interface address information");
+                    }
+                }
+            }
+
+        private:
+            Sink _messageSink;
         };
 
         class Channel {
@@ -885,7 +977,7 @@ namespace Core {
             Channel()
                 : _adminLock()
             {
-                _fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+                _fd = socket(PF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, NETLINK_ROUTE);
 
                 if (_fd != -1) {
                     sockaddr_nl netlinkSocket;
@@ -946,172 +1038,27 @@ namespace Core {
             CriticalSection _adminLock;
             int _fd;
         };
- 
-        class InterfacesFetch : public Netlink {
-        public:
-            InterfacesFetch() = delete;
-            InterfacesFetch(const InterfacesFetch&) = delete;
-            InterfacesFetch& operator=(const InterfacesFetch&) = delete;
-
-            InterfacesFetch(IPNetworks& parent)
-                : _parent(parent)
-            {
-            }
-            ~InterfacesFetch() override = default;
-
-        private:
-            uint16_t Write(uint8_t stream[], const uint16_t length) const override
-            {
-                uint16_t result = sizeof(struct rtgenmsg);
-
-                ASSERT(length >= result);
-                ::memset(stream, 0, result);
-
-                Flags(NLM_F_REQUEST | NLM_F_DUMP | NLM_F_ACK);
-                Type(RTM_GETLINK);
-
-                struct rtgenmsg* message(reinterpret_cast<struct rtgenmsg*>(stream));
-                message->rtgen_family = AF_PACKET; /*  no preferred AF, we will get *all* interfaces */
-
-                return (result);
-            }
-            uint16_t Read(const uint8_t stream[], const uint16_t length) override
-            {
-                if (Type() == RTM_NEWLINK) {
-                    const struct ifinfomsg* iface = reinterpret_cast<const struct ifinfomsg*>(stream);
-                    _parent.Add(iface->ifi_index, reinterpret_cast<const struct rtattr*>(IFLA_RTA(iface)), length - sizeof(struct ifinfomsg));
-                } else if (Type() == NLMSG_ERROR) {
-                    const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
-
-                    if (error->error != 0) {
-                        TRACE_L1("InterfacesFetch: Request failed with code %d", error->error);
-                    } 
-                } 
-                else if (Type() != NLMSG_DONE) {
-                    TRACE_L1("InterfacesFetch: Read unexpected type: %d", Type());
-                }
-                return (length);
-            }
-
-        private:
-            IPNetworks& _parent;
-        };
-
-        template <const bool IPV6>
-        class IPAddressFetchType : public Netlink {
-        public:
-            IPAddressFetchType() = delete;
-            IPAddressFetchType(const IPAddressFetchType<IPV6>&) = delete;
-            IPAddressFetchType<IPV6>& operator=(const IPAddressFetchType<IPV6>&) = delete;
-
-            IPAddressFetchType(IPNetworks& parent)
-                : _parent(parent)
-            {
-            }
-            ~IPAddressFetchType() override = default;
-
-        private:
-            uint16_t Write(uint8_t stream[], const uint16_t length) const override
-            {
-                uint16_t result = sizeof(struct ifaddrmsg) + RTA_LENGTH(IPV6 ? 16 : 4);
-
-                ASSERT(length >= result);
-                ::memset(stream, 0, result);
-
-                Flags(NLM_F_REQUEST | NLM_F_ROOT | NLM_F_ACK);
-                Type(RTM_GETADDR);
-
-                struct ifaddrmsg* message(reinterpret_cast<struct ifaddrmsg*>(stream));
-                message->ifa_family = (IPV6 ? AF_INET6 : AF_INET);
-                message->ifa_index = 0;
-
-                struct rtattr* attribs(reinterpret_cast<struct rtattr*>(stream + sizeof(struct ifaddrmsg)));
-                attribs->rta_len = (IPV6 ? RTA_LENGTH(16) : RTA_LENGTH(4));
-                attribs->rta_type = 0;
-
-                return (result);
-            }
-            uint16_t Read(const uint8_t stream[], const uint16_t length) override
-            {
-                if ( (Type() == RTM_GETADDR) || (Type() == RTM_NEWADDR) || (Type() == RTM_DELADDR) ) {
-                    const struct ifaddrmsg* rtmp = reinterpret_cast<const struct ifaddrmsg*>(stream);
-                    
-                    const struct rtattr* rtatp = reinterpret_cast<const struct rtattr*>(IFA_RTA(rtmp));
-                    const uint8_t prefixlen = static_cast<uint8_t>(rtmp->ifa_prefixlen);
-                    uint16_t rtattrlen = length - sizeof(struct ifaddrmsg);
-
-                    for (; RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
-
-                        if ((rtatp->rta_type == IFA_ADDRESS) || (rtatp->rta_type == IFA_LOCAL)) {
-                            IPNode result (ToIPNode(IPV6, rtatp, prefixlen));
-
-                            if (result.IsValid() == true) {
-                                if (Type() != RTM_DELADDR) {
-                                    _parent.Added(rtmp->ifa_index, result);
-                                }
-                                else {
-                                    _parent.Removed(rtmp->ifa_index, result);
-                                }
-                            }
-                        }
-                    }
-                } else if (Type() == NLMSG_ERROR) {
-                    const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
-
-                    if (error->error != 0) {
-                        TRACE_L1("IPAddressFetchType: Request failed with code %d", error->error);
-                    } 
-                }
-                else if (Type() != NLMSG_DONE) {
-                    TRACE_L1("IPAddressFetchType: Read unexpected type: %d", Type());
-                }
-
-                return (length);
-            }
-
-        private:
-            IPNetworks& _parent;
-        };
 
     protected:
         IPNetworks()
             : _adminLock()
             , _channel(ProxyType<Channel>::Create())
             , _networks()
-            , _observer(*this)
+            , _linkSocket(*this)
             , _observers()
-            , _refCount(0)
         {
             ASSERT(IsValid());
-
-            InterfacesFetch ifInfo(*this);
-
-            uint32_t result = _channel->Exchange(ifInfo, ifInfo);
-
-            if (result != ERROR_NONE) {
-                TRACE_L1("Could not load the base set of interfaces.");
-            }
-            else {
-                IPAddressFetchType<false> ipv4(*this);
-            
-                if (_channel->Exchange(ipv4, ipv4) != ERROR_NONE) {
-                    TRACE_L1("IPNetworks(): Could not read ipv4 Nodes");
-                }
-                else {
-                    IPAddressFetchType<false> ipv6(*this);
-
-                    if (_channel->Exchange(ipv6, ipv6) != ERROR_NONE) {
-                        TRACE_L1("IPNetworks(): Could not read ipv6 Nodes");
-                    }
-                }
-            }
+            _linkSocket.Open();
         }
 
     public:
         IPNetworks(const IPNetworks&) = delete;
         IPNetworks& operator=(const IPNetworks&) = delete;
 
-        ~IPNetworks() = default;
+        ~IPNetworks()
+        {
+            _linkSocket.Close();
+        }
 
         static IPNetworks& Instance()
         {
@@ -1136,7 +1083,6 @@ namespace Core {
             std::list<AdapterObserver::INotification*>::iterator index (std::find(_observers.begin(), _observers.end(), client));
             if (index == _observers.end()) {
                 _observers.push_back(client);
-                AddRef();
             }
             _adminLock.Unlock();
         }
@@ -1145,51 +1091,28 @@ namespace Core {
             std::list<AdapterObserver::INotification*>::iterator index (std::find(_observers.begin(), _observers.end(), client));
             if (index != _observers.end()) {
                 _observers.erase(index);
-                Release();
             }
-            _adminLock.Unlock();            
+            _adminLock.Unlock();
         }
         inline uint32_t Exchange(const Netlink& outbound, Netlink& inbound) {
             return(_channel->Exchange(outbound, inbound));
         }
 
     private:
-        inline void AddRef() {
-            if (Core::InterlockedIncrement(_refCount) == 1) {
-                _observer.Open();
-            }
-        }
-        inline uint32_t Release() {
-
-            ASSERT(_refCount > 0);
-            if (Core::InterlockedDecrement(_refCount) == 0) {
-                _observer.Close();
-            }
-
-            return Core::ERROR_NONE;
-        }
-
         void Add(const uint32_t id, const struct rtattr* data, const uint16_t length) {
-            string interfaceName;
-
             _adminLock.Lock();
-
             Map::iterator index (_networks.find(id));
             if (index == _networks.end()) {
                 Core::ProxyType<Network> newNetwork (Core::ProxyType<Network>::Create(id, data, length));
                 _networks.emplace(std::piecewise_construct,
                     std::forward_as_tuple(id),
                     std::forward_as_tuple(newNetwork));
-                interfaceName = newNetwork->Name();
+                Notify(newNetwork->Name());
             }
             else {
                 index->second->Update(data, length);
-                interfaceName = index->second->Name();
             }
-
-            Notify(interfaceName);
-
-            _adminLock.Unlock();            
+            _adminLock.Unlock();
         }
         void Remove(const uint32_t id) {
             _adminLock.Lock();
@@ -1199,7 +1122,7 @@ namespace Core {
                 _networks.erase(index);
                 Notify(interfaceName);
             }
-            _adminLock.Unlock();            
+            _adminLock.Unlock();
         }
         void Notify(const string& name) {
             for (AdapterObserver::INotification* callback : _observers) {
@@ -1209,13 +1132,17 @@ namespace Core {
         void Added(const uint32_t id, const Core::IPNode& node) {
             Map::iterator index(_networks.find(id));
             if (index != _networks.end()) {
-                index->second->Added(node);
+                if (index->second->Added(node) == true) {
+                    Notify(index->second->Name());
+                }
             }
         }
         void Removed(const uint32_t id, const Core::IPNode& node) {
             Map::iterator index(_networks.find(id));
             if (index != _networks.end()) {
-                index->second->Removed(node);
+                if (index->second->Removed(node) == true) {
+                    Notify(index->second->Name());
+                }
             }
         }
 
@@ -1223,10 +1150,157 @@ namespace Core {
         CriticalSection _adminLock;
         ProxyType<Channel> _channel;
         Map _networks;
-        Observer _observer;
+        LinkSocket _linkSocket;
         std::list<AdapterObserver::INotification*> _observers;
-        uint32_t _refCount;
     };
+
+    RoutingTable::Route::Route(const uint8_t stream[], const uint16_t length) 
+        : _source()
+        , _destination()
+        , _preferred()
+        , _gateway()
+        , _priority(0)
+        , _interface(0)
+        , _metrics(0)
+        , _table(0)
+        , _mask(0)
+        , _flags(0)
+        , _protocol(0)
+        , _scope(0) {
+        const struct rtmsg* r = reinterpret_cast<const struct rtmsg*>(stream);
+        const struct rtattr* rt_attr = RTM_RTA(r);
+        int rtl = length - sizeof(struct rtmsg);
+
+        _mask = r->rtm_dst_len;
+        _flags = r->rtm_flags;
+        _scope = r->rtm_scope;
+        _protocol = r->rtm_protocol;
+
+        for (; RTA_OK(rt_attr, rtl); rt_attr = RTA_NEXT(rt_attr, rtl))
+            switch (rt_attr->rta_type) {
+            case RTA_DST:
+                 if (r->rtm_family == AF_INET6) {
+                     _destination = Core::NodeId(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rt_attr)));
+                 }
+                 else {
+                     _destination = Core::NodeId(*reinterpret_cast<const struct in_addr*>(RTA_DATA(rt_attr)));
+                 }
+                 break;
+            case RTA_SRC:
+                 if (r->rtm_family == AF_INET6) {
+                     _source = Core::NodeId(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rt_attr)));
+                 }
+                 else {
+                     _source = Core::NodeId(*reinterpret_cast<const struct in_addr*>(RTA_DATA(rt_attr)));
+                 }
+                 break;
+            case RTA_GATEWAY:
+                 if (r->rtm_family == AF_INET6) {
+                     _gateway = Core::NodeId(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rt_attr)));
+                 }
+                 else {
+                     _gateway = Core::NodeId(*reinterpret_cast<const struct in_addr*>(RTA_DATA(rt_attr)));
+                 }
+                 break;
+            case RTA_PREFSRC:
+                 if (r->rtm_family == AF_INET6) {
+                     _preferred = Core::NodeId(*reinterpret_cast<const struct in6_addr*>(RTA_DATA(rt_attr)));
+                 }
+                 else {
+                     _preferred = Core::NodeId(*reinterpret_cast<const struct in_addr*>(RTA_DATA(rt_attr)));
+                 }
+                 break;
+            case RTA_OIF:
+                 _interface = *((int *)RTA_DATA(rt_attr));
+                 break;
+            case RTA_METRICS:
+                 _metrics = *((int *)RTA_DATA(rt_attr));
+                 break;
+            case RTA_PRIORITY:
+                 _priority = *((int *)RTA_DATA(rt_attr));
+                 break;
+            case RTA_TABLE:
+                 _table = *((int *)RTA_DATA(rt_attr));
+                 break;
+            default:
+                 TRACE_L1("We also have: %u", rt_attr->rta_type);
+                 break;
+        }
+    }
+
+    string RoutingTable::Route::Interface() const {
+        string result;
+        if (_interface != 0) {
+            char buffer[IF_NAMESIZE + 1];
+
+            if_indextoname(_interface, buffer);
+
+            ToString(buffer, result);
+        }
+
+        return (result);
+    }
+
+    RoutingTable::RoutingTable(const bool ipv4) {
+        class IPRouteTable : public Netlink {
+        public:
+            IPRouteTable() = delete;
+            IPRouteTable(const IPRouteTable&) = delete;
+            IPRouteTable& operator=(const IPRouteTable&) = delete;
+
+            IPRouteTable(std::list<Route>& table, const bool ipv4)
+                : _ipv4(ipv4)
+                , _table(table)
+            {
+            }
+            ~IPRouteTable() override = default;
+
+        private:
+            uint16_t Write(uint8_t stream[], const uint16_t length) const override
+            {
+                Flags(NLM_F_REQUEST | NLM_F_DUMP);
+                Type(RTM_GETROUTE);
+
+                struct rtmsg message;
+
+                ::memset(&message, 0, sizeof(message));
+
+                message.rtm_family = (_ipv4 == true ?  AF_INET : AF_INET6);
+                message.rtm_table = RT_TABLE_MAIN;
+
+                uint16_t copyLength = std::min(length, static_cast<uint16_t>(sizeof(struct rtmsg)));
+                memcpy (stream, &message, copyLength);
+                _table.clear();
+
+                return (copyLength);
+            }
+            uint16_t Read(const uint8_t stream[], const uint16_t length) override
+            {
+                if ( (Type() == RTM_GETROUTE) && (length > 0)) {
+                    _table.emplace_back(stream, length);
+
+                } else if (Type() == NLMSG_ERROR) {
+                    const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
+
+                    if (error->error != 0) {
+                        TRACE_L1("IPRouteTable: Request failed with code %d", error->error);
+                    } 
+                }
+                else if (Type() != NLMSG_DONE) {
+                    TRACE_L1("IPRouteTable: Read unexpected type: %d", Type());
+                }
+
+                return (length);
+            }
+
+        private:
+            bool _ipv4;
+            std::list<Route>& _table;
+        } collector (_table, ipv4);
+
+        IPNetworks::Instance().Exchange(collector, collector);
+    }
+
 
     Network::Network(const uint32_t index, const struct rtattr* iface, const uint32_t length)
         : _adminLock()
@@ -1243,7 +1317,7 @@ namespace Core {
         bool result = false;
         int sockfd;
 
-        sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+        sockfd = ::socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC, 0);
 
         if (sockfd >= 0) {
 
@@ -1273,7 +1347,7 @@ namespace Core {
         bool result = false;
         int sockfd;
 
-        sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+        sockfd = ::socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC, 0);
 
         if (sockfd >= 0) {
 
@@ -1303,7 +1377,7 @@ namespace Core {
         uint32_t result = Core::ERROR_GENERAL;
         int sockfd;
 
-        sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+        sockfd = ::socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC, 0);
 
         if (sockfd >= 0) {
 
@@ -1341,7 +1415,7 @@ namespace Core {
         int sockfd;
         struct ifreq ifr;
 
-        sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+        sockfd = ::socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC, 0);
 
         if (sockfd >= 0) {
 
@@ -1485,6 +1559,11 @@ namespace Core {
         // Time to get the current set of networks..
         IPNetworks::Instance().Load(_list);
         _index = _list.begin();
+    }
+
+    AdapterIterator::AdapterIterator(const uint16_t index)
+        : AdapterIterator() {
+        while ( (Next() == true) && (Index() != index) ) { /* Intentionally left empty */ }
     }
 
     AdapterIterator::AdapterIterator(const string& name) 

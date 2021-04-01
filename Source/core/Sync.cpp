@@ -38,7 +38,7 @@
 #include "ProcessInfo.h"
 #include "Trace.h"
 
-#ifdef CRITICAL_SECTION_LOCK_LOG
+#ifdef __CORE_CRITICAL_SECTION_LOG__
 #include "Thread.h"
 #endif
 
@@ -53,6 +53,15 @@
 // GLOBAL INTERLOCKED METHODS
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
+
+#if BUILD_TESTS
+// TODO: What is going on here??
+//  https://github.com/google/googletest/issues/2328
+#include <cxxabi.h>
+__gnu_cxx::recursive_init_error::~recursive_init_error()
+{
+}
+#endif
 
 namespace WPEFramework {
 namespace Core {
@@ -154,13 +163,13 @@ namespace Core {
             // That will be the day, if this fails...
             ASSERT(false);
         }
-#ifdef CRITICAL_SECTION_LOCK_LOG
+#ifdef __CORE_CRITICAL_SECTION_LOG__
         memset(_UsedStackEntries, 0, sizeof(_UsedStackEntries));
         memset(_LockingStack, 0, sizeof(_LockingStack));
-#endif // CRITICAL_SECTION_LOCK_LOG
+#endif // __CORE_CRITICAL_SECTION_LOG__
     }
 
-#ifdef CRITICAL_SECTION_LOCK_LOG
+#ifdef __CORE_CRITICAL_SECTION_LOG__
     void CriticalSection::TryLock()
     {
         // Wait time in seconds.
@@ -234,7 +243,7 @@ namespace Core {
 
         return newEntryCount;
     }
-#endif // CRITICAL_SECTION_LOCK_LOG
+#endif // __CORE_CRITICAL_SECTION_LOG__
 
 #endif
 
@@ -1051,7 +1060,7 @@ namespace Core {
 #endif
     }
 #ifndef __WINDOWS__
-#if defined(CRITICAL_SECTION_LOCK_LOG)
+#if defined(__CORE_CRITICAL_SECTION_LOG__)
     CriticalSection CriticalSection::_StdErrDumpMutex;
 #endif
 #endif
