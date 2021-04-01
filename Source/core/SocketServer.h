@@ -283,7 +283,7 @@ namespace Core {
                     _lock.Lock();
 
                     // If the CLient has a method to receive it's Id pass it on..
-                    __Id<HANDLECLIENT>(*client, _nextClient);
+                    __Id(*client, _nextClient);
 
                     // A new connection is available, open up a new client
                     _clients.insert(std::pair<uint32_t, ProxyType<HANDLECLIENT>>(_nextClient++, client));

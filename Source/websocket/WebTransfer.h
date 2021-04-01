@@ -247,7 +247,7 @@ namespace Web {
                         _request.Body(_fileBody);
 
                         // Maybe we need to add a hash value...
-                        _CalculateHash<LINK, FILEBODY>(_request);
+                        _CalculateHash(_request);
 
                         // Prepare the request for processing
                         result = _channel.StartTransfer(Core::ProxyType<Web::Request>(_request));

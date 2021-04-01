@@ -273,14 +273,14 @@ namespace Core {
 
         HAS_MEMBER(Reset, hasReset);
 
-        template <typename TYPE>
+        template <typename TYPE=WATCHDOG>
         inline typename Core::TypeTraits::enable_if<hasReset<TYPE, void (TYPE::*)()>::value, void>::type
         Reset()
         {
             _watchDog.Reset();
         }
 
-        template <typename TYPE>
+        template <typename TYPE=WATCHDOG>
         inline typename Core::TypeTraits::enable_if<!hasReset<TYPE, void (TYPE::*)()>::value, void>::type
         Reset()
         {
@@ -425,7 +425,7 @@ namespace Core {
                         // Event if the flagsSet == 0, call handle, maybe a break was issued by this RESOURCE..
                         entry->Handle(flagsSet);
 
-                        Reset<WATCHDOG>();
+                        Reset();
                     }
 
                     index++;
@@ -501,7 +501,7 @@ namespace Core {
                         // Event if the flagsSet == 0, call handle, maybe a break was issued by this RESOURCE..
                         entry->Handle(flagsSet);
 
-                        Reset<WATCHDOG>();
+                        Reset();
                     }
                     index++;
                 }
