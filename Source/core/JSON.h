@@ -130,7 +130,7 @@ namespace Core {
 
                 while (handled < size) {
 
-		    uint16_t payload = static_cast<uint16_t>(std::min((size - handled) + 1, static_cast<uint32_t>(0xFFFF)));
+                    uint16_t payload = static_cast<uint16_t>(std::min((size - handled) + 1, static_cast<uint32_t>(0xFFFF)));
 
                     // Deserialize object
                     uint16_t loaded = static_cast<IElement&>(realObject).Deserialize(&(text.c_str()[handled]), payload, offset, error);
@@ -141,7 +141,7 @@ namespace Core {
                     if (loaded == 0) {
                         break;
                     }
-		    handled += loaded;
+                    handled += loaded;
                 }
 
                 if ((offset != 0 || handled < size) && error.IsSet() == false) {
@@ -321,7 +321,7 @@ namespace Core {
                 realObject.Clear();
 
                 while (size != handled) {
-			uint16_t partial = static_cast<uint16_t>(std::min(size - handled, static_cast<uint32_t>(0xFFFF)));
+                        uint16_t partial = static_cast<uint16_t>(std::min(size - handled, static_cast<uint32_t>(0xFFFF)));
 
                         // Deserialize object
                         uint16_t loaded = static_cast<IMessagePack&>(realObject).Deserialize(&(stream[handled]), partial, offset);
@@ -1410,7 +1410,7 @@ namespace Core {
             // IMessagePack iface:
             uint16_t Serialize(uint8_t stream[], const uint16_t VARIABLE_IS_NOT_USED maxLength, uint32_t& offset) const override
             {
-		ASSERT (maxLength >= 1);
+                ASSERT (maxLength >= 1);
 
                 if ((_value & NullBit) != 0) {
                     stream[offset] = IMessagePack::NullValue;
@@ -1424,7 +1424,7 @@ namespace Core {
 
             uint16_t Deserialize(const uint8_t stream[], const uint16_t VARIABLE_IS_NOT_USED maxLength, uint32_t& offset) override
             {
-		ASSERT (maxLength >= 1);
+                ASSERT (maxLength >= 1);
 
                 if ((stream[0] == IMessagePack::NullValue) != 0) {
                     _value = NullBit;
