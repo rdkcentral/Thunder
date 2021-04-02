@@ -1691,8 +1691,15 @@ namespace Core {
                             
                             if (result < maxLength) {
 
+                                char convertedValue = IsEscapeSequenceValue(*source);
+                                if (convertedValue != 0) {
+                                    stream[result++] = '\\';
+                                    stream[result++] = convertedValue;
+                                } else {
+                                    stream[result++] = *source;
+                                }
+                                source++;
                                 _unaccountedCount = 0;
-                                stream[result++] = *source++;
                                 length--;
                             }
                         }
@@ -1791,7 +1798,9 @@ namespace Core {
                     if (finished == false) {
                         EscapeSequenceAction escapeHandling = EscapeSequenceAction::NOTHING;
 
-                        if ((escapedSequence == true) && ((_scopeCount & DepthCountMask) == 0)) {
+                        if ((escapedSequence == true) && (current == '\\') && (_value[_value.length() - 1] == '\\')) {
+                                escapeHandling = EscapeSequenceAction::COLLAPSE;
+                        } else if ((escapedSequence == true) && ((_scopeCount & DepthCountMask) == 0)) {
                             if (!IsValidEscapeSequence(current)) {
                                 finished = true;
                                 error = Error{ "Invalid escape sequence \"\\" + std::string(1, current) + "\"." };
@@ -1802,15 +1811,17 @@ namespace Core {
                             }
                         }
 
+                        escapedSequence = ((current == '\\') && escapeHandling != EscapeSequenceAction::COLLAPSE);
                         if (escapeHandling == EscapeSequenceAction::COLLAPSE) {
                             _value[_value.length() - 1] = current;
                             ++_unaccountedCount;
+                        } else if (escapeHandling == EscapeSequenceAction::REPLACE) {
+                            _value[_value.length() - 1] = GetEscapeSequenceValue(current);
                         } else {
                             // Write the amount we possibly can..
                             _value += current;
                         }
 
-                        escapedSequence = (current == '\\' && escapeHandling != EscapeSequenceAction::COLLAPSE);
 
                         // Move on to the next position
                         result++;
@@ -1938,17 +1949,71 @@ namespace Core {
                 REPLACE
             };
 
+            char GetEscapeSequenceValue(char current) const
+            {
+                 char value = 0;
+                 switch(current) {
+                 case 'b':
+                     value = 0x08;
+                     break;
+                 case 'f':
+                     value = 0x0c;
+                     break;
+                 case 'n':
+                     value = 0x0a;
+                     break;
+                    case 'r':
+                     value = 0x0d;
+                     break;
+                 case 't':
+                     value = 0x09;
+                     break;
+                 case 'u':
+                     value = 0x0b;
+                     break;
+                 default:
+                     break;
+                 }
+                 return value;
+            }
+
             EscapeSequenceAction GetEscapeSequenceAction(char current) const
             {
                 EscapeSequenceAction action = EscapeSequenceAction::COLLAPSE;
                 if (current == 'u' || current == 'n' || current == 't' || current == 'r' || current == 'f' || current == 'b') {
-                    action = EscapeSequenceAction::NOTHING;
+                    action = EscapeSequenceAction::REPLACE;
                 } else if((current == '\"') && (_scopeCount & DepthCountMask)) {
                     action = EscapeSequenceAction::NOTHING;
                 }
                 return action;
             }
-
+            char IsEscapeSequenceValue(const char& current) const
+            {
+                 char value = 0;
+                 switch(current) {
+                 case 0x08:
+                     value = 'b';
+                     break;
+                 case 0x09:
+                     value = 't';
+                     break;
+                 case 0x0a:
+                     value = 'n';
+                     break;
+                 case 0x0b:
+                     value = 'u';
+                     break;
+                 case 0x0c:
+                     value = 'f';
+                     break;
+                 case 0x0d:
+                     value = 'r';
+                     break;
+                 default:
+                     break;
+                 }
+                 return value;
+            }
             enum class ScopeBracket : bool {
                 CURLY_BRACKET = 0,
                 SQUARE_BRACKET = 1
@@ -3132,7 +3197,6 @@ namespace Core {
             bool IsSet() const override
             {
                 JSONElementList::const_iterator index = _data.begin();
-
                 // As long as we did not find a set element, continue..
                 while ((index != _data.end()) && (index->second->IsSet() == false)) {
                     index++;
@@ -3155,6 +3219,17 @@ namespace Core {
                 while (index != _data.end()) {
                     index->second->Clear();
                     index++;
+                }
+            }
+
+            void Reset()
+            {
+                JSONElementList::const_iterator index = _data.begin();
+
+                // As long as we did not find a set element, continue..
+                while (index != _data.end()) {
+                    index->second->Clear();
+                    index = _data.erase(index);
                 }
             }
 
@@ -3363,6 +3438,7 @@ namespace Core {
                             skip = SKIP_AFTER_KEY;
                         } else {
                             loaded += _current.json->Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
+                            static_cast<JSON::String&>(*_current.json).Value();
                         }
                         offset = (offset == FIND_MARKER ? skip : offset + PARSE);
                     }
@@ -3870,7 +3946,7 @@ namespace Core {
                 uint16_t endIndex = 0;
                 bool insideQuotes = false;
                 for (uint16_t i = 1; i < maxLength; ++i) {
-                    if ((stream[i] == '\"') && (stream[i - 1] != '\\')) {
+                    if ((stream[i] == '\"') && ((stream[i - 1] != '\\') || ((stream[i - 1] == '\\') && (stream[i - 2] == '\\')))) {
                         insideQuotes = !insideQuotes;
                     }
                     if (!insideQuotes) {
@@ -4130,6 +4206,10 @@ namespace Core {
                 return (Iterator(_elements));
             }
 
+            void Clear()
+            {
+                Reset();
+            }
             string GetDebugString(int indent = 0) const;
 
         private:
