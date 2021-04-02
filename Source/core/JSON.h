@@ -1987,6 +1987,7 @@ namespace Core {
                 }
                 return action;
             }
+
             char IsEscapeSequenceValue(const char& current) const
             {
                  char value = 0;
@@ -3438,7 +3439,6 @@ namespace Core {
                             skip = SKIP_AFTER_KEY;
                         } else {
                             loaded += _current.json->Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
-                            static_cast<JSON::String&>(*_current.json).Value();
                         }
                         offset = (offset == FIND_MARKER ? skip : offset + PARSE);
                     }
