@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -60,7 +60,7 @@ namespace Plugin {
         }
     }
 
-   // Access to this interface will be through the BackOffice Plugin, if external exposure is required !!!
+    // Access to this interface will be through the BackOffice Plugin, if external exposure is required !!!
     /* virtual */ const string Controller::Initialize(PluginHost::IShell* service)
     {
 
@@ -74,7 +74,7 @@ namespace Plugin {
         Config config;
         config.FromString(_service->ConfigLine());
 
-        if (config.Probe.IsSet() == true) {
+       if (config.Probe.IsSet() == true) {
             // "239.255.255.250:1900";
             Core::NodeId node (config.Probe.Node.Value().c_str());
 
@@ -352,32 +352,51 @@ namespace Plugin {
                     }
                 }
             } else if (index.Current() == _T("Configuration")) {
-                if ((index.Next() == true) && (request.HasBody() == true)) {
-
-                    Core::ProxyType<PluginHost::Service> serviceInfo(FromIdentifier(index.Current().Text()));
+                if (request.HasBody() == true) {
                     Core::ProxyType<const Web::TextBody> data(request.Body<const Web::TextBody>());
 
-                    if ((data.IsValid() == false) || (serviceInfo.IsValid() == false)) {
+                    if (index.Next() == true) {
+                        
+                        Core::ProxyType<PluginHost::Service> serviceInfo(FromIdentifier(index.Current().Text()));
 
-                        result->ErrorCode = Web::STATUS_BAD_REQUEST;
-                        result->Message = _T("Not sufficent data to comply to the request");
+                        if ((data.IsValid() == false) || (serviceInfo.IsValid() == false)) {
+
+                            result->ErrorCode = Web::STATUS_BAD_REQUEST;
+                            result->Message = _T("Not sufficent data to comply to the request");
+                        } else {
+
+                            uint32_t error;
+
+                            if ((error = serviceInfo->ConfigLine(*data)) == Core::ERROR_NONE) {
+                                result->ErrorCode = Web::STATUS_OK;
+                            } else {
+                                result->ErrorCode = Web::STATUS_BAD_REQUEST;
+                                result->Message = _T("Could not update the config. Error: ") + Core::NumberType<uint32_t>(error).Text();
+                            }
+                        }
                     } else {
-
-                        uint32_t error;
-
-                        if ((error = serviceInfo->ConfigLine(*data)) == Core::ERROR_NONE) {
+                        //request to update the controller configuration 
+                        JsonObject command;
+  
+                        if (data.IsValid() == true && command.FromString(*data)==true){
+                            auto updatedParams= _pluginServer->_config.UpdateFromJsonRpc(command);
                             result->ErrorCode = Web::STATUS_OK;
+                            updatedParams.empty()?result->Message = _T("New configuration is not valid"):result->Message = _T(updatedParams+ " have been updated");
                         } else {
                             result->ErrorCode = Web::STATUS_BAD_REQUEST;
-                            result->Message = _T("Could not update the config. Error: ") + Core::NumberType<uint32_t>(error).Text();
+                            result->Message = _T("body data is not valid");
                         }
                     }
+                } else  {
+                    result->ErrorCode = Web::STATUS_BAD_REQUEST;
+                    result->Message = _T("Request Need body.");
+
                 }
             } else if (index.Current() == _T("Discovery")) {
                 if (_probe != nullptr) {
                     result->ErrorCode = Web::STATUS_BAD_REQUEST;
                     result->Message = _T("Probe functionality not enabled!");
-                }
+                } 
                 else {
                     Core::URL::KeyValue options(request.Query.Value());
                     uint8_t ttl = options.Number<uint8_t>(_T("TTL"), 0);
@@ -388,7 +407,7 @@ namespace Plugin {
                     result->Message = _T("Discovery cycle initiated");
                 }
             } else if (index.Current() == _T("Persist")) {
-                
+
                 _pluginServer->Persist();
 
                 result->ErrorCode = Web::STATUS_OK;
@@ -466,8 +485,6 @@ namespace Plugin {
     {
         event_statechange(callsign, PluginHost::IShell::DEACTIVATED, plugin->Reason());
     }
-
-
     void Controller::SubSystems()
     {
         string message;
@@ -532,8 +549,8 @@ namespace Plugin {
 
         if (callsign.empty() || (callsign == PluginHost::JSONRPC::Callsign())) {
             response = PluginHost::JSONRPC::Invoke(token, channelId, inbound);
-		} else {
-			Core::ProxyType<PluginHost::Server::Service> service;
+        } else {
+            Core::ProxyType<PluginHost::Server::Service> service;
 
             uint32_t result = _pluginServer->Services().FromIdentifier(callsign, service);
 
@@ -544,7 +561,7 @@ namespace Plugin {
 
                 forwarder.Id = inbound.Id;
                 forwarder.Parameters = inbound.Parameters;
-                    
+
                 forwarder.Designator = inbound.VersionedFullMethod();
                 response = service->Invoke(token, channelId, forwarder);
                 asyncCall = (response.IsValid() == false);
@@ -558,17 +575,17 @@ namespace Plugin {
             response->Error.SetError(result);
 
             switch (result) {
-                case Core::ERROR_UNAVAILABLE:
-                    response->Error.Text = "Requested service is not available";
-                    break;
-                case Core::ERROR_INVALID_SIGNATURE:
-                    response->Error.Text = "Invalid service name or version";
-                    break;
-                case Core::ERROR_BAD_REQUEST:
-                    response->Error.Text = "Could not access requested service";
-                    break;
-                default:
-                    response->Error.Text = "Invalid JSONRPC Request";
+            case Core::ERROR_UNAVAILABLE:
+                response->Error.Text = "Requested service is not available";
+                break;
+            case Core::ERROR_INVALID_SIGNATURE:
+                response->Error.Text = "Invalid service name or version";
+                break;
+            case Core::ERROR_BAD_REQUEST:
+                response->Error.Text = "Could not access requested service";
+                break;
+            default:
+                response->Error.Text = "Invalid JSONRPC Request";
             }
         }
 

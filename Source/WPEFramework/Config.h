@@ -41,10 +41,10 @@ namespace PluginHost {
             Substituter(const Config& parent)
                 : _parent(parent)
             {
-                _variables.insert(std::make_pair("datapath", [](const Config& config, const Plugin::Config* info) { 
+                _variables.insert(std::make_pair("datapath", [](const Config& config, const Plugin::Config* info) {
                     return (info == nullptr ? config.DataPath() : info->DataPath(config.DataPath()));
                 }));
-                _variables.insert(std::make_pair("persistentpath", [](const Config& config, const Plugin::Config* info) { 
+                _variables.insert(std::make_pair("persistentpath", [](const Config& config, const Plugin::Config* info) {
                     return (info == nullptr ? config.PersistentPath() : info->PersistentPath(config.PersistentPath()));
                 }));
                 _variables.insert(std::make_pair("systempath", [](const Config& config, const Plugin::Config*) {
@@ -343,8 +343,8 @@ namespace PluginHost {
                 Add(_T("signature"), &Signature);
                 Add(_T("idletime"), &IdleTime);
                 Add(_T("ipv6"), &IPV6);
-                Add(_T("tracing"), &DefaultTraceCategories); 
-                Add(_T("warningreporting"), &DefaultWarningReportingCategories); 
+                Add(_T("tracing"), &DefaultTraceCategories);
+                Add(_T("warningreporting"), &DefaultWarningReportingCategories);
                 Add(_T("redirect"), &Redirect);
                 Add(_T("process"), &Process);
                 Add(_T("input"), &Input);
@@ -381,7 +381,7 @@ namespace PluginHost {
             Core::JSON::DecUInt16 IdleTime;
             Core::JSON::Boolean IPV6;
             Core::JSON::String DefaultTraceCategories;
-            Core::JSON::String DefaultWarningReportingCategories; 
+            Core::JSON::String DefaultWarningReportingCategories;
             ProcessSet Process;
             InputConfig Input;
             Core::JSON::String Configs;
@@ -405,14 +405,14 @@ namespace PluginHost {
                 : _locator()
                 , _type(InputHandler::VIRTUAL)
                 , _enabled(false) {
-            } 
+            }
             void Set(const JSONConfig::InputConfig& input) {
                 _locator = input.Locator.Value();
                 _type = input.Type.Value();
                 _enabled = input.OutputEnabled.Value();
             } 
 
-        public:
+       public:
             InputInfo(const InputInfo&) = delete;
             InputInfo& operator= (const InputInfo&) = delete;
 
@@ -428,7 +428,7 @@ namespace PluginHost {
             inline bool Enabled() const {
                 return(_enabled);
             }
- 
+
         private:
             string _locator;
             InputHandler::type _type;
@@ -473,7 +473,7 @@ namespace PluginHost {
             inline const string& Group() const {
                 return(_group);
             }
-            inline int8_t Priority() const {
+             inline int8_t Priority() const {
                 return(_priority);
             }
             inline int8_t OOMAdjust() const {
@@ -485,7 +485,7 @@ namespace PluginHost {
             inline uint16_t UMask() const {
                 return(_umask);
             }
- 
+
         private:
             bool _isSet;
             string _user;
@@ -594,7 +594,7 @@ namespace PluginHost {
                 while (itr.Next())
                     _linkerPluginPaths.push_back(itr.Current().Value());
             }
-        }
+      }
         #ifdef __WINDOWS__
         #pragma warning(default: 4355)
         #endif
@@ -609,9 +609,14 @@ namespace PluginHost {
         {
             return (_prefix);
         }
-        inline const string& Version() const
-        {
+        inline void UpdatePrefix(const string& newValue) {
+            _prefix = newValue;
+        }
+        inline const string& Version() const  {
             return (_version);
+        }
+        inline void UpdateVersion(const string& newValue) {
+            _version = newValue;
         }
         inline const string& Model() const
         {
@@ -640,6 +645,30 @@ namespace PluginHost {
         inline const string& JSONRPCPrefix() const
         {
             return (_JSONRPCPrefix);
+        }
+        inline string UpdateFromJsonRpc(const JsonObject& command)  {
+            string changedValue;
+            if (command.HasLabel("version")) {
+                UpdateVersion(command["version"].Value());
+                changedValue+="version";
+            }
+            if (command.HasLabel("prefix")) {
+                UpdatePrefix(command["prefix"].Value());
+                changedValue+=",prefix";
+            }
+            if (command.HasLabel("idletime")) {
+                UpdateIdleTime((uint16_t)stoi(command["idletime"].Value()));
+                changedValue+=",idletime";
+            }
+            if (command.HasLabel("latitude")) {
+                UpdateLatitude((int32_t)stoi(command["latitude"].Value()));
+                changedValue+=",latitude";
+            }
+            if (command.HasLabel("longitude")) {
+                UpdateLongitude((int32_t)stoi(command["longitude"].Value()));
+                changedValue+=",longitude";
+            }
+            return changedValue;
         }
 #ifdef PROCESSCONTAINERS_ENABLED
         inline const string& ProcessContainersLogging() const {
@@ -708,25 +737,34 @@ namespace PluginHost {
         {
             return (_background);
         }
-        inline string Substitute(const string& input, const Plugin::Config& plugin) const {
+       inline string Substitute(const string& input, const Plugin::Config& plugin) const {
             return (_substituter.Substitute(input, &plugin));
         }
         inline uint16_t IdleTime() const {
             return (_idleTime);
         }
+        inline void UpdateIdleTime(const uint16_t& newValue)  {
+            _idleTime = newValue;
+        }
         inline const string& URL() const {
             return (_URL);
         }
-        inline uint32_t StackSize() const {
+       inline uint32_t StackSize() const {
             return (_stackSize);
         }
         inline int32_t Latitude() const {
             return (_latitude);
         }
+        inline void UpdateLatitude(const int32_t& newValue){
+            _latitude = newValue;
+        }
         inline int32_t Longitude() const {
             return (_longitude);
         }
-        inline const InputInfo& Input() const {
+        inline void UpdateLongitude(const int32_t& newValue){
+            _longitude = newValue;
+        }
+         inline const InputInfo& Input() const {
             return(_inputInfo);
         }
         inline const ProcessInfo& Process() const {
