@@ -1798,10 +1798,10 @@ namespace Core {
                     if (finished == false) {
                         EscapeSequenceAction escapeHandling = EscapeSequenceAction::NOTHING;
 
-                        if ((escapedSequence == true) && (current == '\\') && (_value[_value.length() - 1] == '\\')) {
+                        if ((escapedSequence == true) && ((_scopeCount & DepthCountMask) == 0)) {
+                            if ((current == '\\') && (_value[_value.length() - 1] == '\\')) {
                                 escapeHandling = EscapeSequenceAction::COLLAPSE;
-                        } else if ((escapedSequence == true) && ((_scopeCount & DepthCountMask) == 0)) {
-                            if (!IsValidEscapeSequence(current)) {
+			    } else if (!IsValidEscapeSequence(current)) {
                                 finished = true;
                                 error = Error{ "Invalid escape sequence \"\\" + std::string(1, current) + "\"." };
                                 ++result;
@@ -1811,7 +1811,7 @@ namespace Core {
                             }
                         }
 
-                        escapedSequence = ((current == '\\') && escapeHandling != EscapeSequenceAction::COLLAPSE);
+                        escapedSequence = ((escapedSequence == 0) && (current == '\\') && (escapeHandling != EscapeSequenceAction::COLLAPSE));
                         if (escapeHandling == EscapeSequenceAction::COLLAPSE) {
                             _value[_value.length() - 1] = current;
                             ++_unaccountedCount;
@@ -1962,14 +1962,11 @@ namespace Core {
                  case 'n':
                      value = 0x0a;
                      break;
-                    case 'r':
+                 case 'r':
                      value = 0x0d;
                      break;
                  case 't':
                      value = 0x09;
-                     break;
-                 case 'u':
-                     value = 0x0b;
                      break;
                  default:
                      break;
@@ -2000,9 +1997,6 @@ namespace Core {
                      break;
                  case 0x0a:
                      value = 'n';
-                     break;
-                 case 0x0b:
-                     value = 'u';
                      break;
                  case 0x0c:
                      value = 'f';
