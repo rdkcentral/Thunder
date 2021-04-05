@@ -197,7 +197,7 @@ TEST(Core_JSON, simpleSet)
             EXPECT_STREQ(value.Value().c_str(), index.Current().Value().c_str());
         }
     }
-    //JsonObject Serialization and Deserialization with backslashes
+    //JsonObject Serialization and Deserialization with escape sequences
     {
         class StringContainer : public Core::JSON::Container {
         public:
@@ -371,5 +371,39 @@ TEST(Core_JSON, simpleSet)
         printf("     output %d --- = %s \n", output.length(), output.c_str());
         printf("     strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
         EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
+
+        class ParamsInfo : public Core::JSON::Container {
+        public:
+            ParamsInfo()
+                : Core::JSON::Container()
+            {
+                Add(_T("ssid"), &Ssid);
+            }
+
+            ParamsInfo(const ParamsInfo&) = delete;
+            ParamsInfo& operator=(const ParamsInfo&) = delete;
+
+        public:
+            Core::JSON::String Ssid; // Identifier of a network
+        };
+
+        Core::JSONRPC::Message message;
+        input = R"({"jsonrpc":"2.0","id":1234567890,"method":"WifiControl.1.connect","params":{"ssid":"iPhone\\"}})";
+        message.FromString(input);
+        message.ToString(output);
+        EXPECT_STREQ(input.c_str(), output.c_str());
+        printf("\n\n Case 16: \n");
+        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("output %d --- = %s \n", output.length(), output.c_str());
+        ParamsInfo paramsInfo;
+        message.Parameters.ToString(input);
+        paramsInfo.FromString(message.Parameters.Value());
+        paramsInfo.ToString(output);
+        printf("message.params = %s\n", message.Parameters.Value().c_str());
+        printf("message.params.ssid = %s\n", paramsInfo.Ssid.Value().c_str());
+        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("output %d --- = %s \n", output.length(), output.c_str());
+
+        EXPECT_STREQ(input.c_str(), output.c_str());
     }
 }
