@@ -239,8 +239,9 @@ TEST(Core_tracing, simpleTracing)
 
         while (index.Next() == true)
             if ((*index)->Enabled() == true) {
-                if ((strcmp((*index)->Module(), "Tracing")) == 0 )
+                if ((strcmp((*index)->Module(), "Tracing")) == 0 ) {
                     EXPECT_STREQ((*index)->Category(), "Information");
+                }
             }
 
         bool enabled = false;
@@ -272,8 +273,9 @@ TEST(Core_tracing, simpleTracingReversed)
 
         while (index.Next() == true)
             if ((*index)->Enabled() == true) {
-                if ((strcmp((*index)->Module(), "Tracing")) == 0 )
+                if ((strcmp((*index)->Module(), "Tracing")) == 0 ) {
                     EXPECT_STREQ((*index)->Category(), "Information");
+                }
             }
 
         bool enabled = false;
