@@ -24,6 +24,7 @@
 
 namespace WPEFramework {
 namespace Tests {
+
     TEST(HEX2StrSerialization, serialiation_working) {
         uint8_t object[] = {0xB1, 0x32, 0x01};
         const uint16_t lenght = sizeof(object);
@@ -70,7 +71,6 @@ namespace Tests {
         EXPECT_EQ(memcmp(expected, buffer, sizeof(expected)), 0);
     }
 
-
     TEST(HEX2StrSerialization, no_buffer_overflow) {
         string str = "010203040506";
         uint8_t expected[] = {0x01, 0x02, 0xDE, 0xAD, 0xBE, 0xEF};
@@ -84,4 +84,3 @@ namespace Tests {
     }
 }
 }
-

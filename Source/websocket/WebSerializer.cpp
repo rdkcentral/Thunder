@@ -1641,6 +1641,8 @@ namespace Web
         }
         case PAIR_VALUE: {
             _state = PAIR_KEY;
+            _parser.CollectWord(':', Parser::UPPERCASE);
+            break;
         }
         case PAIR_KEY: {
             _parser.CollectWord(':', Parser::UPPERCASE);
@@ -2035,6 +2037,8 @@ namespace Web
         }
         case PAIR_VALUE: {
             _state = PAIR_KEY;
+            _parser.CollectWord(':', Parser::UPPERCASE);
+            break;
         }
         case PAIR_KEY: {
             _parser.CollectWord(':', Parser::UPPERCASE);
