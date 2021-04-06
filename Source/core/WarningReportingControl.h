@@ -146,7 +146,7 @@ namespace Core {
 
 namespace WarningReporting {
 
-    class WarningReportingUnitProxy {
+    class EXTERNAL WarningReportingUnitProxy {
     public:
         WarningReportingUnitProxy(const WarningReportingUnitProxy&) = delete;
         WarningReportingUnitProxy& operator=(const WarningReportingUnitProxy&) = delete;

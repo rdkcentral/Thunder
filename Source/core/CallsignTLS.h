@@ -42,7 +42,7 @@ namespace Core {
     template <typename THREADLOCALSTORAGE>
     class ThreadLocalStorageType;
 
-    class CallsignTLS {
+    class EXTERNAL CallsignTLS {
     public:
 
         template <const char** MODULENAME>
@@ -56,7 +56,7 @@ namespace Core {
             }
         };
 
-        class CallSignTLSGuard {
+        class EXTERNAL CallSignTLSGuard {
         public:
             CallSignTLSGuard(const CallSignTLSGuard&) = delete;
             CallSignTLSGuard& operator=(const CallSignTLSGuard&) = delete;

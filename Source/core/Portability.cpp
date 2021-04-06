@@ -253,6 +253,9 @@ void SleepMs(unsigned int a_Time)
     struct timespec sleepTime;
     struct timespec waitedTime;
 
+    if (a_Time == 0) 
+        a_Time = 1;
+
     sleepTime.tv_sec = (a_Time / 1000);
     sleepTime.tv_nsec = (a_Time - (sleepTime.tv_sec * 1000)) * 1000000;
 

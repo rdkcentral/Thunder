@@ -199,7 +199,7 @@ namespace Core {
                         _signal.SetEvent();
 
                         while (_interestCount > 0) {
-                            ::SleepMs(0);
+                            std::this_thread::yield();
                         }
 
                         _signal.ResetEvent();
