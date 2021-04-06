@@ -172,7 +172,7 @@ namespace Core {
                 // Wait till the interest count reaches 0 again..
                 while (m_InterestCount) {
                     // Give the slice to some else
-                    ::SleepMs(0);
+                    std::this_thread::yield();
                 }
 
                 m_StateChange.ResetEvent();
