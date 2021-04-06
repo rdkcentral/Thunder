@@ -1152,13 +1152,18 @@ namespace PluginHost {
                     // Red the file and parse it into this object.
                     IElement::FromFile(storage);
 
-                    // Todo set server options
+ 
                     printf("Version read = [%s]\n", Version.Value().c_str());
                     printf("Prefix read = [%s]\n", Prefix.Value().c_str());
                     printf("IdleTime read = [%u]\n", IdleTime.Value());
                     printf("Latitude read = [%d]\n", Latitude.Value());
                     printf("Longitude read = [%d]\n", Longitude.Value());
 
+                    _serverconfig.UpdateVersion(Version.Value());
+                    _serverconfig.UpdatePrefix(Prefix.Value());
+                    _serverconfig.UpdateIdleTime(IdleTime.Value());
+                    _serverconfig.UpdateLatitude(Latitude.Value());
+                    _serverconfig.UpdateLongitude(Longitude.Value());
                     // Convey the real JSON struct information into the specific services.
                     ServiceMap::Iterator index(_services.Services());
 

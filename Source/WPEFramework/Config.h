@@ -609,9 +609,15 @@ namespace PluginHost {
         {
             return (_prefix);
         }
+        inline void UpdatePrefix(const string& newValue) {
+            _prefix = newValue;
+        }
         inline const string& Version() const
         {
             return (_version);
+        }
+        inline void UpdateVersion(const string& newValue) {
+            _version = newValue;
         }
         inline const string& Model() const
         {
@@ -640,6 +646,30 @@ namespace PluginHost {
         inline const string& JSONRPCPrefix() const
         {
             return (_JSONRPCPrefix);
+        }
+        inline string UpdateFromJsonRpc(const JsonObject& command)  {
+            string changedValue;
+            if (command.HasLabel("version")) {
+                UpdateVersion(command["version"].Value());
+                changedValue+="version";
+            }
+            if (command.HasLabel("prefix")) {
+                UpdatePrefix(command["prefix"].Value());
+                changedValue+=",prefix";
+            }
+            if (command.HasLabel("idletime")) {
+                UpdateIdleTime((uint16_t)stoi(command["idletime"].Value()));
+                changedValue+=",idletime";
+            }
+            if (command.HasLabel("latitude")) {
+                UpdateLatitude((int32_t)stoi(command["latitude"].Value()));
+                changedValue+=",latitude";
+            }
+            if (command.HasLabel("longitude")) {
+                UpdateLongitude((int32_t)stoi(command["longitude"].Value()));
+                changedValue+=",longitude";
+            }
+            return changedValue;
         }
 #ifdef PROCESSCONTAINERS_ENABLED
         inline const string& ProcessContainersLogging() const {
@@ -714,6 +744,9 @@ namespace PluginHost {
         inline uint16_t IdleTime() const {
             return (_idleTime);
         }
+        inline void UpdateIdleTime(const uint16_t& newValue)  {
+            _idleTime = newValue;
+        }
         inline const string& URL() const {
             return (_URL);
         }
@@ -723,8 +756,14 @@ namespace PluginHost {
         inline int32_t Latitude() const {
             return (_latitude);
         }
+        inline void UpdateLatitude(const int32_t& newValue){
+            _latitude = newValue;
+        }
         inline int32_t Longitude() const {
             return (_longitude);
+        }
+        inline void UpdateLongitude(const int32_t& newValue){
+            _longitude = newValue;
         }
         inline const InputInfo& Input() const {
             return(_inputInfo);

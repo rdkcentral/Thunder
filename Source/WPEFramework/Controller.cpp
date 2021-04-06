@@ -352,26 +352,45 @@ namespace Plugin {
                     }
                 }
             } else if (index.Current() == _T("Configuration")) {
-                if ((index.Next() == true) && (request.HasBody() == true)) {
-
-                    Core::ProxyType<PluginHost::Service> serviceInfo(FromIdentifier(index.Current().Text()));
+                if (request.HasBody() == true) {
                     Core::ProxyType<const Web::TextBody> data(request.Body<const Web::TextBody>());
 
-                    if ((data.IsValid() == false) || (serviceInfo.IsValid() == false)) {
+                    if (index.Next() == true) {
+                        
+                        Core::ProxyType<PluginHost::Service> serviceInfo(FromIdentifier(index.Current().Text()));
 
-                        result->ErrorCode = Web::STATUS_BAD_REQUEST;
-                        result->Message = _T("Not sufficent data to comply to the request");
+                        if ((data.IsValid() == false) || (serviceInfo.IsValid() == false)) {
+
+                            result->ErrorCode = Web::STATUS_BAD_REQUEST;
+                            result->Message = _T("Not sufficent data to comply to the request");
+                        } else {
+
+                            uint32_t error;
+
+                            if ((error = serviceInfo->ConfigLine(*data)) == Core::ERROR_NONE) {
+                                result->ErrorCode = Web::STATUS_OK;
+                            } else {
+                                result->ErrorCode = Web::STATUS_BAD_REQUEST;
+                                result->Message = _T("Could not update the config. Error: ") + Core::NumberType<uint32_t>(error).Text();
+                            }
+                        }
                     } else {
-
-                        uint32_t error;
-
-                        if ((error = serviceInfo->ConfigLine(*data)) == Core::ERROR_NONE) {
+                        //request to update the controller configuration 
+                        JsonObject command;
+  
+                        if (data.IsValid() == true && command.FromString(*data)==true){
+                            auto updatedParams= _pluginServer->_config.UpdateFromJsonRpc(command);
                             result->ErrorCode = Web::STATUS_OK;
+                            updatedParams.empty()?result->Message = _T("New configuration is not valid"):result->Message = _T(updatedParams+ " have been updated");
                         } else {
                             result->ErrorCode = Web::STATUS_BAD_REQUEST;
-                            result->Message = _T("Could not update the config. Error: ") + Core::NumberType<uint32_t>(error).Text();
+                            result->Message = _T("body data is not valid");
                         }
                     }
+                } else  {
+                    result->ErrorCode = Web::STATUS_BAD_REQUEST;
+                    result->Message = _T("Request Need body.");
+
                 }
             } else if (index.Current() == _T("Discovery")) {
                 if (_probe != nullptr) {
