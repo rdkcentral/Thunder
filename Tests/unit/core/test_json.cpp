@@ -372,6 +372,25 @@ TEST(Core_JSON, simpleSet)
         printf("     strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
         EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
 
+        char escapeSequence = 13;
+        input = escapeSequence;
+        strInput.Name = (input);
+        strInput.ToString(output);
+        strOutput.FromString(output);
+        printf("\n\n Case 16: \n");
+        printf("     input  %d --- = %s \n", input.length(), input.c_str());
+        printf("     strInput.Name --- = %s \n", strInput.Name.Value().c_str());
+        printf("     output %d --- = %s \n", output.length(), output.c_str());
+        printf("     strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
+        EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
+
+        escapeSequence = 10;
+        input = escapeSequence;
+        WPEFramework::Core::ProxyType<CommandRequest> commandRequest = WPEFramework::Core::ProxyType<CommandRequest>::Create();
+        commandRequest->B = input;
+        WPEFramework::Core::JSON::Tester<1, CommandRequest> parser;
+        parser.ToString(commandRequest, output);
+
         class ParamsInfo : public Core::JSON::Container {
         public:
             ParamsInfo()
@@ -392,7 +411,7 @@ TEST(Core_JSON, simpleSet)
         message.FromString(input);
         message.ToString(output);
         EXPECT_STREQ(input.c_str(), output.c_str());
-        printf("\n\n Case 16: \n");
+        printf("\n\n Case 17: \n");
         printf("input  %d --- = %s \n", input.length(), input.c_str());
         printf("output %d --- = %s \n", output.length(), output.c_str());
         ParamsInfo paramsInfo;

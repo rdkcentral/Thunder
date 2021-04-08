@@ -1458,6 +1458,9 @@ namespace Core {
             {
                 return ((N >> 1) > 0) ? 1 + MaxOpaqueObjectDepth<(N >> 1)>() : 1;
             }
+            const std::map<uint8_t, uint8_t> EscapeKeyLookupTable = {
+                {'b',0x08}, {'f', 0x0c}, {'n', 0x0a}, {'r', 0x0d}, {'t', 0x09}
+            };
 
         public:
             explicit String(const bool quoted = true)
@@ -1693,8 +1696,11 @@ namespace Core {
 
                                 char convertedValue = IsEscapeSequenceValue(*source);
                                 if (convertedValue != 0) {
+
                                     stream[result++] = '\\';
-                                    stream[result++] = convertedValue;
+                                    if (result < maxLength) {
+                                        stream[result++] = convertedValue;
+                                    }
                                 } else {
                                     stream[result++] = *source;
                                 }
@@ -1801,7 +1807,7 @@ namespace Core {
                         if ((escapedSequence == true) && ((_scopeCount & DepthCountMask) == 0)) {
                             if ((current == '\\') && (_value[_value.length() - 1] == '\\')) {
                                 escapeHandling = EscapeSequenceAction::COLLAPSE;
-			    } else if (!IsValidEscapeSequence(current)) {
+                            } else if (!IsValidEscapeSequence(current)) {
                                 finished = true;
                                 error = Error{ "Invalid escape sequence \"\\" + std::string(1, current) + "\"." };
                                 ++result;
@@ -1940,7 +1946,7 @@ namespace Core {
                 // control chars with values less that 0x1F using this convention. Also serializer
                 // should change '"' '\' '\n' '\t' '\f' '\r' '\f' to
                 // '\''"' '\''\' '\''n' '\''t' '\''f' '\''r' '\''f' and deserisalizer has to change tham back
-                return current == '"' || current == 'b' || current == 'n' || current == 't' || current == 'u' || current == '/' || current == '\\' || current == 'f' || current == 'r';
+                return (current == '"') || (EscapeKeyLookupTable.find(current) != EscapeKeyLookupTable.end());
             }
 
             enum class EscapeSequenceAction {
@@ -1949,35 +1955,23 @@ namespace Core {
                 REPLACE
             };
 
-            char GetEscapeSequenceValue(char current) const
+            char GetEscapeSequenceValue(const char current) const
             {
-                 char value = 0;
-                 switch(current) {
-                 case 'b':
-                     value = 0x08;
-                     break;
-                 case 'f':
-                     value = 0x0c;
-                     break;
-                 case 'n':
-                     value = 0x0a;
-                     break;
-                 case 'r':
-                     value = 0x0d;
-                     break;
-                 case 't':
-                     value = 0x09;
-                     break;
-                 default:
-                     break;
-                 }
-                 return value;
+                char value = 0;
+                const auto index = EscapeKeyLookupTable.find(current);
+                if (index != EscapeKeyLookupTable.end()) {
+                    value = index->second;
+                }
+
+                return value;
             }
 
-            EscapeSequenceAction GetEscapeSequenceAction(char current) const
+            EscapeSequenceAction GetEscapeSequenceAction(const char current) const
             {
+
                 EscapeSequenceAction action = EscapeSequenceAction::COLLAPSE;
-                if (current == 'u' || current == 'n' || current == 't' || current == 'r' || current == 'f' || current == 'b') {
+                const auto index = EscapeKeyLookupTable.find(current);
+                if (index != EscapeKeyLookupTable.end()) {
                     action = EscapeSequenceAction::REPLACE;
                 } else if((current == '\"') && (_scopeCount & DepthCountMask)) {
                     action = EscapeSequenceAction::NOTHING;
@@ -1985,29 +1979,17 @@ namespace Core {
                 return action;
             }
 
-            char IsEscapeSequenceValue(const char& current) const
+            char IsEscapeSequenceValue(const char current) const
             {
-                 char value = 0;
-                 switch(current) {
-                 case 0x08:
-                     value = 'b';
-                     break;
-                 case 0x09:
-                     value = 't';
-                     break;
-                 case 0x0a:
-                     value = 'n';
-                     break;
-                 case 0x0c:
-                     value = 'f';
-                     break;
-                 case 0x0d:
-                     value = 'r';
-                     break;
-                 default:
-                     break;
-                 }
-                 return value;
+                char value = 0;
+                for (const auto& index : EscapeKeyLookupTable) {
+                    if (index.second == current) {
+                        value = index.first;
+                        break;
+                    }
+                }
+
+                return value;
             }
             enum class ScopeBracket : bool {
                 CURLY_BRACKET = 0,
