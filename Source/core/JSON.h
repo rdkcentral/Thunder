@@ -1695,17 +1695,13 @@ namespace Core {
                             if (result < maxLength) {
 
                                 char convertedValue = IsEscapeSequenceValue(*source);
-                                if (convertedValue != 0) {
-
+                                if ((result+1 < maxLength) && (convertedValue != *source)) {
                                     stream[result++] = '\\';
-                                    if (result < maxLength) {
-                                        stream[result++] = convertedValue;
-                                    }
-                                } else {
-                                    stream[result++] = *source;
                                 }
-                                source++;
+
+                                stream[result++] = convertedValue;
                                 _unaccountedCount = 0;
+                                source++;
                                 length--;
                             }
                         }
@@ -1981,7 +1977,7 @@ namespace Core {
 
             char IsEscapeSequenceValue(const char current) const
             {
-                char value = 0;
+                char value = current;
                 for (const auto& index : EscapeKeyLookupTable) {
                     if (index.second == current) {
                         value = index.first;
