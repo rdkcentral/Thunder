@@ -433,7 +433,7 @@ namespace Plugin {
 
         if ((plugin->State() == PluginHost::IShell::ACTIVATED) && (_resumes.size() > 0)) {
             string callsign(plugin->Callsign());
-            std::list<string>::const_iterator index(_resumes.begin());
+            std::list<string>::iterator index(_resumes.begin());
 
             ASSERT(_service != nullptr);
 
