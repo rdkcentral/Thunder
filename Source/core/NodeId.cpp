@@ -87,6 +87,7 @@ namespace Core {
         memset(&m_structInfo, 0xFF, sizeof(m_structInfo));
 
         m_structInfo.IPV4Socket.sin_family = TYPE_EMPTY;
+        m_structInfo.IPV4Socket.in_protocol = 0;
     }
 
     NodeId::NodeId(const struct sockaddr_in& rInfo, const uint32_t protocol)
