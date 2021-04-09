@@ -254,10 +254,10 @@ namespace Core {
 
     static constexpr uint16_t TCPv4FrameSize = sizeof(tcphdr);
 
-    template <uint16_t SIZE = 0>
-    class TCPv4FrameType : public IPv4FrameType<IPPROTO_TCP, SIZE + sizeof(tcphdr)> {
+    template <uint16_t SIZE = 0, uint8_t PROTOCOL = IPPROTO_TCP>
+    class TCPv4FrameType : public IPv4FrameType<PROTOCOL, SIZE + sizeof(tcphdr)> {
     public:
-        using Base = IPv4FrameType<IPPROTO_TCP, SIZE + sizeof(tcphdr)>;
+        using Base = IPv4FrameType<PROTOCOL, SIZE + sizeof(tcphdr)>;
         static constexpr uint16_t FrameSize = SIZE;
         static constexpr uint16_t HeaderSize = TCPv4FrameSize;
 
@@ -321,10 +321,10 @@ namespace Core {
 	
     static constexpr uint16_t UDPv4FrameSize = sizeof(udphdr);
 
-    template <uint16_t SIZE = 0>
-    class UDPv4FrameType : public IPv4FrameType<IPPROTO_UDP, SIZE + sizeof(udphdr)> {
+    template <uint16_t SIZE = 0, uint8_t PROTOCOL = IPPROTO_UDP>
+    class UDPv4FrameType : public IPv4FrameType<PROTOCOL, SIZE + sizeof(udphdr)> {
     public:
-        using Base = IPv4FrameType<IPPROTO_UDP, SIZE + sizeof(udphdr)>;
+        using Base = IPv4FrameType<PROTOCOL, SIZE + sizeof(udphdr)>;
         static constexpr uint16_t FrameSize = SIZE;
         static constexpr uint16_t HeaderSize = UDPv4FrameSize;
 

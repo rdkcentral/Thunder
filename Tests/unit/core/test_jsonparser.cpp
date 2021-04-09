@@ -983,10 +983,12 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
-        data.value = "value\\uZZZZ";
+        data.value = R"(value\\uZZZZ)";
         data.valueToPutInJson = "\"" + data.value + "\"";
         ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            EXPECT_EQ(data.value, v.Value());
+            Core::JSON::String value;
+            value.FromString(data.value);
+            EXPECT_EQ(value.Value(), v.Value());
         });
     }
 
