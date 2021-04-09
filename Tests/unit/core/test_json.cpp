@@ -386,10 +386,16 @@ TEST(Core_JSON, simpleSet)
 
         escapeSequence = 10;
         input = escapeSequence;
-        WPEFramework::Core::ProxyType<CommandRequest> commandRequest = WPEFramework::Core::ProxyType<CommandRequest>::Create();
-        commandRequest->B = input;
-        WPEFramework::Core::JSON::Tester<1, CommandRequest> parser;
-        parser.ToString(commandRequest, output);
+        printf("\n\n Case 17 \n");
+        WPEFramework::Core::ProxyType<CommandRequest> commandInput = WPEFramework::Core::ProxyType<CommandRequest>::Create();
+        WPEFramework::Core::JSON::Tester<1, CommandRequest> parserInput;
+        commandInput->B = input;
+        output.clear();
+        parserInput.ToString(commandInput, output);
+        WPEFramework::Core::ProxyType<CommandRequest> commandOutput = WPEFramework::Core::ProxyType<CommandRequest>::Create();
+        WPEFramework::Core::JSON::Tester<1, CommandRequest> parserOutput;
+        parserOutput.FromString(output, commandOutput);
+        EXPECT_STREQ(commandInput->B.Value().c_str(), commandOutput->B.Value().c_str());
 
         class ParamsInfo : public Core::JSON::Container {
         public:
@@ -411,7 +417,7 @@ TEST(Core_JSON, simpleSet)
         message.FromString(input);
         message.ToString(output);
         EXPECT_STREQ(input.c_str(), output.c_str());
-        printf("\n\n Case 17: \n");
+        printf("\n\n Case 18: \n");
         printf("input  %d --- = %s \n", input.length(), input.c_str());
         printf("output %d --- = %s \n", output.length(), output.c_str());
         ParamsInfo paramsInfo;

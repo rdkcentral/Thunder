@@ -1446,8 +1446,9 @@ namespace Core {
         class EXTERNAL String : public IElement, public IMessagePack {
         private:
             static constexpr uint32_t None = 0x00000000;
-            static constexpr uint32_t ScopeMask = 0x007FFFFF;
-            static constexpr uint32_t DepthCountMask = 0x0F800000;
+            static constexpr uint32_t ScopeMask = 0x003FFFFF;
+            static constexpr uint32_t DepthCountMask = 0x07C00000;
+            static constexpr uint32_t EscapeFoundBit = 0x08000000;
             static constexpr uint32_t QuotedSerializeBit = 0x80000000;
             static constexpr uint32_t SetBit = 0x40000000;
             static constexpr uint32_t QuoteFoundBit = 0x20000000;
@@ -1644,12 +1645,26 @@ namespace Core {
                 return ((_scopeCount & (QuotedSerializeBit | QuoteFoundBit)) != 0);
             }
 
+            inline bool IsEscaped() const
+            {
+                return ((_scopeCount & EscapeFoundBit) != 0);
+            }
+
             inline void SetQuoted(const bool enable)
             {
                 if (enable == true) {
                     _scopeCount |= QuotedSerializeBit;
                 } else {
                     _scopeCount &= (~QuotedSerializeBit);
+                }
+            }
+
+            inline void SetEscaped(const bool enable)
+            {
+                if (enable == true) {
+                    _scopeCount |= EscapeFoundBit;
+                } else {
+                    _scopeCount &= (~EscapeFoundBit);
                 }
             }
 
@@ -1695,14 +1710,22 @@ namespace Core {
                             if (result < maxLength) {
 
                                 char convertedValue = IsEscapeSequenceValue(*source);
-                                if ((result+1 < maxLength) && (convertedValue != *source)) {
-                                    stream[result++] = '\\';
+                                if (convertedValue != *source) {
+                                    if (IsEscaped() == false) {
+                                        stream[result++] = '\\';
+                                        const_cast<String*>(this)->SetEscaped(true);
+                                    }
+                                    if (result < maxLength) {
+                                        stream[result++] = convertedValue;
+                                        length--;
+                                        const_cast<String*>(this)->SetEscaped(false);
+                                    }
+                                } else {
+                                    stream[result++] = *source;
+                                    length--;
                                 }
-
-                                stream[result++] = convertedValue;
-                                _unaccountedCount = 0;
                                 source++;
-                                length--;
+                                _unaccountedCount = 0;
                             }
                         }
                     }
@@ -1994,13 +2017,13 @@ namespace Core {
 
             std::string _default;
             // The value stores the following BITS:
-            // | 4 |  5 |         23          |
-            // FFFFDDDDDSSSSSSSSSSSSSSSSSSSSSSS
+            // | 5  | 5  |         22         |
+            // FFFFFDDDDDSSSSSSSSSSSSSSSSSSSSSS
             // Where:
             // F are flags bits (Null, Set etc.)
             // D are depth value bits
             // S bits keep scope stack.
-            // This constrains the maximal depth of the opaque object to be 23.
+            // This constrains the maximal depth of the opaque object to be 22.
             uint32_t _scopeCount;
             mutable uint32_t _unaccountedCount;
             std::string _value;
