@@ -765,8 +765,8 @@ class Class(Identifier, Block):
         self.omit = False
         self.stub = False
         self.is_json = False
-        self.is_json_extended = False
         self.is_event = False
+        self.is_extended = False
         self.is_iterator = False
         self.type_name = name
         self.parent.classes.append(self)
@@ -1109,7 +1109,7 @@ class TemplateClass(Class):
         instance.ancestors = self.ancestors
         instance.specifiers = self.specifiers
         instance.is_json = self.is_json
-        instance.is_json_extended = self.is_json_extended
+        instance.is_extended = self.is_extended
         instance.is_event = self.is_event
         instance.is_iterator = self.is_iterator
 
@@ -1304,10 +1304,10 @@ def __Tokenize(contents):
                     tagtokens.append("@DEPRECATED")
                 if _find("@json", token):
                     tagtokens.append("@JSON")
-                if _find("@json-extended", token):
-                    tagtokens.append("@JSON-EXTENDED")
                 if _find("@event", token):
                     tagtokens.append("@EVENT")
+                if _find("@extended", token):
+                    tagtokens.append("@EXTENDED")
                 if _find("@iterator", token):
                     tagtokens.append("@ITERATOR")
                 if _find("@text", token):
@@ -1441,8 +1441,8 @@ def Parse(contents):
     omit_next = False
     stub_next = False
     json_next = False
-    json_extended_next = False
     event_next = False
+    extended_next = False
     iterator_next = False
     in_typedef = False
 
@@ -1466,13 +1466,12 @@ def Parse(contents):
             json_next = True
             tokens[i] = ";"
             i += 1
-        elif tokens[i] == "@JSON-EXTENDED":
-            json_next = True
-            json_extended_next = True
-            tokens[i] = ";"
-            i += 1
         elif tokens[i] == "@EVENT":
             event_next = True
+            tokens[i] = ";"
+            i += 1
+        elif tokens[i] == "@EXTENDED":
+            extended_next = True
             tokens[i] = ";"
             i += 1
         elif tokens[i] == "@ITERATOR":
@@ -1487,8 +1486,8 @@ def Parse(contents):
             omit_next = False
             stub_next = False
             json_next = False
-            json_extended_next = False
             event_next = False
+            extended_next = False
             iterator_next = False
             in_typedef = False
             tokens[i] = ";"
@@ -1593,15 +1592,16 @@ def Parse(contents):
             elif stub_next:
                 new_class.stub = True
                 stub_next = False
-            if json_next or json_extended_next:
+            if json_next:
                 new_class.is_json = True
+                new_class.is_extended = extended_next
                 json_next = False
-            if json_extended_next:
-                new_class.is_json_extended = True
-                json_extended_next = False
+                extended_next = False
             if event_next:
                 new_class.is_event = True
+                new_class.is_extended = extended_next
                 event_next = False
+                extended_next = False
             if iterator_next:
                 new_class.is_iterator = True
                 event_next = False

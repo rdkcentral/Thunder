@@ -33,7 +33,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pard
 import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 
-VERSION = "1.8"
+VERSION = "1.8.1"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
@@ -914,7 +914,7 @@ def LoadInterface(file, includePaths = []):
                     events = ResolveTypedef(resolved, events, var.type)
                 return events
 
-            def BuildParameters(vars, prop=False):
+            def BuildParameters(vars, json_extended, prop=False):
                 params = {"type": "object"}
                 properties = OrderedDict()
                 required = []
@@ -946,7 +946,7 @@ def LoadInterface(file, includePaths = []):
                 else:
                     if (len(properties) == 0):
                         return {}
-                    elif (len(properties) == 1) and not face.obj.is_json_extended:
+                    elif (len(properties) == 1) and not json_extended:
                         # New way of things: if only one parameter present then omit the outer object
                         return list(properties.values())[0]
                     else:
@@ -1024,7 +1024,7 @@ def LoadInterface(file, includePaths = []):
                             else:
                                 obj["writeonly"] = True
                             if "params" not in obj:
-                                obj["params"] = BuildParameters([method.vars[0]], True)
+                                obj["params"] = BuildParameters([method.vars[0]], face.obj.is_extended, True)
                             if obj["params"] == None:
                                 raise CppParseError(method.vars[0], "property setter method must have one input parameter")
                 else:
@@ -1033,7 +1033,7 @@ def LoadInterface(file, includePaths = []):
             elif method.IsPureVirtual() and not event_params:
                 if isinstance(method.retval.type.Type(), ProxyStubGenerator.CppParser.Void) or (isinstance(method.retval.type.Type(), ProxyStubGenerator.CppParser.Integer) and method.retval.type.Type().size == "long"):
                     obj = OrderedDict()
-                    params = BuildParameters(method.vars)
+                    params = BuildParameters(method.vars, face.obj.is_extended)
                     if "properties" in params and params["properties"]:
                         if method.name.lower() in [x.lower() for x in params["required"]]:
                             raise CppParseError(method, "parameters must not use the same name as the method")
@@ -1069,7 +1069,7 @@ def LoadInterface(file, includePaths = []):
                 if method.IsPureVirtual() and method.omit == False:
                     obj = OrderedDict()
                     obj["cppname"] = method.name
-                    params = BuildParameters(method.vars)
+                    params = BuildParameters(method.vars, f.obj.is_extended)
                     if method.retval.meta.is_deprecated:
                         obj["deprecated"] = True
                     if method.retval.meta.brief:
