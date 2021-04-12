@@ -929,7 +929,7 @@ def LoadInterface(file, includePaths = []):
                         if var_name.startswith("__unnamed"):
                             raise CppParseError(var, "unnamed parameter, can't deduce parameter name")
                         properties[var_name] = ConvertParameter(var)
-                        properties[var_name]["original"] = var.name
+                        properties[var_name]["original"] = var.name.lower
                         if not prop and "description" not in properties[var_name]:
                             trace.DocIssue("'%s': parameter missing description" % var_name)
                         required.append(var_name)
@@ -966,7 +966,7 @@ def LoadInterface(file, includePaths = []):
                         if var_name.startswith("__unnamed") and len(vars) > 1:
                             raise CppParseError(var, "unnamed parameter, can't deduce parameter name")
                         properties[var_name] = ConvertParameter(var)
-                        properties[var_name]["original"] = var.name
+                        properties[var_name]["original"] = var.name.lower()
                         required.append(var_name)
                 params["properties"] = properties
                 if len(properties) == 1:
