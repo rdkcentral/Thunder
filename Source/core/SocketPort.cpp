@@ -370,7 +370,7 @@ namespace Core {
         // the virtuals might be called, which are destructed at this point !!!!
         ASSERT((m_Socket == INVALID_SOCKET) &&(m_State == 0));
 
-        if ((m_Socket != INVALID_SOCKET) || (m_State != 0)) {
+        if (m_Socket != INVALID_SOCKET) {
             ResourceMonitor::Instance().Unregister(*this);
             DestroySocket(m_Socket);
         }

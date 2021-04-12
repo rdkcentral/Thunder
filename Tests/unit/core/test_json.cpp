@@ -197,4 +197,238 @@ TEST(Core_JSON, simpleSet)
             EXPECT_STREQ(value.Value().c_str(), index.Current().Value().c_str());
         }
     }
+    //JsonObject Serialization and Deserialization with escape sequences
+    {
+        class StringContainer : public Core::JSON::Container {
+        public:
+            StringContainer(const StringContainer&) = delete;
+            StringContainer& operator=(const StringContainer&) = delete;
+
+            StringContainer()
+                : Name(_T(""))
+            {
+                Add(_T("name"), &Name);
+            }
+            virtual ~StringContainer()
+            {
+            }
+
+        public:
+            Core::JSON::String Name;
+        } strInput, strOutput;
+
+        JsonObject command;
+        string output, input;
+
+        input = R"({"method":"WifiControl.1.config@Test\\","params":{"ssid":"Test\\"}})";
+        command.FromString(input);
+        command.ToString(output);
+        printf("\n\n Case 1: \n");
+        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("output %d --- = %s \n", output.length(), output.c_str());
+        EXPECT_STREQ(input.c_str(), output.c_str());
+
+        input = R"({"jsonrpc":"2.0","id":1234567890,"method1":"Te\\st","params":{"ssid":"Te\\st","type":"WPA2","hidden":false,"accesspoint":false,"psk":"12345678"}})";
+        command.FromString(input);
+        command.ToString(output);
+        printf("\n\n Case 2: \n");
+        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("output %d --- = %s \n", output.length(), output.c_str());
+        EXPECT_STREQ(input.c_str(), output.c_str());
+
+        input = R"({"jsonrpc":"2.0","id":1234567890,"method":"WifiControl.1.config@Test","params":{"ssid":"Test\\","type":"WPA2","hidden":false,"accesspoint":false,"psk":"12345678"}})";
+        command.FromString(input);
+        command.ToString(output);
+        printf("\n\n Case 3: \n");
+        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("output %d --- = %s \n", output.length(), output.c_str());
+        EXPECT_STREQ(input.c_str(), output.c_str());
+
+        input = R"({"jsonrpc":"2.0","id":1234567890,"method":"hPho\\ne","params":{"ssid":"iPh\one"}})";
+        command.FromString(input);
+        command.ToString(output);
+        printf("\n\n Case 4: \n");
+        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("output %d --- = %s \n\n\n", output.length(), output.c_str());
+        EXPECT_STREQ(input.c_str(), output.c_str());
+
+        input = R"("hPh\\one")";
+        Core::JSON::String str;
+        str.FromString(input);
+        str.ToString(output);
+        printf("\n\n Case 5: \n");
+        printf("string --- = %s \n", str.Value().c_str());
+        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("output %d --- = %s \n", output.length(), output.c_str());
+        EXPECT_STREQ(input.c_str(), output.c_str());
+
+        input = R"({"name":"Iphone\\"})";
+        strInput.Name = R"(Iphone\)";
+        strOutput.FromString(input);
+        printf("\n\n Case 6: \n");
+        printf("strInput --- = %s \n", strInput.Name.Value().c_str());
+        printf("strOutput --- = %s \n", strOutput.Name.Value().c_str());
+        EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
+
+        strInput.Name = R"(Ipho\ne)";
+        strOutput.FromString(input);
+        strInput.ToString(output);
+        strOutput.FromString(output);
+        printf("\n\n Case 7: \n");
+        printf("strInput --- = %s \n", strInput.Name.Value().c_str());
+        printf("strOutput --- = %s \n", strOutput.Name.Value().c_str());
+        EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
+
+        strInput.Name = R"(Iphone\)";
+        printf("\n\n Case 8: \n");
+        printf("name --- = %s \n", strInput.Name.Value().c_str());
+        strInput.ToString(output);
+        printf("output %d --- = %s \n", output.length(), output.c_str());
+        strOutput.FromString(output);
+        printf("name --- = %s \n", strInput.Name.Value().c_str());
+        EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
+
+        input = R"({"name":"IPh\\one"})";
+        strInput.FromString(input);
+        strInput.ToString(output);
+        strOutput.FromString(output);
+        printf("\n\n Case 9: \n");
+        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("strInput.Name --- = %s \n", strInput.Name.Value().c_str());
+        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
+        EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
+        EXPECT_STREQ(input.c_str(), output.c_str());
+
+        input = R"({"name":"IPhone\\\\"})";
+        strInput.FromString(input);
+        strInput.ToString(output);
+        strOutput.FromString(output);
+        printf("\n\n Case 10: \n");
+        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("strInput.Name --- = %s \n", strInput.Name.Value().c_str());
+        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
+        EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
+        EXPECT_STREQ(input.c_str(), output.c_str());
+
+        input = R"({"name":"IPho\\\\ne\\\\"})";
+        strInput.FromString(input);
+        strInput.ToString(output);
+        strOutput.FromString(output);
+        printf("\n\n Case 11: \n");
+        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("strInput.Name --- = %s \n", strInput.Name.Value().c_str());
+        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
+        EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
+        EXPECT_STREQ(input.c_str(), output.c_str());
+
+        input = R"({"name":"\\IPh\\one\\\\"})";
+        strInput.FromString(input);
+        strInput.ToString(output);
+        strOutput.FromString(output);
+        printf("\n\n Case 12: \n");
+        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("strInput.Name --- = %s \n", strInput.Name.Value().c_str());
+        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
+        EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
+        EXPECT_STREQ(input.c_str(), output.c_str());
+
+        input = R"({"name":"\\\\\\IPhone\\\\"})";
+        strInput.FromString(input);
+        strInput.ToString(output);
+        strOutput.FromString(output);
+        printf("\n\n Case 13: \n");
+        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("strInput.Name --- = %s \n", strInput.Name.Value().c_str());
+        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
+        EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
+        EXPECT_STREQ(input.c_str(), output.c_str());
+
+        input = R"({"name":"IPho\ne"})";
+        strInput.FromString(input);
+        strInput.ToString(output);
+        strOutput.FromString(output);
+        printf("\n\n Case 14: \n");
+        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("strInput.Name --- = %s \n", strInput.Name.Value().c_str());
+        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
+        EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
+        EXPECT_STREQ(input.c_str(), output.c_str());
+
+        char name[] = {73, 80, 104, 111, 13, 101 };
+        input = name;
+        strInput.Name = (input);
+        strInput.ToString(output);
+        strOutput.FromString(output);
+        printf("\n\n Case 15: \n");
+        printf("     input  %d --- = %s \n", input.length(), input.c_str());
+        printf("     strInput.Name --- = %s \n", strInput.Name.Value().c_str());
+        printf("     output %d --- = %s \n", output.length(), output.c_str());
+        printf("     strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
+        EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
+
+        char escapeSequence = 13;
+        input = escapeSequence;
+        strInput.Name = (input);
+        strInput.ToString(output);
+        strOutput.FromString(output);
+        printf("\n\n Case 16: \n");
+        printf("     input  %d --- = %s \n", input.length(), input.c_str());
+        printf("     strInput.Name --- = %s \n", strInput.Name.Value().c_str());
+        printf("     output %d --- = %s \n", output.length(), output.c_str());
+        printf("     strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
+        EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
+
+        escapeSequence = 10;
+        input = escapeSequence;
+        printf("\n\n Case 17 \n");
+        WPEFramework::Core::ProxyType<CommandRequest> commandInput = WPEFramework::Core::ProxyType<CommandRequest>::Create();
+        WPEFramework::Core::JSON::Tester<1, CommandRequest> parserInput;
+        commandInput->B = input;
+        output.clear();
+        parserInput.ToString(commandInput, output);
+        WPEFramework::Core::ProxyType<CommandRequest> commandOutput = WPEFramework::Core::ProxyType<CommandRequest>::Create();
+        WPEFramework::Core::JSON::Tester<1, CommandRequest> parserOutput;
+        parserOutput.FromString(output, commandOutput);
+        EXPECT_STREQ(commandInput->B.Value().c_str(), commandOutput->B.Value().c_str());
+
+        class ParamsInfo : public Core::JSON::Container {
+        public:
+            ParamsInfo()
+                : Core::JSON::Container()
+            {
+                Add(_T("ssid"), &Ssid);
+            }
+
+            ParamsInfo(const ParamsInfo&) = delete;
+            ParamsInfo& operator=(const ParamsInfo&) = delete;
+
+        public:
+            Core::JSON::String Ssid; // Identifier of a network
+        };
+
+        Core::JSONRPC::Message message;
+        input = R"({"jsonrpc":"2.0","id":1234567890,"method":"WifiControl.1.connect","params":{"ssid":"iPhone\\"}})";
+        message.FromString(input);
+        message.ToString(output);
+        EXPECT_STREQ(input.c_str(), output.c_str());
+        printf("\n\n Case 18: \n");
+        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("output %d --- = %s \n", output.length(), output.c_str());
+        ParamsInfo paramsInfo;
+        message.Parameters.ToString(input);
+        paramsInfo.FromString(message.Parameters.Value());
+        paramsInfo.ToString(output);
+        printf("message.params = %s\n", message.Parameters.Value().c_str());
+        printf("message.params.ssid = %s\n", paramsInfo.Ssid.Value().c_str());
+        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("output %d --- = %s \n", output.length(), output.c_str());
+
+        EXPECT_STREQ(input.c_str(), output.c_str());
+    }
 }
