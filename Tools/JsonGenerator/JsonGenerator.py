@@ -893,7 +893,7 @@ def LoadInterface(file, includePaths = []):
                     egidx = var.meta.brief.index("(e.g.") if "(e.g." in var.meta.brief else None
                     properties["description"] = var.meta.brief[0:egidx].strip()
                     if egidx and ")" in var.meta.brief[egidx + 1:]:
-                        properties["example"] = var.meta.brief[egidx + 5:var.meta.brief.index(")")].strip()
+                        properties["example"] = var.meta.brief[egidx + 5:var.meta.brief.rfind(")")].strip()
                 return properties
 
             def EventParameters(vars):
