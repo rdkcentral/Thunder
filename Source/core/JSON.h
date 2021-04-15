@@ -130,7 +130,7 @@ namespace Core {
 
                 while (handled < size) {
 
-		    uint16_t payload = static_cast<uint16_t>(std::min((size - handled) + 1, static_cast<uint32_t>(0xFFFF)));
+                    uint16_t payload = static_cast<uint16_t>(std::min((size - handled) + 1, static_cast<uint32_t>(0xFFFF)));
 
                     // Deserialize object
                     uint16_t loaded = static_cast<IElement&>(realObject).Deserialize(&(text.c_str()[handled]), payload, offset, error);
@@ -138,10 +138,13 @@ namespace Core {
                     ASSERT(loaded <= payload);
                     DEBUG_VARIABLE(loaded);
 
-		    handled += loaded;
+                    if (loaded == 0) {
+                        break;
+                    }
+                    handled += loaded;
                 }
 
-                if (offset != 0 && error.IsSet() == false) {
+                if ((offset != 0 || handled < size) && error.IsSet() == false) {
                     error = Error{ "Malformed JSON. Missing closing quotes or brackets" };
                     realObject.Clear();
                 }
@@ -318,7 +321,7 @@ namespace Core {
                 realObject.Clear();
 
                 while (size != handled) {
-			uint16_t partial = static_cast<uint16_t>(std::min(size - handled, static_cast<uint32_t>(0xFFFF)));
+                        uint16_t partial = static_cast<uint16_t>(std::min(size - handled, static_cast<uint32_t>(0xFFFF)));
 
                         // Deserialize object
                         uint16_t loaded = static_cast<IMessagePack&>(realObject).Deserialize(&(stream[handled]), partial, offset);
@@ -1073,9 +1076,10 @@ namespace Core {
                     std::isnan(_value)) 
                 {
                     auto len = strlen(IElement::NullTag);
-                    while(loaded < len)
+                    ASSERT (offset < len);
+                    while(loaded < (len - offset))
                     {
-                        stream[loaded] = IElement::NullTag[loaded];
+                        stream[loaded] = IElement::NullTag[offset + loaded];
                         loaded++;
                     }
                 }
@@ -1088,7 +1092,7 @@ namespace Core {
                 return loaded;
             }
             
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char stream[], const uint16_t, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
 
@@ -1115,7 +1119,9 @@ namespace Core {
 
                 }
 
-                loaded++;
+                if (stream[loaded] == '\"') {
+                    loaded++;
+                }
 
                 if(str == IElement::NullTag)
                 {
@@ -1131,7 +1137,7 @@ namespace Core {
                 }
                 else
                 {
-                    val = std::strtod(str.c_str(), &end);
+                    val = static_cast<TYPE>(std::strtod(str.c_str(), &end));
                 }
 
                 if(end == str.c_str())
@@ -1349,7 +1355,7 @@ namespace Core {
                 return (loaded);
             }
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>&) override
             {
                 uint16_t loaded = 0;
                 static constexpr char trueBuffer[] = "true";
@@ -1402,25 +1408,29 @@ namespace Core {
             }
 
             // IMessagePack iface:
-            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint32_t& offset) const override
+            uint16_t Serialize(uint8_t stream[], const uint16_t VARIABLE_IS_NOT_USED maxLength, uint32_t& offset) const override
             {
+                ASSERT (maxLength >= 1);
+
                 if ((_value & NullBit) != 0) {
-                    stream[0] = IMessagePack::NullValue;
+                    stream[offset] = IMessagePack::NullValue;
                 } else if ((_value & ValueBit) != 0) {
-                    stream[0] = 0xC3;
+                    stream[offset] = 0xC3;
                 } else {
-                    stream[0] = 0xC2;
+                    stream[offset] = 0xC2;
                 }
                 return (1);
             }
 
-            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint32_t& offset) override
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t VARIABLE_IS_NOT_USED maxLength, uint32_t& offset) override
             {
+                ASSERT (maxLength >= 1);
+
                 if ((stream[0] == IMessagePack::NullValue) != 0) {
                     _value = NullBit;
-                } else if ((stream[0] == 0xC3) != 0) {
+                } else if ((stream[offset] == 0xC3) != 0) {
                     _value = ValueBit | SetBit;
-                } else if ((stream[0] == 0xC2) != 0) {
+                } else if ((stream[offset] == 0xC2) != 0) {
                     _value = SetBit;
                 } else {
                     _value = ErrorBit;
@@ -1448,6 +1458,9 @@ namespace Core {
             {
                 return ((N >> 1) > 0) ? 1 + MaxOpaqueObjectDepth<(N >> 1)>() : 1;
             }
+            const std::map<uint8_t, uint8_t> EscapeKeyLookupTable = {
+                {'b',0x08}, {'f', 0x0c}, {'n', 0x0a}, {'r', 0x0d}, {'t', 0x09}
+            };
 
         public:
             explicit String(const bool quoted = true)
@@ -1681,8 +1694,14 @@ namespace Core {
                             
                             if (result < maxLength) {
 
+                                char convertedValue = IsEscapeSequenceValue(*source);
+                                if ((result+1 < maxLength) && (convertedValue != *source)) {
+                                    stream[result++] = '\\';
+                                }
+
+                                stream[result++] = convertedValue;
                                 _unaccountedCount = 0;
-                                stream[result++] = *source++;
+                                source++;
                                 length--;
                             }
                         }
@@ -1782,7 +1801,9 @@ namespace Core {
                         EscapeSequenceAction escapeHandling = EscapeSequenceAction::NOTHING;
 
                         if ((escapedSequence == true) && ((_scopeCount & DepthCountMask) == 0)) {
-                            if (!IsValidEscapeSequence(current)) {
+                            if ((current == '\\') && (_value[_value.length() - 1] == '\\')) {
+                                escapeHandling = EscapeSequenceAction::COLLAPSE;
+                            } else if (!IsValidEscapeSequence(current)) {
                                 finished = true;
                                 error = Error{ "Invalid escape sequence \"\\" + std::string(1, current) + "\"." };
                                 ++result;
@@ -1792,15 +1813,17 @@ namespace Core {
                             }
                         }
 
+                        escapedSequence = ((escapedSequence == 0) && (current == '\\') && (escapeHandling != EscapeSequenceAction::COLLAPSE));
                         if (escapeHandling == EscapeSequenceAction::COLLAPSE) {
                             _value[_value.length() - 1] = current;
                             ++_unaccountedCount;
+                        } else if (escapeHandling == EscapeSequenceAction::REPLACE) {
+                            _value[_value.length() - 1] = GetEscapeSequenceValue(current);
                         } else {
                             // Write the amount we possibly can..
                             _value += current;
                         }
 
-                        escapedSequence = (current == '\\' && escapeHandling != EscapeSequenceAction::COLLAPSE);
 
                         // Move on to the next position
                         result++;
@@ -1919,7 +1942,7 @@ namespace Core {
                 // control chars with values less that 0x1F using this convention. Also serializer
                 // should change '"' '\' '\n' '\t' '\f' '\r' '\f' to
                 // '\''"' '\''\' '\''n' '\''t' '\''f' '\''r' '\''f' and deserisalizer has to change tham back
-                return current == '"' || current == 'b' || current == 'n' || current == 't' || current == 'u' || current == '/' || current == '\\' || current == 'f' || current == 'r';
+                return (current == '"') || (EscapeKeyLookupTable.find(current) != EscapeKeyLookupTable.end());
             }
 
             enum class EscapeSequenceAction {
@@ -1928,17 +1951,42 @@ namespace Core {
                 REPLACE
             };
 
-            EscapeSequenceAction GetEscapeSequenceAction(char current) const
+            char GetEscapeSequenceValue(const char current) const
             {
+                char value = 0;
+                const auto index = EscapeKeyLookupTable.find(current);
+                if (index != EscapeKeyLookupTable.end()) {
+                    value = index->second;
+                }
+
+                return value;
+            }
+
+            EscapeSequenceAction GetEscapeSequenceAction(const char current) const
+            {
+
                 EscapeSequenceAction action = EscapeSequenceAction::COLLAPSE;
-                if (current == 'u' || current == 'n' || current == 't' || current == 'r' || current == 'f' || current == 'b') {
-                    action = EscapeSequenceAction::NOTHING;
+                const auto index = EscapeKeyLookupTable.find(current);
+                if (index != EscapeKeyLookupTable.end()) {
+                    action = EscapeSequenceAction::REPLACE;
                 } else if((current == '\"') && (_scopeCount & DepthCountMask)) {
                     action = EscapeSequenceAction::NOTHING;
                 }
                 return action;
             }
 
+            char IsEscapeSequenceValue(const char current) const
+            {
+                char value = current;
+                for (const auto& index : EscapeKeyLookupTable) {
+                    if (index.second == current) {
+                        value = index.first;
+                        break;
+                    }
+                }
+
+                return value;
+            }
             enum class ScopeBracket : bool {
                 CURLY_BRACKET = 0,
                 SQUARE_BRACKET = 1
@@ -3122,7 +3170,6 @@ namespace Core {
             bool IsSet() const override
             {
                 JSONElementList::const_iterator index = _data.begin();
-
                 // As long as we did not find a set element, continue..
                 while ((index != _data.end()) && (index->second->IsSet() == false)) {
                     index++;
@@ -3145,6 +3192,17 @@ namespace Core {
                 while (index != _data.end()) {
                     index->second->Clear();
                     index++;
+                }
+            }
+
+            void Reset()
+            {
+                JSONElementList::const_iterator index = _data.begin();
+
+                // As long as we did not find a set element, continue..
+                while (index != _data.end()) {
+                    index->second->Clear();
+                    index = _data.erase(index);
                 }
             }
 
@@ -3547,7 +3605,7 @@ namespace Core {
                 return count;
             }
 
-            virtual bool Request(const TCHAR label[])
+            virtual bool Request(const TCHAR [])
             {
                 return (false);
             }
@@ -3860,7 +3918,7 @@ namespace Core {
                 uint16_t endIndex = 0;
                 bool insideQuotes = false;
                 for (uint16_t i = 1; i < maxLength; ++i) {
-                    if ((stream[i] == '\"') && (stream[i - 1] != '\\')) {
+                    if ((stream[i] == '\"') && ((stream[i - 1] != '\\') || ((stream[i - 1] == '\\') && (stream[i - 2] == '\\')))) {
                         insideQuotes = !insideQuotes;
                     }
                     if (!insideQuotes) {
@@ -4120,6 +4178,10 @@ namespace Core {
                 return (Iterator(_elements));
             }
 
+            void Clear()
+            {
+                Reset();
+            }
             string GetDebugString(int indent = 0) const;
 
         private:
