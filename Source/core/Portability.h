@@ -134,6 +134,7 @@
 #include <unordered_map>
 #include <atomic>
 #include <array>
+#include <thread>
 #include <stdarg.h> /* va_list, va_start, va_arg, va_end */
 
 #define AF_NETLINK 16
@@ -271,6 +272,7 @@ typedef std::string string;
 #include <typeinfo>
 #include <unistd.h>
 #include <unordered_map>
+#include <thread>
 #include <stdarg.h> /* va_list, va_start, va_arg, va_end */
 
 #ifdef __APPLE__
@@ -759,6 +761,20 @@ namespace Core {
 
 #ifndef BUILD_REFERENCE
 #define BUILD_REFERENCE engineering_build_for_debug_purpose_only
+#endif
+
+#ifdef __GNUC__
+#if __GNUC__ < 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ < 9 || (__GNUC_MINOR__ == 9 && __GNUC_PATCHLEVEL__ < 3)))
+//defining atomic_init: see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=64658"
+namespace std {
+  template<typename _ITp>
+    inline void
+    atomic_init(atomic<_ITp>* __a, _ITp __i) noexcept
+    {
+       __a->store(__i, memory_order_relaxed);
+    }
+}
+#endif
 #endif
 
 #endif // __PORTABILITY_H

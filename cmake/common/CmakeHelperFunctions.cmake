@@ -664,3 +664,9 @@ function(print_target_properties tgt)
     endforeach(prop)
 endfunction(print_target_properties)
 
+function(semicolon_safe_string StringVar)
+  string(ASCII 31 semicolon_code)
+  string(REPLACE  ";" "${semicolon_code}" SafeString "${${StringVar}}")
+  set(${StringVar} "${SafeString}" PARENT_SCOPE) 
+endfunction(semicolon_safe_string)
+

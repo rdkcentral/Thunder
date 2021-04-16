@@ -17,9 +17,11 @@
 
 set(TEST_RUNNER_NAME "WPEFramework_test_core")
 
+
+
 add_executable(${TEST_RUNNER_NAME}
    ../IPTestAdministrator.cpp
-   test_cyclicbuffer.cpp
+#   test_cyclicbuffer.cpp
    test_databuffer.cpp
    test_dataelement.cpp
    test_dataelementfile.cpp
@@ -40,7 +42,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_lockablecontainer.cpp
    test_logging.cpp
    test_measurementtype.cpp
-   test_messageException.cpp
+   #test_messageException.cpp
    #test_networkinfo.cpp
    test_nodeid.cpp
    test_numbertype.cpp
@@ -101,3 +103,5 @@ target_link_libraries(${TEST_RUNNER_NAME}
 install(
     TARGETS ${TEST_RUNNER_NAME}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+
+add_test(NAME ${TEST_RUNNER_NAME} COMMAND ${TEST_RUNNER_NAME})
