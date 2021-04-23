@@ -37,7 +37,7 @@ namespace Core {
     /* virtual */ Singleton::SingletonList::~SingletonList()
     {
         // Dispose was not called before main application was ended
-        ASSERT(m_Singletons.empty() == true);
+        if (!m_Singletons.empty()) TRACE_L1("%s !!! singleton list is not empty !!!", __FUNCTION__);
         Dispose();
     }
 
