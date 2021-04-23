@@ -36,8 +36,6 @@ namespace Core {
 
     /* virtual */ Singleton::SingletonList::~SingletonList()
     {
-        // Dispose was not called before main application was ended
-        ASSERT(m_Singletons.empty() == true);
         Dispose();
     }
 
