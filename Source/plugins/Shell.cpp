@@ -84,6 +84,7 @@ namespace PluginHost
             , Priority(0)
             , OutOfProcess(true)
             , Mode(ModeType::LOCAL)
+            , LinkLoaderPath()
             , RemoteAddress()
             , Configuration(false)
         {
@@ -94,6 +95,7 @@ namespace PluginHost
             Add(_T("priority"), &Priority);
             Add(_T("outofprocess"), &OutOfProcess);
             Add(_T("mode"), &Mode);
+            Add(_T("loaderpath"), &LinkLoaderPath);
             Add(_T("remoteaddress"), &RemoteAddress);
             Add(_T("configuration"), &Configuration);
         }
@@ -105,6 +107,7 @@ namespace PluginHost
             , Priority(0)
             , OutOfProcess(true)
             , Mode(ModeType::LOCAL)
+            , LinkLoaderPath()
             , RemoteAddress()
             , Configuration(false)
         {
@@ -115,6 +118,7 @@ namespace PluginHost
             Add(_T("priority"), &Priority);
             Add(_T("outofprocess"), &OutOfProcess);
             Add(_T("mode"), &Mode);
+            Add(_T("loaderpath"), &LinkLoaderPath);
             Add(_T("remoteaddress"), &RemoteAddress);
             Add(_T("configuration"), &Configuration);
 
@@ -148,6 +152,7 @@ namespace PluginHost
             , Priority(copy.Priority)
             , OutOfProcess(true)
             , Mode(copy.Mode)
+            , LinkLoaderPath(copy.LinkLoaderPath)
             , RemoteAddress(copy.RemoteAddress)
             , Configuration(copy.Configuration)
         {
@@ -158,6 +163,7 @@ namespace PluginHost
             Add(_T("priority"), &Priority);
             Add(_T("outofprocess"), &OutOfProcess);
             Add(_T("mode"), &Mode);
+            Add(_T("loaderpath"), &LinkLoaderPath);
             Add(_T("remoteaddress"), &RemoteAddress);
             Add(_T("configuration"), &Configuration);
         }
@@ -176,6 +182,7 @@ namespace PluginHost
             OutOfProcess = RHS.OutOfProcess;
             Mode = RHS.Mode;
             RemoteAddress = RHS.RemoteAddress;
+            LinkLoaderPath = RHS.LinkLoaderPath;
             Configuration = RHS.Configuration;
 
             return (*this);
@@ -205,12 +212,14 @@ namespace PluginHost
         Core::JSON::DecSInt8 Priority;
         Core::JSON::Boolean OutOfProcess;
         Core::JSON::EnumType<ModeType> Mode; 
+        Core::JSON::String LinkLoaderPath; 
         Core::JSON::String RemoteAddress; 
         Core::JSON::String Configuration;
     };
 
     void* IShell::Root(uint32_t & pid, const uint32_t waitTime, const string className, const uint32_t interface, const uint32_t version)
     {
+        pid = 0;
         void* result = nullptr;
         Object rootObject(this);
 
@@ -227,7 +236,7 @@ namespace PluginHost
                 std::vector<string> all_paths = GetLibrarySearchPaths(locator);
                 std::vector<string>::const_iterator index = all_paths.begin();
                 while ((result == nullptr) && (index != all_paths.end())) {
-                    Core::File file(index->c_str(), false);
+                    Core::File file(index->c_str());
                     if (file.Exists())
                     {
                         Core::Library resource(index->c_str());
@@ -262,10 +271,11 @@ namespace PluginHost
                     rootObject.Threads.Value(),
                     rootObject.Priority.Value(),
                     rootObject.HostType(), 
+                    rootObject.LinkLoaderPath.Value(),
                     rootObject.RemoteAddress.Value(),
                     rootObject.Configuration.Value());
 
-                result = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());
+                result = handler->Instantiate(definition, waitTime, pid);
             }
         }
 

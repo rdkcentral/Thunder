@@ -17,13 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef __PROCESSINFO_H
-#define __PROCESSINFO_H
+#pragma once
 
-#include <list>
-
-#include "IIterator.h"
 #include "Module.h"
+#include "IIterator.h"
 #include "Portability.h"
 
 namespace WPEFramework {
@@ -58,6 +55,49 @@ namespace Core {
         };
 #endif
 
+    private:
+        class Memory {
+        public:
+            explicit Memory(const process_t pid);
+            ~Memory() = default;
+
+            Memory(const Memory&);
+            Memory& operator=(const Memory&);
+
+        public:
+            void MemoryStats();
+            inline uint64_t USS() const
+            {
+                return _uss;
+            }
+            inline uint64_t PSS() const
+            {
+                return _pss;
+            }
+            inline uint64_t RSS() const
+            {
+                return _rss;
+            }
+            inline uint64_t VSS() const
+            {
+                return _vss;
+            }
+            inline uint64_t Shared() const
+            {
+                return _shared;
+            }
+
+        private:
+            process_t _pid;
+
+            uint64_t _uss;
+            uint64_t _pss;
+            uint64_t _rss;
+            uint64_t _vss;
+            uint64_t _shared;
+        };
+
+    public:
         class EXTERNAL Iterator {
         public:
             // Get all processes
@@ -239,24 +279,52 @@ namespace Core {
 
         inline void Kill(const bool hardKill)
         {
+            
 #ifdef __WINDOWS__
             if (hardKill == true) {
-                TerminateProcess(_info.hProcess, 1234);
+                TerminateProcess(_handle, 1234);
             }
 #else
             ::kill(_pid, (hardKill ? SIGKILL : SIGTERM));
 #endif
         }
-
+#ifdef __LINUX__
+        /**
+         * @brief After using this method user is supposed to retrieve memory stats via 
+         *        methods below - USS, PSS, RSS, or VSS
+         */
+        inline void MemoryStats() const
+        {
+            _memory.MemoryStats();
+        }
+        inline uint64_t USS() const
+        {
+            return _memory.USS();
+        }
+        inline uint64_t PSS() const
+        {
+            return _memory.PSS();
+        }
+        inline uint64_t RSS() const
+        {
+            return _memory.RSS();
+        }
+        inline uint64_t VSS() const
+        {
+            return _memory.VSS();
+        }
+#endif
         uint64_t Allocated() const;
+        /**
+         * @brief On Linux, MemoryStats() is called inside those 2 methods, no need to call it beforehand
+         */
         uint64_t Resident() const;
         uint64_t Shared() const;
-        uint64_t Jiffies() const;
+
         string Name() const;
         void Name(const string& name);
         string Executable() const;
         std::list<string> CommandLine() const;
-        void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
 
         static void FindByName(const string& name, const bool exact, std::list<ProcessInfo>& processInfos);
 
@@ -279,6 +347,7 @@ namespace Core {
 
     private:
         process_t _pid;
+        mutable Memory _memory;
 #ifdef __WINDOWS__
         HANDLE _handle;
 #endif
@@ -306,11 +375,9 @@ namespace Core {
     public:
         explicit ProcessTree(const ProcessInfo& processInfo);
 
-        void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
         bool ContainsProcess(ThreadId pid) const;
         void GetProcessIds(std::list<ThreadId>& processIds) const;
         ThreadId RootId() const;
-        uint64_t Jiffies() const;
 
     private:
         std::list<ProcessInfo> _processes;
@@ -319,4 +386,3 @@ namespace Core {
 } // namespace Core
 } // namespace WPEFramework
 
-#endif // __PROCESSINFO_H

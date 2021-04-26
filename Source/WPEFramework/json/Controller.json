@@ -7,7 +7,7 @@
     "description": "Controller JSON-RPC interface"
   },
   "common": {
-    "$ref": "../../interfaces/json/common.json"
+    "$ref": "common.json"
   },
   "definitions": {
     "state": {
@@ -312,8 +312,8 @@
     },
     "Controller.1.resume": {
       "summary": "Resumes a plugin",
-      "description": "This is a more intelligent method, compared to the Activate, on the controller to move a plugin to a "resumed" state depending on its current state. If required, it will activate and move to the resumed state, regardless of the  flags in the config (AutoStart/Resumed)",
-      events": [
+      "description": "This is a more intelligent method, compared to the Activate, on the controller to move a plugin to a *resumed* state depending on its current state. If required, it will activate and move to the resumed state, regardless of the flags in the config (AutoStart/Resumed)",
+      "events": [
         "statechange"
       ],
       "params": {
@@ -358,7 +358,7 @@
     },
     "Controller.1.suspend": {
       "summary": "Suspends a plugin",
-      "description": "This is a more intelligent method, compared to the Deactivate, on the controller to move a plugin to a "suspended" state depending on its current state. Depending on the AutoStart flag, this method will Deactivate the plugin [AutoStart == false] or only Suspend the plugin [AutoStart == true]",
+      "description": "This is a more intelligent method, compared to the Deactivate, on the controller to move a plugin to a *suspended* state depending on its current state. Depending on the AutoStart flag, this method will Deactivate the plugin [AutoStart == false] or only Suspend the plugin [AutoStart == true]",
       "events": [
         "statechange"
       ],
@@ -398,7 +398,6 @@
         }
       ]
     },
- 
     "Controller.1.startdiscovery": {
       "summary": "Starts the network discovery",
       "description": "Use this method to initiate SSDP network discovery process.",

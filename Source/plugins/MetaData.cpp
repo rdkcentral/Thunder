@@ -79,12 +79,26 @@ ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Channel::state)
         return (*this);
     }
 
+    MetaData::Service::State& MetaData::Service::State::operator=(const MetaData::Service::State& RHS) 
+    {
+        Core::JSON::EnumType<state>::operator= (RHS);
+
+        return (*this);
+    }
+
     string MetaData::Service::State::Data() const
     {
         return (Core::JSON::EnumType<state>::Data());
     }
 
     MetaData::Channel::State& MetaData::Channel::State::operator=(const MetaData::Channel::state RHS)
+    {
+        Core::JSON::EnumType<state>::operator=(RHS);
+
+        return (*this);
+    }
+
+    MetaData::Channel::State& MetaData::Channel::State::operator=(const MetaData::Channel::State& RHS)
     {
         Core::JSON::EnumType<state>::operator=(RHS);
 

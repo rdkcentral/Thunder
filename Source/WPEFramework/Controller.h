@@ -86,13 +86,17 @@ namespace Plugin {
             }
 
         private:
-            virtual void Updated() override
+            void Updated() override
             {
                 _decoupled->Schedule();
             }
-            virtual void StateChange(PluginHost::IShell* plugin) override
+            void Activated(const string& callsign, PluginHost::IShell* plugin) override
             {
-                _parent.StateChange(plugin);
+                _parent.Activated(callsign, plugin);
+            }
+            void Deactivated(const string& callsign, PluginHost::IShell* plugin) override
+            {
+                _parent.Deactivated(callsign, plugin);
             }
 
             BEGIN_INTERFACE_MAP(Sink)
@@ -291,7 +295,8 @@ namespace Plugin {
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;
         Core::ProxyType<Web::Response> PutMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
-        void StateChange(PluginHost::IShell* plugin);
+        void Activated(const string& callsign, PluginHost::IShell* plugin);
+        void Deactivated(const string& callsign, PluginHost::IShell* plugin);
 
         void RegisterAll();
         void UnregisterAll();

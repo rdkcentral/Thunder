@@ -83,6 +83,7 @@ class Metadata:
         self.input = False
         self.output = False
         self.is_property = False
+        self.is_deprecated = False
         self.length = None
         self.maxlength = None
         self.interface = None
@@ -285,11 +286,19 @@ class Identifier():
                     self.meta.details = string[i + 1]
                     skip = 1
                 elif token[1:] == "PARAM":
-                    self.meta.param[string[i + 1]] = string[i + 2]
+                    par = string[i + 1]
+                    if par.endswith(":"):
+                        par = par[:-1]
+                    self.meta.param[par] = string[i + 2]
                     skip = 2
                 elif token[1:] == "RETVAL":
-                    self.meta.retval[string[i + 1]] = string[i + 2]
+                    par = string[i + 1]
+                    if par.endswith(":"):
+                        par = par[:-1]
+                    self.meta.retval[par] = string[i + 2]
                     skip = 2
+                elif token[1:] == "DEPRECATED":
+                    self.meta.is_deprecated = True
                 elif token[1:] == "TEXT":
                     self.meta.text = "".join(string[i + 1])
                     skip = 1
@@ -757,6 +766,7 @@ class Class(Identifier, Block):
         self.stub = False
         self.is_json = False
         self.is_event = False
+        self.is_extended = False
         self.is_iterator = False
         self.type_name = name
         self.parent.classes.append(self)
@@ -1099,6 +1109,7 @@ class TemplateClass(Class):
         instance.ancestors = self.ancestors
         instance.specifiers = self.specifiers
         instance.is_json = self.is_json
+        instance.is_extended = self.is_extended
         instance.is_event = self.is_event
         instance.is_iterator = self.is_iterator
 
@@ -1289,10 +1300,14 @@ def __Tokenize(contents):
                     tagtokens.append("@OUT")
                 if _find("@property", token):
                     tagtokens.append("@PROPERTY")
+                if _find("@deprecated", token):
+                    tagtokens.append("@DEPRECATED")
                 if _find("@json", token):
                     tagtokens.append("@JSON")
                 if _find("@event", token):
                     tagtokens.append("@EVENT")
+                if _find("@extended", token):
+                    tagtokens.append("@EXTENDED")
                 if _find("@iterator", token):
                     tagtokens.append("@ITERATOR")
                 if _find("@text", token):
@@ -1427,6 +1442,7 @@ def Parse(contents):
     stub_next = False
     json_next = False
     event_next = False
+    extended_next = False
     iterator_next = False
     in_typedef = False
 
@@ -1454,6 +1470,10 @@ def Parse(contents):
             event_next = True
             tokens[i] = ";"
             i += 1
+        elif tokens[i] == "@EXTENDED":
+            extended_next = True
+            tokens[i] = ";"
+            i += 1
         elif tokens[i] == "@ITERATOR":
             iterator_next = True
             tokens[i] = ";"
@@ -1467,6 +1487,7 @@ def Parse(contents):
             stub_next = False
             json_next = False
             event_next = False
+            extended_next = False
             iterator_next = False
             in_typedef = False
             tokens[i] = ";"
@@ -1573,10 +1594,14 @@ def Parse(contents):
                 stub_next = False
             if json_next:
                 new_class.is_json = True
+                new_class.is_extended = extended_next
                 json_next = False
+                extended_next = False
             if event_next:
                 new_class.is_event = True
+                new_class.is_extended = extended_next
                 event_next = False
+                extended_next = False
             if iterator_next:
                 new_class.is_iterator = True
                 event_next = False

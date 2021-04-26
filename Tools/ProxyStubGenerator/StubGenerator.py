@@ -30,7 +30,7 @@ import copy
 import CppParser
 from collections import OrderedDict
 
-VERSION = "1.6.6"
+VERSION = "1.6.8"
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -482,7 +482,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                 return Strip(str(method))
 
             # Stringify a method object to a prototype
-            def PrototypeStr(method, parameters=None):
+            def PrototypeStr(method, parameters=None, unused=False):
                 params = parameters if parameters else method.vars
                 proto = "%s %s(" % (TypeStr(method.retval.type), method.name)
                 for c, p in enumerate(params):
@@ -495,7 +495,8 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                 acc += " /* in */"
                             elif p.is_output:
                                 acc += " /* out */"
-                    proto += TypeStr(p.unexpanded) + acc + " param%i%s" % (c, (", " if c != len(method.vars) - 1 else ""))
+                    proto += TypeStr(p.unexpanded) + acc + " param%i%s%s" % (c, (" VARIABLE_IS_NOT_USED" if unused else ""),
+                                    (", " if c != len(method.vars) - 1 else ""))
                 proto += ")"
                 for q in method.qualifiers:
                     proto += " " + q
@@ -664,8 +665,8 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
 
                 # emit the lambda prototype
                 emit.Line(
-                    "[](Core::ProxyType<Core::IPCChannel>& channel%s, Core::ProxyType<RPC::InvokeMessage>& message) {" %
-                    (" VARIABLE_IS_NOT_USED" if not proxy_count else ""))
+                    "[](Core::ProxyType<Core::IPCChannel>& channel%s, Core::ProxyType<RPC::InvokeMessage>& message%s) {" %
+                    (" VARIABLE_IS_NOT_USED" if not proxy_count or m.stub else "", " VARIABLE_IS_NOT_USED" if m.stub else ""))
                 emit.IndentInc()
 
                 if EMIT_TRACES:
@@ -861,7 +862,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                 emit.Line("writer.%s(RPC::instance_cast<%s>(%s));" % (retval.RpcType(), retval.CppType(), retval.name))
                             else:
                                 emit.Line("writer.%s(%s);" % (retval.RpcType(), retval.name))
-                            if retval.is_interface and not retval.type.IsConst():
+                            if retval.is_interface:
                                 if isinstance(retval.type.Type(), CppParser.Void):
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s, %s);" %
                                               (retval.name, retval.interface_ref.length_name))
@@ -1001,7 +1002,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                             p.is_ptr and p.obj) or (p.is_length and not params[p.length_target].is_input):
                         input_params += 1
 
-                method_line = PrototypeStr(m, orig_params) + (" override" if not USE_OLD_CPP else " /* override */")
+                method_line = PrototypeStr(m, orig_params, m.stub) + (" override" if not USE_OLD_CPP else " /* override */")
 
                 if m.omit:
                     emit.Line("// %s" % method_line)

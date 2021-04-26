@@ -94,7 +94,7 @@ namespace Core {
             m_Admin.Lock();
 
             if (m_State != DISABLED) {
-                typename std::list<CONTEXT>::const_iterator
+                typename std::list<CONTEXT>::iterator
                     index
                     = std::find(m_Queue.begin(), m_Queue.end(), a_Entry);
 

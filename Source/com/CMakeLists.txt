@@ -25,6 +25,7 @@ add_library(${TARGET} SHARED
         Communicator.cpp
         ITracing.cpp
         IUnknown.cpp
+        ConnectorType.cpp
         Module.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_COM.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Trace.cpp
@@ -34,6 +35,7 @@ set(PUBLIC_HEADERS
         Administrator.h
         com.h
         Communicator.h
+        ConnectorType.h
         Ids.h
         IRPCIterator.h
         IStringIterator.h

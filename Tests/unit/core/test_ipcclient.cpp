@@ -25,12 +25,13 @@
 namespace WPEFramework {
 namespace Tests {
 
-    string g_connector = _T("/tmp/testserver");
-
     TEST(Core_IPC, IPCClientConnection)
     {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            Core::NodeId serverNode(g_connector.c_str());
+        std::string connector = _T("/tmp/testserver");
+
+        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+            Core::NodeId serverNode(connector.c_str());
+
             uint32_t error;
 
             Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
@@ -47,9 +48,14 @@ namespace Tests {
 
             factory->DestroyFactories();
         };
+
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
         IPTestAdministrator testAdmin(otherSide);
         {
-            Core::NodeId clientNode(g_connector.c_str());
+            Core::NodeId clientNode(connector.c_str());
             uint32_t error;
 
             testAdmin.Sync("setup server");

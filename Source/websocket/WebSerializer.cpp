@@ -1641,6 +1641,8 @@ namespace Web
         }
         case PAIR_VALUE: {
             _state = PAIR_KEY;
+            _parser.CollectWord(':', Parser::UPPERCASE);
+            break;
         }
         case PAIR_KEY: {
             _parser.CollectWord(':', Parser::UPPERCASE);
@@ -1797,6 +1799,7 @@ namespace Web
                     // Dispatch the Response
                     Deserialized(*_current);
                     _current = nullptr;
+                    _parser.Reset();
                     _state = VERSION;
                 }
                 break;
@@ -2002,6 +2005,7 @@ namespace Web
             // Dispatch the Response
             Deserialized(*_current);
             _current = nullptr;
+            _parser.Reset();
             _state = VERSION;
         }
     }
@@ -2033,6 +2037,8 @@ namespace Web
         }
         case PAIR_VALUE: {
             _state = PAIR_KEY;
+            _parser.CollectWord(':', Parser::UPPERCASE);
+            break;
         }
         case PAIR_KEY: {
             _parser.CollectWord(':', Parser::UPPERCASE);
@@ -2052,6 +2058,7 @@ namespace Web
             // Dispatch the Response
             Deserialized(*_current);
             _current = nullptr;
+            _parser.Reset();
             _state = VERSION;
             break;
         }

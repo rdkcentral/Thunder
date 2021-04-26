@@ -83,7 +83,7 @@ private:
 
     FileSystemMonitor()
         : _adminLock()
-        , _notifyFd(inotify_init1(IN_NONBLOCK))
+        , _notifyFd(inotify_init1(IN_NONBLOCK|IN_CLOEXEC))
         , _files()
         , _observers()
     {

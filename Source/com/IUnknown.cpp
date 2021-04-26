@@ -110,6 +110,7 @@ namespace ProxyStub {
         }
         ~UnknownInstantiation()
         {
+            RPC::Administrator::Instance().Recall<Core::IUnknown>();
         }
 
     } UnknownRegistration;

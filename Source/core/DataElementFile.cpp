@@ -53,7 +53,7 @@ namespace Core {
 
     DataElementFile::DataElementFile(const string& fileName, const uint32_t type, const uint32_t requestedSize)
         : DataElement()
-        , m_File(fileName, ((type & File::SHAREABLE) != 0))
+        , m_File(fileName)
         , m_MemoryMappedFile(INVALID_HANDLE_VALUE)
         , m_Flags(type)
     {

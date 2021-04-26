@@ -313,6 +313,7 @@ namespace PluginHost {
                 , IdleTime(0)
                 , IPV6(false)
                 , DefaultTraceCategories(false)
+                , DefaultWarningReportingCategories(false)
                 , Process()
                 , Input()
                 , Configs()
@@ -342,7 +343,8 @@ namespace PluginHost {
                 Add(_T("signature"), &Signature);
                 Add(_T("idletime"), &IdleTime);
                 Add(_T("ipv6"), &IPV6);
-                Add(_T("tracing"), &DefaultTraceCategories);
+                Add(_T("tracing"), &DefaultTraceCategories); 
+                Add(_T("warningreporting"), &DefaultWarningReportingCategories); 
                 Add(_T("redirect"), &Redirect);
                 Add(_T("process"), &Process);
                 Add(_T("input"), &Input);
@@ -379,6 +381,7 @@ namespace PluginHost {
             Core::JSON::DecUInt16 IdleTime;
             Core::JSON::Boolean IPV6;
             Core::JSON::String DefaultTraceCategories;
+            Core::JSON::String DefaultWarningReportingCategories; 
             ProcessSet Process;
             InputConfig Input;
             Core::JSON::String Configs;
@@ -532,6 +535,7 @@ namespace PluginHost {
                 _communicator = Core::NodeId(config.Communicator.Value().c_str());
                 _redirect = config.Redirect.Value();
                 _version = config.Version.Value();
+                _idleTime = config.IdleTime.Value();
                 _IPV6 = config.IPV6.Value();
                 _binding = config.Binding.Value();
                 _interface = config.Interface.Value();
@@ -547,6 +551,8 @@ namespace PluginHost {
                     config.DefaultTraceCategories.SetQuoted(true);
                 }
                 _traceCategories = config.DefaultTraceCategories.Value();
+
+                _warningReportingCategories = config.DefaultWarningReportingCategories.Value();
 
                 if (config.Model.IsSet()) {
                     _model = config.Model.Value();
@@ -614,6 +620,10 @@ namespace PluginHost {
         {
             return (_traceCategories);
         }
+        inline const string& WarningReportingCategories() const
+        {
+            return (_warningReportingCategories);
+        }
         inline const string& Redirect() const
         {
             return (_redirect);
@@ -675,7 +685,7 @@ namespace PluginHost {
         {
             return (_postMortemPath);
         }
-        inline const bool PostMortemAllowed(PluginHost::IShell::reason why) const
+        inline bool PostMortemAllowed(PluginHost::IShell::reason why) const
         {
             std::list<PluginHost::IShell::reason>::const_iterator index(std::find(_reasons.begin(), _reasons.end(), why));
             return ((index != _reasons.end()) ? true: false);
@@ -748,7 +758,6 @@ namespace PluginHost {
             return (added);
         }
         void UpdateAccessor() {
-            bool validAccessor = true;
             Core::NodeId result(_binding.c_str());
 
             if (_interface.empty() == false) {
@@ -779,27 +788,19 @@ namespace PluginHost {
                 value.sin_port = htons(_portNumber);
 
                 _accessor = value;
-                _URL.clear();
-                validAccessor = false;
+                SYSLOG(Logging::Startup, ("Invalid config information could not resolve to a proper IP"));
+            }
+
+            if (_portNumber == 80) {
+                _URL = string(_T("http://")) + _accessor.HostAddress() + _webPrefix;
             } else {
-                if (_portNumber == 80) {
-                    _URL = string(_T("http://")) + _accessor.HostAddress() + _webPrefix;
-                } else {
-                    _URL = string(_T("http://")) + _accessor.HostAddress() + ':' + Core::NumberType<uint16_t>(_portNumber).Text() + _webPrefix;
-                }
-
-                _accessor.PortNumber(_portNumber);
+                _URL = string(_T("http://")) + _accessor.HostAddress() + ':' + Core::NumberType<uint16_t>(_portNumber).Text() + _webPrefix;
             }
 
-            if (validAccessor == false) {
-                SYSLOG(Logging::Startup, ("Invalid config information could not resolve to a proper IP set to: (%s:%d)", _accessor.HostAddress().c_str(), _accessor.PortNumber()));
-            }
-            else {
-                SYSLOG(Logging::Startup, (_T("Accessor: %s"), _URL.c_str()));
-                SYSLOG(Logging::Startup, (_T("Interface IP: %s"), _accessor.HostAddress().c_str()));
-            }
+            _accessor.PortNumber(_portNumber);
 
-            return;
+            SYSLOG(Logging::Startup, (_T("Accessor: %s"), _URL.c_str()));
+            SYSLOG(Logging::Startup, (_T("Interface IP: %s"), _accessor.HostAddress().c_str()));
         }
 
         inline const std::vector<std::string>& LinkerPluginPaths() const
@@ -860,6 +861,7 @@ namespace PluginHost {
         string _model;
         string _traceCategories;
         bool _traceCategoriesFile;
+        string _warningReportingCategories;
         string _binding;
         string _interface;
         string _URL;

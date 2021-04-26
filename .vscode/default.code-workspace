@@ -13,7 +13,7 @@
 			"path": "../../ThunderNanoServices"
 		},
 		{
-			"path": "../../rdkservices"
+			"path": "../../ThunderNanoServicesRDK"
 		},
 		{
 			"path": "../Tools"
@@ -90,8 +90,16 @@
 			"thread": "cpp",
 			"cfenv": "cpp",
 			"typeinfo": "cpp",
-			"variant": "cpp"
+			"variant": "cpp",
+			"charconv": "cpp"
 		},
-		"git.ignoreLimitWarning": true
+		"git.ignoreLimitWarning": true,
+		"cmake.configureSettings": {
+			"CMAKE_INSTALL_PREFIX": "${env:HOME}/Thunder/install/usr",
+			"CMAKE_MODULE_PATH":"${env:HOME}/Thunder/tools/cmake",
+			"GENERIC_CMAKE_MODULE_PATH":"${env:HOME}/Thunder/tools/cmake/test",
+			"BUILD_TYPE":"Debug",
+			"HIDE_NON_EXTERNAL_SYMBOLS":"ON",
+		}
 	}
 }

@@ -27,6 +27,7 @@
 #include "Portability.h"
 #include "Sync.h"
 #include "TextFragment.h"
+#include "Proxy.h"
 
 // ---- Referenced classes and types ----
 
@@ -59,12 +60,10 @@ namespace Core {
     public:
         inline Singleton(void** realDeal) : _realDeal(realDeal)
         {
-            ListInstance().Register(this);
         }
 
         virtual ~Singleton()
         {
-            ListInstance().Unregister(this);
             (*_realDeal) = nullptr;
         }
 
@@ -74,9 +73,11 @@ namespace Core {
         }
         virtual string ImplementationName() const = 0;
 
+    protected:
+        static SingletonList& ListInstance();
+        
     private:
         void** _realDeal;
-        static SingletonList& ListInstance();
     };
 
     template <class SINGLETON>
@@ -91,11 +92,14 @@ namespace Core {
             : Singleton(reinterpret_cast<void**>(&g_TypedSingleton))
             , SINGLETON(std::forward<Args>(args)...)
         {
+            ListInstance().Register(this);
+            TRACE_L1("Singleton constructing %s", ClassNameOnly(typeid(SINGLETON).name()).Text().c_str());
         }
 
     public:
         virtual ~SingletonType()
         {
+           ListInstance().Unregister(this);
            ASSERT(g_TypedSingleton != nullptr);
         }
 
@@ -131,6 +135,30 @@ namespace Core {
 
     template <typename SINGLETONTYPE>
     EXTERNAL_HIDDEN SINGLETONTYPE*  SingletonType<SINGLETONTYPE>::g_TypedSingleton = nullptr;
+
+    template <typename PROXYTYPE>
+    class SingletonProxyType {
+    private:
+        friend class SingletonType<SingletonProxyType<PROXYTYPE>>;
+        template <typename... Args>
+        SingletonProxyType(Args&&... args)
+            : _wrapped(ProxyType<PROXYTYPE>::Create(std::forward<Args>(args)...))
+        {
+        }
+
+    public:
+        SingletonProxyType(const SingletonProxyType<PROXYTYPE>&) = delete;
+        SingletonProxyType& operator=(const SingletonProxyType<PROXYTYPE>&) = delete;
+
+        template <typename... Args>
+        static ProxyType<PROXYTYPE> Instance(Args&&... args)
+        {
+            return (SingletonType<SingletonProxyType<PROXYTYPE>>::Instance(std::forward<Args>(args)...)._wrapped);
+        }
+
+    private:
+        ProxyType<PROXYTYPE> _wrapped;
+    };
 }
 } // namespace Core
 

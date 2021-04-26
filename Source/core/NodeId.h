@@ -42,7 +42,7 @@
 #include <net/if.h>
 #endif
 
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
 #include <../include/bluetooth/bluetooth.h>
 #include <../include/bluetooth/hci.h>
 #include <../include/bluetooth/l2cap.h>
@@ -66,7 +66,13 @@ namespace Core {
             uint16_t un_access;
         };
 #endif
-#ifdef CORE_BLUETOOTH
+        struct ipv4_extended : public sockaddr_in {
+            uint16_t in_protocol;
+        };
+        struct ipv6_extended : public sockaddr_in6 {
+            uint16_t in_protocol;
+        };
+#ifdef __CORE_BLUETOOTH_SUPPORT__
         struct bluetooth_extended : public sockaddr_l2 {
             uint16_t l2_type;
         };
@@ -90,14 +96,14 @@ namespace Core {
 #else
             sa_family_t FamilyType;
 #endif
-            struct sockaddr_in IPV4Socket;
-            struct sockaddr_in6 IPV6Socket;
+            struct ipv4_extended IPV4Socket;
+            struct ipv6_extended IPV6Socket;
 #ifndef __WINDOWS__
             struct domain_extended DomainSocket;
             struct netlink_extended NetlinkSocket;
             struct sockaddr_ll RawSocket;
 #endif
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
             struct sockaddr_hci BTSocket;
             struct bluetooth_extended L2Socket;
 #endif
@@ -117,10 +123,10 @@ namespace Core {
         //------------------------------------------------------------------------
     public:
         NodeId();
-        NodeId(const struct sockaddr_in& rInfo);
-        NodeId(const struct in_addr& rInfo);
-        NodeId(const struct sockaddr_in6& rInfo);
-        NodeId(const struct in6_addr& rInfo);
+        NodeId(const struct sockaddr_in& rInfo, const uint32_t protocol = 0);
+        NodeId(const struct in_addr& rInfo, const uint32_t protocol = 0);
+        NodeId(const struct sockaddr_in6& rInfo, const uint32_t protocol = 0);
+        NodeId(const struct in6_addr& rInfo, const uint32_t protocol = 0);
 #ifndef __WINDOWS__
         NodeId(const struct sockaddr_un& rInfo, const uint16_t access = ~0);
         NodeId(const uint32_t destination, const pid_t pid, const uint32_t groups);
@@ -129,12 +135,12 @@ namespace Core {
         NodeId(const TCHAR interfaceName[], const uint16_t protocol, const uint8_t pkgType, const uint8_t haType, const uint8_t length, const uint8_t* address);
 #endif
 
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
         NodeId(const uint16_t device, const uint16_t channel);
         NodeId(const bdaddr_t& address, const uint8_t addressType, const uint16_t cid, const uint16_t psm);
 #endif
-        NodeId(const TCHAR strHostName[], const enumType defaultType = TYPE_UNSPECIFIED);
-        NodeId(const TCHAR strHostName[], const uint16_t nPortNumber, const enumType defaultType = TYPE_UNSPECIFIED);
+        NodeId(const TCHAR strHostName[], const enumType defaultType = TYPE_UNSPECIFIED, const uint32_t protocol = 0);
+        NodeId(const TCHAR strHostName[], const uint16_t nPortNumber, const enumType defaultType = TYPE_UNSPECIFIED, const uint32_t protocol = 0);
         NodeId(const NodeId& rInfo);
         NodeId(const NodeId& rInfo, const uint16_t portNumber);
 
@@ -144,20 +150,30 @@ namespace Core {
     public:
         inline uint32_t Extension() const
         {
-#ifndef __WINDOWS__
+            switch(Type()) {
+             case TYPE_IPV4:
+                 return(m_structInfo.IPV4Socket.in_protocol);
+                 break;
 
-#ifdef CORE_BLUETOOTH
-            return (Type() == TYPE_BLUETOOTH ? m_structInfo.L2Socket.l2_type : (Type() == TYPE_NETLINK ? m_structInfo.NetlinkSocket.nl_destination : 0));
-#else
-            return (Type() == TYPE_NETLINK ? m_structInfo.NetlinkSocket.nl_destination : 0);
+            case TYPE_IPV6:
+                 return(m_structInfo.IPV6Socket.in_protocol);
+                 break;
+       
+#ifdef __CORE_BLUETOOTH_SUPPORT__
+            case TYPE_BLUETOOTH:
+                 return(m_structInfo.L2Socket.l2_type);
+                 break;
 #endif
-#else
-#ifdef CORE_BLUETOOTH
-            return (Type() == TYPE_BLUETOOTH ? m_structInfo.L2Socket.l2_type : 0);
-#else
+#ifndef __WINDOWS__
+            case TYPE_NETLINK:
+                 return(m_structInfo.NetlinkSocket.nl_destination);
+                 break;
+#endif
+            default:
+                 break;
+            }
+
             return (0);
-#endif
-#endif
         }
         inline uint32_t Rights() const
         {
@@ -174,7 +190,7 @@ namespace Core {
         }
         inline uint16_t PortNumber() const
         {
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
             return (Type() == TYPE_BLUETOOTH ? m_structInfo.BTSocket.hci_dev : ntohs(m_structInfo.IPV4Socket.sin_port));
 #else
             return (ntohs(m_structInfo.IPV4Socket.sin_port));
@@ -209,14 +225,14 @@ namespace Core {
                    (m_structInfo.FamilyType == AF_INET6 ? sizeof(struct sockaddr_in6) : 
                    (m_structInfo.FamilyType == AF_NETLINK ? sizeof(struct sockaddr_nl) :
                    (m_structInfo.FamilyType == AF_PACKET ? sizeof(struct sockaddr_ll) :
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
                    (m_structInfo.BTSocket.hci_family == AF_BLUETOOTH ? (m_structInfo.L2Socket.l2_type == BTPROTO_HCI ? sizeof(struct sockaddr_hci) : sizeof(struct sockaddr_l2)) : sizeof(struct sockaddr_un))))));
 #else
                     sizeof(struct sockaddr_un)))));
 #endif
 
 #else
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
         return (m_structInfo.IPV4Socket.sin_family   == AF_INET      ? sizeof(struct sockaddr_in)  : 
                (m_structInfo.IPV6Socket.sin6_family  == AF_INET6     ? sizeof(struct sockaddr_in6) : 
                (m_structInfo.BTSocket.hci_family     == AF_BLUETOOTH ? (m_structInfo.L2Socket.l2_type == BTPROTO_HCI ? sizeof(struct sockaddr_hci) : sizeof(struct sockaddr_l2)))));
@@ -243,7 +259,6 @@ namespace Core {
         }
 
         string HostName() const;
-        void HostName(const TCHAR strHostName[]);
 
         NodeId AnyInterface() const;
         string HostAddress() const;
@@ -266,7 +281,7 @@ namespace Core {
         NodeId& operator=(const struct sockaddr_nl& rInfo);
         NodeId& operator=(const struct sockaddr_ll& rInfo);
 #endif
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
         NodeId& operator=(const struct sockaddr_hci& rInfo);
         NodeId& operator=(const struct sockaddr_l2& rInfo);
 #endif

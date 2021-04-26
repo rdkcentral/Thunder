@@ -57,7 +57,7 @@ namespace Core {
     }
 #endif
 
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
     static string BTName(const NodeId::SocketInfo& input)
     {
         static TCHAR _hexArray[] = "0123456789ABCDEF";
@@ -87,40 +87,41 @@ namespace Core {
         memset(&m_structInfo, 0xFF, sizeof(m_structInfo));
 
         m_structInfo.IPV4Socket.sin_family = TYPE_EMPTY;
+        m_structInfo.IPV4Socket.in_protocol = 0;
     }
 
-    NodeId::NodeId(const struct sockaddr_in& rInfo)
+    NodeId::NodeId(const struct sockaddr_in& rInfo, const uint32_t protocol)
         : m_hostName()
     {
-
         *this = rInfo;
+        m_structInfo.IPV4Socket.in_protocol = protocol;
 
         ASSERT(m_structInfo.IPV4Socket.sin_family == AF_INET);
     }
 
-    NodeId::NodeId(const struct in_addr& value)
+    NodeId::NodeId(const struct in_addr& value, const uint32_t protocol)
         : m_hostName()
     {
-
         struct sockaddr_in rInfo;
         ::memset(&rInfo, 0, sizeof(rInfo));
         rInfo.sin_family = AF_INET;
         rInfo.sin_addr = value;
 
         *this = rInfo;
+        m_structInfo.IPV4Socket.in_protocol = protocol;
 
         ASSERT(m_structInfo.IPV4Socket.sin_family == AF_INET);
     }
-    NodeId::NodeId(const struct sockaddr_in6& rInfo)
+    NodeId::NodeId(const struct sockaddr_in6& rInfo, const uint32_t protocol)
         : m_hostName()
     {
-
         *this = rInfo;
+        m_structInfo.IPV6Socket.in_protocol = protocol;
 
         ASSERT(m_structInfo.IPV6Socket.sin6_family == AF_INET6);
     }
 
-    NodeId::NodeId(const struct in6_addr& value)
+    NodeId::NodeId(const struct in6_addr& value, const uint32_t protocol)
         : m_hostName()
     {
 
@@ -131,6 +132,7 @@ namespace Core {
         rInfo.sin6_addr = value;
 
         *this = rInfo;
+        m_structInfo.IPV6Socket.in_protocol = protocol;
 
         ASSERT(m_structInfo.IPV6Socket.sin6_family == AF_INET6);
     }
@@ -189,7 +191,7 @@ namespace Core {
 
 #endif
 
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
     NodeId::NodeId(const uint16_t device, const uint16_t channel)
     {
 
@@ -222,7 +224,8 @@ namespace Core {
     NodeId::NodeId(
         const TCHAR strHostName[],
         const uint16_t nPortNumber,
-        const enumType defaultType)
+        const enumType defaultType,
+        const uint32_t protocol)
         : m_hostName()
     {
 
@@ -235,11 +238,19 @@ namespace Core {
 
         // Set the Port number used. (Struct of IPV4 and IPV6 are equeal w.r.t. port number)
         m_structInfo.IPV4Socket.sin_port = htons(nPortNumber);
+
+        if (m_structInfo.IPV4Socket.sin_family == AF_INET) {
+            m_structInfo.IPV4Socket.in_protocol = protocol;
+        }
+        else if (m_structInfo.IPV4Socket.sin_family == AF_INET6) {
+            m_structInfo.IPV6Socket.in_protocol = protocol;
+        }
     }
 
     NodeId::NodeId(
         const TCHAR strHostName[],
-        const enumType defaultType)
+        const enumType defaultType,
+        const uint32_t protocol)
         : m_hostName()
     {
 
@@ -304,6 +315,13 @@ namespace Core {
                 // Set the Port number used.
                 m_structInfo.IPV4Socket.sin_port = 0;
             }
+
+            if (m_structInfo.IPV4Socket.sin_family == AF_INET) {
+                m_structInfo.IPV4Socket.in_protocol = protocol;
+            }
+            else if (m_structInfo.IPV4Socket.sin_family == AF_INET6) {
+                m_structInfo.IPV6Socket.in_protocol = protocol;
+            }
         }
     }
 
@@ -344,7 +362,7 @@ namespace Core {
                 return ((m_structInfo.NetlinkSocket.nl_destination == rInfo.m_structInfo.NetlinkSocket.nl_destination) && (m_structInfo.NetlinkSocket.nl_pid == rInfo.m_structInfo.NetlinkSocket.nl_pid) && (m_structInfo.NetlinkSocket.nl_groups == rInfo.m_structInfo.NetlinkSocket.nl_groups));
             }
 #endif
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
             else if (m_structInfo.DomainSocket.sun_family == AF_BLUETOOTH) {
                 if (m_structInfo.L2Socket.l2_type == rInfo.m_structInfo.L2Socket.l2_type) {
                     if (m_structInfo.L2Socket.l2_type == BTPROTO_HCI) {
@@ -438,7 +456,7 @@ namespace Core {
     }
 #endif
 
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
     NodeId&
     NodeId::operator=(const struct sockaddr_hci& rInfo)
     {
@@ -479,7 +497,7 @@ namespace Core {
         } else if (m_structInfo.DomainSocket.sun_family == AF_UNIX) {
             m_hostName = m_structInfo.DomainSocket.sun_path;
         }
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
         else if (m_structInfo.BTSocket.hci_family == AF_BLUETOOTH) {
             m_hostName = BTName(m_structInfo);
         }
@@ -488,7 +506,7 @@ namespace Core {
             m_hostName.clear();
         }
 #else
-#ifdef CORE_BLUETOOTH
+#ifdef __CORE_BLUETOOTH_SUPPORT__
         if (m_structInfo.BTSocket.hci_family == AF_BLUETOOTH) {
             m_hostName = BTName(m_structInfo);
             else
@@ -554,10 +572,6 @@ namespace Core {
         }
 
         return (m_hostName);
-    }
-
-    void NodeId::HostName(const TCHAR strHostName[])
-    {
     }
 
     string

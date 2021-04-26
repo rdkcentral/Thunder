@@ -441,7 +441,7 @@ namespace Core {
             _reevaluate.SetEvent();
 
             while (_waitCount != 0) {
-                SleepMs(0);
+                std::this_thread::yield();
             }
 
             _reevaluate.ResetEvent();

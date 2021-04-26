@@ -45,7 +45,7 @@ namespace Core {
 #endif
     }
 
-#ifndef __NO_WCHAR_SUPPORT__
+#ifndef __CORE_NO_WCHAR_SUPPORT__
     inline int ToCharacter(const wchar_t* character, TCHAR converted[], unsigned int /* DUMMY JUST TO HAVE THE SAME IF */)
     {
 #ifdef _UNICODE
@@ -81,7 +81,7 @@ namespace Core {
         return (result);
 #endif
     }
-#endif // __NO_WCHAR_SUPPORT__
+#endif // __CORE_NO_WCHAR_SUPPORT__
 
     EXTERNAL string ToString(const char realstring[], const unsigned int length);
 

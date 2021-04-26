@@ -52,17 +52,23 @@ option(PROCESSCONTAINERS
         "Include containerization in the build." OFF)
 option(TEST_APPS
         "Include test applications." OFF)
-option(UNIT_TESTS
-        "Include unit tests (new gtest based)." OFF)
-option(TEST_MEASUREMENTS
-        "Include code coverage measurments." OFF)
 option(STUB_HARDWARE
         "Use hardware stubs for unittests)." OFF)
 option(BUILD_TYPE
         "How do you want to build it, Production, Release or Debug" Production)
+option(WCHAR_SUPPORT
+        "Enable support for WCHAR." OFF)
+option(DISABLE_TRACING
+        "Disable tracing in debug" OFF)
 option(HIDE_NON_EXTERNAL_SYMBOLS 
         "Hide all non EXTERNAL tagged symbols" OFF)
 
+option(EXCEPTION_CATCHING
+        "Enable unhandled exception handling catching." OFF)
+option(DEADLOCK_DETECTION
+        "Enable deadlock detection tooling." OFF)
+option(WARNING_REPORTING
+        "Include warning reporting in the build." OFF)
 #
 # Build type specific options
 #
@@ -92,7 +98,7 @@ endif()
 set(EXTERN_EVENTS ${EXTERN_EVENTS} CACHE INTERNAL
         "List of events assumed to be provided by other plugins.")
 string(REPLACE " " ";" EXTERN_EVENT_LIST "${EXTERN_EVENTS}")
-message("-- Assuming external events: ${EXTERN_EVENT_LIST}")
+message(STATUS "Assuming external events: ${EXTERN_EVENT_LIST}")
 
 if(CORE)
     add_subdirectory(core)
@@ -116,6 +122,10 @@ endif()
 
 if(TRACING)
     add_subdirectory(tracing)
+endif()
+
+if(WARNING_REPORTING)
+    add_subdirectory(warningreporting)
 endif()
 
 if(BLUETOOTH)

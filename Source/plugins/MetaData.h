@@ -52,11 +52,11 @@ namespace PluginHost {
 
             class EXTERNAL State : public Core::JSON::EnumType<state> {
             public:
-                inline State()
+                State()
                     : Core::JSON::EnumType<state>()
                 {
                 }
-                inline State(const State& copy)
+                State(const State& copy)
                     : Core::JSON::EnumType<state>(copy)
                 {
                 }
@@ -66,6 +66,7 @@ namespace PluginHost {
 
             public:
                 State& operator=(const PluginHost::IShell* RHS);
+                State& operator=(const State& RHS);
 
                 string Data() const;
             };
@@ -115,6 +116,7 @@ namespace PluginHost {
 
             public:
                 State& operator=(const state RHS);
+                State& operator=(const State& RHS);
 
                 string Data() const;
             };

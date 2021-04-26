@@ -45,7 +45,7 @@ namespace PluginHost {
             virtual void Register(RPC::IRemoteConnection::INotification* sink) = 0;
             virtual void Unregister(RPC::IRemoteConnection::INotification* sink) = 0;
             virtual RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) = 0;
-            virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId, const string& className, const string& callsign) = 0;
+            virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) = 0;
         };
 
         // State of the IPlugin interface associated with this shell.
@@ -260,7 +260,7 @@ namespace PluginHost {
             uint32_t result = Core::ERROR_NONE;
 
             // Make sure there is a path to the persitent infmration
-            Core::File path(PersistentPath(), true);
+            Core::File path(PersistentPath());
 
             if (path.IsDirectory() == false) {
                 if (Core::Directory(PersistentPath().c_str()).Create() != true) {
@@ -299,7 +299,7 @@ namespace PluginHost {
         void* Root(uint32_t& pid, const uint32_t waitTime, const string className, const uint32_t interface, const uint32_t version = ~0);
 
         /* @stubgen:omit */
-        virtual std::vector<string> GetLibrarySearchPaths(const string& locator) const
+        virtual std::vector<string> GetLibrarySearchPaths(const string&) const
         {
             return std::vector<string> {};
         }

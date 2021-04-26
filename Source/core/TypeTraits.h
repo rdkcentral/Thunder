@@ -151,6 +151,20 @@ namespace Core {
             };
         };
 
+// HPL todo this one can be used with overloads, could not get that to work with the HAS_MEMBER
+#define HAS_MEMBER_NAME(func, name)                                 \
+    template <typename T, typename... Args>                                           \
+    struct name {                                                   \
+        typedef char yes[1];                                        \
+        typedef char no[2];                                         \
+         template <typename U,                                      \
+              typename = decltype( std::declval<U>().func(std::declval<Args>()...) )> \
+        static yes& chk(int);                                       \
+        template <typename U>                                       \
+        static no& chk(...);                                        \
+        static bool const value = sizeof(chk<T>(0)) == sizeof(yes); \
+    }
+
 #define HAS_MEMBER(func, name)                                      \
     template <typename T, typename Sign>                            \
     struct name {                                                   \
@@ -166,7 +180,7 @@ namespace Core {
     }
 
 #define HAS_STATIC_MEMBER(func, name)                               \
-    template <typename T, typename Sign>                            \
+    template <typename T>                                           \
     struct name {                                                   \
         typedef char yes[1];                                        \
         typedef char no[2];                                         \

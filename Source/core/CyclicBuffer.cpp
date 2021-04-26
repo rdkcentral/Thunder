@@ -190,12 +190,12 @@ namespace Core {
 
             // Wait till all waiters have seen the trigger..
             while (_administration->_agents.load() > 0) {
-                SleepMs(0);
+                std::this_thread::yield();
             }
         }
     }
 
-    inline void CyclicBuffer::Alert()
+    void CyclicBuffer::Alert()
     {
 
         // Lock the administrator..

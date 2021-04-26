@@ -384,6 +384,7 @@ namespace RPC {
 
                 return (value);
             }
+            // HPL todo: also add a WarningReporting implementation
             instance_id Implementation() const
             {
                 instance_id result = 0;

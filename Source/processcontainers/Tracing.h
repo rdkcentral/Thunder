@@ -43,7 +43,7 @@ namespace ProcessContainers {
         {
             va_list ap;
             va_start(ap, formatter);
-            Trace::Format(_text, formatter, ap);
+            Core::Format(_text, formatter, ap);
             va_end(ap);
         }
         ProcessContainerization(const string& text)

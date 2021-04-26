@@ -379,7 +379,7 @@ namespace Core {
 
     public:
         SocketNetlink(const NodeId& destination)
-            : SocketDatagram(false, destination, NodeId(), 512, 1024)
+            : SocketDatagram(true, destination, NodeId(), 512, 4096)
             , _adminLock()
         {
         }

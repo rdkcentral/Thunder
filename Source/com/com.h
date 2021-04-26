@@ -21,6 +21,7 @@
 
 #include "Administrator.h"
 #include "Communicator.h"
+#include "ConnectorType.h"
 #include "IRPCIterator.h"
 #include "IStringIterator.h"
 #include "IUnknown.h"

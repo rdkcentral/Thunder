@@ -30,6 +30,9 @@
 #include "Trace.h"
 #include "Proxy.h"
 
+#include "WarningReportingControl.h"
+#include "WarningReportingCategories.h"
+
 namespace WPEFramework {
 namespace Core {
 
@@ -177,6 +180,8 @@ namespace Core {
         }
         ~Sink()
         {
+            REPORT_OUTOFBOUNDS_WARNING(WarningReporting::SinkStillHasReference, _referenceCount);
+
             if (_referenceCount != 0) {
                 // This is probably due to the fact that the "other" side killed the connection, we need to
                 // Remove our selves at the COM Administrator map.. no need to signal Releases on behalf of the dropped connection anymore..

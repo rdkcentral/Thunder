@@ -224,7 +224,7 @@ namespace Core {
             return (Result);
         }
 
-#ifndef __NO_WCHAR_SUPPORT__
+#ifndef __CORE_NO_WCHAR_SUPPORT__
         uint16_t Serialize(std::wstring& buffer)
         {
             wchar_t Buffer[36];

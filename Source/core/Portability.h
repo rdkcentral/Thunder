@@ -63,7 +63,7 @@
 #define B4000000 4000000
 #endif
 
-#if defined(WIN32) || defined(_WINDOWS) || defined (__CYGWIN__)
+#if defined(WIN32) || defined(_WINDOWS) || defined (__CYGWIN__) || defined(_WIN64)
     #ifdef __GNUC__
         #define EXTERNAL        __attribute__ ((dllimport))
         #define EXTERNAL_EXPORT __attribute__ ((dllexport))
@@ -78,6 +78,7 @@
     #endif
 
     #define EXTERNAL_HIDDEN
+    #define __WINDOWS__
 #else
   #if __GNUC__ >= 4 && !defined(__mips__)
     #define EXTERNAL_HIDDEN __attribute__ ((visibility ("hidden")))
@@ -125,12 +126,16 @@
 #include <WinSock2.h>
 #include <algorithm>
 #include <assert.h>
+#include <list>
+#include <map>
 #include <memory.h>
 #include <string>
 #include <windows.h>
 #include <unordered_map>
 #include <atomic>
 #include <array>
+#include <thread>
+#include <stdarg.h> /* va_list, va_start, va_arg, va_end */
 
 #define AF_NETLINK 16
 #define AF_PACKET  17
@@ -207,6 +212,7 @@ typedef std::string string;
 
 // This is an HTTP keyword (VERB) Let's undefine it from windows headers..
 #define _CRT_SECURE_NO_WARNINGS 1
+#define SOCK_CLOEXEC 0
 #undef DELETE
 #undef min
 #undef max
@@ -230,6 +236,8 @@ typedef std::string string;
 #include <algorithm>
 #include <atomic>
 #include <array>
+#include <map>
+#include <list>
 #include <alloca.h>
 #include <arpa/inet.h>
 #include <assert.h>
@@ -241,7 +249,9 @@ typedef std::string string;
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <getopt.h>
+#include <list>
 #include <math.h>
+#include <map>
 #include <poll.h>
 #include <pthread.h>
 #include <sched.h>
@@ -262,6 +272,8 @@ typedef std::string string;
 #include <typeinfo>
 #include <unistd.h>
 #include <unordered_map>
+#include <thread>
+#include <stdarg.h> /* va_list, va_start, va_arg, va_end */
 
 #ifdef __APPLE__
 #include <pthread_impl.h>
@@ -525,7 +537,7 @@ inline void SleepUs(unsigned int a_Time)
 }
 
 
-void EXTERNAL DumpCallStack(const ThreadId threadId, FILE* output);
+void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<string>& stack);
 uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
 
 }
@@ -537,6 +549,7 @@ uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const
 #endif
 
 namespace WPEFramework {
+
 namespace Core {
 
     inline void* Alignment(size_t alignment, void* incoming)
@@ -596,6 +609,10 @@ namespace Core {
         std::transform(inplace.begin(), inplace.end(), inplace.begin(), ::tolower);
     }
 
+    string EXTERNAL Format(const TCHAR formatter[], ...);
+    void EXTERNAL Format(string& dst, const TCHAR format[], ...);
+    void EXTERNAL Format(string& dst, const TCHAR format[], va_list ap);
+
     const uint32_t infinite = -1;
     static const string emptyString;
 
@@ -618,7 +635,7 @@ namespace Core {
         virtual uint32_t Release() const = 0;
     };
 
-    struct EXTERNAL IUnknown : public IReferenceCounted  {
+    struct EXTERNAL IUnknown : virtual public IReferenceCounted  {
         enum { ID = 0x00000000 };
 
         ~IUnknown() override = default;
@@ -744,6 +761,20 @@ namespace Core {
 
 #ifndef BUILD_REFERENCE
 #define BUILD_REFERENCE engineering_build_for_debug_purpose_only
+#endif
+
+#ifdef __GNUC__
+#if __GNUC__ < 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ < 9 || (__GNUC_MINOR__ == 9 && __GNUC_PATCHLEVEL__ < 3)))
+//defining atomic_init: see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=64658"
+namespace std {
+  template<typename _ITp>
+    inline void
+    atomic_init(atomic<_ITp>* __a, _ITp __i) noexcept
+    {
+       __a->store(__i, memory_order_relaxed);
+    }
+}
+#endif
 #endif
 
 #endif // __PORTABILITY_H

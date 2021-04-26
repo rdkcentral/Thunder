@@ -35,7 +35,7 @@ namespace PluginHost {
         _handlers.emplace_back([&](const uint32_t id, const string& designator, const string& data) { Notify(id, designator, data); }, versions);
     }
 
-    JSONRPC::JSONRPC(const std::vector<uint8_t> versions)
+    JSONRPC::JSONRPC(const std::vector<uint8_t>& versions)
         : _adminLock()
         , _handlers()
         , _service(nullptr)
@@ -57,7 +57,7 @@ namespace PluginHost {
         _handlers.emplace_back([&](const uint32_t id, const string& designator, const string& data) { Notify(id, designator, data); }, versions);
     }
 
-    JSONRPC::JSONRPC(const std::vector<uint8_t> versions, const TokenCheckFunction& validation)
+    JSONRPC::JSONRPC(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation)
         : _adminLock()
         , _handlers()
         , _service(nullptr)

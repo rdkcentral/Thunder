@@ -85,8 +85,8 @@ namespace PluginHost {
         JSONRPC& operator=(const JSONRPC&) = delete;
         JSONRPC();
         JSONRPC(const TokenCheckFunction& validation);
-        JSONRPC(const std::vector<uint8_t> versions);
-        JSONRPC(const std::vector<uint8_t> versions, const TokenCheckFunction& validation);
+        JSONRPC(const std::vector<uint8_t>& versions);
+        JSONRPC(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation);
         ~JSONRPC() override;
 
     public:
@@ -412,6 +412,9 @@ namespace PluginHost {
         JSONRPCSupportsEventStatus& operator=(const JSONRPCSupportsEventStatus&) = delete;
 
         JSONRPCSupportsEventStatus() = default;
+        JSONRPCSupportsEventStatus(const TokenCheckFunction& validation) : JSONRPC(validation) {}
+        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions) : JSONRPC(versions) {}
+        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation) : JSONRPC(versions, validation) {}
         virtual ~JSONRPCSupportsEventStatus() = default;
 
         enum class Status { registered,
@@ -460,7 +463,7 @@ namespace PluginHost {
         virtual void Unsubscribe(Core::JSONRPC::Handler& handler, const uint32_t channelId, const string& eventName, const string& callsign, Core::JSONRPC::Message& response)
         {
             NotifyObservers(eventName, callsign, Status::unregistered);
-            JSONRPC::Subscribe(handler, channelId, eventName, callsign, response);
+            JSONRPC::Unsubscribe(handler, channelId, eventName, callsign, response);
         }
 
     private:

@@ -24,6 +24,7 @@
 #include "Portability.h"
 #include "Sync.h"
 #include "SystemInfo.h"
+#include "Serialization.h"
 
 #ifdef __LINUX__
 #include <atomic>
@@ -207,18 +208,18 @@ void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
 
 extern "C" {
 
-void DumpCallStack(const ThreadId threadId, FILE* feed)
+void DumpCallStack(const ThreadId threadId, std::list<string>& stackList)
 {
 #ifdef __DEBUG__
 #ifdef __LINUX__
     void* callstack[32];
-    FILE* output = (feed == nullptr ? stderr : feed);
 
     uint32_t entries = GetCallStack(threadId, callstack, (sizeof(callstack) / sizeof(callstack[0])));
 
     char** symbols = backtrace_symbols(callstack, entries);
 
     for (uint32_t i = 0; i < entries; i++) {
+        char  buffer[1024];
         Dl_info info;
         if (dladdr(callstack[i], &info) && info.dli_sname) {
             char* demangled = NULL;
@@ -226,17 +227,18 @@ void DumpCallStack(const ThreadId threadId, FILE* feed)
             if (info.dli_sname[0] == '_') {
                 demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
             }
-            fprintf(output, "%-3d %*p %s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i],
+            snprintf(buffer, sizeof(buffer), "%-3d %*p %s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i],
                 status == 0 ? demangled : info.dli_sname == 0 ? symbols[i] : info.dli_sname,
                 (char*)callstack[i] - (char*)info.dli_saddr);
+
             free(demangled);
         } else {
-            fprintf(output, "%-3d %*p %s\n",
+            snprintf(buffer, sizeof(buffer), "%-3d %*p %s\n",
             i, int(2 + sizeof(void*) * 2), callstack[i], symbols[i]);
         }
+        stackList.push_back(Core::ToString(buffer));
     }
     free(symbols);
-    fflush(output);
 #else
     __debugbreak();
 #endif
@@ -250,6 +252,9 @@ void SleepMs(unsigned int a_Time)
 {
     struct timespec sleepTime;
     struct timespec waitedTime;
+
+    if (a_Time == 0) 
+        a_Time = 1;
 
     sleepTime.tv_sec = (a_Time / 1000);
     sleepTime.tv_nsec = (a_Time - (sleepTime.tv_sec * 1000)) * 1000000;
@@ -300,5 +305,86 @@ namespace Core {
     /* virtual */ IIPC::~IIPC() {}
     /* virtual */ IIPCServer::~IIPCServer() {}
     /* virtual */ IPCChannel::~IPCChannel() {}
+
+
+
+    // In windows you need the newest compiler for this...
+    //template <typename First, typename... Rest> const string Format(const First* first, const Rest&... rest) {
+    //	TCHAR buffer[2057];
+
+    //	::vsnprintf_s (buffer, sizeof(buffer),sizeof(buffer), first, rest...);
+
+    //	return (string(buffer));
+    //}
+
+#ifndef va_copy
+#ifdef _MSC_VER
+#define va_copy(dst, src) dst = src
+#elif !(__cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__))
+#define va_copy(dst, src) memcpy((void*)dst, (void*)src, sizeof(*src))
+#endif
+#endif
+
+    ///
+    /// \brief Format message
+    /// \param dst String to store formatted message
+    /// \param format Format of message
+    /// \param ap Variable argument list
+    ///
+    static void toString(string& dst, const TCHAR format[], va_list ap)
+    {
+        int length;
+        va_list apStrLen;
+        va_copy(apStrLen, ap);
+        length = vsnprintf(nullptr, 0, format, apStrLen);
+        va_end(apStrLen);
+        if (length > 0) {
+            dst.resize(length);
+            vsnprintf((char*)dst.data(), dst.size() + 1, format, ap);
+        } else {
+            dst = "Format error! format: ";
+            dst.append(format);
+        }
+    }
+
+
+    ///
+    /// \brief Format message
+    /// \param dst String to store formatted message
+    /// \param format Format of message
+    /// \param ... Variable argument list
+    ///
+    void Format(string& dst, const TCHAR format[], ...)
+    {
+        va_list ap;
+        va_start(ap, format);
+        toString(dst, format, ap);
+        va_end(ap);
+    }
+
+    ///
+    /// \brief Format message
+    /// \param format Format of message
+    /// \param ... Variable argument list
+    ///
+    string Format(const TCHAR format[], ...)
+    {
+        string dst;
+        va_list ap;
+        va_start(ap, format);
+        toString(dst, format, ap);
+        va_end(ap);
+        return dst;
+    }
+
+    ///
+    /// \brief Format message
+    /// \param format Format of message
+    /// \param ap Variable argument list
+    ///
+    void Format(string& dst, const TCHAR format[], va_list ap)
+    {
+        toString(dst, format, ap);
+    }
 }
 }

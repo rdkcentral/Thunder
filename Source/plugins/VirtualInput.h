@@ -400,8 +400,8 @@ namespace PluginHost {
                     }
                     KeyCode(const KeyCode& copy)
                         : Core::JSON::Container()
-                        , Code()
-                        , Mods()
+                        , Code(copy.Code)
+                        , Mods(copy.Mods)
                     {
                         Add(_T("code"), &Code);
                         Add(_T("mods"), &Mods);
@@ -426,8 +426,8 @@ namespace PluginHost {
                 }
                 Conversion(const Conversion& copy)
                     : Core::JSON::Container()
-                    , In()
-                    , Out()
+                    , In(copy.In)
+                    , Out(copy.Out)
                 {
                     Add(_T("in"), &In);
                     Add(_T("out"), &Out);
@@ -875,7 +875,7 @@ namespace PluginHost {
                 _keyHandler = new PluginHost::IPCUserInput(Core::NodeId(locator.c_str()), enabled);
                 TRACE_L1("Creating a IPC Channel for key communication. %d", 0);
             } else {
-                if (Core::File(locator, false).Exists() == true) {
+                if (Core::File(locator).Exists() == true) {
                     TRACE_L1("Creating a /dev/input device for key communication. %d", 0);
 
                     // Seems we have a possibility to use /dev/input, create it.

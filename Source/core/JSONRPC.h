@@ -189,27 +189,54 @@ namespace Core {
                 }
                 return (designator.substr(pos == string::npos ? 0 : pos + 1));
             }
-            static uint8_t Version(const string& designator)
+            static uint8_t TryGetVersion(const string& designator, string::size_type pos) {
+                // note: invalid version string will not be detected (> 254) as it is abuse, digits part of a methodname/callsign
+                // bigger will (but not to detect them as names consisting of only digits, see what is not allowed above)
+                uint8_t result = 0;
+                uint8_t multiplier = 1; // probably cheaper then using pow(10, (startpos-pos))
+
+                while ((isdigit(designator[pos]))) {
+                    result += ((designator[pos] - '0') * multiplier);
+                    if (pos-- == 0) {
+                        pos = string::npos;
+                        break;
+                    }
+                    multiplier *= 10;
+                }
+
+                return ((pos == string::npos) || (designator[pos] == '.') ? result : ~0);
+            }
+            static uint8_t Version(const string& designator, const bool fulldesignator = false)
             {
                 uint8_t result = ~0;
-                size_t pos = designator.find_last_of('.', designator.find_last_of('@'));
+                string::size_type pos = designator.find_last_of('@');
+                // optimization, no need to parse behind index. Biggest chance index would be a full number so parsing back to
+                // find out when hitting @ it is not the version would be useless
 
-                if (pos != string::npos) {
-                    size_t index = pos - 1;
-                    while ((index != 0) && (isdigit(designator[index]))) {
-                        index--;
-                    }
-                    if ((index != 0) && (designator[index] == '.')) {
-                        index++;
-                    } else if ((index == 0) && (isdigit(designator[0]) == false)) {
-                        index = pos;
-                    }
-
-                    if (index < pos) {
-                        result = static_cast<uint8_t>(atoi(designator.substr(index, pos - index).c_str()));
+                if ((pos == string::npos) && (fulldesignator == false)) { // when not found and no fulldesignator version can be at the end
+                    pos = designator.size();
+                    pos = ((pos > 1) && (designator[pos - 1] == '.') ? pos - 1 : pos); // this line caters for a possible '.' as last character,
+                                                                                    // can be removed probably
+                    if (pos-- > 2) { // smallest possible valid string would be "1.a" or "b.1" (a methodname, 1 version, b callsign), -- to set pos
+                                     // at last char (note not --pos > 1  to cater for pos == 0)
+                        result = TryGetVersion(designator, pos);
+                        // if no match at the end of the designator, then only one possibilty remains it is before the '.' before the current
+                        // position, will be picked up below
                     }
                 }
-                return (result);
+
+                if ((fulldesignator == true) || ((pos != string::npos) && (pos > 1) && (result == static_cast<uint8_t>(~0))))
+                {
+                    // 1) we have an index then we must also have a full designator. Then version (if avaialble) must be before the previous '.'
+                    //    and that is the only possible option, otherwise it is not there and we found the callsign
+                    // 2) we could not find the version at the end of the designator, search before the . before that
+                    pos = designator.find_last_of('.', pos); // if pos == npos (could be in case of fulldesignator) then will search from the end as it should
+                    if ((pos != string::npos) && (pos > 0)) {
+                        result = TryGetVersion(designator, --pos);
+                    }
+                }
+
+                return result;
             }
             static string Index(const string& designator)
             {
@@ -582,7 +609,7 @@ namespace Core {
             }
             template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
             typename std::enable_if<(std::is_same<std::nullptr_t, typename std::remove_cv<GET_METHOD>::type>::value && !std::is_same<std::nullptr_t, typename std::remove_cv<SET_METHOD>::type>::value), void>::type
-            Property(const string& methodName, GET_METHOD getMethod, SET_METHOD setMethod, REALOBJECT* objectPtr)
+            Property(const string& methodName, GET_METHOD, SET_METHOD setMethod, REALOBJECT* objectPtr)
             {
                 using COUNT = Core::TypeTraits::func_traits<SET_METHOD>;
 
@@ -592,7 +619,7 @@ namespace Core {
             }
             template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
             typename std::enable_if<(!std::is_same<std::nullptr_t, typename std::remove_cv<GET_METHOD>::type>::value && std::is_same<std::nullptr_t, typename std::remove_cv<SET_METHOD>::type>::value), void>::type
-            Property(const string& methodName, GET_METHOD getMethod, SET_METHOD setMethod, REALOBJECT* objectPtr)
+            Property(const string& methodName, GET_METHOD getMethod, SET_METHOD, REALOBJECT* objectPtr)
             {
                 using COUNT = Core::TypeTraits::func_traits<GET_METHOD>;
 

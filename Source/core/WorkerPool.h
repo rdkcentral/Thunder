@@ -47,24 +47,24 @@ namespace Core {
             }
 
         public:
-            void Submit()
+            bool Submit()
             {
                 Core::ProxyType<Core::IDispatch> job(ThreadPool::JobType<IMPLEMENTATION>::Aquire());
 
                 if (job.IsValid()) {
                     Core::IWorkerPool::Instance().Submit(job);
                 }
+             
+                return (job.IsValid());
             }
             bool Schedule(const Core::Time& time)
             {
-                bool result = false;
                 Core::ProxyType<Core::IDispatch> job(ThreadPool::JobType<IMPLEMENTATION>::Aquire());
 
                 if (job.IsValid()) {
                     Core::IWorkerPool::Instance().Schedule(time, job);
-                    result = true;
                 }
-                return (result);
+                return (job.IsValid());
             }
             bool Reschedule(const Core::Time& time)
             {
@@ -152,17 +152,15 @@ namespace Core {
         WorkerPool(const WorkerPool&) = delete;
         WorkerPool& operator=(const WorkerPool&) = delete;
 
-        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize)
-            : _threadPool(threadCount, stackSize, queueSize)
-            , _external(_threadPool.Queue())
+        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, Core::ThreadPool::IDispatcher* dispatcher)
+            : _threadPool(threadCount, stackSize, queueSize, dispatcher)
+            , _external(_threadPool.Queue(), dispatcher)
             , _timer(1024 * 1024, _T("WorkerPoolType::Timer"))
             , _metadata()
             , _joined(0)
         {
             _metadata.Slots = threadCount + 1;
             _metadata.Slot = new uint32_t[threadCount + 1];
-
-            _threadPool.Run();
         }
         ~WorkerPool()
         {
