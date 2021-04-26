@@ -66,7 +66,7 @@ else()
 endif ()
 
 if(BREAKPAD_FOUND)
-    add_definitions(-DUSE_BREAKPAD=1)
+    add_definitions(-DUSE_BREAKPAD=1 -D__STDC_FORMAT_MACROS)
     target_link_libraries(${TARGET} PUBLIC ${BREAKPAD_LIBRARIES} pthread)
     target_include_directories(${TARGET} PUBLIC ${BREAKPAD_INCLUDE_DIRS})
 endif(BREAKPAD_FOUND)
