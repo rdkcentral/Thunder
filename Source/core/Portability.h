@@ -369,7 +369,8 @@ int clock_gettime(int, struct timespec*);
 
 #define ALLOCA alloca
 
-extern void EXTERNAL SleepMs(unsigned int a_Time);
+extern void EXTERNAL SleepMs(const unsigned int a_Time);
+extern void EXTERNAL SleepUs(const unsigned int a_Time);
 inline void EXTERNAL SleepS(unsigned int a_Time)
 {
     ::SleepMs(a_Time * 1000);
@@ -531,10 +532,6 @@ extern int EXTERNAL inet_aton(const char* cp, struct in_addr* inp);
 extern void EXTERNAL usleep(const uint32_t value);
 #endif
 
-inline void SleepUs(unsigned int a_Time)
-{
-    ::usleep(a_Time);
-}
 
 
 void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<string>& stack);
