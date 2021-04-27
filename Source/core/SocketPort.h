@@ -269,6 +269,7 @@ namespace Core {
         uint16_t m_SendBytes;
         uint16_t m_SendOffset;
         uint32_t m_Interface;
+        bool m_SystemdSocket;
     };
 
     class EXTERNAL SocketStream : public SocketPort {
