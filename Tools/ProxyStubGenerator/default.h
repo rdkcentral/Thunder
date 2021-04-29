@@ -20,13 +20,25 @@
 //
 // Forward declarations of types used by the interfaces.
 // Included by default by the stub generator.
-// (fundamental types, time_t, stdint, string and bool types are built into the generator)
+// (fundamental types, stdint and string types are built into the generator)
 //
 
 #pragma once
 
 typedef char TCHAR;
 typedef wchar_t WCHAR;
+
+namespace std {
+  typedef __stubgen_unspecified_integer uintmax_t;
+  typedef __stubgen_unspecified_integer intmax_t;
+  typedef __stubgen_unspecified_integer uintptr_t;
+  typedef __stubgen_unspecified_integer intptr_t;
+
+  typedef __stubgen_unspecified_integer size_t;
+  typedef __stubgen_unspecified_integer ssize_t;
+  typedef __stubgen_unspecified_integer time_t;
+  typedef __stubgen_unspecified_integer clock_t;
+}
 
 namespace WPEFramework {
 
@@ -43,9 +55,12 @@ namespace WPEFramework {
   }
 
   namespace RPC {
+    typedef __stubgen_integer instance_id;
+
     class IStringIterator;
     class IValueIterator;
   }
 
 } // namespace WPEFramework
+
 
