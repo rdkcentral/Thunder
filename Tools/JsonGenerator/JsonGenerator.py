@@ -33,12 +33,12 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pard
 import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 
-VERSION = "1.8.1"
+VERSION = "1.8.2"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
 VERBOSE = False
-NO_DUP_WARNINGS = False
+GENERATED_JSON = False
 
 
 class Trace:
@@ -70,7 +70,7 @@ class Trace:
         self.__Print("%s: %s%s %s" % (self.file, self.cwarn, self.creset, text))
 
     def DocIssue(self, text):
-        if DOCISSUES:
+        if DOC_ISSUES:
             self.__Print("%s: %s%s %s" % (self.file, self.cdocissue, self.creset, text))
 
     def Error(self, text):
@@ -96,7 +96,7 @@ except:
     sys.exit(1)
 
 INDENT_SIZE = 4
-DOCISSUES = True
+DOC_ISSUES = True
 ALWAYS_COPYCTOR = False
 KEEP_EMPTY = False
 CLASSNAME_FROM_REF = True
@@ -152,8 +152,13 @@ def MakeEnum(type):
 class JsonType():
     def __init__(self, name, parent, schema, included=None):
         self.name = schema["original"] if "original" in schema else name
-        if parent and not self.name.islower():
-            trace.Warn("'%s': mixed case identifiers are supported, however all-lowercase names are recommended " % self.name)
+        if parent:
+            if not self.name.replace("_","").isalnum():
+                trace.Error("'%s': invalid characters in identifier name" % self.name)
+            if not self.name.islower():
+                trace.Warn("'%s': mixed case identifiers are supported, however all-lowercase names are recommended " % self.name)
+            elif "_" in self.name and not GENERATED_JSON:
+                trace.Warn("'%s': snake_case identifiers are supported, however flat case names are recommended " % self.name)
         self.true_name = name
         self.schema = schema
         self.duplicate = False
@@ -172,16 +177,13 @@ class JsonType():
         if isinstance(schema, jsonref.JsonRef) and "description" in schema.__reference__:
             self.description = schema.__reference__["description"]
         # do some sanity check on the description text
-        if self.name.endswith(" ") or self.name.startswith(" "):
-            trace.DocIssue("'%s': item name should not begin or end with a space" % self.name)
         if self.description and not isinstance(self, JsonMethod):
             if self.description.endswith("."):
-                trace.DocIssue("'%s': item description should not end with a dot (\"%s\")" % (self.name, Trace.Ellipsis(self.description, False)))
+                trace.DocIssue("'%s': use sentence case capitalization and no period for parameter descriptions (\"%s\")" % (self.name, Trace.Ellipsis(self.description, False)))
             if self.description.endswith(" ") or self.description.startswith(" "):
-                trace.DocIssue("'%s': item description should not begin or end with at space" % self.name)
+                trace.DocIssue("'%s': parameter description has leading or trailing whitespace" % self.name)
             if not self.description[0].isupper() and self.description[0].isalpha():
-                trace.DocIssue("'%s': item description should begin with a capital letter (\"%s\")" %
-                            (self.name, Trace.Ellipsis(self.description)))
+                trace.DocIssue("'%s': use sentence case capitalization and no period for parameter descriptions (\"%s\")" % (self.name, Trace.Ellipsis(self.description)))
         if "default" in schema:
             self.default = schema["default"]
 
@@ -785,7 +787,6 @@ def LoadInterface(file, includePaths = []):
         schema["$schema"] = "interface.json.schema"
         schema["jsonrpc"] = "2.0"
         schema["dorpc"] = True
-        schema["nodupwarnings"] = True
         schema["interfaceonly"] = True
         schema["fromheader"] = True
         schema["configuration"] = { "nodefault" : True }
@@ -931,7 +932,7 @@ def LoadInterface(file, includePaths = []):
                         properties[var_name] = ConvertParameter(var)
                         properties[var_name]["original"] = var.name.lower()
                         if not prop and "description" not in properties[var_name]:
-                            trace.DocIssue("'%s': parameter missing description" % var_name)
+                            trace.DocIssue("'%s': parameter is missing description" % var_name)
                         required.append(var_name)
                 params["properties"] = properties
                 params["required"] = required
@@ -1051,7 +1052,7 @@ def LoadInterface(file, includePaths = []):
                 if method.retval.meta.brief:
                     obj["summary"] = method.retval.meta.brief
                 elif (prefix + method_name_lower) not in properties:
-                    trace.DocIssue("'%s': %s missing brief description" % (method.name, "property" if method.retval.meta.is_property else "method"))
+                    trace.DocIssue("'%s': %s is missing brief description" % (method.name, "property" if method.retval.meta.is_property else "method"))
                 if method.retval.meta.details:
                     obj["description"] = method.retval.meta.details
                 if method.retval.meta.retval:
@@ -1075,7 +1076,7 @@ def LoadInterface(file, includePaths = []):
                     if method.retval.meta.brief:
                         obj["summary"] = method.retval.meta.brief
                     else:
-                        trace.DocIssue("'%s': event missing brief description" % method.name)
+                        trace.DocIssue("'%s': event is missing brief description" % method.name)
                     if method.retval.meta.details:
                         obj["description"] = method.retval.meta.details
                     if params:
@@ -1226,8 +1227,8 @@ class ObjectTracker:
             is_ref = IsInRef(newObj)
             props = newObj.Schema()["properties"]
             for obj in self.Objects()[:-1]:
-                if __Compare(obj.Schema()["properties"], props):
-                    if not NO_DUP_WARNINGS and (not is_ref or not IsInRef(obj)):
+                if __CompareObject(obj.Schema()["properties"], props):
+                    if not GENERATED_JSON and not NO_DUP_WARNINGS and (not is_ref or not IsInRef(obj)):
                         trace.Warn("Duplicate object '%s' (same as '%s') - consider using $ref" %
                                    (newObj.OrigName(), obj.OrigName()))
                     return obj
@@ -1269,7 +1270,7 @@ class EnumTracker(ObjectTracker):
             is_ref = IsInRef(newObj)
             for obj in self.Objects()[:-1]:
                 if __Compare(obj.Schema(), newObj.Schema()):
-                    if not NO_DUP_WARNINGS and (not is_ref or not IsInRef(obj)):
+                    if not GENERATED_JSON and not NO_DUP_WARNINGS and (not is_ref or not IsInRef(obj)):
                         trace.Warn("Duplicate enums '%s' (same as '%s') - consider using $ref" %
                                    (newObj.OrigName(), obj.OrigName()))
                     return obj
@@ -2916,7 +2917,12 @@ if __name__ == "__main__":
                            dest="no_style_warnings",
                            action="store_true",
                            default=False,
-                           help="suppress documentation issues (default: show all warnings)")
+                           help="suppress documentation issues (default: show all documentation issues)")
+    argparser.add_argument("--no-duplicates-warnings",
+                           dest="no_duplicates_warnings",
+                           action="store_true",
+                           default=False,
+                           help="suppress duplicate object warnings (default: show all duplicate object warnings)")
     argparser.add_argument("--include",
                            dest="extra_include",
                            metavar="FILE",
@@ -2938,7 +2944,8 @@ if __name__ == "__main__":
     args = argparser.parse_args(sys.argv[1:])
 
     VERBOSE = args.verbose
-    DOCISSUES = not args.no_style_warnings
+    DOC_ISSUES = not args.no_style_warnings
+    NO_DUP_WARNINGS = args.no_duplicates_warnings
     INDENT_SIZE = args.indent_size
     ALWAYS_COPYCTOR = args.copy_ctor
     KEEP_EMPTY = args.keep_empty
@@ -2983,8 +2990,8 @@ if __name__ == "__main__":
                     schemas = [LoadSchema(path, args.if_dir, args.cppif_dir, args.includePaths)]
                 for schema in schemas:
                     if schema:
-                        warnings = NO_DUP_WARNINGS
-                        NO_DUP_WARNINGS = "nodupwarnings" in schema
+                        warnings = GENERATED_JSON
+                        GENERATED_JSON = "dorpc" in schema
                         output_path = path
                         if args.output_dir:
                             if (args.output_dir[0]) == '/':
@@ -3001,7 +3008,7 @@ if __name__ == "__main__":
                                     else schema["info"]["class"] if "class" in schema["info"] \
                                     else os.path.basename(output_path)
                             CreateDocument(schema, os.path.join(os.path.dirname(output_path), title.replace(" ", "")))
-                        NO_DUP_WARNINGS = warnings
+                        GENERATED_JSON = warnings
             except JsonParseError as err:
                 trace.Error(str(err))
             except RuntimeError as err:
