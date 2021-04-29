@@ -140,14 +140,16 @@
 #define AF_NETLINK 16
 #define AF_PACKET  17
 
-inline void SleepS(unsigned int a_Time)
+inline void SleepS(const uint32_t time)
 {
-    ::Sleep(a_Time * 1000);
+    ::Sleep(time * 1000);
 }
-inline void SleepMs(unsigned int a_Time)
+inline void SleepMs(const uint32_t time)
 {
-    ::Sleep(a_Time);
+    ::Sleep(time);
 }
+
+EXTERNAL void SleepUs(const uint32_t time);
 
 #ifdef _UNICODE
 typedef std::wstring string;
