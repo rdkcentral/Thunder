@@ -1144,29 +1144,80 @@ class ObjectTracker:
         self.Reset()
 
     def Add(self, newObj):
-        def __Compare(lhs, rhs):
+        def __CompareObject(lhs, rhs):
+            def __CompareType(lhs, rhs):
+                if rhs["type"] != lhs["type"]:
+                    return False
+                elif "size" in lhs:
+                    if "size" in rhs:
+                        if lhs["size"] != rhs["size"]:
+                            return False
+                    elif "size" != 32:
+                        return False
+                elif "size" in rhs:
+                    if rhs["size"] != 32:
+                        return False
+                elif "signed" in lhs:
+                    if "signed" in rhs:
+                        if lhs["signed"] != rhs["signed"]:
+                            return False
+                    elif lhs["signed"] != False:
+                        return False
+                elif "signed" in rhs:
+                    if rhs["signed"] != False:
+                        return False
+                elif "enum" in lhs:
+                    if "enum" in rhs:
+                        if lhs["enum"] != rhs["enum"]:
+                            return False
+                    else:
+                        return False
+                elif "enum" in rhs:
+                    return False
+                elif "enumvalues" in lhs:
+                    if "enumvalues" in rhs:
+                        if lhs["enumvalues"] != rhs["enumvalues"]:
+                            return False
+                    else:
+                        return False
+                elif "enumvalues" in rhs:
+                    return False
+                elif "enumids" in lhs:
+                    if "enumids" in rhs:
+                        if lhs["enumids"] != rhs["enumids"]:
+                            return False
+                    else:
+                        return False
+                elif "enumids" in rhs:
+                    return False
+                elif "items" in lhs:
+                    if "items" in rhs:
+                        if not __CompareType(lhs["items"], rhs["items"]):
+                            return False
+                    else:
+                        return False
+                elif "items" in rhs:
+                    return False
+                elif "properties" in lhs:
+                    if "properties" in rhs:
+                        if not __CompareObject(lhs["properties"], rhs["properties"]):
+                            return False
+                    else:
+                        return False
+                return True
+
             # NOTE: Two objects are considered identical if they have the same property names and types only!
             for name, prop in lhs.items():
                 if name not in rhs:
                     return False
-                elif rhs[name]["type"] != prop["type"]:
-                    return False
-                elif "enum" in prop:
-                    if "enum" in rhs[name]:
-                        if prop["enum"] != rhs[name]["enum"]:
-                            return False
-                    else:
+                else:
+                    if not __CompareType(prop, rhs[name]):
                         return False
             for name, prop in rhs.items():
                 if name not in lhs:
                     return False
-                elif lhs[name]["type"] != prop["type"]:
-                    return False
-                elif "enum" in prop:
-                    if "enum" in lhs[name]:
-                        if prop["enum"] != lhs[name]["enum"]:
-                            return False
-                    else:
+                else:
+                    if not __CompareType(prop, lhs[name]):
                         return False
             return True
 
