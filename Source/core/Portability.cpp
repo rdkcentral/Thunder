@@ -278,10 +278,6 @@ void SleepUs(const unsigned int time) {
     }
 
     while ( ((result = ::nanosleep(&elapse, &elapse)) != 0) && (errno == EINTR) ) /* Intentionally left empty */;
-
-    if (result != 0) {
-	printf ("Did not wait the given time (left: %lld)!!!\n", elapse.tv_nsec);
-    }
 }
 
 #endif
