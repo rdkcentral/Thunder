@@ -282,6 +282,16 @@ void SleepUs(const unsigned int time) {
 
 #endif
 
+#if defined(__WINDOWS__)
+
+void SleepUs(const uint32_t time) {
+    std::this_thread::sleep_for(std::chrono::microseconds(time));
+}
+
+#endif
+
+
+
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
 
 uint64_t htonll(const uint64_t& value)
