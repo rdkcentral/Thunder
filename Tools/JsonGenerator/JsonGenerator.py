@@ -52,7 +52,7 @@ class Trace:
         else:
             self.cwarn = "WARNING:"
             self.cerror = "ERROR:"
-            self.cstyle = "DOC-ISSUE:"
+            self.cdocissue = "DOC-ISSUE:"
             self.creset = ""
 
     def __Print(self, text):
