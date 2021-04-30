@@ -315,9 +315,6 @@ namespace Core {
         }
 #endif
         uint64_t Allocated() const;
-        /**
-         * @brief On Linux, MemoryStats() is called inside those 2 methods, no need to call it beforehand
-         */
         uint64_t Resident() const;
         uint64_t Shared() const;
 

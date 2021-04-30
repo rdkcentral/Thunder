@@ -83,30 +83,50 @@
                 "sunriseset": 365,
                 "virtuals": [
                     {
-                        "id": 1,
-                        "passive": false,
-                        "min": "0",
-                        "max": "1"
+                        "id":1,
+                        "passive":false,
+                        "min":0,
+                        "max":1
                     },
                     {
-                        "id": 2,
-                        "passive": false,
-                        "min": "0",
-                        "max": "100"
+                        "id":2,
+                        "passive":false,
+                        "min":0,
+                        "max":100
                     },
                     {
-                        "id": 4,
-                        "passive": false,
-                        "min": "0",
-                        "max": "1"
+                        "id":11,
+                        "passive":false,
+                        "min":0,
+                        "max":1
                     },
                     {
-                        "id": 5,
-                        "passive": false,
-                        "min": "0",
-                        "max": "1"
+                        "id":12,
+                        "source":"/KleineSchuur/DagLichtSensor",
+                        "min":30,
+                        "max":5000
+                    },
+                    {
+                        "id":100,
+                        "schedules":[
+                            {
+                                "start": {
+                                    "time":"23:35",
+                                    "day":"Saterday"
+                                },
+                                "end":"3:21"
+                            },
+                            {
+                                "start":"20:25",
+                                "end":"20:30"
+                            },
+                            {
+                                "start":"16:35",
+                                "end":"17:40",
+                                "days":"Workdays"
+                            }
+                        ]
                     }
-
                 ]
             }
         },
