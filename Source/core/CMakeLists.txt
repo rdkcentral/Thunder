@@ -218,6 +218,15 @@ if(LIBRT_FOUND)
             )
 endif()
 
+find_package(Systemd)
+if (SYSTEMD_FOUND)
+    target_link_libraries( ${TARGET}
+        PRIVATE
+        Systemd::Systemd
+    )
+    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DSYSTEMD_FOUND")
+endif()
+
 # ===========================================================================================
 # Install ARTIFACTS:
 # ===========================================================================================
