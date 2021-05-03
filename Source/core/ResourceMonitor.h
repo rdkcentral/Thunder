@@ -202,10 +202,10 @@ namespace Core {
         {
             _adminLock.Lock();
 
-            // Make sure this entry does not exist, only register resources once !!!
-            ASSERT(std::find(_resourceList.begin(), _resourceList.end(), &resource) == _resourceList.end());
-
-            _resourceList.push_back(&resource);
+            // Make sure this entry is only registered once !!!
+            if (std::find(_resourceList.begin(), _resourceList.end(), &resource) == _resourceList.end()) {
+                _resourceList.push_back(&resource);
+            }
 
             if (_resourceList.size() == 1) {
                 if (_monitor == nullptr) {

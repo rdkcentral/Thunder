@@ -44,6 +44,9 @@
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <sys/signalfd.h>
+#ifdef SYSTEMD_FOUND
+#include <systemd/sd-daemon.h>
+#endif
 #endif
 
 #ifdef __WINDOWS__
@@ -320,7 +323,8 @@ namespace Core {
         , m_ReceivedNode()
         , m_SendBuffer(nullptr)
         , m_ReceiveBuffer(nullptr)
-	, m_Interface(~0)
+        , m_Interface(~0)
+        , m_SystemdSocket(false)
     {
         TRACE_L5("Constructor SocketPort (NodeId&) <%p>", (this));
     }
@@ -342,7 +346,8 @@ namespace Core {
         , m_ReceivedNode()
         , m_SendBuffer(nullptr)
         , m_ReceiveBuffer(nullptr)
-	, m_Interface(~0)
+        , m_Interface(~0)
+        , m_SystemdSocket(false)
     {
         NodeId::SocketInfo localAddress;
         socklen_t localSize = sizeof(localAddress);
@@ -370,7 +375,7 @@ namespace Core {
         // the virtuals might be called, which are destructed at this point !!!!
         ASSERT((m_Socket == INVALID_SOCKET) &&(m_State == 0));
 
-        if ((m_Socket != INVALID_SOCKET) || (m_State != 0)) {
+        if (m_Socket != INVALID_SOCKET) {
             ResourceMonitor::Instance().Unregister(*this);
             DestroySocket(m_Socket);
         }
@@ -636,12 +641,40 @@ namespace Core {
         SOCKET l_Result = INVALID_SOCKET;
 
 #ifndef __WINDOWS__
+        int foundUnixSocketFd = -1;
         // Check if domain path already exists, if so remove.
         if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (m_SocketType == SocketPort::LISTEN)) {
-            if (access(localNode.HostName().c_str(), F_OK) != -1) {
-                TRACE_L1("Found out domain path already exists, deleting: %s", localNode.HostName().c_str());
-                remove(localNode.HostName().c_str());
+            if (access(localNode.HostName().c_str(), R_OK | W_OK) != -1) {
+#ifdef SYSTEMD_FOUND
+                int fd, n;
+                n = sd_listen_fds(0);
+                TRACE_L1("Found %d systemd created listening sockets", n);
+                if (n > 0) {
+                    for (fd = SD_LISTEN_FDS_START; fd < SD_LISTEN_FDS_START + n; fd++) {
+                        if (sd_is_socket_unix(fd, SOCK_STREAM, 1, localNode.HostName().c_str(), 0)) {
+                            TRACE_L1("Use systemd created socket for: %s fd=%d", localNode.HostName().c_str(), fd);
+                            foundUnixSocketFd = fd;
+                            m_SystemdSocket = true;
+                            break;
+                        }
+                    }
+                }
+#endif
+                if (foundUnixSocketFd == -1) {
+                    TRACE_L1("Found out domain path already exists, deleting: %s", localNode.HostName().c_str());
+                    remove(localNode.HostName().c_str());
+                }
             }
+        }
+        if (foundUnixSocketFd != -1) {
+            if (SetNonBlocking(foundUnixSocketFd) == false) {
+                TRACE_L1("Error on setting non blocking");
+            } else {
+                l_Result = foundUnixSocketFd;
+                BufferAlignment(l_Result);
+            }
+            TRACE_L1("Return valid unix socket for %s fd=%d", localNode.HostName().c_str(), l_Result);
+            return l_Result;
         }
 #endif
 
@@ -1098,7 +1131,9 @@ namespace Core {
             DestroySocket(m_Socket);
             ResourceMonitor::Instance().Unregister(*this);
             // Remove socket descriptor for UNIX domain datagram socket.
-            if ((m_LocalNode.Type() == NodeId::TYPE_DOMAIN) && ((m_SocketType == SocketPort::LISTEN) || (SocketMode() != SOCK_STREAM))) {
+            if ((m_LocalNode.Type() == NodeId::TYPE_DOMAIN) && 
+                ((m_SocketType == SocketPort::LISTEN) || (SocketMode() != SOCK_STREAM)) &&
+                !m_SystemdSocket) {
                 TRACE_L1("CLOSED: Remove socket descriptor %s", m_LocalNode.HostName().c_str());
 #ifdef __WINDOWS__
                 _unlink(m_LocalNode.HostName().c_str());
