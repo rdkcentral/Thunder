@@ -225,18 +225,30 @@ namespace Trace {
             m_DirectOut = enabled;
         }
         inline void Announce() {
+            if (m_DirectOut) {
+                return;
+            }
             ASSERT (m_OutputChannel != nullptr);
             m_OutputChannel->Ring();
         }
         inline void Acknowledge() {
+            if (m_DirectOut) {
+                return;
+            }
             ASSERT (m_OutputChannel != nullptr);
             m_OutputChannel->Acknowledge();
         }
         inline uint32_t Wait (const uint32_t waitTime) {
+            if (m_DirectOut) {
+                return Core::ERROR_NONE;
+            }
             ASSERT (m_OutputChannel != nullptr);
             return (m_OutputChannel->Wait(waitTime));
         }
         inline void Relinquish() {
+            if (m_DirectOut) {
+                return;
+            }
             ASSERT(m_OutputChannel != nullptr);
             return (m_OutputChannel->Relinquish());
         }

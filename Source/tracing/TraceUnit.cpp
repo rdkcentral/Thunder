@@ -100,6 +100,11 @@ namespace Trace {
 
     uint32_t TraceUnit::Open(const uint32_t identifier)
     {
+        if (m_DirectOut) {
+            m_OutputChannel = nullptr;
+            return Core::ERROR_NONE;
+        }
+
         uint32_t result = Core::ERROR_UNAVAILABLE;
 
         string fileName;
@@ -121,6 +126,11 @@ namespace Trace {
 
     uint32_t TraceUnit::Open(const string& pathName)
     {
+        if (m_DirectOut) {
+            m_OutputChannel = nullptr;
+            return Core::ERROR_NONE;
+        }
+
         string fileName(Core::Directory::Normalize(pathName) + CyclicBufferName);
         #ifdef __WINDOWS__
         string doorBell("127.0.0.1:62001");
@@ -136,6 +146,9 @@ namespace Trace {
 
     uint32_t TraceUnit::Close()
     {
+        if (m_DirectOut) {
+            return Core::ERROR_NONE;
+        }
         m_Admin.Lock();
 
         ASSERT(m_OutputChannel != nullptr);

@@ -32,6 +32,8 @@ option(PROTOCOLS
         "Include the protocols library." ON)
 option(TRACING
         "Include the tracing library." ON)
+option(TRACING_DIRECT_OUTPUT
+        "Enable direct output for tracing." OFF)
 option(PROFILER
         "Include the profiler library." OFF)
 option(COM
@@ -99,6 +101,10 @@ set(EXTERN_EVENTS ${EXTERN_EVENTS} CACHE INTERNAL
         "List of events assumed to be provided by other plugins.")
 string(REPLACE " " ";" EXTERN_EVENT_LIST "${EXTERN_EVENTS}")
 message(STATUS "Assuming external events: ${EXTERN_EVENT_LIST}")
+
+if(TRACING_DIRECT_OUTPUT)
+    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DTRACING_DIRECT_OUTPUT")
+endif()
 
 if(CORE)
     add_subdirectory(core)

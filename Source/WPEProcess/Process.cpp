@@ -623,7 +623,9 @@ int main(int argc, char** argv)
         Core::SystemInfo::SetEnvironment(_T("COM_PARENT_EXCHANGE_ID"), Core::NumberType<uint32_t>(options.Exchange).Text());
 
         TRACE_L1("Opening a trace file with ID: [%d].", options.Exchange);
-
+#ifdef TRACING_DIRECT_OUTPUT
+        Trace::TraceUnit::Instance().DirectOutput(true);
+#endif
         // Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID.
         Trace::TraceUnit::Instance().Open(options.Exchange);
 

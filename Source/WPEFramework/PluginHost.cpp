@@ -436,6 +436,9 @@ namespace PluginHost {
 
             // Time to open up, the trace buffer for this process and define it for the out-of-proccess systems
             // Define the environment variable for Tracing files, if it is not already set.
+#ifdef TRACING_DIRECT_OUTPUT
+            Trace::TraceUnit::Instance().DirectOutput(true);
+#endif
             if ( Trace::TraceUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE){
 #ifndef __WINDOWS__
                 if (_background == true) {
