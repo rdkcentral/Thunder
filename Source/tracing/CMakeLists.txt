@@ -15,6 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+option(TRACING_ONLY_DIRECT_OUTPUT
+        "Only direct output for tracing." OFF)
+
+if(TRACING_ONLY_DIRECT_OUTPUT)
+    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DTRACING_ONLY_DIRECT_OUTPUT")
+endif()
+
 set(TARGET ${NAMESPACE}Tracing)
 
 add_library(${TARGET} SHARED

@@ -224,22 +224,10 @@ namespace Trace {
         {
             m_DirectOut = enabled;
         }
-        inline void Announce() {
-            ASSERT (m_OutputChannel != nullptr);
-            m_OutputChannel->Ring();
-        }
-        inline void Acknowledge() {
-            ASSERT (m_OutputChannel != nullptr);
-            m_OutputChannel->Acknowledge();
-        }
-        inline uint32_t Wait (const uint32_t waitTime) {
-            ASSERT (m_OutputChannel != nullptr);
-            return (m_OutputChannel->Wait(waitTime));
-        }
-        inline void Relinquish() {
-            ASSERT(m_OutputChannel != nullptr);
-            return (m_OutputChannel->Relinquish());
-        }
+        void Announce();
+        void Acknowledge();
+        uint32_t Wait(const uint32_t waitTime);
+        void Relinquish();
 
     private:
         inline uint32_t Open(const string& doorBell, const string& fileName) 
@@ -259,6 +247,9 @@ namespace Trace {
         TraceBuffer* m_OutputChannel;
         Settings m_EnabledCategories;
         bool m_DirectOut;
+#ifdef TRACING_ONLY_DIRECT_OUTPUT
+        Core::Event m_OnlyDirectOutEvent;
+#endif
     };
 }
 } // namespace Trace

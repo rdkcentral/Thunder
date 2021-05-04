@@ -34,6 +34,9 @@ namespace Trace {
         , m_Admin()
         , m_OutputChannel(nullptr)
         , m_DirectOut(false)
+#ifdef TRACING_ONLY_DIRECT_OUTPUT
+        , m_OnlyDirectOutEvent(false, true)
+#endif
     {
     }
 
@@ -98,6 +101,46 @@ namespace Trace {
         m_Admin.Unlock();
     }
 
+#ifdef TRACING_ONLY_DIRECT_OUTPUT
+
+    uint32_t TraceUnit::Open(const uint32_t identifier)
+    {
+        m_OutputChannel = nullptr;
+        return Core::ERROR_NONE;
+    }
+
+    uint32_t TraceUnit::Open(const string& pathName)
+    {
+        m_OutputChannel = nullptr;
+        return Core::ERROR_NONE;
+    }
+
+    uint32_t TraceUnit::Close()
+    {
+        return Core::ERROR_NONE;
+    }
+
+    void TraceUnit::Announce()
+    {
+        m_OnlyDirectOutEvent.SetEvent();
+    }
+
+    void TraceUnit::Acknowledge()
+    {
+        m_OnlyDirectOutEvent.ResetEvent();
+    }
+
+    uint32_t TraceUnit::Wait (const uint32_t waitTime)
+    {
+        return m_OnlyDirectOutEvent.Lock(waitTime);
+    }
+
+    void TraceUnit::Relinquish()
+    {
+    }
+
+#else
+
     uint32_t TraceUnit::Open(const uint32_t identifier)
     {
         uint32_t result = Core::ERROR_UNAVAILABLE;
@@ -150,6 +193,32 @@ namespace Trace {
 
         return (Core::ERROR_NONE);
     }
+
+    void TraceUnit::Announce()
+    {
+        ASSERT (m_OutputChannel != nullptr);
+        m_OutputChannel->Ring();
+    }
+
+    void TraceUnit::Acknowledge()
+    {
+        ASSERT (m_OutputChannel != nullptr);
+        m_OutputChannel->Acknowledge();
+    }
+
+    uint32_t TraceUnit::Wait(const uint32_t waitTime)
+    {
+        ASSERT (m_OutputChannel != nullptr);
+        return (m_OutputChannel->Wait(waitTime));
+    }
+
+    void TraceUnit::Relinquish()
+    {
+        ASSERT(m_OutputChannel != nullptr);
+        return (m_OutputChannel->Relinquish());
+    }
+
+#endif
 
     void TraceUnit::Announce(ITraceControl& Category)
     {
@@ -347,8 +416,12 @@ namespace Trace {
                 }
             }
         }
-
-        if (m_DirectOut == true) {
+#ifdef TRACING_ONLY_DIRECT_OUTPUT
+        bool directOutput = true;
+#else
+        bool directOutput = m_DirectOut;
+#endif
+        if (directOutput == true) {
             string time(Core::Time::Now().ToRFC1123(true));
             Core::TextFragment cleanClassName(Core::ClassNameOnly(className));
 
