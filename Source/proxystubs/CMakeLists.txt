@@ -51,22 +51,10 @@ target_include_directories(${TARGET}
            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
 )
 
-if (PROTOCOLS)
-    target_link_libraries(${TARGET}
-            PRIVATE
-              ${NAMESPACE}Protocols::${NAMESPACE}Protocols
-            )
-else()
-    target_link_libraries(${TARGET}
-            PRIVATE
-              ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
-              ${NAMESPACE}COM::${NAMESPACE}COM
-            )
-endif ()
-
 target_link_libraries(${TARGET}
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
+          ${NAMESPACE}COM::${NAMESPACE}COM
         )
 
 set_target_properties(${TARGET} PROPERTIES
