@@ -311,6 +311,7 @@ ENUM_CONVERSION_END(Crypto::EnumHashType)
 ENUM_CONVERSION_BEGIN(Web::Authorization::type)
 
     { Web::Authorization::BEARER, _TXT("Bearer") },
+    { Web::Authorization::BASIC, _TXT("Basic") },
 
 ENUM_CONVERSION_END(Web::Authorization::type)
 
