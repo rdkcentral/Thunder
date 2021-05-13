@@ -12,7 +12,7 @@
     "redirect": "Service/Controller/UI",
     "tracing": [
         {
-            "module": "Plugin_VirtualControl",
+            "module": "Plugin_ZigbeeControl",
             "enabled": true
         },
         {
@@ -57,6 +57,15 @@
             "autostart": true
         },
         {
+            "callsign": "ZigbeeControl",
+            "locator": "libZigbeeControl.so",
+            "classname": "ZigbeeControl",
+            "autostart": true,
+            "configuration": {
+                "port": "\\\\.\\COM6"
+            }
+        },
+        {
             "callsign": "WebBridge",
             "locator": "libWebBridge.so",
             "classname": "WebBridge",
@@ -66,7 +75,7 @@
             "callsign": "QuizzMaster",
             "locator": "libQuizzMaster.so",
             "classname": "QuizzMaster",
-            "autostart": true
+            "autostart": false
         },
         {
             "callsign": "StateController",
@@ -147,40 +156,40 @@
             "callsign": "IOControl",
             "locator": "libIOControl.so",
             "classname": "IOControl",
-            "autostart": true,
+            "autostart": false,
             "configuration": {
                 "port": "\\\\.\\COM5",
-              "pins": [
-                {
-                  "id": 1,
-                  "comment": "A1",
-                  "mode": "Input",
-                  "min": 0,
-                  "max":  "1023"
-                },
-                {
-                  "id": 10,
-                  "comment": "B2",
-                  "mode": "Output"
-                },
-                {
-                  "id": 17,
-                  "comment": "C1",
-                  "mode": "Output"
-                },
-                {
-                  "id": 16,
-                  "comment": "C0",
-                  "mode": "Both"
-                }
-              ]
+                "pins": [
+                    {
+                        "id": 1,
+                        "comment": "A1",
+                        "mode": "Input",
+                        "min": 0,
+                        "max":  "1023"
+                    },
+                    {
+                        "id": 10,
+                        "comment": "B2",
+                        "mode": "Output"
+                    },
+                    {
+                        "id": 17,
+                        "comment": "C1",
+                        "mode": "Output"
+                    },
+                    {
+                        "id": 16,
+                        "comment": "C0",
+                        "mode": "Both"
+                    }
+                ]
             }
         },
         {
             "callsign": "OneWireControl",
             "locator": "libOneWireControl.so",
             "classname": "OneWireControl",
-            "autostart": true,
+            "autostart": false,
             "configuration": {
               "port": "\\\\.\\COM5",
               "devices": [
@@ -196,7 +205,7 @@
             "callsign": "I2CControl",
             "locator": "libI2CControl.so",
             "classname": "I2CControl",
-            "autostart": true,
+            "autostart": false,
             "configuration": {
                 "port": "\\\\.\\COM5",
                 "devices": [
