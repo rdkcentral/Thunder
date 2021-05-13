@@ -206,7 +206,7 @@ void HCISocket::Abort()
     Core::SynchronousChannelType<Core::SocketPort>::StateChange();
     if (IsOpen() == true) {
         BtUtilsHciFilterClear(&_filter);
-	    BtUtilsHciFilterSetPtype(HCI_EVENT_PKT, &_filter);
+        BtUtilsHciFilterSetPtype(HCI_EVENT_PKT, &_filter);
         BtUtilsHciFilterSetEvent(EVT_LE_META_EVENT, &_filter);
         BtUtilsHciFilterSetEvent(EVT_CMD_STATUS, &_filter);
         BtUtilsHciFilterSetEvent(EVT_CMD_COMPLETE, &_filter);
