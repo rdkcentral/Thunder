@@ -1,18 +1,18 @@
 {
     "port": 25555,
-    "bind": "0.0.0.0",
+    "interface": "wifi",
     "idletime": 60,
     "ipv6": false,
-    "persistentpath": "C:/Projects/Domotica/artifacts/Persistent",
-    "volatilepath": "C:/Projects/Domotica/artifacts/temp",
-    "datapath": "C:/Projects/Domotica/artifacts/Release/Plugins",
-    "systempath": "C:/Projects/Domotica/artifacts/Release",
-    "proxystubpath": "C:/Projects/Domotica/artifacts/ProxyStubs/Release",
+    "persistentpath": "D:/Domotica/artifacts/Persistent",
+    "volatilepath": "D:/Domotica/artifacts/temp",
+    "datapath": "D:/Domotica/artifacts/Debug/Plugins",
+    "systempath": "D:/Domotica/artifacts/Debug",
+    "proxystubpath": "D:/Domotica/artifacts/ProxyStubs/Debug",
     "communicator": "127.0.0.1:62000",
     "redirect": "Service/Controller/UI",
     "tracing": [
         {
-            "module": "Plugin_SecurityAgent",
+            "module": "Plugin_VirtualControl",
             "enabled": true
         },
         {
@@ -101,10 +101,17 @@
                         "max":1
                     },
                     {
-                        "id":12,
-                        "source":"/KleineSchuur/DagLichtSensor",
-                        "min":30,
-                        "max":5000
+                        "id": 12,
+                        "source": "/KleineSchuur/DagLichtSensor",
+                        "min": 30,
+                        "max": 5000
+                    },
+                    {
+                        "id": 20,
+                        "period": "Hour",
+                        "frequency": 30,
+                        "dutycycle": 25,
+                        "destination": "/KleineSchuur/Switch"
                     },
                     {
                         "id":100,
@@ -140,39 +147,66 @@
             "callsign": "IOControl",
             "locator": "libIOControl.so",
             "classname": "IOControl",
-            "autostart": false,
+            "autostart": true,
             "configuration": {
-                "port": "\\\\.\\COM10",
-                "pins": [
-                    {
-                        "id": 14,
-                        "comment": "B6",
-                        "mode": "Both"
-                    },
-                    {
-                        "id": 15,
-                        "comment": "B7",
-                        "mode": "Output"
-                    }
-                ]
+                "port": "\\\\.\\COM5",
+              "pins": [
+                {
+                  "id": 1,
+                  "comment": "A1",
+                  "mode": "Input",
+                  "min": 0,
+                  "max":  "1023"
+                },
+                {
+                  "id": 10,
+                  "comment": "B2",
+                  "mode": "Output"
+                },
+                {
+                  "id": 17,
+                  "comment": "C1",
+                  "mode": "Output"
+                },
+                {
+                  "id": 16,
+                  "comment": "C0",
+                  "mode": "Both"
+                }
+              ]
             }
         },
         {
             "callsign": "OneWireControl",
             "locator": "libOneWireControl.so",
             "classname": "OneWireControl",
-            "autostart": false,
+            "autostart": true,
             "configuration": {
-                "port": "\\\\.\\COM17"
+              "port": "\\\\.\\COM5",
+              "devices": [
+                {
+                  "address": "0x28-FF0E8B701404-FE",
+                  "type": "DS1621",
+                  "bvariant": true
+                }
+              ]
             }
         },
         {
             "callsign": "I2CControl",
             "locator": "libI2CControl.so",
             "classname": "I2CControl",
-            "autostart": false,
+            "autostart": true,
             "configuration": {
-                "port": "\\\\.\\COM17"
+                "port": "\\\\.\\COM5",
+                "devices": [
+                    {
+                      "address": 35,
+                      "type": "BH1750",
+                      "maxwait": true,
+                      "period": 5
+                    }
+                ]
             }
         },
         {
