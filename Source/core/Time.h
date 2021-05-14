@@ -221,6 +221,7 @@ namespace Core {
         string ToISO8601(const bool localTime) const;
         string ToTimeOnly(const bool localTime) const;
         Time ToLocal() const;
+        Time ToUTC() const;
 
         static Time Now();
         inline static bool FromString(const string& buffer, const bool localTime, Time& element)

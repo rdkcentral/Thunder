@@ -97,7 +97,7 @@ target_link_libraries(${TEST_RUNNER_NAME}
     ${CMAKE_THREAD_LIBS_INIT}
     WPEFrameworkCore
     WPEFrameworkTracing
-    WPEFrameworkProtocols
+    WPEFrameworkWebSocket
 )
 
 install(

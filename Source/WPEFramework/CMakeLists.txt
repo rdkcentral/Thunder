@@ -57,6 +57,8 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
+          ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
+          ${NAMESPACE}COM::${NAMESPACE}COM
         )
         
 if(PROCESSCONTAINERS)
@@ -67,19 +69,6 @@ if(PROCESSCONTAINERS)
         PUBLIC
             PROCESSCONTAINERS_ENABLED=1)
 endif(PROCESSCONTAINERS)
-
-if (PROTOCOLS)
-    target_link_libraries(${TARGET}
-            PRIVATE
-              ${NAMESPACE}Protocols::${NAMESPACE}Protocols
-            )
-else()
-    target_link_libraries(${TARGET}
-            PRIVATE
-              ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
-              ${NAMESPACE}COM::${NAMESPACE}COM
-            )
-endif ()
 
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11

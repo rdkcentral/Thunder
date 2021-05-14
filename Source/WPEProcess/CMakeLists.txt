@@ -43,6 +43,7 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
+          ${NAMESPACE}COM::${NAMESPACE}COM
         )
         
 if (WARNING_REPORTING)
@@ -51,19 +52,6 @@ if (WARNING_REPORTING)
               ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting
             )
 endif()
-
-if (PROTOCOLS)
-    target_link_libraries(${TARGET}
-            PRIVATE
-              ${NAMESPACE}Protocols::${NAMESPACE}Protocols
-            )
-else()
-    target_link_libraries(${TARGET}
-            PRIVATE
-              ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
-              ${NAMESPACE}COM::${NAMESPACE}COM
-            )
-endif ()
 
 if(BREAKPAD_FOUND)
     add_definitions(-DUSE_BREAKPAD=1 -D__STDC_FORMAT_MACROS)
