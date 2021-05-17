@@ -27,17 +27,13 @@ option(BLUETOOTH
 option(BROADCAST
         "Include the broadcasting library." OFF)
 option(WEBSOCKET
-        "Include the websocket library." OFF)
-option(PROTOCOLS
-        "Include the protocols library." ON)
+        "Include the websocket library." ON)
 option(TRACING
         "Include the tracing library." ON)
 option(PROFILER
         "Include the profiler library." OFF)
 option(COM
-        "Include the COM library." OFF)
-option(PROTOCOLS
-        "Include Protocols lib." ON)
+        "Include the COM library." ON)
 option(PROCESS
         "Include the COM hosting process executable." ON)
 option(PROXY_STUB
