@@ -2,7 +2,7 @@
 
 A C++ platform abstraction layer for generic functionality.
 
-### Thunder dependencies
+#Thunder dependencies
 After the JsonGenerator.py and StubGenerator.py were modified to run with the python 3.5 version, some action might be required. When using buildroot or yocto, no action is necessary. Upon running these scripts manually or on Windows, make sure python 3.5 or higher is used, like so:
 ```Shell
 $ python --version
@@ -12,90 +12,122 @@ You might also need to fulfill a requirement of the **jsonref** library, with th
 $ pip install jsonref
 ``` 
 
-### Thunder Options
-**Platforms:**
-* INTELCE
-* RPI
-* PC_UNIX
-* PC_WINDOWS
-* EOS
-* DAWN
-* Xi5
-
-**Thunder options:**
-*  -DCORE=ON ,Include the generics library.
-*  -DCRYPTALGO=ON ,Include the encyption algorithm library.
-*  -DPROTOCOLS=ON ,Include the protocols library.
-*  -DTRACING=ON ,Include the tracing library.
-*  -DPLUGINS=ON ,Include the plugin library.
-*  -DDEBUG=ON ,Enable debug build for Thunder.
-*  -DWCHAR_SUPPORT=ON ,Enable support for WCHAR in Thunder.
-
 **Internal plugins**
 * [Controller](Source/WPEFramework/doc/ControllerPlugin.md)
 
-**Linux (Desktop) Build**
+## Linux (Desktop) Build
+---
 
 These instructions should work on Raspberry PI or any Linux distro. 
 
-Setup root build and install
+Note: All our projects can be custom configured with extra cmake (```-D```) options. To get a list of the posible project specific options add ```-L``` to the ```cmake``` commands below. 
 
+### **Build and install**
+---
+#### **1. Setup a workspace**
+   
 ```shell
-export THUNDER_ROOT=$HOME/thunder
+export THUNDER_ROOT=${HOME}/thunder
 export THUNDER_INSTALL_DIR=${THUNDER_ROOT}/install
 mkdir -p ${THUNDER_INSTALL_DIR}
-```
-
-Clone source
-
-```shell
 cd ${THUNDER_ROOT}
-git clone https://github.com/rdkcentral/Thunder.git
 ```
 
-Build and install Tools
+#### **2. Thunder**
+1. Get Source
 
+      ```shell
+      git clone https://github.com/rdkcentral/Thunder.git
+      ```
+
+2. Build and install tools
+
+      Note: Thunder tools need to be installed before building Thunder
+
+      ```shell
+      cmake -HThunder/Tools -Bbuild/ThunderTools \
+            -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}/usr \
+            -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/tools/cmake \
+            -DGENERIC_CMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/tools/cmake 
+
+      make -C build/ThunderTools && make -C build/ThunderTools install
+      ```
+
+3. Build and install Thunder
+
+      Note: -DBUILD_TYPE options are: ```Production/Release/ReleaseSymbols/DebugOptimized/Debug```
+
+      ```shell
+      cmake -HThunder -Bbuild/Thunder \
+            -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}/usr \
+            -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/tools/cmake \
+            -DBUILD_TYPE=Debug -DBINDING=127.0.0.1 -DPORT=55555
+
+      make -C build/Thunder && make -C build/Thunder install
+      ```
+
+#### **3. Thunder Interfaces**
+   
 ```shell
-cd ${THUNDER_ROOT}/Thunder/Tools
-mkdir build
-
-cd build
-cmake -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR} \
-      -DGENERIC_CMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/include/WPEFramework/cmake/modules ..
-      
-make; make install
-```
-
-Build and install Thunder
-```shell
-cd ${THUNDER_ROOT}/Thunder
-mkdir build
-
-cd build
-cmake -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR} \
-      -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/include/WPEFramework/cmake/modules \
-      -DBUILD_TYPE=Debug -DBINDING=127.0.0.1 -DVIRTUALINPUT=on ..
-      
-make; make install
-```
-
-**ThunderInterfaces**
-
-```shell
-cd ${THUNDER_ROOT}
 git clone https://github.com/rdkcentral/ThunderInterfaces
 
-cd ${THUNDER_ROOT}/ThunderInterfaces
-mkdir build
+cmake -HThunderInterfaces -Bbuild/ThunderInterfaces \
+      -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}/usr \
+      -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/tools/cmake \
 
-cd build
-cmake -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}  \
-      -DBUILD_TYPE=Debug\
-      -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/include/WPEFramework/cmake/modules ..
-make; make install
+make -C build/ThunderInterfaces && make -C build/ThunderInterfaces install
 ```
 
-**WINDOWS Build, using Visual Studio 2019**
+#### **4. Thunder Client Libraries**
+   
+```shell
+git clone https://github.com/rdkcentral/ThunderClientLibraries.git
+
+cmake -HThunderClientLibraries -Bbuild/ThunderClientLibraries \
+      -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}/usr \
+      -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/tools/cmake \
+      -DVIRTUALINPUT=ON
+
+make -C build/ThunderClientLibraries && make -C build/ThunderClientLibraries install
+```
+#### **5. Thunder WebUI**
+
+Note: The WebUI is not supporting a full out of tree build. 
+
+```shell
+git clone https://github.com/rdkcentral/ThunderUI.git
+
+cmake -HThunderUI -BThunderUI/build \
+      -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}/usr \
+      -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/tools/cmake \
+
+make -C ThunderUI/build && make -C ThunderUI/build install
+```
+
+#### **6. Thunder Nano Services**
+
+```shell
+git clone https://github.com/rdkcentral/ThunderNanoServices.git
+
+cmake -HThunderNanoServices -Bbuild/ThunderNanoServices \
+      -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}/usr \
+      -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/tools/cmake \
+      -DPLUGIN_DICTIONARY=ON
+
+make -C build/ThunderNanoServices && make -C build/ThunderNanoServices install
+```
+### **Use Thunder**
+---
+1. Run 
+      ```shell
+      PATH=${THUNDER_INSTALL_DIR}/usr/bin:${PATH} \
+      LD_LIBRARY_PATH=${THUNDER_INSTALL_DIR}/usr/lib:${LD_LIBRARY_PATH} \
+      WPEFramework -c ${THUNDER_INSTALL_DIR}/etc/WPEFramework/config.json
+      ```
+2. Open ```http://127.0.0.1:55555``` in a browser.
+
+## WINDOWS Build, using Visual Studio 2019
+---
 
 The default solution is setup in such away that it can run and load 
 the Thunder and Thunder Nano Services (capable of running in Windows)

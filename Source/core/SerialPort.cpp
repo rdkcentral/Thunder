@@ -224,17 +224,31 @@ namespace Core {
                     SerialPort* port = (*index);
 
                     if (port != nullptr) {
-                        if ((::WaitForSingleObject(port->m_ReadInfo.hEvent, 0) == WAIT_OBJECT_0) && (::GetOverlappedResult(port->Descriptor(), &(port->m_ReadInfo), &info, FALSE))) {
+                        if (::WaitForSingleObject(port->m_ReadInfo.hEvent, 0) == WAIT_OBJECT_0) {
+
                             ::ResetEvent(port->m_ReadInfo.hEvent);
 
-                            ASSERT((info == 0) || (info == 1));
+                            if (::GetOverlappedResult(port->Descriptor(), &(port->m_ReadInfo), &info, FALSE)) {
 
-                            port->Read(static_cast<uint16_t>(info));
+                                ASSERT((info == 0) || (info == 1));
+
+                                port->Read(static_cast<uint16_t>(info));
+                            }
+                            else {
+                                TRACE_L1("Oopsie daisy, could not read Serial Port :-(");
+                            }
                         }
 
-                        if ((::WaitForSingleObject(port->m_WriteInfo.hEvent, 0) == WAIT_OBJECT_0) && (::GetOverlappedResult(port->Descriptor(), &(port->m_WriteInfo), &info, FALSE))) {
+                        if (::WaitForSingleObject(port->m_WriteInfo.hEvent, 0) == WAIT_OBJECT_0) {
+
                             ::ResetEvent(port->m_WriteInfo.hEvent);
-                            port->Write(static_cast<uint16_t>(info));
+
+                            if (::GetOverlappedResult(port->Descriptor(), &(port->m_WriteInfo), &info, FALSE)) {
+                                port->Write(static_cast<uint16_t>(info));
+                            }
+                            else {
+                                TRACE_L1("Oopsie daisy, could not write Serial Port :-(");
+                            }
                         }
                     }
 
