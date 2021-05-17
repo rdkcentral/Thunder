@@ -28,7 +28,6 @@
 
 #include <../include/bluetooth/bluetooth.h>
 #include <../include/bluetooth/hci.h>
-#include <../include/bluetooth/hci_lib.h>
 #include <../include/bluetooth/mgmt.h>
 #include <../include/bluetooth/l2cap.h>
 
