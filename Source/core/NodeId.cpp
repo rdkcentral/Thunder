@@ -396,7 +396,7 @@ namespace Core {
     {
 
         // Copy the struct info
-        memcpy(&m_structInfo.IPV4Socket, &rInfo, sizeof(m_structInfo.IPV4Socket));
+        memcpy(&m_structInfo.IPV4Socket, &rInfo, std::min(sizeof(rInfo), sizeof(m_structInfo.IPV4Socket)));
 
         m_hostName.clear();
 
@@ -409,7 +409,7 @@ namespace Core {
     {
 
         // Copy the struct info
-        memcpy(&m_structInfo.IPV6Socket, &rInfo, sizeof(m_structInfo.IPV6Socket));
+        memcpy(&m_structInfo.IPV6Socket, &rInfo,std::min(sizeof(rInfo), sizeof(m_structInfo.IPV6Socket)));
 
         m_hostName.clear();
 
