@@ -27,6 +27,7 @@ add_library(${TARGET} SHARED
         Profile.cpp
         UUID.cpp
         Definitions.cpp
+        BluetoothUtils.cpp
         Module.cpp)
 
 set(PUBLIC_HEADERS
@@ -36,6 +37,7 @@ set(PUBLIC_HEADERS
         Profile.h
         UUID.h
         Module.h
+        BluetoothUtils.h
         bluetooth.h
         )
 
@@ -49,8 +51,6 @@ target_link_libraries(${TARGET}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
-        PRIVATE
-          ${BLUEZ_LIBRARIES}
         )
 
 set_target_properties(${TARGET} PROPERTIES

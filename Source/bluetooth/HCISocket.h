@@ -21,6 +21,7 @@
 
 #include "Module.h"
 #include "UUID.h"
+#include "BluetoothUtils.h"
 
 namespace WPEFramework {
 
@@ -35,7 +36,7 @@ namespace Bluetooth {
         Address(const uint16_t deviceId)
             : _length(0)
         {
-            if (hci_devba(deviceId, &_address) >= 0) {
+            if (BtUtilsHciDevba(deviceId, &_address) >= 0) {
                 _length = sizeof(_address);
             }
         }
@@ -48,7 +49,7 @@ namespace Bluetooth {
             : _length(sizeof(_address))
         {
             ::memset(&_address, 0, sizeof(_address));
-            str2ba(address, &_address);
+            BtUtilsStr2Ba(address, &_address);
         }
         Address(const Address& address)
             : _length(address._length)
@@ -78,7 +79,7 @@ namespace Bluetooth {
         }
         static Address Default()
         {
-            int deviceId = hci_get_route(nullptr);
+            int deviceId = BtUtilsHciGetRoute(nullptr);
             return ((deviceId >= 0) ? Address(static_cast<uint16_t>(deviceId)) : Address());
         }
         static Address AnyInterface()
@@ -102,7 +103,7 @@ namespace Bluetooth {
         Core::NodeId NodeId(const uint16_t channelType) const
         {
             Core::NodeId result;
-            int deviceId = hci_get_route(const_cast<bdaddr_t*>(Data()));
+            int deviceId = BtUtilsHciGetRoute(const_cast<bdaddr_t*>(Data()));
 
             if (deviceId >= 0) {
                 result = Core::NodeId(static_cast<uint16_t>(deviceId), channelType);
@@ -124,7 +125,7 @@ namespace Bluetooth {
         }
         void OUI(char oui[9]) const
         {
-            ba2oui(Data(), oui);
+            BtUtilsBa2Oui(Data(), oui);
         }
         string ToString() const
         {
