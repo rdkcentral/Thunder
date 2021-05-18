@@ -572,7 +572,7 @@ namespace Core {
             // If it is not the last one, we have to move...
             if (a_Index < m_Current) {
                 // Kill the entry, (again dirty but quick).
-                memcpy(&(m_List[a_Index]), &(m_List[a_Index + 1]), (m_Current - a_Index) * sizeof(IReferenceCounted*));
+                memmove(&(m_List[a_Index]), &(m_List[a_Index + 1]), (m_Current - a_Index) * sizeof(IReferenceCounted*));
             }
 
 #ifdef __DEBUG__
@@ -594,7 +594,7 @@ namespace Core {
             // If it is not the last one, we have to move...
             if (a_Index < m_Current) {
                 // Kill the entry, (again dirty but quick).
-                memcpy(&(m_List[a_Index]), &(m_List[a_Index + 1]), (m_Current - a_Index) * sizeof(IReferenceCounted*));
+                memmove(&(m_List[a_Index]), &(m_List[a_Index + 1]), (m_Current - a_Index) * sizeof(IReferenceCounted*));
             }
 
 #ifdef __DEBUG__
@@ -638,7 +638,7 @@ namespace Core {
                 // If it is not the last one, we have to move...
                 if ((a_Start + a_Count) < m_Current) {
                     // Kill the entry, (again dirty but quick).
-                    memcpy(&(m_List[a_Start]), &(m_List[a_Start + a_Count + 1]), (a_Count * sizeof(IReferenceCounted*)));
+                    memmove(&(m_List[a_Start]), &(m_List[a_Start + a_Count + 1]), (a_Count * sizeof(IReferenceCounted*)));
 
 #ifdef __DEBUG__
                     // Set all no longer used element to nullptr
