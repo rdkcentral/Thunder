@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -27,6 +27,10 @@
 
 namespace WPEFramework {
 namespace Plugin {
+
+    using JSONCallstack =  Web::JSONBodyType < Core::JSON::ArrayType < Core::JSON::String > >;
+
+    extern Core::ProxyType<JSONCallstack> Callstack (const Core::WorkerPool* workerPool, const uint32_t index);
 
     class Controller : public PluginHost::IPlugin, public PluginHost::IWeb, public PluginHost::JSONRPC {
     private:
@@ -276,8 +280,8 @@ namespace Plugin {
 
             return (service);
         }
-		void WorkerPoolMetaData(PluginHost::MetaData::Server& data) const
-		{
+	void WorkerPoolMetaData(PluginHost::MetaData::Server& data) const
+	{
             const Core::WorkerPool::Metadata& snapshot = Core::WorkerPool::Instance().Snapshot();
 
             data.PendingRequests = snapshot.Pending;
@@ -289,7 +293,7 @@ namespace Plugin {
                 newElement = snapshot.Slot[teller];
                 data.ThreadPoolRuns.Add(newElement);
             }
-		}
+	}
         void SubSystems();
         void SubSystems(Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator& index);
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;
