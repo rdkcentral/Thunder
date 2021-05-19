@@ -17,10 +17,11 @@
  * limitations under the License.
  */
 
-#ifndef __WEBSOCKET_H
-#define __WEBSOCKET_H
+#pragma once
 
-#include "Module.h"
+#ifndef MODULE_NAME
+#error "Please define a MODULE_NAME that describes the binary/library you are building."
+#endif
 
 #include "URL.h"
 #include "JSONWebToken.h"
@@ -36,5 +37,3 @@
 #ifdef __WINDOWS__
 #pragma comment(lib, "websocket.lib")
 #endif
-
-#endif // __WEBSOCKET_H
