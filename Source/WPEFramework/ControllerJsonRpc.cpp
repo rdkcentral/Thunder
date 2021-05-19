@@ -523,7 +523,7 @@ namespace Plugin {
         Notify(_T("statechange"), params);
     }
 
-    // Property: status - Information about plugins, including their configurations
+    // Property: callstack - Information the callstack associated with the given index 0 - <Max number of threads in the threadpool>
     // Return codes:
     //  - ERROR_NONE: Success
     //  - ERROR_UNKNOWN_KEY: The index (uint8_t) is not supplied
