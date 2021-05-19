@@ -49,10 +49,12 @@ namespace Plugin {
         Property<Core::JSON::String>(_T("environment"), &Controller::get_environment, nullptr, this);
         Property<Core::JSON::String>(_T("configuration"), &Controller::get_configuration, &Controller::set_configuration, this);
         Register<CloneParamsInfo,Core::JSON::String>(_T("clone"), &Controller::endpoint_clone, this);
+        Property<Core::JSON::ArrayType<Core::JSON::String>>(_T("callstack"), &Controller::get_callstack, nullptr, this);
     }
 
     void Controller::UnregisterAll()
     {
+        Unregister(_T("callstack"));
         Unregister(_T("harakiri"));
         Unregister(_T("delete"));
         Unregister(_T("storeconfig"));
@@ -519,6 +521,32 @@ namespace Plugin {
         params.Reason = reason;
 
         Notify(_T("statechange"), params);
+    }
+
+    // Property: status - Information about plugins, including their configurations
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_UNKNOWN_KEY: The index (uint8_t) is not supplied
+    uint32_t Controller::get_callstack(const string& index, Core::JSON::ArrayType<Core::JSON::String>& response) const
+    {
+        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+
+        if (index.empty() == true) {
+            uint8_t indexValue = Core::NumberType<uint8_t>(Core::TextFragment(index)).Value();
+
+            result = Core::ERROR_NONE;
+            std::list<string> stackList;
+
+            ThreadId threadId = _pluginServer->WorkerPool().Id(indexValue);
+
+            DumpCallStack(threadId, stackList);
+
+            for (const string& entry : stackList) {
+                response.Add() = entry;
+            }
+        }
+
+        return result;
     }
 
     // Note: event_all and event_subsytemchange are handled internally within the Controller

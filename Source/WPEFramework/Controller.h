@@ -30,8 +30,6 @@ namespace Plugin {
 
     using JSONCallstack =  Web::JSONBodyType < Core::JSON::ArrayType < Core::JSON::String > >;
 
-    extern Core::ProxyType<JSONCallstack> Callstack (const Core::WorkerPool* workerPool, const uint32_t index);
-
     class Controller : public PluginHost::IPlugin, public PluginHost::IWeb, public PluginHost::JSONRPC {
     private:
         class Sink : public PluginHost::IPlugin::INotification,
@@ -313,6 +311,7 @@ namespace Plugin {
         uint32_t endpoint_storeconfig();
         uint32_t endpoint_delete(const JsonData::Controller::DeleteParamsData& params);
         uint32_t endpoint_harakiri();
+        uint32_t get_callstack(const string& index, Core::JSON::ArrayType<Core::JSON::String>& response) const;
         uint32_t get_status(const string& index, Core::JSON::ArrayType<PluginHost::MetaData::Service>& response) const;
         uint32_t get_links(Core::JSON::ArrayType<PluginHost::MetaData::Channel>& response) const;
         uint32_t get_processinfo(PluginHost::MetaData::Server& response) const;

@@ -35,21 +35,6 @@ namespace Plugin {
     static Core::ProxyPoolType<JSONCallstack> jsonBodyCallstackFactory(1);
     static Core::ProxyPoolType<Web::TextBody> jsonBodyTextFactory(2);
 
-    Core::ProxyType<JSONCallstack> Callstack (const Core::WorkerPool* workerPool, const uint32_t index) {
-        Core::ProxyType<JSONCallstack> response = jsonBodyCallstackFactory.Element();
-        std::list<string> stackList;
-
-        ThreadId threadId = workerPool->Id(index);
-
-        DumpCallStack(threadId, stackList);
-
-        for (const string& entry : stackList) {
-            response->Add() = entry;
-        }
-
-        return (response);
-    }
-
     void Controller::SubSystems(Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator& index)
     {
         PluginHost::ISubSystem* subSystem = _service->SubSystems();
@@ -273,11 +258,22 @@ namespace Plugin {
         } else if (index.Current() == _T ("Callstack")) {
             if (index.Next() == false) {
                 result->ErrorCode = Web::STATUS_BAD_REQUEST;
-                result->Message = _T("Probe functionality not enabled!");
+                result->Message = _T("Please supply an index for the callstack you need!");
             }
             else {
                 Core::NumberType<uint8_t> threadIndex(index.Current());
-                Core::ProxyType<JSONCallstack> response = Callstack (&(_pluginServer->WorkerPool()), threadIndex.Value());
+                Core::ProxyType<JSONCallstack> response = jsonBodyCallstackFactory.Element();
+
+                std::list<string> stackList;
+
+                ThreadId threadId = _pluginServer->WorkerPool().Id(threadIndex.Value());
+
+                DumpCallStack(threadId, stackList);
+
+                for (const string& entry : stackList) {
+                    response->Add() = entry;
+                }
+
                 result->Body(Core::proxy_cast<Web::IBody>(response));
             }
         } else if (index.Current() == _T("Discovery")) {
