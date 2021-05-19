@@ -17,10 +17,11 @@
  * limitations under the License.
  */
 
-#ifndef __BROADCAST_H
-#define __BROADCAST_H
+#pragma once
 
-#include "Module.h"
+#ifndef MODULE_NAME
+#error "Please define a MODULE_NAME that describes the binary/library you are building."
+#endif
 
 #include "Definitions.h"
 #include "Descriptors.h"
@@ -38,5 +39,3 @@
 #ifdef __WINDOWS__
 #pragma comment(lib, "broadcast.lib")
 #endif
-
-#endif // __BROADCAST_H
