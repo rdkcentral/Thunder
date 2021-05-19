@@ -1,7 +1,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ add_library(${TARGET} SHARED
         Profile.cpp
         UUID.cpp
         Definitions.cpp
+        BluetoothUtils.cpp
         Module.cpp)
 
 set(PUBLIC_HEADERS
@@ -36,6 +37,7 @@ set(PUBLIC_HEADERS
         Profile.h
         UUID.h
         Module.h
+        BluetoothUtils.h
         bluetooth.h
         )
 
@@ -49,8 +51,6 @@ target_link_libraries(${TARGET}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
-        PRIVATE
-          ${BLUEZ_LIBRARIES}
         )
 
 set_target_properties(${TARGET} PROPERTIES
