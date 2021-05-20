@@ -1,7 +1,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -226,6 +226,15 @@ if(ExecInfo_FOUND)
             PRIVATE
               ${LIBEXECINFO_LIBRARY}
             )
+endif()
+
+find_package(Systemd)
+if (SYSTEMD_FOUND)
+    target_link_libraries( ${TARGET}
+        PRIVATE
+        Systemd::Systemd
+    )
+    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DSYSTEMD_FOUND")
 endif()
 
 # ===========================================================================================

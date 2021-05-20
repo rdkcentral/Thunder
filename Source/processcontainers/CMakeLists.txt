@@ -1,7 +1,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,7 +28,8 @@ option(PROCESSCONTAINERS_CLIB
         "Use c-library backend." OFF)
 option(PROCESSCONTAINERS_DOBBY
         "Use Dobby backend." OFF)
-
+option(PROCESSCONTAINERS_AWC
+        "Use AWC/slauncher - One Middleware backend." OFF)
 
 # Construct a library object
 add_library(${TARGET} SHARED
@@ -48,6 +49,8 @@ elseif(PROCESSCONTAINERS_CLIB)
         target_sources(${TARGET} PRIVATE implementations/RunCImplementation/RunCImplementation.cpp)
 elseif(PROCESSCONTAINERS_DOBBY)
         target_sources(${TARGET} PRIVATE implementations/DobbyImplementation/DobbyImplementation.cpp)
+elseif(PROCESSCONTAINERS_AWC)
+        target_sources(${TARGET} PRIVATE implementations/AWCImplementation/AWCImplementation.cpp)
 endif()
 
 set(PUBLIC_HEADERS
@@ -135,6 +138,19 @@ elseif (PROCESSCONTAINERS_DOBBY)
                 PRIVATE
                 ${JSONCPP_INCLUDE_DIRS}
         )
+elseif (PROCESSCONTAINERS_AWC)
+        find_package(LXC REQUIRED)
+        find_package(Slauncher REQUIRED)
+        target_link_libraries(${TARGET}
+                PRIVATE
+                Slauncher::Slauncher
+                CompileSettingsDebug::CompileSettingsDebug
+                )
+
+        target_include_directories( ${TARGET}
+                PRIVATE
+                Slauncher::Slauncher
+                )
 endif()
 
 install(

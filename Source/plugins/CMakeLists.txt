@@ -1,7 +1,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -59,20 +59,9 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
+          ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
+          ${NAMESPACE}COM::${NAMESPACE}COM
         )
-
-if(PROTOCOLS)
-    target_link_libraries(${TARGET}
-            PUBLIC
-              ${NAMESPACE}Protocols::${NAMESPACE}Protocols
-            )
-else()
-    target_link_libraries(${TARGET}
-            PUBLIC
-              ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
-              ${NAMESPACE}COM::${NAMESPACE}COM
-            )
-endif()
 
 if (WARNING_REPORTING)
     target_link_libraries(${TARGET}

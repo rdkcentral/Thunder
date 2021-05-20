@@ -97,7 +97,7 @@
 		"cmake.configureSettings": {
 			"CMAKE_INSTALL_PREFIX": "${env:HOME}/Thunder/install/usr",
 			"CMAKE_MODULE_PATH":"${env:HOME}/Thunder/tools/cmake",
-			"GENERIC_CMAKE_MODULE_PATH":"${env:HOME}/Thunder/tools/cmake/test",
+			"GENERIC_CMAKE_MODULE_PATH":"${env:HOME}/Thunder/tools/cmake",
 			"BUILD_TYPE":"Debug",
 			"HIDE_NON_EXTERNAL_SYMBOLS":"ON",
 		}

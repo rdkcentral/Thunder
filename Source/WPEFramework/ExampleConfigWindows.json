@@ -1,18 +1,18 @@
 {
     "port": 25555,
-    "bind": "0.0.0.0",
+    "interface": "wifi",
     "idletime": 60,
     "ipv6": false,
-    "persistentpath": "C:/Projects/Domotica/artifacts/Persistent",
-    "volatilepath": "C:/Projects/Domotica/artifacts/temp",
-    "datapath": "C:/Projects/Domotica/artifacts/Release/Plugins",
-    "systempath": "C:/Projects/Domotica/artifacts/Release",
-    "proxystubpath": "C:/Projects/Domotica/artifacts/ProxyStubs/Release",
+    "persistentpath": "D:/Domotica/artifacts/Persistent",
+    "volatilepath": "D:/Domotica/artifacts/temp",
+    "datapath": "D:/Domotica/artifacts/Debug/Plugins",
+    "systempath": "D:/Domotica/artifacts/Debug",
+    "proxystubpath": "D:/Domotica/artifacts/ProxyStubs/Debug",
     "communicator": "127.0.0.1:62000",
     "redirect": "Service/Controller/UI",
     "tracing": [
         {
-            "module": "Plugin_SecurityAgent",
+            "module": "Plugin_ZigbeeControl",
             "enabled": true
         },
         {
@@ -57,6 +57,15 @@
             "autostart": true
         },
         {
+            "callsign": "ZigbeeControl",
+            "locator": "libZigbeeControl.so",
+            "classname": "ZigbeeControl",
+            "autostart": true,
+            "configuration": {
+                "port": "\\\\.\\COM6"
+            }
+        },
+        {
             "callsign": "WebBridge",
             "locator": "libWebBridge.so",
             "classname": "WebBridge",
@@ -66,7 +75,7 @@
             "callsign": "QuizzMaster",
             "locator": "libQuizzMaster.so",
             "classname": "QuizzMaster",
-            "autostart": true
+            "autostart": false
         },
         {
             "callsign": "StateController",
@@ -83,30 +92,57 @@
                 "sunriseset": 365,
                 "virtuals": [
                     {
-                        "id": 1,
-                        "passive": false,
-                        "min": "0",
-                        "max": "1"
+                        "id":1,
+                        "passive":false,
+                        "min":0,
+                        "max":1
                     },
                     {
-                        "id": 2,
-                        "passive": false,
-                        "min": "0",
-                        "max": "100"
+                        "id":2,
+                        "passive":false,
+                        "min":0,
+                        "max":100
                     },
                     {
-                        "id": 4,
-                        "passive": false,
-                        "min": "0",
-                        "max": "1"
+                        "id":11,
+                        "passive":false,
+                        "min":0,
+                        "max":1
                     },
                     {
-                        "id": 5,
-                        "passive": false,
-                        "min": "0",
-                        "max": "1"
+                        "id": 12,
+                        "source": "/KleineSchuur/DagLichtSensor",
+                        "min": 30,
+                        "max": 5000
+                    },
+                    {
+                        "id": 20,
+                        "period": "Hour",
+                        "frequency": 30,
+                        "dutycycle": 25,
+                        "destination": "/KleineSchuur/Switch"
+                    },
+                    {
+                        "id":100,
+                        "schedules":[
+                            {
+                                "start": {
+                                    "time":"23:35",
+                                    "day":"Saterday"
+                                },
+                                "end":"3:21"
+                            },
+                            {
+                                "start":"20:25",
+                                "end":"20:30"
+                            },
+                            {
+                                "start":"16:35",
+                                "end":"17:40",
+                                "days":"Workdays"
+                            }
+                        ]
                     }
-
                 ]
             }
         },
@@ -122,17 +158,29 @@
             "classname": "IOControl",
             "autostart": false,
             "configuration": {
-                "port": "\\\\.\\COM10",
+                "port": "\\\\.\\COM5",
                 "pins": [
                     {
-                        "id": 14,
-                        "comment": "B6",
-                        "mode": "Both"
+                        "id": 1,
+                        "comment": "A1",
+                        "mode": "Input",
+                        "min": 0,
+                        "max":  "1023"
                     },
                     {
-                        "id": 15,
-                        "comment": "B7",
+                        "id": 10,
+                        "comment": "B2",
                         "mode": "Output"
+                    },
+                    {
+                        "id": 17,
+                        "comment": "C1",
+                        "mode": "Output"
+                    },
+                    {
+                        "id": 16,
+                        "comment": "C0",
+                        "mode": "Both"
                     }
                 ]
             }
@@ -143,7 +191,14 @@
             "classname": "OneWireControl",
             "autostart": false,
             "configuration": {
-                "port": "\\\\.\\COM17"
+              "port": "\\\\.\\COM5",
+              "devices": [
+                {
+                  "address": "0x28-FF0E8B701404-FE",
+                  "type": "DS1621",
+                  "bvariant": true
+                }
+              ]
             }
         },
         {
@@ -152,7 +207,15 @@
             "classname": "I2CControl",
             "autostart": false,
             "configuration": {
-                "port": "\\\\.\\COM17"
+                "port": "\\\\.\\COM5",
+                "devices": [
+                    {
+                      "address": 35,
+                      "type": "BH1750",
+                      "maxwait": true,
+                      "period": 5
+                    }
+                ]
             }
         },
         {

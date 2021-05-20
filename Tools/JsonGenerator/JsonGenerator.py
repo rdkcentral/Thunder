@@ -3,7 +3,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,12 +33,12 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pard
 import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 
-VERSION = "1.7.2"
+VERSION = "1.8.2"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
 VERBOSE = False
-NO_DUP_WARNINGS = False
+GENERATED_JSON = False
 
 
 class Trace:
@@ -47,12 +47,12 @@ class Trace:
         if os.name == "posix":
             self.cwarn = "\033[33mWARNING"
             self.cerror = "\033[31mERROR"
-            self.cstyle = "\033[37mSTYLE"
+            self.cdocissue = "\033[37mDOC-ISSUE"
             self.creset = "\033[0m"
         else:
             self.cwarn = "WARNING:"
             self.cerror = "ERROR:"
-            self.cstyle = "STYLE:"
+            self.cdocissue = "DOC-ISSUE:"
             self.creset = ""
 
     def __Print(self, text):
@@ -69,9 +69,9 @@ class Trace:
     def Warn(self, text):
         self.__Print("%s: %s%s %s" % (self.file, self.cwarn, self.creset, text))
 
-    def Style(self, text):
-        if VERIFY and VERBOSE:
-            self.__Print("%s: %s%s %s" % (self.file, self.cstyle, self.creset, text))
+    def DocIssue(self, text):
+        if DOC_ISSUES:
+            self.__Print("%s: %s%s %s" % (self.file, self.cdocissue, self.creset, text))
 
     def Error(self, text):
         self.errors += 1
@@ -80,6 +80,11 @@ class Trace:
     def Success(self, text):
         self.__Print("Success: {}".format(text))
 
+    def Ellipsis(text, front=True):
+        if front:
+            return (text[:32] + '...') if len(text) > 32 else text
+        else:
+            return ("..." + text[-32:]) if len(text) > 32 else text
 
 trace = Trace()
 
@@ -91,7 +96,7 @@ except:
     sys.exit(1)
 
 INDENT_SIZE = 4
-VERIFY = True
+DOC_ISSUES = True
 ALWAYS_COPYCTOR = False
 KEEP_EMPTY = False
 CLASSNAME_FROM_REF = True
@@ -147,8 +152,13 @@ def MakeEnum(type):
 class JsonType():
     def __init__(self, name, parent, schema, included=None):
         self.name = schema["original"] if "original" in schema else name
-        if parent and not self.name.islower():
-            trace.Warn("Mixed case identifiers are supported, however all-lowercase names are recommended ('%s')" % self.name)
+        if parent:
+            if not self.name.replace("_","").isalnum():
+                trace.Error("'%s': invalid characters in identifier name" % self.name)
+            if not self.name.islower():
+                trace.Warn("'%s': mixed case identifiers are supported, however all-lowercase names are recommended " % self.name)
+            elif "_" in self.name and not GENERATED_JSON:
+                trace.Warn("'%s': snake_case identifiers are supported, however flat case names are recommended " % self.name)
         self.true_name = name
         self.schema = schema
         self.duplicate = False
@@ -167,16 +177,13 @@ class JsonType():
         if isinstance(schema, jsonref.JsonRef) and "description" in schema.__reference__:
             self.description = schema.__reference__["description"]
         # do some sanity check on the description text
-        if self.name.endswith(" "):
-            trace.Style("Item '%s' name ends with a whitespace" % self.name)
         if self.description and not isinstance(self, JsonMethod):
             if self.description.endswith("."):
-                trace.Style("Item '%s' description ends with a dot (\"%s\")" % (self.name, self.description))
-            if self.description.endswith(" "):
-                trace.Style("Item '%s' description ends with a whitespace" % self.name)
+                trace.DocIssue("'%s': use sentence case capitalization and no period for parameter descriptions (\"%s\")" % (self.name, Trace.Ellipsis(self.description, False)))
+            if self.description.endswith(" ") or self.description.startswith(" "):
+                trace.DocIssue("'%s': parameter description has leading or trailing whitespace" % self.name)
             if not self.description[0].isupper() and self.description[0].isalpha():
-                trace.Style("Item '%s' description does not start with a capital letter (\"%s\")" %
-                            (self.name, self.description))
+                trace.DocIssue("'%s': use sentence case capitalization and no period for parameter descriptions (\"%s\")" % (self.name, Trace.Ellipsis(self.description)))
         if "default" in schema:
             self.default = schema["default"]
 
@@ -532,7 +539,7 @@ class JsonArray(JsonType):
 class JsonMethod(JsonObject):
     def __init__(self, name, parent, schema, included=None):
         if '.' in name:
-            trace.Warn("Methods names containing full designator are deprecated, include name only ('%s')" % name)
+            trace.Warn("'%s': method names containing full designator are deprecated (include name only)" % name)
             objName = name.rsplit(".", 1)[1]
         else:
             objName = name
@@ -780,7 +787,6 @@ def LoadInterface(file, includePaths = []):
         schema["$schema"] = "interface.json.schema"
         schema["jsonrpc"] = "2.0"
         schema["dorpc"] = True
-        schema["nodupwarnings"] = True
         schema["interfaceonly"] = True
         schema["fromheader"] = True
         schema["configuration"] = { "nodefault" : True }
@@ -888,7 +894,7 @@ def LoadInterface(file, includePaths = []):
                     egidx = var.meta.brief.index("(e.g.") if "(e.g." in var.meta.brief else None
                     properties["description"] = var.meta.brief[0:egidx].strip()
                     if egidx and ")" in var.meta.brief[egidx + 1:]:
-                        properties["example"] = var.meta.brief[egidx + 5:var.meta.brief.index(")")].strip()
+                        properties["example"] = var.meta.brief[egidx + 5:var.meta.brief.rfind(")")].strip()
                 return properties
 
             def EventParameters(vars):
@@ -909,7 +915,7 @@ def LoadInterface(file, includePaths = []):
                     events = ResolveTypedef(resolved, events, var.type)
                 return events
 
-            def BuildParameters(vars, prop=False):
+            def BuildParameters(vars, json_extended, prop=False):
                 params = {"type": "object"}
                 properties = OrderedDict()
                 required = []
@@ -917,13 +923,16 @@ def LoadInterface(file, includePaths = []):
                     if var.meta.input or not var.meta.output:
                         if not var.type.IsConst():
                             if not var.meta.input:
-                                trace.Warn("%s: non-const parameter assumed to be input (forgot 'const'?)" % var.name)
+                                trace.Warn("'%s': non-const parameter assumed to be input (forgot 'const'?)" % var.name)
                             elif not var.meta.output:
-                                trace.Warn("%s: non-const parameter marked with @in tag (forgot 'const'?)" % var.name)
+                                trace.Warn("'%s': non-const parameter marked with @in tag (forgot 'const'?)" % var.name)
                         var_name = var.meta.text if var.meta.text else var.name.lower()
                         if var_name.startswith("__unnamed"):
                             raise CppParseError(var, "unnamed parameter, can't deduce parameter name")
                         properties[var_name] = ConvertParameter(var)
+                        properties[var_name]["original"] = var.name.lower()
+                        if not prop and "description" not in properties[var_name]:
+                            trace.DocIssue("'%s': parameter is missing description" % var_name)
                         required.append(var_name)
                 params["properties"] = properties
                 params["required"] = required
@@ -936,7 +945,13 @@ def LoadInterface(file, includePaths = []):
                     else:
                         return None
                 else:
-                    return params
+                    if (len(properties) == 0):
+                        return {}
+                    elif (len(properties) == 1) and not json_extended:
+                        # New way of things: if only one parameter present then omit the outer object
+                        return list(properties.values())[0]
+                    else:
+                        return params
 
             def BuildResult(vars, prop = False):
                 params = {"type": "object"}
@@ -952,7 +967,7 @@ def LoadInterface(file, includePaths = []):
                         if var_name.startswith("__unnamed") and len(vars) > 1:
                             raise CppParseError(var, "unnamed parameter, can't deduce parameter name")
                         properties[var_name] = ConvertParameter(var)
-                        properties[var_name]["original"] = var.name
+                        properties[var_name]["original"] = var.name.lower()
                         required.append(var_name)
                 params["properties"] = properties
                 if len(properties) == 1:
@@ -973,7 +988,9 @@ def LoadInterface(file, includePaths = []):
 
             event_params = EventParameters(method.vars)
             for e in event_params:
-                event_interfaces.add(ProxyStubGenerator.Interface.Interface(ResolveTypedef(e).type, 0, file))
+                exists = any(x.obj.type == e.type.type for x in event_interfaces)
+                if not exists:
+                    event_interfaces.add(ProxyStubGenerator.Interface.Interface(ResolveTypedef(e).type, 0, file))
 
             obj = None
 
@@ -1008,7 +1025,7 @@ def LoadInterface(file, includePaths = []):
                             else:
                                 obj["writeonly"] = True
                             if "params" not in obj:
-                                obj["params"] = BuildParameters([method.vars[0]], True)
+                                obj["params"] = BuildParameters([method.vars[0]], face.obj.is_extended, True)
                             if obj["params"] == None:
                                 raise CppParseError(method.vars[0], "property setter method must have one input parameter")
                 else:
@@ -1017,10 +1034,11 @@ def LoadInterface(file, includePaths = []):
             elif method.IsPureVirtual() and not event_params:
                 if isinstance(method.retval.type.Type(), ProxyStubGenerator.CppParser.Void) or (isinstance(method.retval.type.Type(), ProxyStubGenerator.CppParser.Integer) and method.retval.type.Type().size == "long"):
                     obj = OrderedDict()
-                    params = BuildParameters(method.vars)
+                    params = BuildParameters(method.vars, face.obj.is_extended)
                     if "properties" in params and params["properties"]:
                         if method.name.lower() in [x.lower() for x in params["required"]]:
                             raise CppParseError(method, "parameters must not use the same name as the method")
+                    if params:
                         obj["params"] = params
                     obj["result"] = BuildResult(method.vars)
                     obj["cppname"] = method_name
@@ -1033,6 +1051,8 @@ def LoadInterface(file, includePaths = []):
                     obj["deprecated"] = True
                 if method.retval.meta.brief:
                     obj["summary"] = method.retval.meta.brief
+                elif (prefix + method_name_lower) not in properties:
+                    trace.DocIssue("'%s': %s is missing brief description" % (method.name, "property" if method.retval.meta.is_property else "method"))
                 if method.retval.meta.details:
                     obj["description"] = method.retval.meta.details
                 if method.retval.meta.retval:
@@ -1050,14 +1070,16 @@ def LoadInterface(file, includePaths = []):
                 if method.IsPureVirtual() and method.omit == False:
                     obj = OrderedDict()
                     obj["cppname"] = method.name
-                    params = BuildParameters(method.vars)
+                    params = BuildParameters(method.vars, f.obj.is_extended)
                     if method.retval.meta.is_deprecated:
                         obj["deprecated"] = True
                     if method.retval.meta.brief:
                         obj["summary"] = method.retval.meta.brief
+                    else:
+                        trace.DocIssue("'%s': event is missing brief description" % method.name)
                     if method.retval.meta.details:
                         obj["description"] = method.retval.meta.details
-                    if "properties" in params and params["properties"]:
+                    if params:
                         obj["params"] = params
                     events[prefix + method.name.lower()] = obj
 
@@ -1123,29 +1145,80 @@ class ObjectTracker:
         self.Reset()
 
     def Add(self, newObj):
-        def __Compare(lhs, rhs):
+        def __CompareObject(lhs, rhs):
+            def __CompareType(lhs, rhs):
+                if rhs["type"] != lhs["type"]:
+                    return False
+                elif "size" in lhs:
+                    if "size" in rhs:
+                        if lhs["size"] != rhs["size"]:
+                            return False
+                    elif "size" != 32:
+                        return False
+                elif "size" in rhs:
+                    if rhs["size"] != 32:
+                        return False
+                elif "signed" in lhs:
+                    if "signed" in rhs:
+                        if lhs["signed"] != rhs["signed"]:
+                            return False
+                    elif lhs["signed"] != False:
+                        return False
+                elif "signed" in rhs:
+                    if rhs["signed"] != False:
+                        return False
+                elif "enum" in lhs:
+                    if "enum" in rhs:
+                        if lhs["enum"] != rhs["enum"]:
+                            return False
+                    else:
+                        return False
+                elif "enum" in rhs:
+                    return False
+                elif "enumvalues" in lhs:
+                    if "enumvalues" in rhs:
+                        if lhs["enumvalues"] != rhs["enumvalues"]:
+                            return False
+                    else:
+                        return False
+                elif "enumvalues" in rhs:
+                    return False
+                elif "enumids" in lhs:
+                    if "enumids" in rhs:
+                        if lhs["enumids"] != rhs["enumids"]:
+                            return False
+                    else:
+                        return False
+                elif "enumids" in rhs:
+                    return False
+                elif "items" in lhs:
+                    if "items" in rhs:
+                        if not __CompareType(lhs["items"], rhs["items"]):
+                            return False
+                    else:
+                        return False
+                elif "items" in rhs:
+                    return False
+                elif "properties" in lhs:
+                    if "properties" in rhs:
+                        if not __CompareObject(lhs["properties"], rhs["properties"]):
+                            return False
+                    else:
+                        return False
+                return True
+
             # NOTE: Two objects are considered identical if they have the same property names and types only!
             for name, prop in lhs.items():
                 if name not in rhs:
                     return False
-                elif rhs[name]["type"] != prop["type"]:
-                    return False
-                elif "enum" in prop:
-                    if "enum" in rhs[name]:
-                        if prop["enum"] != rhs[name]["enum"]:
-                            return False
-                    else:
+                else:
+                    if not __CompareType(prop, rhs[name]):
                         return False
             for name, prop in rhs.items():
                 if name not in lhs:
                     return False
-                elif lhs[name]["type"] != prop["type"]:
-                    return False
-                elif "enum" in prop:
-                    if "enum" in lhs[name]:
-                        if prop["enum"] != lhs[name]["enum"]:
-                            return False
-                    else:
+                else:
+                    if not __CompareType(prop, lhs[name]):
                         return False
             return True
 
@@ -1154,8 +1227,8 @@ class ObjectTracker:
             is_ref = IsInRef(newObj)
             props = newObj.Schema()["properties"]
             for obj in self.Objects()[:-1]:
-                if __Compare(obj.Schema()["properties"], props):
-                    if not NO_DUP_WARNINGS and (not is_ref or not IsInRef(obj)):
+                if __CompareObject(obj.Schema()["properties"], props):
+                    if not GENERATED_JSON and not NO_DUP_WARNINGS and (not is_ref or not IsInRef(obj)):
                         trace.Warn("Duplicate object '%s' (same as '%s') - consider using $ref" %
                                    (newObj.OrigName(), obj.OrigName()))
                     return obj
@@ -1197,7 +1270,7 @@ class EnumTracker(ObjectTracker):
             is_ref = IsInRef(newObj)
             for obj in self.Objects()[:-1]:
                 if __Compare(obj.Schema(), newObj.Schema()):
-                    if not NO_DUP_WARNINGS and (not is_ref or not IsInRef(obj)):
+                    if not GENERATED_JSON and not NO_DUP_WARNINGS and (not is_ref or not IsInRef(obj)):
                         trace.Warn("Duplicate enums '%s' (same as '%s') - consider using $ref" %
                                    (newObj.OrigName(), obj.OrigName()))
                     return obj
@@ -1297,10 +1370,16 @@ def EmitEnumRegs(root, emit, header_file, if_file):
 def EmitEvent(emit, root, event, static=False):
     emit.Line("// Event: %s" % event.Headline())
     params = event.Properties()[0].CppType()
-    par = "const string& id, " if event.HasSendif() else ""
-    par = par + ", ".join(
-        map(lambda x: "const " + (GetNamespace(root, x, False) if not static else "") + x.CppStdClass() + "& " + x.JsonName(),
-            event.Properties()[0].Properties()))
+    par = ""
+    if params != "void":
+        par = "const string& id, " if event.HasSendif() else ""
+        if event.Properties()[0].Properties():
+            par = par + ", ".join(
+                map(lambda x: "const " + (GetNamespace(root, x, False) if not static else "") + x.CppStdClass() + "& " + x.JsonName(),
+                    event.Properties()[0].Properties()))
+        else:
+            x = event.Properties()[0]
+            par = par + "const " + (GetNamespace(root, x, False) if not static else "") + x.CppStdClass() + "& " + x.JsonName()
     if not static:
         line = "void %s::%s(%s)" % (root.JsonName(), event.MethodName(), par)
     else:
@@ -1310,13 +1389,17 @@ def EmitEvent(emit, root, event, static=False):
     emit.Line(line)
     emit.Line("{")
     emit.Indent()
+
     if params != "void":
         emit.Line("%s params;" % params)
-        for p in event.Properties()[0].Properties():
-            if isinstance(p, JsonEnum):
-                emit.Line("params.%s = static_cast<%s>(%s);" % (p.CppName(), GetNamespace(root, p, False) + p.CppClass(), p.JsonName()))
-            else:
-                emit.Line("params.%s = %s;" % (p.CppName(), p.JsonName()))
+        if event.Properties()[0].Properties():
+            for p in event.Properties()[0].Properties():
+                if isinstance(p, JsonEnum):
+                    emit.Line("params.%s = static_cast<%s>(%s);" % (p.CppName(), GetNamespace(root, p, False) + p.CppClass(), p.JsonName()))
+                else:
+                    emit.Line("params.%s = %s;" % (p.CppName(), p.JsonName()))
+        else:
+            emit.Line("params = %s;" % event.Properties()[0].JsonName())
         emit.Line()
     if event.HasSendif():
         emit.Line('Notify(_T("%s")%s, [&](const string& designator) -> bool {' %
@@ -1431,9 +1514,9 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                     if isinstance(t[0], JsonString) and "length" in t[0].schema:
                         for w, q in vars.items():
                             if w == t[0].schema["length"] and q[1] == 2:
-                                trace.Warn("%s: parameter marked pointed to by @length is output only" % q[0].name)
+                                trace.Warn("'%s': parameter marked pointed to by @length is output only" % q[0].name)
 
-                # Emit temporary variables and deserializing off JSON data
+                # Emit temporary variables and deserializing of JSON data
                 for v, t in vars.items():
                     # C-style buffers
                     if isinstance(t[0], JsonString) and "length" in t[0].schema:
@@ -1541,7 +1624,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                 if not m.writeonly:
                     Invoke(void, response, not m.readonly)
             else:
-                Invoke(params, response, False, params.CppName() + '.')
+                Invoke(params, response, False, (params.CppName() + '.') if isinstance(params, JsonObject) else None)
 
             if isinstance(m, JsonProperty) and not m.readonly:
                 if not m.writeonly:
@@ -1688,7 +1771,11 @@ def EmitHelperCode(root, emit, header_file):
                 params = __NsName(method.Properties()[0])
                 par = ""
                 if params != "void":
-                    par = ", ".join(map(lambda x: "const " + GetNamespace(root, x) + x.CppStdClass() + "& " + x.JsonName(), method.Properties()[0].Properties()))
+                    if method.Properties()[0].Properties():
+                        par = ", ".join(map(lambda x: "const " + GetNamespace(root, x) + x.CppStdClass() + "& " + x.JsonName(), method.Properties()[0].Properties()))
+                    else:
+                        x = method.Properties()[0]
+                        par = "const " + GetNamespace(root, x) + x.CppStdClass() + "& " + x.JsonName()
                 line = ('void %s(%s%s);' %
                         (method.MethodName(), "const string& id, " if method.HasSendif() else "", par))
                 if method.included_from:
@@ -2152,7 +2239,7 @@ def CreateDocument(schema, path):
                     MdRow([prefix, obj["type"], row])
                 if obj["type"] == "object":
                     if "required" not in obj and name and len(obj["properties"]) > 1:
-                        trace.Warn('No "required" field for object "%s" (assuming all members optional)' % name)
+                        trace.Warn("'%s': no 'required' field present (assuming all members optional)" % name)
                     for pname, props in obj["properties"].items():
                         __TableObj(pname, props, parentName + "/" + name, obj, prefix, False)
                 elif obj["type"] == "array":
@@ -2580,8 +2667,6 @@ def CreateDocument(schema, path):
                                 if "i.e" in descr:
                                     descr = descr[0:descr.index("i.e") - 1]
                                 descr = descr.split(".", 1)[0] if "." in descr else descr
-                            else:
-                                trace.Warn("No description for '%s' %s provided" % (method, header))
                             MdRow([link(header + "." + (method.rsplit(".", 1)[1] if "." in method else method)) + access, descr])
                             emitted = True
                         skip_list.append(method)
@@ -2832,7 +2917,12 @@ if __name__ == "__main__":
                            dest="no_style_warnings",
                            action="store_true",
                            default=False,
-                           help="suppress style/wording warnings (default: show all warnings)")
+                           help="suppress documentation issues (default: show all documentation issues)")
+    argparser.add_argument("--no-duplicates-warnings",
+                           dest="no_duplicates_warnings",
+                           action="store_true",
+                           default=False,
+                           help="suppress duplicate object warnings (default: show all duplicate object warnings)")
     argparser.add_argument("--include",
                            dest="extra_include",
                            metavar="FILE",
@@ -2854,7 +2944,8 @@ if __name__ == "__main__":
     args = argparser.parse_args(sys.argv[1:])
 
     VERBOSE = args.verbose
-    VERIFY = not args.no_style_warnings
+    DOC_ISSUES = not args.no_style_warnings
+    NO_DUP_WARNINGS = args.no_duplicates_warnings
     INDENT_SIZE = args.indent_size
     ALWAYS_COPYCTOR = args.copy_ctor
     KEEP_EMPTY = args.keep_empty
@@ -2899,8 +2990,8 @@ if __name__ == "__main__":
                     schemas = [LoadSchema(path, args.if_dir, args.cppif_dir, args.includePaths)]
                 for schema in schemas:
                     if schema:
-                        warnings = NO_DUP_WARNINGS
-                        NO_DUP_WARNINGS = "nodupwarnings" in schema
+                        warnings = GENERATED_JSON
+                        GENERATED_JSON = "dorpc" in schema
                         output_path = path
                         if args.output_dir:
                             if (args.output_dir[0]) == '/':
@@ -2917,7 +3008,7 @@ if __name__ == "__main__":
                                     else schema["info"]["class"] if "class" in schema["info"] \
                                     else os.path.basename(output_path)
                             CreateDocument(schema, os.path.join(os.path.dirname(output_path), title.replace(" ", "")))
-                        NO_DUP_WARNINGS = warnings
+                        GENERATED_JSON = warnings
             except JsonParseError as err:
                 trace.Error(str(err))
             except RuntimeError as err:

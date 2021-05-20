@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -221,6 +221,7 @@ namespace Core {
         string ToISO8601(const bool localTime) const;
         string ToTimeOnly(const bool localTime) const;
         Time ToLocal() const;
+        Time ToUTC() const;
 
         static Time Now();
         inline static bool FromString(const string& buffer, const bool localTime, Time& element)

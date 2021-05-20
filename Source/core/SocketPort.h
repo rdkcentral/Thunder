@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -269,6 +269,7 @@ namespace Core {
         uint16_t m_SendBytes;
         uint16_t m_SendOffset;
         uint32_t m_Interface;
+        bool m_SystemdSocket;
     };
 
     class EXTERNAL SocketStream : public SocketPort {

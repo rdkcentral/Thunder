@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,40 +87,41 @@ namespace Core {
         memset(&m_structInfo, 0xFF, sizeof(m_structInfo));
 
         m_structInfo.IPV4Socket.sin_family = TYPE_EMPTY;
+        m_structInfo.IPV4Socket.in_protocol = 0;
     }
 
-    NodeId::NodeId(const struct sockaddr_in& rInfo)
+    NodeId::NodeId(const struct sockaddr_in& rInfo, const uint32_t protocol)
         : m_hostName()
     {
-
         *this = rInfo;
+        m_structInfo.IPV4Socket.in_protocol = protocol;
 
         ASSERT(m_structInfo.IPV4Socket.sin_family == AF_INET);
     }
 
-    NodeId::NodeId(const struct in_addr& value)
+    NodeId::NodeId(const struct in_addr& value, const uint32_t protocol)
         : m_hostName()
     {
-
         struct sockaddr_in rInfo;
         ::memset(&rInfo, 0, sizeof(rInfo));
         rInfo.sin_family = AF_INET;
         rInfo.sin_addr = value;
 
         *this = rInfo;
+        m_structInfo.IPV4Socket.in_protocol = protocol;
 
         ASSERT(m_structInfo.IPV4Socket.sin_family == AF_INET);
     }
-    NodeId::NodeId(const struct sockaddr_in6& rInfo)
+    NodeId::NodeId(const struct sockaddr_in6& rInfo, const uint32_t protocol)
         : m_hostName()
     {
-
         *this = rInfo;
+        m_structInfo.IPV6Socket.in_protocol = protocol;
 
         ASSERT(m_structInfo.IPV6Socket.sin6_family == AF_INET6);
     }
 
-    NodeId::NodeId(const struct in6_addr& value)
+    NodeId::NodeId(const struct in6_addr& value, const uint32_t protocol)
         : m_hostName()
     {
 
@@ -131,6 +132,7 @@ namespace Core {
         rInfo.sin6_addr = value;
 
         *this = rInfo;
+        m_structInfo.IPV6Socket.in_protocol = protocol;
 
         ASSERT(m_structInfo.IPV6Socket.sin6_family == AF_INET6);
     }
@@ -222,7 +224,8 @@ namespace Core {
     NodeId::NodeId(
         const TCHAR strHostName[],
         const uint16_t nPortNumber,
-        const enumType defaultType)
+        const enumType defaultType,
+        const uint32_t protocol)
         : m_hostName()
     {
 
@@ -235,11 +238,19 @@ namespace Core {
 
         // Set the Port number used. (Struct of IPV4 and IPV6 are equeal w.r.t. port number)
         m_structInfo.IPV4Socket.sin_port = htons(nPortNumber);
+
+        if (m_structInfo.IPV4Socket.sin_family == AF_INET) {
+            m_structInfo.IPV4Socket.in_protocol = protocol;
+        }
+        else if (m_structInfo.IPV4Socket.sin_family == AF_INET6) {
+            m_structInfo.IPV6Socket.in_protocol = protocol;
+        }
     }
 
     NodeId::NodeId(
         const TCHAR strHostName[],
-        const enumType defaultType)
+        const enumType defaultType,
+        const uint32_t protocol)
         : m_hostName()
     {
 
@@ -303,6 +314,13 @@ namespace Core {
 
                 // Set the Port number used.
                 m_structInfo.IPV4Socket.sin_port = 0;
+            }
+
+            if (m_structInfo.IPV4Socket.sin_family == AF_INET) {
+                m_structInfo.IPV4Socket.in_protocol = protocol;
+            }
+            else if (m_structInfo.IPV4Socket.sin_family == AF_INET6) {
+                m_structInfo.IPV6Socket.in_protocol = protocol;
             }
         }
     }
@@ -378,7 +396,8 @@ namespace Core {
     {
 
         // Copy the struct info
-        memcpy(&m_structInfo.IPV4Socket, &rInfo, sizeof(m_structInfo.IPV4Socket));
+        memcpy(&m_structInfo.IPV4Socket, &rInfo, sizeof(sockaddr_in));
+        m_structInfo.IPV4Socket.in_protocol = 0;
 
         m_hostName.clear();
 
@@ -391,7 +410,8 @@ namespace Core {
     {
 
         // Copy the struct info
-        memcpy(&m_structInfo.IPV6Socket, &rInfo, sizeof(m_structInfo.IPV6Socket));
+        memcpy(&m_structInfo.IPV6Socket, &rInfo, sizeof(sockaddr_in6));
+        m_structInfo.IPV6Socket.in_protocol = 0;
 
         m_hostName.clear();
 
@@ -404,7 +424,8 @@ namespace Core {
     NodeId::operator=(const struct sockaddr_un& rInfo)
     {
         // Copy the struct info
-        memcpy(&m_structInfo.DomainSocket, &rInfo, sizeof(m_structInfo.DomainSocket));
+        memcpy(&m_structInfo.DomainSocket, &rInfo, sizeof(sockaddr_un));
+        m_structInfo.DomainSocket.un_access = ~0;
 
         m_hostName = rInfo.sun_path;
 
