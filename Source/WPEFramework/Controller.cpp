@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ namespace Plugin {
     // Signing will be done on BackOffice level. The Controller I/F will never be exposed to the outside world.
     static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData>> jsonBodyMetaDataFactory(1);
     static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData::Service>> jsonBodyServiceFactory(1);
+    static Core::ProxyPoolType<JSONCallstack> jsonBodyCallstackFactory(1);
     static Core::ProxyPoolType<Web::TextBody> jsonBodyTextFactory(2);
 
     void Controller::SubSystems(Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator& index)
@@ -254,6 +255,27 @@ namespace Plugin {
             WorkerPoolMetaData(response->Process);
 
             result->Body(Core::proxy_cast<Web::IBody>(response));
+        } else if (index.Current() == _T ("Callstack")) {
+            if (index.Next() == false) {
+                result->ErrorCode = Web::STATUS_BAD_REQUEST;
+                result->Message = _T("Please supply an index for the callstack you need!");
+            }
+            else {
+                Core::NumberType<uint8_t> threadIndex(index.Current());
+                Core::ProxyType<JSONCallstack> response = jsonBodyCallstackFactory.Element();
+
+                std::list<string> stackList;
+
+                ThreadId threadId = _pluginServer->WorkerPool().Id(threadIndex.Value());
+
+                DumpCallStack(threadId, stackList);
+
+                for (const string& entry : stackList) {
+                    response->Add() = entry;
+                }
+
+                result->Body(Core::proxy_cast<Web::IBody>(response));
+            }
         } else if (index.Current() == _T("Discovery")) {
 
             if (_probe == nullptr) {
