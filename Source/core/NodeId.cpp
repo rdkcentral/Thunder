@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -396,7 +396,8 @@ namespace Core {
     {
 
         // Copy the struct info
-        memcpy(&m_structInfo.IPV4Socket, &rInfo, sizeof(m_structInfo.IPV4Socket));
+        memcpy(&m_structInfo.IPV4Socket, &rInfo, sizeof(sockaddr_in));
+        m_structInfo.IPV4Socket.in_protocol = 0;
 
         m_hostName.clear();
 
@@ -409,7 +410,8 @@ namespace Core {
     {
 
         // Copy the struct info
-        memcpy(&m_structInfo.IPV6Socket, &rInfo, sizeof(m_structInfo.IPV6Socket));
+        memcpy(&m_structInfo.IPV6Socket, &rInfo, sizeof(sockaddr_in6));
+        m_structInfo.IPV6Socket.in_protocol = 0;
 
         m_hostName.clear();
 
@@ -422,7 +424,8 @@ namespace Core {
     NodeId::operator=(const struct sockaddr_un& rInfo)
     {
         // Copy the struct info
-        memcpy(&m_structInfo.DomainSocket, &rInfo, sizeof(m_structInfo.DomainSocket));
+        memcpy(&m_structInfo.DomainSocket, &rInfo, sizeof(sockaddr_un));
+        m_structInfo.DomainSocket.un_access = ~0;
 
         m_hostName = rInfo.sun_path;
 

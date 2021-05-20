@@ -1,7 +1,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,17 +42,10 @@ include(CmakeHelperFunctions)
 set(PLATFORM "PC_UNIX" CACHE STRING
         "Defines on what platform the application will run")
 
-option(INSTALL_LOCALLY "Install this project locally" OFF)
-
 set(NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")
 
 find_package(ProxyStubGenerator REQUIRED)
 find_package(JsonGenerator REQUIRED)
-
-if (INSTALL_LOCALLY)
-    set(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/install")
-    set(CMAKE_PREFIX_PATH "${PROJECT_BINARY_DIR}/cmake")
-endif()
 
 # make sure others can make use of the JSON creation tools as well!!!
 configure_file( "${CMAKE_SOURCE_DIR}/cmake/project.cmake.in"
@@ -92,7 +85,8 @@ endif()
 
 if(BUILD_TESTS)
   enable_testing()
-  add_subdirectory(Tests/unit)
 endif()
+
+add_subdirectory(Tests)
 
 add_subdirectory(Source)
