@@ -153,7 +153,7 @@ namespace PluginHost {
             virtual uint8_t Identifier(const uint8_t length, uint8_t buffer[] /*@maxlength:length @out*/) const = 0;
             virtual string Architecture() const = 0;
             virtual string Chipset() const = 0;
-            virtual string FirmwareVersion() const = 0;  
+            virtual string FirmwareVersion() const = 0;
         };
 
         // Time synchronisation reporting
@@ -175,8 +175,14 @@ namespace PluginHost {
         struct EXTERNAL IProvisioning : public RPC::IStringIterator {
 
             enum {
+                ID = RPC::ID_SUBSYSTEM_PROVISIONING
+            };
+
+            enum {
                 SUBSYSTEM = PROVISIONING
             };
+
+            virtual string Storage() const = 0;
         };
 
         // Decryption reporting
