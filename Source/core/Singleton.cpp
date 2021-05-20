@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,15 +48,9 @@ namespace Core {
         // Iterate over all singletons and delete...
         while (m_Singletons.empty() == false) {
             Singleton* element(*(m_Singletons.begin()));
-            TRACE_L1("Destructing %s", element->ImplementationName().c_str());
+            TRACE_L1("Singleton destructing %s", element->ImplementationName().c_str());
             delete element;
         }
-        //// Iterate over all singletons and delete...
-        //for(std::list<Singleton*>::const_iterator it = m_Singletons.begin(); it != m_Singletons.end(); ++it)
-        //{
-        //  delete *it;
-        //}
-        //m_Singletons.clear();
     }
 
     void Singleton::SingletonList::Register(Singleton* singleton)
