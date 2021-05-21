@@ -17,8 +17,11 @@
  * limitations under the License.
  */
 
-#ifndef __PLUGIN_FRAMEWORK_SUPPORT_H
-#define __PLUGIN_FRAMEWORK_SUPPORT_H
+#pragma once
+
+#ifndef MODULE_NAME
+#error "Please define a MODULE_NAME that describes the binary/library you are building."
+#endif
 
 #include "Module.h"
 #include "Config.h"
@@ -38,5 +41,3 @@
 #ifdef __WINDOWS__
 #pragma comment(lib, "plugins.lib")
 #endif
-
-#endif // __PLUGIN_FRAMEWORK_SUPPORT_H
