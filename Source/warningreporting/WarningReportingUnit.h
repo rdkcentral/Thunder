@@ -207,20 +207,27 @@ namespace WarningReporting {
             m_DirectOut = enabled;
         }
         inline void Announce() {
-            ASSERT (m_OutputChannel != nullptr);
-            m_OutputChannel->Ring();
+            if (m_OutputChannel != nullptr) {
+                m_OutputChannel->Ring();
+            }
         }
         inline void Acknowledge() {
-            ASSERT (m_OutputChannel != nullptr);
-            m_OutputChannel->Acknowledge();
+            if (m_OutputChannel != nullptr) {
+                m_OutputChannel->Acknowledge();
+            }
         }
         inline uint32_t Wait (const uint32_t waitTime) {
-            ASSERT (m_OutputChannel != nullptr);
-            return (m_OutputChannel->Wait(waitTime));
+            uint32_t status = Core::ERROR_UNAVAILABLE;
+            if (m_OutputChannel != nullptr) {
+                status = (m_OutputChannel->Wait(waitTime));
+            }
+            return status;
         }
         inline void Relinquish() {
-            ASSERT(m_OutputChannel != nullptr);
-            return (m_OutputChannel->Relinquish());
+            if (m_OutputChannel != nullptr) {
+                m_OutputChannel->Relinquish();
+            }
+            return;
         }
 
     private:

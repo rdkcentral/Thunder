@@ -140,7 +140,7 @@ namespace WarningReporting {
     {
         m_Admin.Lock();
 
-        ASSERT(m_OutputChannel != nullptr);
+        //ASSERT(m_OutputChannel != nullptr);
 
         if (m_OutputChannel != nullptr) {
             delete m_OutputChannel;
