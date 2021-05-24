@@ -1,3 +1,5 @@
+#include "Module.h"
+
 #include <core/core.h>
 #include <cryptalgo/cryptalgo.h>
 #include <websocket/websocket.h>
