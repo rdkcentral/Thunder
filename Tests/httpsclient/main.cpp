@@ -27,7 +27,7 @@ public:
     }
     virtual ~WebClient()
     {
-        Close(WPEFramework::Core::infinite);
+        BaseClass::Close(WPEFramework::Core::infinite);
     }
 
 public:
@@ -42,7 +42,6 @@ public:
         string received;
         element->ToString(received);
         printf(_T("Received: %s\n"), received.c_str());
-        // Close(0);
     }
     virtual void Send(const Core::ProxyType<WPEFramework::Web::Request>& response)
     {
@@ -55,17 +54,55 @@ public:
         printf(_T("State change: "));
         if (IsOpen()) {
             printf(_T("[SecureSocket] Open - OK\n"));
+        } else if (IsClosed()) {
+            printf(_T("[SecureSocket] Close - OK\n"));
+        }
+    }
+    void Submit()
+    {
+        if (IsOpen()) {
             Core::ProxyType<WPEFramework::Web::Request> request = Core::ProxyType<WPEFramework::Web::Request>::Create();
 
-            printf("Attempted to open external connection!!!!.\n");
+            printf("Creating Request!!!!.\n");
             request->Verb = Web::Request::HTTP_GET;
             request->Host = _T("httpbin.org");
             request->Path = _T("/get");
             request->Query = _T("test=OK&this=me");
-            Submit(request);
-        } else {
-            printf(_T("[SecureSocket] Closed - OK\n"));
+            printf("Submitting Request!!!!.\n");
+            BaseClass::Submit(request);
         }
+    }
+    void SubmitAuthRequest()
+    {
+        if (IsOpen()) {
+            Core::ProxyType<WPEFramework::Web::Request> request = Core::ProxyType<WPEFramework::Web::Request>::Create();
+
+            printf("Creating Auth Request!!!!.\n");
+            request->Verb = Web::Request::HTTP_GET;
+            request->Host = _T("httpbin.org");
+            request->Path = _T("/basic-auth/user/passwd");
+
+            string input("user:passwd");
+            uint16_t inputLength = static_cast<uint16_t>(input.length());
+            uint16_t outputLength = (((inputLength * 8) / 6) + 4) * sizeof(TCHAR);
+            TCHAR output[(((inputLength * 8) / 6) + 4) * sizeof(TCHAR)];
+            uint16_t convertedLength = Core::URL::Base64Encode(
+                reinterpret_cast<const uint8_t*>(input.c_str()), inputLength * sizeof(TCHAR),
+                output, sizeof(output));
+
+            string header = string(output, convertedLength);
+            header +='=';
+            request->WebToken = Web::Authorization(Web::Authorization::BASIC, _T(header.c_str()));
+            printf("Submitting Auth Request!!!!.\n");
+            BaseClass::Submit(request);
+        }
+    }
+    void Close()
+    {
+        printf(_T("[SecureSocket] Close - calling\n"));
+        BaseClass::Close(0);
+        while (IsClosed() == false);
+        printf(_T("[SecureSocket] Close - OK\n"));
     }
     Core::ProxyPoolType<Web::TextBody> _textBodyFactory;
 };
@@ -92,8 +129,9 @@ int main(int argc, const char* argv[])
         WebClient webConnector(Core::NodeId("httpbin.org", 443));
         Core::ProxyType<WPEFramework::Web::Request> webRequest(Core::ProxyType<WPEFramework::Web::Request>::Create());
 
-        printf("Ready to start processing events, start with 0 to connect.\n");
+        printf("Ready to start processing events, options to start \n 0 -> connect \n 1 -> disconnect \n 2 -> Submit Request \n 3 -> Submit with Authorization Header \n");
         do {
+            printf("\nEnter Key : ");
             keyPress = toupper(getchar());
 
             switch (keyPress) {
@@ -110,6 +148,19 @@ int main(int argc, const char* argv[])
 
                 break;
             }
+            case '1': {
+                webConnector.Close();
+                break;
+            }
+            case '2': {
+                webConnector.Submit();
+                break;
+            }
+            case '3': {
+                webConnector.SubmitAuthRequest();
+                break;
+            }
+
             }
 
         } while (keyPress != 'Q');

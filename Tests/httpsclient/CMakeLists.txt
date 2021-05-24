@@ -12,7 +12,7 @@ target_link_libraries(httpsclient_test
     PRIVATE
         ${NAMESPACE}Core
         ${NAMESPACE}Cryptalgo
-	${NAMESPACE}Tracing
+        ${NAMESPACE}Tracing
         ${NAMESPACE}WebSocket
 )
 
