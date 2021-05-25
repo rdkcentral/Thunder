@@ -54,6 +54,8 @@ namespace Crypto {
             int32_t Read(uint8_t buffer[], const uint16_t length) const override;
             int32_t Write(const uint8_t buffer[], const uint16_t length) override;
 
+            uint32_t Close(const uint32_t waitTime);
+
             // Methods to extract and insert data into the socket buffers
             uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) override {
                 return (_parent.SendData(dataFrame, maxSendSize));

@@ -58,7 +58,6 @@ SecureSocketPort::Handler::~Handler() {
 }
 
 bool SecureSocketPort::Handler::Initialize() {
-    // _context = SSL_CTX_new(TLS_method());
     _context = SSL_CTX_new(SSLv23_method());
     
     _ssl = SSL_new(static_cast<SSL_CTX*>(_context));
@@ -78,6 +77,11 @@ int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length)
 
 int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t length) {
     return (SSL_write(static_cast<SSL*>(_ssl), buffer, length));
+}
+
+uint32_t SecureSocketPort::Handler::Close(const uint32_t waitTime) {
+    SSL_shutdown(static_cast<SSL*>(_ssl));
+    return(Core::SocketPort::Close(waitTime));
 }
 
 void SecureSocketPort::Handler::Update() {
@@ -106,7 +110,6 @@ void SecureSocketPort::Handler::Update() {
     }
     else if (_ssl != nullptr) {
         _handShaking = IDLE;
-        SSL_shutdown(static_cast<SSL*>(_ssl));
         _parent.StateChange();
     }
 }
