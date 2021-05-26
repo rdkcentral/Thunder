@@ -105,7 +105,29 @@ namespace PluginHost {
             string _firmwareVersion;
         };
 
-        typedef RPC::IteratorType<PluginHost::ISubSystem::IProvisioning> Provisioning;
+        class Provisioning : public RPC::IteratorType<PluginHost::ISubSystem::IProvisioning> {
+        public:
+            Provisioning(const Provisioning&) = delete;
+            Provisioning& operator=(const Provisioning&) = delete;
+
+            Provisioning() = delete;
+
+            Provisioning(PluginHost::ISubSystem::IProvisioning* info)
+                : RPC::IteratorType<PluginHost::ISubSystem::IProvisioning>(info)
+                , _storage(info->Storage())
+            {
+            }
+
+            ~Provisioning() override = default;
+
+            string Storage() const override
+            {
+                return _storage;
+            }
+
+        private:
+            string _storage;
+        };
 
         class Internet : public PluginHost::ISubSystem::IInternet {
         public:

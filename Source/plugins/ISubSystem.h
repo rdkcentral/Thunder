@@ -153,7 +153,7 @@ namespace PluginHost {
             virtual uint8_t Identifier(const uint8_t length, uint8_t buffer[] /*@maxlength:length @out*/) const = 0;
             virtual string Architecture() const = 0;
             virtual string Chipset() const = 0;
-            virtual string FirmwareVersion() const = 0;  
+            virtual string FirmwareVersion() const = 0;
         };
 
         // Time synchronisation reporting
@@ -172,19 +172,43 @@ namespace PluginHost {
         };
 
         // IProvisioning reporting
-        struct EXTERNAL IProvisioning : public RPC::IStringIterator {
+        struct EXTERNAL IProvisioning : virtual public Core::IUnknown, public RPC::IStringIterator {
+
+            enum {
+                ID = RPC::ID_SUBSYSTEM_PROVISIONING
+            };
 
             enum {
                 SUBSYSTEM = PROVISIONING
             };
+
+            virtual string Storage() const = 0;
+
+            virtual bool Next(string& info /* @out */) = 0;
+            virtual bool Previous(string& info /* @out */) = 0;
+            virtual void Reset(const uint32_t position) = 0;
+            virtual bool IsValid() const = 0;
+            virtual uint32_t Count() const = 0;
+            virtual string Current() const = 0;
         };
 
         // Decryption reporting
-        struct EXTERNAL IDecryption : public RPC::IStringIterator {
+        struct EXTERNAL IDecryption : virtual public Core::IUnknown, public RPC::IStringIterator {
+
+            enum {
+                ID = RPC::ID_SUBSYSTEM_DECRYPTION
+            };
 
             enum {
                 SUBSYSTEM = DECRYPTION
             };
+
+            virtual bool Next(string& info /* @out */) = 0;
+            virtual bool Previous(string& info /* @out */) = 0;
+            virtual void Reset(const uint32_t position) = 0;
+            virtual bool IsValid() const = 0;
+            virtual uint32_t Count() const = 0;
+            virtual string Current() const = 0;
         };
 
         virtual ~ISubSystem() = default;
