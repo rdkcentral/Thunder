@@ -398,14 +398,12 @@ namespace Plugin {
                         }
                     } else {
                         //request to update the controller configuration 
-                        if (data.IsValid() == true ){
-                            auto updatedParams= _pluginServer->_config.UpdateConfiguration(*data);
-                            result->ErrorCode = Web::STATUS_OK;
-                            updatedParams.empty()?result->Message = _T("New configuration is not valid"):result->Message = _T(updatedParams+ " have been updated");
-                        } else {
+                        WPEFramework::JsonData::Controller::UpdateConfigurationParamsData newconfig ;
+                        if (data.IsValid() == false || newconfig.FromString(*data)==false ){
                             result->ErrorCode = Web::STATUS_BAD_REQUEST;
-                            result->Message = _T("body data is not valid");
+                            result->Message = _T("body data is not valid"); 
                         }
+                        result->ErrorCode = _pluginServer->_config.UpdateConfiguration(newconfig) == Core::ERROR_NONE ? Web::STATUS_OK : Web::STATUS_BAD_REQUEST ;
                     }
                 } else  {
                     result->ErrorCode = Web::STATUS_BAD_REQUEST;

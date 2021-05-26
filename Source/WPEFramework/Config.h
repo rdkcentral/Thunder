@@ -20,6 +20,7 @@
 #pragma once
 
 #include "Module.h"
+#include "json/JsonData_Controller.h"
 
 namespace WPEFramework {
 
@@ -647,34 +648,29 @@ namespace PluginHost {
         {
             return (_JSONRPCPrefix);
         }
-        inline string UpdateConfiguration(const string& newConfig)  {
-            JsonObject newConfigJson ;
-            string changedConfig;
-            if(newConfigJson.FromString(newConfig) ==false ) {
-                return "";
+
+        inline uint32_t UpdateConfiguration(const WPEFramework::JsonData::Controller::UpdateConfigurationParamsData& newConfig)  {
+
+            if (newConfig.Version.IsSet()==true ) {
+                UpdateVersion(newConfig.Version.Value());
             }
-   
-            if (newConfigJson.HasLabel("version")) {
-                UpdateVersion(newConfigJson["version"].Value());
-                changedConfig+="version";
+     
+            if (newConfig.Prefix.IsSet()==true ) {
+                UpdatePrefix(newConfig.Prefix.Value());
             }
-            if (newConfigJson.HasLabel("prefix")) {
-                UpdatePrefix(newConfigJson["prefix"].Value());
-                changedConfig+=",prefix";
+  
+            if (newConfig.IdleTime.IsSet()==true ) {
+                UpdateIdleTime(newConfig.IdleTime.Value());
             }
-            if (newConfigJson.HasLabel("idleTime")) {
-                UpdateIdleTime((uint16_t)stoi(newConfigJson["idleTime"].Value()));
-                changedConfig+=",idleTime";
+      
+            if (newConfig.Latitude.IsSet()==true ) {
+                UpdateLatitude(newConfig.Latitude.Value());
             }
-            if (newConfigJson.HasLabel("latitude")) {
-                UpdateLatitude((int32_t)stoi(newConfigJson["latitude"].Value()));
-                changedConfig+=",latitude";
+
+            if (newConfig.Longitude.IsSet()== true ) {
+                UpdateLongitude(newConfig.Longitude.Value());
             }
-            if (newConfigJson.HasLabel("longitude")) {
-                UpdateLongitude((int32_t)stoi(newConfigJson["longitude"].Value()));
-                changedConfig+=",longitude";
-            }
-            return changedConfig;
+            return Core::ERROR_NONE;
         }
 #ifdef PROCESSCONTAINERS_ENABLED
         inline const string& ProcessContainersLogging() const {

@@ -303,17 +303,12 @@ namespace Plugin {
     // Return codes:
     //  - ERROR_NONE: Success
     //  - ERROR_GENERAL: Failed to update the configuration
-    uint32_t Controller::endpoint_updateConfiguration(const UpdateConfigurationParamsData& params)
+    uint32_t Controller::endpoint_updateConfiguration(const UpdateConfigurationParamsData& newConfig)
     {
         ASSERT(_pluginServer != nullptr);
-        uint32_t result = Core::ERROR_NONE;
-        string paramsstring;
-        if (params.ToString(paramsstring)==false) {
-            return Core::ERROR_GENERAL;
-        }  
-        _pluginServer->_config.UpdateConfiguration(paramsstring);
+    
+        return  _pluginServer->_config.UpdateConfiguration(newConfig);
         
-        return result;
     }
 
     // Method: harakiri - Reboots the device

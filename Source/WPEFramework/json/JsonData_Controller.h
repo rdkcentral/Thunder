@@ -25,7 +25,7 @@
 #pragma once
 
 #include <core/JSON.h>
-#include "../PluginServer.h"
+//#include "../PluginServer.h"
 #include "../Probe.h"
 
 namespace WPEFramework {
@@ -111,7 +111,7 @@ namespace JsonData {
             {
                 Add(_T("version"), &Version);
                 Add(_T("prefix"),  &Prefix);
-                Add(_T("idleTime"), &idleTime);
+                Add(_T("idleTime"), &IdleTime);
                 Add(_T("latitude"), &Latitude);
                 Add(_T("longitude"), &Longitude);
             }
@@ -122,7 +122,7 @@ namespace JsonData {
         public:
             Core::JSON::String Version; // version of the controller
             Core::JSON::String Prefix;  // prefix of the controller
-            Core::JSON::DecUInt16 idleTime;// idleTime of the controller
+            Core::JSON::DecUInt16 IdleTime;// idleTime of the controller
             Core::JSON::DecUInt32 Latitude; // Latitude of the controller
             Core::JSON::DecUInt32 Longitude; // Longitude of the controller
         }; // class UpdateConfigurationParamsData
