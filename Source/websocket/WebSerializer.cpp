@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -311,6 +311,7 @@ ENUM_CONVERSION_END(Crypto::EnumHashType)
 ENUM_CONVERSION_BEGIN(Web::Authorization::type)
 
     { Web::Authorization::BEARER, _TXT("Bearer") },
+    { Web::Authorization::BASIC, _TXT("Basic") },
 
 ENUM_CONVERSION_END(Web::Authorization::type)
 
