@@ -118,6 +118,12 @@ namespace PluginHost {
             {
             }
 
+            Provisioning(std::list<std::string>&& labels, const std::string& storage)
+                : RPC::IteratorType<PluginHost::ISubSystem::IProvisioning>(labels)
+                , _storage(storage)
+            {
+            }
+
             ~Provisioning() override = default;
 
             string Storage() const override
@@ -529,6 +535,8 @@ namespace PluginHost {
                         _provisioning->Release();
                         _provisioning = nullptr;
                     }
+
+                    _provisioning = Core::Service<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(std::move(std::list<std::string>()), "");
 
                     _adminLock.Unlock();
                 } else {
