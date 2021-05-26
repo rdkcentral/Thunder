@@ -94,10 +94,8 @@ namespace PluginHost {
         virtual string Information() const = 0;
     };
 
-    /* @stubgen:skip */
-    struct IPluginExtended
-        : public IPlugin {
-
+    /* @stubgen:omit */
+    struct IPluginExtended : public IPlugin {
         enum {
             ID = RPC::ID_PLUGINEXTENDED
         };
@@ -115,11 +113,12 @@ namespace PluginHost {
         virtual void Detach(PluginHost::Channel& channel) = 0;
     };
 
-    struct IWeb
-        : virtual public Core::IUnknown {
-        enum {
-            ID = RPC::ID_WEB,
-        };
+    /* @stubgen:omit */
+    struct IWeb : virtual public Core::IUnknown {
+
+        enum { ID = RPC::ID_WEB };
+
+        ~IWeb() override = default;
 
         //! @{
         //! ================================== CALLED ON COMMUNICATION THREAD =====================================
@@ -138,11 +137,12 @@ namespace PluginHost {
         virtual Core::ProxyType<Web::Response> Process(const Web::Request& request) = 0;
     };
 
-    struct IWebSocket
-        : virtual public Core::IUnknown {
-        enum {
-            ID = RPC::ID_WEBSOCKET
-        };
+    /* @stubgen:omit */
+    struct IWebSocket : virtual public Core::IUnknown {
+
+        enum { ID = RPC::ID_WEBSOCKET };
+
+        ~IWebSocket() override = default;
 
         //! @{
         //! ================================== CALLED ON COMMUNICATION THREAD =====================================
@@ -161,11 +161,12 @@ namespace PluginHost {
         virtual Core::ProxyType<Core::JSON::IElement> Inbound(const uint32_t ID, const Core::ProxyType<Core::JSON::IElement>& element) = 0;
     };
 
-    struct ITextSocket
-        : virtual public Core::IUnknown {
-        enum {
-            ID = RPC::ID_TEXTSOCKET
-        };
+    /* @stubgen:omit */
+    struct ITextSocket : virtual public Core::IUnknown {
+
+        enum { ID = RPC::ID_TEXTSOCKET };
+
+        ~ITextSocket() override = default;
 
         //! @{
         //! ==================================== CALLED ON THREADPOOL THREAD ======================================
@@ -175,11 +176,12 @@ namespace PluginHost {
         virtual string Inbound(const uint32_t ID, const string& value) = 0;
     };
 
-    struct IChannel
-        : virtual public Core::IUnknown {
-        enum {
-            ID = RPC::ID_CHANNEL
-        };
+    /* @stubgen:omit */
+    struct IChannel : virtual public Core::IUnknown {
+
+        enum { ID = RPC::ID_CHANNEL };
+
+        ~IChannel() override = default;
 
         //! @{
         //! ================================== CALLED ON COMMUNICATION THREAD =====================================
@@ -196,6 +198,7 @@ namespace PluginHost {
         virtual uint32_t Outbound(const uint32_t ID, uint8_t data[], const uint16_t length) const = 0;
     };
 
+    /* @stubgen:omit */
     struct ISecurity : virtual public Core::IUnknown {
         enum {
             ID = RPC::ID_SECURITY
@@ -225,7 +228,7 @@ namespace PluginHost {
             ID = RPC::ID_AUTHENTICATE
         };
 
-        virtual uint32_t CreateToken(const uint16_t length, const uint8_t buffer[], string& token) = 0;
+        virtual uint32_t CreateToken(const uint16_t length/* @in */, const uint8_t buffer[]/*  @in @length:length  */, string& token/* @out */) = 0;
         virtual ISecurity* Officer(const string& token) = 0;
     };
 
