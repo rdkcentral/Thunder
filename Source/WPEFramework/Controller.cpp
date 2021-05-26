@@ -398,10 +398,8 @@ namespace Plugin {
                         }
                     } else {
                         //request to update the controller configuration 
-                        JsonObject command;
-  
-                        if (data.IsValid() == true && command.FromString(*data)==true){
-                            auto updatedParams= _pluginServer->_config.UpdateFromJsonRpc(command);
+                        if (data.IsValid() == true ){
+                            auto updatedParams= _pluginServer->_config.UpdateConfiguration(*data);
                             result->ErrorCode = Web::STATUS_OK;
                             updatedParams.empty()?result->Message = _T("New configuration is not valid"):result->Message = _T(updatedParams+ " have been updated");
                         } else {

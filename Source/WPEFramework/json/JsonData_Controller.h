@@ -104,6 +104,29 @@ namespace JsonData {
             Core::JSON::String Path; // Path to directory (within the persistent storage) to delete contents of
         }; // class DeleteParamsData
 
+        class UpdateConfigurationParamsData : public Core::JSON::Container {
+        public:
+            UpdateConfigurationParamsData()
+                : Core::JSON::Container()
+            {
+                Add(_T("version"), &Version);
+                Add(_T("prefix"),  &Prefix);
+                Add(_T("idleTime"), &idleTime);
+                Add(_T("latitude"), &Latitude);
+                Add(_T("longitude"), &Longitude);
+            }
+
+            UpdateConfigurationParamsData(const UpdateConfigurationParamsData&) = delete;
+            UpdateConfigurationParamsData& operator=(const UpdateConfigurationParamsData&) = delete;
+
+        public:
+            Core::JSON::String Version; // version of the controller
+            Core::JSON::String Prefix;  // prefix of the controller
+            Core::JSON::DecUInt16 idleTime;// idleTime of the controller
+            Core::JSON::DecUInt32 Latitude; // Latitude of the controller
+            Core::JSON::DecUInt32 Longitude; // Longitude of the controller
+        }; // class UpdateConfigurationParamsData
+
         class DownloadParamsData : public Core::JSON::Container {
         public:
             DownloadParamsData()

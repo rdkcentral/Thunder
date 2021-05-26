@@ -50,6 +50,7 @@ namespace Plugin {
         Property<Core::JSON::String>(_T("configuration"), &Controller::get_configuration, &Controller::set_configuration, this);
         Register<CloneParamsInfo,Core::JSON::String>(_T("clone"), &Controller::endpoint_clone, this);
         Property<Core::JSON::ArrayType<Core::JSON::String>>(_T("callstack"), &Controller::get_callstack, nullptr, this);
+        Register<UpdateConfigurationParamsData,void>(_T("updateConfiguration"), &Controller::endpoint_updateConfiguration, this);
     }
 
     void Controller::UnregisterAll()
@@ -71,6 +72,7 @@ namespace Plugin {
         Unregister(_T("links"));
         Unregister(_T("status"));
         Unregister(_T("clone"));
+        Unregister(_T("updateConfiguration"));
     }
 
     // API implementation
@@ -293,6 +295,24 @@ namespace Plugin {
             }
         }
 
+        return result;
+    }
+
+
+    // Method: updateConfiguration - Update the configuration of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to update the configuration
+    uint32_t Controller::endpoint_updateConfiguration(const UpdateConfigurationParamsData& params)
+    {
+        ASSERT(_pluginServer != nullptr);
+        uint32_t result = Core::ERROR_NONE;
+        string paramsstring;
+        if (params.ToString(paramsstring)==false) {
+            return Core::ERROR_GENERAL;
+        }  
+        _pluginServer->_config.UpdateConfiguration(paramsstring);
+        
         return result;
     }
 

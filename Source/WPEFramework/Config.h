@@ -647,29 +647,34 @@ namespace PluginHost {
         {
             return (_JSONRPCPrefix);
         }
-        inline string UpdateFromJsonRpc(const JsonObject& command)  {
-            string changedValue;
-            if (command.HasLabel("version")) {
-                UpdateVersion(command["version"].Value());
-                changedValue+="version";
+        inline string UpdateConfiguration(const string& newConfig)  {
+            JsonObject newConfigJson ;
+            string changedConfig;
+            if(newConfigJson.FromString(newConfig) ==false ) {
+                return "";
             }
-            if (command.HasLabel("prefix")) {
-                UpdatePrefix(command["prefix"].Value());
-                changedValue+=",prefix";
+   
+            if (newConfigJson.HasLabel("version")) {
+                UpdateVersion(newConfigJson["version"].Value());
+                changedConfig+="version";
             }
-            if (command.HasLabel("idletime")) {
-                UpdateIdleTime((uint16_t)stoi(command["idletime"].Value()));
-                changedValue+=",idletime";
+            if (newConfigJson.HasLabel("prefix")) {
+                UpdatePrefix(newConfigJson["prefix"].Value());
+                changedConfig+=",prefix";
             }
-            if (command.HasLabel("latitude")) {
-                UpdateLatitude((int32_t)stoi(command["latitude"].Value()));
-                changedValue+=",latitude";
+            if (newConfigJson.HasLabel("idleTime")) {
+                UpdateIdleTime((uint16_t)stoi(newConfigJson["idleTime"].Value()));
+                changedConfig+=",idleTime";
             }
-            if (command.HasLabel("longitude")) {
-                UpdateLongitude((int32_t)stoi(command["longitude"].Value()));
-                changedValue+=",longitude";
+            if (newConfigJson.HasLabel("latitude")) {
+                UpdateLatitude((int32_t)stoi(newConfigJson["latitude"].Value()));
+                changedConfig+=",latitude";
             }
-            return changedValue;
+            if (newConfigJson.HasLabel("longitude")) {
+                UpdateLongitude((int32_t)stoi(newConfigJson["longitude"].Value()));
+                changedConfig+=",longitude";
+            }
+            return changedConfig;
         }
 #ifdef PROCESSCONTAINERS_ENABLED
         inline const string& ProcessContainersLogging() const {
