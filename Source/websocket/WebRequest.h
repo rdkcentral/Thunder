@@ -157,7 +157,8 @@ namespace Web {
     class EXTERNAL Authorization {
     public:
         enum type {
-            BEARER
+            BEARER,
+            BASIC
         };
 
     public:
