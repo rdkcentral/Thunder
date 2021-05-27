@@ -299,6 +299,10 @@ namespace RPC {
         {
             return (_monitor.Interface());
         }
+        PluginHost::IShell* ControllerInterface()
+        {
+            return _controller;
+        }
 
         // Allow a derived class to take action on a new interface, or almost dissapeared interface..
         virtual void Operational(const bool upAndRunning)
