@@ -118,6 +118,12 @@ namespace PluginHost {
             {
             }
 
+            Provisioning(std::list<std::string>&& labels, const std::string& storage)
+                : RPC::IteratorType<PluginHost::ISubSystem::IProvisioning>(labels)
+                , _storage(storage)
+            {
+            }
+
             ~Provisioning() override = default;
 
             string Storage() const override
@@ -520,22 +526,33 @@ namespace PluginHost {
                 break;
             }
             case PROVISIONING: {
-                PluginHost::ISubSystem::IProvisioning* info = (information != nullptr ? information->QueryInterface<PluginHost::ISubSystem::IProvisioning>() : nullptr);
+                PluginHost::ISubSystem::IProvisioning* info = (information != nullptr) ? information->QueryInterface<PluginHost::ISubSystem::IProvisioning>() : nullptr;
 
-                _adminLock.Lock();
+                if (info == nullptr) {
+                    _adminLock.Lock();
+                    
+                    if (_provisioning != nullptr) {
+                        _provisioning->Release();
+                        _provisioning = nullptr;
+                    }
 
-                if (_provisioning != nullptr) {
-                    _provisioning->Release();
-                }
+                    _provisioning = Core::Service<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(std::move(std::list<std::string>()), "");
 
-                _provisioning = Core::Service<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(info);
+                    _adminLock.Unlock();
+                } else {
+                    _adminLock.Lock();
+                    
+                    if (_provisioning != nullptr) {
+                        _provisioning->Release();
+                    }
 
-                _adminLock.Unlock();
+                    _provisioning = Core::Service<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(info);
 
-                if (info != nullptr) {
+                    _adminLock.Unlock();
+                    
                     info->Release();
                 }
-
+                
                 /* No information to set yet */
                 SYSLOG(Logging::Startup, (_T("EVENT: Provisioning")));
                 break;
