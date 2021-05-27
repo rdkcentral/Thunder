@@ -25,7 +25,6 @@
 #pragma once
 
 #include <core/JSON.h>
-//#include "../PluginServer.h"
 #include "../Probe.h"
 
 namespace WPEFramework {
