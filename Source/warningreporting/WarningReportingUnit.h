@@ -123,7 +123,20 @@ namespace WarningReporting {
     public:
         typedef std::list<Setting> Settings; // HPL todo, better to make unordered_map? lookup on categoryt name happens a lot?
         typedef std::list<IWarningReportingUnit::IWarningReportingControl*> ControlList; // HPL todo, better to make unordered_map? lookup on categoryt name happens a lot
+        //typedef std::unordered_map<uint32_t, IWarningReportingUnit::IWarningReportingControl*> ControlList; // HPL todo, better to make unordered_map? lookup on categoryt name happens a lot
         typedef Core::IteratorType<ControlList, IWarningReportingUnit::IWarningReportingControl*> Iterator;
+
+        //Change later to map
+        IWarningEvent* Clone(const uint32_t id) const{
+            ControlList::iterator it(m_Categories.begin());
+            uint32_t count = 0;
+            while(it != m_Categories.end() && count != id){
+                
+                ++it;
+                ++count;
+            }
+            return it != m_Categories.end() ? (*it)->Clone() : nullptr; 
+        }
 
     private:
         // -------------------------------------------------------------------
@@ -231,10 +244,10 @@ namespace WarningReporting {
         }
 
     private:
-        inline uint32_t Open(const string& , const string& ) 
+        inline uint32_t Open(const string& doorBell, const string& fileName) 
         {
 
-            /*  HPL Todo: only direct output supported at the moment
+            //HPL Todo: only direct output supported at the moment
 
             ASSERT(m_OutputChannel == nullptr);
 
@@ -244,7 +257,7 @@ namespace WarningReporting {
 
             return (m_OutputChannel->IsValid() ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
 
-            */
+            
             DirectOutput(true);
             return Core::ERROR_NONE;
 

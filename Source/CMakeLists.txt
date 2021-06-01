@@ -64,7 +64,7 @@ option(EXCEPTION_CATCHING
 option(DEADLOCK_DETECTION
         "Enable deadlock detection tooling." OFF)
 option(WARNING_REPORTING
-        "Include warning reporting in the build." OFF)
+        "Include warning reporting in the build." ON)
 #
 # Build type specific options
 #

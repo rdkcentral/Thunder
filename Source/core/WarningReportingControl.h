@@ -189,6 +189,7 @@ namespace WarningReporting {
     template <typename CONTROLCATEGORY, typename BOUNDSTYPE = typename CONTROLCATEGORY::BoundsType>
     class WarningReportingBoundsCategory {
     public:
+        using RealCategory = CONTROLCATEGORY;
         WarningReportingBoundsCategory(const WarningReportingBoundsCategory&) = delete;
         WarningReportingBoundsCategory& operator=(const WarningReportingBoundsCategory&) = delete;
 
@@ -363,6 +364,11 @@ namespace WarningReporting {
             {
                 return ((m_Enabled & 0x01) != 0);
             }
+
+            IWarningEvent* Clone() const override{
+                return new typename CONTROLCATEGORY::RealCategory;
+            }
+
             const char* Category() const override
             {
                 return (m_CategoryName.c_str());

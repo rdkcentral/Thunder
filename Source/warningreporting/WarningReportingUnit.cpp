@@ -309,41 +309,28 @@ namespace WarningReporting {
 
             const char* category(information.Category());
             const uint64_t current = Core::Time::Now().Ticks();
-            const uint16_t fileNameLength = static_cast<uint16_t>(strlen(fileName) + 1); // File name.
-            const uint16_t identifierLength = static_cast<uint16_t>(strlen(identifier) + 1); // Module.
-            const uint16_t categoryLength = static_cast<uint16_t>(strlen(category) + 1); // Cateogory.
-            const uint16_t classNameLength = static_cast<uint16_t>(strlen(className) + 1); // Class name.
-//            const uint16_t informationLength = information.Length(); // Actual data (no '\0' needed).
 
-            // Trace entry has been simplified: 16 bit size followed by fields:
-            // length(2 bytes) - clock ticks (8 bytes) - line number (4 bytes) - file/module/category/className
-            const uint16_t headerLength = 2 + 8 + 4 + fileNameLength + identifierLength + categoryLength + classNameLength;
-
-            const uint32_t fullLength = /*informationLength*/ + headerLength; // Actual data (no '\0' needed).
+            // length(2 bytes) - clock ticks (8 bytes) - category id (2 bytes) - data
+            const uint16_t headerLength = 2 + 8 + 2;
+            
+            const uint16_t bufferSize = 1024;
+            uint8_t buffer[bufferSize];
+            uint16_t result = information.Serialize(buffer, bufferSize);
+            
+            const uint16_t fullLength = headerLength + result;
 
             // Tell the buffer how much we are going to write.
+            //stack buffer 1kB, serialize 
             const uint32_t actualLength = m_OutputChannel->Reserve(fullLength);
 
-            if (actualLength >= headerLength) {
-                const uint16_t convertedLength = static_cast<uint16_t>(actualLength);
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&convertedLength), 2);
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&current), 8);
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&lineNumber), 4);
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(fileName), fileNameLength);
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(identifier), identifierLength);
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(category), categoryLength);
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(className), classNameLength);
-/*
-                if (actualLength >= fullLength) {
-                    // We can write the whole information.
-                    m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(information.Data()), informationLength);
-                } else {
-                    // Can only write information partially
-                    const uint16_t dropLength = actualLength - headerLength;
+            if (actualLength >= fullLength) {
+            
 
-                    m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(information->Data()), dropLength);
-                }
-                */
+                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&fullLength), 2);      //fullLenght
+                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&current), 8);         //timestamp
+                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&convertedLength), 2); //pass index of the category id from the list
+                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(buffer), result);
+                
             }
         }
 

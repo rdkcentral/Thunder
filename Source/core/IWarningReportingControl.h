@@ -45,6 +45,7 @@ namespace WarningReporting {
             virtual bool Enabled() const = 0;
             virtual void Enabled(const bool enabled) = 0;
             virtual void Configure(const string& setting) = 0;
+            virtual IWarningEvent* Clone() const = 0;
         };
 
         virtual ~IWarningReportingUnit() = default;
