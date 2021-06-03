@@ -9,6 +9,10 @@ cmake-build-*/
 CMakeCache.txt
 uninstall.cmake
 */cmake_install.cmake
+*/*/cmake_install.cmake
+*/*/Makefile
+*/*/WPEFramework*Config.cmake
+*/*/WPEFramework*ConfigVersion.cmake
 *.pc
 *.so.*
 *.so
