@@ -58,26 +58,52 @@ namespace WarningReporting {
         SinkStillHasReference(const SinkStillHasReference& a_Copy) = delete;
         SinkStillHasReference& operator=(const SinkStillHasReference& a_RHS) = delete;
 
-        SinkStillHasReference() 
+        SinkStillHasReference(const uint32_t currentRefCount):
+            _currentRefCount(currentRefCount)
         {
         }
 
         ~SinkStillHasReference() = default;
 
-        uint16_t Serialize(uint8_t[], const uint16_t) const {
-            // HPL Todo: implement
-            return(0); 
+        uint16_t Serialize(uint8_t buffer[], const uint16_t length) const {
+            ASSERT(length >= 4);
+            memcpy(buffer, &_currentRefCount, sizeof(uint32_t));
+            
+            /*
+            ASSERT(length >= 4);
+            uint32_t val = htonl(_currentRefCount);
+            memcpy(buffer, &val, sizeof(uint32_t));
+            */
+            /*
+            buffer[0] = _currentRefCount & 0xFF;
+            buffer[1] = (_currentRefCount >> 8 ) & 0xFF;
+            buffer[2] = (_currentRefCount >> 16 ) & 0xFF;
+            buffer[3] = (_currentRefCount >> 24 ) & 0xFF;
+            */
+
+            return sizeof(uint32_t); 
         }
 
-        uint16_t Deserialize(const uint8_t[], const uint16_t) {
-            // HPL Todo: implement
-            return(0); 
+        uint16_t Deserialize(const uint8_t buffer[], const uint16_t length) {
+            ASSERT(length >= 4);
+            memcpy(&_currentRefCount, buffer, sizeof(uint32_t));
+            
+            /*
+            ASSERT(length >= 4);
+            uint32_t val = 0;
+            memcpy(&val, buffer, sizeof(uint32_t));
+            _currentRefCount = ntohl(val);
+            */
+           
+            //_currentRefCount = buffer[0] | (buffer[1]  << 8 ) | (buffer[2]  << 16 ) | (buffer[3]  << 24 );  
+            return sizeof(uint32_t);
         }
 
         void ToString(string& visitor) const {
             visitor = (_T("A sink still holds a reference when it is being destructed"));
         };
 
+        uint32_t _currentRefCount;
         static constexpr uint32_t DefaultWarningBound = {0};
         static constexpr uint32_t DefaultReportBound = {0};
     };

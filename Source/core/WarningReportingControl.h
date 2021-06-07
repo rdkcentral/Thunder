@@ -99,7 +99,7 @@
 
 #define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...)                                 \
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t>>::IsEnabled() == true) { \
-        WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t> __data__ ;  \
+        WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t> __data__ (ACTUALVALUE);  \
         if( __data__.Analyze(WPEFramework::Core::System::MODULE_NAME,  \
                              WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
                             ACTUALVALUE,  \

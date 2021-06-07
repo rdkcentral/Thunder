@@ -298,14 +298,20 @@ namespace WarningReporting {
 
     void WarningReportingUnit::ReportWarningEvent(const char identifier[], const char file[], const uint32_t lineNumber, const char className[], const IWarningEvent& information)
     {
+        auto findId = [this](const char* categoryName) {
+            auto iterator = std::find_if(m_Categories.begin(), m_Categories.end(),
+                [categoryName](IWarningReportingUnit::IWarningReportingControl* value) {
+                    return value->Category() == categoryName;
+                });
+
+            return iterator != m_Categories.end() ? std::distance(m_Categories.begin(), iterator) : 0;
+        };
 
         const char* fileName(Core::FileNameOnly(file));
 
         m_Admin.Lock();
 
         if (m_OutputChannel != nullptr) {
-
-            // HPL Todo: not implemented now, m_OutputChannel will always be nullptr
 
             const char* category(information.Category());
             const uint64_t current = Core::Time::Now().Ticks();
@@ -320,15 +326,22 @@ namespace WarningReporting {
             const uint16_t fullLength = headerLength + result;
 
             // Tell the buffer how much we are going to write.
-            //stack buffer 1kB, serialize 
+            // stack buffer 1kB, serialize 
             const uint32_t actualLength = m_OutputChannel->Reserve(fullLength);
-
+            const uint32_t categoryId = findId(category);
+            
             if (actualLength >= fullLength) {
             
 
                 m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&fullLength), 2);      //fullLenght
                 m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&current), 8);         //timestamp
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&convertedLength), 2); //pass index of the category id from the list
+                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&categoryId), 2);      //pass index of the category id from the list
+//                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&fileName), 2);      //pass index of the category id from the list
+//                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&identifier), 2);      //pass index of the category id from the list
+
+//TBD
+//category name instead of id
+//same as tracing but classname is identifier
                 m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(buffer), result);
                 
             }
