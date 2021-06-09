@@ -326,12 +326,12 @@ bool GATTSocket::Security(const uint8_t level)
 
     if (result == true) {
         struct bt_security btSecurity = { .level = level, 0 };
-        if (::setsockopt(Handle(), SOL_BLUETOOTH, BT_SECURITY, &btSecurity, sizeof(btSecurity))) {
-            TRACE_L1("Failed to set Bluetooth Security level for device [%s], error: %d", RemoteId().c_str(), errno);
-            result = false;
-        } else if (::setsockopt(Handle(), SOL_L2CAP, L2CAP_LM, &lm, sizeof(lm)) < 0) {
-            TRACE_L1("Error setting L2CAP Security for device [%s], error: %d", RemoteId().c_str(), errno);
-            result = false;
+        if (::setsockopt(Handle(), SOL_BLUETOOTH, BT_SECURITY, &btSecurity, sizeof(btSecurity)) != 0) {
+            TRACE_L1("Failed to set Bluetooth Security level for device [%s], error: %d, try L2CAP Security", RemoteId().c_str(), errno);
+            if (::setsockopt(Handle(), SOL_L2CAP, L2CAP_LM, &lm, sizeof(lm)) != 0) {
+                TRACE_L1("Error setting L2CAP Security for device [%s], error: %d", RemoteId().c_str(), errno);
+                result = false;
+            }
         }
     }
 
