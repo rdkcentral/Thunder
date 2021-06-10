@@ -95,7 +95,7 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
     // See if we need to retrigger..
     if ((stream[0] != _id) && ((stream[0] != ATT_OP_ERROR) && (stream[1] == _id))) {
         TRACE_L1(_T("Unexpected L2CapSocket message. Expected: %d, got %d [%d]"), _id, stream[0], stream[1]);
-    } else {
+    } else if (stream[0] != ATT_OP_HANDLE_NOTIFY) {
         result = length;
 
         // TRACE_L1(_T("L2CapSocket Receive [%d], Type: %02X"), length, stream[0]);
