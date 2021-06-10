@@ -58,8 +58,8 @@ namespace WarningReporting {
         SinkStillHasReference(const SinkStillHasReference& a_Copy) = delete;
         SinkStillHasReference& operator=(const SinkStillHasReference& a_RHS) = delete;
 
-        SinkStillHasReference(const uint32_t currentRefCount):
-            _currentRefCount(currentRefCount)
+        SinkStillHasReference(/*TBD*/):
+            _currentRefCount(123)
         {
         }
 
@@ -94,7 +94,7 @@ namespace WarningReporting {
             memcpy(&val, buffer, sizeof(uint32_t));
             _currentRefCount = ntohl(val);
             */
-           
+
             //_currentRefCount = buffer[0] | (buffer[1]  << 8 ) | (buffer[2]  << 16 ) | (buffer[3]  << 24 );  
             return sizeof(uint32_t);
         }

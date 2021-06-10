@@ -93,9 +93,11 @@ namespace WarningReporting {
             Close();
         }
 
-        while (m_Categories.size() != 0) {
-            m_Categories.front()->Destroy();
+        for (auto const& category : m_Categories)
+        {
+              category.second->Destroy();
         }
+        
 
         m_Admin.Unlock();
     }
@@ -157,7 +159,8 @@ namespace WarningReporting {
     {
         m_Admin.Lock();
 
-        m_Categories.push_back(&Category);
+        std::string categoryName = Category.Category();
+        m_Categories[categoryName] = &Category;
 
         m_Admin.Unlock();
     }
@@ -165,43 +168,35 @@ namespace WarningReporting {
     void WarningReportingUnit::Revoke(IWarningReportingUnit::IWarningReportingControl& Category)
     {
         m_Admin.Lock();
-
-        std::list<IWarningReportingUnit::IWarningReportingControl*>::iterator index(std::find(m_Categories.begin(), m_Categories.end(), &Category));
-
-        if (index != m_Categories.end()) {
-            m_Categories.erase(index);
-        }
+        std::string categoryName = Category.Category();
+        m_Categories.erase(categoryName);
 
         m_Admin.Unlock();
     }
 
     WarningReportingUnit::Iterator WarningReportingUnit::GetCategories()
     {
-        return (Iterator(m_Categories));
+        //TBD
+        //return (Iterator(m_Categories));
     }
 
     uint32_t WarningReportingUnit::SetCategories(const bool enable, const char* category)
     {
+        //TBD
         uint32_t modifications = 0;
 
-        ControlList::iterator index(m_Categories.begin());
-
-        while (index != m_Categories.end()) {
-            const char* thisCategory = (*index)->Category();
-
-            if (category != nullptr) {
-                if ( ::strcmp(category, thisCategory) == 0 ) {
-                    modifications++;
-                    (*index)->Enabled(enable);
-                }
-            } else {
-                //Disable/Enable traces for all modules
-                modifications++;
-                (*index)->Enabled(enable);
-            }
-
-            index++;
+        if(category != nullptr){
+            std::string categoryName = category;
+            m_Categories[categoryName]->Enabled(enable);
         }
+        else{
+            std::for_each(m_Categories.begin(), m_Categories.end(), 
+            [enable, &modifications](std::pair<std::string, IWarningReportingControl*> pair){
+                pair.second->Enabled(enable);
+                ++modifications;
+            });
+        }
+
 
         return (modifications);
     }
@@ -257,16 +252,16 @@ namespace WarningReporting {
             m_EnabledCategories.emplace_back(Setting(index.Current()));
         }
 
-        for (IWarningReportingUnit::IWarningReportingControl* warningControl : m_Categories) {
+        for (auto& entry : m_Categories) {
             Settings::const_iterator index = m_EnabledCategories.begin(); 
             while (index != m_EnabledCategories.end()) {
                 const Setting& setting = *index;
 
-                if ( setting.Category() == warningControl->Category() ) {
-                    if( setting.Enabled() != warningControl->Enabled() ) {
-                        warningControl->Enabled(setting.Enabled()); 
+                if ( setting.Category() == entry.second->Category() ) {
+                    if( setting.Enabled() != entry.second->Enabled() ) {
+                        entry.second->Enabled(setting.Enabled()); 
                     }
-                    warningControl->Configure(setting.Configuration());
+                    entry.second->Configure(setting.Configuration());
                     break; // HPL todo: you might to add this also on TraceControl
                 }
 
@@ -297,15 +292,7 @@ namespace WarningReporting {
     }
 
     void WarningReportingUnit::ReportWarningEvent(const char identifier[], const char file[], const uint32_t lineNumber, const char className[], const IWarningEvent& information)
-    {
-        auto findId = [this](const char* categoryName) {
-            auto iterator = std::find_if(m_Categories.begin(), m_Categories.end(),
-                [categoryName](IWarningReportingUnit::IWarningReportingControl* value) {
-                    return value->Category() == categoryName;
-                });
-
-            return iterator != m_Categories.end() ? std::distance(m_Categories.begin(), iterator) : 0;
-        };
+    { 
 
         const char* fileName(Core::FileNameOnly(file));
 
@@ -316,9 +303,13 @@ namespace WarningReporting {
             const char* category(information.Category());
             const uint64_t current = Core::Time::Now().Ticks();
 
-            // length(2 bytes) - clock ticks (8 bytes) - category id (2 bytes) - data
-            const uint16_t headerLength = 2 + 8 + 2;
-            
+            const uint16_t fileNameLength = static_cast<uint16_t>(strlen(fileName) + 1); // File name.
+            const uint16_t categoryLength = static_cast<uint16_t>(strlen(category) + 1); // Cateogory.
+            const uint16_t identifierLength = static_cast<uint16_t>(strlen(identifier) + 1); // Identifier name.
+
+            // length(2 bytes) - clock ticks (8 bytes) - lineNumber (4 bytes) - fileNameLength - categoryLength - identifierLength - data
+            const uint16_t headerLength = 2 + 8 + 4 + fileNameLength + categoryLength + identifierLength;
+                 
             const uint16_t bufferSize = 1024;
             uint8_t buffer[bufferSize];
             uint16_t result = information.Serialize(buffer, bufferSize);
@@ -328,20 +319,17 @@ namespace WarningReporting {
             // Tell the buffer how much we are going to write.
             // stack buffer 1kB, serialize 
             const uint32_t actualLength = m_OutputChannel->Reserve(fullLength);
-            const uint32_t categoryId = findId(category);
             
+
             if (actualLength >= fullLength) {
+                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&fullLength), 2); //fullLength
+                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&current), 8);    //timestamp
+                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&lineNumber), 4); //lineNumber
+                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(fileName), fileNameLength); //filename
+                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(category), categoryLength); //category name
+                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(identifier), identifierLength); //identifier aka. callsign
             
-
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&fullLength), 2);      //fullLenght
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&current), 8);         //timestamp
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&categoryId), 2);      //pass index of the category id from the list
-//                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&fileName), 2);      //pass index of the category id from the list
-//                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&identifier), 2);      //pass index of the category id from the list
-
-//TBD
-//category name instead of id
-//same as tracing but classname is identifier
+            
                 m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(buffer), result);
                 
             }

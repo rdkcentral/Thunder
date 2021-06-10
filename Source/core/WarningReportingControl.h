@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2020 RDK Management
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,11 +67,11 @@
 
 #define REPORT_WARNING(CATEGORY, ...)                                                    \
     if (WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled() == true) { \
-        CATEGORY __data__ ;  \
-        if( WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::CallAnalyzeIfAvailable(__data__, WPEFramework::Core::System::MODULE_NAME,  \
+        std::unique_ptr<CATEGORY> __data__(new CATEGORY())  ;  \
+        if( WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::CallAnalyzeIfAvailable(*(__data__.get()), WPEFramework::Core::System::MODULE_NAME,  \
                              WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
                             ##__VA_ARGS__) == true ) {                           \
-            WPEFramework::WarningReporting::WarningReportingType<CATEGORY> __message__(__data__);  \
+            WPEFramework::WarningReporting::WarningReportingType<CATEGORY> __message__(std::move(__data__));  \
             WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                            \
                 WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
                 __FILE__,                                                                  \
@@ -83,11 +83,11 @@
 
 #define REPORT_WARNING_GLOBAL(CATEGORY, ...)                                             \
     if (WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled() == true) { \
-        CATEGORY __data__ ;  \
-        if( WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::CallAnalyzeIfAvailable(__data__, WPEFramework::Core::System::MODULE_NAME,  \
+        std::unique_ptr<CATEGORY> __data__(new CATEGORY())  ;  \
+        if( WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::CallAnalyzeIfAvailable(*(__data__.get()), WPEFramework::Core::System::MODULE_NAME,  \
                              WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
                             ##__VA_ARGS__) == true ) {                           \
-            WPEFramework::WarningReporting::WarningReportingType<CATEGORY> __message__(__data__);  \
+            WPEFramework::WarningReporting::WarningReportingType<CATEGORY> __message__(std::move(__data__));  \
             WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                            \
                 WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
                 __FILE__,                                                                  \
@@ -99,12 +99,12 @@
 
 #define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...)                                 \
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t>>::IsEnabled() == true) { \
-        WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t> __data__ (ACTUALVALUE);  \
-        if( __data__.Analyze(WPEFramework::Core::System::MODULE_NAME,  \
+        std::unique_ptr<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t>>__data__ (new WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t>() ) ;  \
+        if( __data__->Analyze(WPEFramework::Core::System::MODULE_NAME,  \
                              WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
                             ACTUALVALUE,  \
                             ##__VA_ARGS__) == true ) {                           \
-            WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t>> __message__(__data__);  \
+            WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t>> __message__(std::move(__data__));  \
             WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                            \
                 WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
                 __FILE__,                                                                  \
@@ -119,12 +119,12 @@
         WPEFramework::Core::Time start = WPEFramework::Core::Time::Now();                     \
         CODE                                                                            \
         uint32_t duration( (Core::Time::Now().Ticks() - start.Ticks()) / Core::Time::TicksPerMillisecond);              \
-        WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t> __data__ ;  \
-        if( __data__.Analyze(WPEFramework::Core::System::MODULE_NAME,  \
+        std::unique_ptr<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t>> __data__(new WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t>()) ;  \
+        if( __data__->Analyze(WPEFramework::Core::System::MODULE_NAME,  \
                              WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
                             duration,  \
                             ##__VA_ARGS__) == true ) {                           \
-            WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t>> __message__(__data__);  \
+            WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t>> __message__(std::move(__data__));  \
             WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                            \
                 WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),        \
                 __FILE__,                                                                  \
@@ -366,7 +366,10 @@ namespace WarningReporting {
             }
 
             IWarningEvent* Clone() const override{
-                return new typename CONTROLCATEGORY::RealCategory;
+                
+                std::unique_ptr<CONTROLCATEGORY> category(new CONTROLCATEGORY());
+                return new WarningReportingType<CONTROLCATEGORY>(std::move(category));
+                //
             }
 
             const char* Category() const override
@@ -402,8 +405,8 @@ namespace WarningReporting {
         WarningReportingType(const WarningReportingType&) = delete;
         WarningReportingType& operator=(const WarningReportingType&) = delete;
 
-        WarningReportingType(CATEGORY& category)
-            : _info(category)
+        WarningReportingType(std::unique_ptr<CATEGORY> category)
+            : _info(std::move(category))
         {
         }
         ~WarningReportingType() override = default;
@@ -419,7 +422,10 @@ namespace WarningReporting {
         template<typename T = CATEGORY>
         inline typename Core::TypeTraits::enable_if<hasIsWarning<T, bool (T::*)() const>::value, bool>::type
         CallIsWarning() const {
-            return _info.IsWarning();
+            if(_info != nullptr){
+                return _info->IsWarning();
+            }
+            return false;
         }
         HAS_MEMBER_NAME(Analyze, hasAnalyze);
         template<typename T = CATEGORY, typename... Args> 
@@ -451,15 +457,24 @@ namespace WarningReporting {
         }
 
         uint16_t Serialize(uint8_t data[], const uint16_t size) const override {
-            return(_info.Serialize(data, size));
+            if(_info != nullptr){
+                return(_info->Serialize(data, size));
+            }
+            return 0;
+
         }
 
         uint16_t Deserialize(const uint8_t data[], const uint16_t size) override {
-            return(_info.Deserialize(data, size));
+            if(_info != nullptr){
+                return(_info->Deserialize(data, size));
+            }
+            return 0;
         }
 
         void ToString(string& visitor) const override {
-            _info.ToString(visitor);
+            if(_info != nullptr){
+                _info->ToString(visitor);
+            }
         }
 
         bool IsWarning() const override {
@@ -482,7 +497,7 @@ namespace WarningReporting {
         }
 
     private:
-        CATEGORY& _info;
+        std::unique_ptr<CATEGORY> _info;
         static WarningReportingControl<CATEGORY> s_control;
     };
 
