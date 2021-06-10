@@ -1096,7 +1096,7 @@ namespace Core {
 
                 if ((m_ReadBytes != 0) && (handledBytes != 0)) {
                     // Oops not all data was consumed, Lets remove the read data
-                    ::memcpy(m_ReceiveBuffer, &m_ReceiveBuffer[handledBytes], m_ReadBytes);
+                    ::memmove(m_ReceiveBuffer, &m_ReceiveBuffer[handledBytes], m_ReadBytes);
                 }
             }
         }
