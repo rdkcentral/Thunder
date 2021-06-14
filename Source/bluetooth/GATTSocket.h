@@ -144,6 +144,7 @@ namespace Bluetooth {
         static constexpr uint8_t ATT_OP_READ_BY_GROUP_REQ = 0x10;
         static constexpr uint8_t ATT_OP_READ_BY_GROUP_RESP = 0x11;
         static constexpr uint8_t ATT_OP_WRITE_REQ = 0x12;
+        static constexpr uint8_t ATT_OP_WRITE_CMD = 0x52;
         static constexpr uint8_t ATT_OP_WRITE_RESP = 0x13;
         static constexpr uint8_t ATT_OP_HANDLE_NOTIFY = 0x1B;
 
@@ -380,6 +381,15 @@ namespace Bluetooth {
                     _size = 5;
                     _end = 0;
                     return (ATT_OP_READ_BLOB_RESP);
+                }
+                void WriteCommand(const uint16_t handle, const uint8_t length, const uint8_t data[])
+                {
+                    _buffer[0] = ATT_OP_WRITE_CMD;
+                    _buffer[1] = (handle & 0xFF);
+                    _buffer[2] = (handle >> 8) & 0xFF;
+                    ::memcpy(&(_buffer[3]), data, length);
+                    _size = 3 + length;
+                    _end = 0;
                 }
                 uint8_t Write(const uint16_t handle, const uint8_t length, const uint8_t data[])
                 {
@@ -683,6 +693,12 @@ namespace Bluetooth {
                 _error = ~0;
                 _id = _frame.Read(handle);
             }
+            void WriteCommand(const uint16_t handle, const uint8_t length, const uint8_t data[])
+            {
+                _response.Clear();
+                _error = Core::ERROR_NONE;
+                _frame.WriteCommand(handle, length, data);
+            }
             void Write(const uint16_t handle, const uint8_t length, const uint8_t data[])
             {
                 _response.Clear();
@@ -814,6 +830,11 @@ namespace Bluetooth {
                 Send(waitTime, cmd, &_sink, &cmd);
             }
             _adminLock.Unlock();
+        }
+        void Execute(Command& cmd)
+        {
+            cmd.MTU(_sink.MTU());
+            Exchange(CommunicationTimeOut, cmd);
         }
         void Revoke(const Command& cmd)
         {
