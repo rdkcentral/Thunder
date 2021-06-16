@@ -655,6 +655,7 @@ uint32_t ManagementSocket::AddDevice(const Address::type type, const Address& ad
 uint32_t ManagementSocket::RemoveDevice(const Address::type type, const Address& address)
 {
     Management::RemoveDevice message(_deviceId);
+    message->addr.type = type;
     ::memcpy(&(message->addr.bdaddr), address.Data(), sizeof(message->addr.bdaddr));
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
