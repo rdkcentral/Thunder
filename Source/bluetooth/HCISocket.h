@@ -591,11 +591,13 @@ namespace Bluetooth {
     class EXTERNAL HCISocket : public Core::SynchronousChannelType<Core::SocketPort> {
     private:
         static constexpr int      SCAN_TIMEOUT = 1000;
-        static constexpr uint8_t  SCAN_TYPE = 0x01;
-        static constexpr uint8_t  SCAN_FILTER_POLICY = 0x00;
-        static constexpr uint8_t  SCAN_FILTER_DUPLICATES = 0x01;
+        static constexpr uint8_t  SCAN_TYPE_PASSIVE = 0x00;
+        static constexpr uint8_t  SCAN_TYPE_ACTIVE = 0x01;
+        static constexpr uint8_t  SCAN_FILTER_POLICY_ALL = 0x00;
+        static constexpr uint8_t  SCAN_FILTER_DUPLICATES_DISABLE = 0x00;
+        static constexpr uint8_t  SCAN_FILTER_DUPLICATES_ENABLE = 0x01;
         static constexpr uint32_t MAX_ACTION_TIMEOUT = 2000; /* 2 Seconds for commands to complete ? */
-        static constexpr uint16_t ACTION_MASK = 0x3FFF;
+        static constexpr uint16_t ACTION_MASK = 0x0FFF;
 
     public:
 
@@ -882,6 +884,7 @@ namespace Bluetooth {
             IDLE        = 0x0000,
             SCANNING    = 0x0001,
             PAIRING     = 0x0002,
+            DISCOVERING = 0x1000,
             ADVERTISING = 0x4000,
             ABORT       = 0x8000
         };
@@ -914,10 +917,15 @@ namespace Bluetooth {
         {
             return ((_state & ADVERTISING) != 0);
         }
+        bool IsDiscovering() const
+        {
+            return ((_state & DISCOVERING) != 0);
+        }
         uint32_t Advertising(const bool enable, const uint8_t mode = 0);
         void Scan(const uint16_t scanTime, const uint32_t type, const uint8_t flags);
         void Scan(const uint16_t scanTime, const bool limited, const bool passive);
         void Abort();
+        void Discovery(const bool enable);
 
         uint32_t ReadStoredLinkKeys(const Address adr, const bool all, LinkKeys& keys);
 

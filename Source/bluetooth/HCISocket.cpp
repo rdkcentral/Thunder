@@ -140,20 +140,19 @@ void HCISocket::Scan(const uint16_t scanTime, const bool limited, const bool pas
 
     if ((_state & ACTION_MASK) == 0) {
         Command::ScanParametersLE parameters;
-
         parameters.Clear();
-        parameters->type = (passive ? 0x00 : 0x01);
+        parameters->type = (passive? SCAN_TYPE_PASSIVE : SCAN_TYPE_ACTIVE);
         parameters->interval = htobs((limited ? 0x12 : 0x10));
         parameters->window = htobs((limited ? 0x12 : 0x10));
         parameters->own_bdaddr_type = LE_PUBLIC_ADDRESS;
-        parameters->filter = SCAN_FILTER_POLICY;
+        parameters->filter = SCAN_FILTER_POLICY_ALL;
 
         if ((Exchange(MAX_ACTION_TIMEOUT, parameters, parameters) == Core::ERROR_NONE) && (parameters.Response() == 0)) {
 
             Command::ScanEnableLE scanner;
             scanner.Clear();
             scanner->enable = 1;
-            scanner->filter_dup = SCAN_FILTER_DUPLICATES;
+            scanner->filter_dup = SCAN_FILTER_DUPLICATES_ENABLE;
 
             if ((Exchange(MAX_ACTION_TIMEOUT, scanner, scanner) == Core::ERROR_NONE) && (scanner.Response() == 0)) {
 
@@ -170,6 +169,46 @@ void HCISocket::Scan(const uint16_t scanTime, const bool limited, const bool pas
                 Exchange(MAX_ACTION_TIMEOUT, scanner, scanner);
 
                 _state.SetState(static_cast<state>(_state.GetState() & (~(ABORT | SCANNING))));
+            }
+        }
+    }
+
+    _state.Unlock();
+}
+
+void HCISocket::Discovery(const bool enable)
+{
+    _state.Lock();
+
+    if (((_state & ACTION_MASK) == 0)) {
+        Command::ScanParametersLE parameters;
+        parameters.Clear();
+        bool result = true;
+
+        if (enable == true) {
+            parameters->type = SCAN_TYPE_PASSIVE;
+            parameters->interval = htobs(0x12);
+            parameters->window = htobs(0x12);
+            parameters->own_bdaddr_type = LE_PUBLIC_ADDRESS;
+            parameters->filter = SCAN_FILTER_POLICY_ALL;
+
+            uint32_t rv = Exchange(1000, parameters, parameters);
+            if (rv != Core::ERROR_NONE) {
+                TRACE_L1(_T("Failed to send ScanParametersLE command [%i]"), rv);
+            }
+            if ((rv != Core::ERROR_NONE) || (parameters.Response() != 0)) {
+                result = false;
+            }
+        }
+
+        if (result == true) {
+            Command::ScanEnableLE scanner;
+            scanner.Clear();
+            scanner->enable = enable;
+            scanner->filter_dup = SCAN_FILTER_DUPLICATES_ENABLE;
+
+            if ((Exchange(MAX_ACTION_TIMEOUT, scanner, scanner) == Core::ERROR_NONE) && (scanner.Response() == 0)) {
+                _state.SetState(static_cast<state>(enable? (_state.GetState() | DISCOVERING) : (_state.GetState() & (~DISCOVERING))));
             }
         }
     }
