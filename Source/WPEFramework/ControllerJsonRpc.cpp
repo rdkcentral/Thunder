@@ -352,8 +352,6 @@ namespace Plugin {
     //  - ERROR_NONE: Success
     uint32_t Controller::get_discoveryresults(Core::JSON::ArrayType<PluginHost::MetaData::Bridge>& response) const
     {
-        ASSERT(_probe != nullptr);
-
         if (_probe != nullptr) {
             Probe::Iterator index(_probe->Instances());
 
