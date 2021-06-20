@@ -60,7 +60,7 @@
             "callsign": "ZigbeeControl",
             "locator": "libZigbeeControl.so",
             "classname": "ZigbeeControl",
-            "autostart": true,
+            "autostart": false,
             "configuration": {
                 "port": "\\\\.\\COM6"
             }
@@ -156,7 +156,7 @@
             "callsign": "IOControl",
             "locator": "libIOControl.so",
             "classname": "IOControl",
-            "autostart": false,
+            "autostart": true,
             "configuration": {
                 "port": "\\\\.\\COM5",
                 "pins": [
@@ -189,7 +189,7 @@
             "callsign": "OneWireControl",
             "locator": "libOneWireControl.so",
             "classname": "OneWireControl",
-            "autostart": false,
+            "autostart": true,
             "configuration": {
               "port": "\\\\.\\COM5",
               "devices": [
@@ -205,7 +205,7 @@
             "callsign": "I2CControl",
             "locator": "libI2CControl.so",
             "classname": "I2CControl",
-            "autostart": false,
+            "autostart": true,
             "configuration": {
                 "port": "\\\\.\\COM5",
                 "devices": [
@@ -304,7 +304,7 @@
             "callsign": "DeviceInfo",
             "locator": "libdeviceinfo.so",
             "classname": "DeviceInfo",
-            "autostart": false,
+            "autostart": true,
             "configuration": {
                 "location": "external",
                 "identifier": "internal",
