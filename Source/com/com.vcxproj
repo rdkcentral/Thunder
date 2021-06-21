@@ -44,6 +44,7 @@
     <ClInclude Include="ConnectorType.h" />
     <ClInclude Include="Ids.h" />
     <ClInclude Include="ICOM.h" />
+    <ClInclude Include="IRPCIterator.h" />
     <ClInclude Include="IStringIterator.h" />
     <ClInclude Include="IUnknown.h" />
     <ClInclude Include="IValueIterator.h" />
