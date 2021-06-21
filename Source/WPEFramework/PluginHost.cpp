@@ -348,9 +348,12 @@ namespace PluginHost {
 
     static void ForcedExit() {
         if (_atExitActive == true) {
+#ifndef __WINDOWS__
             if (_background) {
                 syslog(LOG_ERR, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an atexit request. No regular shutdown. Errors to follow are collateral damage errors !!!!!!");
-            } else {
+            } else 
+#endif
+            {
                 fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an atexit request. No regular shutdown. Errors to follow are collateral damage errors !!!!!!");
                 fflush(stderr);
             }
@@ -359,9 +362,12 @@ namespace PluginHost {
     }
 
     static void UncaughtExceptions () {
+#ifndef __WINDOWS__
         if (_background) {
             syslog(LOG_ERR, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an uncaught exception. No regular shutdown. Errors to follow are collateral damage errors !!!!!!");
-        } else {
+        } else
+#endif
+        {
             fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an uncaught exception. No regular shutdown. Errors to follow are collateral damage errors !!!!!!");
             fflush(stderr);
         }
