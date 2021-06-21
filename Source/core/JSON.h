@@ -2208,34 +2208,56 @@ namespace Core {
 
                             // See if we can still add a character
                             if (_index == _maxLength) {
-                                _maxLength = (2 * _maxLength);
-                                _buffer = reinterpret_cast<uint8_t*>(::realloc(_buffer, _maxLength));
+                                uint16_t maxLength = (2 * _maxLength);
+                                uint8_t* newBuffer = reinterpret_cast<uint8_t*>(::realloc(_buffer, maxLength));
+                                if (newBuffer != nullptr) {
+                                    _buffer = newBuffer;
+                                    _maxLength = maxLength;
+                                }
                             }
 
-                            if (_state == 0) {
-                                _lastStuff = converted << 2;
-                                _state = 1;
-                            } else if (_state == 1) {
-                                _buffer[_index++] = (((converted & 0x30) >> 4) | _lastStuff);
-                                _lastStuff = ((converted & 0x0F) << 4);
-                                _state = 2;
-                            } else if (_state == 2) {
-                                _buffer[_index++] = (((converted & 0x3C) >> 2) | _lastStuff);
-                                _lastStuff = ((converted & 0x03) << 6);
-                                _state = 3;
-                            } else if (_state == 3) {
-                                _buffer[_index++] = ((converted & 0x3F) | _lastStuff);
-                                _state = 0;
+                            if (_index >= _maxLength) {
+                                TRACE_L1("Out of memory !!!!");
+                            }
+                            else {
+                                if (_state == 0) {
+                                    _lastStuff = converted << 2;
+                                    _state = 1;
+                                }
+                                else if (_state == 1) {
+                                    _buffer[_index++] = (((converted & 0x30) >> 4) | _lastStuff);
+                                    _lastStuff = ((converted & 0x0F) << 4);
+                                    _state = 2;
+                                }
+                                else if (_state == 2) {
+                                    _buffer[_index++] = (((converted & 0x3C) >> 2) | _lastStuff);
+                                    _lastStuff = ((converted & 0x03) << 6);
+                                    _state = 3;
+                                }
+                                else if (_state == 3) {
+                                    _buffer[_index++] = ((converted & 0x3F) | _lastStuff);
+                                    _state = 0;
+                                }
+
                             }
                         }
 
                         if (((_state & SET) == SET) && ((_state & 0xF) != 0)) {
 
                             if (_index == _maxLength) {
-                                _maxLength = _maxLength + 0xFF;
-                                _buffer = reinterpret_cast<uint8_t*>(::realloc(_buffer, _maxLength));
+                                uint16_t maxLength = (_maxLength + 0xFF);
+                                uint8_t* newBuffer = reinterpret_cast<uint8_t*>(::realloc(_buffer, maxLength));
+                                if (newBuffer != nullptr) {
+                                    _buffer = newBuffer;
+                                    _maxLength = maxLength;
+                                }
                             }
-                            _buffer[_index++] = _lastStuff;
+                            if (_index < _maxLength) {
+                                _buffer[_index++] = _lastStuff;
+                            }
+                            else {
+                                TRACE_L1("Out of Memory!!!!");
+                            }
                         }
                     }
                 }
@@ -3167,15 +3189,14 @@ namespace Core {
 
             Container()
                 : _state(0)
+                , _count(0)
                 , _data()
                 , _iterator()
                 , _fieldName(true)
             {
+                ::memset(&_current, 0, sizeof(_current));
             }
-
-            ~Container() override
-            {
-            }
+            ~Container() override = default;
 
         public:
             bool HasLabel(const string& label) const

@@ -40,13 +40,14 @@ namespace Core {
         typedef uint32_t Identifier;
 
         class Serializer {
-        private:
-            Serializer(const Serializer&);
-            Serializer& operator=(const Serializer&);
-
         public:
+            Serializer(const Serializer&) = delete;
+            Serializer& operator=(const Serializer&) = delete;
+
             Serializer()
-                : _current(nullptr)
+                : _length(0)
+                , _offset(0)
+                , _current(nullptr)
             {
             }
             virtual ~Serializer()

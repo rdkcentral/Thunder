@@ -71,6 +71,9 @@
     <ClInclude Include="ConnectorType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="IRPCIterator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

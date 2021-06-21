@@ -102,6 +102,7 @@ namespace Web {
         Signature()
             : _type(Crypto::HASH_MD5)
         {
+            ::memset(_hashValue, 0, sizeof(_hashValue));
         }
         Signature(const Crypto::EnumHashType& type, const uint8_t hash[])
             : _type(type)
@@ -293,15 +294,16 @@ namespace Web {
             };
             const static uint16_t EOL_MARKER = 0x8000;
 
+        public:
             Serializer(const Serializer&) = delete;
             Serializer& operator=(const Serializer&) = delete;
 
-        public:
             Serializer()
                 : _state(VERB)
                 , _offset(0)
                 , _keyIndex(0)
                 , _value()
+                , _bodyLength(0)
                 , _buffer(nullptr)
                 , _lock()
                 , _current()
@@ -374,7 +376,10 @@ namespace Web {
                 : _lock()
                 , _current()
                 , _state(VERB)
+                , _keyWord(Web::Request::keywords::WEBSOCKET_VERSION)
                 , _parser(*this)
+                , _zlib()
+                , _zlibResult(0)
             {
             }
 #ifdef __WINDOWS__
