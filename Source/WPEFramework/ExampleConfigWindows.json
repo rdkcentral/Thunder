@@ -115,13 +115,13 @@
                         "min": 30,
                         "max": 5000
                     },
-                    {
-                        "id": 20,
-                        "period": "Hour",
-                        "frequency": 30,
-                        "dutycycle": 25,
-                        "destination": "/KleineSchuur/Switch"
-                    },
+                  {
+                    "id": 20,
+                    "period": "Hour",
+                    "frequency": 30,
+                    "dutycycle": 25,
+                    "destination": "/PiwiBoard/Led2"
+                  },
                     {
                         "id":100,
                         "schedules":[
@@ -147,7 +147,7 @@
             }
         },
         {
-            "autostart": true,
+            "autostart": false,
             "callsign": "ScriptEngine",
             "classname": "ScriptEngine",
             "locator": "libScriptEngine.so"
@@ -158,7 +158,7 @@
             "classname": "IOControl",
             "autostart": true,
             "configuration": {
-                "port": "\\\\.\\COM5",
+                "port": "\\\\.\\COM9",
                 "pins": [
                     {
                         "id": 1,
@@ -191,7 +191,7 @@
             "classname": "OneWireControl",
             "autostart": true,
             "configuration": {
-              "port": "\\\\.\\COM5",
+              "port": "\\\\.\\COM9",
               "devices": [
                 {
                   "address": "0x28-FF0E8B701404-FE",
@@ -207,7 +207,7 @@
             "classname": "I2CControl",
             "autostart": true,
             "configuration": {
-                "port": "\\\\.\\COM5",
+                "port": "\\\\.\\COM9",
                 "devices": [
                     {
                       "address": 35,
@@ -306,9 +306,12 @@
             "classname": "DeviceInfo",
             "autostart": true,
             "configuration": {
-                "location": "external",
-                "identifier": "internal",
-                "time": "external"
+              "location": "external",
+              "identifier": "internal",
+              "time": "external",
+              "root": {
+                "mode":  "Off"
+              }
             }
         },
         {

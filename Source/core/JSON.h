@@ -2604,12 +2604,31 @@ namespace Core {
                     return (_state == AT_ELEMENT);
                 }
 
-                void Reset()
+                bool Reset(const uint32_t index = ~0)
                 {
+                    _state = AT_BEGINNING;
+
                     if (_container != nullptr) {
                         _iterator = _container->begin();
+
+                        if (index != static_cast<uint32_t>(~0)) {
+                            uint32_t position = (index + 1);
+                            while (position > 0) {
+                                while ((_iterator != _container->end()) && (_iterator->IsSet() == false)) {
+                                    _iterator++;
+                                }
+                                if (_iterator == _container->end()) {
+                                    position = 0;
+                                }
+                                else {
+                                    position--;
+                                }
+                            }
+                            _state = (_iterator != _container->end() ? AT_ELEMENT : AT_END);
+                        }
                     }
-                    _state = AT_BEGINNING;
+
+                    return (_state == AT_ELEMENT);
                 }
 
                 virtual bool Next()
@@ -2701,12 +2720,30 @@ namespace Core {
                     return (_state == AT_ELEMENT);
                 }
 
-                void Reset()
+                bool Reset(const uint32_t index = ~0)
                 {
+                    _state = AT_BEGINNING;
+
                     if (_container != nullptr) {
                         _iterator = _container->begin();
+                        if (index != static_cast<uint32_t>(~0)) {
+                            uint32_t position = (index + 1);
+                            while (position > 0) {
+                                while ((_iterator != _container->end()) && (_iterator->IsSet() == false)) {
+                                    _iterator++;
+                                }
+                                if (_iterator == _container->end()) {
+                                    position = 0;
+                                }
+                                else {
+                                    position--;
+                                }
+                            }
+                            _state = (_iterator != _container->end() ? AT_ELEMENT : AT_END);
+                        }
                     }
-                    _state = AT_BEGINNING;
+
+                    return (_state == AT_ELEMENT);
                 }
 
                 bool Next()
@@ -2745,7 +2782,7 @@ namespace Core {
 
                 inline uint32_t Count() const
                 {
-                    return (_container == nullptr ? 0 : _container->size());
+                    return (_container == nullptr ? 0 : static_cast<uint32_t>(_container->size()));
                 }
 
             private:
