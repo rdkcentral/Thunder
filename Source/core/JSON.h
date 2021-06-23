@@ -2617,11 +2617,12 @@ namespace Core {
                                 while ((_iterator != _container->end()) && (_iterator->IsSet() == false)) {
                                     _iterator++;
                                 }
+
                                 if (_iterator == _container->end()) {
                                     position = 0;
                                 }
-                                else {
-                                    position--;
+                                else if (--position != 0) {
+                                    _iterator++;
                                 }
                             }
                             _state = (_iterator != _container->end() ? AT_ELEMENT : AT_END);
