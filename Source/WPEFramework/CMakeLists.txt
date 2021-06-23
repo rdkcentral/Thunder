@@ -18,7 +18,6 @@
 get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 set(THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool")
-set(SYSTEMD_SERVICE "false" CACHE STRING "Select systemd service scripts, by default it install initv scripts")
 
 # JsonGenerator(CODE INPUT ${CMAKE_CURRENT_SOURCE_DIR}/json/Controller.json OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/json")
 
@@ -46,7 +45,7 @@ if (TREE_REFERENCE)
             )
 endif()
 
-if (EXCEPTION_CATCHING) 
+if (EXCEPTION_CATCHING)
     set_source_files_properties( PluginServer.cpp PROPERTIES COMPILE_FLAGS "-fexceptions" )
 endif()
 
@@ -99,27 +98,6 @@ install(
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
 )
 
-if (SYSTEMD_SERVICE)
-    file(READ scripts/wpeframework.service.in WPEFRAMEWORK_SYSTEMD_SERVICE)
-    string(
-           REGEX REPLACE "EXTRA_DEPENDS" "${SYSTEMD_EXTRA_DEPENDS}"
-           MOD_WPEFRAMEWORK_SYSTEMD_SERVICE "${WPEFRAMEWORK_SYSTEMD_SERVICE}"
-    )
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/scripts/wpeframework.service "${MOD_WPEFRAMEWORK_SYSTEMD_SERVICE}")
-
-    install(DIRECTORY DESTINATION ${CMAKE_INSTALL_PREFIX}/../lib)
-    install(
-            FILES ${CMAKE_CURRENT_BINARY_DIR}/scripts/wpeframework.service
-            DESTINATION ${CMAKE_INSTALL_PREFIX}/../${SYSTEMD_PATH}/system
-    )
-else()
-    install(
-            FILES scripts/wpeframework.in
-            PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
-            DESTINATION ${CMAKE_INSTALL_PREFIX}/../etc/init.d/
-            RENAME wpeframework
-    )
-endif()
-
+add_subdirectory(scripts)
 include(GenericConfig.cmake)
 

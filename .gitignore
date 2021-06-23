@@ -10,7 +10,9 @@ CMakeCache.txt
 uninstall.cmake
 */cmake_install.cmake
 */*/cmake_install.cmake
+*/*/*/cmake_install.cmake
 */*/Makefile
+*/*/*/Makefile
 */*/WPEFramework*Config.cmake
 */*/WPEFramework*ConfigVersion.cmake
 *.pc
