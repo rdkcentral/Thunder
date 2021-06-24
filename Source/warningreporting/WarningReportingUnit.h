@@ -122,25 +122,15 @@ namespace WarningReporting {
 
     public:
         typedef std::list<Setting> Settings; // HPL todo, better to make unordered_map? lookup on categoryt name happens a lot?
-        //typedef std::list<IWarningReportingUnit::IWarningReportingControl*> ControlList; // HPL todo, better to make unordered_map? lookup on categoryt name happens a lot
-        typedef std::unordered_map<std::string, IWarningReportingUnit::IWarningReportingControl*> ControlList;
-        typedef Core::IteratorType<ControlList, IWarningReportingUnit::IWarningReportingControl*> Iterator;
+        typedef std::unordered_map<string, IWarningReportingUnit::IWarningReportingControl*> ControlList;
 
-        //Change later to map
-        IWarningEvent* Clone(const std::string& categoryName) {
-            //TBD
-            //return nullptr;
-            return m_Categories[categoryName]->Clone();
-            /*
-            ControlList::iterator it(m_Categories.begin());
-            uint32_t count = 0;
-            while(it != m_Categories.end() && count != id){
-                
-                ++it;
-                ++count;
+        IWarningEvent* Clone(const string& categoryName)
+        {
+            auto index = m_Categories.find(categoryName);
+            if (index != m_Categories.end()) {
+                return index->second->Clone();
             }
-            return it != m_Categories.end() ? (*it)->Clone(Cata) : nullptr; 
-            */
+            return nullptr;
         }
 
     private:
@@ -201,7 +191,7 @@ namespace WarningReporting {
 
         void Announce(IWarningReportingUnit::IWarningReportingControl& Category) override;
         void Revoke(IWarningReportingUnit::IWarningReportingControl& Category) override;
-        Iterator GetCategories();
+        std::list<string> GetCategories();
         uint32_t SetCategories(const bool enable, const char* category);
 
         // Default enabled/disabled categories: set via config.json.

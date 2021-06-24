@@ -174,31 +174,33 @@ namespace WarningReporting {
         m_Admin.Unlock();
     }
 
-    WarningReportingUnit::Iterator WarningReportingUnit::GetCategories()
+    std::list<string> WarningReportingUnit::GetCategories()
     {
-        //TBD
-        //return (Iterator(m_Categories));
+        std::list<string> result;
+        for (const auto& pair : m_Categories) {
+            result.push_back(pair.first);
+        }
+        return result;
     }
 
     uint32_t WarningReportingUnit::SetCategories(const bool enable, const char* category)
     {
-        //TBD
         uint32_t modifications = 0;
 
-        if(category != nullptr){
-            std::string categoryName = category;
-            m_Categories[categoryName]->Enabled(enable);
-        }
-        else{
-            std::for_each(m_Categories.begin(), m_Categories.end(), 
-            [enable, &modifications](std::pair<std::string, IWarningReportingControl*> pair){
+        if (category != nullptr) {
+            auto index = m_Categories.find(category);
+            if (index != m_Categories.end()) {
+                index->second->Enabled(enable);
+                ++modifications;
+            }
+        } else {
+            for (auto& pair : m_Categories) {
                 pair.second->Enabled(enable);
                 ++modifications;
-            });
+            }
         }
 
-
-        return (modifications);
+        return modifications;
     }
 
     string WarningReportingUnit::Defaults() const
@@ -328,10 +330,7 @@ namespace WarningReporting {
                 m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(fileName), fileNameLength); //filename
                 m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(category), categoryLength); //category name
                 m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(identifier), identifierLength); //identifier aka. callsign
-            
-            
                 m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(buffer), result);
-                
             }
         }
 
