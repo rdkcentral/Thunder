@@ -180,12 +180,12 @@ void HCISocket::Discovery(const bool enable)
 {
     _state.Lock();
 
-    if (((_state & ACTION_MASK) == 0)) {
-        Command::ScanParametersLE parameters;
-        parameters.Clear();
+    if ((_state & ACTION_MASK) == 0) {
         bool result = true;
 
         if (enable == true) {
+            Command::ScanParametersLE parameters;
+            parameters.Clear();
             parameters->type = SCAN_TYPE_PASSIVE;
             parameters->interval = htobs(0x12);
             parameters->window = htobs(0x12);

@@ -837,6 +837,9 @@ namespace Bluetooth {
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CREATE_CONN), le_create_connection_cp, evt_le_connection_complete, EVT_LE_CONN_COMPLETE>
                 ConnectLE;
 
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CREATE_CONN_CANCEL), Core::Void, uint8_t>
+                ConnectLECancel;
+
             typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_SET_CONN_ENCRYPT), set_conn_encrypt_cp, evt_encrypt_change, EVT_ENCRYPT_CHANGE>
                 Encrypt;
 
