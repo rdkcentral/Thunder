@@ -819,16 +819,18 @@ namespace Bluetooth {
         // Create definitions for the HCI commands
         // ------------------------------------------------------------------------
         struct Command {
+            using Void = char[0];
+
             typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_CREATE_CONN), create_conn_cp, evt_conn_complete>
                 Connect;
 
             typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_AUTH_REQUESTED), auth_requested_cp, evt_auth_complete>
                 Authenticate;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_USER_CONFIRM_REPLY), user_confirm_reply_cp, Core::Void>
+            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_USER_CONFIRM_REPLY), user_confirm_reply_cp, Void>
                 UserConfirmReply;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_USER_CONFIRM_NEG_REPLY), user_confirm_reply_cp, Core::Void>
+            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_USER_CONFIRM_NEG_REPLY), user_confirm_reply_cp, Void>
                 UserConfirmNegReply;
 
             typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_DISCONNECT), disconnect_cp, evt_disconn_complete>
@@ -837,7 +839,7 @@ namespace Bluetooth {
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CREATE_CONN), le_create_connection_cp, evt_le_connection_complete, EVT_LE_CONN_COMPLETE>
                 ConnectLE;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CREATE_CONN_CANCEL), Core::Void, uint8_t>
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CREATE_CONN_CANCEL), Void, uint8_t>
                 ConnectLECancel;
 
             typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_SET_CONN_ENCRYPT), set_conn_encrypt_cp, evt_encrypt_change, EVT_ENCRYPT_CHANGE>
@@ -846,7 +848,7 @@ namespace Bluetooth {
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_START_ENCRYPTION), le_start_encryption_cp, uint8_t>
                 EncryptLE;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_REMOTE_NAME_REQ), remote_name_req_cp, Core::Void>
+            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_REMOTE_NAME_REQ), remote_name_req_cp, Void>
                 RemoteName;
 
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_SCAN_PARAMETERS), le_set_scan_parameters_cp, uint8_t>
@@ -855,13 +857,13 @@ namespace Bluetooth {
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_SCAN_ENABLE), le_set_scan_enable_cp, uint8_t>
                 ScanEnableLE;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CLEAR_WHITE_LIST), Core::Void, Core::Void>
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CLEAR_WHITE_LIST), Void, Void>
                 ClearWhiteList;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_READ_WHITE_LIST_SIZE), Core::Void, le_read_white_list_size_rp>
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_READ_WHITE_LIST_SIZE), Void, le_read_white_list_size_rp>
                 ReadWhiteListSize;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_ADD_DEVICE_TO_WHITE_LIST), le_add_device_to_white_list_cp, Core::Void>
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_ADD_DEVICE_TO_WHITE_LIST), le_add_device_to_white_list_cp, Void>
                 AddDeviceToWhiteList;
 
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_REMOVE_DEVICE_FROM_WHITE_LIST), le_remove_device_from_white_list_cp, uint8_t>
