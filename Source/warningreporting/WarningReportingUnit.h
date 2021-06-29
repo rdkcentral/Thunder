@@ -192,13 +192,11 @@ namespace WarningReporting {
         void Announce(IWarningReportingUnit::IWarningReportingControl& Category) override;
         void Revoke(IWarningReportingUnit::IWarningReportingControl& Category) override;
         std::list<string> GetCategories();
-        uint32_t SetCategories(const bool enable, const char* category);
 
         // Default enabled/disabled categories: set via config.json.
         bool IsDefaultCategory(const string& category, bool& enabled, string& configuration) const override;
         string Defaults() const;
         void Defaults(const string& jsonCategories);
-        void Defaults(Core::File& file);
 
         void ReportWarningEvent(const char identifier[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information) override;
 

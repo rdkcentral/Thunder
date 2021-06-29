@@ -183,25 +183,6 @@ namespace WarningReporting {
         return result;
     }
 
-    uint32_t WarningReportingUnit::SetCategories(const bool enable, const char* category)
-    {
-        uint32_t modifications = 0;
-
-        if (category != nullptr) {
-            auto index = m_Categories.find(category);
-            if (index != m_Categories.end()) {
-                index->second->Enabled(enable);
-                ++modifications;
-            }
-        } else {
-            for (auto& pair : m_Categories) {
-                pair.second->Enabled(enable);
-                ++modifications;
-            }
-        }
-
-        return modifications;
-    }
 
     string WarningReportingUnit::Defaults() const
     {
@@ -225,18 +206,6 @@ namespace WarningReporting {
         serialized.FromString(jsonCategories, error);
         if (error.IsSet() == true) {
             SYSLOG(Logging::ParsingError, (_T("Parsing WarningReporting failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
-        }
-
-        // Deal with existing categories that might need to be enable/disabled.
-        UpdateEnabledCategories(serialized);
-    }
-
-    void WarningReportingUnit::Defaults(Core::File& file) {
-        Core::JSON::ArrayType<Setting::JSON> serialized;
-        Core::OptionalType<Core::JSON::Error> error;
-        serialized.IElement::FromFile(file, error);
-        if (error.IsSet() == true) {
-            SYSLOG(WPEFramework::Logging::ParsingError, (_T("Parsing WarningReporting failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
         }
 
         // Deal with existing categories that might need to be enable/disabled.
@@ -333,7 +302,7 @@ namespace WarningReporting {
                 m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(buffer), result);
             }
         }
-
+        /*
         if ( ( m_DirectOut == true ) && ( information.IsWarning() == true ) ) {
 
             string text;
@@ -345,6 +314,7 @@ namespace WarningReporting {
             fprintf(stdout, "\033[1;32mSUSPICIOUS [%s]: [%s:%s]: %s\n\033[0m", time.c_str(), identifier, information.Category(), text.c_str());
             fflush(stdout);
         }
+        */
 
         m_Admin.Unlock();
     }

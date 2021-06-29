@@ -35,6 +35,7 @@
 #endif
 
 #include "../tracing/TraceUnit.h"
+#include "../warningreporting/WarningReportingUnit.h"
 
 namespace WPEFramework {
 namespace RPC {
@@ -1151,9 +1152,10 @@ namespace RPC {
 
                     // Anounce the interface as completed
                     string jsonDefaultCategories(Trace::TraceUnit::Instance().Defaults());
+                    string jsonDefaultWarningCategories(WarningReporting::WarningReportingUnit::Instance().Defaults());
                     void* result = _parent.Announce(proxyChannel, message->Parameters());
 
-                    message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultCategories);
+                    message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultCategories, jsonDefaultWarningCategories);
 
                     // We are done, report completion
                     channel.ReportResponse(data);
