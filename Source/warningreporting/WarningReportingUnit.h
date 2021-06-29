@@ -121,7 +121,7 @@ namespace WarningReporting {
         };
 
     public:
-        typedef std::list<Setting> Settings; // HPL todo, better to make unordered_map? lookup on categoryt name happens a lot?
+        typedef std::unordered_map<string, Setting> Settings; 
         typedef std::unordered_map<string, IWarningReportingUnit::IWarningReportingControl*> ControlList;
 
         IWarningEvent* Clone(const string& categoryName)

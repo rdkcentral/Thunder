@@ -159,8 +159,7 @@ namespace WarningReporting {
     {
         m_Admin.Lock();
 
-        std::string categoryName = Category.Category();
-        m_Categories[categoryName] = &Category;
+        m_Categories.emplace(Category.Category(), &Category);
 
         m_Admin.Unlock();
     }
@@ -168,8 +167,7 @@ namespace WarningReporting {
     void WarningReportingUnit::Revoke(IWarningReportingUnit::IWarningReportingControl& Category)
     {
         m_Admin.Lock();
-        std::string categoryName = Category.Category();
-        m_Categories.erase(categoryName);
+        m_Categories.erase(Category.Category());
 
         m_Admin.Unlock();
     }
@@ -188,11 +186,9 @@ namespace WarningReporting {
     {
         string result;
         Core::JSON::ArrayType<Setting::JSON> serialized;
-        Settings::const_iterator index = m_EnabledCategories.begin();
         
-        while (index != m_EnabledCategories.end()) {
-            serialized.Add(Setting::JSON(*index));
-            index++;
+        for(const auto& enabledCategory: m_EnabledCategories){
+            serialized.Add(Setting::JSON(enabledCategory.second));
         }
 
         serialized.ToString(result);
@@ -220,23 +216,17 @@ namespace WarningReporting {
         m_EnabledCategories.clear();
 
         while (index.Next()) {
-            m_EnabledCategories.emplace_back(Setting(index.Current()));
+            m_EnabledCategories.emplace(index.Current().Category.Value(), Setting(index.Current()));
         }
 
-        for (auto& entry : m_Categories) {
-            Settings::const_iterator index = m_EnabledCategories.begin(); 
-            while (index != m_EnabledCategories.end()) {
-                const Setting& setting = *index;
+        for (auto& setting : m_EnabledCategories) {
+            auto category = m_Categories.find(setting.first);
 
-                if ( setting.Category() == entry.second->Category() ) {
-                    if( setting.Enabled() != entry.second->Enabled() ) {
-                        entry.second->Enabled(setting.Enabled()); 
-                    }
-                    entry.second->Configure(setting.Configuration());
-                    break; // HPL todo: you might to add this also on TraceControl
+            if (category != m_Categories.end()) {
+                if (category->second->Enabled() != setting.second.Enabled()) {
+                    category->second->Enabled(setting.second.Enabled());
                 }
-
-                index++;
+                category->second->Configure(setting.second.Configuration());
             }
         }
     }
@@ -245,18 +235,12 @@ namespace WarningReporting {
     {
 
         bool isDefaultCategory = false;
+        auto setting = m_EnabledCategories.find(category);
 
-        Settings::const_iterator index = m_EnabledCategories.begin(); 
-        while (index != m_EnabledCategories.end()) {
-            const Setting& setting = *index;
-
-            if ( setting.Category() == category) {
-                isDefaultCategory = true;
-                enabled = setting.Enabled();
-                config = setting.Configuration();
-                break; // HPL todo: also in tracecontrol you probably want to stop the loop once found
-            }
-            index++; 
+        if (setting != m_EnabledCategories.end()) {
+            isDefaultCategory = true;
+            enabled = setting->second.Enabled();
+            config = setting->second.Configuration();
         }
 
         return isDefaultCategory;
@@ -302,7 +286,7 @@ namespace WarningReporting {
                 m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(buffer), result);
             }
         }
-        /*
+        
         if ( ( m_DirectOut == true ) && ( information.IsWarning() == true ) ) {
 
             string text;
@@ -314,7 +298,7 @@ namespace WarningReporting {
             fprintf(stdout, "\033[1;32mSUSPICIOUS [%s]: [%s:%s]: %s\n\033[0m", time.c_str(), identifier, information.Category(), text.c_str());
             fflush(stdout);
         }
-        */
+        
 
         m_Admin.Unlock();
     }
