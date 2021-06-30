@@ -844,6 +844,7 @@ class Function(Block, Name):
         self.retval = Identifier(self, self, ret_type, valid_specifiers, False)
         self.omit = False
         self.stub = False
+        self.is_excluded = False
         self.parent.methods.append(self)
 
     def Proto(self):
@@ -1308,6 +1309,8 @@ def __Tokenize(contents):
                     tagtokens.append("@DEPRECATED")
                 if _find("@json", token):
                     tagtokens.append("@JSON")
+                if _find("@json:omit", token):
+                    tagtokens.append("@JSON_OMIT")
                 if _find("@event", token):
                     tagtokens.append("@EVENT")
                 if _find("@extended", token):
@@ -1445,6 +1448,7 @@ def Parse(contents):
     omit_next = False
     stub_next = False
     json_next = False
+    exclude_next = False
     event_next = False
     extended_next = False
     iterator_next = False
@@ -1469,6 +1473,10 @@ def Parse(contents):
         elif tokens[i] == "@JSON":
             json_next = True
             tokens[i] = ";"
+            i += 1
+        elif tokens[i] == "@JSON_OMIT":
+            exclude_next = True
+            tokens[i] = ';'
             i += 1
         elif tokens[i] == "@EVENT":
             event_next = True
@@ -1715,6 +1723,10 @@ def Parse(contents):
                 stub_next = False
             elif method.parent.stub:
                 method.stub = True
+
+            if exclude_next:
+                method.is_excluded = True
+                exclude_next = False
 
             if last_template_def:
                 method.specifiers.append(" ".join(last_template_def))
