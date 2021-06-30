@@ -84,6 +84,7 @@ class Metadata:
         self.output = False
         self.is_property = False
         self.is_deprecated = False
+        self.is_obsolete = False
         self.length = None
         self.maxlength = None
         self.interface = None
@@ -304,6 +305,8 @@ class Identifier():
                     skip = 2
                 elif token[1:] == "DEPRECATED":
                     self.meta.is_deprecated = True
+                elif token[1:] == "OBSOLETE":
+                    self.meta.is_obsolete = True
                 elif token[1:] == "TEXT":
                     self.meta.text = "".join(string[i + 1])
                     skip = 1
@@ -1307,6 +1310,8 @@ def __Tokenize(contents):
                     tagtokens.append("@PROPERTY")
                 if _find("@deprecated", token):
                     tagtokens.append("@DEPRECATED")
+                if _find("@obsolete", token):
+                    tagtokens.append("@OBSOLETE")
                 if _find("@json", token):
                     tagtokens.append("@JSON")
                 if _find("@json:omit", token):
