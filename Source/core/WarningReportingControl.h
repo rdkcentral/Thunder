@@ -187,7 +187,6 @@ namespace WarningReporting {
     template <typename CONTROLCATEGORY, typename BOUNDSTYPE = typename CONTROLCATEGORY::BoundsType>
     class WarningReportingBoundsCategory {
     public:
-        using RealCategory = CONTROLCATEGORY;
         WarningReportingBoundsCategory(const WarningReportingBoundsCategory&) = delete;
         WarningReportingBoundsCategory& operator=(const WarningReportingBoundsCategory&) = delete;
 
@@ -223,21 +222,29 @@ namespace WarningReporting {
             }
             return report;
         }
-        
+
         uint16_t Serialize(uint8_t buffer[], const uint16_t length) const {
-            // HPL Todo: not implemented yet: we should also serialize our part, then only pass on to the actual class
-            return (_category.Serialize(buffer, length));
+            const std::size_t boundsTypeSize = sizeof(BOUNDSTYPE);
+            ASSERT(length >= boundsTypeSize);
+
+            uint16_t serialized = _category.Serialize(buffer, length);
+            memcpy(buffer + serialized, &_actualvalue, boundsTypeSize);
+
+            return serialized + boundsTypeSize;
         }
 
         uint16_t Deserialize(const uint8_t data[], const uint16_t size) {
-            // HPL Todo: not implemented yet: we should also extract our part then pass on the rest to tyhe actual category
-            return (_category.Deserialize(data, size));
+            const std::size_t boundsTypeSize = sizeof(BOUNDSTYPE);
+            ASSERT(size >= boundsTypeSize);
+
+            uint16_t deserialized = _category.Deserialize(data, size);
+            memcpy(&_actualvalue, data + deserialized, boundsTypeSize);
+
+            return deserialized + boundsTypeSize;
         }
 
         void ToString(string& visitor) const {
-            // HPL todo: perhaps give the Catagoryb to influence this, e.g. add unit (ms)
-            _category.ToString(visitor);
-            visitor += Core::Format(_T(", value %u, max allowed %u"), _actualvalue, _warningbound.load(std::memory_order_relaxed));
+            _category.ToString(visitor, _actualvalue, _warningbound.load(std::memory_order_relaxed));
         }
 
         bool IsWarning() const {

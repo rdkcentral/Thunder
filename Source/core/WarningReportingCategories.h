@@ -20,95 +20,65 @@
 #pragma once
 
 #include "Module.h"
+#include <iostream>
 
 namespace WPEFramework {
 namespace WarningReporting {
 
     class EXTERNAL TooLongWaitingForLock {
     public:
-        TooLongWaitingForLock(const TooLongWaitingForLock& a_Copy) = delete;
-        TooLongWaitingForLock& operator=(const TooLongWaitingForLock& a_RHS) = delete;
-
-        TooLongWaitingForLock()
-        {
-        }
-
+        TooLongWaitingForLock(const TooLongWaitingForLock&) = delete;
+        TooLongWaitingForLock& operator=(const TooLongWaitingForLock&) = delete;
+        TooLongWaitingForLock() = default;
         ~TooLongWaitingForLock() = default;
 
-        uint16_t Serialize(uint8_t[], const uint16_t) const {
-            // HPL Todo: implement
-            return(0); 
+        //nothing to serialize/deserialize here
+        uint16_t Serialize(uint8_t[], const uint16_t) const
+        {
+            return 0;
         }
 
-        uint16_t Deserialize(const uint8_t[], const uint16_t) {
-            // HPL Todo: implement
-            return(0);
+        uint16_t Deserialize(const uint8_t[], const uint16_t)
+        {
+            return 0;
         }
 
-        void ToString(string& visitor) const {
-            visitor = (_T("it took suspiciously long to aquire a critical section"));
+        void ToString(string& visitor, const int64_t actualValue, const int64_t warningBound) const
+        {
+            visitor = (_T("It took suspiciously long to aquire a critical section"));
+            visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, warningBound);
         };
 
-        static constexpr uint32_t DefaultWarningBound = {1000};
-        static constexpr uint32_t DefaultReportBound = {1000};
+        static constexpr uint32_t DefaultWarningBound = { 1000 };
+        static constexpr uint32_t DefaultReportBound = { 1000 };
     };
 
     class EXTERNAL SinkStillHasReference {
     public:
-        SinkStillHasReference(const SinkStillHasReference& a_Copy) = delete;
-        SinkStillHasReference& operator=(const SinkStillHasReference& a_RHS) = delete;
-
-        SinkStillHasReference(/*TBD*/):
-            _currentRefCount(123)
-        {
-        }
-
+        SinkStillHasReference(const SinkStillHasReference&) = delete;
+        SinkStillHasReference& operator=(const SinkStillHasReference&) = delete;
+        SinkStillHasReference() = default;
         ~SinkStillHasReference() = default;
 
-        uint16_t Serialize(uint8_t buffer[], const uint16_t length) const {
-            ASSERT(length >= 4);
-            memcpy(buffer, &_currentRefCount, sizeof(uint32_t));
-            
-            /*
-            ASSERT(length >= 4);
-            uint32_t val = htonl(_currentRefCount);
-            memcpy(buffer, &val, sizeof(uint32_t));
-            */
-            /*
-            buffer[0] = _currentRefCount & 0xFF;
-            buffer[1] = (_currentRefCount >> 8 ) & 0xFF;
-            buffer[2] = (_currentRefCount >> 16 ) & 0xFF;
-            buffer[3] = (_currentRefCount >> 24 ) & 0xFF;
-            */
-
-            return sizeof(uint32_t); 
+        //nothing to serialize/deserialize here
+        uint16_t Serialize(uint8_t[], const uint16_t) const
+        {
+            return 0;
         }
 
-        uint16_t Deserialize(const uint8_t buffer[], const uint16_t length) {
-            ASSERT(length >= 4);
-            memcpy(&_currentRefCount, buffer, sizeof(uint32_t));
-            
-            /*
-            ASSERT(length >= 4);
-            uint32_t val = 0;
-            memcpy(&val, buffer, sizeof(uint32_t));
-            _currentRefCount = ntohl(val);
-            */
-
-            //_currentRefCount = buffer[0] | (buffer[1]  << 8 ) | (buffer[2]  << 16 ) | (buffer[3]  << 24 );  
-            return sizeof(uint32_t);
+        uint16_t Deserialize(const uint8_t[], const uint16_t)
+        {
+            return 0;
         }
 
-        void ToString(string& visitor) const {
+        void ToString(string& visitor, const int64_t actualValue, const int64_t warningBound) const
+        {
             visitor = (_T("A sink still holds a reference when it is being destructed"));
+            visitor += Core::Format(_T(", value %lld, max allowed %lld"), actualValue, warningBound);
         };
 
-        uint32_t _currentRefCount;
-        static constexpr uint32_t DefaultWarningBound = {0};
-        static constexpr uint32_t DefaultReportBound = {0};
+        static constexpr uint32_t DefaultWarningBound = { 0 };
+        static constexpr uint32_t DefaultReportBound = { 0 };
     };
-    
 }
-} 
-
-
+}
