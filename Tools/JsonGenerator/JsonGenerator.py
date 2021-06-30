@@ -1070,7 +1070,7 @@ def LoadInterface(file, includePaths = []):
 
         for f in event_interfaces:
             for method in f.obj.methods:
-                if method.IsPureVirtual() and method.omit == False:
+                if method.IsPureVirtual() and method.is_excluded == False:
                     obj = OrderedDict()
                     obj["cppname"] = method.name
                     params = BuildParameters(method.vars, f.obj.is_extended)
