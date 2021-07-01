@@ -30,7 +30,7 @@ import copy
 import CppParser
 from collections import OrderedDict
 
-VERSION = "1.6.9"
+VERSION = "1.6.10"
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -346,6 +346,9 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                     self.oclass = type_
                     self.unexpanded = type
                     self.type = self._ExpandTypedefs(type)
+                    if not isinstance(self.type, CppParser.Type):
+                        raise TypenameError(type_, "'%s': undefined type" % TypeStr(CppParser.Type(CppParser.Undefined(self.type))))
+
                     self.is_ref = type.IsReference()
                     self.is_ptr = type.IsPointer()
 
@@ -460,8 +463,9 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
 
                 def _ExpandTypedefs(self, type):
                     expanded = type
-                    if isinstance(type.Type(), CppParser.Typedef):
-                        expanded = self._ExpandTypedefs(type.Type().type)
+                    if isinstance(type, CppParser.Type):
+                        if isinstance(type.Type(), CppParser.Typedef):
+                            expanded = self._ExpandTypedefs(type.Type().type)
                     return expanded
 
             class EmitParam(EmitType):
@@ -1404,7 +1408,7 @@ if __name__ == "__main__":
                     log.Print("skipped file '%s'" % err)
                     skipped.append(source_file)
                 except NoInterfaceError as err:
-                    log.Info("no interface classes found in %s" % (INTERFACE_NAMESPACE), source_file)
+                    log.Warn("no interface classes found in %s" % (INTERFACE_NAMESPACE), source_file)
                 except TypenameError as err:
                     log.Error(err)
                     if not keep_incomplete and os.path.isfile(output_file):
