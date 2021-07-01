@@ -103,14 +103,17 @@ class Undefined(BaseType):
         self.comment = comment
 
     def Proto(self):
+        proto = self.comment
         if isinstance(self.type, list):
             if (type(self.type[0]) is str):
-                return self.comment + " ".join(self.type).replace(" < ", "<").replace(" :: ", "::").replace(
-                    " >", ">").replace(" *", "*").replace(" &", "&").replace(" &&", "&&")
+                proto += " ".join(self.type).replace(" < ", "<").replace(" :: ", "::").replace(
+                    " >", ">").replace(" *", "*").replace(" &", "&").replace(" &&", "&&").replace(" ,",",")
             else:
-                return self.comment + " ".join([str(x) for x in self.type])
+                proto += " ".join([str(x) for x in self.type])
         else:
-            return self.comment + str(self.type)
+            proto += str(self.type)
+
+        return proto
 
     def __str__(self):
         return self.Proto()
@@ -248,7 +251,11 @@ class Identifier():
                 if nest2 == 0 and not nest1:
                     type_found = True
             elif nest1 or nest2:
-                type[-1] += " " + token
+                # keep double collon-separated tokens together
+                if token == "::" or type[-1].endswith("::"):
+                    type[-1] += token
+                else:
+                    type[-1] += " " + token
 
             # handle pointer/reference markers
             elif token[0] == "@":
