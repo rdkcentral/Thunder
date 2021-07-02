@@ -886,6 +886,8 @@ namespace RPC {
 
                     std::list<RPC::IRemoteConnection::INotification*>::iterator observer(_observers.begin());
 
+                    _parent.Closed(destructed);
+
                     while (observer != _observers.end()) {
                         (*observer)->Deactivated(index->second);
                         observer++;
@@ -898,8 +900,6 @@ namespace RPC {
                     index->second->Release();
                     _connections.erase(index);
                     _adminLock.Unlock();
-
-                    _parent.Closed(destructed);
 
                     connection->Release();
                 }

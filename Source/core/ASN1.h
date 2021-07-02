@@ -227,6 +227,7 @@ namespace Core {
             OID(const string& OID)
                 : _length(0)
             {
+                _buffer[0] = 0;
                 uint16_t firstSet = ~0;
                 uint16_t index = 0;
                 uint32_t value = 0;

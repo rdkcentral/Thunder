@@ -168,6 +168,7 @@ namespace Web {
             template <typename... Args>
             HandlerType(PARENTCLASS& parent, Args&&... args)
                 : ACTUALLINK(std::forward<Args>(args)...)
+                , _activity(true)
                 , _parent(parent)
             {
             }
