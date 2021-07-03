@@ -1055,13 +1055,11 @@ namespace Core {
         static typename Core::TypeTraits::enable_if<std::is_same<ACTUALOBJECT, ELEMENT>::value, EXPOSED*>::type
             Create(IProxyContainerElement*& refInterface, CONTAINER& parent, Args&&... args) 
         {
-            EXPOSED* result = nullptr;
             ThisClass* element = new (0) ThisClass(parent, std::forward<Args>(args)...);
 
             ASSERT(element != nullptr);
 
             if (element->__IsInitialized<CONTAINER, ELEMENT, EXPOSED>() == true) {
-                result = static_cast<EXPOSED*>(element);
                 refInterface = static_cast<IProxyContainerElement*>(element);
             }
             else {
