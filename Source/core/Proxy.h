@@ -1017,7 +1017,7 @@ namespace Core {
     }
 
     struct IProxyContainerElement : public virtual IReferenceCounted {
-        virtual ~IProxyContainerElement() {}
+        ~IProxyContainerElement() override = default;
 
         virtual void Unlink() = 0;
     };
@@ -1185,7 +1185,7 @@ namespace Core {
         }
 
         // -----------------------------------------------------
-        // Check for Aquire method on Object
+        // Check for Unlink method on Object
         // -----------------------------------------------------
         HAS_MEMBER(Unlink, hasUnlink);
 
