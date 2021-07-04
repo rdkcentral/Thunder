@@ -33,7 +33,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pard
 import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 
-VERSION = "1.8.2"
+VERSION = "1.8.3"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
@@ -559,6 +559,7 @@ class JsonMethod(JsonObject):
         if "tags" in schema:
             self.tags = schema["tags"]
         self.deprecated = "deprecated" in schema and schema["deprecated"];
+        self.obsolete = "obsolete" in schema and schema["obsolete"];
 
     def Errors(self):
         return self.errors
@@ -567,7 +568,7 @@ class JsonMethod(JsonObject):
         return IMPL_ENDPOINT_PREFIX + JsonObject.JsonName(self)
 
     def Headline(self):
-        return "%s%s%s" % (self.JsonName(), (" - " + self.summary.split(".", 1)[0]) if self.summary else "", " (DEPRECATED)" if self.deprecated else "")
+        return "%s%s%s" % (self.JsonName(), (" - " + self.summary.split(".", 1)[0]) if self.summary else "", " (DEPRECATED)" if self.deprecated else " (OBSOLETE)" if self.obsolete else "")
 
 
 class JsonNotification(JsonMethod):
@@ -982,6 +983,9 @@ def LoadInterface(file, includePaths = []):
                 else:
                     return None
 
+            if method.is_excluded:
+                continue
+
             prefix = (face.obj.parent.name.lower() + "_") if face.obj.parent.full_name != INTERFACE_NAMESPACE else ""
             method_name = method.name
             method_name_lower = method.name.lower()
@@ -1049,6 +1053,8 @@ def LoadInterface(file, includePaths = []):
             if obj:
                 if method.retval.meta.is_deprecated:
                     obj["deprecated"] = True
+                elif method.retval.meta.is_obsolete:
+                    obj["obsolete"] = True
                 if method.retval.meta.brief:
                     obj["summary"] = method.retval.meta.brief
                 elif (prefix + method_name_lower) not in properties:
@@ -1067,12 +1073,14 @@ def LoadInterface(file, includePaths = []):
 
         for f in event_interfaces:
             for method in f.obj.methods:
-                if method.IsPureVirtual() and method.omit == False:
+                if method.IsPureVirtual() and method.is_excluded == False:
                     obj = OrderedDict()
                     obj["cppname"] = method.name
                     params = BuildParameters(method.vars, f.obj.is_extended)
                     if method.retval.meta.is_deprecated:
                         obj["deprecated"] = True
+                    elif method.retval.meta.is_obsolete:
+                        obj["obsolete"] = True
                     if method.retval.meta.brief:
                         obj["summary"] = method.retval.meta.brief
                     else:
@@ -1636,7 +1644,8 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                     emit.Line("// write-only property set")
                 Invoke(params, void)
                 if not m.writeonly:
-                    emit.Line("%s.Null(true);" % response.CppName())
+                    if not isinstance(response, JsonArray): # FIXME
+                        emit.Line("%s.Null(true);" % response.CppName())
                     emit.Unindent()
                     emit.Line("}")
 
@@ -2314,7 +2323,9 @@ def CreateDocument(schema, path):
                     writeonly = True
                     MdParagraph("> This property is **write-only**.")
             if "deprecated" in props:
-                MdParagraph("> This API is **deprecated**. It is no longer recommended for use in new implementations.")
+                MdParagraph("> This API is **deprecated** and may be removed in the future. It is no longer recommended for use in new implementations.")
+            elif "obsolete" in props:
+                MdParagraph("> This API is **obsolete**. It is no longer recommended for use in new implementations.")
             if "description" in props:
                 MdHeader("Description", 3)
                 MdParagraph(props["description"])
