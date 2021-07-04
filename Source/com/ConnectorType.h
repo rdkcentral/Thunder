@@ -68,7 +68,7 @@ namespace RPC {
         {
             INTERFACE* result = nullptr;
 
-            Core::ProxyType<Channel> channel = _comChannels.Instance(nodeId, nodeId, ENGINE());
+            Core::ProxyType<Channel> channel = _comChannels.template Instance<Channel>(nodeId, nodeId, ENGINE());
 
             if (channel.IsValid() == true) {
                 result = channel->template Aquire<INTERFACE>(waitTime, className, version);
