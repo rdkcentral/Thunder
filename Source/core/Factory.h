@@ -39,40 +39,32 @@ namespace Core {
             virtual Core::ProxyType<BASEOBJECT> GetElement() = 0;
             virtual uint32_t CreatedElements() const = 0;
             virtual uint32_t QueuedElements() const = 0;
-            virtual uint32_t CurrentQueueSize() const = 0;
         };
 
         template <typename FACTORYELEMENT>
         class InternalFactoryType : public IFactory {
-        private:
-            InternalFactoryType(const InternalFactoryType<FACTORYELEMENT>&);
-            InternalFactoryType<FACTORYELEMENT>& operator=(const InternalFactoryType<FACTORYELEMENT>&);
-
         public:
+            InternalFactoryType(const InternalFactoryType<FACTORYELEMENT>&) = delete;
+            InternalFactoryType<FACTORYELEMENT>& operator=(const InternalFactoryType<FACTORYELEMENT>&) = delete;
+
             InternalFactoryType(const uint32_t initialQueueSize)
                 : _warehouse(initialQueueSize)
             {
             }
-            virtual ~InternalFactoryType()
-            {
-            }
+            ~InternalFactoryType() override = default;
 
         public:
-            virtual Core::ProxyType<BASEOBJECT> GetElement()
+            Core::ProxyType<BASEOBJECT> GetElement() override
             {
                 return (Core::proxy_cast<BASEOBJECT>(_warehouse.Element()));
             }
-            virtual uint32_t CreatedElements() const
+            uint32_t CreatedElements() const override
             {
                 return (_warehouse.CreatedElements());
             }
-            virtual uint32_t QueuedElements() const
+            uint32_t QueuedElements() const override
             {
                 return (_warehouse.QueuedElements());
-            }
-            virtual uint32_t CurrentQueueSize() const
-            {
-                return (_warehouse.CurrentQueueSize());
             }
 
         private:
