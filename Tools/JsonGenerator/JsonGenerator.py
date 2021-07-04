@@ -1636,7 +1636,8 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                     emit.Line("// write-only property set")
                 Invoke(params, void)
                 if not m.writeonly:
-                    emit.Line("%s.Null(true);" % response.CppName())
+                    if not isinstance(response, JsonArray): # FIXME
+                        emit.Line("%s.Null(true);" % response.CppName())
                     emit.Unindent()
                     emit.Line("}")
 
