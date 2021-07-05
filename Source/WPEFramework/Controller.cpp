@@ -374,41 +374,26 @@ namespace Plugin {
                     }
                 }
             } else if (index.Current() == _T("Configuration")) {
-                if (request.HasBody() == true) {
+                if ((index.Next() == true) && (request.HasBody() == true)) {
+
+                    Core::ProxyType<PluginHost::Service> serviceInfo(FromIdentifier(index.Current().Text()));
                     Core::ProxyType<const Web::TextBody> data(request.Body<const Web::TextBody>());
 
-                    if (index.Next() == true) {
-                        
-                        Core::ProxyType<PluginHost::Service> serviceInfo(FromIdentifier(index.Current().Text()));
+                    if ((data.IsValid() == false) || (serviceInfo.IsValid() == false)) {
 
-                        if ((data.IsValid() == false) || (serviceInfo.IsValid() == false)) {
-
-                            result->ErrorCode = Web::STATUS_BAD_REQUEST;
-                            result->Message = _T("Not sufficent data to comply to the request");
-                        } else {
-
-                            uint32_t error;
-
-                            if ((error = serviceInfo->ConfigLine(*data)) == Core::ERROR_NONE) {
-                                result->ErrorCode = Web::STATUS_OK;
-                            } else {
-                                result->ErrorCode = Web::STATUS_BAD_REQUEST;
-                                result->Message = _T("Could not update the config. Error: ") + Core::NumberType<uint32_t>(error).Text();
-                            }
-                        }
+                        result->ErrorCode = Web::STATUS_BAD_REQUEST;
+                        result->Message = _T("Not sufficent data to comply to the request");
                     } else {
-                        //request to update the controller configuration 
-                        WPEFramework::JsonData::Controller::UpdateConfigurationParamsData newconfig ;
-                        if (data.IsValid() == false || newconfig.FromString(*data)==false ){
-                            result->ErrorCode = Web::STATUS_BAD_REQUEST;
-                            result->Message = _T("body data is not valid"); 
-                        }
-                        result->ErrorCode = _pluginServer->_config.UpdateConfiguration(newconfig) == Core::ERROR_NONE ? Web::STATUS_OK : Web::STATUS_BAD_REQUEST ;
-                    }
-                } else  {
-                    result->ErrorCode = Web::STATUS_BAD_REQUEST;
-                    result->Message = _T("Request Need body.");
 
+                        uint32_t error;
+
+                        if ((error = serviceInfo->ConfigLine(*data)) == Core::ERROR_NONE) {
+                            result->ErrorCode = Web::STATUS_OK;
+                        } else {
+                            result->ErrorCode = Web::STATUS_BAD_REQUEST;
+                            result->Message = _T("Could not update the config. Error: ") + Core::NumberType<uint32_t>(error).Text();
+                        }
+                    }
                 }
             } else if (index.Current() == _T("Discovery")) {
                 if (_probe != nullptr) {

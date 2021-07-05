@@ -1159,11 +1159,11 @@ namespace PluginHost {
                     printf("Latitude read = [%d]\n", Latitude.Value());
                     printf("Longitude read = [%d]\n", Longitude.Value());
 
-                    _serverconfig.UpdateVersion(Version.Value());
-                    _serverconfig.UpdatePrefix(Prefix.Value());
-                    _serverconfig.UpdateIdleTime(IdleTime.Value());
-                    _serverconfig.UpdateLatitude(Latitude.Value());
-                    _serverconfig.UpdateLongitude(Longitude.Value());
+                    _serverconfig.SetVersion(Version.Value());
+                    _serverconfig.SetPrefix(Prefix.Value());
+                    _serverconfig.SetIdleTime(IdleTime.Value());
+                    _serverconfig.SetLatitude(Latitude.Value());
+                    _serverconfig.SetLongitude(Longitude.Value());
                     // Convey the real JSON struct information into the specific services.
                     ServiceMap::Iterator index(_services.Services());
 

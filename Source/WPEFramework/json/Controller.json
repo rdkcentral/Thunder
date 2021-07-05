@@ -479,49 +479,6 @@
           "$ref": "#/common/errors/general"
         }
       ]
-    },
-    "Controller.1.updateConfiguration": {
-      "summary": "Update the configuration of the controller",
-      "description": "Use this method to override the configuration of the controller",
-      "params": {
-        "type": "object",
-        "properties": {
-          "version": {
-            "type": "string",
-            "description": "version of the controller",
-            "example": "1.0"
-          },
-          "prefix": {
-            "type": "string",
-            "description": "prefix",
-            "example": "prefix"
-          },
-          "idletime": {
-            "type": "number",
-            "description": "idle time",
-            "example": "180"
-          },
-          "latitude": {
-            "type": "number",
-            "description": "latitude ",
-            "example": "100"
-          },
-          "longitude": {
-            "type": "number",
-            "description": "longitude ",
-            "example": "200"
-          }
-        }
-      },
-      "result": {
-        "$ref": "#/common/results/void"
-      },
-      "errors": [
-        {
-          "description": "Failed update the configuration",
-          "$ref": "#/common/errors/general"
-        }
-      ]
     }
   },
   "properties": {
@@ -650,7 +607,62 @@
           "$ref": "#/common/errors/general"
         }
       ]
-    }
+    },
+    "version": {
+			"type": "string",
+			"description": "version of the controller",
+			"example": "1.0",
+			"errors": [
+				{
+					"description": "Failed to get/update the version",
+					"$ref": "#/common/errors/general"
+				}
+			]
+		},
+		"prefix": {
+			"type": "string",
+			"description": "prefix",
+			"example": "prefix",
+			"errors": [
+				{
+					"description": "Failed to update the prefix",
+					"$ref": "#/common/errors/general"
+				}
+			]
+		},
+		"idletime": {
+			"type": "number",
+			"description": "idle time",
+			"example": "180",
+			"errors": [
+				{
+					"description": "Failed to update the idletime",
+					"$ref": "#/common/errors/general"
+				}
+			]
+		},
+		"latitude": {
+			"type": "number",
+			"description": "latitude ",
+			"example": "100",
+			"errors": [
+				{
+					"description": "Failed to update the latitude",
+					"$ref": "#/common/errors/general"
+				}
+			]
+		},
+		"longitude": {
+			"type": "number",
+			"description": "longitude ",
+			"example": "200",
+			"errors": [
+				{
+					"description": "Failed to update the longitude",
+					"$ref": "#/common/errors/general"
+				}
+			]
+		}
   },
   "events": {
     "all": {

@@ -50,7 +50,11 @@ namespace Plugin {
         Property<Core::JSON::String>(_T("configuration"), &Controller::get_configuration, &Controller::set_configuration, this);
         Register<CloneParamsInfo,Core::JSON::String>(_T("clone"), &Controller::endpoint_clone, this);
         Property<Core::JSON::ArrayType<Core::JSON::String>>(_T("callstack"), &Controller::get_callstack, nullptr, this);
-        Register<UpdateConfigurationParamsData,void>(_T("updateConfiguration"), &Controller::endpoint_updateConfiguration, this);
+        Property<Core::JSON::String>(_T("version"), &Controller::get_version, &Controller::set_version, this);
+        Property<Core::JSON::String>(_T("prefix"), &Controller::get_prefix, &Controller::set_prefix, this);
+        Property<Core::JSON::DecUInt16>(_T("idletime"), &Controller::get_idletime, &Controller::set_idletime, this);
+        Property<Core::JSON::DecSInt32>(_T("latitude"), &Controller::get_latitude, &Controller::set_latitude, this);
+        Property<Core::JSON::DecSInt32>(_T("longitude"), &Controller::get_longitude, &Controller::set_longitude, this);
     }
 
     void Controller::UnregisterAll()
@@ -72,7 +76,12 @@ namespace Plugin {
         Unregister(_T("links"));
         Unregister(_T("status"));
         Unregister(_T("clone"));
-        Unregister(_T("updateConfiguration"));
+        Unregister(_T("version"));
+        Unregister(_T("prefix"));
+        Unregister(_T("idletime"));
+        Unregister(_T("latitude"));
+        Unregister(_T("longitude"));
+
     }
 
     // API implementation
@@ -298,18 +307,6 @@ namespace Plugin {
         return result;
     }
 
-
-    // Method: updateConfiguration - Update the configuration of the controller
-    // Return codes:
-    //  - ERROR_NONE: Success
-    //  - ERROR_GENERAL: Failed to update the configuration
-    uint32_t Controller::endpoint_updateConfiguration(const UpdateConfigurationParamsData& newConfig)
-    {
-        ASSERT(_pluginServer != nullptr);
-    
-        return  _pluginServer->_config.UpdateConfiguration(newConfig);
-        
-    }
 
     // Method: harakiri - Reboots the device
     // Return codes:
@@ -563,6 +560,202 @@ namespace Plugin {
 
         return result;
     }
+
+    // Property: version of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to get the version
+    uint32_t Controller::get_version(Core::JSON::String& response) const
+    {
+        uint32_t result = Core::ERROR_NONE;
+   
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer ==nullptr)  {
+            result = Core::ERROR_GENERAL;
+        }
+
+        response = _pluginServer->_config.Version();
+    
+        return  result ;
+        
+    }
+
+    // Property: version of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to set the version
+    uint32_t Controller::set_version(const Core::JSON::String& params)
+    {
+         uint32_t result = Core::ERROR_NONE;
+        
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer ==nullptr)  {
+            result = Core::ERROR_GENERAL;
+        }
+        const string& version = params.Value();
+        _pluginServer->_config.SetVersion(version);
+    
+        return  result ;
+    }
+
+    // Property: prefix of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to get the prefix
+    uint32_t Controller::get_prefix(Core::JSON::String& response) const
+    {
+        uint32_t result = Core::ERROR_NONE;
+        
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer ==nullptr)  {
+            result = Core::ERROR_GENERAL;
+        }
+
+        response = _pluginServer->_config.Prefix();
+    
+        return  result ;
+        
+    }
+
+    // Property: prefix of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to set the prefix
+    uint32_t Controller::set_prefix(const Core::JSON::String& params)
+    {
+         uint32_t result = Core::ERROR_NONE;
+        
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer ==nullptr)  {
+            result = Core::ERROR_GENERAL;
+        }
+        const string& prefix = params.Value();
+        _pluginServer->_config.SetPrefix(prefix);
+    
+        return  result ;
+    }
+
+    // Property: idletime of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to get the idletime
+    uint32_t Controller::get_idletime(Core::JSON::DecUInt16& response) const
+    {
+        uint32_t result = Core::ERROR_NONE;
+        
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer ==nullptr)  {
+            result = Core::ERROR_GENERAL;
+        }
+
+        response = _pluginServer->_config.IdleTime();
+    
+        return  result ;
+        
+    }
+
+    // Property: idletime of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to set the idletime
+    uint32_t Controller::set_idletime(const Core::JSON::DecUInt16& params)
+    {
+         uint32_t result = Core::ERROR_NONE;
+        
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer ==nullptr)  {
+            result = Core::ERROR_GENERAL;
+        }
+
+        _pluginServer->_config.SetIdleTime(params);
+    
+        return  result ;
+    }
+
+    // Property: latitude of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to get the latitude
+    uint32_t Controller::get_latitude(Core::JSON::DecSInt32& response) const
+    {
+        uint32_t result = Core::ERROR_NONE;
+        
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer ==nullptr)  {
+            result = Core::ERROR_GENERAL;
+        }
+
+        response = _pluginServer->_config.Latitude();
+    
+        return  result ;
+        
+    }
+
+    // Property: latitude of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to set the latitude
+    uint32_t Controller::set_latitude(const Core::JSON::DecSInt32& params)
+    {
+         uint32_t result = Core::ERROR_NONE;
+        
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer ==nullptr)  {
+            result = Core::ERROR_GENERAL;
+        }
+
+        _pluginServer->_config.SetLatitude(params);
+    
+        return  result ;
+    }
+
+    // Property: longitude of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to get the longitude
+    uint32_t Controller::get_longitude(Core::JSON::DecSInt32& response) const
+    {
+        uint32_t result = Core::ERROR_NONE;
+        
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer ==nullptr)  {
+            result = Core::ERROR_GENERAL;
+        }
+
+        response = _pluginServer->_config.Longitude();
+    
+        return  result ;
+        
+    }
+
+    // Property: longitude of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to set the longitude
+    uint32_t Controller::set_longitude(const Core::JSON::DecSInt32& params)
+    {
+         uint32_t result = Core::ERROR_NONE;
+        
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer ==nullptr)  {
+            result = Core::ERROR_GENERAL;
+        }
+
+        _pluginServer->_config.SetLongitude(params);
+    
+        return  result ;
+    }
+
 
     // Note: event_all and event_subsytemchange are handled internally within the Controller
 
