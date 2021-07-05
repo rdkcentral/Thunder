@@ -2001,16 +2001,14 @@ namespace PluginHost {
         public:
             class Job : public Core::IDispatch {
             public:
-                Job() = delete;
                 Job(const Job&) = delete;
                 Job& operator=(const Job&) = delete;
 
-                Job(Server* server)
+                Job()
                     : _ID(~0)
-                    , _server(server)
+                    , _server(nullptr)
                     , _service()
                 {
-                    ASSERT(server != nullptr);
                 }
                 ~Job() override
                 {
@@ -2037,7 +2035,7 @@ namespace PluginHost {
                         _service.Release();
                     }
                 }
-                void Set(const uint32_t id, Core::ProxyType<Service>& service)
+                void Set(const uint32_t id, Server* server, Core::ProxyType<Service>& service)
                 {
                     ASSERT(_service.IsValid() == false);
                     ASSERT(_ID == static_cast<uint32_t>(~0));
@@ -2045,6 +2043,7 @@ namespace PluginHost {
 
                     _ID = id;
                     _service = service;
+                    _server = server;
                 }
                 string Process(const string& message)
                 {
@@ -2073,9 +2072,11 @@ namespace PluginHost {
                 template <typename PACKAGE>
                 void Submit(PACKAGE package)
                 {
+                    ASSERT(_server != nullptr);
                     _server->Dispatcher().Submit(_ID, package);
                 }
                 void RequestClose() {
+                    ASSERT(_server != nullptr);
                     _server->Dispatcher().RequestClose(_ID);
                 }
                 string Callsign() const {
@@ -2090,12 +2091,11 @@ namespace PluginHost {
             };
             class WebRequestJob : public Job {
             public:
-                WebRequestJob() = delete;
                 WebRequestJob(const WebRequestJob&) = delete;
                 WebRequestJob& operator=(const WebRequestJob&) = delete;
 
-                WebRequestJob(Server* server)
-                    : Job(server)
+                WebRequestJob()
+                    : Job()
                     , _request()
                     , _jsonrpc(false)
                 {
@@ -2115,9 +2115,9 @@ namespace PluginHost {
                     _missingResponse->ErrorCode = Web::STATUS_INTERNAL_SERVER_ERROR;
                     _missingResponse->Message = _T("There is no response from the requested service.");
                 }
-                void Set(const uint32_t id, Core::ProxyType<Service>& service, Core::ProxyType<Web::Request>& request, const string& token, const bool JSONRPC)
+                void Set(const uint32_t id, Server* server, Core::ProxyType<Service>& service, Core::ProxyType<Web::Request>& request, const string& token, const bool JSONRPC)
                 {
-                    Job::Set(id, service);
+                    Job::Set(id, server, service);
 
                     ASSERT(_request.IsValid() == false);
 
@@ -2200,12 +2200,11 @@ namespace PluginHost {
             };
             class JSONElementJob : public Job {
             public:
-                JSONElementJob() = delete;
                 JSONElementJob(const JSONElementJob&) = delete;
                 JSONElementJob& operator=(const JSONElementJob&) = delete;
 
-                JSONElementJob(Server* server)
-                    : Job(server)
+                JSONElementJob()
+                    : Job()
                     , _element()
                     , _jsonrpc(false)
                 {
@@ -2220,9 +2219,9 @@ namespace PluginHost {
                 }
 
             public:
-                void Set(const uint32_t id, Core::ProxyType<Service>& service, Core::ProxyType<Core::JSON::IElement>& element, const string& token, const bool JSONRPC)
+                void Set(const uint32_t id, Server* server, Core::ProxyType<Service>& service, Core::ProxyType<Core::JSON::IElement>& element, const string& token, const bool JSONRPC)
                 {
-                    Job::Set(id, service);
+                    Job::Set(id, server, service);
 
                     ASSERT(_element.IsValid() == false);
 
@@ -2270,12 +2269,11 @@ namespace PluginHost {
             };
             class TextJob : public Job {
             public:
-                TextJob() = delete;
                 TextJob(const TextJob&) = delete;
                 TextJob& operator=(const TextJob&) = delete;
 
-                TextJob(Server* server)
-                    : Job(server)
+                TextJob()
+                    : Job()
                     , _text()
                 {
                 }
@@ -2284,9 +2282,9 @@ namespace PluginHost {
                 }
 
             public:
-                void Set(const uint32_t id, Core::ProxyType<Service>& service, const string& text)
+                void Set(const uint32_t id, Server* server, Core::ProxyType<Service>& service, const string& text)
                 {
-                    Job::Set(id, service);
+                    Job::Set(id, server, service);
                     _text = text;
                 }
                 void Dispatch() override
@@ -2537,13 +2535,13 @@ namespace PluginHost {
                     } else {
                         // Send the Request object out to be handled.
                         // By definition, we can issue it on a rental thread..
-                        Core::ProxyType<WebRequestJob> job(_webJobs.Element(&_parent));
+                        Core::ProxyType<WebRequestJob> job(_webJobs.Element());
 
                         ASSERT(job.IsValid() == true);
 
                         if (job.IsValid() == true) {
                             Core::ProxyType<Web::Request> baseRequest(Core::proxy_cast<Web::Request>(request));
-                            job->Set(Id(), service, baseRequest, _security->Token(), !request->ServiceCall());
+                            job->Set(Id(), &_parent, service, baseRequest, _security->Token(), !request->ServiceCall());
                             _parent.Submit(Core::proxy_cast<Core::IDispatchType<void>>(job));
                         }
                     }
@@ -2612,12 +2610,12 @@ namespace PluginHost {
                 if (securityClearance == true) {
                     // Send the JSON object out to be handled.
                     // By definition, we can issue it on a rental thread..
-                    Core::ProxyType<JSONElementJob> job(_jsonJobs.Element(&_parent));
+                    Core::ProxyType<JSONElementJob> job(_jsonJobs.Element());
 
                     ASSERT(job.IsValid() == true);
 
                     if ((_service.IsValid() == true) && (job.IsValid() == true)) {
-                        job->Set(Id(), _service, element, _security->Token(), ((State() & Channel::JSONRPC) != 0));
+                        job->Set(Id(), &_parent, _service, element, _security->Token(), ((State() & Channel::JSONRPC) != 0));
                         _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
                     }
                 }
@@ -2630,12 +2628,12 @@ namespace PluginHost {
 
                 // Send the JSON object out to be handled.
                 // By definition, we can issue it on a rental thread..
-                Core::ProxyType<TextJob> job(_textJobs.Element(&_parent));
+                Core::ProxyType<TextJob> job(_textJobs.Element());
 
                 ASSERT(job.IsValid() == true);
 
                 if ((_service.IsValid() == true) && (job.IsValid() == true)) {
-                    job->Set(Id(), _service, value);
+                    job->Set(Id(), &_parent, _service, value);
                     _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
                 }
             }
