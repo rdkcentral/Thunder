@@ -33,7 +33,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pard
 import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 
-VERSION = "1.8.3"
+VERSION = "1.8.4"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
@@ -1549,8 +1549,19 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                             emit.Line("}")
                     # Iterators
                     elif isinstance(t[0], JsonArray):
-                        if "iterator" in t[0].schema:
-                            emit.Line("%s* %s = nullptr;" % (t[0].schema["iterator"], t[0].JsonName()))
+                     if "iterator" in t[0].schema:
+                            initializer = ""
+                            if t[1] == 0:
+                                emit.Line("std::list<%s> elements;" %(t[0].items.CppStdClass()))
+                                emit.Line("auto iterator = %s.Elements();" % (t[0].CppName()))
+                                emit.Line("while (iterator.Next() == true) {")
+                                emit.Indent()
+                                emit.Line("elements.push_back(iterator.Current().Value());")
+                                emit.Unindent();
+                                emit.Line("}")
+                                impl = t[0].schema["iterator"][:t[0].schema["iterator"].index('<')].replace("IIterator", "Iterator") + "<%s>" % t[0].schema["iterator"]
+                                initializer = "Core::Service<%s>::Create<%s>(elements)" % (impl, t[0].schema["iterator"])
+                            emit.Line("%s%s* %s{%s};" % ("const " if t[1] == 0 else "", t[0].schema["iterator"], t[0].JsonName(), initializer))
                     # All others
                     else:
                         emit.Line("%s%s %s{%s};" % ("const " if t[1] == 0 else "", t[0].CppStdClass(), t[0].JsonName(), "%s%s.Value()" % (parent if parent else "", t[0].CppName()) if t[1] <= 1 else ""))
