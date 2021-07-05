@@ -71,7 +71,7 @@ namespace RPC {
             : _container()
             , _index(0)
         {
-            std::copy_if(container.begin(), container.end(), std::back_inserter(_container), [](const typename INTERFACE::Element& data) { return (true); });
+            std::copy_if(container.begin(), container.end(), std::back_inserter(_container), [](const typename INTERFACE::Element& /* data */) { return (true); });
             _iterator = _container.begin();
         }
         template <typename KEY, typename VALUE>

@@ -93,9 +93,9 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
     uint16_t result = 0;
 
     // See if we need to retrigger..
-    if ((stream[0] != _id) && ((stream[0] != ATT_OP_ERROR) && (stream[1] == _id))) {
+    if ((stream[0] != _id) && ((stream[0] != ATT_OP_ERROR) && (length >= 2) && (stream[1] == _id))) {
         TRACE_L1(_T("Unexpected L2CapSocket message. Expected: %d, got %d [%d]"), _id, stream[0], stream[1]);
-    } else {
+    } else if (stream[0] != ATT_OP_HANDLE_NOTIFY) {
         result = length;
 
         // TRACE_L1(_T("L2CapSocket Receive [%d], Type: %02X"), length, stream[0]);
@@ -326,12 +326,12 @@ bool GATTSocket::Security(const uint8_t level)
 
     if (result == true) {
         struct bt_security btSecurity = { .level = level, 0 };
-        if (::setsockopt(Handle(), SOL_BLUETOOTH, BT_SECURITY, &btSecurity, sizeof(btSecurity))) {
-            TRACE_L1("Failed to set Bluetooth Security level for device [%s], error: %d", RemoteId().c_str(), errno);
-            result = false;
-        } else if (::setsockopt(Handle(), SOL_L2CAP, L2CAP_LM, &lm, sizeof(lm)) < 0) {
-            TRACE_L1("Error setting L2CAP Security for device [%s], error: %d", RemoteId().c_str(), errno);
-            result = false;
+        if (::setsockopt(Handle(), SOL_BLUETOOTH, BT_SECURITY, &btSecurity, sizeof(btSecurity)) != 0) {
+            TRACE_L1("Failed to set Bluetooth Security level for device [%s], error: %d, try L2CAP Security", RemoteId().c_str(), errno);
+            if (::setsockopt(Handle(), SOL_L2CAP, L2CAP_LM, &lm, sizeof(lm)) != 0) {
+                TRACE_L1("Error setting L2CAP Security for device [%s], error: %d", RemoteId().c_str(), errno);
+                result = false;
+            }
         }
     }
 
