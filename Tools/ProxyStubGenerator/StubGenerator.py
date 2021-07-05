@@ -51,6 +51,7 @@ CLASS_IUNKNOWN = "::WPEFramework::Core::IUnknown"
 PROXYSTUB_CPP_NAME = "ProxyStubs_%s.cpp"
 
 MIN_INTERFACE_ID = 64
+INSTANCE_ID = "RPC::instance_id"
 
 DEFAULT_DEFINITIONS_FILE = "default.h"
 IDS_DEFINITIONS_FILE = "Ids.h"
@@ -435,27 +436,25 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                 def _RpcType(self, noref):
                     if self.is_ptr:
                         if self.is_interface:
-                            return "Number<RPC::instance_id>"
+                            return "Number<%s>" % INSTANCE_ID
                         else:
                             return "Buffer<%s>" % self.length_type
-                    elif isinstance(self.expanded_typename, CppParser.Enum):
-                        if self.type.Type().type.Type().size == "int":
-                            log.Warn("%s: underlying type of enumeration is not fixed" % self.str_typename)
-                        return "Number<%s>" % noref
-                    elif isinstance(self.expanded_typename, CppParser.Size_t):
-                        log.Warn("%s: size_t size is not fixed, use a stdint type instead" % self.str_typename)
-                        return "Number<%s>" % noref
-                    elif isinstance(self.expanded_typename, CppParser.Time_t):
-                        log.Warn("%s: time_t size is not fixed, use a stdint type instead" % self.str_typename)
-                        return "Number<%s>" % noref
                     elif isinstance(self.expanded_typename, CppParser.Integer):
-                        if self.type.Type().size == "int":
+                        if not self.expanded_typename.IsFixed():
                             log.Warn("%s: integer size is not fixed, use a stdint type instead" % self.str_typename)
                         return "Number<%s>" % noref
                     elif isinstance(self.expanded_typename, CppParser.String):
                         return "Text"
                     elif isinstance(self.expanded_typename, CppParser.Bool):
                         return "Boolean"
+                    elif isinstance(self.expanded_typename, CppParser.Enum):
+                        if not self.expanded_typename.type.Type().IsFixed():
+                            log.Warn("%s: underlying type of enumeration is not fixed" % self.str_typename)
+                        return "Number<%s>" % noref
+                    elif isinstance(self.expanded_typename, CppParser.BuiltinInteger):
+                        if not self.expanded_typename.IsFixed():
+                            log.Warn("%s: %s size is not fixed, use a stdint type instead" % (self.str_typename, noref))
+                        return "Number<%s>" % noref
                     elif isinstance(self.expanded_typename, CppParser.Typedef):
                         et = EmitType(self.oclass, self.ocv)
                         return et._RpcType(noref)
@@ -486,7 +485,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                 return Strip(str(method))
 
             # Stringify a method object to a prototype
-            def PrototypeStr(method, parameters=None):
+            def PrototypeStr(method, parameters=None, unused=False):
                 params = parameters if parameters else method.vars
                 proto = "%s %s(" % (TypeStr(method.retval.type), method.name)
                 for c, p in enumerate(params):
@@ -499,7 +498,8 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                 acc += " /* in */"
                             elif p.is_output:
                                 acc += " /* out */"
-                    proto += TypeStr(p.unexpanded) + acc + " param%i%s" % (c, (", " if c != len(method.vars) - 1 else ""))
+                    proto += TypeStr(p.unexpanded) + acc + " param%i%s%s" % (c, (" VARIABLE_IS_NOT_USED" if unused else ""),
+                                    (", " if c != len(method.vars) - 1 else ""))
                 proto += ")"
                 for q in method.qualifiers:
                     proto += " " + q
@@ -668,8 +668,8 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
 
                 # emit the lambda prototype
                 emit.Line(
-                    "[](Core::ProxyType<Core::IPCChannel>& channel%s, Core::ProxyType<RPC::InvokeMessage>& message) {" %
-                    (" VARIABLE_IS_NOT_USED" if not proxy_count else ""))
+                    "[](Core::ProxyType<Core::IPCChannel>& channel%s, Core::ProxyType<RPC::InvokeMessage>& message%s) {" %
+                    (" VARIABLE_IS_NOT_USED" if not proxy_count or m.stub else "", " VARIABLE_IS_NOT_USED" if m.stub else ""))
                 emit.IndentInc()
 
                 if EMIT_TRACES:
@@ -727,7 +727,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                             "'%s' is defined as a length variable but is write-only" % p.origname)
                                 elif not p.is_length or p.is_maxlength or not params[p.length_target].is_input:
                                     emit.Line("%s %s = reader.%s();" %
-                                              ("RPC::instance_id" if p.proxy else p.str_noref,
+                                              (INSTANCE_ID if p.proxy else p.str_noref,
                                                p.length_name if p.is_length else p.name, p.RpcTypeNoCV()))
                                 if p.is_length:
                                     p.name = p.length_name
@@ -865,7 +865,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                 emit.Line("writer.%s(RPC::instance_cast<%s>(%s));" % (retval.RpcType(), retval.CppType(), retval.name))
                             else:
                                 emit.Line("writer.%s(%s);" % (retval.RpcType(), retval.name))
-                            if retval.is_interface and not retval.type.IsConst():
+                            if retval.is_interface:
                                 if isinstance(retval.type.Type(), CppParser.Void):
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s, %s);" %
                                               (retval.name, retval.interface_ref.length_name))
@@ -974,9 +974,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
             emit.IndentInc()
 
             # emit constructor
-            emit.Line(
-                "%s(const Core::ProxyType<Core::IPCChannel>& channel, RPC::instance_id implementation, const bool otherSideInformed)"
-                % class_name)
+            emit.Line("%s(const Core::ProxyType<Core::IPCChannel>& channel, %s implementation, const bool otherSideInformed)" % (class_name, INSTANCE_ID))
             emit.Line("    : BaseClass(channel, implementation, otherSideInformed)")
             emit.Line("{")
             emit.Line("}")
@@ -1005,7 +1003,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                             p.is_ptr and p.obj) or (p.is_length and not params[p.length_target].is_input):
                         input_params += 1
 
-                method_line = PrototypeStr(m, orig_params) + (" override" if not USE_OLD_CPP else " /* override */")
+                method_line = PrototypeStr(m, orig_params, m.stub) + (" override" if not USE_OLD_CPP else " /* override */")
 
                 if m.omit:
                     emit.Line("// %s" % method_line)
@@ -1104,11 +1102,11 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                         if retval.is_interface:
                             if retval.obj:
                                 emit.Line(
-                                    "%s_proxy = reinterpret_cast<%s>(Interface(reader.Number<RPC::instance_id>(), %s::ID));" %
-                                    (retval.name, retval.str_nocvref, retval.str_typename))
+                                    "%s_proxy = reinterpret_cast<%s>(Interface(reader.Number<%s>(), %s::ID));" %
+                                    (retval.name, retval.str_nocvref, INSTANCE_ID, retval.str_typename))
                             else:
-                                emit.Line("%s_proxy = Interface(reader.Number<RPC::instance_id>(), %s);" %
-                                          (retval.name, retval.interface_expr))
+                                emit.Line("%s_proxy = Interface(reader.Number<%s>(), %s);" %
+                                          (retval.name, INSTANCE_ID, retval.interface_expr))
                         else:
                             if not retval.is_ptr and not retval.CheckRpcType():
                                 if retval.obj:
@@ -1131,8 +1129,8 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
 
                     for p in params:
                         if p.is_nonconstref and p.is_interface:
-                            emit.Line("%s = reinterpret_cast<%s>(Interface(reader.Number<RPC::instance_id>(), %s::ID));" %
-                                      (p.name, p.str_nocvref, p.str_typename))
+                            emit.Line("%s = reinterpret_cast<%s>(Interface(reader.Number<%s>(), %s::ID));" %
+                                      (p.name, p.str_nocvref, INSTANCE_ID, p.str_typename))
                         elif not p.obj and p.is_outputptr:
                             if p.length_var and p.length_ref and p.length_ref.is_output:
                                 emit.Line("%s = reader.%s();" % (p.length_ref.name, p.length_ref.RpcType()))
@@ -1322,7 +1320,7 @@ if __name__ == "__main__":
                            action="store_true",
                            default=False,
                            help="enable verbose output (default: verbose output disabled)")
-    argparser.add_argument('-I', dest="includePaths", metavar="INCLUDE_DIR", action='append', default=[], type=str, 
+    argparser.add_argument('-I', dest="includePaths", metavar="INCLUDE_DIR", action='append', default=[], type=str,
                            help='add an include path (can be used multiple times)')
 
     args = argparser.parse_args(sys.argv[1:])
@@ -1345,7 +1343,8 @@ if __name__ == "__main__":
         print("   @stop               - skip parsing of the rest of the file")
         print("   @omit               - omit generating code for the next item (class or method)")
         print("   @stub               - generate empty stub for the next item (class or method)")
-        print("   @encompass \"file\"   - include another file, relative to the directory of the current file")
+        print("   @stubgen:include \"file\"   - include another file, relative to the directory of the current file")
+        print("   @stubgen:include <file>   - include another file, relative to the defined include directories")
         print("For non-const pointer and reference method parameters:")
         print("   @in                 - denotes an input parameter")
         print("   @out                - denotes an output parameter")
