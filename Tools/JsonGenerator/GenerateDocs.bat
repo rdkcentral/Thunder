@@ -1,7 +1,7 @@
 @rem If not stated otherwise in this file or this component's LICENSE file the
 @rem following copyright and licenses apply:
 @rem
-@rem Copyright 2020 RDK Management
+@rem Copyright 2020 Metrological
 @rem
 @rem Licensed under the Apache License, Version 2.0 (the "License");
 @rem you may not use this file except in compliance with the License.

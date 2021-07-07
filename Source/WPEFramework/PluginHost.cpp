@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ namespace WPEFramework {
     static PluginHost::Config* _config = nullptr;
     static PluginHost::Server* _dispatcher = nullptr;
     static bool _background = false;
+    static bool _atExitActive = true;
 
 namespace PluginHost {
 
@@ -132,88 +133,126 @@ namespace PluginHost {
 
     class ExitHandler : public Core::Thread {
     private:
+        ExitHandler() = delete;
         ExitHandler(const ExitHandler&) = delete;
         ExitHandler& operator=(const ExitHandler&) = delete;
 
-    public:
-        ExitHandler()
+        ExitHandler(PluginHost::Server* destructor)
             : Core::Thread(Core::Thread::DefaultStackSize(), nullptr)
+            , _destructor(destructor)
         {
+            ASSERT(_destructor != nullptr);
         }
-        virtual ~ExitHandler()
+
+    public:
+        ~ExitHandler() override
         {
             Stop();
             Wait(Core::Thread::STOPPED, Core::infinite);
         }
 
-        static void Construct() {
+        static void StartShutdown() {
             _adminLock.Lock();
-            if (_instance == nullptr) {
-                _instance = new WPEFramework::PluginHost::ExitHandler();
+            if ((_dispatcher != nullptr) && (_instance == nullptr)) {
+                _instance = new WPEFramework::PluginHost::ExitHandler(_dispatcher);
+                _dispatcher = nullptr;
                 _instance->Run();
             }
             _adminLock.Unlock();
         }
         static void Destruct() {
+
             _adminLock.Lock();
-            if (_instance != nullptr) {
-                delete _instance; //It will wait till the worker execution completed
-                _instance = nullptr;
-            } else {
-                CloseDown();
+
+            if (_instance == nullptr) {
+
+                PluginHost::Server* destructor = _dispatcher;
+
+                _dispatcher = nullptr;
+
+                _adminLock.Unlock();
+
+		if (destructor != nullptr) {
+                    CloseDown (destructor);
+                }
             }
-            _adminLock.Unlock();
+            else {
+                ExitHandler* destructor = _instance;
+                _instance = nullptr;
+ 
+                _adminLock.Unlock();
+
+                delete destructor; //It will wait till the worker execution completed
+            }
         }
 
     private:
         virtual uint32_t Worker() override
         {
-            CloseDown();
+            CloseDown(_destructor);
             Block();
             return (Core::infinite);
         }
-        static void CloseDown()
+        static void CloseDown(PluginHost::Server* destructor)
         {
-            TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
-
-            if (_dispatcher != nullptr) {
-                PluginHost::Server* destructor = _dispatcher;
-                destructor->Close();
-                _dispatcher = nullptr;
-                delete destructor;
-
-                delete _config;
-                _config = nullptr;
-
 #ifndef __WINDOWS__
-                if (_background) {
-                    syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon closed down.");
-                } else
+            if (_background) {
+                syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon closing down.");
+            } else
 #endif
-                {
-                   fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closed down.\n");
-                }
-
-#ifndef __WINDOWS__
-                closelog();
-#endif
-
-                // Do not forget to close the Tracing stuff...
-                Trace::TraceUnit::Instance().Close();
-
-#ifdef __CORE_WARNING_REPORTING__
-        WarningReporting::WarningReportingUnit::Instance().Close();
-#endif
-
-                // Now clear all singeltons we created.
-                Core::Singleton::Dispose();
+            {
+                fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closing down.\n");
+                fflush(stderr);
             }
 
-            TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+            destructor->Close();
+            delete destructor;
+            delete _config;
+            _config = nullptr;
+
+
+#ifndef __WINDOWS__
+            closelog();
+#endif
+
+            // Do not forget to close the Tracing stuff...
+            Trace::TraceUnit::Instance().Close();
+
+#ifdef __CORE_WARNING_REPORTING__
+            WarningReporting::WarningReportingUnit::Instance().Close();
+#endif
+
+#ifndef __WINDOWS__
+            if (_background) {
+                syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " closing all created singletons.");
+            } else
+#endif
+            {
+                fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closing all created singletons.\n");
+                fflush(stderr);
+            }
+
+
+            // Now clear all singeltons we created.
+            Core::Singleton::Dispose();
+
+#ifndef __WINDOWS__
+            if (_background) {
+                syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " completely stopped.");
+            } else
+#endif
+            {
+                fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " completely stopped.\n");
+                fflush(stderr);
+            }
+            _atExitActive = false;
         }
-        private:
-            static ExitHandler* _instance;
-            static Core::CriticalSection _adminLock;
+
+    private:
+        PluginHost::Server* _destructor;
+
+        static ExitHandler* _instance;
+        static Core::CriticalSection _adminLock;
     };
 
     ExitHandler* ExitHandler::_instance = nullptr;
@@ -232,7 +271,15 @@ namespace PluginHost {
         }
 
         if ((signo == SIGTERM) || (signo == SIGQUIT)) {
-            ExitHandler::Construct();
+
+            if (_background) {
+                syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a SIGTERM or SIGQUIT signal. Regular shutdown\n");
+            } else {
+                fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a SIGTERM or SIGQUIT signal. No regular shutdown. Errors to follow are collateral damage errors !!!!!!");
+                fflush(stderr);
+            }
+
+            ExitHandler::StartShutdown();
         }
     }
     // Workaround solution: OCDM plugin supports blacklist feature that uses regex.
@@ -299,8 +346,35 @@ namespace PluginHost {
     }
 #endif
 
+    static void ForcedExit() {
+        if (_atExitActive == true) {
+#ifndef __WINDOWS__
+            if (_background) {
+                syslog(LOG_ERR, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an atexit request. No regular shutdown. Errors to follow are collateral damage errors !!!!!!");
+            } else 
+#endif
+            {
+                fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an atexit request. No regular shutdown. Errors to follow are collateral damage errors !!!!!!");
+                fflush(stderr);
+            }
+            ExitHandler::Destruct();
+        }
+    }
+
     static void UncaughtExceptions () {
+#ifndef __WINDOWS__
+        if (_background) {
+            syslog(LOG_ERR, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an uncaught exception. No regular shutdown. Errors to follow are collateral damage errors !!!!!!");
+        } else
+#endif
+        {
+            fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an uncaught exception. No regular shutdown. Errors to follow are collateral damage errors !!!!!!");
+            fflush(stderr);
+        }
+
         Logging::DumpException(_T("General"));
+
+        ExitHandler::Destruct();
     }
 
 #ifdef __WINDOWS__
@@ -319,7 +393,7 @@ namespace PluginHost {
 
         ConsoleOptions options(argc, argv);
 
-        if (atexit(ExitHandler::Destruct) != 0) {
+        if (atexit(ForcedExit) != 0) {
             TRACE_L1("Could not register @exit handler. Argc %d.", argc);
             ExitHandler::Destruct();
             exit(EXIT_FAILURE);
@@ -782,8 +856,14 @@ namespace PluginHost {
             }
         }
 
+        if (_background == false) {
+            fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a 'Q' press in the terminal. Regular shutdown\n");
+            fflush(stderr);
+        }
+ 
         ExitHandler::Destruct();
         std::set_terminate(nullptr);
+        _atExitActive = false;
         return 0;
 
     } // End main.

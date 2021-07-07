@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,31 +79,21 @@ namespace PluginHost {
             virtual void Updated() = 0;
         };
 
-        struct EXTERNAL ISecurity
-            : virtual public Core::IUnknown {
+        struct EXTERNAL ISecurity : virtual public Core::IUnknown {
 
-            enum {
-                ID = RPC::ID_SUBSYSTEM_SECURITY
-            };
+            enum { ID = RPC::ID_SUBSYSTEM_SECURITY };
 
-            enum {
-                SUBSYSTEM = SECURITY
-            };
+            enum { SUBSYSTEM = SECURITY };
 
             // Security information
-            virtual string Callsign() const = 0;
+            virtual string Callsign() const = 0;    
         };
 
-        struct EXTERNAL IInternet
-            : virtual public Core::IUnknown {
+        struct EXTERNAL IInternet : virtual public Core::IUnknown {
 
-            enum {
-                ID = RPC::ID_SUBSYSTEM_INTERNET
-            };
+            enum { ID = RPC::ID_SUBSYSTEM_INTERNET };
 
-            enum {
-                SUBSYSTEM = INTERNET
-            };
+            enum { SUBSYSTEM = INTERNET };
 
             enum network_type {
                 UNKNOWN,
@@ -119,16 +109,12 @@ namespace PluginHost {
         };
 
         // Location information
-        struct EXTERNAL ILocation
-            : virtual public Core::IUnknown {
+        struct EXTERNAL ILocation : virtual public Core::IUnknown {
 
-            enum {
-                ID = RPC::ID_SUBSYSTEM_LOCATION
-            };
+            enum { ID = RPC::ID_SUBSYSTEM_LOCATION };
 
-            enum {
-                SUBSYSTEM = LOCATION
-            };
+            enum { SUBSYSTEM = LOCATION };
+
             // Location information
             virtual string TimeZone() const = 0;
             virtual string Country() const = 0;
@@ -139,52 +125,60 @@ namespace PluginHost {
         };
 
         // Device specific identification.
-        struct EXTERNAL IIdentifier
-            : virtual public Core::IUnknown {
+        struct EXTERNAL IIdentifier : virtual public Core::IUnknown {
 
-            enum {
-                ID = RPC::ID_SUBSYSTEM_IDENTIFIER
-            };
+            enum { ID = RPC::ID_SUBSYSTEM_IDENTIFIER };
 
-            enum {
-                SUBSYSTEM = IDENTIFIER
-            };
+            enum { SUBSYSTEM = IDENTIFIER };
+
             // Device specific identification.
             virtual uint8_t Identifier(const uint8_t length, uint8_t buffer[] /*@maxlength:length @out*/) const = 0;
             virtual string Architecture() const = 0;
             virtual string Chipset() const = 0;
-            virtual string FirmwareVersion() const = 0;  
+            virtual string FirmwareVersion() const = 0;
         };
 
         // Time synchronisation reporting
-        struct EXTERNAL ITime
-            : virtual public Core::IUnknown {
+        struct EXTERNAL ITime : virtual public Core::IUnknown {
 
-            enum {
-                ID = RPC::ID_SUBSYSTEM_TIME
-            };
+            enum { ID = RPC::ID_SUBSYSTEM_TIME };
 
-            enum {
-                SUBSYSTEM = TIME
-            };
+            enum { SUBSYSTEM = TIME };
+
             // Time synchronisation reporting.
             virtual uint64_t TimeSync() const = 0;
         };
 
         // IProvisioning reporting
-        struct EXTERNAL IProvisioning : public RPC::IStringIterator {
+        struct EXTERNAL IProvisioning : virtual public Core::IUnknown, public RPC::IStringIterator {
 
-            enum {
-                SUBSYSTEM = PROVISIONING
-            };
+            enum { ID = RPC::ID_SUBSYSTEM_PROVISIONING };
+
+            enum { SUBSYSTEM = PROVISIONING };
+
+            virtual string Storage() const = 0;
+
+            virtual bool Next(string& info /* @out */) = 0;
+            virtual bool Previous(string& info /* @out */) = 0;
+            virtual void Reset(const uint32_t position) = 0;
+            virtual bool IsValid() const = 0;
+            virtual uint32_t Count() const = 0;
+            virtual string Current() const = 0;
         };
 
         // Decryption reporting
-        struct EXTERNAL IDecryption : public RPC::IStringIterator {
+        struct EXTERNAL IDecryption : virtual public Core::IUnknown, public RPC::IStringIterator {
 
-            enum {
-                SUBSYSTEM = DECRYPTION
-            };
+            enum { ID = RPC::ID_SUBSYSTEM_DECRYPTION };
+
+            enum { SUBSYSTEM = DECRYPTION };
+
+            virtual bool Next(string& info /* @out */) = 0;
+            virtual bool Previous(string& info /* @out */) = 0;
+            virtual void Reset(const uint32_t position) = 0;
+            virtual bool IsValid() const = 0;
+            virtual uint32_t Count() const = 0;
+            virtual string Current() const = 0;
         };
 
         virtual ~ISubSystem() = default;

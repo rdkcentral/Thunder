@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 
 #include "Module.h"
 #include "UUID.h"
+#include "BluetoothUtils.h"
 
 namespace WPEFramework {
 
@@ -35,7 +36,7 @@ namespace Bluetooth {
         Address(const uint16_t deviceId)
             : _length(0)
         {
-            if (hci_devba(deviceId, &_address) >= 0) {
+            if (BtUtilsHciDevba(deviceId, &_address) >= 0) {
                 _length = sizeof(_address);
             }
         }
@@ -48,7 +49,7 @@ namespace Bluetooth {
             : _length(sizeof(_address))
         {
             ::memset(&_address, 0, sizeof(_address));
-            str2ba(address, &_address);
+            BtUtilsStr2Ba(address, &_address);
         }
         Address(const Address& address)
             : _length(address._length)
@@ -78,7 +79,7 @@ namespace Bluetooth {
         }
         static Address Default()
         {
-            int deviceId = hci_get_route(nullptr);
+            int deviceId = BtUtilsHciGetRoute(nullptr);
             return ((deviceId >= 0) ? Address(static_cast<uint16_t>(deviceId)) : Address());
         }
         static Address AnyInterface()
@@ -102,7 +103,7 @@ namespace Bluetooth {
         Core::NodeId NodeId(const uint16_t channelType) const
         {
             Core::NodeId result;
-            int deviceId = hci_get_route(const_cast<bdaddr_t*>(Data()));
+            int deviceId = BtUtilsHciGetRoute(const_cast<bdaddr_t*>(Data()));
 
             if (deviceId >= 0) {
                 result = Core::NodeId(static_cast<uint16_t>(deviceId), channelType);
@@ -124,7 +125,7 @@ namespace Bluetooth {
         }
         void OUI(char oui[9]) const
         {
-            ba2oui(Data(), oui);
+            BtUtilsBa2Oui(Data(), oui);
         }
         string ToString() const
         {
@@ -590,11 +591,13 @@ namespace Bluetooth {
     class EXTERNAL HCISocket : public Core::SynchronousChannelType<Core::SocketPort> {
     private:
         static constexpr int      SCAN_TIMEOUT = 1000;
-        static constexpr uint8_t  SCAN_TYPE = 0x01;
-        static constexpr uint8_t  SCAN_FILTER_POLICY = 0x00;
-        static constexpr uint8_t  SCAN_FILTER_DUPLICATES = 0x01;
+        static constexpr uint8_t  SCAN_TYPE_PASSIVE = 0x00;
+        static constexpr uint8_t  SCAN_TYPE_ACTIVE = 0x01;
+        static constexpr uint8_t  SCAN_FILTER_POLICY_ALL = 0x00;
+        static constexpr uint8_t  SCAN_FILTER_DUPLICATES_DISABLE = 0x00;
+        static constexpr uint8_t  SCAN_FILTER_DUPLICATES_ENABLE = 0x01;
         static constexpr uint32_t MAX_ACTION_TIMEOUT = 2000; /* 2 Seconds for commands to complete ? */
-        static constexpr uint16_t ACTION_MASK = 0x3FFF;
+        static constexpr uint16_t ACTION_MASK = 0x0FFF;
 
     public:
 
@@ -816,16 +819,18 @@ namespace Bluetooth {
         // Create definitions for the HCI commands
         // ------------------------------------------------------------------------
         struct Command {
+            using Void = char[0];
+
             typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_CREATE_CONN), create_conn_cp, evt_conn_complete>
                 Connect;
 
             typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_AUTH_REQUESTED), auth_requested_cp, evt_auth_complete>
                 Authenticate;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_USER_CONFIRM_REPLY), user_confirm_reply_cp, Core::Void>
+            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_USER_CONFIRM_REPLY), user_confirm_reply_cp, Void>
                 UserConfirmReply;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_USER_CONFIRM_NEG_REPLY), user_confirm_reply_cp, Core::Void>
+            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_USER_CONFIRM_NEG_REPLY), user_confirm_reply_cp, Void>
                 UserConfirmNegReply;
 
             typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_DISCONNECT), disconnect_cp, evt_disconn_complete>
@@ -834,13 +839,16 @@ namespace Bluetooth {
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CREATE_CONN), le_create_connection_cp, evt_le_connection_complete, EVT_LE_CONN_COMPLETE>
                 ConnectLE;
 
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CREATE_CONN_CANCEL), Void, uint8_t>
+                ConnectLECancel;
+
             typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_SET_CONN_ENCRYPT), set_conn_encrypt_cp, evt_encrypt_change, EVT_ENCRYPT_CHANGE>
                 Encrypt;
 
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_START_ENCRYPTION), le_start_encryption_cp, uint8_t>
                 EncryptLE;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_REMOTE_NAME_REQ), remote_name_req_cp, Core::Void>
+            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_REMOTE_NAME_REQ), remote_name_req_cp, Void>
                 RemoteName;
 
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_SCAN_PARAMETERS), le_set_scan_parameters_cp, uint8_t>
@@ -849,13 +857,13 @@ namespace Bluetooth {
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_SCAN_ENABLE), le_set_scan_enable_cp, uint8_t>
                 ScanEnableLE;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CLEAR_WHITE_LIST), Core::Void, Core::Void>
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CLEAR_WHITE_LIST), Void, Void>
                 ClearWhiteList;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_READ_WHITE_LIST_SIZE), Core::Void, le_read_white_list_size_rp>
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_READ_WHITE_LIST_SIZE), Void, le_read_white_list_size_rp>
                 ReadWhiteListSize;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_ADD_DEVICE_TO_WHITE_LIST), le_add_device_to_white_list_cp, Core::Void>
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_ADD_DEVICE_TO_WHITE_LIST), le_add_device_to_white_list_cp, Void>
                 AddDeviceToWhiteList;
 
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_REMOVE_DEVICE_FROM_WHITE_LIST), le_remove_device_from_white_list_cp, uint8_t>
@@ -881,6 +889,7 @@ namespace Bluetooth {
             IDLE        = 0x0000,
             SCANNING    = 0x0001,
             PAIRING     = 0x0002,
+            DISCOVERING = 0x1000,
             ADVERTISING = 0x4000,
             ABORT       = 0x8000
         };
@@ -913,10 +922,15 @@ namespace Bluetooth {
         {
             return ((_state & ADVERTISING) != 0);
         }
+        bool IsDiscovering() const
+        {
+            return ((_state & DISCOVERING) != 0);
+        }
         uint32_t Advertising(const bool enable, const uint8_t mode = 0);
         void Scan(const uint16_t scanTime, const uint32_t type, const uint8_t flags);
         void Scan(const uint16_t scanTime, const bool limited, const bool passive);
         void Abort();
+        void Discovery(const bool enable);
 
         uint32_t ReadStoredLinkKeys(const Address adr, const bool all, LinkKeys& keys);
 

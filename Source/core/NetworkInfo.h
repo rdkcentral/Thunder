@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,6 +136,8 @@ namespace Core {
             virtual ~INotification() = default;
 
             virtual void Event(const string&) = 0;
+            virtual void Added(const string&, const Core::IPNode&) {}
+            virtual void Removed(const string&, const Core::IPNode&) {}
         };
 
     public:

@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -886,6 +886,8 @@ namespace RPC {
 
                     std::list<RPC::IRemoteConnection::INotification*>::iterator observer(_observers.begin());
 
+                    _parent.Closed(destructed);
+
                     while (observer != _observers.end()) {
                         (*observer)->Deactivated(index->second);
                         observer++;
@@ -898,8 +900,6 @@ namespace RPC {
                     index->second->Release();
                     _connections.erase(index);
                     _adminLock.Unlock();
-
-                    _parent.Closed(destructed);
 
                     connection->Release();
                 }

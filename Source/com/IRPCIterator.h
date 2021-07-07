@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ namespace RPC {
             : _container()
             , _index(0)
         {
-            std::copy_if(container.begin(), container.end(), std::back_inserter(_container), [](const typename INTERFACE::Element& data) { return (true); });
+            std::copy_if(container.begin(), container.end(), std::back_inserter(_container), [](const typename INTERFACE::Element& /* data */) { return (true); });
             _iterator = _container.begin();
         }
         template <typename KEY, typename VALUE>

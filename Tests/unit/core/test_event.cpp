@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,12 +32,11 @@ public:
     ThreadClass(const ThreadClass&) = delete;
     ThreadClass& operator=(const ThreadClass&) = delete;
 
-    ThreadClass(Event& event, std::thread::id parentTid, bool& threadDone, volatile bool& lock, volatile bool& setEvent, volatile bool& pulseEvent)
+    ThreadClass(Event& event, std::thread::id parentTid, bool& threadDone, volatile bool& lock, volatile bool& setEvent)
         : Core::Thread(Core::Thread::DefaultStackSize(), _T("Test"))
         , _threadDone(threadDone)
         , _lock(lock)
         , _setEvent(setEvent)
-        , _pulseEvent(pulseEvent)
         , _event(event)
         , _parentTid(parentTid)
     {
@@ -60,10 +59,6 @@ public:
                 _threadDone = true;
                 _setEvent = false;
                 _event.SetEvent();
-            }else if (_pulseEvent) {
-                _threadDone = true;
-                _pulseEvent = false;
-                _event.PulseEvent();
             }
         }
         return (Core::infinite);
@@ -72,7 +67,6 @@ private:
     volatile bool&  _threadDone;
     volatile bool&  _lock;
     volatile bool&  _setEvent;
-    volatile bool&  _pulseEvent;
     Event& _event;
     std::thread::id _parentTid;
 };
@@ -96,9 +90,8 @@ TEST(test_event, unlock_event)
     bool threadDone = false;
     volatile bool lock = true;
     volatile bool setEvent = false;
-    volatile bool pulseEvent = false;
 
-    ThreadClass object(event, parentTid, threadDone, lock, setEvent, pulseEvent);
+    ThreadClass object(event, parentTid, threadDone, lock, setEvent);
     object.Run();
     event.Lock();
     EXPECT_FALSE(lock);
@@ -112,29 +105,11 @@ TEST(DISABLE_test_event, set_event)
     bool threadDone = false;
     volatile bool lock = false;
     volatile bool setEvent = true;
-    volatile bool pulseEvent = false;
 
     event.ResetEvent();
-    ThreadClass object(event, parentTid, threadDone, lock, setEvent, pulseEvent);
+    ThreadClass object(event, parentTid, threadDone, lock, setEvent);
     object.Run();
     event.Lock();
     EXPECT_FALSE(setEvent);
     object.Stop();     
-}
-
-TEST(test_event, pulse_event)
-{
-    Event event(false,true);
-    std::thread::id parentTid;
-    bool threadDone = false;
-    volatile bool lock = false;
-    volatile bool setEvent = false;
-    volatile bool pulseEvent = true;
-
-    event.ResetEvent();
-    ThreadClass object(event, parentTid, threadDone, lock, setEvent, pulseEvent);
-    object.Run();
-    event.Lock();
-    EXPECT_FALSE(pulseEvent);
-    object.Stop();
 }

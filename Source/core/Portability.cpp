@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -248,18 +248,49 @@ void DumpCallStack(const ThreadId threadId, std::list<string>& stackList)
 
 #ifdef __LINUX__
 
-void SleepMs(unsigned int a_Time)
-{
-    struct timespec sleepTime;
-    struct timespec waitedTime;
+void SleepMs(const unsigned int time) {
+    int result;
+    struct timespec elapse;
 
-    sleepTime.tv_sec = (a_Time / 1000);
-    sleepTime.tv_nsec = (a_Time - (sleepTime.tv_sec * 1000)) * 1000000;
+    if (time == 0) {
+        elapse.tv_sec = 0;
+        elapse.tv_nsec = 1000;
+    }
+    else {
+        elapse.tv_sec = time / 1000;
+        elapse.tv_nsec = (time % 1000) * 1000000;
+    }
+ 
+    while ( ((result = ::nanosleep(&elapse, &elapse)) != 0) && (errno == EINTR) ) /* Intentionally left empty */;
+}
 
-    ::nanosleep(&sleepTime, &waitedTime);
+void SleepUs(const unsigned int time) {
+    int result;
+    struct timespec elapse;
+
+    if (time == 0) {
+        elapse.tv_sec = 0;
+        elapse.tv_nsec = 1000;
+    }
+    else {
+        elapse.tv_sec = time / 1000000;
+        elapse.tv_nsec = (time % 1000000) * 1000;
+    }
+
+    while ( ((result = ::nanosleep(&elapse, &elapse)) != 0) && (errno == EINTR) ) /* Intentionally left empty */;
 }
 
 #endif
+
+#if defined(__WINDOWS__)
+
+void SleepUs(const uint32_t time) {
+    std::this_thread::sleep_for(std::chrono::microseconds(time));
+}
+
+#endif
+
+
 
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
 

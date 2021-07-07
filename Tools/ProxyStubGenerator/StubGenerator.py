@@ -3,7 +3,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import copy
 import CppParser
 from collections import OrderedDict
 
-VERSION = "1.6.8"
+VERSION = "1.6.10"
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -51,6 +51,7 @@ CLASS_IUNKNOWN = "::WPEFramework::Core::IUnknown"
 PROXYSTUB_CPP_NAME = "ProxyStubs_%s.cpp"
 
 MIN_INTERFACE_ID = 64
+INSTANCE_ID = "RPC::instance_id"
 
 DEFAULT_DEFINITIONS_FILE = "default.h"
 IDS_DEFINITIONS_FILE = "Ids.h"
@@ -345,6 +346,9 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                     self.oclass = type_
                     self.unexpanded = type
                     self.type = self._ExpandTypedefs(type)
+                    if not isinstance(self.type, CppParser.Type):
+                        raise TypenameError(type_, "'%s': undefined type" % TypeStr(CppParser.Type(CppParser.Undefined(self.type))))
+
                     self.is_ref = type.IsReference()
                     self.is_ptr = type.IsPointer()
 
@@ -432,27 +436,25 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                 def _RpcType(self, noref):
                     if self.is_ptr:
                         if self.is_interface:
-                            return "Number<RPC::instance_id>"
+                            return "Number<%s>" % INSTANCE_ID
                         else:
                             return "Buffer<%s>" % self.length_type
-                    elif isinstance(self.expanded_typename, CppParser.Enum):
-                        if self.type.Type().type.Type().size == "int":
-                            log.Warn("%s: underlying type of enumeration is not fixed" % self.str_typename)
-                        return "Number<%s>" % noref
-                    elif isinstance(self.expanded_typename, CppParser.Size_t):
-                        log.Warn("%s: size_t size is not fixed, use a stdint type instead" % self.str_typename)
-                        return "Number<%s>" % noref
-                    elif isinstance(self.expanded_typename, CppParser.Time_t):
-                        log.Warn("%s: time_t size is not fixed, use a stdint type instead" % self.str_typename)
-                        return "Number<%s>" % noref
                     elif isinstance(self.expanded_typename, CppParser.Integer):
-                        if self.type.Type().size == "int":
+                        if not self.expanded_typename.IsFixed():
                             log.Warn("%s: integer size is not fixed, use a stdint type instead" % self.str_typename)
                         return "Number<%s>" % noref
                     elif isinstance(self.expanded_typename, CppParser.String):
                         return "Text"
                     elif isinstance(self.expanded_typename, CppParser.Bool):
                         return "Boolean"
+                    elif isinstance(self.expanded_typename, CppParser.Enum):
+                        if not self.expanded_typename.type.Type().IsFixed():
+                            log.Warn("%s: underlying type of enumeration is not fixed" % self.str_typename)
+                        return "Number<%s>" % noref
+                    elif isinstance(self.expanded_typename, CppParser.BuiltinInteger):
+                        if not self.expanded_typename.IsFixed():
+                            log.Warn("%s: %s size is not fixed, use a stdint type instead" % (self.str_typename, noref))
+                        return "Number<%s>" % noref
                     elif isinstance(self.expanded_typename, CppParser.Typedef):
                         et = EmitType(self.oclass, self.ocv)
                         return et._RpcType(noref)
@@ -461,8 +463,9 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
 
                 def _ExpandTypedefs(self, type):
                     expanded = type
-                    if isinstance(type.Type(), CppParser.Typedef):
-                        expanded = self._ExpandTypedefs(type.Type().type)
+                    if isinstance(type, CppParser.Type):
+                        if isinstance(type.Type(), CppParser.Typedef):
+                            expanded = self._ExpandTypedefs(type.Type().type)
                     return expanded
 
             class EmitParam(EmitType):
@@ -724,7 +727,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                             "'%s' is defined as a length variable but is write-only" % p.origname)
                                 elif not p.is_length or p.is_maxlength or not params[p.length_target].is_input:
                                     emit.Line("%s %s = reader.%s();" %
-                                              ("RPC::instance_id" if p.proxy else p.str_noref,
+                                              (INSTANCE_ID if p.proxy else p.str_noref,
                                                p.length_name if p.is_length else p.name, p.RpcTypeNoCV()))
                                 if p.is_length:
                                     p.name = p.length_name
@@ -971,9 +974,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
             emit.IndentInc()
 
             # emit constructor
-            emit.Line(
-                "%s(const Core::ProxyType<Core::IPCChannel>& channel, RPC::instance_id implementation, const bool otherSideInformed)"
-                % class_name)
+            emit.Line("%s(const Core::ProxyType<Core::IPCChannel>& channel, %s implementation, const bool otherSideInformed)" % (class_name, INSTANCE_ID))
             emit.Line("    : BaseClass(channel, implementation, otherSideInformed)")
             emit.Line("{")
             emit.Line("}")
@@ -1101,11 +1102,11 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                         if retval.is_interface:
                             if retval.obj:
                                 emit.Line(
-                                    "%s_proxy = reinterpret_cast<%s>(Interface(reader.Number<RPC::instance_id>(), %s::ID));" %
-                                    (retval.name, retval.str_nocvref, retval.str_typename))
+                                    "%s_proxy = reinterpret_cast<%s>(Interface(reader.Number<%s>(), %s::ID));" %
+                                    (retval.name, retval.str_nocvref, INSTANCE_ID, retval.str_typename))
                             else:
-                                emit.Line("%s_proxy = Interface(reader.Number<RPC::instance_id>(), %s);" %
-                                          (retval.name, retval.interface_expr))
+                                emit.Line("%s_proxy = Interface(reader.Number<%s>(), %s);" %
+                                          (retval.name, INSTANCE_ID, retval.interface_expr))
                         else:
                             if not retval.is_ptr and not retval.CheckRpcType():
                                 if retval.obj:
@@ -1128,8 +1129,8 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
 
                     for p in params:
                         if p.is_nonconstref and p.is_interface:
-                            emit.Line("%s = reinterpret_cast<%s>(Interface(reader.Number<RPC::instance_id>(), %s::ID));" %
-                                      (p.name, p.str_nocvref, p.str_typename))
+                            emit.Line("%s = reinterpret_cast<%s>(Interface(reader.Number<%s>(), %s::ID));" %
+                                      (p.name, p.str_nocvref, INSTANCE_ID, p.str_typename))
                         elif not p.obj and p.is_outputptr:
                             if p.length_var and p.length_ref and p.length_ref.is_output:
                                 emit.Line("%s = reader.%s();" % (p.length_ref.name, p.length_ref.RpcType()))
@@ -1319,7 +1320,7 @@ if __name__ == "__main__":
                            action="store_true",
                            default=False,
                            help="enable verbose output (default: verbose output disabled)")
-    argparser.add_argument('-I', dest="includePaths", metavar="INCLUDE_DIR", action='append', default=[], type=str, 
+    argparser.add_argument('-I', dest="includePaths", metavar="INCLUDE_DIR", action='append', default=[], type=str,
                            help='add an include path (can be used multiple times)')
 
     args = argparser.parse_args(sys.argv[1:])
@@ -1407,7 +1408,7 @@ if __name__ == "__main__":
                     log.Print("skipped file '%s'" % err)
                     skipped.append(source_file)
                 except NoInterfaceError as err:
-                    log.Info("no interface classes found in %s" % (INTERFACE_NAMESPACE), source_file)
+                    log.Warn("no interface classes found in %s" % (INTERFACE_NAMESPACE), source_file)
                 except TypenameError as err:
                     log.Error(err)
                     if not keep_incomplete and os.path.isfile(output_file):

@@ -3,7 +3,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -84,6 +84,7 @@ class Metadata:
         self.output = False
         self.is_property = False
         self.is_deprecated = False
+        self.is_obsolete = False
         self.length = None
         self.maxlength = None
         self.interface = None
@@ -93,28 +94,33 @@ class Metadata:
 
 
 class BaseType:
-    def __init__(self):
-        pass
+    def __init__(self, type):
+        self.type = type
+
+    def Proto(self):
+        return self.type
+
+    def __str__(self):
+        return self.Proto()
 
 
 class Undefined(BaseType):
     def __init__(self, type, comment=""):
-        BaseType.__init__(self)
-        self.type = type
+        BaseType.__init__(self, type)
         self.comment = comment
 
     def Proto(self):
+        proto = self.comment
         if isinstance(self.type, list):
             if (type(self.type[0]) is str):
-                return self.comment + " ".join(self.type).replace(" < ", "<").replace(" :: ", "::").replace(
-                    " >", ">").replace(" *", "*").replace(" &", "&").replace(" &&", "&&")
+                proto += " ".join(self.type).replace(" < ", "<").replace(" :: ", "::").replace(
+                    " >", ">").replace(" *", "*").replace(" &", "&").replace(" &&", "&&").replace(" ,",",")
             else:
-                return self.comment + " ".join([str(x) for x in self.type])
+                proto += " ".join([str(x) for x in self.type])
         else:
-            return self.comment + str(self.type)
+            proto += str(self.type)
 
-    def __str__(self):
-        return self.Proto()
+        return proto
 
     def __repr__(self):
         return "undefined %s" % self.Proto()
@@ -122,37 +128,42 @@ class Undefined(BaseType):
 
 class Fundamental(BaseType):
     def __init__(self, type):
-        BaseType.__init__(self)
-        self.type = type
-
-    def Proto(self):
-        return self.type
-
-    def __str__(self):
-        return self.type
+        BaseType.__init__(self, type)
 
     def __repr__(self):
         return "fundamental %s" % self.type
 
 
-class Void(Fundamental):
-    def __init__(self):
-        Fundamental.__init__(self, "void")
+class Intrinsic(BaseType):
+    def __init__(self, type):
+        BaseType.__init__(self, type)
+
+    def __repr__(self):
+        return "intrinsic %s" % self.type
+
+
+class BuiltinInteger(Intrinsic):
+    def __init__(self, fixed_size = False):
+        Intrinsic.__init__(self, "builtin_integer")
+        self.fixed = fixed_size
+
+    def IsFixed(self):
+        return self.fixed
+
+
+class String(Intrinsic):
+    def __init__(self, std=False):
+        Intrinsic.__init__(self, "std::string" if std else "string")
 
 
 class Nullptr_t(Fundamental):
     def __init__(self):
-        Fundamental.__init__(self, "nullptr_t")
+        Fundamental.__init__(self, "std::nullptr_t")
 
 
-class Size_t(Fundamental):
+class Void(Fundamental):
     def __init__(self):
-        Fundamental.__init__(self, "size_t")
-
-
-class Time_t(Fundamental):
-    def __init__(self):
-        Fundamental.__init__(self, "time_t")
+        Fundamental.__init__(self, "void")
 
 
 class Bool(Fundamental):
@@ -179,10 +190,8 @@ class Integer(Fundamental):
         else:
             self.size = " ".join(self.type.split()[1:])
 
-
-class String(Fundamental):
-    def __init__(self, std=False):
-        Fundamental.__init__(self, "std::string" if std else "string")
+    def IsFixed(self):
+        return self.size != "int"
 
 
 class Float(Fundamental):
@@ -249,7 +258,11 @@ class Identifier():
                 if nest2 == 0 and not nest1:
                     type_found = True
             elif nest1 or nest2:
-                type[-1] += " " + token
+                # keep double collon-separated tokens together
+                if token == "::" or type[-1].endswith("::"):
+                    type[-1] += token
+                else:
+                    type[-1] += " " + token
 
             # handle pointer/reference markers
             elif token[0] == "@":
@@ -286,13 +299,21 @@ class Identifier():
                     self.meta.details = string[i + 1]
                     skip = 1
                 elif token[1:] == "PARAM":
-                    self.meta.param[string[i + 1]] = string[i + 2]
+                    par = string[i + 1]
+                    if par.endswith(":"):
+                        par = par[:-1]
+                    self.meta.param[par] = string[i + 2]
                     skip = 2
                 elif token[1:] == "RETVAL":
-                    self.meta.retval[string[i + 1]] = string[i + 2]
+                    par = string[i + 1]
+                    if par.endswith(":"):
+                        par = par[:-1]
+                    self.meta.retval[par] = string[i + 2]
                     skip = 2
                 elif token[1:] == "DEPRECATED":
                     self.meta.is_deprecated = True
+                elif token[1:] == "OBSOLETE":
+                    self.meta.is_obsolete = True
                 elif token[1:] == "TEXT":
                     self.meta.text = "".join(string[i + 1])
                     skip = 1
@@ -455,25 +476,21 @@ class Identifier():
                 type = self.type[i].split()[-1]
                 if type in ["float", "double"]:
                     self.type[i] = Type(Float(self.type[i]))
-                elif type in [
-                        "int", "char", "wchar_t", "short", "long", "signed", "unsigned", "int8_t", "uint8_t", "int16_t",
-                        "uint16_t", "int32_t", "uint32_t", "int64_t", "uint64_t"
-                ]:
+                elif type in ["int", "char", "wchar_t", "char16_t", "char32_t", "short", "long", "signed", "unsigned",
+                              "int8_t", "uint8_t", "int16_t", "uint16_t", "int32_t", "uint32_t", "int64_t", "uint64_t"]:
                     self.type[i] = Type(Integer(self.type[i]))
                 elif type == "bool":
                     self.type[i] = Type(Bool())
                 elif type == "void":
                     self.type[i] = Type(Void())
-                elif type in ["size_t", "std::size_t"]:
-                    self.type[i] = Type(Size_t())
-                elif type in ["time_t", "std::time_t"]:
-                    self.type[i] = Type(Time_t())
-                elif type in ["nullptr_t", "std::nullptr_t"]:
-                    self.type[i] = Type(Nullptr_t())
                 elif type == "string":
                     self.type[i] = Type(String())
                 elif type == "std::string":
                     self.type[i] = Type(String(True))
+                elif type == "__stubgen_integer":
+                    self.type[i] = Type(BuiltinInteger(True))
+                elif type == "__stubgen_unspecified_integer":
+                    self.type[i] = Type(BuiltinInteger(False))
                 else:
                     found = []
                     __Search(global_namespace, found, self.type[i])
@@ -686,6 +703,9 @@ class Type:
     def IsFundamental(self):
         return isinstance(self.type, Fundamental)
 
+    def IsIntrinsic(self):
+        return isinstance(self.type, Intrinsic)
+
     def IsClass(self):
         return isinstance(self.type, Class)
 
@@ -760,6 +780,7 @@ class Class(Identifier, Block):
         self.stub = False
         self.is_json = False
         self.is_event = False
+        self.is_extended = False
         self.is_iterator = False
         self.type_name = name
         self.parent.classes.append(self)
@@ -833,6 +854,7 @@ class Function(Block, Name):
         self.retval = Identifier(self, self, ret_type, valid_specifiers, False)
         self.omit = False
         self.stub = False
+        self.is_excluded = False
         self.parent.methods.append(self)
 
     def Proto(self):
@@ -1102,6 +1124,7 @@ class TemplateClass(Class):
         instance.ancestors = self.ancestors
         instance.specifiers = self.specifiers
         instance.is_json = self.is_json
+        instance.is_extended = self.is_extended
         instance.is_event = self.is_event
         instance.is_iterator = self.is_iterator
 
@@ -1294,10 +1317,16 @@ def __Tokenize(contents):
                     tagtokens.append("@PROPERTY")
                 if _find("@deprecated", token):
                     tagtokens.append("@DEPRECATED")
+                if _find("@obsolete", token):
+                    tagtokens.append("@OBSOLETE")
                 if _find("@json", token):
                     tagtokens.append("@JSON")
+                if _find("@json:omit", token):
+                    tagtokens.append("@JSON_OMIT")
                 if _find("@event", token):
                     tagtokens.append("@EVENT")
+                if _find("@extended", token):
+                    tagtokens.append("@EXTENDED")
                 if _find("@iterator", token):
                     tagtokens.append("@ITERATOR")
                 if _find("@text", token):
@@ -1431,7 +1460,9 @@ def Parse(contents):
     omit_next = False
     stub_next = False
     json_next = False
+    exclude_next = False
     event_next = False
+    extended_next = False
     iterator_next = False
     in_typedef = False
 
@@ -1455,8 +1486,16 @@ def Parse(contents):
             json_next = True
             tokens[i] = ";"
             i += 1
+        elif tokens[i] == "@JSON_OMIT":
+            exclude_next = True
+            tokens[i] = ';'
+            i += 1
         elif tokens[i] == "@EVENT":
             event_next = True
+            tokens[i] = ";"
+            i += 1
+        elif tokens[i] == "@EXTENDED":
+            extended_next = True
             tokens[i] = ";"
             i += 1
         elif tokens[i] == "@ITERATOR":
@@ -1472,6 +1511,7 @@ def Parse(contents):
             stub_next = False
             json_next = False
             event_next = False
+            extended_next = False
             iterator_next = False
             in_typedef = False
             tokens[i] = ";"
@@ -1578,10 +1618,14 @@ def Parse(contents):
                 stub_next = False
             if json_next:
                 new_class.is_json = True
+                new_class.is_extended = extended_next
                 json_next = False
+                extended_next = False
             if event_next:
                 new_class.is_event = True
+                new_class.is_extended = extended_next
                 event_next = False
+                extended_next = False
             if iterator_next:
                 new_class.is_iterator = True
                 event_next = False
@@ -1691,6 +1735,10 @@ def Parse(contents):
                 stub_next = False
             elif method.parent.stub:
                 method.stub = True
+
+            if exclude_next:
+                method.is_excluded = True
+                exclude_next = False
 
             if last_template_def:
                 method.specifiers.append(" ".join(last_template_def))

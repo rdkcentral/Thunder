@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -207,20 +207,27 @@ namespace WarningReporting {
             m_DirectOut = enabled;
         }
         inline void Announce() {
-            ASSERT (m_OutputChannel != nullptr);
-            m_OutputChannel->Ring();
+            if (m_OutputChannel != nullptr) {
+                m_OutputChannel->Ring();
+            }
         }
         inline void Acknowledge() {
-            ASSERT (m_OutputChannel != nullptr);
-            m_OutputChannel->Acknowledge();
+            if (m_OutputChannel != nullptr) {
+                m_OutputChannel->Acknowledge();
+            }
         }
         inline uint32_t Wait (const uint32_t waitTime) {
-            ASSERT (m_OutputChannel != nullptr);
-            return (m_OutputChannel->Wait(waitTime));
+            uint32_t status = Core::ERROR_UNAVAILABLE;
+            if (m_OutputChannel != nullptr) {
+                status = (m_OutputChannel->Wait(waitTime));
+            }
+            return status;
         }
         inline void Relinquish() {
-            ASSERT(m_OutputChannel != nullptr);
-            return (m_OutputChannel->Relinquish());
+            if (m_OutputChannel != nullptr) {
+                m_OutputChannel->Relinquish();
+            }
+            return;
         }
 
     private:

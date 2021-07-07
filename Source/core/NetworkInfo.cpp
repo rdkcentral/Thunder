@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1130,19 +1130,28 @@ namespace Core {
                 callback->Event(name);
             }
         }
+        void NotifyAddressUpdate(const string& name, const Core::IPNode& address, const bool added) {
+            for (AdapterObserver::INotification* callback : _observers) {
+                if (added == true) {
+                    callback->Added(name, address);
+                } else {
+                    callback->Removed(name, address);
+                }
+            }
+        }
         void Added(const uint32_t id, const Core::IPNode& node) {
             Map::iterator index(_networks.find(id));
             if (index != _networks.end()) {
                 if (index->second->Added(node) == true) {
-                    Notify(index->second->Name());
+                    NotifyAddressUpdate(index->second->Name(), node, true);
                 }
             }
         }
         void Removed(const uint32_t id, const Core::IPNode& node) {
             Map::iterator index(_networks.find(id));
             if (index != _networks.end()) {
-                if (index->second->Removed(node) == true) {
-                    Notify(index->second->Name());
+                if (index->second->Removed(node) == true ) {
+                    NotifyAddressUpdate(index->second->Name(), node, false);
                 }
             }
         }

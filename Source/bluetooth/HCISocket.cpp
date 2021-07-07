@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ void HCISocket::Scan(const uint16_t scanTime, const uint32_t type, const uint8_t
         struct hci_inquiry_req* ir = reinterpret_cast<struct hci_inquiry_req*>(buf);
         std::list<Address> reported;
 
-        ir->dev_id = hci_get_route(nullptr);
+        ir->dev_id = BtUtilsHciGetRoute(nullptr);
         ir->num_rsp = 128;
         ir->length = (((scanTime * 100) + 50) / 128);
         ir->flags = flags | IREQ_CACHE_FLUSH;
@@ -140,20 +140,19 @@ void HCISocket::Scan(const uint16_t scanTime, const bool limited, const bool pas
 
     if ((_state & ACTION_MASK) == 0) {
         Command::ScanParametersLE parameters;
-
         parameters.Clear();
-        parameters->type = (passive ? 0x00 : 0x01);
+        parameters->type = (passive? SCAN_TYPE_PASSIVE : SCAN_TYPE_ACTIVE);
         parameters->interval = htobs((limited ? 0x12 : 0x10));
         parameters->window = htobs((limited ? 0x12 : 0x10));
         parameters->own_bdaddr_type = LE_PUBLIC_ADDRESS;
-        parameters->filter = SCAN_FILTER_POLICY;
+        parameters->filter = SCAN_FILTER_POLICY_ALL;
 
         if ((Exchange(MAX_ACTION_TIMEOUT, parameters, parameters) == Core::ERROR_NONE) && (parameters.Response() == 0)) {
 
             Command::ScanEnableLE scanner;
             scanner.Clear();
             scanner->enable = 1;
-            scanner->filter_dup = SCAN_FILTER_DUPLICATES;
+            scanner->filter_dup = SCAN_FILTER_DUPLICATES_ENABLE;
 
             if ((Exchange(MAX_ACTION_TIMEOUT, scanner, scanner) == Core::ERROR_NONE) && (scanner.Response() == 0)) {
 
@@ -170,6 +169,46 @@ void HCISocket::Scan(const uint16_t scanTime, const bool limited, const bool pas
                 Exchange(MAX_ACTION_TIMEOUT, scanner, scanner);
 
                 _state.SetState(static_cast<state>(_state.GetState() & (~(ABORT | SCANNING))));
+            }
+        }
+    }
+
+    _state.Unlock();
+}
+
+void HCISocket::Discovery(const bool enable)
+{
+    _state.Lock();
+
+    if ((_state & ACTION_MASK) == 0) {
+        bool result = true;
+
+        if (enable == true) {
+            Command::ScanParametersLE parameters;
+            parameters.Clear();
+            parameters->type = SCAN_TYPE_PASSIVE;
+            parameters->interval = htobs(0x12);
+            parameters->window = htobs(0x12);
+            parameters->own_bdaddr_type = LE_PUBLIC_ADDRESS;
+            parameters->filter = SCAN_FILTER_POLICY_ALL;
+
+            uint32_t rv = Exchange(1000, parameters, parameters);
+            if (rv != Core::ERROR_NONE) {
+                TRACE_L1(_T("Failed to send ScanParametersLE command [%i]"), rv);
+            }
+            if ((rv != Core::ERROR_NONE) || (parameters.Response() != 0)) {
+                result = false;
+            }
+        }
+
+        if (result == true) {
+            Command::ScanEnableLE scanner;
+            scanner.Clear();
+            scanner->enable = enable;
+            scanner->filter_dup = SCAN_FILTER_DUPLICATES_ENABLE;
+
+            if ((Exchange(MAX_ACTION_TIMEOUT, scanner, scanner) == Core::ERROR_NONE) && (scanner.Response() == 0)) {
+                _state.SetState(static_cast<state>(enable? (_state.GetState() | DISCOVERING) : (_state.GetState() & (~DISCOVERING))));
             }
         }
     }
@@ -205,35 +244,35 @@ void HCISocket::Abort()
 {
     Core::SynchronousChannelType<Core::SocketPort>::StateChange();
     if (IsOpen() == true) {
-        hci_filter_clear(&_filter);
-	hci_filter_set_ptype(HCI_EVENT_PKT, &_filter);
-        hci_filter_set_event(EVT_LE_META_EVENT, &_filter);
-	hci_filter_set_event(EVT_CMD_STATUS, &_filter);
-	hci_filter_set_event(EVT_CMD_COMPLETE, &_filter);
-	hci_filter_set_event(EVT_PIN_CODE_REQ, &_filter);
-	hci_filter_set_event(EVT_LINK_KEY_REQ, &_filter);
-	hci_filter_set_event(EVT_LINK_KEY_NOTIFY, &_filter);
-	hci_filter_set_event(EVT_RETURN_LINK_KEYS, &_filter);
-	hci_filter_set_event(EVT_IO_CAPABILITY_REQUEST, &_filter);
-	hci_filter_set_event(EVT_IO_CAPABILITY_RESPONSE, &_filter);
-	hci_filter_set_event(EVT_USER_CONFIRM_REQUEST, &_filter);
-	hci_filter_set_event(EVT_USER_PASSKEY_REQUEST, &_filter);
-	hci_filter_set_event(EVT_REMOTE_OOB_DATA_REQUEST, &_filter);
-	hci_filter_set_event(EVT_USER_PASSKEY_NOTIFY, &_filter);
-	hci_filter_set_event(EVT_KEYPRESS_NOTIFY, &_filter);
-	hci_filter_set_event(EVT_SIMPLE_PAIRING_COMPLETE, &_filter);
-	hci_filter_set_event(EVT_AUTH_COMPLETE, &_filter);
-	hci_filter_set_event(EVT_REMOTE_NAME_REQ_COMPLETE, &_filter);
-	hci_filter_set_event(EVT_READ_REMOTE_VERSION_COMPLETE, &_filter);
-	hci_filter_set_event(EVT_READ_REMOTE_FEATURES_COMPLETE, &_filter);
-	hci_filter_set_event(EVT_REMOTE_HOST_FEATURES_NOTIFY, &_filter);
-	hci_filter_set_event(EVT_INQUIRY_COMPLETE, &_filter);
-	hci_filter_set_event(EVT_INQUIRY_RESULT, &_filter);
-	hci_filter_set_event(EVT_INQUIRY_RESULT_WITH_RSSI, &_filter);
-	hci_filter_set_event(EVT_EXTENDED_INQUIRY_RESULT, &_filter);
-	hci_filter_set_event(EVT_CONN_REQUEST, &_filter);
-	hci_filter_set_event(EVT_CONN_COMPLETE, &_filter);
-	hci_filter_set_event(EVT_DISCONN_COMPLETE, &_filter);
+        BtUtilsHciFilterClear(&_filter);
+        BtUtilsHciFilterSetPtype(HCI_EVENT_PKT, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_LE_META_EVENT, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_CMD_STATUS, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_CMD_COMPLETE, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_PIN_CODE_REQ, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_LINK_KEY_REQ, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_LINK_KEY_NOTIFY, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_RETURN_LINK_KEYS, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_IO_CAPABILITY_REQUEST, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_IO_CAPABILITY_RESPONSE, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_USER_CONFIRM_REQUEST, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_USER_PASSKEY_REQUEST, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_REMOTE_OOB_DATA_REQUEST, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_USER_PASSKEY_NOTIFY, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_KEYPRESS_NOTIFY, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_SIMPLE_PAIRING_COMPLETE, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_AUTH_COMPLETE, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_REMOTE_NAME_REQ_COMPLETE, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_READ_REMOTE_VERSION_COMPLETE, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_READ_REMOTE_FEATURES_COMPLETE, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_REMOTE_HOST_FEATURES_NOTIFY, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_INQUIRY_COMPLETE, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_INQUIRY_RESULT, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_INQUIRY_RESULT_WITH_RSSI, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_EXTENDED_INQUIRY_RESULT, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_CONN_REQUEST, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_CONN_COMPLETE, &_filter);
+        BtUtilsHciFilterSetEvent(EVT_DISCONN_COMPLETE, &_filter);
 
 	if (setsockopt(Handle(), SOL_HCI, HCI_FILTER, &_filter, sizeof(_filter)) < 0) {
             TRACE_L1("Can't set filter:  %s (%d)\n", strerror(errno), errno);
@@ -655,6 +694,7 @@ uint32_t ManagementSocket::AddDevice(const Address::type type, const Address& ad
 uint32_t ManagementSocket::RemoveDevice(const Address::type type, const Address& address)
 {
     Management::RemoveDevice message(_deviceId);
+    message->addr.type = type;
     ::memcpy(&(message->addr.bdaddr), address.Data(), sizeof(message->addr.bdaddr));
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
@@ -979,36 +1019,36 @@ uint32_t ManagementSocket::Notifications(const bool enabled)
     uint32_t result = Core::ERROR_UNAVAILABLE;
 
     if (IsOpen() == true) {
-        hci_filter_clear(&_filter);
+        BtUtilsHciFilterClear(&_filter);
 
         if (enabled == true) {
-            hci_filter_set_ptype(HCI_EVENT_PKT, &_filter);
-            hci_filter_set_event(EVT_CMD_STATUS, &_filter);
-            hci_filter_set_event(EVT_CMD_COMPLETE, &_filter);
-            hci_filter_set_event(EVT_PIN_CODE_REQ, &_filter);
-            hci_filter_set_event(EVT_LINK_KEY_REQ, &_filter);
-            hci_filter_set_event(EVT_LINK_KEY_NOTIFY, &_filter);
-            hci_filter_set_event(EVT_RETURN_LINK_KEYS, &_filter);
-            hci_filter_set_event(EVT_IO_CAPABILITY_REQUEST, &_filter);
-            hci_filter_set_event(EVT_IO_CAPABILITY_RESPONSE, &_filter);
-            hci_filter_set_event(EVT_USER_CONFIRM_REQUEST, &_filter);
-            hci_filter_set_event(EVT_USER_PASSKEY_REQUEST, &_filter);
-            hci_filter_set_event(EVT_REMOTE_OOB_DATA_REQUEST, &_filter);
-            hci_filter_set_event(EVT_USER_PASSKEY_NOTIFY, &_filter);
-            hci_filter_set_event(EVT_KEYPRESS_NOTIFY, &_filter);
-            hci_filter_set_event(EVT_SIMPLE_PAIRING_COMPLETE, &_filter);
-            hci_filter_set_event(EVT_AUTH_COMPLETE, &_filter);
-            hci_filter_set_event(EVT_REMOTE_NAME_REQ_COMPLETE, &_filter);
-            hci_filter_set_event(EVT_READ_REMOTE_VERSION_COMPLETE, &_filter);
-            hci_filter_set_event(EVT_READ_REMOTE_FEATURES_COMPLETE, &_filter);
-            hci_filter_set_event(EVT_REMOTE_HOST_FEATURES_NOTIFY, &_filter);
-            hci_filter_set_event(EVT_INQUIRY_COMPLETE, &_filter);
-            hci_filter_set_event(EVT_INQUIRY_RESULT, &_filter);
-            hci_filter_set_event(EVT_INQUIRY_RESULT_WITH_RSSI, &_filter);
-            hci_filter_set_event(EVT_EXTENDED_INQUIRY_RESULT, &_filter);
-            hci_filter_set_event(EVT_CONN_REQUEST, &_filter);
-            hci_filter_set_event(EVT_CONN_COMPLETE, &_filter);
-            hci_filter_set_event(EVT_DISCONN_COMPLETE, &_filter);
+            BtUtilsHciFilterSetPtype(HCI_EVENT_PKT, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_CMD_STATUS, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_CMD_COMPLETE, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_PIN_CODE_REQ, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_LINK_KEY_REQ, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_LINK_KEY_NOTIFY, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_RETURN_LINK_KEYS, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_IO_CAPABILITY_REQUEST, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_IO_CAPABILITY_RESPONSE, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_USER_CONFIRM_REQUEST, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_USER_PASSKEY_REQUEST, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_REMOTE_OOB_DATA_REQUEST, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_USER_PASSKEY_NOTIFY, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_KEYPRESS_NOTIFY, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_SIMPLE_PAIRING_COMPLETE, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_AUTH_COMPLETE, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_REMOTE_NAME_REQ_COMPLETE, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_READ_REMOTE_VERSION_COMPLETE, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_READ_REMOTE_FEATURES_COMPLETE, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_REMOTE_HOST_FEATURES_NOTIFY, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_INQUIRY_COMPLETE, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_INQUIRY_RESULT, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_INQUIRY_RESULT_WITH_RSSI, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_EXTENDED_INQUIRY_RESULT, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_CONN_REQUEST, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_CONN_COMPLETE, &_filter);
+            BtUtilsHciFilterSetEvent(EVT_DISCONN_COMPLETE, &_filter);
         }
 
         if (setsockopt(Handle(), SOL_HCI, HCI_FILTER, &_filter, sizeof(_filter)) < 0) {

@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,6 +170,11 @@ namespace Core {
             return (m_RefCount == 1);
         }
 
+        inline void Clear()
+        {
+            __Clear();
+        }
+
         inline void CompositRelease()
         {
             // This release is intended for objects that Composit ProxyObject<> objects as a composition part.
@@ -177,15 +182,35 @@ namespace Core {
             // last release but will not delete this object as that the the responsibility of the object that
             // has this object as a composit.
             Core::InterlockedDecrement(m_RefCount);
+
+            ASSERT(m_RefCount == 0);
         }
 
     private:
+        // -----------------------------------------------------
+        // Check for Clear method on Object
+        // -----------------------------------------------------
+        HAS_MEMBER(Clear, hasClear);
+
+        template <typename TYPE = CONTEXT>
+        inline typename Core::TypeTraits::enable_if<hasClear<TYPE, void (TYPE::*)()>::value, void>::type
+            __Clear()
+        {
+            CONTEXT::Clear();
+        }
+
+        template <typename TYPE = CONTEXT>
+        inline typename Core::TypeTraits::enable_if<!hasClear<TYPE, void (TYPE::*)()>::value, void>::type
+            __Clear()
+        {
+        }
+
         // -----------------------------------------------------
         // Check for Initialize method on Object
         // -----------------------------------------------------
         HAS_MEMBER(Initialize, hasInitialize);
 
-        template <typename TYPE=CONTEXT>
+        template <typename TYPE = CONTEXT>
         inline typename Core::TypeTraits::enable_if<hasInitialize<TYPE, uint32_t (TYPE::*)()>::value, uint32_t>::type
         __Initialize()
         {
@@ -204,7 +229,7 @@ namespace Core {
         // -----------------------------------------------------
         HAS_MEMBER(Deinitialize, hasDeinitialize);
 
-        template <typename TYPE=CONTEXT>
+        template <typename TYPE = CONTEXT>
         inline typename Core::TypeTraits::enable_if<hasDeinitialize<TYPE, void (TYPE::*)()>::value, void>::type
         __Deinitialize()
         {
@@ -212,7 +237,7 @@ namespace Core {
         }
 
 
-        template <typename TYPE=CONTEXT>
+        template <typename TYPE = CONTEXT>
         inline typename Core::TypeTraits::enable_if<!hasDeinitialize<TYPE, void (TYPE::*)()>::value, void>::type
         __Deinitialize()
         {
@@ -249,12 +274,12 @@ namespace Core {
         }
 
     public:
-        virtual void AddRef() const
+        void AddRef() const override
         {
             ProxyService<CONTEXT>::AddRef();
         }
 
-        virtual uint32_t Release() const
+        uint32_t Release() const override
         {
             return (ProxyService<CONTEXT>::Release());
         }
@@ -572,7 +597,7 @@ namespace Core {
             // If it is not the last one, we have to move...
             if (a_Index < m_Current) {
                 // Kill the entry, (again dirty but quick).
-                memcpy(&(m_List[a_Index]), &(m_List[a_Index + 1]), (m_Current - a_Index) * sizeof(IReferenceCounted*));
+                memmove(&(m_List[a_Index]), &(m_List[a_Index + 1]), (m_Current - a_Index) * sizeof(IReferenceCounted*));
             }
 
 #ifdef __DEBUG__
@@ -594,7 +619,7 @@ namespace Core {
             // If it is not the last one, we have to move...
             if (a_Index < m_Current) {
                 // Kill the entry, (again dirty but quick).
-                memcpy(&(m_List[a_Index]), &(m_List[a_Index + 1]), (m_Current - a_Index) * sizeof(IReferenceCounted*));
+                memmove(&(m_List[a_Index]), &(m_List[a_Index + 1]), (m_Current - a_Index) * sizeof(IReferenceCounted*));
             }
 
 #ifdef __DEBUG__
@@ -638,7 +663,7 @@ namespace Core {
                 // If it is not the last one, we have to move...
                 if ((a_Start + a_Count) < m_Current) {
                     // Kill the entry, (again dirty but quick).
-                    memcpy(&(m_List[a_Start]), &(m_List[a_Start + a_Count + 1]), (a_Count * sizeof(IReferenceCounted*)));
+                    memmove(&(m_List[a_Start]), &(m_List[a_Start + a_Count + 1]), (a_Count * sizeof(IReferenceCounted*)));
 
 #ifdef __DEBUG__
                     // Set all no longer used element to nullptr
@@ -986,199 +1011,284 @@ namespace Core {
         return (l_Received);
     }
 
-    template <typename PROXYPOOLELEMENT>
-    class ProxyPoolType {
+    struct IProxyContainerElement : public virtual IReferenceCounted {
+        ~IProxyContainerElement() override = default;
+
+        virtual void Unlink() = 0;
+    };
+    template <typename ELEMENT>
+    using ProxyContainerElement = typename std::conditional<std::is_base_of<IReferenceCounted, ELEMENT>::value != 0, ProxyService<ELEMENT>, ProxyObject<ELEMENT>>::type;
+
+    template <typename CONTAINER, typename ELEMENT, typename EXPOSED = ELEMENT>
+    class ProxyContainerType : public ProxyContainerElement<ELEMENT>, public IProxyContainerElement {
     private:
-        template <typename ELEMENT>
-        using PoolElement = typename std::conditional<std::is_base_of<IReferenceCounted, ELEMENT>::value != 0, ProxyService<ELEMENT>, ProxyObject<ELEMENT>>::type;
-
-        template <typename ELEMENT>
-        class ProxyObjectType : public PoolElement<ELEMENT> {
-        private:
-            template <typename... Args>
-            ProxyObjectType(ProxyPoolType<ELEMENT>* queue, Args&&... args)
-                : PoolElement<ELEMENT>(args...)
-                , _queue(*queue)
-            {
-                ASSERT(queue != nullptr);
-            }
-
-        public:
-            ProxyObjectType() = delete;
-            ProxyObjectType(const ProxyObjectType<ELEMENT>&) = delete;
-            ProxyObjectType<ELEMENT>& operator=(const ProxyObjectType<ELEMENT>&) = delete;
-
-            ~ProxyObjectType()
-            {
-            }
-
-            template <typename... Args>
-            inline static Core::ProxyType<ProxyObjectType<ELEMENT>> Create(ProxyPoolType<ELEMENT>& queue, Args&&... args)
-            {
-                ProxyObjectType* result(new (0) ProxyObjectType(&queue, args...));
-                return (Core::ProxyType<ProxyObjectType<ELEMENT>>(static_cast<IReferenceCounted*>(result), result));
-            }
-
-        public:
-            virtual uint32_t Release() const
-            {
-                uint32_t result;
-
-                if ((result = Core::InterlockedDecrement(ProxyService<ELEMENT>::m_RefCount)) == 0) {
-
-                    ProxyObjectType* baseElement(const_cast<ProxyObjectType*>(this));
-
-                    baseElement->__Relinquish();
-                    baseElement->__Clear();
-
-                    Core::ProxyType<ProxyObjectType> returnObject(static_cast<IReferenceCounted*>(baseElement), baseElement);
-
-                    _queue.Return(returnObject);
-
-                    return (Core::ERROR_DESTRUCTION_SUCCEEDED);
-                }
-
-                return (Core::ERROR_NONE);
-            }
-            inline void HandOut()
-            {
-                __Acquire();
-            }
-
-        private:
-            // -----------------------------------------------------
-            // Check for Clear method on Object
-            // -----------------------------------------------------
-            HAS_MEMBER(Clear, hasClear);
-
-            template <typename TYPE=ELEMENT>
-            inline typename Core::TypeTraits::enable_if<hasClear<TYPE, void (TYPE::*)()>::value, void>::type
-            __Clear()
-            {
-                ELEMENT::Clear();
-            }
-
-            template <typename TYPE=ELEMENT>
-            inline typename Core::TypeTraits::enable_if<!hasClear<TYPE, void (TYPE::*)()>::value, void>::type
-            __Clear()
-            {
-            }
-
-            // -----------------------------------------------------
-            // Check for Aquire method on Object
-            // -----------------------------------------------------
-            HAS_MEMBER(Acquire, hasAcquire);
-
-            template <typename TYPE=ELEMENT>
-            inline typename Core::TypeTraits::enable_if<hasAcquire<TYPE, void (TYPE::*)()>::value, void>::type
-            __Acquire()
-            {
-                ELEMENT::Acquire();
-            }
-
-            template <typename TYPE=ELEMENT>
-            inline typename Core::TypeTraits::enable_if<!hasAcquire<TYPE, void (TYPE::*)()>::value, void>::type
-            __Acquire()
-            {
-            }
-
-            // -----------------------------------------------------
-            // Check for Relinquish method on Object
-            // -----------------------------------------------------
-            HAS_MEMBER(Relinquish, hasRelinquish);
-
-            template <typename TYPE=ELEMENT>
-            inline typename Core::TypeTraits::enable_if<hasRelinquish<TYPE, void (TYPE::*)()>::value, void>::type
-            __Relinquish()
-            {
-                ELEMENT::Relinquish();
-            }
-
-            template <typename TYPE=ELEMENT>
-            inline typename Core::TypeTraits::enable_if<!hasRelinquish<TYPE, void (TYPE::*)()>::value, void>::type
-            __Relinquish()
-            {
-            }
-
-        private:
-            ProxyPoolType<ELEMENT>& _queue;
-        };
-
-    private:
-        typedef ProxyObjectType<PROXYPOOLELEMENT> ProxyPoolElement;
+        using ThisClass = ProxyContainerType<CONTAINER, ELEMENT, EXPOSED>;
 
     public:
-        ProxyPoolType(const ProxyPoolType<PROXYPOOLELEMENT>&) = delete;
-        ProxyPoolType<PROXYPOOLELEMENT>& operator=(const ProxyPoolType<PROXYPOOLELEMENT>&) = delete;
+        ProxyContainerType() = delete;
+        ProxyContainerType(const ProxyContainerType<CONTAINER, ELEMENT, EXPOSED>&) = delete;
+        ProxyContainerType<CONTAINER, ELEMENT, EXPOSED>& operator=(const ProxyContainerType<CONTAINER, ELEMENT, EXPOSED>&) = delete;
 
-        ProxyPoolType(const uint32_t initialQueueSize)
-            : _createdElements(0)
-            , _queue(initialQueueSize)
+    protected:
+        template <typename... Args>
+        ProxyContainerType(CONTAINER& parent, Args&&... args)
+            : ProxyContainerElement<ELEMENT>(std::forward<Args>(args)...)
+            , _parent(&parent)
+        {
+        }
+
+    public:
+        ~ProxyContainerType() override = default;
+
+        template <typename ACTUALOBJECT, typename... Args>
+        static typename Core::TypeTraits::enable_if<!std::is_same<ACTUALOBJECT, ELEMENT>::value, EXPOSED*>::type
+            Create(IProxyContainerElement*& refInterface, CONTAINER& parent, Args&&... args)
+        {
+            return (ProxyContainerType<CONTAINER, ACTUALOBJECT, EXPOSED>::template Create<ACTUALOBJECT>(refInterface, parent, std::forward<Args>(args)...));
+        }
+        template <typename ACTUALOBJECT, typename... Args>
+        static typename Core::TypeTraits::enable_if<std::is_same<ACTUALOBJECT, ELEMENT>::value, EXPOSED*>::type
+            Create(IProxyContainerElement*& refInterface, CONTAINER& parent, Args&&... args) 
+        {
+            ThisClass* element = new (0) ThisClass(parent, std::forward<Args>(args)...);
+
+            ASSERT(element != nullptr);
+
+            if (element->__IsInitialized() == true) {
+                refInterface = static_cast<IProxyContainerElement*>(element);
+            }
+            else {
+                delete element;
+            }
+
+            return (element);
+        }
+
+    public:
+        void AddRef() const override
+        {
+            if (ProxyService<ELEMENT>::LastRef() == true) {
+                const_cast<ThisClass*>(this)->__Acquire();
+            }
+            ProxyService<ELEMENT>::AddRef();
+        }
+        uint32_t Release() const override
+        {
+            if (ProxyService<ELEMENT>::LastRef() == true) {
+                // This can only happen of the parent has unlinked us, other wise 
+                // the last release is always in the Unlink..
+                ASSERT(_parent == nullptr);
+                const_cast<ThisClass*>(this)->__Relinquish();
+            }
+            uint32_t result = ProxyService<ELEMENT>::Release();
+
+            if ((result != Core::ERROR_DESTRUCTION_SUCCEEDED) && (ProxyService<ELEMENT>::LastRef() == true)) {
+                const_cast<ThisClass*>(this)->Notify();
+
+                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
+            }
+
+            return (result);
+        }
+        void Unlink() override
+        {
+            ASSERT(_parent != nullptr);
+
+            if (ProxyService<ELEMENT>::LastRef() == false) {
+                // This can only happen if the parent has unlinked us, while we are still being used somewhere..
+                const_cast<ThisClass*>(this)->__Unlink();
+            }
+
+            // By incrementing this refcount the last reference count is definitily not reached, so safe to remove the parent as we are sure
+            // that it will not be used while we clear it... 
+            ProxyService<ELEMENT>::AddRef();
+            _parent = nullptr;
+            ProxyService<ELEMENT>::Release();
+            ProxyService<ELEMENT>::Release();
+        }
+ 
+    private:
+        void Notify() {
+            __Relinquish();
+            ProxyContainerElement<ELEMENT>::Clear();
+
+            if (_parent != nullptr) {
+                // The parent is the only one still holding this proxy. Let him now...
+                _parent->Notify(static_cast<IProxyContainerElement*>(this), static_cast<EXPOSED*>(this));
+            }
+        }
+
+        // -----------------------------------------------------
+        // Check for IsInitialized method on Object
+        // -----------------------------------------------------
+        HAS_MEMBER(IsInitialized, hasIsInitialized);
+
+        template <typename B = ELEMENT>
+        inline typename Core::TypeTraits::enable_if<hasIsInitialized<B, bool (B::*)() const>::value, bool>::type
+            __IsInitialized() const
+        {
+            reurn (ELEMENT::IsInitialized());
+        }
+
+        template < typename B = ELEMENT>
+        inline typename Core::TypeTraits::enable_if<!hasIsInitialized<B, bool (B::*)() const>::value, bool>::type
+            __IsInitialized() const
+        {
+            return (true);
+        }
+
+        // -----------------------------------------------------
+        // Check for Aquire method on Object
+        // -----------------------------------------------------
+
+        HAS_MEMBER(Acquire, hasAcquire);
+
+        template < typename B = ELEMENT>
+        inline typename Core::TypeTraits::enable_if<hasAcquire<B, void (B::*)()>::value, void>::type
+            __Acquire()
+        {
+            ELEMENT::Acquire();
+        }
+
+        template <typename B = ELEMENT>
+        inline typename Core::TypeTraits::enable_if<!hasAcquire<B, void (B::*)()>::value, void>::type
+            __Acquire()
+        {
+        }
+
+
+        // -----------------------------------------------------
+        // Check for Relinquish method on Object
+        // -----------------------------------------------------
+        HAS_MEMBER(Relinquish, hasRelinquish);
+
+        template <typename B = ELEMENT>
+        inline typename Core::TypeTraits::enable_if<hasRelinquish<B, void (B::*)()>::value, void>::type
+            __Relinquish()
+        {
+            ELEMENT::Relinquish();
+        }
+
+        template < typename B = ELEMENT>
+        inline typename Core::TypeTraits::enable_if<!hasRelinquish<B, void (B::*)()>::value, void>::type
+            __Relinquish()
+        {
+        }
+
+        // -----------------------------------------------------
+        // Check for Unlink method on Object
+        // -----------------------------------------------------
+        HAS_MEMBER(Unlink, hasUnlink);
+
+        template <typename B = ELEMENT>
+        inline typename Core::TypeTraits::enable_if<hasUnlink<B, void (B::*)()>::value, void>::type
+            __Unlink()
+        {
+            ELEMENT::Unlink();
+        }
+
+        template <typename B = ELEMENT>
+        inline typename Core::TypeTraits::enable_if<!hasUnlink<B, void (B::*)()>::value, void>::type
+            __Unlink()
+        {
+        }
+
+    private:
+        CONTAINER* _parent;
+    };
+
+    template <typename PROXYELEMENT>
+    class ProxyPoolType {
+    private:
+        using ContainerElement = ProxyContainerType< ProxyPoolType<PROXYELEMENT>, PROXYELEMENT>;
+        using ContainerList = std::list< std::pair<IProxyContainerElement*, PROXYELEMENT*> >;
+
+    public:
+        ProxyPoolType(const ProxyPoolType<PROXYELEMENT>&) = delete;
+        ProxyPoolType<PROXYELEMENT>& operator=(const ProxyPoolType<PROXYELEMENT>&) = delete;
+
+        template <typename... Args>
+        ProxyPoolType(const uint32_t initialQueueSize, Args&&... args)
+            : _createdElements(initialQueueSize)
             , _lock()
         {
+            for (uint32_t index = 0; index < initialQueueSize; index++) {
+                IProxyContainerElement* refInterface;
+                PROXYELEMENT* element = ContainerElement::template Create<PROXYELEMENT>(refInterface, *this, std::forward<Args>(args)...);
+
+                ASSERT(element != nullptr);
+                ASSERT(refInterface != nullptr);
+
+                refInterface->AddRef();
+
+                _queue.emplace_back(refInterface, element);
+            }
         }
         ~ProxyPoolType()
         {
             // Clear the created objects..
             uint16_t attempt = 500;
-            while ((attempt != 0) && (_createdElements != 0)) {
-                if (_queue.Count() == 0) {
-                    // Give up the slice, we are waiting for ProxyPool
-                    // objects to return.
+            do {
+                while (_queue.size() != 0) {
+
+                    _lock.Lock();
+
+                    _queue.front().first->Unlink();
+                    _queue.pop_front();
+                    _createdElements--;
+
+                    _lock.Unlock();
+                }
+
+                if (_createdElements != 0) {
+                    // Give up the slice, we are waiting for ProxyPool objects to return.
                     TRACE_L1("Pending ProxyPool objects. Waiting for %d objects.", _createdElements);
                     ::SleepMs(1);
 
                     attempt--;
-                } else {
-                    Core::ProxyType<ProxyPoolElement> listLoad;
-
-                    _createdElements--;
-
-                    _queue.Remove(0, listLoad);
-
-                    listLoad.Destroy();
                 }
-            }
+
+            } while ((attempt != 0) && (_createdElements != 0));
+
             if (_createdElements != 0) {
-                TRACE_L1("Missing Pool Elements. PLease find leaking objects in: %s", typeid(PROXYPOOLELEMENT).name());
+                TRACE_L1("Missing Pool Elements. PLease find leaking objects in: %s", typeid(PROXYELEMENT).name());
             }
         }
 
     public:
         template <typename... Args>
-        Core::ProxyType<PROXYPOOLELEMENT> Element(Args&&... args)
+        Core::ProxyType<PROXYELEMENT> Element(Args&&... args)
         {
-            Core::ProxyType<ProxyPoolElement> result;
+            Core::ProxyType<PROXYELEMENT> result;
+            IProxyContainerElement* refInterface;
+            PROXYELEMENT* element = nullptr;
 
             _lock.Lock();
 
-            if (_queue.Count() == 0) {
+            if (_queue.size() == 0) {
 
                 _createdElements++;
 
                 _lock.Unlock();
 
-                result = ProxyPoolElement::Create(*this, args...);
 
-                // TRACE_L1("Created a new element for: %s [%p]\n", typeid(PROXYPOOLELEMENT).name(), &static_cast<PROXYPOOLELEMENT&>(*result));
-            } else {
-                _queue.Remove(0, result);
+                element = ContainerElement::template Create<PROXYELEMENT>(refInterface, *this, std::forward<Args>(args)...);                
+                refInterface->AddRef();
+            }
+            else {
+                element = _queue.front().second;;
+                refInterface = _queue.front().first;;
+                _queue.pop_front();
 
                 _lock.Unlock();
-
-                // TRACE_L1("Reused an element for: %s [%p]\n", typeid(PROXYPOOLELEMENT).name(), &static_cast<PROXYPOOLELEMENT&>(*result));
             }
 
-            result->HandOut();
+            ASSERT(element != nullptr);
 
-            return (Core::proxy_cast<PROXYPOOLELEMENT>(result));
-        }
-        void Return(Core::ProxyType<ProxyPoolElement>& element) const
-        {
-            _lock.Lock();
-            // TRACE_L1("Returned an element for: %s [%p]\n", typeid(PROXYPOOLELEMENT).name(), &static_cast<PROXYPOOLELEMENT&>(*element));
-            _queue.Add(element);
-            _lock.Unlock();
+            // TRACE_L1("Reused an element for: %s [%p]\n", typeid(PROXYPOOLELEMENT).name(), &static_cast<PROXYPOOLELEMENT&>(*result));
+            result = Core::ProxyType<PROXYELEMENT>(static_cast<IReferenceCounted*>(refInterface), element);
+
+            return (result);
         }
         inline uint32_t CreatedElements() const
         {
@@ -1186,86 +1296,29 @@ namespace Core {
         }
         inline uint32_t QueuedElements() const
         {
-            return (_queue.Count());
+            return (static_cast<uint32_t>(_queue.size()));
         }
-        inline uint32_t CurrentQueueSize() const
+        void Notify(IProxyContainerElement* refCount, PROXYELEMENT* element)
         {
-            return (_queue.CurrentQueueSize());
+            _lock.Lock();
+
+            // TRACE_L1("Returned an element for: %s [%p]\n", typeid(PROXYPOOLELEMENT).name(), &static_cast<PROXYPOOLELEMENT&>(*element));
+            _queue.emplace_back(refCount, element);
+
+            _lock.Unlock();
         }
 
     private:
         uint32_t _createdElements;
-        mutable Core::ProxyList<ProxyPoolElement> _queue;
+        ContainerList _queue;
         mutable Core::CriticalSection _lock;
     };
 
     template <typename PROXYKEY, typename PROXYELEMENT>
     class ProxyMapType {
     private:
-        template <typename ELEMENT>
-        using PoolElement = typename std::conditional<std::is_base_of<IReferenceCounted, ELEMENT>::value != 0, ProxyService<ELEMENT>, ProxyObject<ELEMENT>>::type;
-
-        template <typename KEY, typename ELEMENT>
-        class ProxyObjectType : public PoolElement<ELEMENT> {
-        public:
-            ProxyObjectType() = delete;
-            ProxyObjectType(const ProxyObjectType<KEY, ELEMENT>&) = delete;
-            ProxyObjectType<KEY, ELEMENT>& operator=(const ProxyObjectType<KEY, ELEMENT>&) = delete;
-
-            template <typename... Args>
-            ProxyObjectType(ProxyMapType<KEY, ELEMENT>& parent, const KEY& key, Args&&... args)
-                : PoolElement<ELEMENT>(key, std::forward<Args>(args)...)
-                , _parent(parent)
-            {
-            }
-            ~ProxyObjectType() override = default;
-
-        public:
-            uint32_t Release() const override
-            {
-                uint32_t result = Core::InterlockedDecrement(ProxyService<ELEMENT>::m_RefCount);
-
-                if (result == 1) {
-                    // The Map is the only one still holding this proxy. Kill it....
-                    _parent.RemoveObject(*this);
-                } else if (result == 0) {
-                    delete this;
-
-                    return (Core::ERROR_DESTRUCTION_SUCCEEDED);
-                }
-
-                return (Core::ERROR_NONE);
-            }
-            bool IsInitialized() const
-            {
-                return (__IsInitialized());
-            }
-
-        private:
-            // -----------------------------------------------------
-            // Check for Relinquish method on Object
-            // -----------------------------------------------------
-            HAS_MEMBER(IsInitialized, hasIsInitialized);
-
-            template  <typename TYPE=ELEMENT>
-            inline typename Core::TypeTraits::enable_if<hasIsInitialized<TYPE, bool (TYPE::*)() const>::value, bool>::type
-            __IsInitialized() const
-            {
-                return (ELEMENT::IsInitialized());
-            }
-
-            template < typename TYPE=ELEMENT>
-            inline typename Core::TypeTraits::enable_if<!hasIsInitialized<TYPE, bool (TYPE::*)() const>::value, bool>::type
-            __IsInitialized() const
-            {
-                return (true);
-            }
-
-        private:
-            ProxyMapType<KEY, ELEMENT>& _parent;
-        };
-
-        using ProxyMapElement = ProxyObjectType<PROXYKEY, PROXYELEMENT>;
+        using ContainerElement = ProxyContainerType< ProxyMapType< PROXYKEY, PROXYELEMENT>, PROXYELEMENT>;
+        using ContainerMap = std::map<PROXYKEY, std::pair<IProxyContainerElement*, PROXYELEMENT*> >;
 
     public:
         ProxyMapType(const ProxyMapType<PROXYKEY, PROXYELEMENT>&) = delete;
@@ -1276,37 +1329,39 @@ namespace Core {
             , _lock()
         {
         }
-        ~ProxyMapType() = default;
+        ~ProxyMapType() {
+            Clear();
+        }
 
     public:
-        template <typename... Args>
+        template <typename ACTUALOBJECT, typename... Args>
         Core::ProxyType<PROXYELEMENT> Instance(const PROXYKEY& key, Args&&... args)
         {
             Core::ProxyType<PROXYELEMENT> result;
+            IProxyContainerElement* refInterface;
 
             _lock.Lock();
 
-            typename std::map<PROXYKEY, Core::ProxyType<ProxyMapElement>>::iterator index(_map.find(key));
+            typename ContainerMap::iterator index(_map.find(key));
 
             if (index == _map.end()) {
                 // Oops we do not have such an element, create it...
-                ProxyObjectType<PROXYKEY, PROXYELEMENT>* newItem(new (0) ProxyMapElement(*this, key, std::forward<Args>(args)...));
+                PROXYELEMENT* newItem = ContainerElement::template Create<ACTUALOBJECT>(refInterface, *this, std::forward<Args>(args)...);
 
-                if (newItem->IsInitialized() == false) {
-                    delete newItem;
-                } else {
-                    Core::ProxyType<ProxyMapElement> newElement(static_cast<IReferenceCounted*>(newItem), newItem);
+                if (newItem != nullptr) {
+                    _map.emplace(std::piecewise_construct,
+                        std::forward_as_tuple(key),
+                        std::forward_as_tuple(refInterface, newItem));
+
+                    // On account of our map we maintain a reference as well, untill we are the last :-)
+                    refInterface->AddRef();
 
                     // Make sure the return value is already "accounted" for otherwise the copy of the
                     // element into the map will trigger the "last" on map reference.
-                    result = proxy_cast<PROXYELEMENT>(newElement);
-
-                    _map.emplace(std::piecewise_construct,
-                        std::forward_as_tuple(key),
-                        std::forward_as_tuple(newElement));
+                    result = Core::ProxyType<PROXYELEMENT>(static_cast<IReferenceCounted*>(refInterface), newItem);
                 }
             } else {
-                result = proxy_cast<PROXYELEMENT>(index->second);
+                result = Core::ProxyType<PROXYELEMENT>(static_cast<IReferenceCounted*>(index->second.first), index->second.second);
             }
 
             _lock.Unlock();
@@ -1319,140 +1374,65 @@ namespace Core {
 
             _lock.Lock();
 
-            typename std::map<PROXYKEY, Core::ProxyType<ProxyMapElement>>::iterator index(_map.find(key));
+            typename ContainerMap::iterator index(_map.find(key));
 
             if (index != _map.end()) {
-                result = proxy_cast<PROXYELEMENT>(index->second);
+                result = Core::ProxyType<PROXYELEMENT>(static_cast<IReferenceCounted*>(index->second.first), index->second.second);
             }
 
             _lock.Unlock();
 
             return (result);
         }
-
-    private:
-        void RemoveObject(const ProxyMapElement& element) const
+        // void action<const PROXYKEY& key, const Core::ProxyType<PROXYELEMENT>& element>
+        template<typename ACTION>
+        void Visit(ACTION&& action ) const {
+            _lock.Lock();
+            for (const std::pair< PROXYKEY, std::pair<IProxyContainerElement*, PROXYELEMENT*> >& entry : _map) {
+                action(entry.first, Core::ProxyType<PROXYELEMENT>(static_cast<IReferenceCounted*>(entry.second.first), entry.second.second));
+            }
+            _lock.Unlock();
+        }
+        void Clear()
+        {
+            _lock.Lock();
+            for (const std::pair< PROXYKEY, std::pair<IProxyContainerElement*, PROXYELEMENT*> >& entry : _map) {
+                entry.second.first->Unlink();
+            }
+            _map.clear();
+            _lock.Unlock();
+        }
+        void Notify(IProxyContainerElement* refCount, PROXYELEMENT* element)
         {
             _lock.Lock();
 
-            // See if we did not hand it out before we reached the lock
-            if (element.LastRef() == true) {
-                typename std::map<PROXYKEY, ProxyType<ProxyMapElement>>::iterator index(_map.begin());
+            typename ContainerMap::iterator index(_map.begin());
 
-                // Find the element in the map..
-                while ((index != _map.end()) && (index->second != element)) {
-                    index++;
-                }
+            // Find the element in the map..
+            while ((index != _map.end()) && (index->second.first != refCount)) {
+                index++;
+            }
 
-                ASSERT(index != _map.end());
+            ASSERT(index != _map.end());
 
-                if (index != _map.end()) {
-                    _map.erase(index);
-                }
+            if (index != _map.end()) {
+                refCount->Unlink();
+                _map.erase(index);
             }
 
             _lock.Unlock();
         }
 
     private:
-        mutable std::map<PROXYKEY, ProxyType<ProxyMapElement>> _map;
+        ContainerMap _map;
         mutable Core::CriticalSection _lock;
     };
 
     template <typename PROXYELEMENT>
     class ProxyListType {
     private:
-        template <typename REALTYPE>
-        using Wrapper = typename std::conditional<std::is_base_of<IReferenceCounted, REALTYPE>::value != 0, ProxyService<REALTYPE>, ProxyObject<REALTYPE>>::type;
-
-        template <typename LISTTYPE, typename REALTYPE>
-        class ListElementType : public Wrapper<REALTYPE> {
-        public:
-            ListElementType() = delete;
-            ListElementType(const ListElementType<LISTTYPE, REALTYPE>&) = delete;
-            ListElementType<LISTTYPE, REALTYPE>& operator=(const ListElementType<LISTTYPE, REALTYPE>&) = delete;
-
-            template <typename... Args>
-            ListElementType(ProxyListType<LISTTYPE>& parent, Args&&... args)
-                : Wrapper<REALTYPE>(std::forward<Args>(args)...)
-                , _parent(&parent)
-            {
-            }
-            ~ListElementType() override = default;
-
-        public:
-            uint32_t Release() const override
-            {
-                uint32_t result = Core::InterlockedDecrement(ProxyService<REALTYPE>::m_RefCount);
-
-                if (result == 1) {
-                    if (_parent != nullptr) {
-                        // The list is the only one still holding this proxy. Kill it....
-                        _parent->RemoveObject(*this);
-                    }
-                } else if (result == 0) {
-                    delete this;
-
-                    return (Core::ERROR_DESTRUCTION_SUCCEEDED);
-                }
-
-                return (Core::ERROR_NONE);
-            }
-            bool IsInitialized() const
-            {
-                return (__IsInitialized());
-            }
-            void Clear()
-            {
-                // Doing this Addref to prevent the _parent from being used in the Release, now it has by definition 3 AddRefs, owned by the
-                // ListObject
-                Core::InterlockedIncrement(ProxyService<REALTYPE>::m_RefCount);
-                _parent = nullptr;
-                __Clear();
-                Core::InterlockedDecrement(ProxyService<REALTYPE>::m_RefCount);
-            }
-
-        private:
-            // -----------------------------------------------------
-            // Check for IsInitialized method on Object
-            // -----------------------------------------------------
-            HAS_MEMBER(IsInitialized, hasIsInitialized);
-
-            template <typename TYPE=REALTYPE>
-            inline typename Core::TypeTraits::enable_if<hasIsInitialized<TYPE, bool (TYPE::*)() const>::value, bool>::type
-            __IsInitialized() const
-            {
-                return (REALTYPE::IsInitialized());
-            }
-
-            template <typename TYPE=REALTYPE>
-            inline typename Core::TypeTraits::enable_if<!hasIsInitialized<TYPE, bool (TYPE::*)() const>::value, bool>::type
-            __IsInitialized() const
-            {
-                return (true);
-            }
-
-            // -----------------------------------------------------
-            // Check for Clear method on Object
-            // -----------------------------------------------------
-            HAS_MEMBER(Clear, hasClear);
-
-            template <typename TYPE2=LISTTYPE>
-            inline typename Core::TypeTraits::enable_if<hasClear<TYPE2, void (TYPE2::*)()>::value, void>::type
-            __Clear()
-            {
-                REALTYPE::Clear();
-            }
-
-            template <typename TYPE2=LISTTYPE>
-            inline typename Core::TypeTraits::enable_if<!hasClear<TYPE2, void (TYPE2::*)()>::value, void>::type
-            __Clear()
-            {
-            }
-
-        private:
-            ProxyListType<LISTTYPE>* _parent;
-        };
+        using ContainerElement = ProxyContainerType< ProxyListType<PROXYELEMENT>, PROXYELEMENT>;
+        using ContainerList = std::list<std::pair<IProxyContainerElement*, PROXYELEMENT*> >;
 
     public:
         ProxyListType(const ProxyListType<PROXYELEMENT>&) = delete;
@@ -1469,25 +1449,25 @@ namespace Core {
         }
 
     public:
-        template <typename REALTYPE, typename... Args>
-        Core::ProxyType<REALTYPE> Instance(Args&&... args)
+        template <typename ACTUALOBJECT, typename... Args>
+        Core::ProxyType<PROXYELEMENT> Instance(Args&&... args)
         {
-            Core::ProxyType<REALTYPE> result;
+            IProxyContainerElement* refInterface;
+            Core::ProxyType<PROXYELEMENT> result;
 
             _lock.Lock();
 
-            ListElementType<PROXYELEMENT, REALTYPE>* newItem(new (0) ListElementType<PROXYELEMENT, REALTYPE>(*this, std::forward<Args>(args)...));
+            PROXYELEMENT* newItem = ContainerElement::template Create<ACTUALOBJECT>(refInterface, *this, std::forward<Args>(args)...);
 
-            if (newItem->IsInitialized() == false) {
-                delete newItem;
-            } else {
-                // This moves the reference count to 1...
-                Core::ProxyType<PROXYELEMENT> newElement(static_cast<IReferenceCounted*>(newItem), newItem);
+            if (newItem != nullptr) {
+                _list.emplace_back(refInterface, newItem);
 
-                // This moves the reference count to 2...
-                result = Core::ProxyType<REALTYPE>(static_cast<IReferenceCounted*>(newItem), newItem);
+                // On account of our map we maintain a reference as well, untill we are the last :-)    
+                newItem->AddRef();
 
-                _list.emplace_back(newElement);
+                // Make sure the return value is already "accounted" for otherwise the copy of the
+                // element into the map will trigger the "last" on map reference.
+                result = Core::ProxyType<PROXYELEMENT>(static_cast<IReferenceCounted*>(refInterface), newItem);
             }
 
             _lock.Unlock();
@@ -1498,23 +1478,26 @@ namespace Core {
         void Clear()
         {
             _lock.Lock();
-            for (auto element : _list) {
-                element->Clear();
+            for (const std::pair< IProxyContainerElement*, PROXYELEMENT*>& entry : _list) {
+                entry.first->Unlink();
             }
             _list.clear();
             _lock.Unlock();
         }
-
-    private:
-        void RemoveObject(const PROXYELEMENT& element) const
+        void Notify(IProxyContainerElement* refCount, PROXYELEMENT* element)
         {
             _lock.Lock();
 
-            auto index = std::find(_list.begin(), _list.end(), element);
+            typename ContainerList::iterator index = _list.begin();
+
+            while ( (index != _list.end()) && (index->first != refCount) ) {
+                index++;
+            }
 
             ASSERT(index != _list.end());
 
             if (index != _list.end()) {
+                refCount->Unlink();
                 _list.erase(index);
             }
 
@@ -1523,7 +1506,7 @@ namespace Core {
 
     private:
         mutable Core::CriticalSection _lock;
-        mutable std::list<ProxyType<PROXYELEMENT>> _list;
+        ContainerList _list;
     };
 }
 } // namespace Core

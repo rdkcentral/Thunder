@@ -1,7 +1,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -663,4 +663,10 @@ function(print_target_properties tgt)
         endif()
     endforeach(prop)
 endfunction(print_target_properties)
+
+function(semicolon_safe_string StringVar)
+  string(ASCII 31 semicolon_code)
+  string(REPLACE  ";" "${semicolon_code}" SafeString "${${StringVar}}")
+  set(${StringVar} "${SafeString}" PARENT_SCOPE) 
+endfunction(semicolon_safe_string)
 

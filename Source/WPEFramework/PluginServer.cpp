@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -160,14 +160,17 @@ namespace PluginHost
     };
 
     void Server::WorkerPoolImplementation::Dispatcher::Dispatch(Core::IDispatch* job) /* override */ {
-    #ifdef __CORE_EXCEPTION_CATCHING__
-        string callsign(_T("Unknown"));
+    #if defined(__CORE_EXCEPTION_CATCHING__) || defined(__CORE_WARNING_REPORTING__)
+        string callsign(_T("Callsign Unknown"));
         Channel::Job* rootObject = dynamic_cast<Channel::Job*>(job);
         if (rootObject != nullptr) {
             callsign = rootObject->Callsign();
         }
 
         WARNING_REPORTING_THREAD_SETCALLSIGN_GUARD(callsign.c_str());
+    #endif
+
+    #ifdef __CORE_EXCEPTION_CATCHING__
 
         try {
             job->Dispatch();

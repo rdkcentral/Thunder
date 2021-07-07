@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ TEST(test_portability, simple_generic)
 {
     SleepS(1);
     SleepMs(1);
-    EXPECT_EQ(htonll(12345),ntohll(12345));
+    EXPECT_EQ(htonl(12345),ntohl(12345));
 
     std::thread::id parentId;
     ThreadClass object(parentId);

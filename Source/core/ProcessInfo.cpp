@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -420,8 +420,21 @@ namespace Core {
             }
         }
 #else
-        _memory.MemoryStats();
-        result = _memory.RSS();
+        int fd;
+        TCHAR buffer[128];
+        int VmRSS = 0;
+
+        snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
+        if ((fd = open(buffer, O_RDONLY)) > 0) {
+            ssize_t readAmount = 0;
+            if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
+                ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
+                buffer[nulIndex] = '\0';
+                sscanf(buffer, "%*d %d", &VmRSS);
+                result = VmRSS * PageSize;
+            }
+            close(fd);
+        }
 #endif
 
         return (result);
@@ -438,8 +451,21 @@ namespace Core {
             }
         }
 #else
-        _memory.MemoryStats();
-        result = _memory.Shared();
+        int fd;
+        TCHAR buffer[128];
+        int Share = 0;
+
+        snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
+        if ((fd = open(buffer, O_RDONLY)) > 0) {
+            ssize_t readAmount = 0;
+            if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
+                ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
+                buffer[nulIndex] = '\0';
+                sscanf(buffer, "%*d %*d %d", &Share);
+                result = Share * PageSize;
+            }
+            close(fd);
+        }
 #endif
 
         return (result);

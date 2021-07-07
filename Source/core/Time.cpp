@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -625,6 +625,17 @@ namespace Core {
             static_cast<uint16_t>(local.wMilliseconds), false));
     }
 
+    Time Time::ToUTC() const {
+        return (Time(
+            static_cast<uint16_t>(_time.wYear),
+            static_cast<uint8_t>(_time.wMonth),
+            static_cast<uint8_t>(_time.wDay),
+            static_cast<uint8_t>(_time.wHour),
+            static_cast<uint8_t>(_time.wMinute),
+            static_cast<uint8_t>(_time.wSecond),
+            static_cast<uint16_t>(_time.wMilliseconds), true));
+    }
+
     // Return the time in MicroSeconds, since since January 1, 1970 00:00:00 (UTC)...
     uint64_t Time::Ticks() const
     {
@@ -814,6 +825,17 @@ namespace Core {
             static_cast<uint8_t>(local.tm_min),
             static_cast<uint8_t>(local.tm_sec),
             0, false));
+    }
+
+    Time Time::ToUTC() const {
+        return (Time(
+            static_cast<uint16_t>(_time.tm_year + 1900),
+            static_cast<uint8_t>(_time.tm_mon + 1),
+            static_cast<uint8_t>(_time.tm_mday),
+            static_cast<uint8_t>(_time.tm_hour),
+            static_cast<uint8_t>(_time.tm_min),
+            static_cast<uint8_t>(_time.tm_sec),
+            0, true));
     }
 
     // Copyright (c) 2001-2006, NLnet Labs. All rights reserved.

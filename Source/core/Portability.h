@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,14 +140,16 @@
 #define AF_NETLINK 16
 #define AF_PACKET  17
 
-inline void SleepS(unsigned int a_Time)
+inline void SleepS(const uint32_t time)
 {
-    ::Sleep(a_Time * 1000);
+    ::Sleep(time * 1000);
 }
-inline void SleepMs(unsigned int a_Time)
+inline void SleepMs(const uint32_t time)
 {
-    ::Sleep(a_Time);
+    ::Sleep(time);
 }
+
+EXTERNAL void SleepUs(const uint32_t time);
 
 #ifdef _UNICODE
 typedef std::wstring string;
@@ -369,7 +371,8 @@ int clock_gettime(int, struct timespec*);
 
 #define ALLOCA alloca
 
-extern void EXTERNAL SleepMs(unsigned int a_Time);
+extern void EXTERNAL SleepMs(const unsigned int a_Time);
+extern void EXTERNAL SleepUs(const unsigned int a_Time);
 inline void EXTERNAL SleepS(unsigned int a_Time)
 {
     ::SleepMs(a_Time * 1000);
@@ -531,10 +534,6 @@ extern int EXTERNAL inet_aton(const char* cp, struct in_addr* inp);
 extern void EXTERNAL usleep(const uint32_t value);
 #endif
 
-inline void SleepUs(unsigned int a_Time)
-{
-    ::usleep(a_Time);
-}
 
 
 void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<string>& stack);
@@ -761,6 +760,20 @@ namespace Core {
 
 #ifndef BUILD_REFERENCE
 #define BUILD_REFERENCE engineering_build_for_debug_purpose_only
+#endif
+
+#ifdef __GNUC__
+#if __GNUC__ < 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ < 9 || (__GNUC_MINOR__ == 9 && __GNUC_PATCHLEVEL__ < 3)))
+//defining atomic_init: see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=64658"
+namespace std {
+  template<typename _ITp>
+    inline void
+    atomic_init(atomic<_ITp>* __a, _ITp __i) noexcept
+    {
+       __a->store(__i, memory_order_relaxed);
+    }
+}
+#endif
 #endif
 
 #endif // __PORTABILITY_H

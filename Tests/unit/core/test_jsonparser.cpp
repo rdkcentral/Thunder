@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -983,10 +983,12 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
-        data.value = "value\\uZZZZ";
+        data.value = R"(value\\uZZZZ)";
         data.valueToPutInJson = "\"" + data.value + "\"";
         ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            EXPECT_EQ(data.value, v.Value());
+            Core::JSON::String value;
+            value.FromString(data.value);
+            EXPECT_EQ(value.Value(), v.Value());
         });
     }
 

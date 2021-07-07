@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -239,8 +239,9 @@ TEST(Core_tracing, simpleTracing)
 
         while (index.Next() == true)
             if ((*index)->Enabled() == true) {
-                if ((strcmp((*index)->Module(), "Tracing")) == 0 )
+                if ((strcmp((*index)->Module(), "Tracing")) == 0 ) {
                     EXPECT_STREQ((*index)->Category(), "Information");
+                }
             }
 
         bool enabled = false;
@@ -272,8 +273,9 @@ TEST(Core_tracing, simpleTracingReversed)
 
         while (index.Next() == true)
             if ((*index)->Enabled() == true) {
-                if ((strcmp((*index)->Module(), "Tracing")) == 0 )
+                if ((strcmp((*index)->Module(), "Tracing")) == 0 ) {
                     EXPECT_STREQ((*index)->Category(), "Information");
+                }
             }
 
         bool enabled = false;
