@@ -179,35 +179,26 @@ namespace WarningReporting {
         static WarningReportingUnitProxy& Instance();
 
         void ReportWarningEvent(const char identifier[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information);
-        bool IsDefaultCategory(const string& category, bool& enabled, string& excluded, string& specific) const;
+        bool IsDefaultCategory(const string& category, bool& enabled, string& excluded, string& specificConfig) const;
         void Announce(IWarningReportingUnit::IWarningReportingControl& Category);
         void Revoke(IWarningReportingUnit::IWarningReportingControl& Category);
 
         void Handler(IWarningReportingUnit* handler);
-        void FillExcludedWarnings(const string& excludedJsonList, ExcludedWarnings& excludedWarnings) const;
+        void FillExcludedWarnings(const string& excludedJsonList, ExcludedWarnings& outExcludedWarnings) const;
+        void FillBoundsConfig(const string& boundsConfig, uint64_t& outReportingBound, uint64_t& outWarningBound, string& outSpecificConfig) const;
 
     protected:
-        WarningReportingUnitProxy() : _handler(nullptr), _waitingannounces() {};
+        WarningReportingUnitProxy() : _handler(nullptr), _waitingAnnounces() {};
 
-    private:
         // HPL todo: find better solution? we can't be dependednd on JSON.h in this file (cirlcular dependencies) so must be in CPP and therfore not template class and don't want it in the accesible namespace
         //           and perhaps remove the whole doubs temnplate param, beter make it uint32_t always...
-        struct BoundsConfigValues {
-            Core::OptionalType<uint64_t> reportbound;
-            Core::OptionalType<uint64_t> warningbound;
-            Core::OptionalType<string> config;
-
-            BoundsConfigValues(const string& config);
-        };
-
-        template <typename CONTROLCATEGORY, typename BOUNDSTYPE>
-        friend class WarningReportingBoundsCategory;
+        
 
     private:
         using WaitingAnnounceContainer = std::vector<IWarningReportingUnit::IWarningReportingControl*>;
 
        IWarningReportingUnit* _handler; 
-       WaitingAnnounceContainer _waitingannounces;
+       WaitingAnnounceContainer _waitingAnnounces;
     };
 
     template <typename CONTROLCATEGORY, typename BOUNDSTYPE = typename CONTROLCATEGORY::BoundsType>
@@ -216,22 +207,26 @@ namespace WarningReporting {
         WarningReportingBoundsCategory(const WarningReportingBoundsCategory&) = delete;
         WarningReportingBoundsCategory& operator=(const WarningReportingBoundsCategory&) = delete;
 
-        WarningReportingBoundsCategory() : _category(), _actualvalue(0) {}
+        WarningReportingBoundsCategory() : _category(), _actualValue(0) {}
         ~WarningReportingBoundsCategory() = default;
 
-        static void Configure(const string& settings) {
-            WarningReportingUnitProxy::BoundsConfigValues boundsconfig(settings);
+        static void Configure(const string& settings)
+        {
+            uint64_t reportBound = 0;
+            uint64_t warningBound = 0;
+            string specificConfig;
+            WarningReportingUnitProxy::Instance().FillBoundsConfig(settings, reportBound, warningBound, specificConfig);
 
-            if( boundsconfig.reportbound.IsSet() ) {
-                _reportingbound.store(static_cast<BOUNDSTYPE>(boundsconfig.reportbound.Value()), std::memory_order_relaxed);
+            if (reportBound != 0) {
+                _reportingBound.store(static_cast<BOUNDSTYPE>(reportBound), std::memory_order_relaxed);
             }
 
-            if( boundsconfig.warningbound.IsSet() ) {
-                _warningbound.store(static_cast<BOUNDSTYPE>(boundsconfig.warningbound.Value()), std::memory_order_relaxed);
+            if (warningBound != 0) {
+                _warningBound.store(static_cast<BOUNDSTYPE>(warningBound), std::memory_order_relaxed);
             }
 
-            if( boundsconfig.config.IsSet() ) {
-                CallConfigure(boundsconfig.config.Value());
+            if (!specificConfig.empty()) {
+                CallConfigure(specificConfig);
             }
         }
 
@@ -240,11 +235,11 @@ namespace WarningReporting {
         }
         
         template <typename... Args>
-        bool Analyze(const char modulename[], const char identifier[], const BOUNDSTYPE actualvalue, Args&&... args) {                
+        bool Analyze(const char moduleName[], const char identifier[], const BOUNDSTYPE actualValue, Args&&... args) {                
             bool report = false;
-            _actualvalue = actualvalue;
-            if( actualvalue > _reportingbound.load(std::memory_order_relaxed) ) {
-                report = CallAnalyze(modulename, identifier, std::forward<Args>(args)...);
+            _actualValue = actualValue;
+            if( actualValue > _reportingBound.load(std::memory_order_relaxed) ) {
+                report = CallAnalyze(moduleName, identifier, std::forward<Args>(args)...);
             }
             return report;
         }
@@ -254,31 +249,31 @@ namespace WarningReporting {
             ASSERT(length >= boundsTypeSize);
 
             uint16_t serialized = _category.Serialize(buffer, length);
-            memcpy(buffer + serialized, &_actualvalue, boundsTypeSize);
+            memcpy(buffer + serialized, &_actualValue, boundsTypeSize);
 
             return serialized + boundsTypeSize;
         }
 
-        uint16_t Deserialize(const uint8_t data[], const uint16_t size) {
+        uint16_t Deserialize(const uint8_t buffer[], const uint16_t length) {
             const std::size_t boundsTypeSize = sizeof(BOUNDSTYPE);
-            ASSERT(size >= boundsTypeSize);
+            ASSERT(length >= boundsTypeSize);
 
-            uint16_t deserialized = _category.Deserialize(data, size);
-            memcpy(&_actualvalue, data + deserialized, boundsTypeSize);
+            uint16_t deserialized = _category.Deserialize(buffer, length);
+            memcpy(&_actualValue, buffer + deserialized, boundsTypeSize);
 
             return deserialized + boundsTypeSize;
         }
 
         void ToString(string& visitor) const {
-            _category.ToString(visitor, _actualvalue, _warningbound.load(std::memory_order_relaxed));
+            _category.ToString(visitor, _actualValue, _warningBound.load(std::memory_order_relaxed));
         }
 
         bool IsWarning() const {
-            bool iswarning = false;
-            if( _actualvalue > _warningbound.load(std::memory_order_relaxed) ) {
-                iswarning = CallIsWarning();
+            bool isWarning = false;
+            if( _actualValue > _warningBound.load(std::memory_order_relaxed) ) {
+                isWarning = CallIsWarning();
             }
-            return iswarning;
+            return isWarning;
         }
 
     private:
@@ -317,10 +312,10 @@ namespace WarningReporting {
 
     private: 
         CONTROLCATEGORY _category;
-        BOUNDSTYPE _actualvalue;
+        BOUNDSTYPE _actualValue;
 
-        static std::atomic<BOUNDSTYPE> _reportingbound; 
-        static std::atomic<BOUNDSTYPE> _warningbound;
+        static std::atomic<BOUNDSTYPE> _reportingBound; 
+        static std::atomic<BOUNDSTYPE> _warningBound;
 
         // HPL todo; test later if this works, not important now
         //static_assert(WarningReportingBoundsCategory<BOUNDSTYPE, CONTROLCATEGORY>::_reportingbound <= WarningReportingBoundsCategory<BOUNDSTYPE, CONTROLCATEGORY>::_warningbound);
@@ -371,8 +366,8 @@ namespace WarningReporting {
             WarningReportingControl& operator=(const WarningReportingControl&) = delete;
 
             WarningReportingControl() 
-                : m_CategoryName(CallCategoryName())
-                , m_Enabled(0x03) 
+                : _categoryName(CallCategoryName())
+                , _enabled(0x03) 
             {
                 // Register Our control unit, so it can be influenced from the outside
                 // if nessecary..
@@ -381,12 +376,12 @@ namespace WarningReporting {
                 bool enabled = false;
                 string settings;
                 string excluded;
-                if (WarningReportingUnitProxy::Instance().IsDefaultCategory(m_CategoryName, enabled, excluded, settings)) {
+                if (WarningReportingUnitProxy::Instance().IsDefaultCategory(_categoryName, enabled, excluded, settings)) {
                     if (enabled) {
                         // Better not to use virtual Enabled(...), because derived classes aren't finished yet.
-                        m_Enabled = m_Enabled | 0x01;
+                        _enabled = _enabled | 0x01;
                     }
-                    WarningReportingUnitProxy::Instance().FillExcludedWarnings(excluded, m_ExcludedWarnings);
+                    WarningReportingUnitProxy::Instance().FillExcludedWarnings(excluded, _excludedWarnings);
 
 
                     CallConfigure(settings);
@@ -400,15 +395,15 @@ namespace WarningReporting {
         public:
             inline bool IsEnabled() const
             {
-                return ((m_Enabled & 0x01) != 0);
+                return ((_enabled & 0x01) != 0);
             }
             inline bool IsCallsignExcluded(const string& callsign)
             {
-                return m_ExcludedWarnings.IsCallsignExcluded(callsign);
+                return _excludedWarnings.IsCallsignExcluded(callsign);
             }
             inline bool IsModuleExcluded(const string& module)
             {
-                return m_ExcludedWarnings.IsModuleExcluded(module);
+                return _excludedWarnings.IsModuleExcluded(module);
             }
             IWarningEvent* Clone() const override
             {
@@ -416,7 +411,7 @@ namespace WarningReporting {
             }
             const char* Category() const override
             {
-                return (m_CategoryName.c_str());
+                return (_categoryName.c_str());
             }
             bool Enabled() const override
             {
@@ -424,11 +419,11 @@ namespace WarningReporting {
             }
             void Enabled(const bool enabled) override
             {
-                m_Enabled = (m_Enabled & 0xFE) | (enabled ? 0x01 : 0x00);
+                _enabled = (_enabled & 0xFE) | (enabled ? 0x01 : 0x00);
             }
             void Exclude(const string& toExclude) override 
             {
-                WarningReportingUnitProxy::Instance().FillExcludedWarnings(toExclude, m_ExcludedWarnings);
+                WarningReportingUnitProxy::Instance().FillExcludedWarnings(toExclude, _excludedWarnings);
             }
             void Configure(const string& settings) override 
             {
@@ -436,16 +431,16 @@ namespace WarningReporting {
             }
             void Destroy() override
             {
-                if ((m_Enabled & 0x02) != 0) {
+                if ((_enabled & 0x02) != 0) {
                     WarningReportingUnitProxy::Instance().Revoke(*this);
-                    m_Enabled = 0;
+                    _enabled = 0;
                 }
             }
 
         protected:
-            const string m_CategoryName;
-            uint8_t m_Enabled;
-            ExcludedWarnings m_ExcludedWarnings;
+            const string _categoryName;
+            uint8_t _enabled;
+            ExcludedWarnings _excludedWarnings;
         };
 
 
@@ -539,9 +534,9 @@ namespace WarningReporting {
     template <typename CATEGORY>
     EXTERNAL_HIDDEN typename WarningReportingType<CATEGORY>::template WarningReportingControl<CATEGORY> WarningReportingType<CATEGORY>::s_control;
     template <typename CONTROLCATEGORY, typename BOUNDSTYPE>
-    EXTERNAL_HIDDEN std::atomic<BOUNDSTYPE> WarningReportingBoundsCategory<CONTROLCATEGORY, BOUNDSTYPE>::_reportingbound(CONTROLCATEGORY::DefaultReportBound);
+    EXTERNAL_HIDDEN std::atomic<BOUNDSTYPE> WarningReportingBoundsCategory<CONTROLCATEGORY, BOUNDSTYPE>::_reportingBound(CONTROLCATEGORY::DefaultReportBound);
     template <typename CONTROLCATEGORY, typename BOUNDSTYPE>
-    EXTERNAL_HIDDEN std::atomic<BOUNDSTYPE> WarningReportingBoundsCategory<CONTROLCATEGORY, BOUNDSTYPE>::_warningbound(CONTROLCATEGORY::DefaultWarningBound);
+    EXTERNAL_HIDDEN std::atomic<BOUNDSTYPE> WarningReportingBoundsCategory<CONTROLCATEGORY, BOUNDSTYPE>::_warningBound(CONTROLCATEGORY::DefaultWarningBound);
 }
 
 }

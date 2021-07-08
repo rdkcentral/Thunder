@@ -104,19 +104,19 @@ namespace WarningReporting {
             _handler->Announce(Category);
         }
         else {
-            _waitingannounces.emplace_back(&Category);
+            _waitingAnnounces.emplace_back(&Category);
         }
     }
 
     void WarningReportingUnitProxy::Revoke(IWarningReportingUnit::IWarningReportingControl& Category) {
         Core::SafeSyncType<Core::CriticalSection> guard(adminlock);
         if( _handler != nullptr ) {
-             ASSERT(_waitingannounces.size() == 0);
+             ASSERT(_waitingAnnounces.size() == 0);
             _handler->Revoke(Category);
         } else {
-            WaitingAnnounceContainer::iterator it = std::find(std::begin(_waitingannounces), std::end(_waitingannounces), &Category);
-            if( it != std::end(_waitingannounces) ) {
-                _waitingannounces.erase(it);
+            WaitingAnnounceContainer::iterator it = std::find(std::begin(_waitingAnnounces), std::end(_waitingAnnounces), &Category);
+            if( it != std::end(_waitingAnnounces) ) {
+                _waitingAnnounces.erase(it);
             }
         }
     }
@@ -127,36 +127,36 @@ namespace WarningReporting {
         _handler = handler;
         if( _handler != nullptr) {
 
-            for (IWarningReportingUnit::IWarningReportingControl* category : _waitingannounces) {
+            for (IWarningReportingUnit::IWarningReportingControl* category : _waitingAnnounces) {
                 ASSERT(category != nullptr);
                 _handler->Announce(*category);
             }
-            _waitingannounces.clear();
+            _waitingAnnounces.clear();
         }
     }
 
-    WarningReportingUnitProxy::BoundsConfigValues::BoundsConfigValues(const string& settings)
-        : reportbound()
-        , warningbound()
-        , config() {
-            WarningReportingBoundsCategoryConfig boundsconfig;
+    void WarningReportingUnitProxy::FillBoundsConfig(const string& boundsConfig, uint64_t& outReportingBound, uint64_t& outWarningBound, string& outSpecificConfig) const
+    {
+        WarningReportingBoundsCategoryConfig boundsconfig;
 
-            boundsconfig.FromString(settings);
+        boundsconfig.FromString(boundsConfig);
 
-            // HPL todo: add check for correct settings? (reportbound <= warningbound)
+        if (boundsconfig.ReportBound.IsSet()) {
+            outReportingBound = boundsconfig.ReportBound.Value();
+        }
 
-            if( boundsconfig.ReportBound.IsSet() ) {
-                reportbound  = boundsconfig.ReportBound.Value();
-            }
+        if (boundsconfig.WarningBound.IsSet()) {
+            outWarningBound = boundsconfig.WarningBound.Value();
+        }
 
-            if( boundsconfig.WarningBound.IsSet() ) {
-                warningbound  = boundsconfig.WarningBound.Value();
-            }
-
-            if( boundsconfig.CategoryConfig.IsSet() ) {
-                config = boundsconfig.CategoryConfig.Value();
-            }
+        if (boundsconfig.CategoryConfig.IsSet()) {
+            outSpecificConfig = boundsconfig.CategoryConfig.Value();
+        }
+        if (outReportingBound > outWarningBound) {
+            TRACE_L1("WarningReporting report bound [%d] is greater than waning bound [%d]!", outReportingBound, outWarningBound);
+        }
     }
+
     void WarningReportingUnitProxy::FillExcludedWarnings(const string& excludedJsonList, ExcludedWarnings& outExcludedWarnings) const
     {
         ExcludedCategoriesValuesConfig config;
