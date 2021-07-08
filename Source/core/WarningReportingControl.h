@@ -19,44 +19,44 @@
 
 #pragma once
 
-#include <inttypes.h> 
+#include <inttypes.h>
 
-#include "Module.h"
-#include "IWarningReportingControl.h"
-#include "TextFragment.h"
-#include "Trace.h"
-#include "SystemInfo.h"
-#include "Time.h"
-#include "TypeTraits.h"
-#include "Optional.h"
 #include "CallsignTLS.h"
-#include <vector>
+#include "IWarningReportingControl.h"
+#include "Module.h"
+#include "Optional.h"
+#include "SystemInfo.h"
+#include "TextFragment.h"
+#include "Time.h"
+#include "Trace.h"
+#include "TypeTraits.h"
 #include <unordered_set>
+#include <vector>
 
 #ifndef __CORE_WARNING_REPORTING__
 
-#define REPORT_WARNING(CATEGORY, ...)                                                  
+#define REPORT_WARNING(CATEGORY, ...)
 
-#define REPORT_WARNING_GLOBAL(CATEGORY, ...)                             
+#define REPORT_WARNING_GLOBAL(CATEGORY, ...)
 
 #define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...)
 
-#define REPORT_DURATION_WARNING(CODE, CATEGORY, ...)                                 \
+#define REPORT_DURATION_WARNING(CODE, CATEGORY, ...) \
     CODE
 
 #else
 
 // Note for creating new categories:
 //
-// CATEGORY requiremements: 
+// CATEGORY requiremements:
 // Name of catagory must be unique
 // Methods:
 // - <optional> bool Analyze(const char modulename[], const char identifier[], EXTRA_PARAMETERS);  // needs to return true if needs to be Reported
-// - <optional> static void Configure(const string& settings); 
+// - <optional> static void Configure(const string& settings);
 // - constructor ()
 // - uint16_t Serialize(uint8_t[], const uint16_t) const; (note use the return parameter to indicate how much of the buffer is written)
 // - uint16_t Deserialize(const uint8_t[], const uint16_t); (note use the return parameter to indicate how much of the buffer is read)
-// - void ToString(string& visitor) const; 
+// - void ToString(string& visitor) const;
 // - <optional> bool IsWarning() const; (if not available uit will always be a warning)
 // Constants:
 // - if a Duration or OutOfBounds warning category:
@@ -99,8 +99,8 @@
     }
 
 #define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...)                                                                                                                  \
-    if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) {        \
-        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;                   \
+    if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) {                  \
+        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;                             \
         if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
                 ACTUALVALUE,                                                                                                                                                    \
                 ##__VA_ARGS__)                                                                                                                                                  \
@@ -114,26 +114,26 @@
         }                                                                                                                                                                       \
     }
 
-#define REPORT_DURATION_WARNING(CODE, CATEGORY, ...)                                                                                                                     \
+#define REPORT_DURATION_WARNING(CODE, CATEGORY, ...)                                                                                                           \
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) { \
-        WPEFramework::Core::Time start = WPEFramework::Core::Time::Now();                                                                                                \
-        CODE                                                                                                                                                             \
-            uint32_t duration((Core::Time::Now().Ticks() - start.Ticks()) / Core::Time::TicksPerMillisecond);                                                            \
+        WPEFramework::Core::Time start = WPEFramework::Core::Time::Now();                                                                                      \
+        CODE                                                                                                                                                   \
+            uint32_t duration((Core::Time::Now().Ticks() - start.Ticks()) / Core::Time::TicksPerMillisecond);                                                  \
         WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;            \
-        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME,                                                                                                 \
-                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),                                                   \
-                duration,                                                                                                                                                \
-                ##__VA_ARGS__)                                                                                                                                           \
-            == true) {                                                                                                                                                   \
-            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                                    \
-                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),                                                   \
-                __FILE__,                                                                                                                                                \
-                __LINE__,                                                                                                                                                \
-                typeid(*this).name(),                                                                                                                                    \
-                __message__);                                                                                                                                            \
-        }                                                                                                                                                                \
-    } else {                                                                                                                                                             \
-        CODE                                                                                                                                                             \
+        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME,                                                                                       \
+                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),                                         \
+                duration,                                                                                                                                      \
+                ##__VA_ARGS__)                                                                                                                                 \
+            == true) {                                                                                                                                         \
+            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                          \
+                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),                                         \
+                __FILE__,                                                                                                                                      \
+                __LINE__,                                                                                                                                      \
+                typeid(*this).name(),                                                                                                                          \
+                __message__);                                                                                                                                  \
+        }                                                                                                                                                      \
+    } else {                                                                                                                                                   \
+        CODE                                                                                                                                                   \
     }
 
 namespace WPEFramework {
@@ -188,13 +188,15 @@ namespace WarningReporting {
         void FillBoundsConfig(const string& boundsConfig, uint32_t& outReportingBound, uint32_t& outWarningBound, string& outSpecificConfig) const;
 
     protected:
-        WarningReportingUnitProxy() : _handler(nullptr), _waitingAnnounces() {};
-        
+        WarningReportingUnitProxy()
+            : _handler(nullptr)
+            , _waitingAnnounces(){};
+
     private:
         using WaitingAnnounceContainer = std::vector<IWarningReportingUnit::IWarningReportingControl*>;
 
-       IWarningReportingUnit* _handler; 
-       WaitingAnnounceContainer _waitingAnnounces;
+        IWarningReportingUnit* _handler;
+        WaitingAnnounceContainer _waitingAnnounces;
     };
 
     template <typename CONTROLCATEGORY>
@@ -203,7 +205,11 @@ namespace WarningReporting {
         WarningReportingBoundsCategory(const WarningReportingBoundsCategory&) = delete;
         WarningReportingBoundsCategory& operator=(const WarningReportingBoundsCategory&) = delete;
 
-        WarningReportingBoundsCategory() : _category(), _actualValue(0) {}
+        WarningReportingBoundsCategory()
+            : _category()
+            , _actualValue(0)
+        {
+        }
         ~WarningReportingBoundsCategory() = default;
 
         static void Configure(const string& settings)
@@ -226,21 +232,24 @@ namespace WarningReporting {
             }
         }
 
-        static string CategoryName() {
+        static string CategoryName()
+        {
             return Core::ClassNameOnly(typeid(CONTROLCATEGORY).name()).Text();
         }
-        
+
         template <typename... Args>
-        bool Analyze(const char moduleName[], const char identifier[], const uint32_t actualValue, Args&&... args) {                
+        bool Analyze(const char moduleName[], const char identifier[], const uint32_t actualValue, Args&&... args)
+        {
             bool report = false;
             _actualValue = actualValue;
-            if( actualValue > _reportingBound.load(std::memory_order_relaxed) ) {
+            if (actualValue > _reportingBound.load(std::memory_order_relaxed)) {
                 report = CallAnalyze(moduleName, identifier, std::forward<Args>(args)...);
             }
             return report;
         }
 
-        uint16_t Serialize(uint8_t buffer[], const uint16_t length) const {
+        uint16_t Serialize(uint8_t buffer[], const uint16_t length) const
+        {
             const std::size_t boundsTypeSize = sizeof(_actualValue);
             ASSERT(length >= boundsTypeSize);
 
@@ -250,7 +259,8 @@ namespace WarningReporting {
             return serialized + boundsTypeSize;
         }
 
-        uint16_t Deserialize(const uint8_t buffer[], const uint16_t length) {
+        uint16_t Deserialize(const uint8_t buffer[], const uint16_t length)
+        {
             const std::size_t boundsTypeSize = sizeof(_actualValue);
             ASSERT(length >= boundsTypeSize);
 
@@ -260,13 +270,15 @@ namespace WarningReporting {
             return deserialized + boundsTypeSize;
         }
 
-        void ToString(string& visitor) const {
+        void ToString(string& visitor) const
+        {
             _category.ToString(visitor, _actualValue, _warningBound.load(std::memory_order_relaxed));
         }
 
-        bool IsWarning() const {
+        bool IsWarning() const
+        {
             bool isWarning = false;
-            if( _actualValue > _warningBound.load(std::memory_order_relaxed) ) {
+            if (_actualValue > _warningBound.load(std::memory_order_relaxed)) {
                 isWarning = CallIsWarning();
             }
             return isWarning;
@@ -274,45 +286,50 @@ namespace WarningReporting {
 
     private:
         HAS_MEMBER_NAME(Analyze, hasAnalyze);
-        template<typename T = CONTROLCATEGORY, typename... Args> 
+        template <typename T = CONTROLCATEGORY, typename... Args>
         inline typename Core::TypeTraits::enable_if<!hasAnalyze<T, const char[], const char[], Args&&...>::value, bool>::type
-        CallAnalyze(const char[], const char[], Args&&...) {
+        CallAnalyze(const char[], const char[], Args&&...)
+        {
             return true;
         }
-        template<typename T = CONTROLCATEGORY, typename... Args> 
+        template <typename T = CONTROLCATEGORY, typename... Args>
         inline typename Core::TypeTraits::enable_if<hasAnalyze<T, const char[], const char[], Args&&...>::value, bool>::type
-        CallAnalyze(const char modulename[] , const char identifier[], Args&&... args) {
+        CallAnalyze(const char modulename[], const char identifier[], Args&&... args)
+        {
             return _category.Analyze(modulename, identifier, std::forward<Args>(args)...);
         }
         HAS_STATIC_MEMBER(Configure, hasConfigure);
-        template<typename T = CONTROLCATEGORY>
-         inline static typename Core::TypeTraits::enable_if<!hasConfigure<T>::value, void>::type
-        CallConfigure(const string&) {
+        template <typename T = CONTROLCATEGORY>
+        inline static typename Core::TypeTraits::enable_if<!hasConfigure<T>::value, void>::type
+        CallConfigure(const string&)
+        {
         }
-        template<typename T = CONTROLCATEGORY>
-         inline static typename Core::TypeTraits::enable_if<hasConfigure<T>::value, void>::type
-        CallConfigure(const string& settings) {
+        template <typename T = CONTROLCATEGORY>
+        inline static typename Core::TypeTraits::enable_if<hasConfigure<T>::value, void>::type
+        CallConfigure(const string& settings)
+        {
             return CONTROLCATEGORY::Configure(settings);
         }
         HAS_MEMBER(IsWarning, hasIsWarning);
-        template<typename T = CONTROLCATEGORY>
+        template <typename T = CONTROLCATEGORY>
         inline typename Core::TypeTraits::enable_if<!hasIsWarning<T, bool (T::*)() const>::value, bool>::type
-        CallIsWarning() const {
+        CallIsWarning() const
+        {
             return true;
         }
-        template<typename T = CONTROLCATEGORY>
+        template <typename T = CONTROLCATEGORY>
         inline typename Core::TypeTraits::enable_if<hasIsWarning<T, bool (T::*)() const>::value, bool>::type
-        CallIsWarning() const {
+        CallIsWarning() const
+        {
             return _category.IsWarning();
         }
 
-    private: 
+    private:
         CONTROLCATEGORY _category;
         uint32_t _actualValue;
 
-        static std::atomic<uint32_t> _reportingBound; 
+        static std::atomic<uint32_t> _reportingBound;
         static std::atomic<uint32_t> _warningBound;
-
     };
 
     template <typename CATEGORY>
@@ -322,7 +339,7 @@ namespace WarningReporting {
         inline bool Analyze(const char modulename[], const char identifier[], Args&&... args)
         {
             bool result = false;
-            if (!s_control.IsCallsignExcluded(identifier) && !s_control.IsModuleExcluded(modulename) ) {
+            if (!s_control.IsCallsignExcluded(identifier) && !s_control.IsModuleExcluded(modulename)) {
                 result = CallAnalyze(_info, modulename, identifier, std::forward<Args>(args)...);
             }
             return result;
@@ -334,24 +351,28 @@ namespace WarningReporting {
         private:
             // HPL todo: this is now duplicated code from the class above, certainly when nested again that could be prevented
             HAS_STATIC_MEMBER(Configure, hasConfigure);
-            template<typename T = CONTROLCATEGORY>
+            template <typename T = CONTROLCATEGORY>
             static inline typename Core::TypeTraits::enable_if<!hasConfigure<T>::value, void>::type
-            CallConfigure(const string&) {
+            CallConfigure(const string&)
+            {
             }
-            template<typename T = CONTROLCATEGORY>
+            template <typename T = CONTROLCATEGORY>
             static inline typename Core::TypeTraits::enable_if<hasConfigure<T>::value, void>::type
-            CallConfigure(const string& settings) {
+            CallConfigure(const string& settings)
+            {
                 return CONTROLCATEGORY::Configure(settings);
             }
             HAS_STATIC_MEMBER(CategoryName, hasCategoryName);
-            template<typename T = CONTROLCATEGORY>
+            template <typename T = CONTROLCATEGORY>
             static inline typename Core::TypeTraits::enable_if<!hasCategoryName<T>::value, string>::type
-            CallCategoryName() {
+            CallCategoryName()
+            {
                 return Core::ClassNameOnly(typeid(CONTROLCATEGORY).name()).Text();
             }
-            template<typename T = CONTROLCATEGORY>
+            template <typename T = CONTROLCATEGORY>
             static inline typename Core::TypeTraits::enable_if<hasCategoryName<T>::value, string>::type
-            CallCategoryName() {
+            CallCategoryName()
+            {
                 return CONTROLCATEGORY::CategoryName();
             }
 
@@ -359,9 +380,9 @@ namespace WarningReporting {
             WarningReportingControl(const WarningReportingControl&) = delete;
             WarningReportingControl& operator=(const WarningReportingControl&) = delete;
 
-            WarningReportingControl() 
+            WarningReportingControl()
                 : _categoryName(CallCategoryName())
-                , _enabled(0x03) 
+                , _enabled(0x03)
             {
                 // Register Our control unit, so it can be influenced from the outside
                 // if nessecary..
@@ -375,7 +396,6 @@ namespace WarningReporting {
                         _enabled = Enabled();
                     }
                     WarningReportingUnitProxy::Instance().FillExcludedWarnings(excluded, _excludedWarnings);
-
 
                     CallConfigure(settings);
                 }
@@ -414,11 +434,11 @@ namespace WarningReporting {
             {
                 _enabled = (_enabled & 0xFE) | (enabled ? 0x01 : 0x00);
             }
-            void Exclude(const string& toExclude) override 
+            void Exclude(const string& toExclude) override
             {
                 WarningReportingUnitProxy::Instance().FillExcludedWarnings(toExclude, _excludedWarnings);
             }
-            void Configure(const string& settings) override 
+            void Configure(const string& settings) override
             {
                 CallConfigure(settings);
             }
@@ -436,7 +456,6 @@ namespace WarningReporting {
             ExcludedWarnings _excludedWarnings;
         };
 
-
     public:
         WarningReportingType(const WarningReportingType&) = delete;
         WarningReportingType& operator=(const WarningReportingType&) = delete;
@@ -449,25 +468,29 @@ namespace WarningReporting {
     private:
         // HPL todo: this is now duplicated code from the class above, certainly when nested again that could be prevented
         HAS_MEMBER(IsWarning, hasIsWarning);
-        template<typename T = CATEGORY>
+        template <typename T = CATEGORY>
         inline typename Core::TypeTraits::enable_if<!hasIsWarning<T, bool (T::*)() const>::value, bool>::type
-        CallIsWarning() const {
+        CallIsWarning() const
+        {
             return true;
         }
-        template<typename T = CATEGORY>
+        template <typename T = CATEGORY>
         inline typename Core::TypeTraits::enable_if<hasIsWarning<T, bool (T::*)() const>::value, bool>::type
-        CallIsWarning() const {
+        CallIsWarning() const
+        {
             return _info.IsWarning();
         }
         HAS_MEMBER_NAME(Analyze, hasAnalyze);
-        template<typename T = CATEGORY, typename... Args> 
+        template <typename T = CATEGORY, typename... Args>
         inline static typename Core::TypeTraits::enable_if<!hasAnalyze<T, const char[], const char[], Args&&...>::value, bool>::type
-        CallAnalyze(T& category, const char[], const char[], Args&&...) {
+        CallAnalyze(T& category, const char[], const char[], Args&&...)
+        {
             return true;
         }
-        template<typename T = CATEGORY, typename... Args> 
+        template <typename T = CATEGORY, typename... Args>
         inline static typename Core::TypeTraits::enable_if<hasAnalyze<T, const char[], const char[], Args&&...>::value, bool>::type
-        CallAnalyze(T& category, const char modulename[] , const char identifier[], Args&&... args) {
+        CallAnalyze(T& category, const char modulename[], const char identifier[], Args&&... args)
+        {
             return category.Analyze(modulename, identifier, std::forward<Args>(args)...);
         }
 
@@ -488,19 +511,23 @@ namespace WarningReporting {
             return (s_control.Category());
         }
 
-        uint16_t Serialize(uint8_t data[], const uint16_t size) const override {
+        uint16_t Serialize(uint8_t data[], const uint16_t size) const override
+        {
             return _info.Serialize(data, size);
         }
 
-        uint16_t Deserialize(const uint8_t data[], const uint16_t size) override {
+        uint16_t Deserialize(const uint8_t data[], const uint16_t size) override
+        {
             return _info.Deserialize(data, size);
         }
 
-        void ToString(string& visitor) const override {
+        void ToString(string& visitor) const override
+        {
             _info.ToString(visitor);
         }
 
-        bool IsWarning() const override {
+        bool IsWarning() const override
+        {
             return CallIsWarning();
         }
 
@@ -531,8 +558,6 @@ namespace WarningReporting {
     template <typename CONTROLCATEGORY>
     EXTERNAL_HIDDEN std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_warningBound(CONTROLCATEGORY::DefaultWarningBound);
 }
-
 }
 
 #endif
-

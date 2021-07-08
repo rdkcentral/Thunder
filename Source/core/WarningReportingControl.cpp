@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -18,58 +18,58 @@
  */
 
 #include "WarningReportingControl.h"
-#include "Sync.h"
+#include "JSON.h"
 #include "Singleton.h"
+#include "Sync.h"
 #include "Thread.h"
-#include "JSON.h" 
 
 namespace {
-    WPEFramework::Core::CriticalSection adminlock; // we cannot have this as a member as Sync.h might also need WarningReporting. but as WarningReportingUnitProxy that is not a problem
+WPEFramework::Core::CriticalSection adminlock; // we cannot have this as a member as Sync.h might also need WarningReporting. but as WarningReportingUnitProxy that is not a problem
 
-    class WarningReportingBoundsCategoryConfig : public WPEFramework::Core::JSON::Container {
-    public:
-        WarningReportingBoundsCategoryConfig(const WarningReportingBoundsCategoryConfig&) = delete;
-        WarningReportingBoundsCategoryConfig& operator=(const WarningReportingBoundsCategoryConfig&) = delete;
+class WarningReportingBoundsCategoryConfig : public WPEFramework::Core::JSON::Container {
+public:
+    WarningReportingBoundsCategoryConfig(const WarningReportingBoundsCategoryConfig&) = delete;
+    WarningReportingBoundsCategoryConfig& operator=(const WarningReportingBoundsCategoryConfig&) = delete;
 
-        WarningReportingBoundsCategoryConfig()
-            : WPEFramework::Core::JSON::Container()
-            , ReportBound()
-            , WarningBound()
-            , CategoryConfig(false)
-        {
-            Add(_T("reportbound"), &ReportBound);
-            Add(_T("warningbound"), &WarningBound);
-            Add(_T("config"), &CategoryConfig);
-        }
+    WarningReportingBoundsCategoryConfig()
+        : WPEFramework::Core::JSON::Container()
+        , ReportBound()
+        , WarningBound()
+        , CategoryConfig(false)
+    {
+        Add(_T("reportbound"), &ReportBound);
+        Add(_T("warningbound"), &WarningBound);
+        Add(_T("config"), &CategoryConfig);
+    }
 
-        ~WarningReportingBoundsCategoryConfig() override = default;
+    ~WarningReportingBoundsCategoryConfig() override = default;
 
-    public:
-        WPEFramework::Core::JSON::DecUInt64 ReportBound; // HPL: this used to be a template but we must put it in a cpp file...
-        WPEFramework::Core::JSON::DecUInt64 WarningBound;
-        WPEFramework::Core::JSON::String CategoryConfig;
-    };
+public:
+    WPEFramework::Core::JSON::DecUInt64 ReportBound;
+    WPEFramework::Core::JSON::DecUInt64 WarningBound;
+    WPEFramework::Core::JSON::String CategoryConfig;
+};
 
-    class ExcludedCategoriesValuesConfig : public WPEFramework::Core::JSON::Container {
-    public:
-        ExcludedCategoriesValuesConfig(const WarningReportingBoundsCategoryConfig&) = delete;
-        ExcludedCategoriesValuesConfig& operator=(const WarningReportingBoundsCategoryConfig&) = delete;
+class ExcludedCategoriesValuesConfig : public WPEFramework::Core::JSON::Container {
+public:
+    ExcludedCategoriesValuesConfig(const WarningReportingBoundsCategoryConfig&) = delete;
+    ExcludedCategoriesValuesConfig& operator=(const WarningReportingBoundsCategoryConfig&) = delete;
 
-        ExcludedCategoriesValuesConfig()
-            : WPEFramework::Core::JSON::Container()
-            , ExcludedCallsigns()
-            , ExcludedModules()
-        {
-            Add(_T("callsigns"), &ExcludedCallsigns);
-            Add(_T("modules"), &ExcludedModules);
-        }
+    ExcludedCategoriesValuesConfig()
+        : WPEFramework::Core::JSON::Container()
+        , ExcludedCallsigns()
+        , ExcludedModules()
+    {
+        Add(_T("callsigns"), &ExcludedCallsigns);
+        Add(_T("modules"), &ExcludedModules);
+    }
 
-        ~ExcludedCategoriesValuesConfig() override = default;
+    ~ExcludedCategoriesValuesConfig() override = default;
 
-    public:
-        WPEFramework::Core::JSON::ArrayType<WPEFramework::Core::JSON::String> ExcludedCallsigns;
-        WPEFramework::Core::JSON::ArrayType<WPEFramework::Core::JSON::String> ExcludedModules;
-    };
+public:
+    WPEFramework::Core::JSON::ArrayType<WPEFramework::Core::JSON::String> ExcludedCallsigns;
+    WPEFramework::Core::JSON::ArrayType<WPEFramework::Core::JSON::String> ExcludedModules;
+};
 }
 
 namespace WPEFramework {
@@ -80,52 +80,56 @@ namespace WarningReporting {
         return (Core::SingletonType<WarningReportingUnitProxy>::Instance());
     }
 
-    void WarningReportingUnitProxy::ReportWarningEvent(const char module[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information) {
+    void WarningReportingUnitProxy::ReportWarningEvent(const char module[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information)
+    {
         Core::SafeSyncType<Core::CriticalSection> guard(adminlock);
-        if( _handler != nullptr ) {
+        if (_handler != nullptr) {
             _handler->ReportWarningEvent(module, fileName, lineNumber, className, information);
         }
     }
 
-    bool WarningReportingUnitProxy::IsDefaultCategory(const string& category, bool& enabled, string& excluded, string& specific) const {
-        bool retval = false; 
+    bool WarningReportingUnitProxy::IsDefaultCategory(const string& category, bool& enabled, string& excluded, string& specific) const
+    {
+        bool retval = false;
         adminlock.Lock();
-        if( _handler != nullptr ) {
+        if (_handler != nullptr) {
             retval = _handler->IsDefaultCategory(category, enabled, excluded, specific);
         }
         adminlock.Unlock();
         return retval;
     }
 
-    void WarningReportingUnitProxy::Announce(IWarningReportingUnit::IWarningReportingControl& Category) {
+    void WarningReportingUnitProxy::Announce(IWarningReportingUnit::IWarningReportingControl& Category)
+    {
         Core::SafeSyncType<Core::CriticalSection> guard(adminlock);
 
-        if( _handler != nullptr ) {
+        if (_handler != nullptr) {
             _handler->Announce(Category);
-        }
-        else {
+        } else {
             _waitingAnnounces.emplace_back(&Category);
         }
     }
 
-    void WarningReportingUnitProxy::Revoke(IWarningReportingUnit::IWarningReportingControl& Category) {
+    void WarningReportingUnitProxy::Revoke(IWarningReportingUnit::IWarningReportingControl& Category)
+    {
         Core::SafeSyncType<Core::CriticalSection> guard(adminlock);
-        if( _handler != nullptr ) {
-             ASSERT(_waitingAnnounces.size() == 0);
+        if (_handler != nullptr) {
+            ASSERT(_waitingAnnounces.size() == 0);
             _handler->Revoke(Category);
         } else {
             WaitingAnnounceContainer::iterator it = std::find(std::begin(_waitingAnnounces), std::end(_waitingAnnounces), &Category);
-            if( it != std::end(_waitingAnnounces) ) {
+            if (it != std::end(_waitingAnnounces)) {
                 _waitingAnnounces.erase(it);
             }
         }
     }
 
-    void WarningReportingUnitProxy::Handler(IWarningReportingUnit* handler) {
-        ASSERT( ( _handler == nullptr && handler != nullptr ) || ( _handler != nullptr && handler == nullptr ) );
+    void WarningReportingUnitProxy::Handler(IWarningReportingUnit* handler)
+    {
+        ASSERT((_handler == nullptr && handler != nullptr) || (_handler != nullptr && handler == nullptr));
         Core::SafeSyncType<Core::CriticalSection> guard(adminlock);
         _handler = handler;
-        if( _handler != nullptr) {
+        if (_handler != nullptr) {
 
             for (IWarningReportingUnit::IWarningReportingControl* category : _waitingAnnounces) {
                 ASSERT(category != nullptr);
@@ -157,7 +161,6 @@ namespace WarningReporting {
             TRACE_L1("WarningReporting report bound [%d] is greater than waning bound [%d]!", outReportingBound, outWarningBound);
         }
         ASSERT(outReportingBound <= outWarningBound);
-        
     }
 
     void WarningReportingUnitProxy::FillExcludedWarnings(const string& excludedJsonList, ExcludedWarnings& outExcludedWarnings) const
@@ -179,4 +182,4 @@ namespace WarningReporting {
         }
     }
 }
-} 
+}
