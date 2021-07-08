@@ -55,7 +55,7 @@ namespace Core {
             : CONTEXT(copy)
             , m_RefCount(0)
         {
-            __Initialize<CONTEXT>();
+            __Initialize();
         }
 
     public:
@@ -96,11 +96,11 @@ namespace Core {
             : CONTEXT(std::forward<Args>(args)...)
             , m_RefCount(0)
         {
-            __Initialize<CONTEXT>();
+            __Initialize();
         }
         virtual ~ProxyService()
         {
-            __Deinitialize<CONTEXT>();
+            __Deinitialize();
 
             /* Hotfix for gcc linker issue preventing debug builds.
              *
@@ -172,7 +172,7 @@ namespace Core {
 
         inline void Clear()
         {
-            __Clear<CONTEXT>();
+            __Clear();
         }
 
         inline void CompositRelease()
@@ -192,17 +192,15 @@ namespace Core {
         // -----------------------------------------------------
         HAS_MEMBER(Clear, hasClear);
 
-        typedef hasClear<CONTEXT, void (CONTEXT::*)()> TraitClear;
-
-        template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<ProxyService<TYPE>::TraitClear::value, void>::type
+        template <typename TYPE = CONTEXT>
+        inline typename Core::TypeTraits::enable_if<hasClear<TYPE, void (TYPE::*)()>::value, void>::type
             __Clear()
         {
             CONTEXT::Clear();
         }
 
-        template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<!ProxyService<TYPE>::TraitClear::value, void>::type
+        template <typename TYPE = CONTEXT>
+        inline typename Core::TypeTraits::enable_if<!hasClear<TYPE, void (TYPE::*)()>::value, void>::type
             __Clear()
         {
         }
@@ -212,17 +210,15 @@ namespace Core {
         // -----------------------------------------------------
         HAS_MEMBER(Initialize, hasInitialize);
 
-        typedef hasInitialize<CONTEXT, uint32_t (CONTEXT::*)()> TraitInitialize;
-
-        template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<ProxyService<TYPE>::TraitInitialize::value, uint32_t>::type
+        template <typename TYPE = CONTEXT>
+        inline typename Core::TypeTraits::enable_if<hasInitialize<TYPE, uint32_t (TYPE::*)()>::value, uint32_t>::type
         __Initialize()
         {
             return (CONTEXT::Initialize());
         }
 
-        template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<!ProxyService<TYPE>::TraitInitialize::value, uint32_t>::type
+        template <typename TYPE=CONTEXT>
+        inline typename Core::TypeTraits::enable_if<!hasInitialize<TYPE, uint32_t (TYPE::*)()>::value, uint32_t>::type
         __Initialize()
         {
             return (Core::ERROR_NONE);
@@ -233,17 +229,16 @@ namespace Core {
         // -----------------------------------------------------
         HAS_MEMBER(Deinitialize, hasDeinitialize);
 
-        typedef hasDeinitialize<CONTEXT, void (CONTEXT::*)()> TraitDeinitialize;
-
-        template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<ProxyService<TYPE>::TraitDeinitialize::value, void>::type
+        template <typename TYPE = CONTEXT>
+        inline typename Core::TypeTraits::enable_if<hasDeinitialize<TYPE, void (TYPE::*)()>::value, void>::type
         __Deinitialize()
         {
             CONTEXT::Deinitialize();
         }
 
-        template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<!ProxyService<TYPE>::TraitDeinitialize::value, void>::type
+
+        template <typename TYPE = CONTEXT>
+        inline typename Core::TypeTraits::enable_if<!hasDeinitialize<TYPE, void (TYPE::*)()>::value, void>::type
         __Deinitialize()
         {
         }
@@ -1059,7 +1054,7 @@ namespace Core {
 
             ASSERT(element != nullptr);
 
-            if (element->__IsInitialized<CONTAINER, ELEMENT, EXPOSED>() == true) {
+            if (element->__IsInitialized() == true) {
                 refInterface = static_cast<IProxyContainerElement*>(element);
             }
             else {
@@ -1073,7 +1068,7 @@ namespace Core {
         void AddRef() const override
         {
             if (ProxyService<ELEMENT>::LastRef() == true) {
-                const_cast<ThisClass*>(this)->__Acquire<CONTAINER, ELEMENT, EXPOSED>();
+                const_cast<ThisClass*>(this)->__Acquire();
             }
             ProxyService<ELEMENT>::AddRef();
         }
@@ -1083,7 +1078,7 @@ namespace Core {
                 // This can only happen of the parent has unlinked us, other wise 
                 // the last release is always in the Unlink..
                 ASSERT(_parent == nullptr);
-                const_cast<ThisClass*>(this)->__Relinquish<CONTAINER, ELEMENT, EXPOSED>();
+                const_cast<ThisClass*>(this)->__Relinquish();
             }
             uint32_t result = ProxyService<ELEMENT>::Release();
 
@@ -1101,7 +1096,7 @@ namespace Core {
 
             if (ProxyService<ELEMENT>::LastRef() == false) {
                 // This can only happen if the parent has unlinked us, while we are still being used somewhere..
-                const_cast<ThisClass*>(this)->__Unlink<CONTAINER, ELEMENT, EXPOSED>();
+                const_cast<ThisClass*>(this)->__Unlink();
             }
 
             // By incrementing this refcount the last reference count is definitily not reached, so safe to remove the parent as we are sure
@@ -1114,7 +1109,7 @@ namespace Core {
  
     private:
         void Notify() {
-            __Relinquish<CONTAINER, ELEMENT, EXPOSED>();
+            __Relinquish();
             ProxyContainerElement<ELEMENT>::Clear();
 
             if (_parent != nullptr) {
@@ -1128,17 +1123,15 @@ namespace Core {
         // -----------------------------------------------------
         HAS_MEMBER(IsInitialized, hasIsInitialized);
 
-        typedef hasIsInitialized<ELEMENT, bool (ELEMENT::*)() const> TraitIsInitialized;
-
-        template <typename A, typename B, typename C>
-        inline typename Core::TypeTraits::enable_if<ProxyContainerType<A, B, C>::TraitIsInitialized::value, bool>::type
+        template <typename B = ELEMENT>
+        inline typename Core::TypeTraits::enable_if<hasIsInitialized<B, bool (B::*)() const>::value, bool>::type
             __IsInitialized() const
         {
             reurn (ELEMENT::IsInitialized());
         }
 
-        template <typename A, typename B, typename C>
-        inline typename Core::TypeTraits::enable_if<!ProxyContainerType<A, B, C>::TraitIsInitialized::value, bool>::type
+        template < typename B = ELEMENT>
+        inline typename Core::TypeTraits::enable_if<!hasIsInitialized<B, bool (B::*)() const>::value, bool>::type
             __IsInitialized() const
         {
             return (true);
@@ -1147,39 +1140,37 @@ namespace Core {
         // -----------------------------------------------------
         // Check for Aquire method on Object
         // -----------------------------------------------------
+
         HAS_MEMBER(Acquire, hasAcquire);
 
-        typedef hasAcquire<ELEMENT, void (ELEMENT::*)()> TraitAcquire;
-
-        template <typename A, typename B, typename C>
-        inline typename Core::TypeTraits::enable_if<ProxyContainerType<A, B, C>::TraitAcquire::value, void>::type
+        template < typename B = ELEMENT>
+        inline typename Core::TypeTraits::enable_if<hasAcquire<B, void (B::*)()>::value, void>::type
             __Acquire()
         {
             ELEMENT::Acquire();
         }
 
-        template <typename A, typename B, typename C>
-        inline typename Core::TypeTraits::enable_if<!ProxyContainerType<A, B, C>::TraitAcquire::value, void>::type
+        template <typename B = ELEMENT>
+        inline typename Core::TypeTraits::enable_if<!hasAcquire<B, void (B::*)()>::value, void>::type
             __Acquire()
         {
         }
+
 
         // -----------------------------------------------------
         // Check for Relinquish method on Object
         // -----------------------------------------------------
         HAS_MEMBER(Relinquish, hasRelinquish);
 
-        typedef hasRelinquish<ELEMENT, void (ELEMENT::*)()> TraitRelinquish;
-
-        template <typename A, typename B, typename C>
-        inline typename Core::TypeTraits::enable_if<ProxyContainerType<A, B, C>::TraitRelinquish::value, void>::type
+        template <typename B = ELEMENT>
+        inline typename Core::TypeTraits::enable_if<hasRelinquish<B, void (B::*)()>::value, void>::type
             __Relinquish()
         {
             ELEMENT::Relinquish();
         }
 
-        template <typename A, typename B, typename C>
-        inline typename Core::TypeTraits::enable_if<!ProxyContainerType<A, B, C>::TraitRelinquish::value, void>::type
+        template < typename B = ELEMENT>
+        inline typename Core::TypeTraits::enable_if<!hasRelinquish<B, void (B::*)()>::value, void>::type
             __Relinquish()
         {
         }
@@ -1189,17 +1180,15 @@ namespace Core {
         // -----------------------------------------------------
         HAS_MEMBER(Unlink, hasUnlink);
 
-        typedef hasUnlink<ELEMENT, void (ELEMENT::*)()> TraitUnlink;
-
-        template <typename A, typename B, typename C>
-        inline typename Core::TypeTraits::enable_if<ProxyContainerType<A, B, C>::TraitUnlink::value, void>::type
+        template <typename B = ELEMENT>
+        inline typename Core::TypeTraits::enable_if<hasUnlink<B, void (B::*)()>::value, void>::type
             __Unlink()
         {
             ELEMENT::Unlink();
         }
 
-        template <typename A, typename B, typename C>
-        inline typename Core::TypeTraits::enable_if<!ProxyContainerType<A, B, C>::TraitUnlink::value, void>::type
+        template <typename B = ELEMENT>
+        inline typename Core::TypeTraits::enable_if<!hasUnlink<B, void (B::*)()>::value, void>::type
             __Unlink()
         {
         }
