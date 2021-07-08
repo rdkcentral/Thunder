@@ -99,8 +99,8 @@
     }
 
 #define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...)                                                                                                                  \
-    if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t>>::IsEnabled() == true) {        \
-        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t>> __message__;                   \
+    if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) {        \
+        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;                   \
         if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
                 ACTUALVALUE,                                                                                                                                                    \
                 ##__VA_ARGS__)                                                                                                                                                  \
@@ -115,11 +115,11 @@
     }
 
 #define REPORT_DURATION_WARNING(CODE, CATEGORY, ...)                                                                                                                     \
-    if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t>>::IsEnabled() == true) { \
+    if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) { \
         WPEFramework::Core::Time start = WPEFramework::Core::Time::Now();                                                                                                \
         CODE                                                                                                                                                             \
             uint32_t duration((Core::Time::Now().Ticks() - start.Ticks()) / Core::Time::TicksPerMillisecond);                                                            \
-        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY, uint32_t>> __message__;            \
+        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;            \
         if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME,                                                                                                 \
                 WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),                                                   \
                 duration,                                                                                                                                                \
@@ -185,15 +185,11 @@ namespace WarningReporting {
 
         void Handler(IWarningReportingUnit* handler);
         void FillExcludedWarnings(const string& excludedJsonList, ExcludedWarnings& outExcludedWarnings) const;
-        void FillBoundsConfig(const string& boundsConfig, uint64_t& outReportingBound, uint64_t& outWarningBound, string& outSpecificConfig) const;
+        void FillBoundsConfig(const string& boundsConfig, uint32_t& outReportingBound, uint32_t& outWarningBound, string& outSpecificConfig) const;
 
     protected:
         WarningReportingUnitProxy() : _handler(nullptr), _waitingAnnounces() {};
-
-        // HPL todo: find better solution? we can't be dependednd on JSON.h in this file (cirlcular dependencies) so must be in CPP and therfore not template class and don't want it in the accesible namespace
-        //           and perhaps remove the whole doubs temnplate param, beter make it uint32_t always...
         
-
     private:
         using WaitingAnnounceContainer = std::vector<IWarningReportingUnit::IWarningReportingControl*>;
 
@@ -201,7 +197,7 @@ namespace WarningReporting {
        WaitingAnnounceContainer _waitingAnnounces;
     };
 
-    template <typename CONTROLCATEGORY, typename BOUNDSTYPE = typename CONTROLCATEGORY::BoundsType>
+    template <typename CONTROLCATEGORY>
     class WarningReportingBoundsCategory {
     public:
         WarningReportingBoundsCategory(const WarningReportingBoundsCategory&) = delete;
@@ -212,17 +208,17 @@ namespace WarningReporting {
 
         static void Configure(const string& settings)
         {
-            uint64_t reportBound = 0;
-            uint64_t warningBound = 0;
+            uint32_t reportBound = 0;
+            uint32_t warningBound = 0;
             string specificConfig;
             WarningReportingUnitProxy::Instance().FillBoundsConfig(settings, reportBound, warningBound, specificConfig);
 
             if (reportBound != 0) {
-                _reportingBound.store(static_cast<BOUNDSTYPE>(reportBound), std::memory_order_relaxed);
+                _reportingBound.store(reportBound, std::memory_order_relaxed);
             }
 
             if (warningBound != 0) {
-                _warningBound.store(static_cast<BOUNDSTYPE>(warningBound), std::memory_order_relaxed);
+                _warningBound.store(warningBound, std::memory_order_relaxed);
             }
 
             if (!specificConfig.empty()) {
@@ -235,7 +231,7 @@ namespace WarningReporting {
         }
         
         template <typename... Args>
-        bool Analyze(const char moduleName[], const char identifier[], const BOUNDSTYPE actualValue, Args&&... args) {                
+        bool Analyze(const char moduleName[], const char identifier[], const uint32_t actualValue, Args&&... args) {                
             bool report = false;
             _actualValue = actualValue;
             if( actualValue > _reportingBound.load(std::memory_order_relaxed) ) {
@@ -245,7 +241,7 @@ namespace WarningReporting {
         }
 
         uint16_t Serialize(uint8_t buffer[], const uint16_t length) const {
-            const std::size_t boundsTypeSize = sizeof(BOUNDSTYPE);
+            const std::size_t boundsTypeSize = sizeof(_actualValue);
             ASSERT(length >= boundsTypeSize);
 
             uint16_t serialized = _category.Serialize(buffer, length);
@@ -255,7 +251,7 @@ namespace WarningReporting {
         }
 
         uint16_t Deserialize(const uint8_t buffer[], const uint16_t length) {
-            const std::size_t boundsTypeSize = sizeof(BOUNDSTYPE);
+            const std::size_t boundsTypeSize = sizeof(_actualValue);
             ASSERT(length >= boundsTypeSize);
 
             uint16_t deserialized = _category.Deserialize(buffer, length);
@@ -312,13 +308,11 @@ namespace WarningReporting {
 
     private: 
         CONTROLCATEGORY _category;
-        BOUNDSTYPE _actualValue;
+        uint32_t _actualValue;
 
-        static std::atomic<BOUNDSTYPE> _reportingBound; 
-        static std::atomic<BOUNDSTYPE> _warningBound;
+        static std::atomic<uint32_t> _reportingBound; 
+        static std::atomic<uint32_t> _warningBound;
 
-        // HPL todo; test later if this works, not important now
-        //static_assert(WarningReportingBoundsCategory<BOUNDSTYPE, CONTROLCATEGORY>::_reportingbound <= WarningReportingBoundsCategory<BOUNDSTYPE, CONTROLCATEGORY>::_warningbound);
     };
 
     template <typename CATEGORY>
@@ -378,8 +372,7 @@ namespace WarningReporting {
                 string excluded;
                 if (WarningReportingUnitProxy::Instance().IsDefaultCategory(_categoryName, enabled, excluded, settings)) {
                     if (enabled) {
-                        // Better not to use virtual Enabled(...), because derived classes aren't finished yet.
-                        _enabled = _enabled | 0x01;
+                        _enabled = Enabled();
                     }
                     WarningReportingUnitProxy::Instance().FillExcludedWarnings(excluded, _excludedWarnings);
 
@@ -533,10 +526,10 @@ namespace WarningReporting {
 
     template <typename CATEGORY>
     EXTERNAL_HIDDEN typename WarningReportingType<CATEGORY>::template WarningReportingControl<CATEGORY> WarningReportingType<CATEGORY>::s_control;
-    template <typename CONTROLCATEGORY, typename BOUNDSTYPE>
-    EXTERNAL_HIDDEN std::atomic<BOUNDSTYPE> WarningReportingBoundsCategory<CONTROLCATEGORY, BOUNDSTYPE>::_reportingBound(CONTROLCATEGORY::DefaultReportBound);
-    template <typename CONTROLCATEGORY, typename BOUNDSTYPE>
-    EXTERNAL_HIDDEN std::atomic<BOUNDSTYPE> WarningReportingBoundsCategory<CONTROLCATEGORY, BOUNDSTYPE>::_warningBound(CONTROLCATEGORY::DefaultWarningBound);
+    template <typename CONTROLCATEGORY>
+    EXTERNAL_HIDDEN std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_reportingBound(CONTROLCATEGORY::DefaultReportBound);
+    template <typename CONTROLCATEGORY>
+    EXTERNAL_HIDDEN std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_warningBound(CONTROLCATEGORY::DefaultWarningBound);
 }
 
 }
