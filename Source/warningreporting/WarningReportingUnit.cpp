@@ -133,7 +133,6 @@ namespace WarningReporting {
     {
         _adminLock.Lock();
 
-        //ASSERT(m_OutputChannel != nullptr);
 
         if (_outputChannel != nullptr) {
             delete _outputChannel;
@@ -201,7 +200,8 @@ namespace WarningReporting {
 
     void WarningReportingUnit::UpdateEnabledCategories(const Core::JSON::ArrayType<Setting::JSON>& info)
     {
-        // HPL todo: there might be a synchronization issue here??? (at least the enabled should be atomic (altough if aligned on most platforms it will not be an issue)
+        _adminLock.Lock();
+       
         Core::JSON::ArrayType<Setting::JSON>::ConstIterator index = info.Elements();
 
         _enabledCategories.clear();
@@ -214,18 +214,23 @@ namespace WarningReporting {
             auto category = _categories.find(setting.first);
 
             if (category != _categories.end()) {
+                
                 if (category->second->Enabled() != setting.second.Enabled()) {
                     category->second->Enabled(setting.second.Enabled());
                 }
+
                 category->second->Configure(setting.second.Configuration());
                 category->second->Exclude(setting.second.Excluded());
             }
         }
+
+        _adminLock.Unlock();
     }
 
     //TODO CHANGE NAME OF THIS
     bool WarningReportingUnit::IsDefaultCategory(const string& category, bool& enabled, string& excluded, string& config) const
     {
+        _adminLock.Lock();
 
         bool isDefaultCategory = false;
         auto setting = _enabledCategories.find(category);
@@ -236,6 +241,8 @@ namespace WarningReporting {
             config = setting->second.Configuration();
             excluded = setting->second.Excluded();
         }
+
+        _adminLock.Unlock();
 
         return isDefaultCategory;
     }

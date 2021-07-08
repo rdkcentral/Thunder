@@ -279,7 +279,7 @@ namespace WarningReporting {
         void UpdateEnabledCategories(const Core::JSON::ArrayType<Setting::JSON>& info);
 
         ControlList _categories;
-        Core::CriticalSection _adminLock;
+        mutable Core::CriticalSection _adminLock;
         ReportingBuffer* _outputChannel;
         Settings _enabledCategories;
         bool _directOutput;
