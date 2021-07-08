@@ -31,6 +31,7 @@
 #include "Optional.h"
 #include "CallsignTLS.h"
 #include <vector>
+#include <unordered_set>
 
 #ifndef __CORE_WARNING_REPORTING__
 
@@ -66,7 +67,7 @@
 //  - BoundsType to indicate type for boubnds values
 
 #define REPORT_WARNING(CATEGORY, ...)                                                                                  \
-    if (WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled() == true) {                         \
+    if (WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled()) {                                 \
         WPEFramework::WarningReporting::WarningReportingType<CATEGORY> __message__;                                    \
         if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME,                                               \
                 WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
@@ -144,6 +145,30 @@ namespace Core {
 
 namespace WarningReporting {
 
+    class EXTERNAL ExcludedWarnings {
+    public:
+        bool IsCallsignExcluded(const string& callsign) const
+        {
+            return _callsigns.find(callsign) != _callsigns.end();
+        }
+        bool IsModuleExcluded(const string& module) const
+        {
+            return _modules.find(module) != _callsigns.end();
+        }
+        void InsertCallsign(const string& callsign)
+        {
+            _callsigns.insert(callsign);
+        }
+        void InsertModule(const string& module)
+        {
+            _modules.insert(module);
+        }
+
+    private:
+        std::unordered_set<string> _callsigns;
+        std::unordered_set<string> _modules;
+    };
+
     class EXTERNAL WarningReportingUnitProxy {
     public:
         WarningReportingUnitProxy(const WarningReportingUnitProxy&) = delete;
@@ -154,11 +179,12 @@ namespace WarningReporting {
         static WarningReportingUnitProxy& Instance();
 
         void ReportWarningEvent(const char identifier[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information);
-        bool IsDefaultCategory(const string& category, bool& enabled, string& specific) const;
+        bool IsDefaultCategory(const string& category, bool& enabled, string& excluded, string& specific) const;
         void Announce(IWarningReportingUnit::IWarningReportingControl& Category);
         void Revoke(IWarningReportingUnit::IWarningReportingControl& Category);
 
         void Handler(IWarningReportingUnit* handler);
+        void FillExcludedWarnings(const string& excludedJsonList, ExcludedWarnings& excludedWarnings) const;
 
     protected:
         WarningReportingUnitProxy() : _handler(nullptr), _waitingannounces() {};
@@ -303,11 +329,15 @@ namespace WarningReporting {
     template <typename CATEGORY>
     class WarningReportingType : public IWarningEvent {
     public:
-
-    template<typename... Args>
-    inline bool Analyze(const char modulename[], const char identifier[], Args&&... args) {
-        return CallAnalyze(_info, modulename, identifier, std::forward<Args>(args)...);
-    }
+        template <typename... Args>
+        inline bool Analyze(const char modulename[], const char identifier[], Args&&... args)
+        {
+            bool result = false;
+            if (!s_control.IsCallsignExcluded(identifier) && !s_control.IsModuleExcluded(modulename) ) {
+                result = CallAnalyze(_info, modulename, identifier, std::forward<Args>(args)...);
+            }
+            return result;
+        }
 
     private:
         template <typename CONTROLCATEGORY>
@@ -346,17 +376,20 @@ namespace WarningReporting {
             {
                 // Register Our control unit, so it can be influenced from the outside
                 // if nessecary..
-                WarningReportingUnitProxy::Instance().Announce(*this); 
+                WarningReportingUnitProxy::Instance().Announce(*this);
 
                 bool enabled = false;
                 string settings;
-                if (WarningReportingUnitProxy::Instance().IsDefaultCategory(m_CategoryName, enabled, settings)) {
+                string excluded;
+                if (WarningReportingUnitProxy::Instance().IsDefaultCategory(m_CategoryName, enabled, excluded, settings)) {
                     if (enabled) {
                         // Better not to use virtual Enabled(...), because derived classes aren't finished yet.
                         m_Enabled = m_Enabled | 0x01;
                     }
-                    CallConfigure(settings);
+                    WarningReportingUnitProxy::Instance().FillExcludedWarnings(excluded, m_ExcludedWarnings);
 
+
+                    CallConfigure(settings);
                 }
             }
             ~WarningReportingControl() override
@@ -369,11 +402,18 @@ namespace WarningReporting {
             {
                 return ((m_Enabled & 0x01) != 0);
             }
-
-            IWarningEvent* Clone() const override{
-                return new WarningReportingType<CONTROLCATEGORY>();                
+            inline bool IsCallsignExcluded(const string& callsign)
+            {
+                return m_ExcludedWarnings.IsCallsignExcluded(callsign);
             }
-
+            inline bool IsModuleExcluded(const string& module)
+            {
+                return m_ExcludedWarnings.IsModuleExcluded(module);
+            }
+            IWarningEvent* Clone() const override
+            {
+                return new WarningReportingType<CONTROLCATEGORY>();
+            }
             const char* Category() const override
             {
                 return (m_CategoryName.c_str());
@@ -386,8 +426,13 @@ namespace WarningReporting {
             {
                 m_Enabled = (m_Enabled & 0xFE) | (enabled ? 0x01 : 0x00);
             }
-            void Configure(const string& settings) override {
-                    CallConfigure(settings);
+            void Exclude(const string& toExclude) override 
+            {
+                WarningReportingUnitProxy::Instance().FillExcludedWarnings(toExclude, m_ExcludedWarnings);
+            }
+            void Configure(const string& settings) override 
+            {
+                CallConfigure(settings);
             }
             void Destroy() override
             {
@@ -400,6 +445,7 @@ namespace WarningReporting {
         protected:
             const string m_CategoryName;
             uint8_t m_Enabled;
+            ExcludedWarnings m_ExcludedWarnings;
         };
 
 

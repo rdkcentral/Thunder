@@ -197,6 +197,7 @@ namespace WarningReporting {
 
     void WarningReportingUnit::Defaults(const string& jsonCategories)
     {
+        std::cerr << "DEFAULTS: " << jsonCategories << std::endl;
         Core::JSON::ArrayType<Setting::JSON> serialized;
         Core::OptionalType<Core::JSON::Error> error;
         serialized.FromString(jsonCategories, error);
@@ -227,11 +228,13 @@ namespace WarningReporting {
                     category->second->Enabled(setting.second.Enabled());
                 }
                 category->second->Configure(setting.second.Configuration());
+                category->second->Exclude(setting.second.Excluded());
             }
         }
     }
 
-    bool WarningReportingUnit::IsDefaultCategory(const string& category, bool& enabled, string& config) const
+    //TODO CHANGE NAME OF THIS
+    bool WarningReportingUnit::IsDefaultCategory(const string& category, bool& enabled, string& excluded, string& config) const
     {
 
         bool isDefaultCategory = false;
@@ -241,6 +244,7 @@ namespace WarningReporting {
             isDefaultCategory = true;
             enabled = setting->second.Enabled();
             config = setting->second.Configuration();
+            excluded = setting->second.Excluded();
         }
 
         return isDefaultCategory;
@@ -265,9 +269,8 @@ namespace WarningReporting {
             // length(2 bytes) - clock ticks (8 bytes) - lineNumber (4 bytes) - fileNameLength - categoryLength - identifierLength - data
             const uint16_t headerLength = 2 + 8 + 4 + fileNameLength + categoryLength + identifierLength;
                  
-            const uint16_t bufferSize = 1024;
-            uint8_t buffer[bufferSize];
-            uint16_t result = information.Serialize(buffer, bufferSize);
+            uint8_t buffer[1024];
+            uint16_t result = information.Serialize(buffer, sizeof(buffer));
             
             const uint16_t fullLength = headerLength + result;
 

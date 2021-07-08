@@ -47,30 +47,36 @@ namespace WarningReporting {
                     : Core::JSON::Container()
                     , Category()
                     , Enabled(false)
+                    , Excluded()
                     , CategoryConfig(false)
                 {
                     Add(_T("category"), &Category);
                     Add(_T("enabled"), &Enabled);
+                    Add(_T("excluded"), &Excluded);
                     Add(_T("config"), &CategoryConfig);
                 }
                 JSON(const JSON& copy)
                     : Core::JSON::Container()
                     , Category(copy.Category)
                     , Enabled(copy.Enabled)
+                    , Excluded(copy.Excluded)
                     , CategoryConfig(copy.CategoryConfig)
                 {
                     Add(_T("category"), &Category);
                     Add(_T("enabled"), &Enabled);
+                    Add(_T("excluded"), &Excluded);
                     Add(_T("config"), &CategoryConfig);
                 }
                 JSON(const Setting& rhs)
                     : Core::JSON::Container()
                     , Category()
                     , Enabled()
+                    , Excluded()
                     , CategoryConfig(false)
                 {
                     Add(_T("category"), &Category);
                     Add(_T("enabled"), &Enabled);
+                    Add(_T("excluded"), &Excluded);
                     Add(_T("config"), &CategoryConfig);
 
                     Category = rhs.Category();
@@ -84,39 +90,51 @@ namespace WarningReporting {
             public:
                 Core::JSON::String Category;
                 Core::JSON::Boolean Enabled;
+                Core::JSON::String Excluded;
                 Core::JSON::String CategoryConfig;
             };
 
         public:
-            Setting(const JSON& source) 
+            Setting(const JSON& source)
                 : _category(source.Category.Value())
-                , _enabled(source.Enabled.Value()) {
-                if (source.CategoryConfig.IsSet()) {
-                    _categoryconfig = source.CategoryConfig.Value();
-                }
+                , _enabled(source.Enabled.Value())
+                , _excluded(source.Excluded.IsSet() ? source.Excluded.Value() : _T(""))
+                , _categoryconfig(source.CategoryConfig.IsSet() ? source.CategoryConfig.Value() : _T(""))
+            {
             }
             Setting(const Setting& copy)
                 : _category(copy._category)
                 , _enabled(copy._enabled)
-                , _categoryconfig(copy._categoryconfig) {
+                , _excluded(copy._excluded)
+                , _categoryconfig(copy._categoryconfig)
+            {
             }
-            ~Setting() {
+            ~Setting()
+            {
             }
 
         public:
-            const string& Category() const {
+            const string& Category() const
+            {
                 return (_category);
             }
-            bool Enabled() const {
+            bool Enabled() const
+            {
                 return (_enabled);
             }
-            const string& Configuration() const {
+            const string& Excluded() const
+            {
+                return (_excluded);
+            }
+            const string& Configuration() const
+            {
                 return (_categoryconfig);
             }
 
         private:
             string _category;
             bool _enabled;
+            string _excluded;
             string _categoryconfig; 
         };
 
@@ -194,7 +212,7 @@ namespace WarningReporting {
         std::list<string> GetCategories();
 
         // Default enabled/disabled categories: set via config.json.
-        bool IsDefaultCategory(const string& category, bool& enabled, string& configuration) const override;
+        bool IsDefaultCategory(const string& category, bool& enabled, string& excluded, string& configuration) const override;
         string Defaults() const;
         void Defaults(const string& jsonCategories);
 
@@ -240,7 +258,6 @@ namespace WarningReporting {
         inline uint32_t Open(const string& doorBell, const string& fileName) 
         {
 
-            //HPL Todo: only direct output supported at the moment
 
             ASSERT(m_OutputChannel == nullptr);
 

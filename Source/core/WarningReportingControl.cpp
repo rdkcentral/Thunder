@@ -49,6 +49,27 @@ namespace {
         WPEFramework::Core::JSON::DecUInt64 WarningBound;
         WPEFramework::Core::JSON::String CategoryConfig;
     };
+
+    class ExcludedCategoriesValuesConfig : public WPEFramework::Core::JSON::Container {
+    public:
+        ExcludedCategoriesValuesConfig(const WarningReportingBoundsCategoryConfig&) = delete;
+        ExcludedCategoriesValuesConfig& operator=(const WarningReportingBoundsCategoryConfig&) = delete;
+
+        ExcludedCategoriesValuesConfig()
+            : WPEFramework::Core::JSON::Container()
+            , ExcludedCallsigns()
+            , ExcludedModules()
+        {
+            Add(_T("callsigns"), &ExcludedCallsigns);
+            Add(_T("modules"), &ExcludedModules);
+        }
+
+        ~ExcludedCategoriesValuesConfig() override = default;
+
+    public:
+        WPEFramework::Core::JSON::ArrayType<WPEFramework::Core::JSON::String> ExcludedCallsigns;
+        WPEFramework::Core::JSON::ArrayType<WPEFramework::Core::JSON::String> ExcludedModules;
+    };
 }
 
 namespace WPEFramework {
@@ -66,11 +87,11 @@ namespace WarningReporting {
         }
     }
 
-    bool WarningReportingUnitProxy::IsDefaultCategory(const string& category, bool& enabled, string& specific) const {
+    bool WarningReportingUnitProxy::IsDefaultCategory(const string& category, bool& enabled, string& excluded, string& specific) const {
         bool retval = false; 
         adminlock.Lock();
         if( _handler != nullptr ) {
-            retval = _handler->IsDefaultCategory(category, enabled, specific);
+            retval = _handler->IsDefaultCategory(category, enabled, excluded, specific);
         }
         adminlock.Unlock();
         return retval;
@@ -136,6 +157,23 @@ namespace WarningReporting {
                 config = boundsconfig.CategoryConfig.Value();
             }
     }
+    void WarningReportingUnitProxy::FillExcludedWarnings(const string& excludedJsonList, ExcludedWarnings& outExcludedWarnings) const
+    {
+        ExcludedCategoriesValuesConfig config;
+        config.FromString(excludedJsonList);
 
+        if (config.ExcludedCallsigns.IsSet()) {
+            auto iterator(config.ExcludedCallsigns.Elements());
+            while (iterator.Next()) {
+                outExcludedWarnings.InsertCallsign(iterator.Current().Value());
+            }
+        }
+        if (config.ExcludedModules.IsSet()) {
+            auto iterator(config.ExcludedModules.Elements());
+            while (iterator.Next()) {
+                outExcludedWarnings.InsertModule(iterator.Current().Value());
+            }
+        }
+    }
 }
 } 
