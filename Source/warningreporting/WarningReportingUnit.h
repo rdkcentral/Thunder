@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -135,17 +135,17 @@ namespace WarningReporting {
             string _category;
             bool _enabled;
             string _excluded;
-            string _categoryconfig; 
+            string _categoryconfig;
         };
 
     public:
-        typedef std::unordered_map<string, Setting> Settings; 
+        typedef std::unordered_map<string, Setting> Settings;
         typedef std::unordered_map<string, IWarningReportingUnit::IWarningReportingControl*> ControlList;
 
         IWarningEvent* Clone(const string& categoryName)
         {
-            auto index = m_Categories.find(categoryName);
-            if (index != m_Categories.end()) {
+            auto index = _categories.find(categoryName);
+            if (index != _categories.end()) {
                 return index->second->Clone();
             }
             return nullptr;
@@ -173,13 +173,16 @@ namespace WarningReporting {
 
         public:
             virtual uint32_t GetOverwriteSize(Cursor& cursor) override;
-            inline void Ring() {
+            inline void Ring()
+            {
                 _doorBell.Ring();
             }
-            inline void Acknowledge() {
+            inline void Acknowledge()
+            {
                 _doorBell.Acknowledge();
             }
-            inline uint32_t Wait (const uint32_t waitTime) {
+            inline uint32_t Wait(const uint32_t waitTime)
+            {
                 return (_doorBell.Wait(waitTime));
             }
             inline void Relinquish()
@@ -220,65 +223,66 @@ namespace WarningReporting {
 
         inline Core::CyclicBuffer* CyclicBuffer()
         {
-            return (m_OutputChannel);
+            return (_outputChannel);
         }
         inline bool HasDirectOutput() const
         {
-            return (m_DirectOut);
+            return (_directOutput);
         }
         inline void DirectOutput(const bool enabled)
         {
-            m_DirectOut = enabled;
+            _directOutput = enabled;
         }
-        inline void Announce() {
-            if (m_OutputChannel != nullptr) {
-                m_OutputChannel->Ring();
+        inline void Announce()
+        {
+            if (_outputChannel != nullptr) {
+                _outputChannel->Ring();
             }
         }
-        inline void Acknowledge() {
-            if (m_OutputChannel != nullptr) {
-                m_OutputChannel->Acknowledge();
+        inline void Acknowledge()
+        {
+            if (_outputChannel != nullptr) {
+                _outputChannel->Acknowledge();
             }
         }
-        inline uint32_t Wait (const uint32_t waitTime) {
+        inline uint32_t Wait(const uint32_t waitTime)
+        {
             uint32_t status = Core::ERROR_UNAVAILABLE;
-            if (m_OutputChannel != nullptr) {
-                status = (m_OutputChannel->Wait(waitTime));
+            if (_outputChannel != nullptr) {
+                status = (_outputChannel->Wait(waitTime));
             }
             return status;
         }
-        inline void Relinquish() {
-            if (m_OutputChannel != nullptr) {
-                m_OutputChannel->Relinquish();
+        inline void Relinquish()
+        {
+            if (_outputChannel != nullptr) {
+                _outputChannel->Relinquish();
             }
             return;
         }
 
     private:
-        inline uint32_t Open(const string& doorBell, const string& fileName) 
+        inline uint32_t Open(const string& doorBell, const string& fileName)
         {
 
+            ASSERT(_outputChannel == nullptr);
 
-            ASSERT(m_OutputChannel == nullptr);
+            _outputChannel = new ReportingBuffer(doorBell, fileName);
 
-            m_OutputChannel = new ReportingBuffer(doorBell, fileName);
+            ASSERT(_outputChannel->IsValid() == true);
 
-            ASSERT(m_OutputChannel->IsValid() == true);
+            return (_outputChannel->IsValid() ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
 
-            return (m_OutputChannel->IsValid() ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
-
-            
             DirectOutput(true);
             return Core::ERROR_NONE;
-
         }
         void UpdateEnabledCategories(const Core::JSON::ArrayType<Setting::JSON>& info);
 
-        ControlList m_Categories;
-        Core::CriticalSection m_Admin;
-        ReportingBuffer* m_OutputChannel;
-        Settings m_EnabledCategories;
-        bool m_DirectOut;
+        ControlList _categories;
+        Core::CriticalSection _adminLock;
+        ReportingBuffer* _outputChannel;
+        Settings _enabledCategories;
+        bool _directOutput;
     };
 }
-} 
+}

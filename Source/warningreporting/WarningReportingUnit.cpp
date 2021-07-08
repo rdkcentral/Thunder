@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -28,37 +28,30 @@ namespace WarningReporting {
     /* static */ const TCHAR* CyclicBufferName = _T("warningreportingbuffer");
 
     WarningReportingUnit::WarningReportingUnit()
-        : m_Categories()
-        , m_Admin()
-        , m_OutputChannel(nullptr)
-        , m_DirectOut(false)
+        : _categories()
+        , _adminLock()
+        , _outputChannel(nullptr)
+        , _directOutput(false)
     {
         WarningReportingUnitProxy::Instance().Handler(this);
     }
 
     WarningReportingUnit::ReportingBuffer::ReportingBuffer(const string& doorBell, const string& name)
-        : Core::CyclicBuffer(name, 
-                                Core::File::USER_READ    | 
-                                Core::File::USER_WRITE   | 
-                                Core::File::USER_EXECUTE | 
-                                Core::File::GROUP_READ   |
-                                Core::File::GROUP_WRITE  |
-                                Core::File::OTHERS_READ  |
-                                Core::File::OTHERS_WRITE | 
-                                Core::File::SHAREABLE,
-                             CyclicBufferSize, true)
+        : Core::CyclicBuffer(name,
+              Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE | Core::File::GROUP_READ | Core::File::GROUP_WRITE | Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | Core::File::SHAREABLE,
+              CyclicBufferSize, true)
         , _doorBell(doorBell.c_str())
     {
         // Make sure the trace file opened proeprly.
         TRACE_L1("Opened a file to stash my reported warning at: %s [%d] and doorbell: %s", name.c_str(), CyclicBufferSize, doorBell.c_str());
-        ASSERT (IsValid() == true);
+        ASSERT(IsValid() == true);
     }
 
     WarningReportingUnit::ReportingBuffer::~ReportingBuffer()
     {
     }
 
-    /* virtual */ uint32_t WarningReportingUnit::ReportingBuffer::GetOverwriteSize(Cursor& cursor)
+    uint32_t WarningReportingUnit::ReportingBuffer::GetOverwriteSize(Cursor& cursor)
     {
         while (cursor.Offset() < cursor.Size()) {
             uint16_t chunkSize = 0;
@@ -72,12 +65,12 @@ namespace WarningReporting {
         return cursor.Offset();
     }
 
-    /* virtual */ void WarningReportingUnit::ReportingBuffer::DataAvailable()
+    void WarningReportingUnit::ReportingBuffer::DataAvailable()
     {
         _doorBell.Ring();
     }
 
-    /* static */ WarningReportingUnit& WarningReportingUnit::Instance()
+    WarningReportingUnit& WarningReportingUnit::Instance()
     {
         return (Core::SingletonType<WarningReportingUnit>::Instance());
     }
@@ -87,19 +80,17 @@ namespace WarningReporting {
 
         WarningReportingUnitProxy::Instance().Handler(nullptr);
 
-        m_Admin.Lock();
+        _adminLock.Lock();
 
-        if (m_OutputChannel != nullptr) {
+        if (_outputChannel != nullptr) {
             Close();
         }
 
-        for (auto const& category : m_Categories)
-        {
-              category.second->Destroy();
+        for (auto const& category : _categories) {
+            category.second->Destroy();
         }
-        
 
-        m_Admin.Unlock();
+        _adminLock.Unlock();
     }
 
     uint32_t WarningReportingUnit::Open(const uint32_t identifier)
@@ -115,8 +106,8 @@ namespace WarningReporting {
         ASSERT(doorBell.empty() == false);
 
         if (fileName.empty() == false) {
-       
-            fileName +=  '.' + Core::NumberType<uint32_t>(identifier).Text();
+
+            fileName += '.' + Core::NumberType<uint32_t>(identifier).Text();
             result = Open(doorBell, fileName);
         }
 
@@ -126,11 +117,11 @@ namespace WarningReporting {
     uint32_t WarningReportingUnit::Open(const string& pathName)
     {
         string fileName(Core::Directory::Normalize(pathName) + CyclicBufferName);
-        #ifdef __WINDOWS__
-        string doorBell("127.0.0.1:62002"); 
-        #else
-        string doorBell(Core::Directory::Normalize(pathName) + CyclicBufferName + ".doorbell" );
-        #endif
+#ifdef __WINDOWS__
+        string doorBell("127.0.0.1:62002");
+#else
+        string doorBell(Core::Directory::Normalize(pathName) + CyclicBufferName + ".doorbell");
+#endif
 
         Core::SystemInfo::SetEnvironment(WARNINGREPORTING_CYCLIC_BUFFER_FILENAME, fileName);
         Core::SystemInfo::SetEnvironment(WARNINGREPORTING_CYCLIC_BUFFER_DOORBELL, doorBell);
@@ -140,54 +131,53 @@ namespace WarningReporting {
 
     uint32_t WarningReportingUnit::Close()
     {
-        m_Admin.Lock();
+        _adminLock.Lock();
 
         //ASSERT(m_OutputChannel != nullptr);
 
-        if (m_OutputChannel != nullptr) {
-            delete m_OutputChannel;
+        if (_outputChannel != nullptr) {
+            delete _outputChannel;
         }
 
-        m_OutputChannel = nullptr;
+        _outputChannel = nullptr;
 
-        m_Admin.Unlock();
+        _adminLock.Unlock();
 
         return (Core::ERROR_NONE);
     }
 
     void WarningReportingUnit::Announce(IWarningReportingUnit::IWarningReportingControl& Category)
     {
-        m_Admin.Lock();
+        _adminLock.Lock();
 
-        m_Categories.emplace(Category.Category(), &Category);
+        _categories.emplace(Category.Category(), &Category);
 
-        m_Admin.Unlock();
+        _adminLock.Unlock();
     }
 
     void WarningReportingUnit::Revoke(IWarningReportingUnit::IWarningReportingControl& Category)
     {
-        m_Admin.Lock();
-        m_Categories.erase(Category.Category());
+        _adminLock.Lock();
+        _categories.erase(Category.Category());
 
-        m_Admin.Unlock();
+        _adminLock.Unlock();
     }
 
     std::list<string> WarningReportingUnit::GetCategories()
     {
         std::list<string> result;
-        for (const auto& pair : m_Categories) {
+        for (const auto& pair : _categories) {
             result.push_back(pair.first);
         }
         return result;
     }
 
-
     string WarningReportingUnit::Defaults() const
     {
         string result;
         Core::JSON::ArrayType<Setting::JSON> serialized;
-        
-        for(const auto& enabledCategory: m_EnabledCategories){
+
+        for (const auto& enabledCategory : _enabledCategories) {
             serialized.Add(Setting::JSON(enabledCategory.second));
         }
 
@@ -214,16 +204,16 @@ namespace WarningReporting {
         // HPL todo: there might be a synchronization issue here??? (at least the enabled should be atomic (altough if aligned on most platforms it will not be an issue)
         Core::JSON::ArrayType<Setting::JSON>::ConstIterator index = info.Elements();
 
-        m_EnabledCategories.clear();
+        _enabledCategories.clear();
 
         while (index.Next()) {
-            m_EnabledCategories.emplace(index.Current().Category.Value(), Setting(index.Current()));
+            _enabledCategories.emplace(index.Current().Category.Value(), Setting(index.Current()));
         }
 
-        for (auto& setting : m_EnabledCategories) {
-            auto category = m_Categories.find(setting.first);
+        for (auto& setting : _enabledCategories) {
+            auto category = _categories.find(setting.first);
 
-            if (category != m_Categories.end()) {
+            if (category != _categories.end()) {
                 if (category->second->Enabled() != setting.second.Enabled()) {
                     category->second->Enabled(setting.second.Enabled());
                 }
@@ -238,9 +228,9 @@ namespace WarningReporting {
     {
 
         bool isDefaultCategory = false;
-        auto setting = m_EnabledCategories.find(category);
+        auto setting = _enabledCategories.find(category);
 
-        if (setting != m_EnabledCategories.end()) {
+        if (setting != _enabledCategories.end()) {
             isDefaultCategory = true;
             enabled = setting->second.Enabled();
             config = setting->second.Configuration();
@@ -251,13 +241,13 @@ namespace WarningReporting {
     }
 
     void WarningReportingUnit::ReportWarningEvent(const char identifier[], const char file[], const uint32_t lineNumber, const char className[], const IWarningEvent& information)
-    { 
+    {
 
         const char* fileName(Core::FileNameOnly(file));
 
-        m_Admin.Lock();
+        _adminLock.Lock();
 
-        if (m_OutputChannel != nullptr) {
+        if (_outputChannel != nullptr) {
 
             const char* category(information.Category());
             const uint64_t current = Core::Time::Now().Ticks();
@@ -268,29 +258,28 @@ namespace WarningReporting {
 
             // length(2 bytes) - clock ticks (8 bytes) - lineNumber (4 bytes) - fileNameLength - categoryLength - identifierLength - data
             const uint16_t headerLength = 2 + 8 + 4 + fileNameLength + categoryLength + identifierLength;
-                 
+
             uint8_t buffer[1024];
             uint16_t result = information.Serialize(buffer, sizeof(buffer));
-            
+
             const uint16_t fullLength = headerLength + result;
 
             // Tell the buffer how much we are going to write.
-            // stack buffer 1kB, serialize 
-            const uint32_t actualLength = m_OutputChannel->Reserve(fullLength);
-            
+            // stack buffer 1kB, serialize
+            const uint32_t actualLength = _outputChannel->Reserve(fullLength);
 
             if (actualLength >= fullLength) {
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&fullLength), 2); //fullLength
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&current), 8);    //timestamp
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(&lineNumber), 4); //lineNumber
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(fileName), fileNameLength); //filename
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(category), categoryLength); //category name
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(identifier), identifierLength); //identifier aka. callsign
-                m_OutputChannel->Write(reinterpret_cast<const uint8_t*>(buffer), result);
+                _outputChannel->Write(reinterpret_cast<const uint8_t*>(&fullLength), 2); //fullLength
+                _outputChannel->Write(reinterpret_cast<const uint8_t*>(&current), 8); //timestamp
+                _outputChannel->Write(reinterpret_cast<const uint8_t*>(&lineNumber), 4); //lineNumber
+                _outputChannel->Write(reinterpret_cast<const uint8_t*>(fileName), fileNameLength); //filename
+                _outputChannel->Write(reinterpret_cast<const uint8_t*>(category), categoryLength); //category name
+                _outputChannel->Write(reinterpret_cast<const uint8_t*>(identifier), identifierLength); //identifier aka. callsign
+                _outputChannel->Write(reinterpret_cast<const uint8_t*>(buffer), result);
             }
         }
-        
-        if ( ( m_DirectOut == true ) && ( information.IsWarning() == true ) ) {
+
+        if ((_directOutput == true) && (information.IsWarning() == true)) {
 
             string text;
             string time(Core::Time::Now().ToRFC1123(true));
@@ -301,9 +290,8 @@ namespace WarningReporting {
             fprintf(stdout, "\033[1;32mSUSPICIOUS [%s]: [%s:%s]: %s\n\033[0m", time.c_str(), identifier, information.Category(), text.c_str());
             fflush(stdout);
         }
-        
 
-        m_Admin.Unlock();
+        _adminLock.Unlock();
     }
 }
-} 
+}
