@@ -72,8 +72,8 @@ class Ref(IntEnum):
     RVALUE_REFERENCE = 8
     CONST = 16,
     VOLATILE = 32,
-    CONST_POINTER = 64,
-    VOLATILE_POINTER = 128,
+    POINTER_TO_CONST = 64,
+    POINTER_TO_VOLATILE = 128,
 
 
 class Metadata:
@@ -461,10 +461,11 @@ class Identifier():
                 elif self.type[typeIdx] == "&&":
                     ref |= Ref.RVALUE_REFERENCE
                 elif self.type[typeIdx] == "const":
-                    ref |= Ref.CONST_POINTER
+                    ref |= Ref.CONST
                 elif self.type[typeIdx] == "volatile":
-                    ref |= Ref.VOLATILE_POINTER
+                    ref |= Ref.VOLATILE
                 typeIdx -= 1
+                cnt += 1
 
             # Skip template parsing here
             if isinstance(self.type[typeIdx], str):
@@ -510,9 +511,15 @@ class Identifier():
             if isinstance(self.type[typeIdx], Type):
                 for i in range(len(self.type) - cnt - 1):
                     if self.type[i] == "const":
-                        self.type[typeIdx].ref |= Ref.CONST
+                        if self.type[typeIdx].ref & Ref.POINTER:
+                            self.type[typeIdx].ref |= Ref.POINTER_TO_CONST
+                        else:
+                            self.type[typeIdx].ref |= Ref.CONST
                     elif self.type[i] == "volatile":
-                        self.type[typeIdx].ref |= Ref.VOLATILE
+                        if self.type[typeIdx].ref | Ref.POINTER:
+                            self.type[typeIdx].ref |= Ref.POINTER_TO_VOLATILE
+                        else:
+                            self.type[typeIdx].ref |= Ref.VOLATILE
 
                 self.type = self.type[typeIdx]
 
@@ -671,10 +678,10 @@ class Type:
         return self.ref & Ref.POINTER != 0
 
     def IsConstPointer(self):
-        return self.ref & Ref.CONST_POINTER != 0
+        return self.IsPointer() and self.IsConst()
 
     def IsVolatilePointer(self):
-        return self.ref & Ref.VOLATILE_POINTER != 0
+        return self.IsPointer() and self.IsVolatile()
 
     def IsReference(self):
         return self.ref & Ref.REFERENCE != 0
@@ -683,10 +690,13 @@ class Type:
         return self.ref & Ref.RVALUE_REFERENCE
 
     def IsPointerToConst(self):
-        return self.IsConst() and self.IsPointer()
+        return self.ref & Ref.POINTER_TO_CONST
+
+    def IsPointerToVolatile(self):
+        return self.ref & Ref.POINTER_TO_VOLATILE
 
     def IsConstPointerToConst(self):
-        return self.IsConst() and self.IsConstPointer()
+        return self.IsConst() and self.IsPointerToConst()
 
     def IsConstReference(self):
         return self.IsConst() and self.IsReference()
@@ -722,12 +732,13 @@ class Type:
         return str
 
     def Proto(self):
-        _str = "const " if self.IsConst() else ""
+        _str = "const " if ((self.IsConst() and not self.IsPointer()) or self.IsPointerToConst()) else ""
+        _str += "volatile " if (self.IsVolatile() and not self.IsPointer()) or self.IsPointerToVolatile() else ""
         _str += self.TypeName()
         _str += "*" if self.IsPointer() else ""
-        _str += "&" if self.IsReference() else "&&" if self.IsRvalueReference() else ""
         _str += " const" if self.IsConstPointer() else ""
         _str += " volatile" if self.IsVolatilePointer() else ""
+        _str += "&" if self.IsReference() else "&&" if self.IsRvalueReference() else ""
         return _str
 
     def __str__(self):
@@ -864,6 +875,9 @@ class Function(Block, Name):
         _str += "(%s)" % (", ".join([str(v) for v in self.vars]))
         return _str
 
+    def IsStatic(self):
+        return "static" in self.specifiers
+
     def __str__(self):
         return self.Proto()
 
@@ -927,9 +941,6 @@ class Method(Function):
 
     def IsVolatile(self):
         return "volatile" in self.qualifiers
-
-    def IsStatic(self):
-        return "static" in self.specifiers
 
     def CVString(self):
         str = "const" if self.IsConst() else ""
