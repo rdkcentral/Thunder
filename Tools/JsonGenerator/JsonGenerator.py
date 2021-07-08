@@ -1030,6 +1030,9 @@ def LoadInterface(file, includePaths = []):
                                 obj["writeonly"] = True
                             if "params" not in obj:
                                 obj["params"] = BuildParameters([method.vars[0]], face.obj.is_extended, True)
+                            else:
+                                if method.vars[0].type.IsReference():
+                                    obj["params"]["ref"] = True
                             if obj["params"] == None:
                                 raise CppParseError(method.vars[0], "property setter method must have one input parameter")
                 else:
@@ -1564,7 +1567,8 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                                 initializer = "Core::Service<%s>::Create<%s>(elements)" % (impl, t[0].schema["iterator"])
                                 emit.Line("%s* %s{%s};" % (t[0].schema["iterator"], t[0].JsonName(), initializer))
                                 t[0].release = True
-                                t[0].cast = "static_cast<%s* const&>(%s)" % (t[0].schema["iterator"], t[0].JsonName())
+                                if "ref" in t[0].schema and t[0].schema["ref"]:
+                                    t[0].cast = "static_cast<%s* const&>(%s)" % (t[0].schema["iterator"], t[0].JsonName())
                             elif t[1] == 2:
                                 emit.Line("%s%s* %s{};" % ("const " if t[1] == 0 else "", t[0].schema["iterator"], t[0].JsonName()))
                             else:
