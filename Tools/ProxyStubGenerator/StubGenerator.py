@@ -30,7 +30,7 @@ import copy
 import CppParser
 from collections import OrderedDict
 
-VERSION = "1.6.10"
+VERSION = "1.6.11"
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -352,8 +352,8 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                     self.is_ref = type.IsReference()
                     self.is_ptr = type.IsPointer()
 
-                    self.is_nonconstref = type.IsReference() and not type.IsConst()
-                    self.is_nonconstptr = type.IsPointer() and not type.IsConst()
+                    self.is_nonconstref = type.IsReference() and not type.IsConst() and not type.IsPointerToConst()
+                    self.is_nonconstptr = type.IsPointer() and not type.IsConst() and not type.IsPointerToConst()
 
                     self.typename = type.Type()
                     self.expanded_typename = self.type.Type()
@@ -833,8 +833,11 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                         call += "%s %s = " % (retval.str_noref, retval.name)
                     call += "implementation->%s(" % m.name
                     for c, p in enumerate(params):
-                        call += "%s%s%s%s" % ("&" if p.length_type == "void" else "", p.name,
+                        parameter = "%s%s%s%s" % ("&" if p.length_type == "void" else "", p.name,
                                               ("_proxy" if p.proxy else ""), (", " if c < len(params) - 1 else ""))
+                        if p.is_inputptr and p.is_inputref and p.proxy:
+                            parameter = "static_cast<%s* const&>(%s)" % (p.str_typename, parameter)
+                        call += parameter
                     call += ");"
                     emit.Line(call)
 
