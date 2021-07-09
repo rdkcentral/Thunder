@@ -215,7 +215,7 @@ namespace WarningReporting {
         std::list<string> GetCategories();
 
         // Default enabled/disabled categories: set via config.json.
-        bool IsDefaultCategory(const string& category, bool& enabled, string& excluded, string& configuration) const override;
+        void FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const override;
         string Defaults() const;
         void Defaults(const string& jsonCategories);
 
@@ -273,8 +273,6 @@ namespace WarningReporting {
 
             return (_outputChannel->IsValid() ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
 
-            DirectOutput(true);
-            return Core::ERROR_NONE;
         }
         void UpdateEnabledCategories(const Core::JSON::ArrayType<Setting::JSON>& info);
 

@@ -53,7 +53,7 @@ namespace WarningReporting {
 
         virtual ~IWarningReportingUnit() = default;
         virtual void ReportWarningEvent(const char identifier[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information) = 0;
-        virtual bool IsDefaultCategory(const string& category, bool& enabled, string& excluded, string& configuration) const = 0;
+        virtual void FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const = 0;
         virtual void Announce(IWarningReportingControl& Category) = 0;
         virtual void Revoke(IWarningReportingControl& Category) = 0;
     };

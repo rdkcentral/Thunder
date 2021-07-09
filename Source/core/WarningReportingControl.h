@@ -179,7 +179,7 @@ namespace WarningReporting {
         static WarningReportingUnitProxy& Instance();
 
         void ReportWarningEvent(const char identifier[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information);
-        bool IsDefaultCategory(const string& category, bool& enabled, string& excluded, string& specificConfig) const;
+        void FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const;
         void Announce(IWarningReportingUnit::IWarningReportingControl& Category);
         void Revoke(IWarningReportingUnit::IWarningReportingControl& Category);
 
@@ -388,12 +388,16 @@ namespace WarningReporting {
                 // if nessecary..
                 WarningReportingUnitProxy::Instance().Announce(*this);
 
-                bool enabled = false;
+                bool isDefaultCategory = false;
+                bool isEnabled = false;
                 string settings;
                 string excluded;
-                if (WarningReportingUnitProxy::Instance().IsDefaultCategory(_categoryName, enabled, excluded, settings)) {
-                    if (enabled) {
-                        _enabled = Enabled();
+                WarningReportingUnitProxy::Instance().FetchCategoryInformation(_categoryName, isDefaultCategory, isEnabled, excluded, settings);
+                
+                if (isDefaultCategory) {
+    
+                    if (isEnabled) {
+                        _enabled = _enabled | 0x01;
                     }
                     WarningReportingUnitProxy::Instance().FillExcludedWarnings(excluded, _excludedWarnings);
 

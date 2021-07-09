@@ -205,7 +205,6 @@ namespace WarningReporting {
         Core::JSON::ArrayType<Setting::JSON>::ConstIterator index = info.Elements();
 
         _enabledCategories.clear();
-
         while (index.Next()) {
             _enabledCategories.emplace(index.Current().Category.Value(), Setting(index.Current()));
         }
@@ -223,28 +222,22 @@ namespace WarningReporting {
                 category->second->Exclude(setting.second.Excluded());
             }
         }
-
         _adminLock.Unlock();
     }
 
-    //TODO CHANGE NAME OF THIS
-    bool WarningReportingUnit::IsDefaultCategory(const string& category, bool& enabled, string& excluded, string& config) const
+    void WarningReportingUnit::FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const
     {
         _adminLock.Lock();
-
-        bool isDefaultCategory = false;
+        outIsDefaultCategory = true;
         auto setting = _enabledCategories.find(category);
 
         if (setting != _enabledCategories.end()) {
-            isDefaultCategory = true;
-            enabled = setting->second.Enabled();
-            config = setting->second.Configuration();
-            excluded = setting->second.Excluded();
+            outIsDefaultCategory = true;
+            outIsEnabled = setting->second.Enabled();
+            outExcluded = setting->second.Excluded();
+            outConfiguration = setting->second.Configuration();
         }
-
         _adminLock.Unlock();
-
-        return isDefaultCategory;
     }
 
     void WarningReportingUnit::ReportWarningEvent(const char identifier[], const char file[], const uint32_t lineNumber, const char className[], const IWarningEvent& information)

@@ -88,15 +88,13 @@ namespace WarningReporting {
         }
     }
 
-    bool WarningReportingUnitProxy::IsDefaultCategory(const string& category, bool& enabled, string& excluded, string& specific) const
+    void WarningReportingUnitProxy::FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const
     {
-        bool retval = false;
         adminlock.Lock();
         if (_handler != nullptr) {
-            retval = _handler->IsDefaultCategory(category, enabled, excluded, specific);
+            _handler->FetchCategoryInformation(category, outIsDefaultCategory, outIsEnabled, outExcluded, outConfiguration);
         }
         adminlock.Unlock();
-        return retval;
     }
 
     void WarningReportingUnitProxy::Announce(IWarningReportingUnit::IWarningReportingControl& Category)
