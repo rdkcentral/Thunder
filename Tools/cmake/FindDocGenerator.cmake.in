@@ -1,0 +1,17 @@
+find_package(JsonGenerator REQUIRED)
+
+function(DocGenerator)
+    set(oneValueArgs INPUT)
+
+    cmake_parse_arguments(Argument "${oneValueArgs}" ${ARGN} )
+
+    if(Argument_INPUT)
+        set(PLUGIN_NAME ${ARGN})
+    endif()
+    
+    set(GENERATOR_SEARCH_PATH ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE})
+    set(CPPIFDIR_PATH ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/WPEFramework/interfaces/)
+    JsonGenerator(INPUT ${CMAKE_CURRENT_SOURCE_DIR}/${PLUGIN_NAME}Plugin.json DOCS OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/doc" INCLUDE_PATH ${GENERATOR_SEARCH_PATH} CPPIFDIR ${CPPIFDIR_PATH})
+
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/doc/${PLUGIN_NAME}Plugin.md DESTINATION "${CMAKE_INSTALL_PREFIX}/share/doc")
+endfunction(DocGenerator)
