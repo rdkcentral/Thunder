@@ -394,6 +394,7 @@ namespace RPC {
                 string value;
 
                 uint16_t length = sizeof(instance_id) + sizeof(uint32_t) ;   // skip implentation and sequencenumber 
+                length += _data.GetText(length, value);  // skip proxyStub path
                 length += _data.GetText(length, value);  // skip TraceCategories
 
                 _data.GetText(length, value); 
