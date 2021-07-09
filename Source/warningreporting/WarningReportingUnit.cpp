@@ -145,19 +145,19 @@ namespace WarningReporting {
         return (Core::ERROR_NONE);
     }
 
-    void WarningReportingUnit::Announce(IWarningReportingUnit::IWarningReportingControl& Category)
+    void WarningReportingUnit::Announce(IWarningReportingUnit::IWarningReportingControl& category)
     {
         _adminLock.Lock();
 
-        _categories.emplace(Category.Category(), &Category);
+        _categories[category.Category()] = &category;
 
         _adminLock.Unlock();
     }
 
-    void WarningReportingUnit::Revoke(IWarningReportingUnit::IWarningReportingControl& Category)
+    void WarningReportingUnit::Revoke(IWarningReportingUnit::IWarningReportingControl& category)
     {
         _adminLock.Lock();
-        _categories.erase(Category.Category());
+        _categories.erase(category.Category());
 
         _adminLock.Unlock();
     }
