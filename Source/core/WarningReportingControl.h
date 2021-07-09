@@ -33,6 +33,8 @@
 #include <unordered_set>
 #include <vector>
 
+
+#define __CORE_WARNING_REPORTING__ asf
 #ifndef __CORE_WARNING_REPORTING__
 
 #define REPORT_WARNING(CATEGORY, ...)
@@ -272,7 +274,7 @@ namespace WarningReporting {
 
         void ToString(string& visitor) const
         {
-            _category.ToString(visitor, _actualValue, _warningBound.load(std::memory_order_relaxed));
+            _category.ToString(visitor, _actualValue, IsWarning() ? _warningBound.load(std::memory_order_relaxed) : _reportingBound.load(std::memory_order_relaxed));
         }
 
         bool IsWarning() const

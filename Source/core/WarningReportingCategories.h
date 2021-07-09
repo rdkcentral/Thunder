@@ -43,10 +43,10 @@ namespace WarningReporting {
             return 0;
         }
 
-        void ToString(string& visitor, const int64_t actualValue, const int64_t warningBound) const
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
         {
             visitor = (_T("It took suspiciously long to aquire a critical section"));
-            visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, warningBound);
+            visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, maxValue);
         };
 
         static constexpr uint32_t DefaultWarningBound = { 1000 };
@@ -71,10 +71,10 @@ namespace WarningReporting {
             return 0;
         }
 
-        void ToString(string& visitor, const int64_t actualValue, const int64_t warningBound) const
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
         {
             visitor = (_T("A sink still holds a reference when it is being destructed"));
-            visitor += Core::Format(_T(", value %lld, max allowed %lld"), actualValue, warningBound);
+            visitor += Core::Format(_T(", value %lld, max allowed %lld"), actualValue, maxValue);
         };
 
         static constexpr uint32_t DefaultWarningBound = { 0 };

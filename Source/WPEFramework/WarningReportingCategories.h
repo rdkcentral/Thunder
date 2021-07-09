@@ -82,12 +82,12 @@ namespace WarningReporting {
             return 0;
         }
 
-        void ToString(string& visitor, const int64_t actualValue, const int64_t warningBound) const
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
         {
             visitor = Core::Format(_T("It took suspiciously long to switch plugin [%s] to state %s"),
                 _callsign.c_str(),
                 StateAsString(_stateChange).c_str());
-            visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, warningBound);
+            visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, maxValue);
         };
 
         static constexpr uint32_t DefaultWarningBound = { 5000 };
@@ -225,12 +225,12 @@ namespace WarningReporting {
             return 0;
         }
 
-        void ToString(string& visitor, const int64_t actualValue, const int64_t warningBound) const
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
         {
             visitor = Core::Format(_T("It took suspiciously long to handle an incoming message of type [%s] with content [%s]"),
                 TypeAsString(_type).c_str(),
                 (_content.c_str() == nullptr ? _T("<empty>") : _content.c_str()));
-            visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, warningBound);
+            visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, maxValue);
         };
 
         static constexpr uint32_t DefaultWarningBound = { 500 };
