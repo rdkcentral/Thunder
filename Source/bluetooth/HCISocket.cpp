@@ -73,62 +73,51 @@ uint32_t HCISocket::Advertising(const bool enable, const uint8_t mode)
     return (result);
 }
 
-void HCISocket::Scan(const uint16_t scanTime, const uint32_t type, const uint8_t flags)
+void HCISocket::Scan(const uint16_t scanTime, const bool limited)
 {
-    ASSERT(scanTime <= 326);
-
     _state.Lock();
 
     if ((_state & ACTION_MASK) == 0) {
-        int descriptor = Handle();
+        /* The inquiry API limits the scan time to 326 seconds, so split it into mutliple inquiries if neccessary. */
+        const uint16_t lapTime = 30; /* sec */
+        uint16_t timeLeft = scanTime;
+        bool started = false;
 
-        _state.SetState(static_cast<state>(_state.GetState() | SCANNING));
+        Command::Inquiry inquiry;
+        Command::InquiryCancel inquiryCancel;
 
-        _state.Unlock();
+        inquiry.Clear();
+        inquiry->num_rsp = 255;
+        inquiry->length = 30; /* in 1.28s == 35s */
 
-        ASSERT(descriptor >= 0);
+        ASSERT(((uint32_t)inquiry->length * 128 / 100) > lapTime + 1);
 
-        void* buf = ALLOCA(sizeof(struct hci_inquiry_req) + (sizeof(inquiry_info) * 128));
-        struct hci_inquiry_req* ir = reinterpret_cast<struct hci_inquiry_req*>(buf);
-        std::list<Address> reported;
+        inquiry->lap[0] = (limited == true? 0x00 : 0x33);
+        inquiry->lap[1] = 0x8B;
+        inquiry->lap[2] = 0x9e;
 
-        ir->dev_id = BtUtilsHciGetRoute(nullptr);
-        ir->num_rsp = 128;
-        ir->length = (((scanTime * 100) + 50) / 128);
-        ir->flags = flags | IREQ_CACHE_FLUSH;
-        ir->lap[0] = (type >> 16) & 0xFF; // 0x33;
-        ir->lap[1] = (type >> 8) & 0xFF; // 0x8b;
-        ir->lap[2] = type & 0xFF; // 0x9e;
-        // Core::Time endTime = Core::Time::Now().Add(scanTime * 1000);
+        while (timeLeft > 0) {
+            if ((Exchange(MAX_ACTION_TIMEOUT, inquiry, inquiry) == Core::ERROR_NONE) && (inquiry.Response() == 0)) {
+                _state.SetState(static_cast<state>(_state.GetState() | SCANNING));
 
-        // while ((ir->length != 0) && (ioctl(descriptor, HCIINQUIRY, reinterpret_cast<unsigned long>(buf)) >= 0)) {
-        if (ioctl(descriptor, HCIINQUIRY, reinterpret_cast<unsigned long>(buf)) >= 0) {
+                _state.Unlock();
 
-            for (uint8_t index = 0; index < (ir->num_rsp); index++) {
-                inquiry_info* info = reinterpret_cast<inquiry_info*>(&(reinterpret_cast<uint8_t*>(buf)[sizeof(hci_inquiry_req)]));
-
-                bdaddr_t* address = &(info[index].bdaddr);
-                Address newSource(*address);
-
-                EIR eir("", ((info->dev_class[2] << 16) | (info->dev_class[1] << 8) | (info->dev_class[0])));
-
-                std::list<Address>::const_iterator finder(std::find(reported.begin(), reported.end(), newSource));
-
-                if (finder == reported.end()) {
-                    reported.push_back(newSource);
-                    Discovered(false, newSource, eir);
+                // This is not super-precise, but it doesn't have to be.
+                uint16_t roundTime = (timeLeft > lapTime? lapTime : timeLeft);
+                if (_state.WaitState(ABORT, (roundTime * 1000)) == true) {
+                    roundTime = timeLeft; // essentially break
                 }
-            }
+                timeLeft -= roundTime;
 
-            // Reset go for the next round !!
-            // ir->length  = (endTime <= Core::Time::Now() ? 0 : 1);
-            // ir->num_rsp = 128;
-            // ir->flags  &= ~IREQ_CACHE_FLUSH;
+                _state.Lock();
+
+                Exchange(MAX_ACTION_TIMEOUT, inquiryCancel, inquiryCancel);
+                _state.SetState(static_cast<state>(_state.GetState() & (~(ABORT | SCANNING))));
+           } else {
+                TRACE_L1(_T("Failed to send Inquiry command"));
+                break;
+           }
         }
-
-        _state.Lock();
-
-        _state.SetState(static_cast<state>(_state.GetState() & (~(ABORT | SCANNING))));
     }
 
     _state.Unlock();
@@ -169,8 +158,23 @@ void HCISocket::Scan(const uint16_t scanTime, const bool limited, const bool pas
                 Exchange(MAX_ACTION_TIMEOUT, scanner, scanner);
 
                 _state.SetState(static_cast<state>(_state.GetState() & (~(ABORT | SCANNING))));
+            } else {
+                TRACE_L1(_T("Failed to send ScanEnableLE command"));
             }
+        } else {
+            TRACE_L1(_T("Failed to send ScanParametersLE command"));
         }
+    }
+
+    _state.Unlock();
+}
+
+void HCISocket::Abort()
+{
+    _state.Lock();
+
+    if ((_state & ACTION_MASK) == SCANNING) {
+        _state.SetState(static_cast<state>(_state.GetState() | ABORT));
     }
 
     _state.Unlock();
@@ -192,7 +196,7 @@ void HCISocket::Discovery(const bool enable)
             parameters->own_bdaddr_type = LE_PUBLIC_ADDRESS;
             parameters->filter = SCAN_FILTER_POLICY_ALL;
 
-            uint32_t rv = Exchange(1000, parameters, parameters);
+            uint32_t rv = Exchange(MAX_ACTION_TIMEOUT, parameters, parameters);
             if (rv != Core::ERROR_NONE) {
                 TRACE_L1(_T("Failed to send ScanParametersLE command [%i]"), rv);
             }
@@ -225,19 +229,6 @@ uint32_t HCISocket::ReadStoredLinkKeys(const Address adr, const bool all, LinkKe
     parameters->read_all= (all ? 0x1 : 0x0);
 
     return (Exchange(MAX_ACTION_TIMEOUT, parameters, parameters));
-}
-
-
-void HCISocket::Abort()
-{
-    _state.Lock();
-
-    if ((_state & ACTION_MASK) != 0) {
-        // TODO: Find if we can actually abort a IOCTL:HCIINQUIRY !!
-        _state.SetState(static_cast<state>(_state.GetState() | ABORT));
-    }
-
-    _state.Unlock();
 }
 
 /* virtual */ void HCISocket::StateChange()
@@ -280,32 +271,54 @@ void HCISocket::Abort()
     }
 }
 
+template<typename EVENT> void HCISocket::DeserializeScanResponse(const uint8_t* data)
+{
+    const uint8_t* segment = data;
+    uint8_t entries = *segment++;
+
+    for (uint8_t loop = 0; loop < entries; loop++) {
+        const EVENT* info = reinterpret_cast<const EVENT*>(segment);
+        Update(*info);
+        segment += sizeof(EVENT);
+    }
+}
+
+template<> void HCISocket::DeserializeScanResponse<le_advertising_info>(const uint8_t* data)
+{
+    const uint8_t* segment = data;
+    uint8_t entries = *segment++;
+
+    for (uint8_t loop = 0; loop < entries; loop++) {
+        const le_advertising_info* info = reinterpret_cast<const le_advertising_info*>(segment);
+        Update(*info);
+        segment += (sizeof(le_advertising_info) + info->length);
+    }
+}
+
 /* virtual */ uint16_t HCISocket::Deserialize(const uint8_t* dataFrame, const uint16_t availableData)
 {
+    CMD_DUMP("HCI event received", dataFrame, availableData);
+
     uint16_t result = 0;
     const hci_event_hdr* hdr = reinterpret_cast<const hci_event_hdr*>(&(dataFrame[1]));
-
-    // printf("GENERAL RECEIVED: ");
-    // for (uint16_t loop = 0; loop < availableData; loop++) { printf("%02X:", dataFrame[loop]); } printf("\n");
 
     if ( (availableData > sizeof(hci_event_hdr)) && (availableData > (sizeof(hci_event_hdr) + hdr->plen)) ) {
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&(dataFrame[1 + sizeof(hci_event_hdr)]));
 
         result = 1 + sizeof(hci_event_hdr) + hdr->plen;
 
-        if ( (hdr->evt != EVT_LE_META_EVENT) || (reinterpret_cast<const evt_le_meta_event*>(ptr)->subevent != EVT_LE_ADVERTISING_REPORT) ) {
+        // Deserialize scan response events
+        if ((hdr->evt == EVT_LE_META_EVENT) && (reinterpret_cast<const evt_le_meta_event*>(ptr)->subevent == EVT_LE_ADVERTISING_REPORT)) {
+            DeserializeScanResponse<le_advertising_info>(reinterpret_cast<const evt_le_meta_event*>(ptr)->data);
+        } else if (hdr->evt == EVT_INQUIRY_RESULT) {
+            DeserializeScanResponse<inquiry_info>(ptr);
+        } else if (hdr->evt == EVT_INQUIRY_RESULT_WITH_RSSI) {
+            DeserializeScanResponse<inquiry_info_with_rssi>(ptr);
+        } else if (hdr->evt == EVT_EXTENDED_INQUIRY_RESULT) {
+            DeserializeScanResponse<extended_inquiry_info>(ptr);
+        } else {
+            // All other events
             Update(*hdr);
-        }
-        else {
-            const uint8_t* segment = reinterpret_cast<const evt_le_meta_event*>(ptr)->data;
-            uint8_t entries = segment[0];
-            segment++;
-
-            for (uint8_t loop = 0; loop < entries; loop++) {
-                const le_advertising_info* info = reinterpret_cast<const le_advertising_info*>(segment);
-                Update (*info);
-                segment = &(segment[info->length + sizeof(le_advertising_info)]);
-            }
         }
     }
     else {
@@ -319,11 +332,19 @@ void HCISocket::Abort()
 {
 }
 
-/* virtual */ void HCISocket::Update(const le_advertising_info&)
+/* virtual */ void HCISocket::Update(const inquiry_info& eventData)
 {
 }
 
-/* virtual */ void HCISocket::Discovered(const bool lowEnergy, const Bluetooth::Address& address, const EIR& info)
+/* virtual */ void HCISocket::Update(const inquiry_info_with_rssi& eventData)
+{
+}
+
+/* virtual */ void HCISocket::Update(const extended_inquiry_info& eventData)
+{
+}
+
+/* virtual */ void HCISocket::Update(const le_advertising_info& eventData)
 {
 }
 
@@ -334,6 +355,10 @@ void EIR::Ingest(const uint8_t buffer[], const uint16_t bufferLength)
 
     while (((offset + buffer[offset]) <= bufferLength) && (buffer[offset+1] != 0)) {
         const uint8_t length = (buffer[offset] - 1);
+        if (length == 0) {
+            break;
+        }
+
         const uint8_t type = buffer[offset + 1];
         const uint8_t* const data = &buffer[offset + 2];
 
@@ -426,17 +451,16 @@ private:
             ::memcpy(stream, &(_buffer[_offset]), result);
             _offset += result;
 
-            // printf ("SEND: ");
-            // for (uint16_t loop = 0; loop < result; loop++) { printf("%02X:", stream[loop]); } printf("\n");
+            CMD_DUMP("MGMT sent", stream, result);
         }
         return (result);
     }
     virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t length) override
     {
+        CMD_DUMP("MGMT received", stream, length);
+
         uint16_t result = 0;
         if (length >= sizeof(mgmt_hdr)) {
-            // printf ("RECEIVED: ");
-            // for (uint16_t loop = 0; loop < length; loop++) { printf("%02X:", stream[loop]); } printf("\n");
 
             const mgmt_hdr* hdr = reinterpret_cast<const mgmt_hdr*>(stream);
             uint16_t opCode = btohs(hdr->opcode);
@@ -1064,9 +1088,7 @@ uint32_t ManagementSocket::Notifications(const bool enabled)
 
 /* virtual */ uint16_t ManagementSocket::Deserialize(const uint8_t* dataFrame, const uint16_t availableData)
 {
-    // uint16_t length = htobs(hdr->len);
-    // printf ("Header: %d, Len: %d, Available: %d\n", sizeof(mgmt_hdr), length, availableData);
-    // for (uint16_t loop = 0; loop < availableData; loop++) { printf("%02X:", dataFrame[loop]); } printf("\n");
+    CMD_DUMP("MGMT event received", dataFrame, availableData);
 
     if (availableData >= sizeof(mgmt_hdr)) {
         const mgmt_hdr* hdr = reinterpret_cast<const mgmt_hdr*>(dataFrame);
