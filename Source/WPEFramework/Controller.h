@@ -168,9 +168,9 @@ namespace Plugin {
         Controller& operator=(const Controller&);
 
     protected:
-        #ifdef __WINDOWS__
-        #pragma warning(disable : 4355)
-        #endif
+#ifdef __WINDOWS__
+#pragma warning(disable : 4355)
+#endif
         Controller()
             : _adminLock()
             , _skipURL(0)
@@ -184,9 +184,9 @@ namespace Plugin {
         {
             RegisterAll();
         }
-        #ifdef __WINDOWS__
-        #pragma warning(default : 4355)
-        #endif
+#ifdef __WINDOWS__
+#pragma warning(default : 4355)
+#endif
 
     public:
         virtual ~Controller()
@@ -194,10 +194,11 @@ namespace Plugin {
             UnregisterAll();
             SetServer(nullptr);
         }
-		inline void Notification(const PluginHost::Server::ForwardMessage& message) {
+        inline void Notification(const PluginHost::Server::ForwardMessage& message)
+        {
             Notify("all", message);
-		}
-           
+        }
+
         inline void SetServer(PluginHost::Server* pluginServer)
         {
             ASSERT((_pluginServer == nullptr) ^ (pluginServer == nullptr));
@@ -309,7 +310,7 @@ namespace Plugin {
         uint32_t endpoint_deactivate(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_startdiscovery(const JsonData::Controller::StartdiscoveryParamsData& params);
         uint32_t endpoint_storeconfig();
-        uint32_t endpoint_delete(const JsonData::Controller::DeleteParamsData& params);
+        uint32_t endpoint_delete(const JsonData::Controller::DeleteParamsData& params);;
         uint32_t endpoint_harakiri();
         uint32_t get_callstack(const string& index, Core::JSON::ArrayType<Core::JSON::String>& response) const;
         uint32_t get_status(const string& index, Core::JSON::ArrayType<PluginHost::MetaData::Service>& response) const;
@@ -320,6 +321,16 @@ namespace Plugin {
         uint32_t get_environment(const string& index, Core::JSON::String& response) const;
         uint32_t get_configuration(const string& index, Core::JSON::String& response) const;
         uint32_t set_configuration(const string& index, const Core::JSON::String& params);
+        uint32_t get_version(Core::JSON::String& response) const;
+        uint32_t set_version(const Core::JSON::String& params);
+        uint32_t get_prefix(Core::JSON::String& response) const;
+        uint32_t set_prefix(const Core::JSON::String& params);
+        uint32_t get_idletime(Core::JSON::DecUInt16& response) const;
+        uint32_t set_idletime(const Core::JSON::DecUInt16& params);
+        uint32_t get_latitude(Core::JSON::DecSInt32& response) const;
+        uint32_t set_latitude(const Core::JSON::DecSInt32& params);
+        uint32_t get_longitude(Core::JSON::DecSInt32& response) const;
+        uint32_t set_longitude(const Core::JSON::DecSInt32& params);
         void event_all(const string& callsign, const Core::JSON::String& data);
         void event_statechange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
 

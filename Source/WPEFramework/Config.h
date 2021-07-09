@@ -21,6 +21,7 @@
 
 #include "Module.h"
 
+
 namespace WPEFramework {
 
 namespace PluginHost {
@@ -518,7 +519,8 @@ namespace PluginHost {
             config.IElement::FromFile(file, error);
 
             if (error.IsSet() == false) {
-                _webPrefix = '/' + config.Prefix.Value();
+                _prefix = config.Prefix.Value();
+                _webPrefix = '/' + _prefix;
                 _JSONRPCPrefix = '/' + config.JSONRPC.Value();
 #ifdef PROCESSCONTAINERS_ENABLED
                 _ProcessContainersLogging = config.ProcessContainers.Logging.Value();
@@ -604,9 +606,19 @@ namespace PluginHost {
         }
 
     public:
+        inline const string& Prefix() const
+        {
+            return (_prefix);
+        }
+        inline void SetPrefix(const string& newValue) {
+            _prefix = newValue;
+        }
         inline const string& Version() const
         {
             return (_version);
+        }
+        inline void SetVersion(const string& newValue) {
+            _version = newValue;
         }
         inline const string& Model() const
         {
@@ -635,7 +647,7 @@ namespace PluginHost {
         inline const string& JSONRPCPrefix() const
         {
             return (_JSONRPCPrefix);
-        }
+        } 
 #ifdef PROCESSCONTAINERS_ENABLED
         inline const string& ProcessContainersLogging() const {
             return (_ProcessContainersLogging);
@@ -709,6 +721,9 @@ namespace PluginHost {
         inline uint16_t IdleTime() const {
             return (_idleTime);
         }
+        inline void SetIdleTime(const uint16_t& newValue)  {
+            _idleTime = newValue;
+        }
         inline const string& URL() const {
             return (_URL);
         }
@@ -718,8 +733,14 @@ namespace PluginHost {
         inline int32_t Latitude() const {
             return (_latitude);
         }
+        inline void SetLatitude(const int32_t& newValue){
+            _latitude = newValue;
+        }
         inline int32_t Longitude() const {
             return (_longitude);
+        }
+        inline void SetLongitude(const int32_t& newValue){
+            _longitude = newValue;
         }
         inline const InputInfo& Input() const {
             return(_inputInfo);
@@ -841,6 +862,7 @@ namespace PluginHost {
 
     private:
         const bool _background;
+        string _prefix; // store prefix to make it overridable
         string _webPrefix;
         string _JSONRPCPrefix;
         string _volatilePath;
