@@ -92,6 +92,10 @@ namespace Plugin {
             {
                 _decoupled->Schedule();
             }
+            void Unavailable(const string& callsign, PluginHost::IShell* plugin) override
+            {
+
+            }
             void Activated(const string& callsign, PluginHost::IShell* plugin) override
             {
                 _parent.Activated(callsign, plugin);
