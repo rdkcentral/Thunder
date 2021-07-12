@@ -72,7 +72,7 @@ namespace WarningReporting {
 
     WarningReportingUnit& WarningReportingUnit::Instance()
     {
-        return (Core::SingletonType<WarningReportingUnit>::Instance());
+        return Core::SingletonType<WarningReportingUnit>::Instance();
     }
 
     WarningReportingUnit::~WarningReportingUnit()
@@ -111,7 +111,7 @@ namespace WarningReporting {
             result = Open(doorBell, fileName);
         }
 
-        return (result);
+        return result;
     }
 
     uint32_t WarningReportingUnit::Open(const string& pathName)
@@ -126,23 +126,20 @@ namespace WarningReporting {
         Core::SystemInfo::SetEnvironment(WARNINGREPORTING_CYCLIC_BUFFER_FILENAME, fileName);
         Core::SystemInfo::SetEnvironment(WARNINGREPORTING_CYCLIC_BUFFER_DOORBELL, doorBell);
 
-        return (Open(doorBell, fileName));
+        return Open(doorBell, fileName);
     }
 
     uint32_t WarningReportingUnit::Close()
     {
         _adminLock.Lock();
 
-
-        if (_outputChannel != nullptr) {
-            delete _outputChannel;
-        }
+        _outputChannel.reset(nullptr);
 
         _outputChannel = nullptr;
 
         _adminLock.Unlock();
 
-        return (Core::ERROR_NONE);
+        return Core::ERROR_NONE;
     }
 
     void WarningReportingUnit::Announce(IWarningReportingUnit::IWarningReportingControl& category)
@@ -181,12 +178,11 @@ namespace WarningReporting {
         }
 
         serialized.ToString(result);
-        return (result);
+        return result;
     }
 
     void WarningReportingUnit::Defaults(const string& jsonCategories)
     {
-        std::cerr << "DEFAULTS: " << jsonCategories << std::endl;
         Core::JSON::ArrayType<Setting::JSON> serialized;
         Core::OptionalType<Core::JSON::Error> error;
         serialized.FromString(jsonCategories, error);

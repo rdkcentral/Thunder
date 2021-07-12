@@ -116,19 +116,19 @@ namespace WarningReporting {
         public:
             const string& Category() const
             {
-                return (_category);
+                return _category;
             }
             bool Enabled() const
             {
-                return (_enabled);
+                return _enabled;
             }
             const string& Excluded() const
             {
-                return (_excluded);
+                return _excluded;
             }
             const string& Configuration() const
             {
-                return (_categoryconfig);
+                return _categoryconfig;
             }
 
         private:
@@ -183,11 +183,11 @@ namespace WarningReporting {
             }
             inline uint32_t Wait(const uint32_t waitTime)
             {
-                return (_doorBell.Wait(waitTime));
+                return _doorBell.Wait(waitTime);
             }
             inline void Relinquish()
             {
-                return (_doorBell.Relinquish());
+                return _doorBell.Relinquish();
             }
 
         private:
@@ -221,13 +221,9 @@ namespace WarningReporting {
 
         void ReportWarningEvent(const char identifier[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information) override;
 
-        inline Core::CyclicBuffer* CyclicBuffer()
-        {
-            return (_outputChannel);
-        }
         inline bool HasDirectOutput() const
         {
-            return (_directOutput);
+            return _directOutput;
         }
         inline void DirectOutput(const bool enabled)
         {
@@ -249,7 +245,7 @@ namespace WarningReporting {
         {
             uint32_t status = Core::ERROR_UNAVAILABLE;
             if (_outputChannel != nullptr) {
-                status = (_outputChannel->Wait(waitTime));
+                status = _outputChannel->Wait(waitTime);
             }
             return status;
         }
@@ -267,18 +263,18 @@ namespace WarningReporting {
 
             ASSERT(_outputChannel == nullptr);
 
-            _outputChannel = new ReportingBuffer(doorBell, fileName);
+            _outputChannel.reset(new ReportingBuffer(doorBell, fileName));
 
             ASSERT(_outputChannel->IsValid() == true);
 
-            return (_outputChannel->IsValid() ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
+            return _outputChannel->IsValid() ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE;
 
         }
         void UpdateEnabledCategories(const Core::JSON::ArrayType<Setting::JSON>& info);
 
         ControlList _categories;
         mutable Core::CriticalSection _adminLock;
-        ReportingBuffer* _outputChannel;
+        std::unique_ptr<ReportingBuffer> _outputChannel;
         Settings _enabledCategories;
         bool _directOutput;
     };

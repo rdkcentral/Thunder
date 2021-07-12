@@ -34,7 +34,6 @@
 #include <vector>
 
 
-#define __CORE_WARNING_REPORTING__ asf
 #ifndef __CORE_WARNING_REPORTING__
 
 #define REPORT_WARNING(CATEGORY, ...)
@@ -414,7 +413,7 @@ namespace WarningReporting {
         public:
             inline bool IsEnabled() const
             {
-                return ((_enabled & 0x01) != 0);
+                return (_enabled & 0x01) != 0;
             }
             inline bool IsCallsignExcluded(const string& callsign)
             {
@@ -430,11 +429,11 @@ namespace WarningReporting {
             }
             const char* Category() const override
             {
-                return (_categoryName.c_str());
+                return _categoryName.c_str();
             }
             bool Enabled() const override
             {
-                return (IsEnabled());
+                return IsEnabled();
             }
             void Enabled(const bool enabled) override
             {
@@ -504,7 +503,7 @@ namespace WarningReporting {
         // No dereference etc.. 1 straight line to enabled or not... Quick method..
         inline static bool IsEnabled()
         {
-            return (s_control.IsEnabled());
+            return s_control.IsEnabled();
         }
 
         inline static void Enable(const bool status)
@@ -514,7 +513,7 @@ namespace WarningReporting {
 
         const char* Category() const override
         {
-            return (s_control.Category());
+            return s_control.Category();
         }
 
         uint16_t Serialize(uint8_t data[], const uint16_t size) const override
@@ -539,7 +538,7 @@ namespace WarningReporting {
 
         bool Enabled() const
         {
-            return (s_control.Enabled());
+            return s_control.Enabled();
         }
 
         void Enabled(const bool enabled)
