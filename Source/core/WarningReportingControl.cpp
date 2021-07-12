@@ -155,10 +155,10 @@ namespace WarningReporting {
             outSpecificConfig = boundsconfig.CategoryConfig.Value();
         }
 
+        //just let know, do not assert, maybe this is desired
         if (outReportingBound > outWarningBound) {
             TRACE_L1("WarningReporting report bound [%d] is greater than waning bound [%d]!", outReportingBound, outWarningBound);
         }
-        ASSERT(outReportingBound <= outWarningBound);
     }
 
     void WarningReportingUnitProxy::FillExcludedWarnings(const string& excludedJsonList, ExcludedWarnings& outExcludedWarnings) const
