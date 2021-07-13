@@ -71,7 +71,6 @@ namespace PluginHost
     /* static */ const TCHAR* Server::CommunicatorConnector = _T("COMMUNICATOR_CONNECTOR");
 
     static const TCHAR _defaultControllerCallsign[] = _T("Controller");
-    static const TCHAR _defaultDispatcherCallsign[] = _T("Dispatcher");
 
     class DefaultSecurity : public ISecurity {
     public:
@@ -310,7 +309,7 @@ namespace PluginHost
 
         if (currentState == IShell::ACTIVATION) {
             result = Core::ERROR_INPROGRESS;
-        } else if ((currentState == IShell::DEACTIVATION) || (currentState == IShell::DESTROYED)) {
+        } else if ((currentState == IShell::UNAVAILABLE) || (currentState == IShell::DEACTIVATION) || (currentState == IShell::DESTROYED)) {
             result = Core::ERROR_ILLEGAL_STATE;
         } else if ((currentState == IShell::DEACTIVATED) || (currentState == IShell::PRECONDITION)) {
 
@@ -429,11 +428,9 @@ namespace PluginHost
             result = Core::ERROR_INPROGRESS;
         } else if ((currentState == IShell::ACTIVATION) || (currentState == IShell::DESTROYED)) {
             result = Core::ERROR_ILLEGAL_STATE;
-        } else if ((currentState == IShell::ACTIVATED) || (currentState == IShell::PRECONDITION)) {
+        } else if ((currentState == IShell::UNAVAILABLE) || (currentState == IShell::ACTIVATED) || (currentState == IShell::PRECONDITION)) {
 
             const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
-
-            ASSERT(_handler != nullptr);
 
             const string className(PluginHost::Service::Configuration().ClassName.Value());
             const string callSign(PluginHost::Service::Configuration().Callsign.Value());
@@ -441,6 +438,8 @@ namespace PluginHost
             _reason = why;
 
             if (currentState == IShell::ACTIVATED) {
+                ASSERT(_handler != nullptr);
+
                 State(DEACTIVATION);
                 _administrator.StateChange(this);
 
@@ -486,15 +485,59 @@ namespace PluginHost
 #endif
 
             _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
-            if (State() != ACTIVATED) {
-                // We have no need for his module anymore..
-                ReleaseInterfaces();
-            }
+
+            ASSERT(State() != ACTIVATED);
+
+            // We have no need for his module anymore..
+            ReleaseInterfaces();
         }
 
         Unlock();
 
         return (result);
+    }
+
+    uint32_t Server::Service::Unavailable(const reason why) {
+        uint32_t result = Core::ERROR_NONE;
+
+        Lock();
+
+        IShell::state currentState(State());
+
+        if ((currentState == IShell::DEACTIVATION) || 
+            (currentState == IShell::ACTIVATION)   || 
+            (currentState == IShell::DESTROYED)    || 
+            (currentState == IShell::ACTIVATED)    ||
+            (currentState == IShell::PRECONDITION)) {
+            result = Core::ERROR_ILLEGAL_STATE;
+        }
+        else if (currentState == IShell::DEACTIVATED) {
+
+            const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
+
+            const string className(PluginHost::Service::Configuration().ClassName.Value());
+            const string callSign(PluginHost::Service::Configuration().Callsign.Value());
+
+            _reason = why;
+
+            SYSLOG(Logging::Shutdown, (_T("Unavailable plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
+
+            TRACE(Activity, (Core::Format(_T("Unavailable plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
+
+            State(UNAVAILABLE);
+            _administrator.StateChange(this);
+
+#if THUNDER_RESTFULL_API
+            _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"unavailable\",\"reason\":\"") + textReason.Data() + _T("\"}"));
+#endif
+
+            _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
+        }
+
+        Unlock();
+
+        return (result);
+
     }
 
     /* virtual */ uint32_t Server::Service::Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response)

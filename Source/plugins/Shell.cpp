@@ -24,6 +24,7 @@ namespace WPEFramework {
 
 ENUM_CONVERSION_BEGIN(PluginHost::IShell::state)
 
+    { PluginHost::IShell::UNAVAILABLE, _TXT("Unavailable") },
     { PluginHost::IShell::DEACTIVATED, _TXT("Deactivated") },
     { PluginHost::IShell::DEACTIVATION, _TXT("Deactivation") },
     { PluginHost::IShell::ACTIVATED, _TXT("Activated") },
