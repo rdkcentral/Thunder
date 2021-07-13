@@ -23,6 +23,15 @@
 #include "UUID.h"
 #include "BluetoothUtils.h"
 
+#define BLUETOOTH_CMD_DUMP
+
+#if defined(BLUETOOTH_CMD_DUMP)
+#define CMD_DUMP(descr, buffer, length) \
+    do { fprintf(stderr,"%s [%i]: ", descr, length); for (int i = 0; i < length; i++) { printf("%02x:", buffer[i]); } printf("\n"); } while(0)
+#else
+#define CMD_DUMP(descr, buffer, length)
+#endif
+
 namespace WPEFramework {
 
 namespace Bluetooth {
@@ -653,8 +662,8 @@ namespace Bluetooth {
                     ::memcpy(stream, &(_buffer[_offset]), result);
                     _offset += result;
 
-                    //printf("SEND: "); for (uint16_t loop = 0; loop < result; loop++) { printf("%02X:", stream[loop]); } printf("\n");
-                    //printf(_T("HCI command: %X:%03X\n"), cmd_opcode_ogf(OPCODE), cmd_opcode_ocf(OPCODE));
+                    CMD_DUMP("HCI sent", stream, result);
+                    // printf(_T("HCI command: %X:%03X\n"), cmd_opcode_ogf(OPCODE), cmd_opcode_ocf(OPCODE));
                 }
                 return (result);
             }
@@ -674,19 +683,18 @@ namespace Bluetooth {
             }
             virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t length) override
             {
+                CMD_DUMP("HCI received", stream, length);
+
                 uint16_t result = 0;
                 if (length >= (HCI_EVENT_HDR_SIZE + 1)) {
                     const hci_event_hdr* hdr = reinterpret_cast<const hci_event_hdr*>(&(stream[1]));
                     const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&(stream[1 + HCI_EVENT_HDR_SIZE]));
                     uint16_t len = (length - (1 + HCI_EVENT_HDR_SIZE));
 
-                    //printf("RECEIVE: "); for (uint16_t loop = 0; loop < length; loop++) { printf("%02X:", stream[loop]); } printf("\n");
-
                     if (hdr->evt == EVT_CMD_STATUS) {
                         const evt_cmd_status* cs = reinterpret_cast<const evt_cmd_status*>(ptr);
                         if (btohs(cs->opcode) == OPCODE) {
-                            //printf(_T("HCI command status: %X:%03X Status=%d\n"),
-                            //          cmd_opcode_ogf(cs->opcode), cmd_opcode_ocf(cs->opcode), cs->status);
+                            // printf(_T("HCI command status: %X:%03X Status=%d\n"), cmd_opcode_ogf(cs->opcode), cmd_opcode_ocf(cs->opcode), cs->status);
 
                             if (cs->status == 0) {
                                 // See if we are waiting for an event...
@@ -702,8 +710,7 @@ namespace Bluetooth {
                     } else if (hdr->evt == EVT_CMD_COMPLETE) {
                         const evt_cmd_complete* cc = reinterpret_cast<const evt_cmd_complete*>(ptr);
                         if (btohs(cc->opcode) == OPCODE) {
-                            //printf(_T("HCI command complete: %X:%03X %s\n"),
-                            //          cmd_opcode_ogf(cc->opcode), cmd_opcode_ocf(cc->opcode), len <= EVT_CMD_COMPLETE_SIZE? "FAILURE" : "");
+                            // printf(_T("HCI command complete: %X:%03X %s\n"), cmd_opcode_ogf(cc->opcode), cmd_opcode_ocf(cc->opcode), len <= EVT_CMD_COMPLETE_SIZE? "FAILURE" : "");
 
                             if (len <= EVT_CMD_COMPLETE_SIZE) {
                                 _error = ~0;
@@ -821,6 +828,12 @@ namespace Bluetooth {
         struct Command {
             using Void = char[0];
 
+            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_INQUIRY), inquiry_cp, uint8_t>
+                Inquiry;
+
+            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_INQUIRY_CANCEL), Void, uint8_t>
+                InquiryCancel;
+
             typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_CREATE_CONN), create_conn_cp, evt_conn_complete>
                 Connect;
 
@@ -927,7 +940,7 @@ namespace Bluetooth {
             return ((_state & DISCOVERING) != 0);
         }
         uint32_t Advertising(const bool enable, const uint8_t mode = 0);
-        void Scan(const uint16_t scanTime, const uint32_t type, const uint8_t flags);
+        void Scan(const uint16_t scanTime, const bool limited);
         void Scan(const uint16_t scanTime, const bool limited, const bool passive);
         void Abort();
         void Discovery(const bool enable);
@@ -968,9 +981,14 @@ namespace Bluetooth {
         }
 
     protected:
-        virtual void Update(const le_advertising_info& eventData);
         virtual void Update(const hci_event_hdr& eventData);
-        virtual void Discovered(const bool lowEnergy, const Bluetooth::Address& address, const Bluetooth::EIR& info);
+        virtual void Update(const inquiry_info& eventData);
+        virtual void Update(const inquiry_info_with_rssi& eventData);
+        virtual void Update(const extended_inquiry_info& eventData);
+        virtual void Update(const le_advertising_info& eventData);
+
+    private:
+        template<typename EVENT> void DeserializeScanResponse(const uint8_t* ptr);
 
     private:
         virtual void StateChange() override;
