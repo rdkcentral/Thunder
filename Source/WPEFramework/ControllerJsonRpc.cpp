@@ -35,6 +35,7 @@ namespace Plugin {
     {
         Register<ActivateParamsInfo,void>(_T("activate"), &Controller::endpoint_activate, this);
         Register<ActivateParamsInfo,void>(_T("deactivate"), &Controller::endpoint_deactivate, this);
+        Register<ActivateParamsInfo,void>(_T("unavailable"), &Controller::endpoint_unavailable, this);
         Register<ActivateParamsInfo,void>(_T("suspend"), &Controller::endpoint_suspend, this);
         Register<ActivateParamsInfo,void>(_T("resume"), &Controller::endpoint_resume, this);
         Register<StartdiscoveryParamsData,void>(_T("startdiscovery"), &Controller::endpoint_startdiscovery, this);
@@ -61,6 +62,7 @@ namespace Plugin {
         Unregister(_T("startdiscovery"));
         Unregister(_T("suspend"));
         Unregister(_T("resume"));
+        Unregister(_T("unavailable"));
         Unregister(_T("deactivate"));
         Unregister(_T("activate"));
         Unregister(_T("configuration"));
@@ -153,7 +155,44 @@ namespace Plugin {
         return result;
     }
 
-    // Method: activate - Resume a plugin
+    // Method: unavailable- Mark the plugin as unavailable
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_UNKNOWN_KEY: The plugin does not exist
+    //  - ERROR_ILLEGAL_STATE: Current state of the plugin does not allow deactivation
+    //  - ERROR_CLOSING_FAILED: Failed to activate the plugin
+    //  - ERROR_PRIVILEGED_REQUEST: Deactivation of the plugin is not allowed (e.g. Controller)
+    uint32_t Controller::endpoint_unavailable(const ActivateParamsInfo& params)
+    {
+        uint32_t result = Core::ERROR_OPENING_FAILED;
+        const string& callsign = params.Callsign.Value();
+
+        ASSERT(_pluginServer != nullptr);
+
+        if (callsign != Callsign()) {
+            Core::ProxyType<PluginHost::Server::Service> service;
+
+            if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
+                ASSERT(service.IsValid());
+                result = service->Unavailable(PluginHost::IShell::REQUESTED);
+
+                // Normalise return code
+                if ((result != Core::ERROR_NONE) && (result != Core::ERROR_ILLEGAL_STATE) && (result !=  Core::ERROR_INPROGRESS)) {
+                    result = Core::ERROR_CLOSING_FAILED;
+                }
+            }
+            else {
+                result = Core::ERROR_UNKNOWN_KEY;
+            }
+        }
+        else {
+            result = Core::ERROR_PRIVILIGED_REQUEST;
+        }
+
+        return result;
+    }
+
+    // Method: resume - Resume a plugin
     // Return codes:
     //  - ERROR_NONE: Success
     //  - ERROR_PENDING_CONDITIONS: The plugin will be activated once its activation preconditions are met
@@ -225,6 +264,32 @@ namespace Plugin {
         }
         else {
             result = Core::ERROR_PRIVILIGED_REQUEST;
+        }
+
+        return result;
+    }
+
+    // Property: callstack - Information the callstack associated with the given index 0 - <Max number of threads in the threadpool>
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_UNKNOWN_KEY: The index (uint8_t) is not supplied
+    uint32_t Controller::get_callstack(const string& index, Core::JSON::ArrayType<Core::JSON::String>& response) const
+    {
+        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+
+        if (index.empty() == true) {
+            uint8_t indexValue = Core::NumberType<uint8_t>(Core::TextFragment(index)).Value();
+
+            result = Core::ERROR_NONE;
+            std::list<string> stackList;
+
+            ThreadId threadId = _pluginServer->WorkerPool().Id(indexValue);
+
+            DumpCallStack(threadId, stackList);
+
+            for (const string& entry : stackList) {
+                response.Add() = entry;
+            }
         }
 
         return result;
@@ -519,32 +584,6 @@ namespace Plugin {
         params.Reason = reason;
 
         Notify(_T("statechange"), params);
-    }
-
-    // Property: callstack - Information the callstack associated with the given index 0 - <Max number of threads in the threadpool>
-    // Return codes:
-    //  - ERROR_NONE: Success
-    //  - ERROR_UNKNOWN_KEY: The index (uint8_t) is not supplied
-    uint32_t Controller::get_callstack(const string& index, Core::JSON::ArrayType<Core::JSON::String>& response) const
-    {
-        uint32_t result = Core::ERROR_UNKNOWN_KEY;
-
-        if (index.empty() == true) {
-            uint8_t indexValue = Core::NumberType<uint8_t>(Core::TextFragment(index)).Value();
-
-            result = Core::ERROR_NONE;
-            std::list<string> stackList;
-
-            ThreadId threadId = _pluginServer->WorkerPool().Id(indexValue);
-
-            DumpCallStack(threadId, stackList);
-
-            for (const string& entry : stackList) {
-                response.Add() = entry;
-            }
-        }
-
-        return result;
     }
 
     // Note: event_all and event_subsytemchange are handled internally within the Controller

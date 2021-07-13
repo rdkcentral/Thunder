@@ -19,8 +19,6 @@
 
 #include "BluetoothUtils.h"
 
-#define BDADDR_ANY (&(bdaddr_t){ { 0, 0, 0, 0, 0, 0 } })
-
 namespace WPEFramework {
 
 namespace Bluetooth {
