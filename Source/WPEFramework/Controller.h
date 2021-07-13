@@ -307,6 +307,8 @@ namespace Plugin {
 
         void RegisterAll();
         void UnregisterAll();
+        uint32_t endpoint_suspend(const JsonData::Controller::ActivateParamsInfo& params);
+        uint32_t endpoint_resume(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_activate(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_clone(const JsonData::Controller::CloneParamsInfo& params, Core::JSON::String& response);
         uint32_t endpoint_deactivate(const JsonData::Controller::ActivateParamsInfo& params);
@@ -315,6 +317,7 @@ namespace Plugin {
         uint32_t endpoint_storeconfig();
         uint32_t endpoint_delete(const JsonData::Controller::DeleteParamsData& params);
         uint32_t endpoint_harakiri();
+        uint32_t get_callstack(const string& index, Core::JSON::ArrayType<Core::JSON::String>& response) const;
         uint32_t get_status(const string& index, Core::JSON::ArrayType<PluginHost::MetaData::Service>& response) const;
         uint32_t get_links(Core::JSON::ArrayType<PluginHost::MetaData::Channel>& response) const;
         uint32_t get_processinfo(PluginHost::MetaData::Server& response) const;
