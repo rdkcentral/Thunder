@@ -515,8 +515,6 @@ namespace PluginHost
 
             State(why == CONDITIONS? PRECONDITION : DEACTIVATED);
 
-            _administrator.Deactivated(callSign, this);
-
 #if THUNDER_RESTFULL_API
             _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
 #endif
