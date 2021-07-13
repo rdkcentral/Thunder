@@ -512,6 +512,10 @@ namespace Plugin {
         event_statechange(callsign, PluginHost::IShell::DEACTIVATED, plugin->Reason());
     }
 
+    void Controller::Unavailable(const string& callsign, PluginHost::IShell* plugin)
+    {
+        event_statechange(callsign, PluginHost::IShell::UNAVAILABLE, plugin->Reason());
+    }
 
     void Controller::SubSystems()
     {

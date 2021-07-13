@@ -28,6 +28,8 @@
 namespace WPEFramework {
 namespace Plugin {
 
+    using JSONCallstack =  Web::JSONBodyType < Core::JSON::ArrayType < Core::JSON::String > >;
+
     class Controller : public PluginHost::IPlugin, public PluginHost::IWeb, public PluginHost::JSONRPC {
     private:
         class Sink : public PluginHost::IPlugin::INotification,
@@ -86,13 +88,21 @@ namespace Plugin {
             }
 
         private:
-            virtual void Updated() override
+            void Updated() override
             {
                 _decoupled->Schedule();
             }
-            virtual void StateChange(PluginHost::IShell* plugin) override
+            void Activated(const string& callsign, PluginHost::IShell* plugin) override
             {
-                _parent.StateChange(plugin);
+                _parent.Activated(callsign, plugin);
+            }
+            void Deactivated(const string& callsign, PluginHost::IShell* plugin) override
+            {
+                _parent.Deactivated(callsign, plugin);
+            }
+            void Unavailable(const string& callsign, PluginHost::IShell* plugin) override
+            {
+                _parent.Unavailable(callsign, plugin);
             }
 
             BEGIN_INTERFACE_MAP(Sink)
@@ -291,7 +301,9 @@ namespace Plugin {
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;
         Core::ProxyType<Web::Response> PutMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
-        void StateChange(PluginHost::IShell* plugin);
+        void Activated(const string& callsign, PluginHost::IShell* plugin);
+        void Deactivated(const string& callsign, PluginHost::IShell* plugin);
+        void Unavailable(const string& callsign, PluginHost::IShell* plugin);
 
         void RegisterAll();
         void UnregisterAll();

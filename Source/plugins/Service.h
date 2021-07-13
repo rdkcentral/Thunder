@@ -17,8 +17,7 @@
  * limitations under the License.
  */
 
-#ifndef __WEBBRIDGESUPPORT_SERVICE__
-#define __WEBBRIDGESUPPORT_SERVICE__
+#pragma once
 
 #include "Module.h"
 #include "Channel.h"
@@ -32,21 +31,13 @@ namespace WPEFramework {
 namespace PluginHost {
 
     class EXTERNAL Service : public IShell {
-        // This object is created by the instance that instantiates the plugins. As the lifetime
-        // of this object is controlled by the server, instantiating this object, do not allow
-        // this obnject to be copied or created by any other instance.
     private:
-        Service() = delete;
-        Service(const Service&) = delete;
-        Service& operator=(const Service&) = delete;
-
         class EXTERNAL Config {
-        private:
+        public:
             Config() = delete;
             Config(const Config&) = delete;
             Config& operator=(const Config&) = delete;
 
-        public:
             Config(const Plugin::Config& plugin, const string& webPrefix, const string& persistentPath, const string& dataPath, const string& volatilePath)
             {
                 const string& callSign(plugin.Callsign.Value());
@@ -148,120 +139,96 @@ namespace PluginHost {
         };
 
     public:
+        // This object is created by the instance that instantiates the plugins. As the lifetime
+        // of this object is controlled by the server, instantiating this object, do not allow
+        // this obnject to be copied or created by any other instance.
+        Service() = delete;
+        Service(const Service&) = delete;
+        Service& operator=(const Service&) = delete;
+
         Service(const Plugin::Config& plugin, const string& webPrefix, const string& persistentPath, const string& dataPath, const string& volatilePath)
             : _adminLock()
-#if THUNDER_RUNTIME_STATISTICS
+            #if THUNDER_RUNTIME_STATISTICS
             , _processedRequests(0)
             , _processedObjects(0)
-#endif
+            #endif
             , _state(DEACTIVATED)
             , _config(plugin, webPrefix, persistentPath, dataPath, volatilePath)
-#if THUNDER_RESTFULL_API
+            #if THUNDER_RESTFULL_API
             , _notifiers()
-#endif
+            #endif
         {
+            if ( (plugin.Startup.IsSet() == true) && (plugin.Startup.Value() == Plugin::Config::UNAVAILABLE) ) {
+                _state = UNAVAILABLE;
+            }
         }
-        ~Service()
-        {
-        }
+        ~Service() override = default;
 
     public:
-        bool IsWebServerRequest(const string& segment) const;
-
-#if THUNDER_RESTFULL_API
-        void Notification(const string& message);
-#endif
-        virtual string Versions() const
+        string Versions() const override
         {
             return (_config.Configuration().Versions.Value());
         }
-        virtual uint32_t StartupOrder() const
-        {
-            return (_config.Configuration().StartupOrder.Value());
-        }
-        virtual string Locator() const
+        string Locator() const override
         {
             return (_config.Configuration().Locator.Value());
         }
-        virtual string ClassName() const
+        string ClassName() const override
         {
             return (_config.Configuration().ClassName.Value());
         }
-        virtual string Callsign() const
+        string Callsign() const override
         {
             return (_config.Configuration().Callsign.Value());
         }
-        virtual string WebPrefix() const
+        string WebPrefix() const override
         {
             return (_config.WebPrefix());
         }
-        virtual string ConfigLine() const
+        string ConfigLine() const override
         {
             return (_config.Configuration().Configuration.Value());
         }
-        virtual string PersistentPath() const
+        string PersistentPath() const override
         {
             return (_config.PersistentPath());
         }
-        virtual string VolatilePath() const
+        string VolatilePath() const override
         {
             return (_config.VolatilePath());
         }
-        virtual string DataPath() const
+        string DataPath() const override
         {
             return (_config.DataPath());
         }
-        virtual state State() const
+        state State() const override
         {
             return (_state);
         }
-        virtual bool AutoStart() const
+        bool AutoStart() const override
         {
-            return (_config.Configuration().AutoStart.Value());
+            bool result = _config.Configuration().AutoStart.Value();
+
+            if (_config.Configuration().Startup.IsSet() == true) {
+                Plugin::Config::startup value = _config.Configuration().Startup.Value();
+                result = (value == Plugin::Config::startup::SUSPENDED) || (value == Plugin::Config::startup::RESUMED);
+            }
+
+            return (result);
         }
-        virtual bool Resumed() const
+        bool Resumed() const override
         {
-            return (_config.Configuration().Resumed.IsSet() ? _config.Configuration().Resumed.Value() : (_config.Configuration().AutoStart.Value() == false));
+            bool result = (_config.Configuration().Resumed.IsSet() ? _config.Configuration().Resumed.Value() : (_config.Configuration().AutoStart.Value() == false));
+
+            if (_config.Configuration().Startup.IsSet() == true) {
+                result = (_config.Configuration().Startup.Value() == Plugin::Config::startup::RESUMED);
+            }
+
+            return (result);
         }
-        virtual bool IsSupported(const uint8_t number) const
+        bool IsSupported(const uint8_t number) const override
         {
             return (_config.IsSupported(number));
-        }
-        inline const Plugin::Config& Configuration() const
-        {
-            return (_config.Configuration());
-        }
-        inline bool IsActive() const
-        {
-            return (_state == ACTIVATED);
-        }
-        inline bool HasError() const
-        {
-            return (_errorMessage.empty() == false);
-        }
-        inline const string& ErrorMessage() const
-        {
-            return (_errorMessage);
-        }
-        inline void GetMetaData(MetaData::Service& metaData) const
-        {
-            metaData = _config.Configuration();
-#if THUNDER_RESTFULL_API
-            metaData.Observers = static_cast<uint32_t>(_notifiers.size());
-#endif
-            // When we do this, we need to make sure that the Service does not change state, otherwise it might
-            // be that the the plugin is deinitializing and the IStateControl becomes invalid during our run.
-            // Now we can first check if
-            Lock();
-
-            metaData.JSONState = this;
-
-            Unlock();
-
-#if THUNDER_RUNTIME_STATISTICS
-            metaData.ProcessedRequests = _processedRequests;
-            metaData.ProcessedObjects = _processedObjects;
-#endif
         }
 
         // As a service, the plugin could act like a WebService. The Webservice hosts files from a location over the
@@ -269,7 +236,7 @@ namespace PluginHost {
         // http://<bridge host ip>:<bridge port>/Service/<Callsign>/<PostFixURL>/....
         // Root directory of the files to be services by the URL are in case the passed in value is empty:
         // <DataPath>/<PostFixYRL>
-        virtual void EnableWebServer(const string& postFixURL, const string& fileRootPath)
+        void EnableWebServer(const string& postFixURL, const string& fileRootPath) override
         {
             // The postFixURL should *NOT* contain a starting or trailing slash!!!
             ASSERT((postFixURL.length() > 0) && (postFixURL[0] != '/') && (postFixURL[postFixURL.length() - 1] != '/'));
@@ -287,28 +254,54 @@ namespace PluginHost {
                 _webServerFilePath = fileRootPath;
             }
         }
-        virtual void DisableWebServer()
+        void DisableWebServer() override
         {
             // We signal the request to ervice web files via a non-empty _webServerFilePath.
             _webServerFilePath.clear();
             _webURLPath.clear();
         }
-        virtual Core::ProxyType<Core::JSON::IElement> Inbound(const string& identifier) = 0;
 
-        virtual void Notify(const string& message) = 0;
-        virtual void* QueryInterface(const uint32_t id) = 0;
-        virtual void* QueryInterfaceByCallsign(const uint32_t id, const string& name) = 0;
-        virtual void Register(IPlugin::INotification* sink) = 0;
-        virtual void Unregister(IPlugin::INotification* sink) = 0;
+        inline const Plugin::Config& Configuration() const
+        {
+            return (_config.Configuration());
+        }
+        uint32_t StartupOrder() const
+        {
+            return (_config.Configuration().StartupOrder.Value());
+        }
+        inline bool IsActive() const
+        {
+            return (_state == ACTIVATED);
+        }
+        inline bool HasError() const
+        {
+            return (_errorMessage.empty() == false);
+        }
+        inline const string& ErrorMessage() const
+        {
+            return (_errorMessage);
+        }
+        inline void GetMetaData(MetaData::Service& metaData) const
+        {
+            metaData = _config.Configuration();
+            #if THUNDER_RESTFULL_API
+            metaData.Observers = static_cast<uint32_t>(_notifiers.size());
+            #endif
 
-        // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
-        virtual ICOMLink* COMLink() = 0;
+            // When we do this, we need to make sure that the Service does not change state, otherwise it might
+            // be that the the plugin is deinitializing and the IStateControl becomes invalid during our run.
+            // Now we can first check if
+            Lock();
 
-        // Methods to Activate and Deactivate the aggregated Plugin to this shell.
-        // These are Blocking calls!!!!!
-        virtual uint32_t Activate(const PluginHost::IShell::reason) = 0;
-        virtual uint32_t Deactivate(const PluginHost::IShell::reason) = 0;
+            metaData.JSONState = this;
 
+            Unlock();
+
+            #if THUNDER_RUNTIME_STATISTICS
+            metaData.ProcessedRequests = _processedRequests;
+            metaData.ProcessedObjects = _processedObjects;
+            #endif
+        }
         inline uint32_t ConfigLine(const string& newConfiguration)
         {
             uint32_t result = Core::ERROR_ILLEGAL_STATE;
@@ -346,6 +339,14 @@ namespace PluginHost {
             return (result);
         }
 
+        bool IsWebServerRequest(const string& segment) const;
+
+        #if THUNDER_RESTFULL_API
+        void Notification(const string& message);
+        #endif
+ 
+        virtual Core::ProxyType<Core::JSON::IElement> Inbound(const string& identifier) = 0;
+
     protected:
         inline void Lock() const
         {
@@ -363,7 +364,7 @@ namespace PluginHost {
         {
             _errorMessage = message;
         }
-#if THUNDER_RESTFULL_API
+        #if THUNDER_RESTFULL_API
         inline bool Subscribe(Channel& channel)
         {
             _notifierLock.Lock();
@@ -393,8 +394,8 @@ namespace PluginHost {
 
             _notifierLock.Unlock();
         }
-#endif
-#if THUNDER_RUNTIME_STATISTICS
+        #endif
+        #if THUNDER_RUNTIME_STATISTICS
         inline void IncrementProcessedRequests()
         {
             _processedRequests++;
@@ -403,19 +404,21 @@ namespace PluginHost {
         {
             _processedObjects++;
         }
-#endif
+        #endif
+
         void FileToServe(const string& webServiceRequest, Web::Response& response);
 
     private:
         mutable Core::CriticalSection _adminLock;
-#if THUNDER_RESTFULL_API
-        Core::CriticalSection _notifierLock;
-#endif
 
-#if THUNDER_RUNTIME_STATISTICS
+        #if THUNDER_RESTFULL_API
+        Core::CriticalSection _notifierLock;
+        #endif
+
+        #if THUNDER_RUNTIME_STATISTICS
         uint32_t _processedRequests;
         uint32_t _processedObjects;
-#endif
+        #endif
 
         state _state;
         Config _config;
@@ -426,12 +429,10 @@ namespace PluginHost {
         string _webURLPath;
         string _webServerFilePath;
 
-#if THUNDER_RESTFULL_API
+        #if THUNDER_RESTFULL_API
         // Keep track of people who want to be notified of changes.
         std::list<Channel*> _notifiers;
-#endif
+        #endif
     };
 }
 }
-
-#endif // __WEBBRIDGESUPPORT_SERVICE__

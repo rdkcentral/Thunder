@@ -1662,10 +1662,8 @@ namespace PluginHost {
             {
                 return (reinterpret_cast<ISubSystem*>(_subSystems.QueryInterface(ISubSystem::ID)));
             }
-            void Activated(PluginHost::IShell* entry)
+            void Activated(const string& callsign, PluginHost::IShell* entry)
             {
-                string callsign = entry->Callsign();
-
                 _notificationLock.Lock();
 
                 std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
@@ -1678,10 +1676,8 @@ namespace PluginHost {
                 _notificationLock.Unlock();
             }
 
-            void Deactivated(PluginHost::IShell* entry)
+            void Deactivated(const string& callsign, PluginHost::IShell* entry)
             {
-                string callsign = entry->Callsign();
-
                 _notificationLock.Lock();
 
                 std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
@@ -1694,10 +1690,8 @@ namespace PluginHost {
                 _notificationLock.Unlock();
             }
 
-            void Unavailable(PluginHost::IShell* entry)
+            void Unavailable(const string& callsign, PluginHost::IShell* entry)
             {
-                string callsign = entry->Callsign();
-
                 _notificationLock.Lock();
 
                 std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);

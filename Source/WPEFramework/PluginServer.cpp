@@ -358,7 +358,6 @@ namespace PluginHost
             } else {
 
                 State(ACTIVATION);
-                _administrator.StateChange(this);
 
                 Unlock();
 
@@ -374,7 +373,6 @@ namespace PluginHost
                     Lock();
                     ReleaseInterfaces();
                     State(DEACTIVATED);
-                    _administrator.StateChange(this);
                 } else {
                     const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
                     const string webUI(PluginHost::Service::Configuration().WebUI.Value());
@@ -392,7 +390,7 @@ namespace PluginHost
                     SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
                     Lock();
                     State(ACTIVATED);
-                    _administrator.StateChange(this);
+                    _administrator.Activated(callSign, this);
 
 #if THUNDER_RESTFULL_API
                     _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
@@ -441,7 +439,7 @@ namespace PluginHost
                 ASSERT(_handler != nullptr);
 
                 State(DEACTIVATION);
-                _administrator.StateChange(this);
+                _administrator.Deactivated(callSign, this);
 
                 Unlock();
 
@@ -478,7 +476,7 @@ namespace PluginHost
 
             State(why == CONDITIONS? PRECONDITION : DEACTIVATED);
 
-            _administrator.StateChange(this);
+            _administrator.Deactivated(callSign, this);
 
 #if THUNDER_RESTFULL_API
             _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
@@ -525,7 +523,7 @@ namespace PluginHost
             TRACE(Activity, (Core::Format(_T("Unavailable plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
 
             State(UNAVAILABLE);
-            _administrator.StateChange(this);
+            _administrator.Unavailable(callSign, this);
 
 #if THUNDER_RESTFULL_API
             _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"unavailable\",\"reason\":\"") + textReason.Data() + _T("\"}"));
@@ -640,7 +638,7 @@ namespace PluginHost
         : _dispatcher(configuration.StackSize())
         , _connections(*this, configuration.Binder(), configuration.IdleTime())
         , _config(configuration)
-        , _services(*this, _config, configuration.StackSize())
+        , _services(*this, _config)
         , _controller()
         , _factoriesImplementation()
     {
