@@ -1,4 +1,4 @@
-/*
+ /*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -27,8 +27,6 @@
 
 namespace WPEFramework {
 namespace Plugin {
-
-    using JSONCallstack =  Web::JSONBodyType < Core::JSON::ArrayType < Core::JSON::String > >;
 
     class Controller : public PluginHost::IPlugin, public PluginHost::IWeb, public PluginHost::JSONRPC {
     private:
@@ -88,21 +86,13 @@ namespace Plugin {
             }
 
         private:
-            void Updated() override
+            virtual void Updated() override
             {
                 _decoupled->Schedule();
             }
-            void Unavailable(const string& callsign, PluginHost::IShell* plugin) override
+            virtual void StateChange(PluginHost::IShell* plugin) override
             {
-
-            }
-            void Activated(const string& callsign, PluginHost::IShell* plugin) override
-            {
-                _parent.Activated(callsign, plugin);
-            }
-            void Deactivated(const string& callsign, PluginHost::IShell* plugin) override
-            {
-                _parent.Deactivated(callsign, plugin);
+                _parent.StateChange(plugin);
             }
 
             BEGIN_INTERFACE_MAP(Sink)
@@ -282,8 +272,8 @@ namespace Plugin {
 
             return (service);
         }
-	void WorkerPoolMetaData(PluginHost::MetaData::Server& data) const
-	{
+		void WorkerPoolMetaData(PluginHost::MetaData::Server& data) const
+		{
             const Core::WorkerPool::Metadata& snapshot = Core::WorkerPool::Instance().Snapshot();
 
             data.PendingRequests = snapshot.Pending;
@@ -295,27 +285,24 @@ namespace Plugin {
                 newElement = snapshot.Slot[teller];
                 data.ThreadPoolRuns.Add(newElement);
             }
-	}
+		}
         void SubSystems();
         void SubSystems(Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator& index);
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;
         Core::ProxyType<Web::Response> PutMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
-        void Activated(const string& callsign, PluginHost::IShell* plugin);
-        void Deactivated(const string& callsign, PluginHost::IShell* plugin);
+        void StateChange(PluginHost::IShell* plugin);
 
         void RegisterAll();
         void UnregisterAll();
-        uint32_t endpoint_suspend(const JsonData::Controller::ActivateParamsInfo& params);
-        uint32_t endpoint_resume(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_activate(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_clone(const JsonData::Controller::CloneParamsInfo& params, Core::JSON::String& response);
         uint32_t endpoint_deactivate(const JsonData::Controller::ActivateParamsInfo& params);
+        uint32_t endpoint_unavailable(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_startdiscovery(const JsonData::Controller::StartdiscoveryParamsData& params);
         uint32_t endpoint_storeconfig();
         uint32_t endpoint_delete(const JsonData::Controller::DeleteParamsData& params);
         uint32_t endpoint_harakiri();
-        uint32_t get_callstack(const string& index, Core::JSON::ArrayType<Core::JSON::String>& response) const;
         uint32_t get_status(const string& index, Core::JSON::ArrayType<PluginHost::MetaData::Service>& response) const;
         uint32_t get_links(Core::JSON::ArrayType<PluginHost::MetaData::Channel>& response) const;
         uint32_t get_processinfo(PluginHost::MetaData::Server& response) const;

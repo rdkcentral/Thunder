@@ -373,6 +373,29 @@ namespace Plugin {
                         }
                     }
                 }
+            } else if (index.Current() == _T("Unavailable")) {
+                if (index.Next()) {
+                    const string callSign(index.Current().Text());
+                    if (callSign == _service->Callsign()) {
+                        result->ErrorCode = Web::STATUS_FORBIDDEN;
+                        result->Message = _T("The PluginHost Controller can not set Unavailable.");
+                    } else {
+                        Core::ProxyType<PluginHost::Server::Service> pluginInfo(FromIdentifier(callSign));
+
+                        if (pluginInfo.IsValid()) {
+                            if (pluginInfo->State() == PluginHost::IShell::DEACTIVATED) {
+                                // Mark the plugin as unavailable.
+                                if (pluginInfo->Unavailable(PluginHost::IShell::REQUESTED) != Core::ERROR_NONE) {
+                                    result->ErrorCode = Web::STATUS_NOT_MODIFIED;
+                                    result->Message = _T("Marking the plugin as Unavailble failed.");
+                                }
+                            }
+                        } else {
+                            result->ErrorCode = Web::STATUS_NOT_FOUND;
+                            result->Message = _T("There is no callsign: ") + callSign;
+                        }
+                    }
+                }
             } else if (index.Current() == _T("Configuration")) {
                 if ((index.Next() == true) && (request.HasBody() == true)) {
 
