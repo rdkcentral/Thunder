@@ -1671,22 +1671,6 @@ namespace PluginHost {
 
                 _notificationLock.Unlock();
             }
-
-            void Unavailable(PluginHost::IShell* entry)
-            {
-                string callsign = entry->Callsign();
-
-                _notificationLock.Lock();
-
-                std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
-
-                while (currentlist.size()) {
-                    currentlist.front()->Unavailable(callsign, entry);
-                    currentlist.pop_front();
-                }
-
-                _notificationLock.Unlock();
-            }
             void Register(PluginHost::IPlugin::INotification* sink)
             {
                 _notificationLock.Lock();

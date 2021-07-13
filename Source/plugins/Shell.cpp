@@ -19,6 +19,7 @@
 
 #include "Module.h"
 #include "IShell.h"
+#include "Configuration.h"
 
 namespace WPEFramework {
 
@@ -46,6 +47,16 @@ ENUM_CONVERSION_BEGIN(PluginHost::IShell::reason)
     { PluginHost::IShell::WATCHDOG_EXPIRED, _TXT("WatchdogExpired") },
 
 ENUM_CONVERSION_END(PluginHost::IShell::reason)
+
+ENUM_CONVERSION_BEGIN(Plugin::Config::startup)
+
+    { Plugin::Config::startup::UNAVAILABLE, _TXT("Unavailable") },
+    { Plugin::Config::startup::DEACTIVATED, _TXT("Deactivated") },
+    { Plugin::Config::startup::SUSPENDED,   _TXT("Suspended")   },
+    { Plugin::Config::startup::RESUMED,     _TXT("Resumed")     },
+    { Plugin::Config::startup::RESUMED,     _TXT("Activated")   },
+
+ENUM_CONVERSION_END(Plugin::Config::startup)
 
 namespace PluginHost
 {
