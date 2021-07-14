@@ -9,17 +9,17 @@
             "name": "Local Debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${env:HOME}/Thunder/install/usr/bin/WPEFramework",
+            "program": "${config:thunder.installPath}/usr/bin/WPEFramework",
             "args": [
-                "-c${env:HOME}/Thunder/install/etc/WPEFramework/config.json"
+                "-c${config:thunder.installPath}/etc/WPEFramework/config.json"
              ],
             "stopAtEntry": false,
-            "cwd": "${env:HOME}/Thunder/install",
+            "cwd": "${config:thunder.installPath}",
             "environment": [
-                { "name": "LD_LIBRARY_PATH", "value": "${env:HOME}/Thunder/install/usr/lib" },
-                { "name": "PATH", "value": "${env:HOME}/Thunder/install/usr/bin"},
+                { "name": "LD_LIBRARY_PATH", "value": "${config:thunder.installPath}/usr/lib" },
+                { "name": "PATH", "value": "${config:thunder.installPath}/usr/bin"},
             ],
-            "additionalSOLibSearchPath": "${env:HOME}/Thunder/install/usr/lib;/usr/local/lib;/usr/lib;/lib",
+            "additionalSOLibSearchPath": "${config:thunder.installPath}/usr/lib;/usr/local/lib;/usr/lib;/lib",
             "logging": {
                 "moduleLoad": false,
                 "trace": true
