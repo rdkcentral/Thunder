@@ -40,6 +40,7 @@ namespace PluginHost {
 
         public:
             enum state {
+                UNAVAILABLE = PluginHost::IShell::UNAVAILABLE,
                 DEACTIVATED = PluginHost::IShell::DEACTIVATED,
                 DEACTIVATION = PluginHost::IShell::DEACTIVATION,
                 ACTIVATED = PluginHost::IShell::ACTIVATED,
