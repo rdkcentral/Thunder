@@ -27,6 +27,7 @@
 #include <cryptalgo/cryptalgo.h>
 #include <plugins/plugins.h>
 #include <tracing/tracing.h>
+#include <warningreporting/warningreporting.h>
 #include <websocket/websocket.h>
 
 #ifndef TREE_REFERENCE
