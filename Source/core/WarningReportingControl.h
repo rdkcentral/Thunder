@@ -34,6 +34,7 @@
 #include <vector>
 
 
+#define __CORE_WARNING_REPORTING__ asss
 #ifndef __CORE_WARNING_REPORTING__
 
 #define REPORT_WARNING(CATEGORY, ...)
@@ -340,7 +341,7 @@ namespace WarningReporting {
         inline bool Analyze(const char modulename[], const char identifier[], Args&&... args)
         {
             bool result = false;
-            if (!s_control.IsCallsignExcluded(identifier) && !s_control.IsModuleExcluded(modulename)) {
+            if (!_sWarningControl.IsCallsignExcluded(identifier) && !_sWarningControl.IsModuleExcluded(modulename)) {
                 result = CallAnalyze(_info, modulename, identifier, std::forward<Args>(args)...);
             }
             return result;
@@ -503,17 +504,17 @@ namespace WarningReporting {
         // No dereference etc.. 1 straight line to enabled or not... Quick method..
         inline static bool IsEnabled()
         {
-            return s_control.IsEnabled();
+            return _sWarningControl.IsEnabled();
         }
 
         inline static void Enable(const bool status)
         {
-            s_control.Enabled(status);
+            _sWarningControl.Enabled(status);
         }
 
         const char* Category() const override
         {
-            return s_control.Category();
+            return _sWarningControl.Category();
         }
 
         uint16_t Serialize(uint8_t data[], const uint16_t size) const override
@@ -538,26 +539,26 @@ namespace WarningReporting {
 
         bool Enabled() const
         {
-            return s_control.Enabled();
+            return _sWarningControl.Enabled();
         }
 
         void Enabled(const bool enabled)
         {
-            s_control.Enabled(enabled);
+            _sWarningControl.Enabled(enabled);
         }
 
         void Destroy()
         {
-            s_control.Destroy();
+            _sWarningControl.Destroy();
         }
 
     private:
         CATEGORY _info;
-        static WarningReportingControl<CATEGORY> s_control;
+        static WarningReportingControl<CATEGORY> _sWarningControl;
     };
 
     template <typename CATEGORY>
-    EXTERNAL_HIDDEN typename WarningReportingType<CATEGORY>::template WarningReportingControl<CATEGORY> WarningReportingType<CATEGORY>::s_control;
+    EXTERNAL_HIDDEN typename WarningReportingType<CATEGORY>::template WarningReportingControl<CATEGORY> WarningReportingType<CATEGORY>::_sWarningControl;
     template <typename CONTROLCATEGORY>
     EXTERNAL_HIDDEN std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_reportingBound(CONTROLCATEGORY::DefaultReportBound);
     template <typename CONTROLCATEGORY>
