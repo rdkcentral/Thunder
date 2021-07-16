@@ -1152,13 +1152,6 @@ namespace PluginHost {
                     // Red the file and parse it into this object.
                     IElement::FromFile(storage);
 
- 
-                    printf("Version read = [%s]\n", Version.Value().c_str());
-                    printf("Prefix read = [%s]\n", Prefix.Value().c_str());
-                    printf("IdleTime read = [%u]\n", IdleTime.Value());
-                    printf("Latitude read = [%d]\n", Latitude.Value());
-                    printf("Longitude read = [%d]\n", Longitude.Value());
-
                     _serverconfig.SetVersion(Version.Value());
                     _serverconfig.SetPrefix(Prefix.Value());
                     _serverconfig.SetIdleTime(IdleTime.Value());

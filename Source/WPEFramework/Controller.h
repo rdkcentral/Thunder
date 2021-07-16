@@ -310,7 +310,7 @@ namespace Plugin {
         uint32_t endpoint_deactivate(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_startdiscovery(const JsonData::Controller::StartdiscoveryParamsData& params);
         uint32_t endpoint_storeconfig();
-        uint32_t endpoint_delete(const JsonData::Controller::DeleteParamsData& params);;
+        uint32_t endpoint_delete(const JsonData::Controller::DeleteParamsData& params);
         uint32_t endpoint_harakiri();
         uint32_t get_callstack(const string& index, Core::JSON::ArrayType<Core::JSON::String>& response) const;
         uint32_t get_status(const string& index, Core::JSON::ArrayType<PluginHost::MetaData::Service>& response) const;

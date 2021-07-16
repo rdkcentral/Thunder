@@ -569,14 +569,12 @@ namespace Plugin {
    
         ASSERT(_pluginServer != nullptr);
         
-        if (_pluginServer ==nullptr)  {
+        if (_pluginServer !=nullptr)  {
+            response = _pluginServer->_config.Version();
+        } else {
             result = Core::ERROR_GENERAL;
         }
-
-        response = _pluginServer->_config.Version();
-    
         return  result ;
-        
     }
 
     // Property: version of the controller
@@ -585,15 +583,16 @@ namespace Plugin {
     //  - ERROR_GENERAL: Failed to set the version
     uint32_t Controller::set_version(const Core::JSON::String& params)
     {
-         uint32_t result = Core::ERROR_NONE;
+        uint32_t result = Core::ERROR_NONE;
         
         ASSERT(_pluginServer != nullptr);
         
-        if (_pluginServer ==nullptr)  {
+        if (_pluginServer !=nullptr)  {
+            const string& version = params.Value();
+            _pluginServer->_config.SetVersion(version);
+        } else {
             result = Core::ERROR_GENERAL;
         }
-        const string& version = params.Value();
-        _pluginServer->_config.SetVersion(version);
     
         return  result ;
     }
@@ -605,17 +604,16 @@ namespace Plugin {
     uint32_t Controller::get_prefix(Core::JSON::String& response) const
     {
         uint32_t result = Core::ERROR_NONE;
-        
+   
         ASSERT(_pluginServer != nullptr);
         
-        if (_pluginServer ==nullptr)  {
+        if (_pluginServer !=nullptr)  {
+            response = _pluginServer->_config.Prefix();
+        } else {
             result = Core::ERROR_GENERAL;
         }
-
-        response = _pluginServer->_config.Prefix();
     
         return  result ;
-        
     }
 
     // Property: prefix of the controller
@@ -627,12 +625,13 @@ namespace Plugin {
          uint32_t result = Core::ERROR_NONE;
         
         ASSERT(_pluginServer != nullptr);
-        
-        if (_pluginServer ==nullptr)  {
+
+        if (_pluginServer !=nullptr)  {
+            const string& prefix = params.Value();
+            _pluginServer->_config.SetPrefix(prefix);
+        } else {
             result = Core::ERROR_GENERAL;
         }
-        const string& prefix = params.Value();
-        _pluginServer->_config.SetPrefix(prefix);
     
         return  result ;
     }
@@ -644,17 +643,16 @@ namespace Plugin {
     uint32_t Controller::get_idletime(Core::JSON::DecUInt16& response) const
     {
         uint32_t result = Core::ERROR_NONE;
-        
+   
         ASSERT(_pluginServer != nullptr);
         
-        if (_pluginServer ==nullptr)  {
+        if (_pluginServer !=nullptr)  {
+            response = _pluginServer->_config.IdleTime();
+        } else {
             result = Core::ERROR_GENERAL;
         }
-
-        response = _pluginServer->_config.IdleTime();
     
         return  result ;
-        
     }
 
     // Property: idletime of the controller
@@ -663,15 +661,15 @@ namespace Plugin {
     //  - ERROR_GENERAL: Failed to set the idletime
     uint32_t Controller::set_idletime(const Core::JSON::DecUInt16& params)
     {
-         uint32_t result = Core::ERROR_NONE;
+        uint32_t result = Core::ERROR_NONE;
         
         ASSERT(_pluginServer != nullptr);
         
-        if (_pluginServer ==nullptr)  {
+        if (_pluginServer !=nullptr)  {
+            _pluginServer->_config.SetIdleTime(params.Value());
+        } else {
             result = Core::ERROR_GENERAL;
         }
-
-        _pluginServer->_config.SetIdleTime(params);
     
         return  result ;
     }
@@ -683,17 +681,16 @@ namespace Plugin {
     uint32_t Controller::get_latitude(Core::JSON::DecSInt32& response) const
     {
         uint32_t result = Core::ERROR_NONE;
-        
+   
         ASSERT(_pluginServer != nullptr);
         
-        if (_pluginServer ==nullptr)  {
+        if (_pluginServer !=nullptr)  {
+            response = _pluginServer->_config.Latitude();
+        } else {
             result = Core::ERROR_GENERAL;
         }
-
-        response = _pluginServer->_config.Latitude();
     
         return  result ;
-        
     }
 
     // Property: latitude of the controller
@@ -702,15 +699,15 @@ namespace Plugin {
     //  - ERROR_GENERAL: Failed to set the latitude
     uint32_t Controller::set_latitude(const Core::JSON::DecSInt32& params)
     {
-         uint32_t result = Core::ERROR_NONE;
+        uint32_t result = Core::ERROR_NONE;
         
         ASSERT(_pluginServer != nullptr);
         
-        if (_pluginServer ==nullptr)  {
+        if (_pluginServer !=nullptr)  {
+            _pluginServer->_config.SetLatitude(params.Value());
+        } else {
             result = Core::ERROR_GENERAL;
         }
-
-        _pluginServer->_config.SetLatitude(params);
     
         return  result ;
     }
@@ -722,17 +719,16 @@ namespace Plugin {
     uint32_t Controller::get_longitude(Core::JSON::DecSInt32& response) const
     {
         uint32_t result = Core::ERROR_NONE;
-        
+   
         ASSERT(_pluginServer != nullptr);
         
-        if (_pluginServer ==nullptr)  {
+        if (_pluginServer !=nullptr)  {
+            response = _pluginServer->_config.Longitude();
+        } else {
             result = Core::ERROR_GENERAL;
         }
-
-        response = _pluginServer->_config.Longitude();
     
         return  result ;
-        
     }
 
     // Property: longitude of the controller
@@ -745,11 +741,11 @@ namespace Plugin {
         
         ASSERT(_pluginServer != nullptr);
         
-        if (_pluginServer ==nullptr)  {
+        if (_pluginServer !=nullptr)  {
+            _pluginServer->_config.SetLongitude(params.Value());
+        } else {
             result = Core::ERROR_GENERAL;
         }
-
-        _pluginServer->_config.SetLongitude(params);
     
         return  result ;
     }

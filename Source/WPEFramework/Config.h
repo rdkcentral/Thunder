@@ -512,7 +512,8 @@ namespace PluginHost {
             , _processInfo()
             , _plugins()
             , _reasons()
-            , _substituter(*this)
+            , _substituter(*this),
+            _configLock()
         {
             JSONConfig config;
 
@@ -608,17 +609,27 @@ namespace PluginHost {
     public:
         inline const string& Prefix() const
         {
+            _configLock.Lock();
             return (_prefix);
+            _configLock.Unlock();
         }
         inline void SetPrefix(const string& newValue) {
+            _configLock.Lock();
             _prefix = newValue;
+            _webPrefix = '/' + _prefix;
+            _configLock.Unlock();
         }
         inline const string& Version() const
         {
+            _configLock.Lock();
             return (_version);
+            _configLock.Unlock();
         }
         inline void SetVersion(const string& newValue) {
+            _configLock.Lock();
             _version = newValue;
+            _configLock.Unlock();
+
         }
         inline const string& Model() const
         {
@@ -642,7 +653,9 @@ namespace PluginHost {
         }
         inline const string& WebPrefix() const
         {
+            _configLock.Lock();
             return (_webPrefix);
+            _configLock.Unlock();
         }
         inline const string& JSONRPCPrefix() const
         {
@@ -721,8 +734,10 @@ namespace PluginHost {
         inline uint16_t IdleTime() const {
             return (_idleTime);
         }
-        inline void SetIdleTime(const uint16_t& newValue)  {
+        inline void SetIdleTime(const uint16_t newValue)  {
+            _configLock.Lock();
             _idleTime = newValue;
+            _configLock.Unlock();
         }
         inline const string& URL() const {
             return (_URL);
@@ -731,16 +746,24 @@ namespace PluginHost {
             return (_stackSize);
         }
         inline int32_t Latitude() const {
+            _configLock.Lock();
             return (_latitude);
+            _configLock.Unlock();
         }
-        inline void SetLatitude(const int32_t& newValue){
+        inline void SetLatitude(const int32_t newValue){
+            _configLock.Lock();
             _latitude = newValue;
+            _configLock.Unlock();
         }
         inline int32_t Longitude() const {
+            _configLock.Lock();
             return (_longitude);
+            _configLock.Unlock();
         }
-        inline void SetLongitude(const int32_t& newValue){
+        inline void SetLongitude(const int32_t newValue){
+            _configLock.Lock();
             _longitude = newValue;
+            _configLock.Unlock();
         }
         inline const InputInfo& Input() const {
             return(_inputInfo);
@@ -779,6 +802,7 @@ namespace PluginHost {
             return (added);
         }
         void UpdateAccessor() {
+            _configLock.Lock();
             Core::NodeId result(_binding.c_str());
 
             if (_interface.empty() == false) {
@@ -822,6 +846,8 @@ namespace PluginHost {
 
             SYSLOG(Logging::Startup, (_T("Accessor: %s"), _URL.c_str()));
             SYSLOG(Logging::Startup, (_T("Interface IP: %s"), _accessor.HostAddress().c_str()));
+
+            _configLock.Unlock();
         }
 
         inline const std::vector<std::string>& LinkerPluginPaths() const
@@ -898,6 +924,7 @@ namespace PluginHost {
         Core::JSON::ArrayType<Plugin::Config> _plugins;
         std::list<PluginHost::IShell::reason> _reasons;
         Substituter _substituter;
+        mutable Core::CriticalSection _configLock;
 #ifdef PROCESSCONTAINERS_ENABLED
         string _ProcessContainersLogging;
 #endif
