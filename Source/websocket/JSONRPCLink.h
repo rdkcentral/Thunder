@@ -817,6 +817,9 @@ namespace JSONRPC {
             if (result == Core::ERROR_NONE) {
                 if (response->Error.IsSet() == true) {
                     result = response->Error.Code.Value();
+                } else if ((response->Result.IsSet() == true)
+                        && (response->Result.Value().empty() == false)) {
+                    FromMessage((INTERFACE*) &inbound, *response);
                 }
             }
             return (result);
