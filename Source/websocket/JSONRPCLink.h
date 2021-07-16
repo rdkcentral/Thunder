@@ -931,7 +931,16 @@ namespace JSONRPC {
         uint32_t InternalInvoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters)
         {
             Core::ProxyType<Core::JSONRPC::Message> response;
-            return Send(waitTime, method, parameters, response);
+            uint32_t result = Send(waitTime, method, parameters, response);
+            if (result == Core::ERROR_NONE) {
+                if (response->Error.IsSet() == true) {
+                    result = response->Error.Code.Value();
+                } else if ((response->Result.IsSet() == true)
+                        && (response->Result.Value().empty() == false)) {
+                    FromMessage((INTERFACE*) &inbound, *response);
+                }
+            }
+            return (result);
         }
         template <typename PARAMETERS, typename HANDLER>
         uint32_t InternalInvoke(const ::TemplateIntToType<0>&, const uint32_t waitTime, const string& method, const PARAMETERS& parameters, const HANDLER& callback)
