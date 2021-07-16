@@ -109,7 +109,33 @@ namespace Bluetooth {
         {
              return (_uuid[0] == 2 ? &(_uuid[15]) :  &(_uuid[1]));
         }
-        string ToString(const bool full = false) const
+        string ConvertRemainingBytes() const
+        {
+            static const TCHAR hexArray[] = "0123456789abcdef";
+
+            string result;
+            uint8_t index = 0;
+
+            result.resize(23);
+            result[index++] = '-';
+            for (uint8_t byte = 8 + 2; byte > 8; byte--) {
+                result[index++] = hexArray[_uuid[byte] >> 4];
+                result[index++] = hexArray[_uuid[byte] & 0xF];
+            }
+            result[index++] = '-';
+            for (uint8_t byte = 6 + 2; byte > 6; byte--) {
+                result[index++] = hexArray[_uuid[byte] >> 4];
+                result[index++] = hexArray[_uuid[byte] & 0xF];
+            }
+            result[index++] = '-';
+            for (uint8_t byte = 0 + 6; byte > 0; byte--) {
+                result[index++] = hexArray[_uuid[byte] >> 4];
+                result[index++] = hexArray[_uuid[byte] & 0xF];
+            }
+
+            return result;
+        }
+        string ToString(const bool full = false, const bool naturalOrder = false) const
         {
             static const TCHAR hexArray[] = "0123456789abcdef";
 
@@ -117,31 +143,33 @@ namespace Bluetooth {
             string result;
 
             if ((HasShort() == false) || (full == true)) {
-                result.resize(36);
-                for (uint8_t byte = 12 + 4; byte > 12; byte--) {
-                    result[index++] = hexArray[_uuid[byte] >> 4];
-                    result[index++] = hexArray[_uuid[byte] & 0xF];
+                result.resize(13);
+                if (naturalOrder == true) {
+                    for (uint8_t byte = 10 + 2; byte > 10; byte--) {
+                        result[index++] = hexArray[_uuid[byte] >> 4];
+                        result[index++] = hexArray[_uuid[byte] & 0xF];
+                    }
+                    for (uint8_t byte = 12 + 4; byte > 14; byte--) {
+                        result[index++] = hexArray[_uuid[byte] >> 4];
+                        result[index++] = hexArray[_uuid[byte] & 0xF];
+                    }
+                    result[index++] = '-';
+                    for (uint8_t byte = 10 + 4; byte > 12; byte--) {
+                        result[index++] = hexArray[_uuid[byte] >> 4];
+                        result[index++] = hexArray[_uuid[byte] >> 4];
+                    }
+                } else {
+                    for (uint8_t byte = 12 + 4; byte > 12; byte--) {
+                        result[index++] = hexArray[_uuid[byte] >> 4];
+                        result[index++] = hexArray[_uuid[byte] & 0xF];
+                    }
+                    result[index++] = '-';
+                    for (uint8_t byte = 10 + 2; byte > 10; byte--) {
+                        result[index++] = hexArray[_uuid[byte] >> 4];
+                        result[index++] = hexArray[_uuid[byte] & 0xF];
+                    }
                 }
-                result[index++] = '-';
-                for (uint8_t byte = 10 + 2; byte > 10; byte--) {
-                    result[index++] = hexArray[_uuid[byte] >> 4];
-                    result[index++] = hexArray[_uuid[byte] & 0xF];
-                }
-                result[index++] = '-';
-                for (uint8_t byte = 8 + 2; byte > 8; byte--) {
-                    result[index++] = hexArray[_uuid[byte] >> 4];
-                    result[index++] = hexArray[_uuid[byte] & 0xF];
-                }
-                result[index++] = '-';
-                for (uint8_t byte = 6 + 2; byte > 6; byte--) {
-                    result[index++] = hexArray[_uuid[byte] >> 4];
-                    result[index++] = hexArray[_uuid[byte] & 0xF];
-                }
-                result[index++] = '-';
-                for (uint8_t byte = 0 + 6; byte > 0; byte--) {
-                    result[index++] = hexArray[_uuid[byte] >> 4];
-                    result[index++] = hexArray[_uuid[byte] & 0xF];
-                }
+                result = result + ConvertRemainingBytes();
             }
             else {
                 result.resize(4);

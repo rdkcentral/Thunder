@@ -368,6 +368,14 @@ namespace Bluetooth {
                         }
                         return (result);
                     }
+                    string Uuid(bool full) const {
+                        bool naturalOrder = false;
+                        
+                        if (full && _uuid.HasShort())
+                            naturalOrder = true;
+
+                        return _uuid.ToString(full, naturalOrder);
+                    }
                     uint16_t Handle() const {
                         return (_handle);
                     }
@@ -445,6 +453,15 @@ namespace Bluetooth {
 
                     return (index != _descriptors.end() ? &(*index) : nullptr);
                 }
+                string Uuid(bool full) const {
+                    bool naturalOrder = false;
+
+                    if (full && _type.HasShort())
+                        naturalOrder = true;
+
+                    return _type.ToString(full, naturalOrder);
+                }
+
                 uint16_t Handle() const {
                     return (_handle);
                 }
