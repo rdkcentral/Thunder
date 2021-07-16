@@ -59,6 +59,7 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
 install(DIRECTORY
             "${CMAKE_SOURCE_DIR}/cmake/common"
             "${CMAKE_SOURCE_DIR}/cmake/config"
+            "${CMAKE_SOURCE_DIR}/cmake/modules"
             "${CMAKE_SOURCE_DIR}/cmake/templates"
         DESTINATION lib/cmake/${NAMESPACE})
 
