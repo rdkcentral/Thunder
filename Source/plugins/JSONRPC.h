@@ -463,7 +463,7 @@ namespace PluginHost {
         virtual void Unsubscribe(Core::JSONRPC::Handler& handler, const uint32_t channelId, const string& eventName, const string& callsign, Core::JSONRPC::Message& response)
         {
             NotifyObservers(eventName, callsign, Status::unregistered);
-            JSONRPC::Subscribe(handler, channelId, eventName, callsign, response);
+            JSONRPC::Unsubscribe(handler, channelId, eventName, callsign, response);
         }
 
     private:
