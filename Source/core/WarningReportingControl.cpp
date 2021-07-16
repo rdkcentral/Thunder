@@ -90,11 +90,11 @@ namespace WarningReporting {
 
     void WarningReportingUnitProxy::FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const
     {
-        adminlock.Lock();
+        Core::SafeSyncType<Core::CriticalSection> guard(adminlock);
+
         if (_handler != nullptr) {
             _handler->FetchCategoryInformation(category, outIsDefaultCategory, outIsEnabled, outExcluded, outConfiguration);
         }
-        adminlock.Unlock();
     }
 
     void WarningReportingUnitProxy::Announce(IWarningReportingUnit::IWarningReportingControl& Category)

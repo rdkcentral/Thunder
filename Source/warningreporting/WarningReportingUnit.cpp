@@ -78,9 +78,10 @@ namespace WarningReporting {
     WarningReportingUnit::~WarningReportingUnit()
     {
 
+        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+        
         WarningReportingUnitProxy::Instance().Handler(nullptr);
 
-        _adminLock.Lock();
 
         if (_outputChannel != nullptr) {
             Close();
@@ -90,7 +91,6 @@ namespace WarningReporting {
             category.second->Destroy();
         }
 
-        _adminLock.Unlock();
     }
 
     uint32_t WarningReportingUnit::Open(const uint32_t identifier)
@@ -131,32 +131,25 @@ namespace WarningReporting {
 
     uint32_t WarningReportingUnit::Close()
     {
-        _adminLock.Lock();
-
+        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+        
         _outputChannel.reset(nullptr);
-
-        _outputChannel = nullptr;
-
-        _adminLock.Unlock();
 
         return Core::ERROR_NONE;
     }
 
     void WarningReportingUnit::Announce(IWarningReportingUnit::IWarningReportingControl& category)
     {
-        _adminLock.Lock();
-
+        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+    
         _categories[category.Category()] = &category;
-
-        _adminLock.Unlock();
     }
 
     void WarningReportingUnit::Revoke(IWarningReportingUnit::IWarningReportingControl& category)
     {
-        _adminLock.Lock();
+        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+        
         _categories.erase(category.Category());
-
-        _adminLock.Unlock();
     }
 
     std::list<string> WarningReportingUnit::GetCategories()
@@ -196,7 +189,7 @@ namespace WarningReporting {
 
     void WarningReportingUnit::UpdateEnabledCategories(const Core::JSON::ArrayType<Setting::JSON>& info)
     {
-        _adminLock.Lock();
+        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
        
         Core::JSON::ArrayType<Setting::JSON>::ConstIterator index = info.Elements();
 
@@ -218,12 +211,12 @@ namespace WarningReporting {
                 category->second->Exclude(setting.second.Excluded());
             }
         }
-        _adminLock.Unlock();
     }
 
     void WarningReportingUnit::FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const
     {
-        _adminLock.Lock();
+        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+
         outIsDefaultCategory = true;
         auto setting = _enabledCategories.find(category);
 
@@ -233,7 +226,6 @@ namespace WarningReporting {
             outExcluded = setting->second.Excluded();
             outConfiguration = setting->second.Configuration();
         }
-        _adminLock.Unlock();
     }
 
     void WarningReportingUnit::ReportWarningEvent(const char identifier[], const char file[], const uint32_t lineNumber, const char className[], const IWarningEvent& information)
@@ -241,7 +233,7 @@ namespace WarningReporting {
 
         const char* fileName(Core::FileNameOnly(file));
 
-        _adminLock.Lock();
+        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
 
         if (_outputChannel != nullptr) {
 
@@ -287,7 +279,6 @@ namespace WarningReporting {
             fflush(stdout);
         }
 
-        _adminLock.Unlock();
     }
 }
 }
