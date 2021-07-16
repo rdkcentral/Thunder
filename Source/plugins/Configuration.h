@@ -67,7 +67,7 @@ namespace Plugin {
             Add(_T("persistentpathpostfix"), &PersistentPathPostfix);
             Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
             Add(_T("startuporder"), &StartupOrder);
-            Add(_T("startup"), &Startup);
+            Add(_T("startmode"), &Startup);
         }
         Config(const Config& copy)
             : Core::JSON::Container()
@@ -99,7 +99,7 @@ namespace Plugin {
             Add(_T("persistentpathpostfix"), &PersistentPathPostfix);
             Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
             Add(_T("startuporder"), &StartupOrder);
-            Add(_T("startup"), &Startup);
+            Add(_T("startmode"), &Startup);
         }
         ~Config() override = default;
 
