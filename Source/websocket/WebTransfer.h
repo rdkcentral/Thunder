@@ -247,7 +247,7 @@ namespace Web {
                         _request.Body(_fileBody);
 
                         // Maybe we need to add a hash value...
-                        _CalculateHash<LINK, FILEBODY>(_request);
+                        _CalculateHash(_request);
 
                         // Prepare the request for processing
                         result = _channel.StartTransfer(Core::ProxyType<Web::Request>(_request));
@@ -326,9 +326,7 @@ namespace Web {
         }
  
     private:
-        HAS_MEMBER(Hash, hasHash);
-
-        typedef hasHash<FILEBODY, typename FILEBODY::HashType& (FILEBODY::*)() const> TraitHasHash;
+    
 
         inline void EndTransfer(const Core::ProxyType<Web::Response>& response)
         {
@@ -347,7 +345,7 @@ namespace Web {
                            (((Transferred() == 0) && (FileSize() == 0)) || (FileSize() < Transferred()))) {
                     errorCode = Core::ERROR_WRITE_ERROR;
                 } else if ((response->ErrorCode == Web::STATUS_UNAUTHORIZED) || 
-                          ((_state == TRANSFER_DOWNLOAD) && (_ValidateHash<LINK, FILEBODY>(response->ContentSignature) == false))) {
+                          ((_state == TRANSFER_DOWNLOAD) && (_ValidateHash(response->ContentSignature) == false))) {
                     errorCode = Core::ERROR_INCORRECT_HASH;
                 } else if (response->ErrorCode == Web::STATUS_REQUEST_RANGE_NOT_SATISFIABLE) {
                     errorCode = Core::ERROR_INVALID_RANGE;
@@ -378,8 +376,11 @@ namespace Web {
                 _fileBody.Release();
             }
         }
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type
+
+        HAS_MEMBER(Hash, hasHash);
+
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _CalculateHash(Web::Request& request)
         {
             uint8_t   buffer[64];
@@ -402,22 +403,22 @@ namespace Web {
             request.ContentSignature = Signature(hash.HashType(), hash.Result());
         }
 
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<!ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _CalculateHash()
         {
         }
 
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, bool>::type
+        template <typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             // See if this is a valid. frame
             return ((signature.IsSet() == false) || (signature.Value().Equal(_fileBody.HashType(), _fileBody.Hash().Result()) == true));
         }
 
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<!ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, bool>::type
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             return (true);
@@ -513,7 +514,7 @@ namespace Web {
                     string message = Authorize(*element);
 
                     if (message.empty() == true) {
-                        _CalculateHash<LINK, FILEBODY>(*_response);
+                        _CalculateHash(*_response);
                         _response->Body(_fileBody);
                     } else {
                         // Somehow we are not Authorzed. Kill it....
@@ -547,8 +548,6 @@ namespace Web {
 
     private:
         HAS_MEMBER(Hash, hasHash);
-
-        typedef hasHash<FILEBODY, typename FILEBODY::HashType& (FILEBODY::*)() const> TraitHasHash;
 
         template <typename ACTUALLINK, typename ACTUALFILEBODY>
         inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type

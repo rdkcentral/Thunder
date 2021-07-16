@@ -295,7 +295,7 @@ namespace Core {
         public:
             inline void Clear()
             {
-                __Clear<PACKAGE, REALIDENTIFIER>();
+                __Clear();
             }
             inline PACKAGE& Package()
             {
@@ -307,15 +307,15 @@ namespace Core {
             }
             virtual uint32_t Length() const
             {
-                return (_Length<PACKAGE, REALIDENTIFIER>());
+                return (_Length());
             }
             virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
             {
-                return (_Serialize<PACKAGE, REALIDENTIFIER>(stream, maxLength, offset));
+                return (_Serialize(stream, maxLength, offset));
             }
             virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset)
             {
-                return (_Deserialize<PACKAGE, REALIDENTIFIER>(stream, maxLength, offset));
+                return _Deserialize(stream, maxLength, offset);
             }
             virtual void AddRef() const
             {
@@ -332,17 +332,16 @@ namespace Core {
             // -----------------------------------------------------
             HAS_MEMBER(Clear, hasClear);
 
-            typedef hasClear<PACKAGE, void (PACKAGE::*)()> TraitClear;
 
-            template <typename SUBJECT, const uint32_t ID>
-            inline typename Core::TypeTraits::enable_if<RawSerializedType<SUBJECT, ID>::TraitClear::value, void>::type
+            template <typename SUBJECT=PACKAGE>
+            inline typename Core::TypeTraits::enable_if<hasClear<SUBJECT, void (SUBJECT::*)()>::value, void>::type
             __Clear()
             {
                 _package.Clear();
             }
 
-            template <typename SUBJECT, const uint32_t ID>
-            inline typename Core::TypeTraits::enable_if<!RawSerializedType<SUBJECT, ID>::TraitClear::value, void>::type
+            template <typename SUBJECT=PACKAGE>
+            inline typename Core::TypeTraits::enable_if<!hasClear<SUBJECT, void (SUBJECT::*)()>::value, void>::type
             __Clear()
             {
             }
@@ -352,17 +351,16 @@ namespace Core {
             // -----------------------------------------------------
             HAS_MEMBER(Length, hasLength);
 
-            typedef hasLength<PACKAGE, uint32_t (PACKAGE::*)() const> TraitLength;
 
-            template <typename SUBJECT, const uint32_t ID>
-            inline typename Core::TypeTraits::enable_if<RawSerializedType<SUBJECT, ID>::TraitLength::value, uint32_t>::type
+            template <typename SUBJECT=PACKAGE>
+            inline typename Core::TypeTraits::enable_if<hasLength<SUBJECT, uint32_t (SUBJECT::*)() const>::value, uint32_t>::type
             _Length() const
             {
                 return (_package.Length());
             }
 
-            template <typename SUBJECT, const uint32_t ID>
-            inline typename Core::TypeTraits::enable_if<!RawSerializedType<SUBJECT, ID>::TraitLength::value, uint32_t>::type
+            template <typename SUBJECT=PACKAGE>
+            inline typename Core::TypeTraits::enable_if<!hasLength<SUBJECT, uint32_t (SUBJECT::*)() const>::value, uint32_t>::type
             _Length() const
             {
                 return (sizeof(PACKAGE));
@@ -370,21 +368,19 @@ namespace Core {
 
             HAS_MEMBER(Serialize, hasSerialize);
 
-            typedef hasSerialize<PACKAGE, uint16_t (PACKAGE::*)(uint8_t[], const uint16_t, const uint32_t) const> TraitSerialize;
-
-            template <typename SUBJECT, const uint32_t ID>
-            inline typename Core::TypeTraits::enable_if<RawSerializedType<SUBJECT, ID>::TraitSerialize::value, uint16_t>::type
+            template <typename SUBJECT= PACKAGE>
+            inline typename Core::TypeTraits::enable_if<hasSerialize<PACKAGE, uint16_t (SUBJECT::*)(uint8_t[], const uint16_t, const uint32_t) const> ::value, uint16_t>::type
             _Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
             {
                 return (_package.Serialize(stream, maxLength, offset));
             }
 
-            template <typename SUBJECT, const uint32_t ID>
-            inline typename Core::TypeTraits::enable_if<!RawSerializedType<SUBJECT, ID>::TraitSerialize::value, uint16_t>::type
+            template <typename SUBJECT= PACKAGE>
+            inline typename Core::TypeTraits::enable_if<!hasSerialize<SUBJECT, uint16_t (SUBJECT::*)(uint8_t[], const uint16_t, const uint32_t) const> ::value, uint16_t>::type
             _Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
             {
                 uint16_t result = 0;
-                uint32_t packageLength = _Length<SUBJECT, ID>();
+                uint32_t packageLength = _Length();
 
                 if (offset < packageLength) {
                     result = ((maxLength > (packageLength - offset)) ? (packageLength - offset) : maxLength);
@@ -395,17 +391,16 @@ namespace Core {
 
             HAS_MEMBER(Deserialize, hasDeserialize);
 
-            typedef hasDeserialize<PACKAGE, uint16_t (PACKAGE::*)(const uint8_t[], const uint16_t, const uint32_t)> TraitDeserialize;
 
-            template <typename SUBJECT, const uint32_t ID>
-            inline typename Core::TypeTraits::enable_if<RawSerializedType<SUBJECT, ID>::TraitDeserialize::value, uint16_t>::type
+            template <typename SUBJECT=PACKAGE>
+            inline typename Core::TypeTraits::enable_if<hasDeserialize<SUBJECT, uint16_t (SUBJECT::*)(const uint8_t[], const uint16_t, const uint32_t)>::value, uint16_t>::type
             _Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset)
             {
                 return (_package.Deserialize(stream, maxLength, offset));
             }
 
-            template <typename SUBJECT, const uint32_t ID>
-            inline typename Core::TypeTraits::enable_if<!RawSerializedType<SUBJECT, ID>::TraitDeserialize::value, uint16_t>::type
+            template <typename SUBJECT=PACKAGE>
+            inline typename Core::TypeTraits::enable_if<!hasDeserialize<SUBJECT, uint16_t (SUBJECT::*)(const uint8_t[], const uint16_t, const uint32_t)>::value, uint16_t>::type
             _Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset)
             {
                 uint16_t result = 0;
@@ -1040,23 +1035,22 @@ namespace Core {
         }
         virtual void StateChange()
         {
-            __StateChange<ACTUALSOURCE, EXTENSION>();
+            __StateChange();
         }
 
     private:
         HAS_MEMBER(StateChange, hasStateChange);
 
-        typedef hasStateChange<EXTENSION, void (EXTENSION::*)()> TraitStateChange;
-
-        template <typename A, typename B>
-        inline typename Core::TypeTraits::enable_if<IPCChannelType<A, B>::TraitStateChange::value, void>::type
+        template <typename T=EXTENSION>
+        inline typename Core::TypeTraits::enable_if<hasStateChange<T, void (T::*)()> ::value, void>::type
         __StateChange()
         {
             _extension.StateChange();
         }
 
-        template <typename A, typename B>
-        inline typename Core::TypeTraits::enable_if<!IPCChannelType<A, B>::TraitStateChange::value, void>::type
+
+        template <typename T=EXTENSION>
+        inline typename Core::TypeTraits::enable_if<!hasStateChange<T, void (T::*)()> ::value, void>::type
         __StateChange()
         {
         }

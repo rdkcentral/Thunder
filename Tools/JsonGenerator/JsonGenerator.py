@@ -33,7 +33,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pard
 import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 
-VERSION = "1.8.3"
+VERSION = "1.8.5"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
@@ -1030,6 +1030,9 @@ def LoadInterface(file, includePaths = []):
                                 obj["writeonly"] = True
                             if "params" not in obj:
                                 obj["params"] = BuildParameters([method.vars[0]], face.obj.is_extended, True)
+                            else:
+                                if method.vars[0].type.IsReference():
+                                    obj["params"]["ref"] = True
                             if obj["params"] == None:
                                 raise CppParseError(method.vars[0], "property setter method must have one input parameter")
                 else:
@@ -1527,6 +1530,8 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                 # Emit temporary variables and deserializing of JSON data
                 for v, t in vars.items():
                     # C-style buffers
+                    t[0].release = False
+                    t[0].cast = None
                     if isinstance(t[0], JsonString) and "length" in t[0].schema:
                         encode = "encode" in t[0].schema and t[0].schema["encode"]
                         if t[1] == 0 and not encode:
@@ -1550,22 +1555,59 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                     # Iterators
                     elif isinstance(t[0], JsonArray):
                         if "iterator" in t[0].schema:
-                            emit.Line("%s* %s = nullptr;" % (t[0].schema["iterator"], t[0].JsonName()))
+                            if t[1] == 0:
+                                emit.Line("std::list<%s> elements;" %(t[0].items.CppStdClass()))
+                                emit.Line("auto iterator = %s.Elements();" % (t[0].CppName()))
+                                emit.Line("while (iterator.Next() == true) {")
+                                emit.Indent()
+                                emit.Line("elements.push_back(iterator.Current().Value());")
+                                emit.Unindent()
+                                emit.Line("}")
+                                impl = t[0].schema["iterator"][:t[0].schema["iterator"].index('<')].replace("IIterator", "Iterator") + "<%s>" % t[0].schema["iterator"]
+                                initializer = "Core::Service<%s>::Create<%s>(elements)" % (impl, t[0].schema["iterator"])
+                                emit.Line("%s* %s{%s};" % (t[0].schema["iterator"], t[0].JsonName(), initializer))
+                                t[0].release = True
+                                if "ref" in t[0].schema and t[0].schema["ref"]:
+                                    t[0].cast = "static_cast<%s* const&>(%s)" % (t[0].schema["iterator"], t[0].JsonName())
+                            elif t[1] == 2:
+                                emit.Line("%s%s* %s{};" % ("const " if t[1] == 0 else "", t[0].schema["iterator"], t[0].JsonName()))
+                            else:
+                                raise RuntimeError("Read/write arrays not supported: %s" % t[0].JsonName())
+
                     # All others
                     else:
                         emit.Line("%s%s %s{%s};" % ("const " if t[1] == 0 else "", t[0].CppStdClass(), t[0].JsonName(), "%s%s.Value()" % (parent if parent else "", t[0].CppName()) if t[1] <= 1 else ""))
 
+                cond = ""
+                for v, t in vars.items():
+                    if t[0].release:
+                        cond += "(%s != nullptr) &&" % t[0].JsonName()
+                if cond:
+                    emit.Line("if (%s) {" % cond[:-3])
+                    emit.Indent()
+
                 # Emit call the API
                 if const_cast:
-                    line = "errorCode = (const_cast<const %s*>(destination))->%s(" % (face, m.TrueName())
+                    line = "errorCode = (static_cast<const %s*>(destination))->%s(" % (face, m.TrueName())
                 else:
                     line = "errorCode = destination->%s(" % m.TrueName()
                 for v, t in vars.items():
-                    line = line + ("%s, " % (t[0].JsonName()))
+                    line = line + ("%s, " % (t[0].cast if t[0].cast else t[0].JsonName()))
                 if line.endswith(", "):
                     line = line[:-2]
                 line = line + ");"
                 emit.Line(line)
+
+                if cond:
+                    for v, t in vars.items():
+                        if t[0].release:
+                            emit.Line("%s->Release();" % t[0].JsonName())
+                    emit.Unindent()
+                    emit.Line("} else {")
+                    emit.Indent()
+                    emit.Line("errorCode = Core::ERROR_GENERAL;")
+                    emit.Unindent()
+                    emit.Line("}")
 
                 # Emit result handling and serializing JSON data
                 if response.CppType() != "void":
