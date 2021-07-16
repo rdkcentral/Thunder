@@ -23,6 +23,8 @@
 #include "Module.h"
 #include "Request.h"
 
+#include <functional>
+
 namespace WPEFramework {
 namespace PluginHost {
 
@@ -153,13 +155,46 @@ namespace PluginHost {
             {
                 return (_current.IsValid() == false);
             }
+
+            inline const string getIdentifier(const char* stream, const uint16_t length)
+            {
+                uint16_t current = 0;
+                bool bValid = false;
+                if ((length > 0) && (stream[current] != '{') && (stream[current] != '[')) {
+                    // look for the delimter, colon (:)
+                    while (current < length) {
+                        if (stream[current] == ':') {
+                            bValid = true;
+                            break;
+                        }
+                        current++;
+                    }
+                }
+
+                auto result = (bValid != false)
+                    ? std::function<string()>{[&]() {
+                        string identifier(stream, current--);
+                        uint16_t startpos = 0, endpos = 0;
+
+                        if ( (std::string::npos != (startpos = identifier.find_first_of("\""))) &&
+                                (std::string::npos != (endpos = identifier.find_last_of("\""))) ) {
+                                if (endpos != startpos)
+                                    identifier = identifier.substr(startpos+1,  endpos-startpos-1);
+                        }
+
+                        return identifier; }}
+                    : []() {return string(); };
+
+                return result();
+            }
+
             inline uint16_t Deserialize(const char* stream, const uint16_t length)
             {
                 uint16_t loaded = 0;
 
                 if (_current.IsValid() == false) {
                     if (_parent.IsOpen() == true) {
-                        _current = _parent.Element(EMPTY_STRING);
+                        _current = _parent.Element(getIdentifier(stream,length));
                         _offset = 0;
                     }
                 } 
