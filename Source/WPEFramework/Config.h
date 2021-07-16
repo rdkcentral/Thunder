@@ -735,9 +735,8 @@ namespace PluginHost {
             return (_idleTime);
         }
         inline void SetIdleTime(const uint16_t newValue)  {
-            _configLock.Lock();
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             _idleTime = newValue;
-            _configLock.Unlock();
         }
         inline const string& URL() const {
             return (_URL);
@@ -746,24 +745,20 @@ namespace PluginHost {
             return (_stackSize);
         }
         inline int32_t Latitude() const {
-            _configLock.Lock();
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_latitude);
-            _configLock.Unlock();
         }
         inline void SetLatitude(const int32_t newValue){
-            _configLock.Lock();
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             _latitude = newValue;
-            _configLock.Unlock();
         }
         inline int32_t Longitude() const {
-            _configLock.Lock();
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_longitude);
-            _configLock.Unlock();
         }
         inline void SetLongitude(const int32_t newValue){
-            _configLock.Lock();
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             _longitude = newValue;
-            _configLock.Unlock();
         }
         inline const InputInfo& Input() const {
             return(_inputInfo);
@@ -802,7 +797,7 @@ namespace PluginHost {
             return (added);
         }
         void UpdateAccessor() {
-            _configLock.Lock();
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             Core::NodeId result(_binding.c_str());
 
             if (_interface.empty() == false) {
@@ -847,7 +842,7 @@ namespace PluginHost {
             SYSLOG(Logging::Startup, (_T("Accessor: %s"), _URL.c_str()));
             SYSLOG(Logging::Startup, (_T("Interface IP: %s"), _accessor.HostAddress().c_str()));
 
-            _configLock.Unlock();
+
         }
 
         inline const std::vector<std::string>& LinkerPluginPaths() const
