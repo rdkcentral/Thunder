@@ -796,7 +796,7 @@ namespace PluginHost {
 
             if (_interface.empty() == false) {
                 Core::NodeId selectedNode = Plugin::Config::IPV4UnicastNode(_interface);
-f
+
                 if (selectedNode.IsValid() == true) {
                     _accessor = selectedNode;
                     result = _accessor;
