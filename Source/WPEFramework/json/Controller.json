@@ -609,9 +609,11 @@
       ]
     },
     "version": {
-			"type": "string",
 			"description": "version of the controller",
-			"example": "1.0",
+      "params": {
+        "example": "1.0",
+        "type": "string"
+      },
 			"errors": [
 				{
 					"description": "Failed to get/update the version",
@@ -622,7 +624,10 @@
 		"prefix": {
 			"type": "string",
 			"description": "prefix",
-			"example": "prefix",
+      "params": {
+        "example": "prefix",
+        "type": "string"
+      },
 			"errors": [
 				{
 					"description": "Failed to update the prefix",
@@ -633,7 +638,10 @@
 		"idletime": {
 			"type": "number",
 			"description": "idle time",
-			"example": "180",
+      "params": {
+        "example": "1",
+        "type": "number"
+      },
 			"errors": [
 				{
 					"description": "Failed to update the idletime",
@@ -644,7 +652,10 @@
 		"latitude": {
 			"type": "number",
 			"description": "latitude ",
-			"example": "100",
+      "params": {
+        "example": "100",
+        "type": "number"
+      },
 			"errors": [
 				{
 					"description": "Failed to update the latitude",
@@ -655,7 +666,10 @@
 		"longitude": {
 			"type": "number",
 			"description": "longitude ",
-			"example": "200",
+      "params": {
+        "example": "200",
+        "type": "number"
+      },
 			"errors": [
 				{
 					"description": "Failed to update the longitude",
