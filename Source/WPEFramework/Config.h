@@ -609,27 +609,22 @@ namespace PluginHost {
     public:
         inline const string& Prefix() const
         {
-            _configLock.Lock();
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_prefix);
-            _configLock.Unlock();
         }
         inline void SetPrefix(const string& newValue) {
-            _configLock.Lock();
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             _prefix = newValue;
             _webPrefix = '/' + _prefix;
-            _configLock.Unlock();
         }
         inline const string& Version() const
         {
-            _configLock.Lock();
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_version);
-            _configLock.Unlock();
         }
         inline void SetVersion(const string& newValue) {
-            _configLock.Lock();
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             _version = newValue;
-            _configLock.Unlock();
-
         }
         inline const string& Model() const
         {
@@ -653,9 +648,8 @@ namespace PluginHost {
         }
         inline const string& WebPrefix() const
         {
-            _configLock.Lock();
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_webPrefix);
-            _configLock.Unlock();
         }
         inline const string& JSONRPCPrefix() const
         {
@@ -802,7 +796,7 @@ namespace PluginHost {
 
             if (_interface.empty() == false) {
                 Core::NodeId selectedNode = Plugin::Config::IPV4UnicastNode(_interface);
-
+f
                 if (selectedNode.IsValid() == true) {
                     _accessor = selectedNode;
                     result = _accessor;
