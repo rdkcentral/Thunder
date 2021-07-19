@@ -248,7 +248,7 @@ namespace Core {
     };
 
     template <typename CONTEXT>
-    class ProxyObject : public ProxyService<CONTEXT>, public IReferenceCounted {
+    class ProxyObject : public ProxyService<CONTEXT>, virtual public IReferenceCounted {
     private:
         // ----------------------------------------------------------------
         // Never, ever allow reference counted objects to be assigned.
