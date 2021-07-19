@@ -923,8 +923,14 @@ namespace JSONRPC {
             Core::ProxyType<Core::JSONRPC::Message> response;
             uint32_t result = Send(waitTime, method, parameters, response);
             if (result == Core::ERROR_NONE) {
-                FromMessage((INTERFACE*)&inbound, *response);
+                if (response->Error.IsSet() == true) {
+                    result = response->Error.Code.Value();
+                } else if ((response->Result.IsSet() == true)
+                        && (response->Result.Value().empty() == false)) {
+                    FromMessage((INTERFACE*) &inbound, *response);
+                }
             }
+ 
             return (result);
         }
         template <typename PARAMETERS>
@@ -935,9 +941,6 @@ namespace JSONRPC {
             if (result == Core::ERROR_NONE) {
                 if (response->Error.IsSet() == true) {
                     result = response->Error.Code.Value();
-                } else if ((response->Result.IsSet() == true)
-                        && (response->Result.Value().empty() == false)) {
-                    FromMessage((INTERFACE*) &inbound, *response);
                 }
             }
             return (result);
