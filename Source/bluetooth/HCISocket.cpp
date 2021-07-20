@@ -81,7 +81,6 @@ void HCISocket::Scan(const uint16_t scanTime, const bool limited)
         /* The inquiry API limits the scan time to 326 seconds, so split it into mutliple inquiries if neccessary. */
         const uint16_t lapTime = 30; /* sec */
         uint16_t timeLeft = scanTime;
-        bool started = false;
 
         Command::Inquiry inquiry;
         Command::InquiryCancel inquiryCancel;
