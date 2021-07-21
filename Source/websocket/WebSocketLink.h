@@ -782,7 +782,7 @@ namespace Web {
                     while ((result < receivedSize) && (tooSmall == false)) {
                         uint16_t actualDataSize = receivedSize - result;
                         uint16_t headerSize = _handler.Decoder(const_cast<uint8_t*>(&dataFrame[result]), actualDataSize);
-                        uint16_t payloadSizeInControlFrame;
+                        uint64_t payloadSizeInControlFrame;
 
                         tooSmall = ((headerSize == 0) && (actualDataSize == 0));
 
