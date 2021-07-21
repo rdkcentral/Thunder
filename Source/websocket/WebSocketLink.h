@@ -783,6 +783,7 @@ namespace Web {
                     while ((result < receivedSize) && (tooSmall == false)) {
                         uint16_t actualDataSize = receivedSize - result;
                         uint16_t headerSize = _handler.Decoder(const_cast<uint8_t*>(&dataFrame[result]), actualDataSize);
+                        uint16_t payloadSizeInControlFrame;
 
                         tooSmall = ((headerSize == 0) && (actualDataSize == 0));
 
@@ -826,7 +827,30 @@ namespace Web {
                                     _commandData.clear();
                                 }
 
-                                result += headerSize; // actualDataSize
+                                payloadSizeInControlFrame = 0;
+                                // skip payload bytes for control frames:
+                                if (headerSize > 1) {
+                                   payloadSizeInControlFrame = dataFrame[result+1] & 0x7F;
+                                   if (payloadSizeInControlFrame == 126) {
+				       if (headerSize > 3) {
+                                         payloadSizeInControlFrame = ((dataFrame[result+2] << 8) + dataFrame[result+3]);
+				       } else {
+                                         TRACE_L1("Header too small for 16-bit extended payload size");
+                                         payloadSizeInControlFrame = 0;
+                                      }
+                                   } else if (payloadSizeInControlFrame == 127) {
+                                      if (headerSize > 9) {
+                                         payloadSizeInControlFrame = dataFrame[result+9];
+                                         for (int i=8; i>=2; i--) payloadSizeInControlFrame = (payloadSizeInControlFrame << 8) + dataFrame[result+i];
+                                      } else {
+                                         TRACE_L1("Header too small for 64-bit jumbo payload size ");
+                                         payloadSizeInControlFrame = 0;
+                                      }
+                                   }
+                                }
+
+                                result += (headerSize + payloadSizeInControlFrame); // actualDataSize
+
                             } else {
                                 _parent.ReceiveData(&(dataFrame[result + headerSize]), actualDataSize);
 
