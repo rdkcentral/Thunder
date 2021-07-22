@@ -34,7 +34,6 @@
 #include <vector>
 
 
-#define __CORE_WARNING_REPORTING__ asss
 #ifndef __CORE_WARNING_REPORTING__
 
 #define REPORT_WARNING(CATEGORY, ...)
