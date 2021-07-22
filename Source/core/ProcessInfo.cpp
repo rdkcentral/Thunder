@@ -79,42 +79,41 @@ namespace Core {
         ASSERT(maxLength > 0);
 
         if (maxLength > 0) {
-            char procpath[48];
-            snprintf(procpath, sizeof(procpath), "/proc/%u/exe", pid);
-            ssize_t length = readlink(procpath, buffer, maxLength - 1);
+            int fd;
 
-            if (length > 0) {
-                buffer[length] = '\0';
-            } else {
-                int fd;
+            std::stringstream ss;
+            ss << "/proc/" << pid << "/comm";
 
-                snprintf(procpath, sizeof(procpath), "/proc/%u/comm", pid);
-
-                if ((fd = open(procpath, O_RDONLY)) > 0) {
-                    ssize_t size;
-                    if ((size = read(fd, buffer, maxLength - 1)) > 0) {
-                        if (buffer[size - 1] == '\n') {
-                            buffer[size - 1] = '\0';
-                        } else {
-                            buffer[size] = '\0';
-                        }
+            if ((fd = open(ss.str().c_str(), O_RDONLY)) > 0) {
+                ssize_t size;
+                if ((size = read(fd, buffer, maxLength - 1)) > 0) {
+                    if (buffer[size - 1] == '\n') {
+                        buffer[size - 1] = '\0';
                     } else {
-                        buffer[0] = '\0';
+                        buffer[size] = '\0';
                     }
-
-                    close(fd);
                 } else {
                     buffer[0] = '\0';
                 }
+
+                close(fd);
+            } else {
+                buffer[0] = '\0';
             }
         }
     }
 
-    static string ExecutableName(const uint32_t PID)
+    static string ExecutableName(const uint32_t pid)
     {
         char fullname[PATH_MAX];
 
-        ProcessName(PID, fullname, sizeof(fullname));
+        std::stringstream ss;
+        ss << "/proc/" << pid << "/exe";
+        ssize_t length = readlink(ss.str().c_str(), fullname, PATH_MAX - 1);
+        if (length > 0)
+            fullname[length] = '\0';
+        else
+            *fullname = '\0';
 
         return (string(fullname));
     }
@@ -186,21 +185,40 @@ namespace Core {
                 pid = strtol(ep->d_name, &endptr, 10);
 
                 if ('\0' == endptr[0]) {
+                    size_t count = pids.size();
                     TCHAR buffer[512];
                     ProcessName(pid, buffer, sizeof(buffer));
+                    string procName(buffer);
 
                     if (fullMatch == true) {
-                        if (item == buffer) {
+                        if (item == procName) {
                             pids.push_back(pid);
                         }
                     } else {
-                        auto entry = Core::File::FileNameExtended(string(buffer));
-                        if (entry.rfind(item, 0) == 0) {
+                        if (procName.find(item)  != std::string::npos) {
                             pids.push_back(pid);
+                        }
+                    }
+
+                    string exeName;
+                    if (count == pids.size()) {
+                        exeName = ExecutableName(pid);
+
+                        if (fullMatch == true) {
+                            if (item == exeName) {
+                                pids.push_back(pid);
+                            }
+                        } else {
+                            auto entry = Core::File::FileNameExtended(exeName);
+                            if (entry.rfind(item, 0) == 0) {
+                                pids.push_back(pid);
+                            }
                         }
                     }
                 }
             }
+            pids.sort();
+            pids.unique();
 
             (void)closedir(dp);
         }
