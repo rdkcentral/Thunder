@@ -358,7 +358,7 @@ namespace WarningReporting {
         template <typename CONTROLCATEGORY>
         class WarningReportingControl : public IWarningReportingUnit::IWarningReportingControl {
         private:
-            // HPL todo: this is now duplicated code from the class above, certainly when nested again that could be prevented
+            // HPL todo: The code is duplicated, perhaps possible to nest it?
             HAS_STATIC_MEMBER(Configure, hasConfigure);
             template <typename T = CONTROLCATEGORY>
             static inline typename Core::TypeTraits::enable_if<!hasConfigure<T>::value, void>::type
@@ -479,8 +479,7 @@ namespace WarningReporting {
         ~WarningReportingType() override = default;
 
     private:
-        // HPL todo: this is now duplicated code from the class above, certainly when nested again that could be prevented
-        HAS_MEMBER(IsWarning, hasIsWarning);
+        // HPL todo: The code is duplicated, perhaps possible to nest it?        HAS_MEMBER(IsWarning, hasIsWarning);
         template <typename T = CATEGORY>
         inline typename Core::TypeTraits::enable_if<!hasIsWarning<T, bool (T::*)() const>::value, bool>::type
         CallIsWarning() const

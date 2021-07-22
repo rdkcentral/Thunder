@@ -32,7 +32,7 @@ namespace WarningReporting {
         enum class StateChange : uint8_t { ACTIVATION,
             DEACTIVATION,
             SUSPEND,
-            RESUME }; // HPL todo: also take the suspend resume state into acount?
+            RESUME }; // HPL todo: create warnings upon changing state to SUSPEND/RESUME
 
         TooLongPluginState()
             : _stateChange(StateChange::ACTIVATION)
