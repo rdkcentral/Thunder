@@ -33,7 +33,6 @@
 #include <unordered_set>
 #include <vector>
 
-
 #ifndef __CORE_WARNING_REPORTING__
 
 #define REPORT_WARNING(CATEGORY, ...)
@@ -146,8 +145,17 @@ namespace Core {
 
 namespace WarningReporting {
 
-    class EXTERNAL ExcludedWarnings {
+    class ExcludedWarnings {
     public:
+        ExcludedWarnings()
+            : _callsigns()
+            , _modules()
+        {
+        }
+        ~ExcludedWarnings() = default;
+        ExcludedWarnings(const ExcludedWarnings&) = delete;
+        ExcludedWarnings& operator=(const ExcludedWarnings&) = delete;
+
         bool IsCallsignExcluded(const string& callsign) const
         {
             return _callsigns.find(callsign) != _callsigns.end();
