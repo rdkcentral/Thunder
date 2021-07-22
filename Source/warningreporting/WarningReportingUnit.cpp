@@ -154,10 +154,12 @@ namespace WarningReporting {
 
     std::list<string> WarningReportingUnit::GetCategories()
     {
+        _adminLock.Lock();
         std::list<string> result;
         for (const auto& pair : _categories) {
             result.push_back(pair.first);
         }
+        _adminLock.Unlock();
         return result;
     }
 
