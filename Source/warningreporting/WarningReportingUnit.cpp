@@ -77,8 +77,7 @@ namespace WarningReporting {
 
     WarningReportingUnit::~WarningReportingUnit()
     {
-
-        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+        _adminLock.Lock();
         
         WarningReportingUnitProxy::Instance().Handler(nullptr);
 
@@ -91,6 +90,7 @@ namespace WarningReporting {
             category.second->Destroy();
         }
 
+        _adminLock.Unlock();
     }
 
     uint32_t WarningReportingUnit::Open(const uint32_t identifier)
@@ -189,7 +189,7 @@ namespace WarningReporting {
 
     void WarningReportingUnit::UpdateEnabledCategories(const Core::JSON::ArrayType<Setting::JSON>& info)
     {
-        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+        _adminLock.Lock();
        
         Core::JSON::ArrayType<Setting::JSON>::ConstIterator index = info.Elements();
 
@@ -211,11 +211,12 @@ namespace WarningReporting {
                 category->second->Exclude(setting.second.Excluded());
             }
         }
+        _adminLock.Unlock();
     }
 
     void WarningReportingUnit::FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const
     {
-        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+        _adminLock.Lock();
 
         outIsDefaultCategory = true;
         auto setting = _enabledCategories.find(category);
@@ -226,6 +227,8 @@ namespace WarningReporting {
             outExcluded = setting->second.Excluded();
             outConfiguration = setting->second.Configuration();
         }
+
+        _adminLock.Unlock();
     }
 
     void WarningReportingUnit::ReportWarningEvent(const char identifier[], const char file[], const uint32_t lineNumber, const char className[], const IWarningEvent& information)
@@ -233,7 +236,7 @@ namespace WarningReporting {
 
         const char* fileName(Core::FileNameOnly(file));
 
-        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+        _adminLock.Lock();
 
         if (_outputChannel != nullptr) {
 
@@ -278,6 +281,8 @@ namespace WarningReporting {
             fprintf(stdout, "\033[1;32mSUSPICIOUS [%s]: [%s:%s]: %s\n\033[0m", time.c_str(), identifier, information.Category(), text.c_str());
             fflush(stdout);
         }
+
+        _adminLock.Unlock();
 
     }
 }

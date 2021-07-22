@@ -82,35 +82,37 @@ namespace WarningReporting {
 
     void WarningReportingUnitProxy::ReportWarningEvent(const char module[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information)
     {
-        Core::SafeSyncType<Core::CriticalSection> guard(adminlock);
+        adminlock.Lock();
         if (_handler != nullptr) {
             _handler->ReportWarningEvent(module, fileName, lineNumber, className, information);
         }
+        adminlock.Unlock();
     }
 
     void WarningReportingUnitProxy::FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const
     {
-        Core::SafeSyncType<Core::CriticalSection> guard(adminlock);
-
+        adminlock.Lock();
         if (_handler != nullptr) {
             _handler->FetchCategoryInformation(category, outIsDefaultCategory, outIsEnabled, outExcluded, outConfiguration);
         }
+        adminlock.Unlock();
     }
 
     void WarningReportingUnitProxy::Announce(IWarningReportingUnit::IWarningReportingControl& Category)
     {
-        Core::SafeSyncType<Core::CriticalSection> guard(adminlock);
-
+        adminlock.Lock();
         if (_handler != nullptr) {
             _handler->Announce(Category);
         } else {
             _waitingAnnounces.emplace_back(&Category);
         }
+        adminlock.Unlock();
+
     }
 
     void WarningReportingUnitProxy::Revoke(IWarningReportingUnit::IWarningReportingControl& Category)
     {
-        Core::SafeSyncType<Core::CriticalSection> guard(adminlock);
+        adminlock.Lock();
         if (_handler != nullptr) {
             ASSERT(_waitingAnnounces.size() == 0);
             _handler->Revoke(Category);
@@ -120,12 +122,13 @@ namespace WarningReporting {
                 _waitingAnnounces.erase(it);
             }
         }
+        adminlock.Unlock();
     }
 
     void WarningReportingUnitProxy::Handler(IWarningReportingUnit* handler)
     {
         ASSERT((_handler == nullptr && handler != nullptr) || (_handler != nullptr && handler == nullptr));
-        Core::SafeSyncType<Core::CriticalSection> guard(adminlock);
+        adminlock.Lock();
         _handler = handler;
         if (_handler != nullptr) {
 
@@ -135,6 +138,7 @@ namespace WarningReporting {
             }
             _waitingAnnounces.clear();
         }
+        adminlock.Unlock();
     }
 
     void WarningReportingUnitProxy::FillBoundsConfig(const string& boundsConfig, uint32_t& outReportingBound, uint32_t& outWarningBound, string& outSpecificConfig) const
