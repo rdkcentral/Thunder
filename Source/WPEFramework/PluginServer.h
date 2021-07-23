@@ -1201,10 +1201,10 @@ namespace PluginHost {
                     // Clear all currently set values, they might be from the precious run.
                     Clear();
 
-                    Version = _serverconfig.Version();
-                    Prefix = _serverconfig.Prefix();
-                    IdleTime = _serverconfig.IdleTime();
-                    Latitude = _serverconfig.Latitude();
+                    Version   = _serverconfig.Version();
+                    Prefix    = _serverconfig.Prefix();
+                    IdleTime  = _serverconfig.IdleTime();
+                    Latitude  = _serverconfig.Latitude();
                     Longitude = _serverconfig.Longitude();
 
                     // Convey the real information from he specific services into the JSON struct.
@@ -2978,7 +2978,8 @@ namespace PluginHost {
         {
             _dispatcher.Revoke(job);
         }
-        inline const PluginHost::Config& Configuration() const
+
+        inline PluginHost::Config& Configuration()
         {
             return (_config);
         }

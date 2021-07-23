@@ -512,8 +512,8 @@ namespace PluginHost {
             , _processInfo()
             , _plugins()
             , _reasons()
-            , _substituter(*this),
-            _configLock()
+            , _substituter(*this)
+            , _configLock()
         {
             JSONConfig config;
 
@@ -678,6 +678,7 @@ namespace PluginHost {
         }
         inline const Core::NodeId& Accessor() const
         {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_accessor);
         }
         inline const Core::NodeId& Communicator() const
@@ -726,6 +727,7 @@ namespace PluginHost {
             return (_substituter.Substitute(input, &plugin));
         }
         inline uint16_t IdleTime() const {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_idleTime);
         }
         inline void SetIdleTime(const uint16_t newValue)  {
@@ -791,27 +793,30 @@ namespace PluginHost {
             return (added);
         }
         void UpdateAccessor() {
-            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             Core::NodeId result(_binding.c_str());
 
             if (_interface.empty() == false) {
                 Core::NodeId selectedNode = Plugin::Config::IPV4UnicastNode(_interface);
-
+    
+                _configLock.Lock();
                 if (selectedNode.IsValid() == true) {
                     _accessor = selectedNode;
                     result = _accessor;
+                    
                 }
             } else if (result.IsAnyInterface() == true) {
                 // TODO: We should iterate here over all interfaces to find a suitable IPv4 address or IPv6.
                 Core::NodeId selectedNode = Plugin::Config::IPV4UnicastNode(_interface);
 
+                _configLock.Lock();
                 if (selectedNode.IsValid() == true) {
                     _accessor = selectedNode;
                 }
             } else {
+                _configLock.Lock();
                 _accessor = result;
             }
-
+            string hostaddress;
             if (_accessor.IsValid() == false) {
 
                 // Let's go for the default and make the best of it :-)
@@ -822,20 +827,27 @@ namespace PluginHost {
                 value.sin_port = htons(_portNumber);
 
                 _accessor = value;
+
+                _accessor.PortNumber(_portNumber);
+                hostaddress = _accessor.HostAddress();
+                _configLock.Unlock();
                 SYSLOG(Logging::Startup, ("Invalid config information could not resolve to a proper IP"));
-            }
-
-            if (_portNumber == 80) {
-                _URL = string(_T("http://")) + _accessor.HostAddress() + _webPrefix;
             } else {
-                _URL = string(_T("http://")) + _accessor.HostAddress() + ':' + Core::NumberType<uint16_t>(_portNumber).Text() + _webPrefix;
+                _accessor.PortNumber(_portNumber);
+                hostaddress= _accessor.HostAddress();
+                _configLock.Unlock();
             }
 
-            _accessor.PortNumber(_portNumber);
+            
+            if (_portNumber == 80) {
+                _URL = string(_T("http://")) + hostaddress + WebPrefix();
+            } else {
+                _URL = string(_T("http://")) + hostaddress + ':' + Core::NumberType<uint16_t>(_portNumber).Text() + WebPrefix();
+            }
+            
 
             SYSLOG(Logging::Startup, (_T("Accessor: %s"), _URL.c_str()));
-            SYSLOG(Logging::Startup, (_T("Interface IP: %s"), _accessor.HostAddress().c_str()));
-
+            SYSLOG(Logging::Startup, (_T("Interface IP: %s"), hostaddress.c_str()));
 
         }
 

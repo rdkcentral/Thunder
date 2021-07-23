@@ -609,7 +609,7 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
         
         if (_pluginServer !=nullptr)  {
-            response = _pluginServer->_config.Version();
+            response = _pluginServer->Configuration().Version();
         } else {
             result = Core::ERROR_GENERAL;
         }
@@ -628,7 +628,7 @@ namespace Plugin {
         
         if (_pluginServer !=nullptr)  {
             const string& version = params.Value();
-            _pluginServer->_config.SetVersion(version);
+            _pluginServer->Configuration().SetVersion(version);
         } else {
             result = Core::ERROR_GENERAL;
         }
@@ -647,7 +647,7 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
         
         if (_pluginServer !=nullptr)  {
-            response = _pluginServer->_config.Prefix();
+            response = _pluginServer->Configuration().Prefix();
         } else {
             result = Core::ERROR_GENERAL;
         }
@@ -667,7 +667,7 @@ namespace Plugin {
 
         if (_pluginServer !=nullptr)  {
             const string& prefix = params.Value();
-            _pluginServer->_config.SetPrefix(prefix);
+            _pluginServer->Configuration().SetPrefix(prefix);
         } else {
             result = Core::ERROR_GENERAL;
         }
@@ -686,7 +686,7 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
         
         if (_pluginServer !=nullptr)  {
-            response = _pluginServer->_config.IdleTime();
+            response = _pluginServer->Configuration().IdleTime();
         } else {
             result = Core::ERROR_GENERAL;
         }
@@ -705,7 +705,7 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
         
         if (_pluginServer !=nullptr)  {
-            _pluginServer->_config.SetIdleTime(params.Value());
+            _pluginServer->Configuration().SetIdleTime(params.Value());
         } else {
             result = Core::ERROR_GENERAL;
         }
@@ -724,7 +724,7 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
         
         if (_pluginServer !=nullptr)  {
-            response = _pluginServer->_config.Latitude();
+            response = _pluginServer->Configuration().Latitude();
         } else {
             result = Core::ERROR_GENERAL;
         }
@@ -743,7 +743,7 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
         
         if (_pluginServer !=nullptr)  {
-            _pluginServer->_config.SetLatitude(params.Value());
+            _pluginServer->Configuration().SetLatitude(params.Value());
         } else {
             result = Core::ERROR_GENERAL;
         }
@@ -762,7 +762,7 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
         
         if (_pluginServer !=nullptr)  {
-            response = _pluginServer->_config.Longitude();
+            response = _pluginServer->Configuration().Longitude();
         } else {
             result = Core::ERROR_GENERAL;
         }
@@ -781,7 +781,7 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
         
         if (_pluginServer !=nullptr)  {
-            _pluginServer->_config.SetLongitude(params.Value());
+            _pluginServer->Configuration().SetLongitude(params.Value());
         } else {
             result = Core::ERROR_GENERAL;
         }
