@@ -18,9 +18,12 @@
  * limitations under the License.
  */
 
+#define MODULE_NAME BroadcastTest
+
 #include <broadcast/broadcast.h>
 #include <core/core.h>
 
+MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 using namespace WPEFramework;
 
 void printHelp(){

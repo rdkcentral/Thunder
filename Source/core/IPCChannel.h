@@ -393,22 +393,20 @@ namespace Core {
     private:
         inline ProxyType<IIPC> InvokeAllowed(const Client& client, const ProxyType<IIPC>& command) const
         {
-            return (__InvokeAllowed<EXTENSION, INTERNALFACTORY>(client, command));
+            return (__InvokeAllowed(client, command));
         }
 
         HAS_MEMBER(InvokeAllowed, hasInvokeAllowed);
 
-        typedef hasInvokeAllowed<EXTENSION, ProxyType<IIPC> (EXTENSION::*)(const ProxyType<IIPC>&) const> TraitInvokeAllowed;
-
-        template <typename A, const bool B>
-        inline typename Core::TypeTraits::enable_if<IPCChannelServerType<A, B>::TraitInvokeAllowed::value, ProxyType<IIPC>>::type
+        template <typename CLASSNAME = EXTENSION>
+        inline typename Core::TypeTraits::enable_if<hasInvokeAllowed<CLASSNAME, ProxyType<IIPC> (CLASSNAME::*)(const ProxyType<IIPC>&) const>::value, ProxyType<IIPC>>::type
         __InvokeAllowed(const Client& client, const ProxyType<IIPC>& command) const
         {
             return (client.Extension().InvokeAllowed(command));
         }
 
-        template <typename A, const bool B>
-        inline typename Core::TypeTraits::enable_if<!IPCChannelServerType<A, B>::TraitInvokeAllowed::value, ProxyType<IIPC>>::type
+        template <typename CLASSNAME = EXTENSION>
+        inline typename Core::TypeTraits::enable_if<!hasInvokeAllowed<CLASSNAME, ProxyType<IIPC> (CLASSNAME::*)(const ProxyType<IIPC>&) const>::value, ProxyType<IIPC>>::type
         __InvokeAllowed(const Client&, const ProxyType<IIPC>& command) const
         {
             return (command);

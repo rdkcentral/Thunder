@@ -49,11 +49,11 @@ namespace Web {
                 CLOSE_INPROGRESS = 0x08
             };
 
+        public:
             Protocol() = delete;
             Protocol(const Protocol&) = delete;
             Protocol& operator=(const Protocol&) = delete;
-
-        public:
+            
             Protocol(const bool binary, const bool masking)
                 : _setFlags((masking ? 0x80 : 0x00) | (binary ? 0x02 : 0x01))
                 , _progressInfo(0)
@@ -61,6 +61,7 @@ namespace Web {
                 , _frameType(TEXT)
                 , _controlStatus(0)
             {
+                ::memset(_scrambleKey, 0, sizeof(_scrambleKey));
             }
             ~Protocol()
             {
