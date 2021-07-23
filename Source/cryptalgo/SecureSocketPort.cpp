@@ -80,7 +80,9 @@ int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t 
 }
 
 uint32_t SecureSocketPort::Handler::Close(const uint32_t waitTime) {
-    SSL_shutdown(static_cast<SSL*>(_ssl));
+    if (_ssl != nullptr) {
+        SSL_shutdown(static_cast<SSL*>(_ssl));
+    }
     return(Core::SocketPort::Close(waitTime));
 }
 

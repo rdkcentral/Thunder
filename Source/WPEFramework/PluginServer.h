@@ -862,14 +862,16 @@ namespace PluginHost {
 
             // Methods to Activate and Deactivate the aggregated Plugin to this shell.
             // These are Blocking calls!!!!!
-            virtual uint32_t Activate(const reason) override;
-            virtual uint32_t Deactivate(const reason) override;
-            uint32_t Suspend(const reason);
-            uint32_t Resume(const reason);
-            virtual reason Reason() const
+            uint32_t Activate(const reason) override;
+            uint32_t Deactivate(const reason) override;
+            uint32_t Unavailable(const reason) override;
+            reason Reason() const override
             {
                 return (_reason);
             }
+
+            uint32_t Suspend(const reason);
+            uint32_t Resume(const reason);
             bool HasVersionSupport(const string& number) const
             {
 
@@ -981,8 +983,7 @@ namespace PluginHost {
                 _pluginHandling.Lock();
 
                 ASSERT(State() != ACTIVATED);
-                ASSERT(_handler != nullptr);
-
+  
                 IPlugin* currentIF = _handler;
 
                 if (_webRequest != nullptr) {
@@ -1018,10 +1019,13 @@ namespace PluginHost {
 
                 _pluginHandling.Unlock();
 
-                currentIF->Release();
+                if (currentIF != nullptr) {
 
-                // Could be that we can now drop the dynamic library...
-                Core::ServiceAdministrator::Instance().FlushLibraries();
+                    currentIF->Release();
+
+                    // Could be that we can now drop the dynamic library...
+                    Core::ServiceAdministrator::Instance().FlushLibraries();
+                }
             }
 
         private:
@@ -1694,10 +1698,8 @@ namespace PluginHost {
             {
                 return (reinterpret_cast<ISubSystem*>(_subSystems.QueryInterface(ISubSystem::ID)));
             }
-            void Activated(PluginHost::IShell* entry)
+            void Activated(const string& callsign, PluginHost::IShell* entry)
             {
-                string callsign = entry->Callsign();
-
                 _notificationLock.Lock();
 
                 std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
@@ -1709,16 +1711,29 @@ namespace PluginHost {
 
                 _notificationLock.Unlock();
             }
-            void Deactivated(PluginHost::IShell* entry)
-            {
-                string callsign = entry->Callsign();
 
+            void Deactivated(const string& callsign, PluginHost::IShell* entry)
+            {
                 _notificationLock.Lock();
 
                 std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
 
                 while (currentlist.size()) {
                     currentlist.front()->Deactivated(callsign, entry);
+                    currentlist.pop_front();
+                }
+
+                _notificationLock.Unlock();
+            }
+
+            void Unavailable(const string& callsign, PluginHost::IShell* entry)
+            {
+                _notificationLock.Lock();
+
+                std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
+
+                while (currentlist.size()) {
+                    currentlist.front()->Unavailable(callsign, entry);
                     currentlist.pop_front();
                 }
 

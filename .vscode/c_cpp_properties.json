@@ -4,7 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${env:HOME}/Thunder/install/usr/include/**"
+                "${config:thunder.installPath}/usr/include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
