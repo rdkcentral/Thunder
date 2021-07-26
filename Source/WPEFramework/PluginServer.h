@@ -2982,7 +2982,12 @@ namespace PluginHost {
         inline PluginHost::Config& Configuration()
         {
             return (_config);
+        }  
+        inline const PluginHost::Config& Configuration() const
+        {
+            return (_config);
         }
+
         void Notification(const ForwardMessage& message);
         void Open();
         void Close();
