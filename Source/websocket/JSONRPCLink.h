@@ -385,6 +385,10 @@ namespace JSONRPC {
             {
                 _channel.Submit(message);
             }
+            bool IsSuspended() const
+            {
+                return (_channel.IsSuspended());
+            }
     
         protected:
             void StateChange()
@@ -1034,7 +1038,9 @@ namespace JSONRPC {
         {
             uint32_t result = Core::ERROR_UNAVAILABLE;
 
-            if (_channel.IsValid() == true) {
+            if ((_channel.IsValid() == true) && (_channel->IsSuspended() == true)) {
+                result = Core::ERROR_ASYNC_FAILED;
+            } else if (_channel.IsValid() == true) {
 
                 result = Core::ERROR_ASYNC_FAILED;
 
@@ -1073,6 +1079,8 @@ namespace JSONRPC {
                         if (response.IsValid() == true) {
                             result = Core::ERROR_NONE;
                         }
+                    } else {
+                      result = Core::ERROR_TIMEDOUT;
                     }
 
                     _adminLock.Lock();
@@ -1091,8 +1099,9 @@ namespace JSONRPC {
         {
             uint32_t result = Core::ERROR_UNAVAILABLE;
 
-            if (_channel.IsValid() == false) {
-            } else {
+            if ((_channel.IsValid() == true) && (_channel->IsSuspended() == true)) {
+                result = Core::ERROR_ASYNC_FAILED;
+            } else if (_channel.IsValid() == true) {
 
                 result = Core::ERROR_ASYNC_FAILED;
 
