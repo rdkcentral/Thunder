@@ -20,11 +20,11 @@
                 "trace": true
               },
             "externalConsole": false,
-            "linux": {    
+            "linux": {
                 "name": "Local Debug WPEFramework on Linux",
                 "program": "${config:thunder.installPath}/usr/bin/WPEFramework",
                 "type":"cppdbg",
-                "request": "launch",       
+                "request": "launch",
                 "MIMode": "gdb",
                 "miDebuggerPath": "gdb",
                 "setupCommands": [
@@ -35,7 +35,7 @@
                     }
                 ],
                 "sourceFileMap": {
-                }, 
+                },
                 "environment": [
                     { "name": "LD_LIBRARY_PATH", "value": "${config:thunder.installPath}/usr/lib" },
                     { "name": "PATH", "value": "${config:thunder.installPath}/usr/bin"},
@@ -62,13 +62,13 @@
                 "type":"cppdbg",
                 "request": "launch",
                 "MIMode": "gdb",
-                "miDebuggerServerAddress": "${config:thunder.remoteTargetHost}:${config:thunder.remoteDebugPort}",
-                "miDebuggerPath": "${config:thunder.crossToolsPath}/${config:thunder.crossToolsPrefix}-gdb",
+                "miDebuggerServerAddress": "${config:thunder.remoteTargetHost}:${config:thunder.remoteTargetDebugPort}",
+                "miDebuggerPath": "${config:thunder.crossToolsPath}/${config:thunder.crossToolsPrefix}gdb",
                 "miDebuggerArgs": "",
                 "setupCommands": [
                     {"text": "-enable-pretty-printing"},
-                    // commands if gdbserver is started with --multi 
-                    // {"text": "target extended-remote ${config:thunder.remoteTargetHost}:${config:thunder.remoteDebugPort}"},
+                    // commands if gdbserver is started with --multi
+                    // {"text": "target extended-remote ${config:thunder.remoteTargetHost}:${config:thunder.remoteTargetDebugPort}"},
                     // {"text": "set remote exec-file WPEFramework"}
                 ],
                 "sourceFileMap": {
@@ -79,8 +79,7 @@
                 },
                 "preLaunchTask": "Prepare WPEFramework for remote gdb debugging",
                 "postDebugTask": "Clean debugging run"
-            },
-            
-        },
+            }
+        }
     ]
 }
