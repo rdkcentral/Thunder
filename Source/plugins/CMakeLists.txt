@@ -55,11 +55,10 @@ set(PUBLIC_HEADERS
 target_link_libraries(${TARGET}
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
-        PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
-          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
-          ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
+          ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
+          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
           ${NAMESPACE}COM::${NAMESPACE}COM
         )
 
