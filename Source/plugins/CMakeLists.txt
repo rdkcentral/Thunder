@@ -56,6 +56,7 @@ target_link_libraries(${TARGET}
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
           ${NAMESPACE}Core::${NAMESPACE}Core
+	PUBLIC
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
