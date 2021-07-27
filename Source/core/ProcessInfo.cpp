@@ -74,11 +74,11 @@ namespace Core {
     }
 
 #else
-    void ProcessName(const uint32_t pid, TCHAR buffer[], const uint32_t maxLength)
+    static string ProcessName(const uint32_t pid)
     {
-        ASSERT(maxLength > 0);
+        char name[PATH_MAX];
 
-        if (maxLength > 0) {
+        //if (maxLength > 0) {
             int fd;
 
             std::stringstream ss;
@@ -86,21 +86,22 @@ namespace Core {
 
             if ((fd = open(ss.str().c_str(), O_RDONLY)) > 0) {
                 ssize_t size;
-                if ((size = read(fd, buffer, maxLength - 1)) > 0) {
-                    if (buffer[size - 1] == '\n') {
-                        buffer[size - 1] = '\0';
+                if ((size = read(fd, name, sizeof(name) - 1)) > 0) {
+                    if (name[size - 1] == '\n') {
+                        name[size - 1] = '\0';
                     } else {
-                        buffer[size] = '\0';
+                        name[size] = '\0';
                     }
                 } else {
-                    buffer[0] = '\0';
+                    name[0] = '\0';
                 }
 
                 close(fd);
             } else {
-                buffer[0] = '\0';
+                name[0] = '\0';
             }
-        }
+        //}
+        return (string(name));
     }
 
     static string ExecutableName(const uint32_t pid)
@@ -186,30 +187,29 @@ namespace Core {
 
                 if ('\0' == endptr[0]) {
                     size_t count = pids.size();
-                    TCHAR buffer[512];
-                    ProcessName(pid, buffer, sizeof(buffer));
-                    string procName(buffer);
+                    string name;
+
+                    name = ProcessName(pid);
 
                     if (fullMatch == true) {
-                        if (item == procName) {
+                        if (item == name) {
                             pids.push_back(pid);
                         }
                     } else {
-                        if (procName.find(item)  != std::string::npos) {
+                        if (name.find(item)  != std::string::npos) {
                             pids.push_back(pid);
                         }
                     }
 
-                    string exeName;
                     if (count == pids.size()) {
-                        exeName = ExecutableName(pid);
+                        name = ExecutableName(pid);
 
                         if (fullMatch == true) {
-                            if (item == exeName) {
+                            if (item == name) {
                                 pids.push_back(pid);
                             }
                         } else {
-                            auto entry = Core::File::FileNameExtended(exeName);
+                            auto entry = Core::File::FileNameExtended(name);
                             if (entry.rfind(item, 0) == 0) {
                                 pids.push_back(pid);
                             }
@@ -277,13 +277,13 @@ namespace Core {
 #ifndef __WINDOWS__
         FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) {
             bool accept = false;
-            char fullname[PATH_MAX];
-            ProcessName(foundparentPID, fullname, sizeof(fullname));
+            string fullname;
+            fullname = ProcessName(foundparentPID);     // XXX: ExecutableName ???
 
             accept = (parentname == (removepath == true ? Core::File::FileNameExtended(fullname) : fullname));
 
             if (accept == true) {
-                ProcessName(childPID, fullname, sizeof(fullname));
+                fullname = ProcessName(childPID);
                 accept = (childname == (removepath == true ? Core::File::FileNameExtended(fullname) : fullname));
             }
             return accept;
@@ -303,8 +303,8 @@ namespace Core {
             bool accept = false;
 
             if (parentPID == foundparentPID) {
-                char fullname[PATH_MAX];
-                ProcessName(childPID, fullname, sizeof(fullname));
+                string fullname;
+                fullname = ProcessName(childPID);
                 accept = (childname == (removepath == true ? Core::File::FileNameExtended(fullname) : fullname));
             }
             return accept;
@@ -492,9 +492,9 @@ namespace Core {
     string ProcessInfo::Name() const
     {
 #ifdef __WINDOWS__
-        return (Core::File::FileName(ExecutableName(_handle)));
+        return (ProcessName(_handle));
 #else
-        return (Core::File::FileName(ExecutableName(_pid)));
+        return (ProcessName(_pid));
 #endif
     }
     void ProcessInfo::Name(const string& name)
