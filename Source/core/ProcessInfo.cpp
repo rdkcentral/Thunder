@@ -61,15 +61,19 @@ namespace Core {
         return (result);
     }
 #elif defined(__APPLE__)
-    void ProcessName(const uint32_t pid, TCHAR buffer[], const uint32_t maxLength)
+    static string ProcessName(const uint32_t pid)
     {
-        proc_pidpath(pid, buffer, maxLength);
+        char pathbuf[PROC_PIDPATHINFO_MAXSIZE];
+
+        proc_name(pid, pathbuf, sizeof(pathbuf));
+        return pathbuf;
+
     }
     static string ExecutableName(HANDLE handle)
     {
         char pathbuf[PROC_PIDPATHINFO_MAXSIZE];
 
-        ProcessName(handle, pathbuf, sizeof(pathbuf));
+        proc_pidpath(handle, pathbuf, sizeof(pathbuf));
         return pathbuf;
     }
 
@@ -78,29 +82,28 @@ namespace Core {
     {
         char name[PATH_MAX];
 
-        //if (maxLength > 0) {
-            int fd;
+        int fd;
 
-            std::stringstream ss;
-            ss << "/proc/" << pid << "/comm";
+        std::stringstream ss;
+        ss << "/proc/" << pid << "/comm";
 
-            if ((fd = open(ss.str().c_str(), O_RDONLY)) > 0) {
-                ssize_t size;
-                if ((size = read(fd, name, sizeof(name) - 1)) > 0) {
-                    if (name[size - 1] == '\n') {
-                        name[size - 1] = '\0';
-                    } else {
-                        name[size] = '\0';
-                    }
+        if ((fd = open(ss.str().c_str(), O_RDONLY)) > 0) {
+            ssize_t size;
+            if ((size = read(fd, name, sizeof(name) - 1)) > 0) {
+                if (name[size - 1] == '\n') {
+                    name[size - 1] = '\0';
                 } else {
-                    name[0] = '\0';
+                    name[size] = '\0';
                 }
-
-                close(fd);
             } else {
                 name[0] = '\0';
             }
-        //}
+
+            close(fd);
+        } else {
+            name[0] = '\0';
+        }
+
         return (string(name));
     }
 
@@ -278,7 +281,7 @@ namespace Core {
         FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) {
             bool accept = false;
             string fullname;
-            fullname = ProcessName(foundparentPID);     // XXX: ExecutableName ???
+            fullname = ProcessName(foundparentPID);
 
             accept = (parentname == (removepath == true ? Core::File::FileNameExtended(fullname) : fullname));
 
