@@ -855,6 +855,14 @@ namespace PluginHost {
             {
                 _administrator.Unregister(sink);
             }
+            void Register(IShell::ICOMLink::INotification* sink)
+            {
+                _administrator.Register(sink);
+            }
+            void Unregister(IShell::ICOMLink::INotification* sink)
+            {
+                _administrator.Unregister(sink);
+            }
             RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) override
             {
                 return (_administrator.RemoteConnection(connectionId));
@@ -1054,16 +1062,14 @@ namespace PluginHost {
         };
         class ServiceMap {
         public:
-            typedef Core::IteratorMapType<std::map<const string, Core::ProxyType<Service>>, Core::ProxyType<Service>, const string&> Iterator;
-            typedef std::map<const string, IRemoteInstantiation*> RemoteInstantiators;
+            using Iterator = Core::IteratorMapType<std::map<const string, Core::ProxyType<Service>>, Core::ProxyType<Service>, const string&>;
+            using RemoteInstantiators = std::map<const string, IRemoteInstantiation*>;
 
         private:
-            ServiceMap() = delete;
-            ServiceMap(const ServiceMap&) = delete;
-            ServiceMap& operator=(const ServiceMap&) = delete;
-
             class CommunicatorServer : public RPC::Communicator {
             private:
+                using ObserverList = std::list<IShell::ICOMLink::INotification*>;
+
                 class RemoteHost : public RPC::Communicator::RemoteConnection {
                 private:
                     friend class Core::Service<RemoteHost>;
@@ -1130,6 +1136,7 @@ namespace PluginHost {
                 CommunicatorServer() = delete;
                 CommunicatorServer(const CommunicatorServer&) = delete;
                 CommunicatorServer& operator=(const CommunicatorServer&) = delete;
+
                 CommunicatorServer(
                     ServiceMap& parent,
                     const Core::NodeId& node,
@@ -1170,6 +1177,11 @@ namespace PluginHost {
                 }
                 virtual ~CommunicatorServer()
                 {
+                    ASSERT(_requestObservers.size() == 0 && "Sink for ICOMLink::INotifications not unregistered!");
+                    while (_requestObservers.size() != 0) {
+                        _requestObservers.front()->Release();
+                        _requestObservers.pop_front();
+                    }
                 }
 
             public:
@@ -1209,6 +1221,54 @@ namespace PluginHost {
                 {
                     return (_application);
                 }
+                void Register(RPC::IRemoteConnection::INotification* sink)
+                {
+                    RPC::Communicator::Register(sink);
+                }
+                void Unregister(RPC::IRemoteConnection::INotification* sink)
+                {
+                    RPC::Communicator::Unregister(sink);
+                }
+                void Register(IShell::ICOMLink::INotification* sink)
+                {
+                    ASSERT(sink != nullptr);
+
+                    if (sink != nullptr) {
+
+                        _adminLock.Lock();
+
+                        ObserverList::iterator index = std::find(_requestObservers.begin(), _requestObservers.end(), sink);
+
+                        ASSERT(index == _requestObservers.end());
+
+                        if (index == _requestObservers.end()) {
+                            sink->AddRef();
+                            _requestObservers.push_back(sink);
+                        }
+
+                        _adminLock.Unlock();
+                    }
+                }
+                void Unregister(IShell::ICOMLink::INotification* sink)
+                {
+                    ASSERT(sink != nullptr);
+
+                    if (sink != nullptr) {
+
+                        _adminLock.Lock();
+
+                        ObserverList::iterator index = std::find(_requestObservers.begin(), _requestObservers.end(), sink);
+
+                        ASSERT(index != _requestObservers.end());
+
+                        if (index != _requestObservers.end()) {
+                            (*index)->Release();
+                            _requestObservers.erase(index);
+                        }
+
+                        _adminLock.Unlock();
+                    }
+                }
 
             private:
                 RPC::Communicator::RemoteConnection* CreateStarter(const RPC::Config& config, const RPC::Object& instance) override
@@ -1229,6 +1289,28 @@ namespace PluginHost {
                     return (_parent.Aquire(interfaceId, className, version));
                 }
 
+                void Cleanup(const Core::IUnknown* source, const uint32_t interfaceId) override
+                {
+                    _adminLock.Lock();
+
+                    for (auto& observer : _requestObservers) {
+                        observer->CleanedUp(source, interfaceId);
+                    }
+
+                    _adminLock.Unlock();
+                }
+
+                void Revoke(const Core::IUnknown* remote, const uint32_t interfaceId) override
+                {
+                    _adminLock.Lock();
+
+                    for (auto& observer : _requestObservers) {
+                        observer->Revoked(remote, interfaceId);
+                    }
+
+                    _adminLock.Unlock();
+                }
+
             private:
                 ServiceMap& _parent;
                 const string _persistentPath;
@@ -1240,6 +1322,7 @@ namespace PluginHost {
                 const string _postMortemPath;
                 const string _application;
                 mutable Core::CriticalSection _adminLock;
+                ObserverList _requestObservers;
             };
             class RemoteInstantiation : public IRemoteInstantiation {
             private:
@@ -1583,6 +1666,10 @@ namespace PluginHost {
             };
 
         public:
+            ServiceMap() = delete;
+            ServiceMap(const ServiceMap&) = delete;
+            ServiceMap& operator=(const ServiceMap&) = delete;
+
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
@@ -1771,6 +1858,14 @@ namespace PluginHost {
                 _processAdministrator.Register(sink);
             }
             void Unregister(RPC::IRemoteConnection::INotification* sink)
+            {
+                _processAdministrator.Unregister(sink);
+            }
+            void Register(IShell::ICOMLink::INotification* sink)
+            {
+                _processAdministrator.Register(sink);
+            }
+            void Unregister(IShell::ICOMLink::INotification* sink)
             {
                 _processAdministrator.Unregister(sink);
             }
