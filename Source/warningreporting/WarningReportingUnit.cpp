@@ -191,9 +191,8 @@ namespace WarningReporting {
 
     void WarningReportingUnit::UpdateEnabledCategories(const Core::JSON::ArrayType<Setting::JSON>& info)
     {
-        _adminLock.Lock();
-       
         Core::JSON::ArrayType<Setting::JSON>::ConstIterator index = info.Elements();
+        _adminLock.Lock();
 
         _enabledCategories.clear();
         while (index.Next()) {
@@ -271,6 +270,7 @@ namespace WarningReporting {
                 _outputChannel->Write(reinterpret_cast<const uint8_t*>(buffer), result);
             }
         }
+        _adminLock.Unlock();
 
         if ((_directOutput == true) && (information.IsWarning() == true)) {
 
@@ -284,7 +284,6 @@ namespace WarningReporting {
             fflush(stdout);
         }
 
-        _adminLock.Unlock();
 
     }
 }
