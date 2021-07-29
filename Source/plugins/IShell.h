@@ -41,9 +41,20 @@ namespace PluginHost {
         // If this interface is requested outside of the main process, it will return a nullptr.
         /* @stubgen:omit */
         struct EXTERNAL ICOMLink {
+
+            struct INotification : virtual public Core::IUnknown {
+                virtual ~INotification() = default;
+                virtual void CleanedUp(const Core::IUnknown* source, const uint32_t interfaceId) = 0;
+                virtual void Revoked(const Core::IUnknown* remote, const uint32_t interfaceId) = 0;
+            };
+
             virtual ~ICOMLink() {}
             virtual void Register(RPC::IRemoteConnection::INotification* sink) = 0;
             virtual void Unregister(RPC::IRemoteConnection::INotification* sink) = 0;
+
+            virtual void Register(INotification* sink) = 0;
+            virtual void Unregister(INotification* sink) = 0;
+
             virtual RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) = 0;
             virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) = 0;
         };
@@ -242,6 +253,26 @@ namespace PluginHost {
             ICOMLink* handler(COMLink());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
+            ASSERT(handler != nullptr);
+
+            if (handler != nullptr) {
+                handler->Unregister(sink);
+            }
+        }
+        inline void Register(ICOMLink::INotification* sink)
+        {
+            ICOMLink* handler(COMLink());
+
+            ASSERT(handler != nullptr);
+
+            if (handler != nullptr) {
+                handler->Register(sink);
+            }
+        }
+        inline void Unregister(ICOMLink::INotification* sink)
+        {
+            ICOMLink* handler(COMLink());
+
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {
