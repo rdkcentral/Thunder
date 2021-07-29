@@ -777,7 +777,14 @@ namespace Bluetooth {
 
     public:
         GATTSocket(const Core::NodeId& localNode, const Core::NodeId& remoteNode, const uint16_t maxMTU)
-            : Core::SynchronousChannelType<Core::SocketPort>(SocketPort::SEQUENCED, localNode, remoteNode, maxMTU, maxMTU)
+            : Core::SynchronousChannelType<Core::SocketPort>(SocketPort::SEQUENCED, localNode, remoteNode, static_cast<uint16_t>(48*1024), static_cast<uint16_t>(48*1024))
+            , _adminLock()
+            , _sink(*this, maxMTU)
+            , _queue()
+        {
+        }
+        GATTSocket(const Core::NodeId& localNode, const Core::NodeId& remoteNode, const uint16_t maxMTU, const uint16_t sendBufferSize, const uint16_t recvBufferSize)
+            : Core::SynchronousChannelType<Core::SocketPort>(SocketPort::SEQUENCED, localNode, remoteNode, sendBufferSize, recvBufferSize)
             , _adminLock()
             , _sink(*this, maxMTU)
             , _queue()

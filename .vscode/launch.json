@@ -9,32 +9,76 @@
             "name": "Local Debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${env:HOME}/Thunder/install/usr/bin/WPEFramework",
+            "program": "${config:thunder.installPath}/usr/bin/WPEFramework",
             "args": [
-                "-c${env:HOME}/Thunder/install/etc/WPEFramework/config.json"
+                "-c${config:thunder.installPath}/etc/WPEFramework/config.json"
              ],
             "stopAtEntry": false,
-            "cwd": "${env:HOME}/Thunder/install",
-            "environment": [
-                { "name": "LD_LIBRARY_PATH", "value": "${env:HOME}/Thunder/install/usr/lib" },
-                { "name": "PATH", "value": "${env:HOME}/Thunder/install/usr/bin"},
-            ],
-            "additionalSOLibSearchPath": "${env:HOME}/Thunder/install/usr/lib;/usr/local/lib;/usr/lib;/lib",
+            "cwd": "${config:thunder.installPath}",
             "logging": {
                 "moduleLoad": false,
                 "trace": true
               },
             "externalConsole": false,
-            "miDebuggerPath": "gdb",
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
-            "sourceFileMap": {
+            "linux": {
+                "name": "Local Debug WPEFramework on Linux",
+                "program": "${config:thunder.installPath}/usr/bin/WPEFramework",
+                "type":"cppdbg",
+                "request": "launch",
+                "MIMode": "gdb",
+                "miDebuggerPath": "gdb",
+                "setupCommands": [
+                    {
+                        "description": "Enable pretty-printing for gdb",
+                        "text": "-enable-pretty-printing",
+                        "ignoreFailures": true
+                    }
+                ],
+                "sourceFileMap": {
+                },
+                "environment": [
+                    { "name": "LD_LIBRARY_PATH", "value": "${config:thunder.installPath}/usr/lib" },
+                    { "name": "PATH", "value": "${config:thunder.installPath}/usr/bin"},
+                ],
+                "additionalSOLibSearchPath": "${config:thunder.installPath}/usr/lib;/usr/local/lib;/usr/lib;/lib",
+            },
+        },
+        {
+            "name": "Remote Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${config:thunder.installPath}/usr/bin/WPEFramework",
+            "cwd": "${config:thunder.installPath}",
+            "stopAtEntry": false,
+            "logging": {
+                "moduleLoad": false,
+                "trace": false,
+                "traceResponse": false,
+                "engineLogging": false,
+              },
+            "linux": {
+                "name": "Remote Debug WPEFramework on Linux",
+                "program": "${config:thunder.installPath}/usr/bin/WPEFramework",
+                "type":"cppdbg",
+                "request": "launch",
+                "MIMode": "gdb",
+                "miDebuggerServerAddress": "${config:thunder.remoteTargetHost}:${config:thunder.remoteTargetDebugPort}",
+                "miDebuggerPath": "${config:thunder.crossToolsPath}/${config:thunder.crossToolsPrefix}gdb",
+                "miDebuggerArgs": "",
+                "setupCommands": [
+                    {"text": "-enable-pretty-printing"},
+                    // commands if gdbserver is started with --multi
+                    // {"text": "target extended-remote ${config:thunder.remoteTargetHost}:${config:thunder.remoteTargetDebugPort}"},
+                    // {"text": "set remote exec-file WPEFramework"}
+                ],
+                "sourceFileMap": {
+                    // "remote": "local"
+                    "/usr": "${config:thunder.installPath}/usr",
+                    "/usr/bin": "${config:thunder.installPath}/usr/bin",
+                    "/usr/lib": "${config:thunder.installPath}/usr/lib",
+                },
+                "preLaunchTask": "Prepare WPEFramework for remote gdb debugging",
+                "postDebugTask": "Clean debugging run"
             }
         }
     ]

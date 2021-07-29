@@ -170,6 +170,9 @@ namespace PluginHost {
                     _adminLock.Unlock();
                 }
             }
+            void Unavailable(const string& name, PluginHost::IShell* plugin) override
+            {
+            }
 
         private:
             mutable Core::CriticalSection _adminLock;

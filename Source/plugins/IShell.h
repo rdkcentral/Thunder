@@ -41,15 +41,27 @@ namespace PluginHost {
         // If this interface is requested outside of the main process, it will return a nullptr.
         /* @stubgen:omit */
         struct EXTERNAL ICOMLink {
+
+            struct INotification : virtual public Core::IUnknown {
+                virtual ~INotification() = default;
+                virtual void CleanedUp(const Core::IUnknown* source, const uint32_t interfaceId) = 0;
+                virtual void Revoked(const Core::IUnknown* remote, const uint32_t interfaceId) = 0;
+            };
+
             virtual ~ICOMLink() {}
             virtual void Register(RPC::IRemoteConnection::INotification* sink) = 0;
             virtual void Unregister(RPC::IRemoteConnection::INotification* sink) = 0;
+
+            virtual void Register(INotification* sink) = 0;
+            virtual void Unregister(INotification* sink) = 0;
+
             virtual RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) = 0;
             virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) = 0;
         };
 
         // State of the IPlugin interface associated with this shell.
         enum state : uint8_t {
+            UNAVAILABLE,
             DEACTIVATED,
             DEACTIVATION,
             ACTIVATED,
@@ -95,10 +107,9 @@ namespace PluginHost {
             }
 
         public:
-            static Core::ProxyType<Core::IDispatch>
-            Create(IShell* shell, IShell::state toState, IShell::reason why);
+            static Core::ProxyType<Core::IDispatch> Create(IShell* shell, IShell::state toState, IShell::reason why);
 
-            virtual void Dispatch()
+            void Dispatch() override
             {
                 ASSERT(_shell != nullptr);
 
@@ -209,10 +220,11 @@ namespace PluginHost {
         virtual state State() const = 0;
         virtual void* /* @interface:id */ QueryInterfaceByCallsign(const uint32_t id, const string& name) = 0;
 
-        // Methods to Activate and Deactivate the aggregated Plugin to this shell.
+        // Methods to Activate/Deactivate and Unavailable the aggregated Plugin to this shell.
         // NOTE: These are Blocking calls!!!!!
         virtual uint32_t Activate(const reason) = 0;
         virtual uint32_t Deactivate(const reason) = 0;
+        virtual uint32_t Unavailable(const reason) = 0;
         virtual reason Reason() const = 0;
 
         // Method to access, in the main process space, the channel factory to submit JSON objects to be send.
@@ -241,6 +253,26 @@ namespace PluginHost {
             ICOMLink* handler(COMLink());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
+            ASSERT(handler != nullptr);
+
+            if (handler != nullptr) {
+                handler->Unregister(sink);
+            }
+        }
+        inline void Register(ICOMLink::INotification* sink)
+        {
+            ICOMLink* handler(COMLink());
+
+            ASSERT(handler != nullptr);
+
+            if (handler != nullptr) {
+                handler->Register(sink);
+            }
+        }
+        inline void Unregister(ICOMLink::INotification* sink)
+        {
+            ICOMLink* handler(COMLink());
+
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {

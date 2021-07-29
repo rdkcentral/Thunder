@@ -27,14 +27,11 @@
     <ClCompile Include="Module.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ProxyStubs.cpp">
+    <ClCompile Include="ConnectorType.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="generated\ProxyStubs_COM.cpp">
       <Filter>Generated Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ConnectorType.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -69,6 +66,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ConnectorType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IRPCIterator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -230,6 +230,7 @@ namespace RPC {
                 , _exchangeId(~0)
                 , _versionId(0)
             {
+                _className[0] = '\0';
             }
             ~Init()
             {

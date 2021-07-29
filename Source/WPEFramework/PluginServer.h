@@ -855,6 +855,14 @@ namespace PluginHost {
             {
                 _administrator.Unregister(sink);
             }
+            void Register(IShell::ICOMLink::INotification* sink)
+            {
+                _administrator.Register(sink);
+            }
+            void Unregister(IShell::ICOMLink::INotification* sink)
+            {
+                _administrator.Unregister(sink);
+            }
             RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) override
             {
                 return (_administrator.RemoteConnection(connectionId));
@@ -862,14 +870,16 @@ namespace PluginHost {
 
             // Methods to Activate and Deactivate the aggregated Plugin to this shell.
             // These are Blocking calls!!!!!
-            virtual uint32_t Activate(const reason) override;
-            virtual uint32_t Deactivate(const reason) override;
-            uint32_t Suspend(const reason);
-            uint32_t Resume(const reason);
-            virtual reason Reason() const
+            uint32_t Activate(const reason) override;
+            uint32_t Deactivate(const reason) override;
+            uint32_t Unavailable(const reason) override;
+            reason Reason() const override
             {
                 return (_reason);
             }
+
+            uint32_t Suspend(const reason);
+            uint32_t Resume(const reason);
             bool HasVersionSupport(const string& number) const
             {
 
@@ -981,8 +991,7 @@ namespace PluginHost {
                 _pluginHandling.Lock();
 
                 ASSERT(State() != ACTIVATED);
-                ASSERT(_handler != nullptr);
-
+  
                 IPlugin* currentIF = _handler;
 
                 if (_webRequest != nullptr) {
@@ -1018,10 +1027,13 @@ namespace PluginHost {
 
                 _pluginHandling.Unlock();
 
-                currentIF->Release();
+                if (currentIF != nullptr) {
 
-                // Could be that we can now drop the dynamic library...
-                Core::ServiceAdministrator::Instance().FlushLibraries();
+                    currentIF->Release();
+
+                    // Could be that we can now drop the dynamic library...
+                    Core::ServiceAdministrator::Instance().FlushLibraries();
+                }
             }
 
         private:
@@ -1050,16 +1062,14 @@ namespace PluginHost {
         };
         class ServiceMap {
         public:
-            typedef Core::IteratorMapType<std::map<const string, Core::ProxyType<Service>>, Core::ProxyType<Service>, const string&> Iterator;
-            typedef std::map<const string, IRemoteInstantiation*> RemoteInstantiators;
+            using Iterator = Core::IteratorMapType<std::map<const string, Core::ProxyType<Service>>, Core::ProxyType<Service>, const string&>;
+            using RemoteInstantiators = std::map<const string, IRemoteInstantiation*>;
 
         private:
-            ServiceMap() = delete;
-            ServiceMap(const ServiceMap&) = delete;
-            ServiceMap& operator=(const ServiceMap&) = delete;
-
             class CommunicatorServer : public RPC::Communicator {
             private:
+                using ObserverList = std::list<IShell::ICOMLink::INotification*>;
+
                 class RemoteHost : public RPC::Communicator::RemoteConnection {
                 private:
                     friend class Core::Service<RemoteHost>;
@@ -1126,6 +1136,7 @@ namespace PluginHost {
                 CommunicatorServer() = delete;
                 CommunicatorServer(const CommunicatorServer&) = delete;
                 CommunicatorServer& operator=(const CommunicatorServer&) = delete;
+
                 CommunicatorServer(
                     ServiceMap& parent,
                     const Core::NodeId& node,
@@ -1166,6 +1177,11 @@ namespace PluginHost {
                 }
                 virtual ~CommunicatorServer()
                 {
+                    ASSERT(_requestObservers.size() == 0 && "Sink for ICOMLink::INotifications not unregistered!");
+                    while (_requestObservers.size() != 0) {
+                        _requestObservers.front()->Release();
+                        _requestObservers.pop_front();
+                    }
                 }
 
             public:
@@ -1205,6 +1221,54 @@ namespace PluginHost {
                 {
                     return (_application);
                 }
+                void Register(RPC::IRemoteConnection::INotification* sink)
+                {
+                    RPC::Communicator::Register(sink);
+                }
+                void Unregister(RPC::IRemoteConnection::INotification* sink)
+                {
+                    RPC::Communicator::Unregister(sink);
+                }
+                void Register(IShell::ICOMLink::INotification* sink)
+                {
+                    ASSERT(sink != nullptr);
+
+                    if (sink != nullptr) {
+
+                        _adminLock.Lock();
+
+                        ObserverList::iterator index = std::find(_requestObservers.begin(), _requestObservers.end(), sink);
+
+                        ASSERT(index == _requestObservers.end());
+
+                        if (index == _requestObservers.end()) {
+                            sink->AddRef();
+                            _requestObservers.push_back(sink);
+                        }
+
+                        _adminLock.Unlock();
+                    }
+                }
+                void Unregister(IShell::ICOMLink::INotification* sink)
+                {
+                    ASSERT(sink != nullptr);
+
+                    if (sink != nullptr) {
+
+                        _adminLock.Lock();
+
+                        ObserverList::iterator index = std::find(_requestObservers.begin(), _requestObservers.end(), sink);
+
+                        ASSERT(index != _requestObservers.end());
+
+                        if (index != _requestObservers.end()) {
+                            (*index)->Release();
+                            _requestObservers.erase(index);
+                        }
+
+                        _adminLock.Unlock();
+                    }
+                }
 
             private:
                 RPC::Communicator::RemoteConnection* CreateStarter(const RPC::Config& config, const RPC::Object& instance) override
@@ -1225,6 +1289,28 @@ namespace PluginHost {
                     return (_parent.Aquire(interfaceId, className, version));
                 }
 
+                void Cleanup(const Core::IUnknown* source, const uint32_t interfaceId) override
+                {
+                    _adminLock.Lock();
+
+                    for (auto& observer : _requestObservers) {
+                        observer->CleanedUp(source, interfaceId);
+                    }
+
+                    _adminLock.Unlock();
+                }
+
+                void Revoke(const Core::IUnknown* remote, const uint32_t interfaceId) override
+                {
+                    _adminLock.Lock();
+
+                    for (auto& observer : _requestObservers) {
+                        observer->Revoked(remote, interfaceId);
+                    }
+
+                    _adminLock.Unlock();
+                }
+
             private:
                 ServiceMap& _parent;
                 const string _persistentPath;
@@ -1236,6 +1322,7 @@ namespace PluginHost {
                 const string _postMortemPath;
                 const string _application;
                 mutable Core::CriticalSection _adminLock;
+                ObserverList _requestObservers;
             };
             class RemoteInstantiation : public IRemoteInstantiation {
             private:
@@ -1579,6 +1666,10 @@ namespace PluginHost {
             };
 
         public:
+            ServiceMap() = delete;
+            ServiceMap(const ServiceMap&) = delete;
+            ServiceMap& operator=(const ServiceMap&) = delete;
+
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
@@ -1658,10 +1749,8 @@ namespace PluginHost {
             {
                 return (reinterpret_cast<ISubSystem*>(_subSystems.QueryInterface(ISubSystem::ID)));
             }
-            void Activated(PluginHost::IShell* entry)
+            void Activated(const string& callsign, PluginHost::IShell* entry)
             {
-                string callsign = entry->Callsign();
-
                 _notificationLock.Lock();
 
                 std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
@@ -1673,16 +1762,29 @@ namespace PluginHost {
 
                 _notificationLock.Unlock();
             }
-            void Deactivated(PluginHost::IShell* entry)
-            {
-                string callsign = entry->Callsign();
 
+            void Deactivated(const string& callsign, PluginHost::IShell* entry)
+            {
                 _notificationLock.Lock();
 
                 std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
 
                 while (currentlist.size()) {
                     currentlist.front()->Deactivated(callsign, entry);
+                    currentlist.pop_front();
+                }
+
+                _notificationLock.Unlock();
+            }
+
+            void Unavailable(const string& callsign, PluginHost::IShell* entry)
+            {
+                _notificationLock.Lock();
+
+                std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
+
+                while (currentlist.size()) {
+                    currentlist.front()->Unavailable(callsign, entry);
                     currentlist.pop_front();
                 }
 
@@ -1756,6 +1858,14 @@ namespace PluginHost {
                 _processAdministrator.Register(sink);
             }
             void Unregister(RPC::IRemoteConnection::INotification* sink)
+            {
+                _processAdministrator.Unregister(sink);
+            }
+            void Register(IShell::ICOMLink::INotification* sink)
+            {
+                _processAdministrator.Register(sink);
+            }
+            void Unregister(IShell::ICOMLink::INotification* sink)
             {
                 _processAdministrator.Unregister(sink);
             }
@@ -2001,16 +2111,14 @@ namespace PluginHost {
         public:
             class Job : public Core::IDispatch {
             public:
-                Job() = delete;
                 Job(const Job&) = delete;
                 Job& operator=(const Job&) = delete;
 
-                Job(Server* server)
+                Job()
                     : _ID(~0)
-                    , _server(server)
+                    , _server(nullptr)
                     , _service()
                 {
-                    ASSERT(server != nullptr);
                 }
                 ~Job() override
                 {
@@ -2037,7 +2145,7 @@ namespace PluginHost {
                         _service.Release();
                     }
                 }
-                void Set(const uint32_t id, Core::ProxyType<Service>& service)
+                void Set(const uint32_t id, Server* server, Core::ProxyType<Service>& service)
                 {
                     ASSERT(_service.IsValid() == false);
                     ASSERT(_ID == static_cast<uint32_t>(~0));
@@ -2045,6 +2153,7 @@ namespace PluginHost {
 
                     _ID = id;
                     _service = service;
+                    _server = server;
                 }
                 string Process(const string& message)
                 {
@@ -2073,9 +2182,11 @@ namespace PluginHost {
                 template <typename PACKAGE>
                 void Submit(PACKAGE package)
                 {
+                    ASSERT(_server != nullptr);
                     _server->Dispatcher().Submit(_ID, package);
                 }
                 void RequestClose() {
+                    ASSERT(_server != nullptr);
                     _server->Dispatcher().RequestClose(_ID);
                 }
                 string Callsign() const {
@@ -2090,12 +2201,11 @@ namespace PluginHost {
             };
             class WebRequestJob : public Job {
             public:
-                WebRequestJob() = delete;
                 WebRequestJob(const WebRequestJob&) = delete;
                 WebRequestJob& operator=(const WebRequestJob&) = delete;
 
-                WebRequestJob(Server* server)
-                    : Job(server)
+                WebRequestJob()
+                    : Job()
                     , _request()
                     , _jsonrpc(false)
                 {
@@ -2115,9 +2225,9 @@ namespace PluginHost {
                     _missingResponse->ErrorCode = Web::STATUS_INTERNAL_SERVER_ERROR;
                     _missingResponse->Message = _T("There is no response from the requested service.");
                 }
-                void Set(const uint32_t id, Core::ProxyType<Service>& service, Core::ProxyType<Web::Request>& request, const string& token, const bool JSONRPC)
+                void Set(const uint32_t id, Server* server, Core::ProxyType<Service>& service, Core::ProxyType<Web::Request>& request, const string& token, const bool JSONRPC)
                 {
-                    Job::Set(id, service);
+                    Job::Set(id, server, service);
 
                     ASSERT(_request.IsValid() == false);
 
@@ -2200,12 +2310,11 @@ namespace PluginHost {
             };
             class JSONElementJob : public Job {
             public:
-                JSONElementJob() = delete;
                 JSONElementJob(const JSONElementJob&) = delete;
                 JSONElementJob& operator=(const JSONElementJob&) = delete;
 
-                JSONElementJob(Server* server)
-                    : Job(server)
+                JSONElementJob()
+                    : Job()
                     , _element()
                     , _jsonrpc(false)
                 {
@@ -2220,9 +2329,9 @@ namespace PluginHost {
                 }
 
             public:
-                void Set(const uint32_t id, Core::ProxyType<Service>& service, Core::ProxyType<Core::JSON::IElement>& element, const string& token, const bool JSONRPC)
+                void Set(const uint32_t id, Server* server, Core::ProxyType<Service>& service, Core::ProxyType<Core::JSON::IElement>& element, const string& token, const bool JSONRPC)
                 {
-                    Job::Set(id, service);
+                    Job::Set(id, server, service);
 
                     ASSERT(_element.IsValid() == false);
 
@@ -2270,12 +2379,11 @@ namespace PluginHost {
             };
             class TextJob : public Job {
             public:
-                TextJob() = delete;
                 TextJob(const TextJob&) = delete;
                 TextJob& operator=(const TextJob&) = delete;
 
-                TextJob(Server* server)
-                    : Job(server)
+                TextJob()
+                    : Job()
                     , _text()
                 {
                 }
@@ -2284,9 +2392,9 @@ namespace PluginHost {
                 }
 
             public:
-                void Set(const uint32_t id, Core::ProxyType<Service>& service, const string& text)
+                void Set(const uint32_t id, Server* server, Core::ProxyType<Service>& service, const string& text)
                 {
-                    Job::Set(id, service);
+                    Job::Set(id, server, service);
                     _text = text;
                 }
                 void Dispatch() override
@@ -2537,13 +2645,13 @@ namespace PluginHost {
                     } else {
                         // Send the Request object out to be handled.
                         // By definition, we can issue it on a rental thread..
-                        Core::ProxyType<WebRequestJob> job(_webJobs.Element(&_parent));
+                        Core::ProxyType<WebRequestJob> job(_webJobs.Element());
 
                         ASSERT(job.IsValid() == true);
 
                         if (job.IsValid() == true) {
                             Core::ProxyType<Web::Request> baseRequest(Core::proxy_cast<Web::Request>(request));
-                            job->Set(Id(), service, baseRequest, _security->Token(), !request->ServiceCall());
+                            job->Set(Id(), &_parent, service, baseRequest, _security->Token(), !request->ServiceCall());
                             _parent.Submit(Core::proxy_cast<Core::IDispatchType<void>>(job));
                         }
                     }
@@ -2612,12 +2720,12 @@ namespace PluginHost {
                 if (securityClearance == true) {
                     // Send the JSON object out to be handled.
                     // By definition, we can issue it on a rental thread..
-                    Core::ProxyType<JSONElementJob> job(_jsonJobs.Element(&_parent));
+                    Core::ProxyType<JSONElementJob> job(_jsonJobs.Element());
 
                     ASSERT(job.IsValid() == true);
 
                     if ((_service.IsValid() == true) && (job.IsValid() == true)) {
-                        job->Set(Id(), _service, element, _security->Token(), ((State() & Channel::JSONRPC) != 0));
+                        job->Set(Id(), &_parent, _service, element, _security->Token(), ((State() & Channel::JSONRPC) != 0));
                         _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
                     }
                 }
@@ -2630,12 +2738,12 @@ namespace PluginHost {
 
                 // Send the JSON object out to be handled.
                 // By definition, we can issue it on a rental thread..
-                Core::ProxyType<TextJob> job(_textJobs.Element(&_parent));
+                Core::ProxyType<TextJob> job(_textJobs.Element());
 
                 ASSERT(job.IsValid() == true);
 
                 if ((_service.IsValid() == true) && (job.IsValid() == true)) {
-                    job->Set(Id(), _service, value);
+                    job->Set(Id(), &_parent, _service, value);
                     _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
                 }
             }
