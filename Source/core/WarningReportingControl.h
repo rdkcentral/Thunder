@@ -479,7 +479,8 @@ namespace WarningReporting {
         ~WarningReportingType() override = default;
 
     private:
-        // HPL todo: The code is duplicated, perhaps possible to nest it?        HAS_MEMBER(IsWarning, hasIsWarning);
+        // HPL todo: The code is duplicated, perhaps possible to nest it?        
+        HAS_MEMBER(IsWarning, hasIsWarning);
         template <typename T = CATEGORY>
         inline typename Core::TypeTraits::enable_if<!hasIsWarning<T, bool (T::*)() const>::value, bool>::type
         CallIsWarning() const
