@@ -33,6 +33,43 @@ namespace Core {
         , _error()
     {
     }
+    Library::Library(const void* functionInLibrary) {
+        TCHAR filename[512];
+        HMODULE handle = nullptr;
+
+#ifdef __WINDOWS__
+        GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+            GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+            (LPCSTR)functionInLibrary, &handle);
+
+        if (handle != nullptr) {
+            GetModuleFileName(handle, filename, sizeof(filename));
+
+            // Looks like we need to add a ref count by opening it..
+            handle = ::LoadLibrary(filename);
+        }
+#endif
+#ifdef __LINUX__
+        Dl_info info;
+        if (dladdr(functionInLibrary, &info) != 0) {
+            _tcsncpy (filename, info.dli_fname, sizeof(filename))
+            handle = ::dlopen(filename);
+        }
+#endif
+        if (handle != nullptr) {
+            // Seems we have an dynamic library opened..
+            _refCountedHandle = new RefCountedHandle;
+            _refCountedHandle->_referenceCount = 1;
+            _refCountedHandle->_handle = handle;
+            _refCountedHandle->_name = filename;
+        }
+        else {
+#ifdef __LINUX__
+            _error = dlerror();
+            TRACE_L1("Failed to load library: %s, error %s", fileName, _error.c_str());
+#endif
+        }
+    }
     Library::Library(const TCHAR fileName[])
         : _refCountedHandle(nullptr)
         , _error()
