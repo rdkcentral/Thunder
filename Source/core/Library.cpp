@@ -35,9 +35,9 @@ namespace Core {
     }
     Library::Library(const void* functionInLibrary) {
         TCHAR filename[512];
-        HMODULE handle = nullptr;
 
 #ifdef __WINDOWS__
+        HMODULE handle = nullptr;
         GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
             (LPCSTR)functionInLibrary, &handle);
@@ -50,10 +50,11 @@ namespace Core {
         }
 #endif
 #ifdef __LINUX__
+        void* handle = nullptr;
         Dl_info info;
         if (dladdr(functionInLibrary, &info) != 0) {
-            _tcsncpy (filename, info.dli_fname, sizeof(filename))
-            handle = ::dlopen(filename);
+            _tcsncpy (filename, info.dli_fname, sizeof(filename) - 1);
+            handle = ::dlopen(filename, RTLD_NOLOAD);
         }
 #endif
         if (handle != nullptr) {
