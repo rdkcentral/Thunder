@@ -185,6 +185,16 @@ namespace PluginHost {
         //! DataPath: <config:datapath>/<plugin:classname>/
         virtual string DataPath() const = 0;
 
+#ifdef PROCESSCONTAINERS_ENABLED
+        //! ProcessContainersPath: <config:processcontainerspath>/<plugin:classname>/
+        virtual string ProcessContainersPath() const = 0;
+#else
+        virtual inline string ProcessContainersPath() const
+        {
+            return string();
+        }
+#endif
+
         //! VolatilePath: <config:volatilepath>/<plugin:callsign>/
         virtual string ProxyStubPath() const = 0;
 

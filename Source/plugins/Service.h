@@ -38,6 +38,24 @@ namespace PluginHost {
             Config(const Config&) = delete;
             Config& operator=(const Config&) = delete;
 
+        public:
+#ifdef PROCESSCONTAINERS_ENABLED
+            Config(const Plugin::Config& plugin, const string& webPrefix, const string& persistentPath, const string& dataPath, const string& volatilePath,  const string& processContainersPath)
+            {
+                const string& callSign(plugin.Callsign.Value());
+
+                _webPrefix = webPrefix + '/' + callSign;
+                _persistentPath = plugin.PersistentPath(persistentPath);
+                _dataPath = plugin.DataPath(dataPath);
+                _volatilePath = plugin.VolatilePath(volatilePath);
+                _processContainersPath = plugin.ProcessContainersPath(processContainersPath);
+
+                // Volatile means that the path could not have been created, create it for now.
+                Core::Directory(_volatilePath.c_str()).CreatePath();
+
+                Update(plugin);
+            }
+#else
             Config(const Plugin::Config& plugin, const string& webPrefix, const string& persistentPath, const string& dataPath, const string& volatilePath)
             {
                 const string& callSign(plugin.Callsign.Value());
@@ -52,6 +70,8 @@ namespace PluginHost {
 
                 Update(plugin);
             }
+#endif
+
             ~Config()
             {
             }
@@ -96,11 +116,21 @@ namespace PluginHost {
             }
 
             // DataPath is a path, to a location (read-only to be used to store
-            // This path is build up from: DataPath / callSign /
+            // This path is build up from: DataPath / className /
             inline const string& DataPath() const
             {
                 return (_dataPath);
             }
+
+#ifdef PROCESSCONTAINERS_ENABLED
+            // ProcessContainersPath is a path, to a location (r/w) to be used to
+            // store plugin container configs.
+            // This path is built up from: DataPath / className /
+            inline const string& ProcessContainersPath() const
+            {
+                return (_processContainersPath);
+            }
+#endif
 
             inline void Update(const Plugin::Config& config)
             {
@@ -134,6 +164,7 @@ namespace PluginHost {
             string _persistentPath;
             string _volatilePath;
             string _dataPath;
+            string _processContainersPath;
             string _accessor;
             std::list<uint8_t> _versions;
         };
@@ -146,14 +177,22 @@ namespace PluginHost {
         Service(const Service&) = delete;
         Service& operator=(const Service&) = delete;
 
+#ifdef PROCESSCONTAINERS_ENABLED
+        Service(const Plugin::Config& plugin, const string& webPrefix, const string& persistentPath, const string& dataPath, const string& volatilePath, const string& processContainersPath)
+#else
         Service(const Plugin::Config& plugin, const string& webPrefix, const string& persistentPath, const string& dataPath, const string& volatilePath)
+#endif
             : _adminLock()
             #if THUNDER_RUNTIME_STATISTICS
             , _processedRequests(0)
             , _processedObjects(0)
             #endif
             , _state(DEACTIVATED)
+            #ifdef PROCESSCONTAINERS_ENABLED
+            , _config(plugin, webPrefix, persistentPath, dataPath, volatilePath, processContainersPath)
+            #else
             , _config(plugin, webPrefix, persistentPath, dataPath, volatilePath)
+            #endif
             #if THUNDER_RESTFULL_API
             , _notifiers()
             #endif
@@ -201,6 +240,13 @@ namespace PluginHost {
         {
             return (_config.DataPath());
         }
+
+#ifdef PROCESSCONTAINERS_ENABLED
+        string ProcessContainersPath() const override
+        {
+            return (_config.ProcessContainersPath());
+        }
+#endif
         state State() const override
         {
             return (_state);

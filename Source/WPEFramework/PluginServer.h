@@ -420,7 +420,11 @@ namespace PluginHost {
 
         public:
             Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator)
+#ifdef PROCESSCONTAINERS_ENABLED
+                : PluginHost::Service(plugin, server.WebPrefix(), server.PersistentPath(), server.DataPath(), server.VolatilePath(), server.ProcessContainersPath())
+#else
                 : PluginHost::Service(plugin, server.WebPrefix(), server.PersistentPath(), server.DataPath(), server.VolatilePath())
+#endif
                 , _pluginHandling()
                 , _handler(nullptr)
                 , _extended(nullptr)
@@ -841,8 +845,11 @@ namespace PluginHost {
             {
                 ASSERT(_connection == nullptr);
 
+#ifdef PROCESSCONTAINERS_ENABLED
+                void* result(_administrator.Instantiate(object, waitTime, sessionId, DataPath(), PersistentPath(), VolatilePath(), ProcessContainersPath()));
+#else
                 void* result(_administrator.Instantiate(object, waitTime, sessionId, DataPath(), PersistentPath(), VolatilePath()));
-
+#endif
                 _connection = _administrator.RemoteConnection(sessionId);
 
                 return (result);
@@ -1345,6 +1352,9 @@ namespace PluginHost {
                     const string& systemPath,
                     const string& dataPath,
                     const string& volatilePath,
+#ifdef PROCESSCONTAINERS_ENABLED
+                    const string& processContainersPath,
+#endif
                     const string& appPath,
                     const string& proxyStubPath,
                     const string& postMortemPath,
@@ -1355,6 +1365,9 @@ namespace PluginHost {
                     , _systemPath(systemPath.empty() == false ? Core::Directory::Normalize(systemPath) : systemPath)
                     , _dataPath(dataPath.empty() == false ? Core::Directory::Normalize(dataPath) : dataPath)
                     , _volatilePath(volatilePath.empty() == false ? Core::Directory::Normalize(volatilePath) : volatilePath)
+#ifdef PROCESSCONTAINERS_ENABLED
+                    , _processContainersPath(processContainersPath.empty() == false ? Core::Directory::Normalize(processContainersPath) : processContainersPath)
+#endif
                     , _appPath(appPath.empty() == false ? Core::Directory::Normalize(appPath) : appPath)
                     , _proxyStubPath(proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath)
                     , _postMortemPath(postMortemPath.empty() == false ? Core::Directory::Normalize(postMortemPath) : postMortemPath)
@@ -1386,10 +1399,18 @@ namespace PluginHost {
                 }
 
             public:
+
+#ifdef PROCESSCONTAINERS_ENABLED
+                void* Create(uint32_t& connectionId, const RPC::Object& instance, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath, const string& processContainersPath)
+                {
+                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, volatilePath, processContainersPath, _appPath, _proxyStubPath, _postMortemPath), waitTime));
+                }
+#else
                 void* Create(uint32_t& connectionId, const RPC::Object& instance, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath)
                 {
                     return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, volatilePath, _appPath, _proxyStubPath, _postMortemPath), waitTime));
                 }
+#endif
                 const string& PersistentPath() const
                 {
                     return (_persistentPath);
@@ -1406,6 +1427,12 @@ namespace PluginHost {
                 {
                     return (_volatilePath);
                 }
+#ifdef PROCESSCONTAINERS_ENABLED
+                const string& ProcessContainersPath() const
+                {
+                    return (_processContainersPath);
+                }
+#endif
                 const string& AppPath() const
                 {
                     return (_appPath);
@@ -1518,6 +1545,9 @@ namespace PluginHost {
                 const string _systemPath;
                 const string _dataPath;
                 const string _volatilePath;
+#ifdef PROCESSCONTAINERS_ENABLED
+                const string _processContainersPath;
+#endif
                 const string _appPath;
                 const string _proxyStubPath;
                 const string _postMortemPath;
@@ -1584,6 +1614,9 @@ namespace PluginHost {
                     string persistentPath(_comms.PersistentPath());
                     string dataPath(_comms.DataPath());
                     string volatilePath(_comms.VolatilePath());
+#ifdef PROCESSCONTAINERS_ENABLED
+                    string processContainersPath(_comms.ProcessContainersPath());
+#endif
 
                     if (callsign.empty() == false) {
                         dataPath += callsign + '/';
@@ -1592,9 +1625,12 @@ namespace PluginHost {
                     }
 
                     uint32_t id;
+#ifdef PROCESSCONTAINERS_ENABLED
+                    RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, processContainersPath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath());
+#else
                     RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath());
+#endif
                     RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, linkLoaderPath, _T(""), configuration);
-
                     RPC::Process process(requestId, config, instance);
 
                     return (process.Launch(id));
@@ -1723,6 +1759,9 @@ namespace PluginHost {
                     config.SystemPath(), 
                     config.DataPath(), 
                     config.VolatilePath(), 
+#ifdef PROCESSCONTAINERS_ENABLED
+                    config.ProcessContainersPath(),
+#endif
                     config.AppPath(), 
                     config.ProxyStubPath(), 
                     config.PostMortemPath(), 
@@ -1885,10 +1924,17 @@ namespace PluginHost {
                 return (result);
             }
 
+#ifdef PROCESSCONTAINERS_ENABLED
+            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& dataPath, const string& persistentPath, const string& volatilePath, const string& processContainersPath)
+            {
+                return (_processAdministrator.Create(sessionId, object, waitTime, dataPath, persistentPath, volatilePath, processContainersPath));
+            }
+#else
             void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& dataPath, const string& persistentPath, const string& volatilePath)
             {
                 return (_processAdministrator.Create(sessionId, object, waitTime, dataPath, persistentPath, volatilePath));
             }
+#endif
             void Register(RPC::IRemoteConnection::INotification* sink)
             {
                 _processAdministrator.Register(sink);

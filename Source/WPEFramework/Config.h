@@ -54,6 +54,11 @@ namespace PluginHost {
                 _variables.insert(std::make_pair("volatilepath", [](const Config& config, const Plugin::Config* info) {
                     return (info == nullptr ? config.VolatilePath() : info->VolatilePath(config.VolatilePath()));
                 }));
+#ifdef PROCESSCONTAINERS_ENABLED
+                _variables.insert(std::make_pair("searchpath", [](const Config& config, const Plugin::Config* info) {
+                    return (info == nullptr ? config.ProcessContainersPath() : info->ProcessContainersPath(config.ProcessContainersPath()));
+                }));
+#endif
                 _variables.insert(std::make_pair("proxystubpath", [](const Config& config, const Plugin::Config*) {
                     return (config.ProxyStubPath());
                 }));
@@ -260,24 +265,30 @@ namespace PluginHost {
             public:
                 ProcessContainerConfig()
                     : Logging(_T("NONE"))
+                    , SearchPath()
                 {
 
                     Add(_T("logging"), &Logging);
+                    Add(_T("searchpath"), &SearchPath);
                 }
                 ProcessContainerConfig(const ProcessContainerConfig& copy)
                     : Logging(copy.Logging)
+                    , SearchPath(copy.SearchPath)
                 {
                     Add(_T("logging"), &Logging);
+                    Add(_T("searchpath"), &SearchPath);
                 }
                 ~ProcessContainerConfig() override = default;
 
                 ProcessContainerConfig& operator=(const ProcessContainerConfig& RHS)
                 {
                     Logging = RHS.Logging;
+                    SearchPath = RHS.SearchPath;
                     return (*this);
                 }
 
                 Core::JSON::String Logging;
+                Core::JSON::String SearchPath;
             };
 
 #endif
@@ -525,6 +536,7 @@ namespace PluginHost {
                 _JSONRPCPrefix = '/' + config.JSONRPC.Value();
 #ifdef PROCESSCONTAINERS_ENABLED
                 _ProcessContainersLogging = config.ProcessContainers.Logging.Value();
+                _processContainersPath = Core::Directory::Normalize(config.ProcessContainers.SearchPath.Value());
 #endif
                 _volatilePath = Core::Directory::Normalize(config.VolatilePath.Value());
                 _persistentPath = Core::Directory::Normalize(config.PersistentPath.Value());
@@ -658,6 +670,10 @@ namespace PluginHost {
 #ifdef PROCESSCONTAINERS_ENABLED
         inline const string& ProcessContainersLogging() const {
             return (_ProcessContainersLogging);
+        }
+        inline const string& ProcessContainersPath() const
+        {
+            return (_processContainersPath);
         }
 #endif
         inline const string& VolatilePath() const
@@ -928,6 +944,7 @@ namespace PluginHost {
         mutable Core::CriticalSection _configLock;
 #ifdef PROCESSCONTAINERS_ENABLED
         string _ProcessContainersLogging;
+        string _processContainersPath;
 #endif
         std::vector<std::string> _linkerPluginPaths;
     };
