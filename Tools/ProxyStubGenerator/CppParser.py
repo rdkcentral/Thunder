@@ -36,6 +36,10 @@ class LoaderError(RuntimeError):
         msg = "%s: load error: %s" % (file, msg)
         super(LoaderError, self).__init__(msg)
 
+class Warning():
+    def __init__(self, msg):
+        msg = "WARNING: %s(%s): %s" % (CurrentFile(), CurrentLine(), msg)
+        print(msg)
 
 # Checks if identifier is valid.
 def is_valid(token):
@@ -1302,6 +1306,7 @@ def __Tokenize(contents):
 
                 if _find("@stubgen", token):
                     if "@stubgen:skip" in token:
+                        Warning("@stubgen:skip is deprecated")
                         skipmode = True
                     elif "@stubgen:omit" in token:
                         tagtokens.append("@OMIT")
@@ -1641,6 +1646,10 @@ def Parse(contents):
                 new_class.is_iterator = True
                 event_next = False
 
+            if new_class.parent.omit:
+                # Inherit omiting...
+                new_class.omit = True
+
             if last_template_def:
                 new_class.specifiers.append(" ".join(last_template_def))
                 last_template_def = []
@@ -1723,10 +1732,7 @@ def Parse(contents):
             # locate return value
             while j >= min_index and tokens[j] not in ['{', '}', ';', ':']:
                 j -= 1
-            if not current_block[-1].omit and not omit_next:
-                ret_type = tokens[j + 1:k]
-            else:
-                ret_type = []
+            ret_type = tokens[j + 1:k]
 
             if isinstance(current_block[-1], Class):
                 if name[0] == "~":
