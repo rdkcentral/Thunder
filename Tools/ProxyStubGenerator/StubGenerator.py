@@ -29,6 +29,9 @@ import argparse
 import copy
 import CppParser
 from collections import OrderedDict
+sys.path.append("../")
+import Log
+
 
 VERSION = "1.6.11"
 NAME = "ProxyStubGenerator"
@@ -56,41 +59,8 @@ INSTANCE_ID = "RPC::instance_id"
 DEFAULT_DEFINITIONS_FILE = "default.h"
 IDS_DEFINITIONS_FILE = "Ids.h"
 
-# -------------------------------------------------------------------------
-# Logger
 
-
-class Log:
-    def __init__(self):
-        self.warnings = []
-        self.errors = []
-        self.infos = []
-
-    def Info(self, text, file=""):
-        if BE_VERBOSE:
-            self.infos.append("%s: INFO: %s%s%s" % (NAME, file, ": " if file else "", text))
-            print(self.infos[-1])
-
-    def Warn(self, text, file=""):
-        if SHOW_WARNINGS:
-            self.warnings.append("%s: WARNING: %s%s%s" % (NAME, file, ": " if file else "", text))
-            print(self.warnings[-1])
-
-    def Error(self, text, file=""):
-        self.errors.append("%s: ERROR: %s%s%s" % (NAME, file, ": " if file else "", text))
-        print(self.errors[-1], file=sys.stderr)
-
-    def Print(self, text, file=""):
-        print("%s: %s%s%s" % (NAME, file, ": " if file else "", text))
-
-    def Dump(self):
-        if self.errors or self.warnings or self.infos:
-            print("")
-            for item in self.errors + self.warnings + self.infos:
-                print(item)
-
-
-log = Log()
+log = Log.Log(NAME,BE_VERBOSE,SHOW_WARNINGS)
 
 # -------------------------------------------------------------------------
 # Exception classes
@@ -171,7 +141,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
 
     ids = os.path.join("@" + os.path.dirname(source_file), IDS_DEFINITIONS_FILE)
 
-    tree = CppParser.ParseFiles([defaults, ids, source_file], includePaths)
+    tree = CppParser.ParseFiles([defaults, ids, source_file], includePaths,log)
     if not isinstance(tree, CppParser.Namespace):
         raise SkipFileError(source_file)
 
@@ -1332,6 +1302,8 @@ if __name__ == "__main__":
     USE_OLD_CPP = args.old_cpp
     SHOW_WARNINGS = not args.no_warnings
     BE_VERBOSE = args.verbose
+    log.BE_VERBOSE = BE_VERBOSE
+    log.SHOW_WARNINGS = SHOW_WARNINGS
     INTERFACE_NAMESPACE = args.if_namespace
     OUTDIR = args.outdir
     EMIT_TRACES = args.traces
