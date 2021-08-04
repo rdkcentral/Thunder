@@ -866,12 +866,15 @@ namespace Core {
                 private:
                     uint16_t Write(uint8_t stream[], const uint16_t maxLength) const override
                     {
-                        const uint16_t length = sizeof(struct rtgenmsg);
+                        const uint16_t length = sizeof(struct ifinfomsg);
                         ASSERT(length <= maxLength);
 
-                        struct rtgenmsg* message(reinterpret_cast<struct rtgenmsg*>(stream));
-                        ::memset(message, 0, sizeof(struct rtgenmsg));
-                        message->rtgen_family = AF_UNSPEC;
+                        struct ifinfomsg* message(reinterpret_cast<struct ifinfomsg*>(stream));
+                        ::memset(message, 0, sizeof(struct ifinfomsg));
+                        message->ifi_family = AF_UNSPEC;
+                        message->ifi_index = 0 /* all of them */;
+                        message->ifi_change = 0xFFFFFFFF;
+
 
                         return (length);
                     }
