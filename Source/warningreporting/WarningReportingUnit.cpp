@@ -85,8 +85,6 @@ namespace WarningReporting {
     WarningReportingUnit::~WarningReportingUnit()
     {
 
-        WarningReportingUnitProxy::Instance().Handler(nullptr);
-
         m_Admin.Lock();
 
         if (m_OutputChannel != nullptr) {
@@ -98,6 +96,8 @@ namespace WarningReporting {
         }
 
         m_Admin.Unlock();
+
+        WarningReportingUnitProxy::Instance().Handler(nullptr);
     }
 
     uint32_t WarningReportingUnit::Open(const uint32_t identifier)
