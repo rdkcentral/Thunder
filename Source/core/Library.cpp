@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include "Library.h"
 #include "Sync.h"
 #include "Trace.h"
@@ -67,7 +67,7 @@ namespace Core {
         else {
 #ifdef __LINUX__
             _error = dlerror();
-            TRACE_L1("Failed to load library: %s, error %s", fileName, _error.c_str());
+            TRACE_L1("Failed to load library: %s, error %s", filename, _error.c_str());
 #endif
         }
     }
