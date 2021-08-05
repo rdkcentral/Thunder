@@ -661,7 +661,7 @@ namespace PluginHost {
                     Unlock();
 
                     result = Core::proxy_cast<Core::JSONRPC::Message>(Factories::Instance().JSONRPC());
-                    result->Error.SetError(Core::ERROR_PLUGIN_NOTACTIVATED);
+                    result->Error.SetError(Core::ERROR_UNAVAILABLE);
                     result->Error.Text = _T("Service is not active");
                     result->Id = message.Id;
                 }
