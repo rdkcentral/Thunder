@@ -378,8 +378,8 @@ namespace Core {
         typedef std::list<Message> PendingList;
 
     public:
-        SocketNetlink(const NodeId& destination)
-            : SocketDatagram(true, destination, NodeId(), 512, 4096)
+        SocketNetlink(const NodeId& source)
+            : SocketDatagram(true, source, NodeId(), 512, 8192)
             , _adminLock()
         {
         }
