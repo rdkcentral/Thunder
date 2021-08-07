@@ -244,7 +244,7 @@ namespace Web {
                         _request.Verb = Web::Request::HTTP_PUT;
                         _request.Path = '/' + destination.Path().Value();
                         _request.Host = destination.Host().Value();
-                        _request.Body(_fileBody);
+                        _request.Body(Core::ProxyType<Web::IBody>(_fileBody));
 
                         // Maybe we need to add a hash value...
                         _CalculateHash(_request);
@@ -403,6 +403,14 @@ namespace Web {
             request.ContentSignature = Signature(hash.HashType(), hash.Result());
         }
 
+
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
+        _CalculateHash(Web::Request& request)
+        {
+        }
+
+
         template < typename ACTUALFILEBODY = FILEBODY>
         inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _CalculateHash()
@@ -410,7 +418,7 @@ namespace Web {
         }
 
         template <typename ACTUALFILEBODY = FILEBODY>
-        inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
+        inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, bool>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             // See if this is a valid. frame
@@ -418,7 +426,7 @@ namespace Web {
         }
 
         template < typename ACTUALFILEBODY = FILEBODY>
-        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
+        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, bool>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             return (true);
@@ -484,7 +492,7 @@ namespace Web {
                     _response->Message = _T("File: ") + element->Path + _T(" could not be stored server side.");
                 } else {
                     // See if the keys we received correspond.
-                    if (_ValidateHash<LINK, FILEBODY>(element->ContentSignature) == true) {
+                    if (_ValidateHash<FILEBODY>(element->ContentSignature) == true) {
                         string message = Authorize(*element);
 
                         if (message.empty() == true) {
@@ -549,8 +557,8 @@ namespace Web {
     private:
         HAS_MEMBER(Hash, hasHash);
 
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _CalculateHash(Web::Response& request)
         {
             uint8_t   buffer[64];
@@ -573,22 +581,28 @@ namespace Web {
             request.ContentSignature = Signature(hash.HashType(), hash.Result());
         }
 
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<!ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
+        _CalculateHash(Web::Response& request)
+        {
+        }
+
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _CalculateHash()
         {
         }
 
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, bool>::type
+        template <typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (FILEBODY::*)() const>::value, bool>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             // See if this is a valid. frame
             return ((signature.IsSet() == false) || (signature.Value().Equal(_fileBody.HashType(), _fileBody.Hash().Result()) == true));
         }
 
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<!ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, bool>::type
+        template <typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, bool>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             return (true);
