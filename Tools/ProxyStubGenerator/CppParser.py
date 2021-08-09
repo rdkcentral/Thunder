@@ -35,10 +35,6 @@ class LoaderError(RuntimeError):
         msg = "%s: load error: %s" % (file, msg)
         super(LoaderError, self).__init__(msg)
 
-class Warning():
-    def __init__(self, msg):
-        msg = "WARNING: %s(%s): %s" % (CurrentFile(), CurrentLine(), msg)
-        print(msg)
 
 # Checks if identifier is valid.
 def is_valid(token):
@@ -1305,7 +1301,6 @@ def __Tokenize(contents,log = None):
 
                 if _find("@stubgen", token):
                     if "@stubgen:skip" in token:
-                        Warning("@stubgen:skip is deprecated")
                         skipmode = True
                         if log :
                             log.Warn("The Use of @stubgen:skip is deprecated, Please use @stubgen:omit instead",(CurrentFile()+" Line: "+str(CurrentLine())))

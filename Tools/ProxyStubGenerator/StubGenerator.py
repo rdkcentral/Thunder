@@ -29,7 +29,6 @@ import argparse
 import copy
 import CppParser
 from collections import OrderedDict
-sys.path.append("../")
 import Log
 
 
