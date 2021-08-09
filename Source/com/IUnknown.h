@@ -224,7 +224,7 @@ namespace ProxyStub {
                 // Remove our selves from the Administration, we are done..
                 RPC::Administrator::Instance().UnregisterProxy(*this);
 
-                result = (result == Core::ERROR_NONE ? static_cast<uint32_t>(Core::ERROR_DESTRUCTION_SUCCEEDED) : result);
+                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
             }
             return (result);
         }
