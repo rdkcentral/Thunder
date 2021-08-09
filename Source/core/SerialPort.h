@@ -322,7 +322,6 @@ namespace Core {
 #ifdef __WINDOWS__
         HANDLE m_Descriptor;
         DCB m_PortSettings;
-        uint8_t m_CharBuffer;
         mutable OVERLAPPED m_WriteInfo;
         mutable OVERLAPPED m_ReadInfo;
 #endif
