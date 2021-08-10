@@ -36,7 +36,6 @@ import ProxyStubGenerator.Interface
 import ProxyStubGenerator.Log as Log
 
 NAME = "JsonStubGenerator"
-VERSION = "1.8.5"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
@@ -2983,10 +2982,8 @@ if __name__ == "__main__":
     generateDocs = args.docs
     generateStubs = args.stubs
 
-    if args.version:
-        log.Print("Version: {}".format(VERSION))
-        sys.exit(1)
-    elif not args.path or (not generateCode and not generateRpc and not generateStubs and not generateDocs):
+
+    if not args.path or (not generateCode and not generateRpc and not generateStubs and not generateDocs):
         argparser.print_help()
     else:
         files = []

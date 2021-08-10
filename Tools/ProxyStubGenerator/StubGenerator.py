@@ -32,7 +32,6 @@ from collections import OrderedDict
 import Log
 
 
-VERSION = "1.6.12"
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -1333,9 +1332,6 @@ if __name__ == "__main__":
         print("The tags shall be placed inside comments.")
         sys.exit()
 
-    if args.show_version:
-        print("Version: " + VERSION)
-        sys.exit()
 
     if not args.path:
         argparser.print_help()
