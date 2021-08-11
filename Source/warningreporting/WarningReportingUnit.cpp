@@ -77,17 +77,14 @@ namespace WarningReporting {
 
     WarningReportingUnit::~WarningReportingUnit()
     {
-        _adminLock.Lock();
 
         if (_outputChannel != nullptr) {
             Close();
         }
-
-        for (auto const& category : _categories) {
-            category.second->Destroy();
+        
+        while (_categories.size() != 0) {
+            _categories.begin()->second->Destroy();
         }
-
-        _adminLock.Unlock();
 
         WarningReportingUnitProxy::Instance().Handler(nullptr);
     }
