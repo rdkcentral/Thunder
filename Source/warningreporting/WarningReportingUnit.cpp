@@ -32,7 +32,6 @@ namespace WarningReporting {
         , _adminLock()
         , _outputChannel(nullptr)
         , _directOutput(false)
-        , _isShutdown(false)
     {
         WarningReportingUnitProxy::Instance().Handler(this);
     }
@@ -77,8 +76,9 @@ namespace WarningReporting {
     }
 
     WarningReportingUnit::~WarningReportingUnit()
-    {        
-        _isShutdown = true;
+    {
+        _adminLock.Lock();
+
         if (_outputChannel != nullptr) {
             Close();
         }
@@ -86,7 +86,8 @@ namespace WarningReporting {
         for (auto const& category : _categories) {
             category.second->Destroy();
         }
-        _categories.clear();
+
+        _adminLock.Unlock();
 
         WarningReportingUnitProxy::Instance().Handler(nullptr);
     }
@@ -146,10 +147,8 @@ namespace WarningReporting {
     void WarningReportingUnit::Revoke(IWarningReportingUnit::IWarningReportingControl& category)
     {
         Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
-        //do not erease in for ranged loop in destructor
-        if(!_isShutdown){
-            _categories.erase(category.Category());
-        }
+        
+        _categories.erase(category.Category());
     }
 
     std::list<string> WarningReportingUnit::GetCategories()

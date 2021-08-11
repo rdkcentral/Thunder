@@ -277,7 +277,6 @@ namespace WarningReporting {
         std::unique_ptr<ReportingBuffer> _outputChannel;
         Settings _enabledCategories;
         bool _directOutput;
-        bool _isShutdown;
     };
 }
 }
