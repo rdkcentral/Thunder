@@ -2957,7 +2957,7 @@ if __name__ == "__main__":
 
     VERBOSE = args.verbose
     DOC_ISSUES = not args.no_style_warnings
-    log.doc_issuesFlag = DOC_ISSUES
+    log.doc_issues = DOC_ISSUES
     NO_DUP_WARNINGS = args.no_duplicates_warnings
     INDENT_SIZE = args.indent_size
     ALWAYS_COPYCTOR = args.copy_ctor

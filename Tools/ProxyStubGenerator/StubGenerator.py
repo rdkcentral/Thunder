@@ -1301,8 +1301,8 @@ if __name__ == "__main__":
     USE_OLD_CPP = args.old_cpp
     SHOW_WARNINGS = not args.no_warnings
     BE_VERBOSE = args.verbose
-    log.BE_VERBOSE = BE_VERBOSE
-    log.SHOW_WARNINGS = SHOW_WARNINGS
+    log.be_verbose = BE_VERBOSE
+    log.warning = SHOW_WARNINGS
     INTERFACE_NAMESPACE = args.if_namespace
     OUTDIR = args.outdir
     EMIT_TRACES = args.traces
