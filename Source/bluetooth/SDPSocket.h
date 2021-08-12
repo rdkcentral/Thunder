@@ -102,7 +102,7 @@ namespace Bluetooth {
                 if (cont == Continuation::ABSENT) {
                     Push(static_cast<uint8_t>(0));
                 } else {
-                    ASSERT(data.length() <= 16)
+                    ASSERT(data.length() <= 16);
                     Push(static_cast<uint8_t>(data.length()));
                     Push(data);
                 }

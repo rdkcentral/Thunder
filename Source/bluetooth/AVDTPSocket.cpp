@@ -62,7 +62,7 @@ namespace Bluetooth {
             _type = signalId;
             result = length;
         } else {
-            TRACE_L1("Unexpected signal label [%d vs %d]", label, expectedLabel)
+            TRACE_L1("Unexpected signal label [%d vs %d]", label, expectedLabel);
         }
 
         return (result);
