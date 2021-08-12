@@ -240,7 +240,7 @@ namespace RPC {
 
             _adminLock.Unlock();
         }
-        void UnregisterProxy(const ProxyStub::UnknownProxy& proxy);
+        uint32_t UnregisterProxy(const ProxyStub::UnknownProxy& proxy);
         
    private:
         // ----------------------------------------------------------------------------------------------------

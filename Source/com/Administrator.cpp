@@ -102,8 +102,10 @@ namespace RPC {
         proxy->Complete(response);
     }
 
-    void Administrator::UnregisterProxy(const ProxyStub::UnknownProxy& proxy)
+    uint32_t Administrator::UnregisterProxy(const ProxyStub::UnknownProxy& proxy)
     {
+        uint32_t result = Core::ERROR_NONE;
+
         _adminLock.Lock();
 
         ChannelMap::iterator index(_channelProxyMap.find(proxy.Channel().operator->()));
@@ -118,6 +120,9 @@ namespace RPC {
                 if (index->second.size() == 0) {
                     _channelProxyMap.erase(index);
                 }
+                if ((*entry)->RefCount() == 0) {
+                    result = Core::ERROR_DESTRUCTION_SUCCEEDED;
+                }
             } else {
                 TRACE_L1("Could not find the Proxy entry to be unregistered in the channel list.");
             }
@@ -126,6 +131,8 @@ namespace RPC {
         }
 
         _adminLock.Unlock();
+
+        return result;
     }
 
     void Administrator::Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message)
@@ -217,7 +224,7 @@ namespace RPC {
                     TRACE_L1("Failed to find a Proxy for %d.", id);
                 }
             }
-		
+
             _adminLock.Unlock();
         }
 
@@ -325,7 +332,7 @@ namespace RPC {
     }
 
     /* static */ Administrator& Job::_administrator= Administrator::Instance();
-	/* static */ Core::ProxyPoolType<Job> Job::_factory(6);
+    /* static */ Core::ProxyPoolType<Job> Job::_factory(6);
 
 }
 } // namespace Core

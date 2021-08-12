@@ -52,10 +52,10 @@ namespace ProxyStub {
         {
             return (3);
         }
-	virtual Core::IUnknown* Convert(void* incomingData) const {
+        virtual Core::IUnknown* Convert(void* incomingData) const {
             return (reinterpret_cast<Core::IUnknown*>(incomingData));
         }
-	virtual uint32_t InterfaceId() const {
+        virtual uint32_t InterfaceId() const {
             return (Core::IUnknown::ID);
         }
         virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message);
@@ -92,7 +92,7 @@ namespace ProxyStub {
         {
             return (reinterpret_cast<INTERFACE*>(incomingData));
         }
-	virtual uint32_t InterfaceId() const {
+        virtual uint32_t InterfaceId() const {
             return (INTERFACE::ID);
         }
         virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message)
@@ -182,6 +182,13 @@ namespace ProxyStub {
 
             return(result);
         }
+        uint32_t RefCount() const {
+            uint32_t refCount;
+            _adminLock.Lock();
+            refCount = _refCount;
+            _adminLock.Unlock();
+            return refCount;
+        }
         void AddRef() const {
             _adminLock.Lock();
             _refCount++;
@@ -222,9 +229,7 @@ namespace ProxyStub {
                 _adminLock.Unlock();
 
                 // Remove our selves from the Administration, we are done..
-                RPC::Administrator::Instance().UnregisterProxy(*this);
-
-                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
+                result = RPC::Administrator::Instance().UnregisterProxy(*this);
             }
             return (result);
         }
@@ -308,7 +313,7 @@ namespace ProxyStub {
         // -------------------------------------------------------------------------------------------------------------------------------
         // This method should only be called from the administrator from stub implementation methods
         // It should be called through the Administrator::Release(ProxyStub*, Message::Response) !!
-	    // Concurrent access trhough this code is prevented by the CriticalSection in the Administrator
+        // Concurrent access trhough this code is prevented by the CriticalSection in the Administrator
         template <typename ACTUAL_INTERFACE>
         inline ACTUAL_INTERFACE* QueryInterface() const
         {
