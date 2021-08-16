@@ -53,6 +53,7 @@ target_link_libraries(${TARGET}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
+          ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
         )
