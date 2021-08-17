@@ -660,7 +660,7 @@ namespace PluginHost {
                     Unlock();
 
                     result = Core::proxy_cast<Core::JSONRPC::Message>(Factories::Instance().JSONRPC());
-                    result->Error.SetError(Core::ERROR_BAD_REQUEST);
+                    result->Error.SetError(Core::ERROR_UNAVAILABLE);
                     result->Error.Text = _T("Service is not active");
                     result->Id = message.Id;
                 }
@@ -2814,6 +2814,10 @@ namespace PluginHost {
 
                     State(CLOSED, false);
                     _parent.Dispatcher().TriggerCleanup();
+                } else if (IsUpgrading() == true) {
+                  if (Allowed(Path(), Query()) == false) {
+                    AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Security prohibites this connection."));
+                  }
                 } else if (IsWebSocket() == true) {
                     ASSERT(_service.IsValid() == false);
                     bool serviceCall;
