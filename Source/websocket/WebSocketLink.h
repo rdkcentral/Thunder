@@ -1081,11 +1081,6 @@ namespace Web {
                     _parent.StateChange();
 
                     _adminLock.Unlock();
-                } else if ((_webSocketMessage.IsValid() == true) && (element->ErrorCode == Web::STATUS_FORBIDDEN)) {
-                    ASSERT((_state & UPGRADING) != 0);
-
-                    // Not allowed websocket
-                    Close(0);
                 } else {
                     _parent.Received(element);
                 }
