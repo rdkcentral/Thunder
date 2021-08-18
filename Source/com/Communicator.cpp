@@ -504,7 +504,9 @@ namespace RPC {
                 Trace::TraceUnit::Instance().Defaults(jsonDefaultCategories);
             }
             if(jsonDefaultWarningCategories.empty() == false){
+#ifdef WARNING_REPORTING
                 WarningReporting::WarningReportingUnit::Instance().Defaults(jsonDefaultWarningCategories);
+#endif
             }
 
             _connectionId = announceMessage->Response().SequenceNumber();
