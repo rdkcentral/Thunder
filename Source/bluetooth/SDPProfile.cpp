@@ -193,35 +193,33 @@ namespace Bluetooth {
                 break;
             case AttributeDescriptor::LanguageBaseAttributeIDList:
                 value.Pop(SDPSocket::use_descriptor, [&](const SDPSocket::Payload& sequence) {
-                    while (sequence.Available()) {
-                        sequence.Pop(SDPSocket::use_descriptor, [&](const SDPSocket::Payload& descriptor) {
-                            uint16_t lang = 0;
-                            uint16_t charset = 0;
-                            uint16_t base = 0;
+                    while (sequence.Available() >= 9 /* sizeof language descriptor triplet */) {
+                        uint16_t lang = 0;
+                        uint16_t charset = 0;
+                        uint16_t base = 0;
 
-                            descriptor.Pop(lang); // TODO: Take lang and charset into consideration...?
-                            descriptor.Pop(charset);
-                            descriptor.Pop(base);
+                        sequence.Pop(SDPSocket::use_descriptor, lang); // TODO: Take lang and charset into consideration...?
+                        sequence.Pop(SDPSocket::use_descriptor, charset);
+                        sequence.Pop(SDPSocket::use_descriptor, base);
 
-                            auto FetchString = [&](const uint16_t offset, string& output) {
-                                auto it = _attributes.find(base + offset);
-                                if (it != _attributes.end()) {
-                                    SDPSocket::Payload str((*it).second.Value());
-                                    str.Pop(SDPSocket::use_descriptor, output);
-                                }
-                            };
+                        auto FetchString = [&](const uint16_t offset, string& output) {
+                            auto it = _attributes.find(base + offset);
+                            if (it != _attributes.end()) {
+                                SDPSocket::Payload str((*it).second.Value());
+                                str.Pop(SDPSocket::use_descriptor, output);
+                            }
+                        };
 
-                            string name;
-                            FetchString(AttributeDescriptor::OFFSET_ServiceName, name);
+                        string name;
+                        FetchString(AttributeDescriptor::OFFSET_ServiceName, name);
 
-                            string desc;
-                            FetchString(AttributeDescriptor::OFFSET_ServiceDescription, desc);
+                        string desc;
+                        FetchString(AttributeDescriptor::OFFSET_ServiceDescription, desc);
 
-                            string provider;
-                            FetchString(AttributeDescriptor::OFFSET_ProviderName, desc);
+                        string provider;
+                        FetchString(AttributeDescriptor::OFFSET_ProviderName, desc);
 
-                            _metadatas.emplace_back(lang, charset, name, desc, provider);
-                        });
+                        _metadatas.emplace_back(lang, charset, name, desc, provider);
                     }
                 });
                 break;
