@@ -20,7 +20,7 @@
 #pragma once
 
 #include "Module.h"
-#include "Record.h"
+#include "DataRecord.h"
 
 namespace WPEFramework {
 
@@ -63,7 +63,7 @@ namespace Bluetooth {
     public:
         class Command : public Core::IOutbound, public Core::IInbound {
         public:
-            class Signal : public Record  {
+            class Signal : public DataRecord  {
             public:
                 enum signalidentifier : uint8_t {
                     INVALID                     = 0x00,
@@ -128,9 +128,9 @@ namespace Bluetooth {
                 };
 
             public:
-                using Record::Record;
-                using Record::Push;
-                using Record::Pop;
+                using DataRecord::DataRecord;
+                using DataRecord::Push;
+                using DataRecord::Pop;
                 ~Signal() = default;
 
             public:
@@ -363,7 +363,7 @@ namespace Bluetooth {
 
             private:
                 uint8_t* _payloadScratchPad;
-                Record _payload;
+                DataRecord _payload;
                 Signal::signalidentifier _type;
                 Signal::errorcode _status;
             }; // class Response

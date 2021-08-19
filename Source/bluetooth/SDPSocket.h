@@ -21,7 +21,7 @@
 
 #include "Module.h"
 #include "UUID.h"
-#include "Record.h"
+#include "DataRecord.h"
 
 
 namespace WPEFramework {
@@ -65,7 +65,7 @@ namespace Bluetooth {
         struct use_descriptor_t{};
         static constexpr use_descriptor_t use_descriptor = use_descriptor_t(); // for selecting a proper overload
 
-        class Payload : public RecordBE {
+        class Payload : public DataRecordBE {
         public:
             enum elementtype : uint8_t {
                 NIL = 0x00,
@@ -89,10 +89,10 @@ namespace Bluetooth {
             };
 
         public:
-            using RecordBE::RecordBE;
-            using RecordBE::Pop;
-            using RecordBE::Push;
-            using RecordBE::Peek;
+            using DataRecordBE::DataRecordBE;
+            using DataRecordBE::Pop;
+            using DataRecordBE::Push;
+            using DataRecordBE::Peek;
 
             ~Payload() = default;
 
@@ -241,7 +241,7 @@ namespace Bluetooth {
                         TRACE_L1("SDP: Warning: integer value possibly truncated!");
                     }
                     if (size == 1) {
-                        uint8_t val; Record::PopIntegerValue(val); value = val;
+                        uint8_t val; DataRecord::PopIntegerValue(val); value = val;
                     } else if (size == 2) {
                         uint16_t val; PopIntegerValue(val); value = val;
                     } else if (size == 4) {

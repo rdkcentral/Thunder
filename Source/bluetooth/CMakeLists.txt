@@ -45,7 +45,7 @@ set(PUBLIC_HEADERS
         RTPSocket.h
         Profile.h
         UUID.h
-        Record.h
+        DataRecord.h
         Module.h
         BluetoothUtils.h
         bluetooth.h

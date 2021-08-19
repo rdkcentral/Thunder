@@ -31,12 +31,12 @@ namespace Bluetooth {
     using Buffer = std::basic_string<uint8_t>;
 
     // Architecture netural version
-    class Record  {
+    class DataRecord  {
     public:
-        Record(const Record& buffer) = delete;
-        Record& operator=(const Record&) = delete;
+        DataRecord(const DataRecord& buffer) = delete;
+        DataRecord& operator=(const DataRecord&) = delete;
 
-        Record()
+        DataRecord()
             : _buffer(nullptr)
             , _bufferSize(0)
             , _filledSize(0)
@@ -44,7 +44,7 @@ namespace Bluetooth {
             , _writerOffset(0)
         {
         }
-        explicit Record(const Buffer& buffer)
+        explicit DataRecord(const Buffer& buffer)
             // It is ensured that the buffer will never be written.
             : _buffer(const_cast<uint8_t*>(buffer.data()))
             , _bufferSize(buffer.size())
@@ -56,7 +56,7 @@ namespace Bluetooth {
             ASSERT(_buffer != nullptr);
             ASSERT(_bufferSize >= _filledSize);
         }
-        Record(const uint8_t buffer[], const uint16_t bufferSize)
+        DataRecord(const uint8_t buffer[], const uint16_t bufferSize)
             // It is ensured that the buffer will never be written.
             : _buffer(const_cast<uint8_t*>(buffer))
             , _bufferSize(bufferSize)
@@ -68,7 +68,7 @@ namespace Bluetooth {
             ASSERT(_bufferSize != 0);
             ASSERT(_bufferSize >= _filledSize);
         }
-        Record(uint8_t scratchPad[], const uint16_t scratchPadSize, const uint16_t filledSize = 0)
+        DataRecord(uint8_t scratchPad[], const uint16_t scratchPadSize, const uint16_t filledSize = 0)
             : _buffer(scratchPad)
             , _bufferSize(scratchPadSize)
             , _filledSize(filledSize)
@@ -79,7 +79,7 @@ namespace Bluetooth {
             ASSERT(_bufferSize != 0);
             ASSERT(_bufferSize >= _filledSize);
         }
-        virtual ~Record() = default;
+        virtual ~DataRecord() = default;
 
     public:
         bool IsEmpty() const
@@ -171,7 +171,7 @@ namespace Bluetooth {
             ASSERT(sizeof(TYPE) <= 4);
             PushIntegerValue(static_cast<typename std::underlying_type<TYPE>::type>(value));
         }
-        void Push(const Record& element)
+        void Push(const DataRecord& element)
         {
             ASSERT(Free() >= element.Length());
             ::memcpy(WritePtr(), element.Data(), element.Length());
@@ -185,7 +185,7 @@ namespace Bluetooth {
                 value.assign(reinterpret_cast<const char*>(ReadPtr()), length);
                 _readerOffset += length;
             } else {
-                TRACE_L1("Record: String truncated!");
+                TRACE_L1("DataRecord: String truncated!");
                 _readerOffset = _writerOffset;
             }
         }
@@ -195,7 +195,7 @@ namespace Bluetooth {
                 value.assign(ReadPtr(), length);
                 _readerOffset += length;
             } else {
-                TRACE_L1("Record: Buffer truncated!");
+                TRACE_L1("DataRecord: Buffer truncated!");
                 _readerOffset = _writerOffset;
             }
         }
@@ -212,25 +212,25 @@ namespace Bluetooth {
         {
             PopIntegerValue(value);
         }
-        void Pop(Record& element, const uint32_t size) const
+        void Pop(DataRecord& element, const uint32_t size) const
         {
             if (Available() >= size) {
                 element.Push(ReadPtr(), size);
                 _readerOffset += size;
             } else {
-                TRACE_L1("Record: Truncated payload");
+                TRACE_L1("DataRecord: Truncated payload");
                 _readerOffset = _writerOffset;
             }
         }
 
     public:
-        void Peek(Record& element, const uint32_t size) const
+        void Peek(DataRecord& element, const uint32_t size) const
         {
             if (Available() >= size) {
                 element.Assign(const_cast<uint8_t*>(ReadPtr()), size);
                 _readerOffset += size;
             } else {
-                TRACE_L1("Record: Truncated payload");
+                TRACE_L1("DataRecord: Truncated payload");
                 _readerOffset = _writerOffset;
             }
         }
@@ -278,13 +278,13 @@ namespace Bluetooth {
         uint16_t _filledSize;
         mutable uint16_t _readerOffset;
         uint16_t _writerOffset;
-    }; // class Record
+    }; // class DataRecord
 
     // Big-Endian version
-    class RecordBE : public Record {
+    class DataRecordBE : public DataRecord {
     public:
-        using Record::Record;
-        ~RecordBE() = default;
+        using DataRecord::DataRecord;
+        ~DataRecordBE() = default;
 
     protected:
         void PushIntegerValue(const uint16_t value) override
@@ -312,13 +312,13 @@ namespace Bluetooth {
                         | (_buffer[_readerOffset + 2] << 8) | _buffer[_readerOffset + 3]);
             _readerOffset += 4;
         }
-    }; // class RecordLE
+    }; // class DataRecordLE
 
     // Little-Endian version
-    class RecordLE : public Record {
+    class DataRecordLE : public DataRecord {
     public:
-        using Record::Record;
-        ~RecordLE() = default;
+        using DataRecord::DataRecord;
+        ~DataRecordLE() = default;
 
     protected:
         void PushIntegerValue(const uint16_t value) override
@@ -346,7 +346,7 @@ namespace Bluetooth {
                         | (_buffer[_readerOffset + 1] << 8) | _buffer[_readerOffset]);
             _readerOffset += 4;
         }
-    }; // class RecordLE
+    }; // class DataRecordLE
 
 } // namespace Bluetooth
 
