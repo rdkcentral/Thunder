@@ -257,6 +257,8 @@ namespace Core {
 
         mutable CriticalSection m_syncAdmin;
 
+        string m_threadName;
+
 #ifdef __POSIX__
         Event m_sigExit;
         pthread_t m_hThreadInstance;

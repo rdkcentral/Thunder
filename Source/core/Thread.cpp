@@ -21,6 +21,7 @@
 #include "Proxy.h"
 #include "Serialization.h"
 #include "Trace.h"
+#include "tracing/Logging.h"
 #include <limits.h>
 
 #ifdef __WINDOWS__
@@ -39,6 +40,7 @@ namespace Core {
     Thread::Thread(const uint32_t stackSize, const TCHAR* threadName)
         : m_enumState(BLOCKED)
         , m_syncAdmin()
+        , m_threadName("Unknown thread name")
         , m_sigExit(false, true)
 
 #ifdef __WINDOWS__
@@ -98,10 +100,8 @@ namespace Core {
 #endif
 
         if (threadName != nullptr) {
-            std::string convertedName;
-            Core::ToString(threadName, convertedName);
-
-            ThreadName(convertedName.c_str());
+            Core::ToString(threadName, m_threadName);
+            ThreadName(m_threadName.c_str());
         }
     }
     Thread::~Thread()
@@ -146,6 +146,9 @@ namespace Core {
         sigaddset(&mask, SIGTERM);
         pthread_sigmask(SIG_BLOCK, &mask, nullptr);
 #endif
+        #if defined(__CORE_EXCEPTION_CATCHING__) || defined(__CORE_WARNING_REPORTING__)
+        WARNING_REPORTING_THREAD_SETCALLSIGN_GUARD(cClassPointer->m_threadName.c_str());
+        #endif
 
         StateTrigger<thread_state>& stateObject = cClassPointer->m_enumState;
 
@@ -169,7 +172,19 @@ namespace Core {
                     // O.K. befor using the state, lock it.
                     adminLock.Unlock();
 
-                    delayed = cClassPointer->Worker();
+                    #ifdef __CORE_EXCEPTION_CATCHING__
+                    try {
+                        delayed = cClassPointer->Worker();
+                    }
+                    catch(const std::exception& type) {
+                        Logging::DumpException(type.what());
+                    }
+                    catch(...) {
+                        Logging::DumpException(_T("Unknown"));
+                    }
+                    #else
+                        delayed = cClassPointer->Worker();
+                    #endif
 
                     // Change the state, we are done with it.
                     adminLock.Lock();
