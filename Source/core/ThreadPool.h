@@ -195,7 +195,7 @@ namespace Core {
                     _runs++;
 
                     Core::IDispatch* request = &(*_currentRequest);
-                    _dispatcher->Dispatch(request);
+                    REPORT_DURATION_WARNING( { _dispatcher->Dispatch(request); }, WarningReporting::TooLongThreadJob);
                     _currentRequest.Release();
 
                     // if someone is observing this run, (WaitForCompletion) make sure that

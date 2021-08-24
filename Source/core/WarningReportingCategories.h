@@ -80,5 +80,33 @@ namespace WarningReporting {
         static constexpr uint32_t DefaultWarningBound = { 0 };
         static constexpr uint32_t DefaultReportBound = { 0 };
     };
+
+    class EXTERNAL TooLongThreadJob {
+    public:
+        TooLongThreadJob(const TooLongThreadJob&) = delete;
+        TooLongThreadJob& operator=(const TooLongThreadJob&) = delete;
+        TooLongThreadJob() = default;
+        ~TooLongThreadJob() = default;
+
+        //nothing to serialize/deserialize here
+        uint16_t Serialize(uint8_t[], const uint16_t) const
+        {
+            return 0;
+        }
+
+        uint16_t Deserialize(const uint8_t[], const uint16_t)
+        {
+            return 0;
+        }
+
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
+        {
+            visitor = (_T("ThreadPool/WorkerPool job took too long to finish"));
+            visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, maxValue);
+        };
+
+        static constexpr uint32_t DefaultWarningBound = { 7500 };
+        static constexpr uint32_t DefaultReportBound = { 5000 };
+    };
 }
 }
