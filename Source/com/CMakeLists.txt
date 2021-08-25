@@ -56,7 +56,19 @@ target_link_libraries(${TARGET}
           CompileSettingsDebug::CompileSettingsDebug
         )
 
-target_include_directories(${TARGET} 
+if (WARNING_REPORTING)
+target_compile_definitions(${TARGET}
+PUBLIC
+        WARNING_REPORTING_ENABLED
+)
+
+target_link_libraries(${TARGET}
+PUBLIC
+        ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting
+)
+endif()
+
+target_include_directories(${TARGET}
         PRIVATE
           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
