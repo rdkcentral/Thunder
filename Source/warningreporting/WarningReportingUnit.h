@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -47,30 +47,36 @@ namespace WarningReporting {
                     : Core::JSON::Container()
                     , Category()
                     , Enabled(false)
+                    , Excluded()
                     , CategoryConfig(false)
                 {
                     Add(_T("category"), &Category);
                     Add(_T("enabled"), &Enabled);
+                    Add(_T("excluded"), &Excluded);
                     Add(_T("config"), &CategoryConfig);
                 }
                 JSON(const JSON& copy)
                     : Core::JSON::Container()
                     , Category(copy.Category)
                     , Enabled(copy.Enabled)
+                    , Excluded(copy.Excluded)
                     , CategoryConfig(copy.CategoryConfig)
                 {
                     Add(_T("category"), &Category);
                     Add(_T("enabled"), &Enabled);
+                    Add(_T("excluded"), &Excluded);
                     Add(_T("config"), &CategoryConfig);
                 }
                 JSON(const Setting& rhs)
                     : Core::JSON::Container()
                     , Category()
                     , Enabled()
+                    , Excluded()
                     , CategoryConfig(false)
                 {
                     Add(_T("category"), &Category);
                     Add(_T("enabled"), &Enabled);
+                    Add(_T("excluded"), &Excluded);
                     Add(_T("config"), &CategoryConfig);
 
                     Category = rhs.Category();
@@ -84,46 +90,66 @@ namespace WarningReporting {
             public:
                 Core::JSON::String Category;
                 Core::JSON::Boolean Enabled;
+                Core::JSON::String Excluded;
                 Core::JSON::String CategoryConfig;
             };
 
         public:
-            Setting(const JSON& source) 
+            Setting(const JSON& source)
                 : _category(source.Category.Value())
-                , _enabled(source.Enabled.Value()) {
-                if (source.CategoryConfig.IsSet()) {
-                    _categoryconfig = source.CategoryConfig.Value();
-                }
+                , _enabled(source.Enabled.Value())
+                , _excluded(source.Excluded.IsSet() ? source.Excluded.Value() : _T(""))
+                , _categoryconfig(source.CategoryConfig.IsSet() ? source.CategoryConfig.Value() : _T(""))
+            {
             }
             Setting(const Setting& copy)
                 : _category(copy._category)
                 , _enabled(copy._enabled)
-                , _categoryconfig(copy._categoryconfig) {
+                , _excluded(copy._excluded)
+                , _categoryconfig(copy._categoryconfig)
+            {
             }
-            ~Setting() {
+            ~Setting()
+            {
             }
 
         public:
-            const string& Category() const {
-                return (_category);
+            const string& Category() const
+            {
+                return _category;
             }
-            bool Enabled() const {
-                return (_enabled);
+            bool Enabled() const
+            {
+                return _enabled;
             }
-            const string& Configuration() const {
-                return (_categoryconfig);
+            const string& Excluded() const
+            {
+                return _excluded;
+            }
+            const string& Configuration() const
+            {
+                return _categoryconfig;
             }
 
         private:
             string _category;
             bool _enabled;
-            string _categoryconfig; 
+            string _excluded;
+            string _categoryconfig;
         };
 
     public:
-        typedef std::list<Setting> Settings; // HPL todo, better to make unordered_map? lookup on categoryt name happens a lot?
-        typedef std::list<IWarningReportingUnit::IWarningReportingControl*> ControlList; // HPL todo, better to make unordered_map? lookup on categoryt name happens a lot
-        typedef Core::IteratorType<ControlList, IWarningReportingUnit::IWarningReportingControl*> Iterator;
+        typedef std::unordered_map<string, Setting> Settings;
+        typedef std::unordered_map<string, IWarningReportingUnit::IWarningReportingControl*> ControlList;
+
+        IWarningEvent* Clone(const string& categoryName)
+        {
+            auto index = _categories.find(categoryName);
+            if (index != _categories.end()) {
+                return index->second->Clone();
+            }
+            return nullptr;
+        }
 
     private:
         // -------------------------------------------------------------------
@@ -147,18 +173,21 @@ namespace WarningReporting {
 
         public:
             virtual uint32_t GetOverwriteSize(Cursor& cursor) override;
-            inline void Ring() {
+            inline void Ring()
+            {
                 _doorBell.Ring();
             }
-            inline void Acknowledge() {
+            inline void Acknowledge()
+            {
                 _doorBell.Acknowledge();
             }
-            inline uint32_t Wait (const uint32_t waitTime) {
-                return (_doorBell.Wait(waitTime));
+            inline uint32_t Wait(const uint32_t waitTime)
+            {
+                return _doorBell.Wait(waitTime);
             }
             inline void Relinquish()
             {
-                return (_doorBell.Relinquish());
+                return _doorBell.Relinquish();
             }
 
         private:
@@ -183,79 +212,71 @@ namespace WarningReporting {
 
         void Announce(IWarningReportingUnit::IWarningReportingControl& Category) override;
         void Revoke(IWarningReportingUnit::IWarningReportingControl& Category) override;
-        Iterator GetCategories();
-        uint32_t SetCategories(const bool enable, const char* category);
+        std::list<string> GetCategories();
 
         // Default enabled/disabled categories: set via config.json.
-        bool IsDefaultCategory(const string& category, bool& enabled, string& configuration) const override;
+        void FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const override;
         string Defaults() const;
         void Defaults(const string& jsonCategories);
-        void Defaults(Core::File& file);
 
         void ReportWarningEvent(const char identifier[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information) override;
 
-        inline Core::CyclicBuffer* CyclicBuffer()
-        {
-            return (m_OutputChannel);
-        }
         inline bool HasDirectOutput() const
         {
-            return (m_DirectOut);
+            return _directOutput;
         }
         inline void DirectOutput(const bool enabled)
         {
-            m_DirectOut = enabled;
+            _directOutput = enabled;
         }
-        inline void Announce() {
-            if (m_OutputChannel != nullptr) {
-                m_OutputChannel->Ring();
+        inline void Announce()
+        {
+            if (_outputChannel != nullptr) {
+                _outputChannel->Ring();
             }
         }
-        inline void Acknowledge() {
-            if (m_OutputChannel != nullptr) {
-                m_OutputChannel->Acknowledge();
+        inline void Acknowledge()
+        {
+            if (_outputChannel != nullptr) {
+                _outputChannel->Acknowledge();
             }
         }
-        inline uint32_t Wait (const uint32_t waitTime) {
+        inline uint32_t Wait(const uint32_t waitTime)
+        {
             uint32_t status = Core::ERROR_UNAVAILABLE;
-            if (m_OutputChannel != nullptr) {
-                status = (m_OutputChannel->Wait(waitTime));
+            if (_outputChannel != nullptr) {
+                status = _outputChannel->Wait(waitTime);
             }
             return status;
         }
-        inline void Relinquish() {
-            if (m_OutputChannel != nullptr) {
-                m_OutputChannel->Relinquish();
+        inline void Relinquish()
+        {
+            if (_outputChannel != nullptr) {
+                _outputChannel->Relinquish();
             }
             return;
         }
 
     private:
-        inline uint32_t Open(const string& , const string& ) 
+        inline uint32_t Open(const string& doorBell, const string& fileName)
         {
 
-            /*  HPL Todo: only direct output supported at the moment
+            ASSERT(_outputChannel == nullptr);
 
-            ASSERT(m_OutputChannel == nullptr);
+            _outputChannel.reset(new ReportingBuffer(doorBell, fileName));
 
-            m_OutputChannel = new ReportingBuffer(doorBell, fileName);
+            ASSERT(_outputChannel->IsValid() == true);
 
-            ASSERT(m_OutputChannel->IsValid() == true);
-
-            return (m_OutputChannel->IsValid() ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
-
-            */
-            DirectOutput(true);
-            return Core::ERROR_NONE;
+            return _outputChannel->IsValid() ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE;
 
         }
         void UpdateEnabledCategories(const Core::JSON::ArrayType<Setting::JSON>& info);
 
-        ControlList m_Categories;
-        Core::CriticalSection m_Admin;
-        ReportingBuffer* m_OutputChannel;
-        Settings m_EnabledCategories;
-        bool m_DirectOut;
+        ControlList _categories;
+        mutable Core::CriticalSection _adminLock;
+        std::unique_ptr<ReportingBuffer> _outputChannel;
+        Settings _enabledCategories;
+        bool _directOutput;
     };
 }
-} 
+}
