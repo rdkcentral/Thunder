@@ -672,15 +672,16 @@ namespace Core {
 
         if ((m_ReceiveBufferSize != 0) || (m_SendBufferSize != 0)) {
             uint8_t* allocatedMemory = static_cast<uint8_t*>(::calloc(m_SendBufferSize + m_ReceiveBufferSize, 1));
-            if (m_SendBufferSize != 0) {
-                if (m_SendBuffer != nullptr) {
-                    free(m_SendBuffer);
-                }
-                m_SendBuffer = allocatedMemory;
+            ASSERT(allocatedMemory != nullptr);
+
+            if (m_SendBuffer != nullptr) {
+                ::free(m_SendBuffer);
+            } else if (m_ReceiveBuffer != nullptr) {
+                ::free(m_ReceiveBuffer);
             }
-            if (m_ReceiveBufferSize != 0) {
-                m_ReceiveBuffer = &(allocatedMemory[m_SendBufferSize]);
-            }
+
+            m_SendBuffer = (m_SendBufferSize != 0? allocatedMemory : nullptr);
+            m_ReceiveBuffer = (m_ReceiveBufferSize != 0? &(allocatedMemory[m_SendBufferSize]) : nullptr);
         }
     }
 
