@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #ifndef NETLINK_MESSAGE_H_
 #define NETLINK_MESSAGE_H_
 
@@ -36,7 +36,7 @@ namespace WPEFramework {
 namespace Core {
 
     class EXTERNAL Netlink {
-    private:
+    public:
         template <typename HEADER>
         class Parameters {
         public:
