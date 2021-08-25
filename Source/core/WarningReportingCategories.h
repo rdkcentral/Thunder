@@ -101,7 +101,7 @@ namespace WarningReporting {
 
         void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
         {
-            visitor = (_T("ThreadPool/WorkerPool job took too long to finish"));
+            visitor = (_T("WorkerPool job took too long to finish"));
             visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, maxValue);
         };
 
