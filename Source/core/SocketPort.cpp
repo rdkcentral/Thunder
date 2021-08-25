@@ -550,7 +550,6 @@ namespace Core {
 
     uint32_t SocketPort::Close(const uint32_t waitTime)
     {
-
         // Make sure the state does not change in the mean time.
         m_syncAdmin.Lock();
 
@@ -944,7 +943,17 @@ namespace Core {
     {
         uint16_t result = 0;
 
-        if (m_State != 0) {
+        if (HasError() == true) {
+            // Socket is in exceptional state, hold off reads and writes, allow only HUP events.
+            // While HUP has meaning only for connection-oriented sockets, having it non-zero
+            // prevents the ResourceMonitor from unregistering the socket whatever type it is.
+#ifdef __WINDOWS__
+            result = FD_CLOSE;
+#else
+            result = POLLHUP;
+#endif
+        }
+        else if (m_State != 0) {
 #ifdef __WINDOWS__
             result = FD_CLOSE;
 #else
