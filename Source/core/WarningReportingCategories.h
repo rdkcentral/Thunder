@@ -134,8 +134,8 @@ namespace WarningReporting {
             visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, maxValue);
         };
 
-        static constexpr uint32_t DefaultWarningBound = { 100 };
-        static constexpr uint32_t DefaultReportBound = { 10 };
+        static constexpr uint32_t DefaultWarningBound = { 400 };
+        static constexpr uint32_t DefaultReportBound = { 200 };
 
         private:
         uint32_t _timeInMs;
