@@ -1013,7 +1013,7 @@ class Attribute(Variable):
 class Enumerator(Identifier, Name):
     def __init__(self, parent_block, name, value=None, type=["int"]):
         parent_enum = parent_block if parent_block.scoped else parent_block.parent
-        Identifier.__init__(self, parent_enum, self, [type, name], [])
+        Identifier.__init__(self, parent_enum, self, [type] + name, [])
         Name.__init__(self, parent_enum, self.name)
         self.parent = parent_block
         self.value = parent_block.GetValue() if value == None else Evaluate(value)
@@ -1876,7 +1876,22 @@ def Parse(contents):
             j = i
             while True:
                 if tokens[i] in ['}', ',']:
-                    Enumerator(enum, tokens[j], tokens[j + 2:i] if tokens[j + 1] == '=' else None, enum.type)
+
+                    # disentangle @text tag and enumerator value (if any)
+                    value = None
+                    entry = tokens[j:i]
+                    if "@TEXT" in entry:
+                        where = entry.index("@TEXT")
+                        text = entry[where + 1]
+                        del entry[where:where + 2]
+                        entry = entry[:1] + ["@TEXT", text] + entry[1:]
+
+                    if '=' in entry:
+                        where = entry.index('=')
+                        value = entry[where + 1:]
+                        del entry[where:]
+
+                    Enumerator(enum, entry, value, enum.type)
                     if tokens[i + 1] == '}':
                         i += 1 # handle ,} situation
                         break
