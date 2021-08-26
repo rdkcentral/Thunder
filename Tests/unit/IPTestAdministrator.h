@@ -24,9 +24,7 @@
 #include <string>
 #include <time.h>
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Tracing
-#endif
+
    
 class IPTestAdministrator;
 
