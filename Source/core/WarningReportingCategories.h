@@ -81,12 +81,12 @@ namespace WarningReporting {
         static constexpr uint32_t DefaultReportBound = { 0 };
     };
 
-    class EXTERNAL TooLongThreadJob {
+    class EXTERNAL JobTooLongToFinish {
     public:
-        TooLongThreadJob(const TooLongThreadJob&) = delete;
-        TooLongThreadJob& operator=(const TooLongThreadJob&) = delete;
-        TooLongThreadJob() = default;
-        ~TooLongThreadJob() = default;
+        JobTooLongToFinish(const JobTooLongToFinish&) = delete;
+        JobTooLongToFinish& operator=(const JobTooLongToFinish&) = delete;
+        JobTooLongToFinish() = default;
+        ~JobTooLongToFinish() = default;
 
         //nothing to serialize/deserialize here
         uint16_t Serialize(uint8_t[], const uint16_t) const
@@ -101,12 +101,44 @@ namespace WarningReporting {
 
         void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
         {
-            visitor = (_T("WorkerPool job took too long to finish"));
+            visitor = (_T("Job took too long to finish"));
             visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, maxValue);
         };
 
         static constexpr uint32_t DefaultWarningBound = { 7500 };
         static constexpr uint32_t DefaultReportBound = { 5000 };
+    };
+
+
+    class EXTERNAL JobTooLongWaitingInQueue {
+    public:
+        JobTooLongWaitingInQueue(const JobTooLongWaitingInQueue&) = delete;
+        JobTooLongWaitingInQueue& operator=(const JobTooLongWaitingInQueue&) = delete;
+        JobTooLongWaitingInQueue() = default;
+        ~JobTooLongWaitingInQueue() = default;
+
+        //nothing to serialize/deserialize here
+        uint16_t Serialize(uint8_t[], const uint16_t) const
+        {
+            return 0;
+        }
+
+        uint16_t Deserialize(const uint8_t[], const uint16_t)
+        {
+            return 0;
+        }
+
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
+        {
+            visitor = (_T("Job waiting in queue to be executed took too long"));
+            visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, maxValue);
+        };
+
+        static constexpr uint32_t DefaultWarningBound = { 100 };
+        static constexpr uint32_t DefaultReportBound = { 10 };
+
+        private:
+        uint32_t _timeInMs;
     };
 }
 }

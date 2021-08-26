@@ -34,6 +34,17 @@ namespace Core {
     struct IDispatchType<void> {
         virtual ~IDispatchType(){};
         virtual void Dispatch() = 0;
+
+        #ifdef __CORE_WARNING_REPORTING__    
+        inline void QueuedTime(uint64_t miliseconds) {
+            _time = miliseconds;
+        }
+        inline uint32_t QueuedTime() const {
+            return _time;
+        }
+        private:
+        uint32_t _time;
+        #endif
     };
 
     typedef IDispatchType<void> IDispatch;

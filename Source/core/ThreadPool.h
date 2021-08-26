@@ -195,7 +195,12 @@ namespace Core {
                     _runs++;
 
                     Core::IDispatch* request = &(*_currentRequest);
-                    REPORT_DURATION_WARNING( { _dispatcher->Dispatch(request); }, WarningReporting::TooLongThreadJob);
+                    
+                    #ifdef __CORE_WARNING_REPORTING__
+                    REPORT_OUTOFBOUNDS_WARNING(WarningReporting::JobTooLongWaitingInQueue, Core::Time::Now().MilliSeconds() - request->QueuedTime());
+                    #endif
+                    
+                    REPORT_DURATION_WARNING( { _dispatcher->Dispatch(request); }, WarningReporting::JobTooLongToFinish);
                     _currentRequest.Release();
 
                     // if someone is observing this run, (WaitForCompletion) make sure that
@@ -342,6 +347,10 @@ namespace Core {
             else {
                 _queue.Insert(job, waitTime);
             }
+
+            #ifdef __CORE_WARNING_REPORTING__
+            job->QueuedTime(Core::Time::Now().MilliSeconds());
+            #endif
 
         }
         void Post(const Core::ProxyType<IDispatch>& job)
