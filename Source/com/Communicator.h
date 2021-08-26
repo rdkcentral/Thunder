@@ -35,7 +35,10 @@
 #endif
 
 #include "../tracing/TraceUnit.h"
+
+#if defined(WARNING_REPORTING_ENABLED)
 #include "../warningreporting/WarningReportingUnit.h"
+#endif
 
 namespace WPEFramework {
 namespace RPC {
@@ -381,13 +384,13 @@ namespace RPC {
                     (Logging::LoggingType<Logging::ParsingError>::IsEnabled() ? 0x10 : 0) |
                     (Logging::LoggingType<Logging::Error>::IsEnabled() ? 0x20 : 0) |
                     (Logging::LoggingType<Logging::Fatal>::IsEnabled() ? 0x40 : 0);
-            _options.Add(_T("-e")).Add(Core::NumberType<uint32_t>(loggingSettings).Text());           
+            _options.Add(_T("-e")).Add(Core::NumberType<uint32_t>(loggingSettings).Text());
 
 
             string oldPath;
             _ldLibLock.Lock();
             if (_linkLoaderPath.empty() == false) {
-                
+
                 Core::SystemInfo::GetEnvironment(_T("LD_LIBRARY_PATH"), oldPath);
                 string newPath = _linkLoaderPath+':'+oldPath ;
                 Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), newPath, true);
@@ -401,7 +404,7 @@ namespace RPC {
             //restore the original value
             if (_linkLoaderPath.empty() == false) {
                 Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), oldPath, true);
-                
+
             }
             _ldLibLock.Unlock();
 
@@ -1152,7 +1155,11 @@ namespace RPC {
 
                     // Anounce the interface as completed
                     string jsonDefaultCategories(Trace::TraceUnit::Instance().Defaults());
-                    string jsonDefaultWarningCategories(WarningReporting::WarningReportingUnit::Instance().Defaults());
+                    string jsonDefaultWarningCategories;
+
+#if defined(WARNING_REPORTING_ENABLED)
+                    jsonDefaultWarningCategories = WarningReporting::WarningReportingUnit::Instance().Defaults();
+#endif
                     void* result = _parent.Announce(proxyChannel, message->Parameters());
 
                     message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultCategories, jsonDefaultWarningCategories);
