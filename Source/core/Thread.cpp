@@ -40,7 +40,6 @@ namespace Core {
     Thread::Thread(const uint32_t stackSize, const TCHAR* threadName)
         : m_enumState(BLOCKED)
         , m_syncAdmin()
-        , m_threadName("Unknown thread name")
         , m_sigExit(false, true)
 
 #ifdef __WINDOWS__
@@ -100,8 +99,10 @@ namespace Core {
 #endif
 
         if (threadName != nullptr) {
-            Core::ToString(threadName, m_threadName);
-            ThreadName(m_threadName.c_str());
+            std::string convertedName;
+            Core::ToString(threadName, convertedName);
+
+            ThreadName(convertedName.c_str());
         }
     }
     Thread::~Thread()
@@ -146,9 +147,6 @@ namespace Core {
         sigaddset(&mask, SIGTERM);
         pthread_sigmask(SIG_BLOCK, &mask, nullptr);
 #endif
-        #if defined(__CORE_EXCEPTION_CATCHING__) || defined(__CORE_WARNING_REPORTING__)
-        WARNING_REPORTING_THREAD_SETCALLSIGN_GUARD(cClassPointer->m_threadName.c_str());
-        #endif
 
         StateTrigger<thread_state>& stateObject = cClassPointer->m_enumState;
 
