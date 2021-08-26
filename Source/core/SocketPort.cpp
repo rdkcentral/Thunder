@@ -629,7 +629,7 @@ namespace Core {
         if (m_SocketReceiveBufferSize != static_cast<uint32_t>(~0)) {
             // Also allow setting a 0 size buffer for kernel to allocate the required mininum.
             if (::setsockopt(socket, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<const char*>(&m_SocketReceiveBufferSize), sizeof(m_SocketReceiveBufferSize)) == SOCKET_ERROR) {
-                TRACE_L1("Error could not set socket receive buffer size (%lu)", m_SocketReceiveBufferSize);
+                TRACE_L1("Error could not set socket receive buffer size (%u)", m_SocketReceiveBufferSize);
             }
         }
 
@@ -637,7 +637,7 @@ namespace Core {
         // Kernel doubles the buffer size, take that into account.
         m_SocketReceiveBufferSize /= 2;
         if (origSocketReceiveBufferSize != m_SocketReceiveBufferSize) {
-            TRACE_L2("Adjusted socket receive buffer size (%lu->%lu)", origSocketReceiveBufferSize, m_SocketReceiveBufferSize);
+            TRACE_L2("Adjusted socket receive buffer size (%u->%u)", origSocketReceiveBufferSize, m_SocketReceiveBufferSize);
         }
 
         if (m_ReceiveBufferSize == static_cast<uint16_t>(~0)) {
@@ -652,14 +652,14 @@ namespace Core {
 
         if (origSocketSendBufferSize != static_cast<uint32_t>(~0)) {
             if (::setsockopt(socket, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<const char*>(&m_SocketSendBufferSize), sizeof(m_SocketSendBufferSize)) == SOCKET_ERROR) {
-                TRACE_L1("Error could not set socket send buffer size (%lu)", m_SocketSendBufferSize);
+                TRACE_L1("Error could not set socket send buffer size (%u)", m_SocketSendBufferSize);
             }
         }
 
         ::getsockopt(socket, SOL_SOCKET, SO_SNDBUF, (char*)&m_SocketSendBufferSize, &valueLength);
         m_SocketSendBufferSize /= 2;
         if (origSocketSendBufferSize != m_SocketSendBufferSize) {
-            TRACE_L2("Adjusted socket send buffer size (%lu->%lu)", origSocketSendBufferSize, m_SocketSendBufferSize);
+            TRACE_L2("Adjusted socket send buffer size (%u->%u)", origSocketSendBufferSize, m_SocketSendBufferSize);
         }
 
         if (m_SendBufferSize == static_cast<uint16_t>(~0)) {
