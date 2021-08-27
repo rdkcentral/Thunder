@@ -21,7 +21,6 @@
 #include "Proxy.h"
 #include "Serialization.h"
 #include "Trace.h"
-#include "tracing/Logging.h"
 #include <limits.h>
 
 #ifdef __WINDOWS__
@@ -170,19 +169,7 @@ namespace Core {
                     // O.K. befor using the state, lock it.
                     adminLock.Unlock();
 
-                    #ifdef __CORE_EXCEPTION_CATCHING__
-                    try {
-                        delayed = cClassPointer->Worker();
-                    }
-                    catch(const std::exception& type) {
-                        Logging::DumpException(type.what());
-                    }
-                    catch(...) {
-                        Logging::DumpException(_T("Unknown"));
-                    }
-                    #else
-                        delayed = cClassPointer->Worker();
-                    #endif
+                    delayed = cClassPointer->Worker();
 
                     // Change the state, we are done with it.
                     adminLock.Lock();
