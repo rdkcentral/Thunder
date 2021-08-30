@@ -29,8 +29,9 @@ import argparse
 import copy
 import CppParser
 from collections import OrderedDict
+import Log
 
-VERSION = "1.6.11"
+
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -56,41 +57,8 @@ INSTANCE_ID = "RPC::instance_id"
 DEFAULT_DEFINITIONS_FILE = "default.h"
 IDS_DEFINITIONS_FILE = "Ids.h"
 
-# -------------------------------------------------------------------------
-# Logger
 
-
-class Log:
-    def __init__(self):
-        self.warnings = []
-        self.errors = []
-        self.infos = []
-
-    def Info(self, text, file=""):
-        if BE_VERBOSE:
-            self.infos.append("%s: INFO: %s%s%s" % (NAME, file, ": " if file else "", text))
-            print(self.infos[-1])
-
-    def Warn(self, text, file=""):
-        if SHOW_WARNINGS:
-            self.warnings.append("%s: WARNING: %s%s%s" % (NAME, file, ": " if file else "", text))
-            print(self.warnings[-1])
-
-    def Error(self, text, file=""):
-        self.errors.append("%s: ERROR: %s%s%s" % (NAME, file, ": " if file else "", text))
-        print(self.errors[-1], file=sys.stderr)
-
-    def Print(self, text, file=""):
-        print("%s: %s%s%s" % (NAME, file, ": " if file else "", text))
-
-    def Dump(self):
-        if self.errors or self.warnings or self.infos:
-            print("")
-            for item in self.errors + self.warnings + self.infos:
-                print(item)
-
-
-log = Log()
+log = Log.Log(NAME,BE_VERBOSE,SHOW_WARNINGS)
 
 # -------------------------------------------------------------------------
 # Exception classes
@@ -132,7 +100,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
         def __Traverse(tree, faces):
             if isinstance(tree, CppParser.Namespace) or isinstance(tree, CppParser.Class):
                 for c in tree.classes:
-                    if not isinstance(c, CppParser.TemplateClass) and c.methods:
+                    if not isinstance(c, CppParser.TemplateClass):
                         if (c.full_name.find(INTERFACE_NAMESPACE + "::")) == 0:
                             inherits_iunknown = False
                             for a in c.ancestors:
@@ -152,8 +120,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                 if not has_id:
                                     log.Warn("class %s does not have ID enumerator" % c.full_name, source_file)
                             else:
-                                log.Info("class %s not does not inherit from %s" % (c.full_name, CLASS_IUNKNOWN),
-                                         source_file)
+                                log.Info("class %s not does not inherit from %s" % (c.full_name, CLASS_IUNKNOWN), source_file)
                         else:
                             log.Info("class %s not in %s namespace" % (c.full_name, INTERFACE_NAMESPACE), source_file)
 
@@ -171,7 +138,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
 
     ids = os.path.join("@" + os.path.dirname(source_file), IDS_DEFINITIONS_FILE)
 
-    tree = CppParser.ParseFiles([defaults, ids, source_file], includePaths)
+    tree = CppParser.ParseFiles([defaults, ids, source_file], includePaths,log)
     if not isinstance(tree, CppParser.Namespace):
         raise SkipFileError(source_file)
 
@@ -509,7 +476,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                 return "const_cast<%s>(%s)" % (typ, identifier)
 
             if iface.obj.omit:
-                log.Print("omitted class %s" % iface.obj.full_name, source_file)
+                log.Info("omitted class %s" % iface.obj.full_name, source_file)
                 continue
 
             emit_methods = [m for m in iface.obj.methods if m.IsPureVirtual()]
@@ -636,15 +603,6 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                     p.oclass, "unable to serialise '%s': length variable not defined" % (p.origname))
 
             for m in emit_methods:
-                if m.omit:
-                    log.Print("omitted method %s" % iface.obj.full_name, source_file)
-                    emit.Line("// method omitted")
-                    emit.Line("//")
-                    emit.Line("")
-                    continue
-                elif BE_VERBOSE:
-                    log.Print("  generating code for %s()" % m.full_name)
-
                 proxy_count = 0
                 output_params = 0
 
@@ -659,6 +617,17 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                     if p.is_output:
                         output_params += 1
                     p.name += str(i)
+
+                if m.omit:
+                    log.Info("omitted method %s" % m.full_name, source_file)
+                    emit.Line("// %s" % SignatureStr(m, orig_params))
+                    emit.Line("//")
+                    emit.Line("// method omitted")
+                    emit.Line("//")
+                    emit.Line("")
+                    continue
+                elif BE_VERBOSE:
+                    log.Print("  generating code for %s()" % m.full_name)
 
                 LinkPointers(retval, params)
                 # emit a comment with function signature (optional)
@@ -1332,6 +1301,8 @@ if __name__ == "__main__":
     USE_OLD_CPP = args.old_cpp
     SHOW_WARNINGS = not args.no_warnings
     BE_VERBOSE = args.verbose
+    log.be_verbose = BE_VERBOSE
+    log.warning = SHOW_WARNINGS
     INTERFACE_NAMESPACE = args.if_namespace
     OUTDIR = args.outdir
     EMIT_TRACES = args.traces
@@ -1361,9 +1332,6 @@ if __name__ == "__main__":
         print("The tags shall be placed inside comments.")
         sys.exit()
 
-    if args.show_version:
-        print("Version: " + VERSION)
-        sys.exit()
 
     if not args.path:
         argparser.print_help()
@@ -1417,7 +1385,7 @@ if __name__ == "__main__":
                     if not keep_incomplete and os.path.isfile(output_file):
                         os.remove(output_file)
                 except (CppParser.ParserError, CppParser.LoaderError) as err:
-                  log.Error(err)
+                    log.Error(err)
 
             if scan_only:
                 print("\nInterface dump:")
