@@ -1674,6 +1674,44 @@ namespace Core {
                 return (str.length() > 0) && (str[str.length() - 1] == ch);
             }
 
+            string ToUTF8String(string& unicodestr)
+            {
+                string s;
+                int unicode = stoul(unicodestr, nullptr, 16);
+                if (unicode >= 0 and unicode <= 0x7f) {
+                    s = static_cast<char>(unicode);
+                    return s;
+                } else if (unicode <= 0x7ff) {
+                    unsigned char c1 = 192, c2 = 128;
+                    for (int k = 0; k < 11; ++k) {
+                        if (k < 6) {
+                            c2 |= (unicode % 64) & (1 << k);
+                        } else {
+                            c1 |= (unicode >> 6) & (1 << (k - 6));
+                        }
+                    }
+                    s = c1;
+                    s += c2;
+                    return s;
+                } else if (unicode <= 0xffff) {
+                    unsigned char c1 = 224, c2 = 128, c3 = 128;
+                    for (int k = 0; k < 16; ++k) {
+                        if (k < 6) {
+                            c3 |= (unicode % 64) & (1 << k);
+                        } else if (k < 12) {
+                            c2 |= (unicode >> 6) & (1 << (k - 6));
+                        } else {
+                            c1 |= (unicode >> 12) & (1 << (k - 12));
+                        }
+                    }
+                    s = c1;
+                    s += c2;
+                    s += c3;
+                    return s;
+                }
+                return "";
+            }
+
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
@@ -1826,6 +1864,15 @@ namespace Core {
                         if ((escapedSequence == true) && ((_scopeCount & DepthCountMask) == 0)) {
                             if ((current == '\\') && (_value[_value.length() - 1] == '\\')) {
                                 escapeHandling = EscapeSequenceAction::COLLAPSE;
+                            } else if ((current == 'u') && (_value[_value.length() - 1] == '\\')) {
+                                if (((result+4) < maxLength) && isxdigit(stream[result+1]) && isxdigit(stream[result+2]) && isxdigit(stream[result+3]) && isxdigit(stream[result+4])) {
+                                    escapeHandling = EscapeSequenceAction::REPLACE;
+                                } else {
+                                    finished = true;
+                                    error = Error{ "Invalid escape sequence \"\\" + std::string(1, current) + "\"." };
+                                    ++result;
+                                    break;
+                                }
                             } else if (!IsValidEscapeSequence(current)) {
                                 finished = true;
                                 error = Error{ "Invalid escape sequence \"\\" + std::string(1, current) + "\"." };
@@ -1841,7 +1888,15 @@ namespace Core {
                             _value[_value.length() - 1] = current;
                             ++_unaccountedCount;
                         } else if (escapeHandling == EscapeSequenceAction::REPLACE) {
-                            _value[_value.length() - 1] = GetEscapeSequenceValue(current);
+                            if (current == 'u') {
+                                string str(string(stream, result+1, 4));
+                                string utf8str = ToUTF8String(str);
+                                _value.pop_back();
+                                _value += utf8str;
+                                result += 4;
+                            } else {
+                                _value[_value.length() - 1] = GetEscapeSequenceValue(current);
+                            }
                         } else {
                             // Write the amount we possibly can..
                             _value += current;
