@@ -35,14 +35,14 @@ import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 import ProxyStubGenerator.Log as Log
 
-NAME = "JsonStubGenerator"
+NAME = "JsonGenerator"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
 VERBOSE = False
 GENERATED_JSON = False
 SHOW_WARNINGS = True
-DOC_ISSUES = False
+DOC_ISSUES = True
 
 
 log = Log.Log(NAME,VERBOSE,SHOW_WARNINGS,DOC_ISSUES)
@@ -2826,7 +2826,7 @@ if __name__ == "__main__":
         formatter_class=argparse.RawTextHelpFormatter)
     argparser.add_argument('path', nargs="*", help="JSON file(s), wildcards are allowed")
     argparser.add_argument("--version", dest="version", action="store_true", default=False, help="display version")
-    argparser.add_argument("--verbose", dest="verbose", action="store_true", default=False, help="be verbose")
+    argparser.add_argument("--verbose", dest="verbose", action="store_true", default=VERBOSE, help="enable verbose logging (default: no verbouse logging)")
     argparser.add_argument("-d",
                            "--docs",
                            dest="docs",
@@ -2928,12 +2928,12 @@ if __name__ == "__main__":
     argparser.add_argument("--no-style-warnings",
                            dest="no_style_warnings",
                            action="store_true",
-                           default=False,
+                           default=not DOC_ISSUES,
                            help="suppress documentation issues (default: show all documentation issues)")
     argparser.add_argument("--no-duplicates-warnings",
                            dest="no_duplicates_warnings",
                            action="store_true",
-                           default=False,
+                           default=not SHOW_WARNINGS,
                            help="suppress duplicate object warnings (default: show all duplicate object warnings)")
     argparser.add_argument("--include",
                            dest="extra_include",

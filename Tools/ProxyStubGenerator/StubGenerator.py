@@ -1293,7 +1293,7 @@ if __name__ == "__main__":
     argparser.add_argument("--no-warnings",
                            dest="no_warnings",
                            action="store_true",
-                           default=False,
+                           default=not SHOW_WARNINGS,
                            help="suppress all warnings (default: show warnings)")
     argparser.add_argument("--keep",
                            dest="keep_incomplete",
@@ -1303,8 +1303,8 @@ if __name__ == "__main__":
     argparser.add_argument("--verbose",
                            dest="verbose",
                            action="store_true",
-                           default=False,
-                           help="enable verbose output (default: verbose output disabled)")
+                           default=BE_VERBOSE,
+                           help="enable verbose logging (default: verbose logging disabled)")
     argparser.add_argument('-I', dest="includePaths", metavar="INCLUDE_DIR", action='append', default=[], type=str,
                            help='add an include path (can be used multiple times)')
 
