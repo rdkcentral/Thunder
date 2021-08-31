@@ -605,6 +605,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
             for m in emit_methods:
                 proxy_count = 0
                 output_params = 0
+                interface_params = 0
 
                 # enumerate and prepare parameters for emitting
                 # force non-ptr, non-ref parameters to be const
@@ -612,11 +613,15 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                 params = [EmitParam(v, cv=["const"]) for v in m.vars]
                 orig_params = [EmitParam(v) for v in m.vars]
                 for i, p in enumerate(params):
+                    if p.is_interface:
+                        interface_params += 1
                     if p.proxy and p.obj:
                         proxy_count += 1
                     if p.is_output:
                         output_params += 1
                     p.name += str(i)
+
+                interface_params += 1 if retval.is_interface else 0
 
                 if m.omit:
                     log.Info("omitted method %s" % m.full_name, source_file)
@@ -638,7 +643,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                 # emit the lambda prototype
                 emit.Line(
                     "[](Core::ProxyType<Core::IPCChannel>& channel%s, Core::ProxyType<RPC::InvokeMessage>& message%s) {" %
-                    (" VARIABLE_IS_NOT_USED" if not proxy_count or m.stub else "", " VARIABLE_IS_NOT_USED" if m.stub else ""))
+                    (" VARIABLE_IS_NOT_USED" if ((not interface_params and not proxy_count) or m.stub) else "", " VARIABLE_IS_NOT_USED" if m.stub else ""))
                 emit.IndentInc()
 
                 if EMIT_TRACES:
