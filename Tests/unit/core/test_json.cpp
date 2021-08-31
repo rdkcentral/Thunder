@@ -101,6 +101,11 @@ public:
     {
     }
 
+    void Clear()
+    {
+        WPEFramework::Core::JSON::Container::Clear();
+    }
+
 public:
     WPEFramework::Core::JSON::HexSInt32 A;
     WPEFramework::Core::JSON::String B;

@@ -117,11 +117,11 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                                 faces.append(Interface(c, item.value, source_file))
                                                 has_id = True
                                                 break
-                                if not has_id:
+                                if not has_id and not c.omit:
                                     log.Warn("class %s does not have ID enumerator" % c.full_name, source_file)
-                            else:
+                            elif not c.omit:
                                 log.Info("class %s not does not inherit from %s" % (c.full_name, CLASS_IUNKNOWN), source_file)
-                        else:
+                        elif not c.omit:
                             log.Info("class %s not in %s namespace" % (c.full_name, INTERFACE_NAMESPACE), source_file)
 
                     __Traverse(c, faces)
@@ -605,6 +605,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
             for m in emit_methods:
                 proxy_count = 0
                 output_params = 0
+                interface_params = 0
 
                 # enumerate and prepare parameters for emitting
                 # force non-ptr, non-ref parameters to be const
@@ -612,11 +613,15 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                 params = [EmitParam(v, cv=["const"]) for v in m.vars]
                 orig_params = [EmitParam(v) for v in m.vars]
                 for i, p in enumerate(params):
+                    if p.is_interface:
+                        interface_params += 1
                     if p.proxy and p.obj:
                         proxy_count += 1
                     if p.is_output:
                         output_params += 1
                     p.name += str(i)
+
+                interface_params += 1 if retval.is_interface else 0
 
                 if m.omit:
                     log.Info("omitted method %s" % m.full_name, source_file)
@@ -638,7 +643,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                 # emit the lambda prototype
                 emit.Line(
                     "[](Core::ProxyType<Core::IPCChannel>& channel%s, Core::ProxyType<RPC::InvokeMessage>& message%s) {" %
-                    (" VARIABLE_IS_NOT_USED" if not proxy_count or m.stub else "", " VARIABLE_IS_NOT_USED" if m.stub else ""))
+                    (" VARIABLE_IS_NOT_USED" if ((not interface_params and not proxy_count) or m.stub) else "", " VARIABLE_IS_NOT_USED" if m.stub else ""))
                 emit.IndentInc()
 
                 if EMIT_TRACES:
@@ -735,7 +740,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                                               length_var)
                                                 emit.Line("%s = static_cast<%s>(ALLOCA(%s));" %
                                                           (p.name, p.str_nocvref, length_var))
-                                                emit.Line("ASSERT(%s != nullptr);" % p.name)
+                                                emit.Line("ASSERT(%s != %s);" % (p.name, NULLPTR))
                                             else:
                                                 # is input/output but maxlength not defined
                                                 emit.Line("%s = const_cast<%s>(%s); // reuse the input buffer" %
@@ -752,7 +757,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                                           length_var)
                                             emit.Line("%s = static_cast<%s>(ALLOCA(%s));" %
                                                       (p.name, p.str_nocvref, length_var))
-                                            emit.Line("ASSERT(%s != nullptr);" % p.name)
+                                            emit.Line("ASSERT(%s != %s);" % (p.name, NULLPTR))
                                             if not p.length_constant:
                                                 emit.IndentDec()
                                                 emit.Line("}")
@@ -838,12 +843,16 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                             else:
                                 emit.Line("writer.%s(%s);" % (retval.RpcType(), retval.name))
                             if retval.is_interface:
+                                emit.Line("if (%s != %s) {" % (retval.name, NULLPTR))
+                                emit.IndentInc()
                                 if isinstance(retval.type.Type(), CppParser.Void):
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s, %s);" %
                                               (retval.name, retval.interface_ref.length_name))
                                 else:
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s);" %
                                               retval.name)
+                                emit.IndentDec()
+                                emit.Line("}")
 
                     if output_params:
                         for p in params:
@@ -869,7 +878,11 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                     else:
                                         emit.Line("writer.%s(%s);" % (p.RpcType(), p.name))
                                 if p.is_interface and not p.type.IsConst():
+                                    emit.Line("if (%s != %s) {" % (p.name, NULLPTR))
+                                    emit.IndentInc()
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s);" % p.name)
+                                    emit.IndentDec()
+                                    emit.Line("}")
 
                     if proxy_count:
                         # emit release proxy call if applicable
@@ -1280,7 +1293,7 @@ if __name__ == "__main__":
     argparser.add_argument("--no-warnings",
                            dest="no_warnings",
                            action="store_true",
-                           default=False,
+                           default=not SHOW_WARNINGS,
                            help="suppress all warnings (default: show warnings)")
     argparser.add_argument("--keep",
                            dest="keep_incomplete",
@@ -1290,8 +1303,8 @@ if __name__ == "__main__":
     argparser.add_argument("--verbose",
                            dest="verbose",
                            action="store_true",
-                           default=False,
-                           help="enable verbose output (default: verbose output disabled)")
+                           default=BE_VERBOSE,
+                           help="enable verbose logging (default: verbose logging disabled)")
     argparser.add_argument('-I', dest="includePaths", metavar="INCLUDE_DIR", action='append', default=[], type=str,
                            help='add an include path (can be used multiple times)')
 
