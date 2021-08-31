@@ -22,6 +22,7 @@
 
 #include <map>
 #include <vector>
+#include <iomanip>
 
 #include "Enumerate.h"
 #include "FileSystem.h"
@@ -1674,7 +1675,7 @@ namespace Core {
                 return (str.length() > 0) && (str[str.length() - 1] == ch);
             }
 
-            string ToUTF8String(string& unicodestr)
+            string ToUTF8String(const string& unicodestr) const
             {
                 string s;
                 int unicode = stoul(unicodestr, nullptr, 16);
@@ -1710,6 +1711,34 @@ namespace Core {
                     return s;
                 }
                 return "";
+            }
+
+            string FromUTF8String(const string& utf8str) const
+            {
+                unsigned utf8size = utf8str.length();
+                int unicode = 0;
+                for (unsigned p = 0; p < utf8size; ++p) {
+                    int bitcount = (p ? 6 : 8 - utf8size - (utf8size == 1 ? 0 : 1)),
+                        shift = (p < utf8size - 1 ? (6 * (utf8size - p - 1)) : 0);
+                    for (int k = 0; k < bitcount; ++k)
+                        unicode += ((utf8str[p] & (1 << k)) << shift);
+                }
+                std::stringstream sstream;
+                sstream << std::setfill('0') << std::setw(4) << std::hex << unicode;
+                return sstream.str();
+            }
+
+            int CheckGetUTF8Count(const TCHAR buf[], const int len) const
+            {
+                int cnt = 0;
+                if (len && buf[0] > 0x7F) {
+                    if (((buf[0] >> 4) == 0b1110) && (len >= 3) && ((buf[1] >> 6) == 0b10) && ((buf[2] >> 6) == 0b10)) {
+                        cnt = 3;
+                    } else if (((buf[0] >> 5) == 0b110) && (len >= 2) && ((buf[1] >> 6) == 0b10)) {
+                        cnt = 2;
+                    }
+                }
+                return cnt;
             }
 
             // IElement iface:
@@ -1757,6 +1786,20 @@ namespace Core {
                                         stream[result++] = convertedValue;
                                         length--;
                                         const_cast<String*>(this)->SetEscaped(false);
+                                    }
+                                } else if (int cnt = CheckGetUTF8Count(source, length)) {
+                                    string utf8str(string(source, 0, cnt));
+                                    string ustr(FromUTF8String(utf8str));
+                                    if ((result + ustr.size() + 1) < maxLength) {
+                                        stream[result++] = '\\';
+                                        stream[result++] = 'u';
+                                        for (char c : ustr) {
+                                            stream[result++] = c;
+                                        }
+                                        length -= cnt;
+                                        source += cnt - 1;
+                                    } else {
+                                        // TBD
                                     }
                                 } else {
                                     stream[result++] = *source;
