@@ -117,11 +117,11 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                                 faces.append(Interface(c, item.value, source_file))
                                                 has_id = True
                                                 break
-                                if not has_id:
+                                if not has_id and not c.omit:
                                     log.Warn("class %s does not have ID enumerator" % c.full_name, source_file)
-                            else:
+                            elif not c.omit:
                                 log.Info("class %s not does not inherit from %s" % (c.full_name, CLASS_IUNKNOWN), source_file)
-                        else:
+                        elif not c.omit:
                             log.Info("class %s not in %s namespace" % (c.full_name, INTERFACE_NAMESPACE), source_file)
 
                     __Traverse(c, faces)
