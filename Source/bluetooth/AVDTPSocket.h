@@ -545,8 +545,8 @@ namespace Bluetooth {
         }; // class Entry
 
     public:
-        AVDTPSocket(const Core::NodeId& localNode, const Core::NodeId& remoteNode, const uint16_t maxMTU)
-            : Core::SynchronousChannelType<Core::SocketPort>(SocketPort::SEQUENCED, localNode, remoteNode, maxMTU, maxMTU)
+        AVDTPSocket(const Core::NodeId& localNode, const Core::NodeId& remoteNode)
+            : Core::SynchronousChannelType<Core::SocketPort>(SocketPort::SEQUENCED, localNode, remoteNode, 1024, 2048)
             , _adminLock()
             , _callback(*this)
             , _queue()
