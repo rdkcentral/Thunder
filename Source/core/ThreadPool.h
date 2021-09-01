@@ -261,7 +261,6 @@ namespace Core {
 
                     _runs++;
 
-                    std::this_thread::sleep_for(std::chrono::milliseconds(700));
                     
                     #ifdef __CORE_WARNING_REPORTING__
                     _currentRequest.Process(_dispatcher);
