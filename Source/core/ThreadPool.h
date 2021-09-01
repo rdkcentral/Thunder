@@ -294,11 +294,10 @@ namespace Core {
             MessageQueue& _queue;
             Core::CriticalSection _adminLock;
             Core::Event _signal;
-            uint32_t _interestCount;
+            std::atomic<uint32_t> _interestCount;
             #ifdef __CORE_WARNING_REPORTING__
             MeasurableJob _currentRequest;
             #else
-            std::atomic<uint32_t> _interestCount;
             Core::ProxyType<Core::IDispatch> _currentRequest;
             #endif
             uint32_t _runs;
