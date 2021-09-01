@@ -35,7 +35,12 @@
 namespace WPEFramework {
 namespace Core {
 
-    /* static */ uint32_t Thread::_defaultStackSize = 0;
+    //Definitions of static members
+    uint32_t Thread::_defaultStackSize = 0;
+    #ifdef __CORE_EXCEPTION_CATCHING__
+    Thread::IExceptionCallback* Thread::_exceptionHandler = nullptr;
+    #endif
+
 
     Thread::Thread(const uint32_t stackSize, const TCHAR* threadName)
         : m_enumState(BLOCKED)
@@ -175,10 +180,14 @@ namespace Core {
                         delayed = cClassPointer->Worker();
                     }
                     catch(const std::exception& type) {
-                        Logging::DumpException(type.what());
+                        if(_exceptionHandler != nullptr){
+                            _exceptionHandler->Exception(type.what());
+                        }
                     }
                     catch(...) {
-                        Logging::DumpException(_T("Unknown"));
+                        if(_exceptionHandler != nullptr){
+                            _exceptionHandler->Exception(_T("Unknown"));
+                        }
                     }
                     #else
                         delayed = cClassPointer->Worker();
