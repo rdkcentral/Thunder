@@ -21,7 +21,6 @@
 #include "Proxy.h"
 #include "Serialization.h"
 #include "Trace.h"
-#include "tracing/Logging.h"
 #include <limits.h>
 
 #ifdef __WINDOWS__
