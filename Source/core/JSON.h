@@ -1083,6 +1083,7 @@ namespace Core {
                 }
                 if (offset == _strValue.size()) {
                     offset = 0;
+                    const_cast<FloatType*>(this)->_strValue.clear();
                 }
 
                 return loaded;
@@ -1172,7 +1173,9 @@ namespace Core {
                             _value = val;
                             _set |= SET;
                         }
+
                         offset = 0;
+                        _strValue.Clear();
                     }
                 }
 
