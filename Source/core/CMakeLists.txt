@@ -72,6 +72,7 @@ set(PUBLIC_HEADERS
         Enumerate.h
         Factory.h
         FileSystem.h
+        FileObserver.h
         Frame.h
         IAction.h
         IIterator.h
