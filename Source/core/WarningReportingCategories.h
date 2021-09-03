@@ -136,9 +136,6 @@ namespace WarningReporting {
 
         static constexpr uint32_t DefaultWarningBound = { 400 };
         static constexpr uint32_t DefaultReportBound = { 200 };
-
-        private:
-        uint32_t _timeInMs;
     };
 }
 }
