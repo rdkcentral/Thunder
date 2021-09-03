@@ -24,6 +24,53 @@
 
 namespace WPEFramework {
 namespace Web {
+
+    class EXTERNAL ProtocolsArray {
+    public:
+        ProtocolsArray() = default;
+        ~ProtocolsArray() = default;
+        ProtocolsArray(const ProtocolsArray&) = default;
+        ProtocolsArray& operator=(const ProtocolsArray&) = default;
+
+        explicit ProtocolsArray(const string& buffer)
+            : _raw(buffer)
+        {
+            //remove spaces and tokenize by comma
+            _raw.erase(std::remove_if(_raw.begin(), _raw.end(), ::isspace), _raw.end());
+            std::istringstream iss(_raw);
+
+            while (iss.good()) {
+                string substring;
+                getline(iss, substring, ',');
+                _parts.push_back(substring);
+            }
+        }
+
+        const string& First() const
+        {
+            return _parts.front();
+        }
+
+        const string& All() const
+        {
+            return _raw;
+        }
+
+        std::vector<string>::iterator begin()
+        {
+            return _parts.begin();
+        }
+
+        std::vector<string>::iterator end()
+        {
+            return _parts.end();
+        }
+
+    private:
+        string _raw;
+        std::vector<string> _parts;
+    };
+
     static const uint8_t MajorVersion = 1;
     static const uint8_t MinorVersion = 1;
 
@@ -630,7 +677,7 @@ namespace Web {
         Core::OptionalType<string> AccessControlHeaders;
         Core::OptionalType<uint16_t> AccessControlMethod;
         Core::OptionalType<string> WebSocketKey;
-        Core::OptionalType<string> WebSocketProtocol;
+        Core::OptionalType<ProtocolsArray> WebSocketProtocol;
         Core::OptionalType<uint32_t> WebSocketVersion;
         Core::OptionalType<string> WebSocketExtensions;
         Core::OptionalType<string> Man;

@@ -651,6 +651,20 @@ namespace Web {
             {
                 return (_protocol);
             }
+            inline bool IsProtocolSupported(const string& protocol)
+            {
+                if (protocol == _T("notification")) {
+                    return true;
+                } else if (protocol == _T("json")) {
+                    return true;
+                } else if (protocol == _T("text")) {
+                    return true;
+                } else if (protocol == _T("jsonrpc")) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
             inline const string& Query() const
             {
                 return (_query);
@@ -965,7 +979,14 @@ namespace Web {
                         _webSocketMessage->Message = _T("State of the link can not be upgraded.");
                     } else {
                         _state = static_cast<EnumlinkState>((_state & 0xF0) | UPGRADING);
-                        _protocol = element->WebSocketProtocol.Value();
+
+                        for (const auto& protocol : element->WebSocketProtocol.Value()) {
+                            if (IsProtocolSupported(protocol)) {
+                                _protocol = protocol;
+                                break;
+                            }
+                        }
+
                         _path = element->Path;
                         if (element->Query.IsSet() == true) {
                             _query = element->Query.Value();
