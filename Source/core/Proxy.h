@@ -76,8 +76,7 @@ namespace Core {
                 Space = reinterpret_cast<uint8_t*>(::malloc(alignedSize + sizeof(void*) + AdditionalSize));
 
                 if (Space != nullptr) {
-//                    *(reinterpret_cast<uint32_t*>(&Space[alignedSize])) = AdditionalSize;
-                    *(reinterpret_cast<uint64_t*>(&Space[alignedSize])) = AdditionalSize;
+                    *(reinterpret_cast<uint32_t*>(&Space[alignedSize])) = AdditionalSize;
                 }
             } else {
                 Space = reinterpret_cast<uint8_t*>(::malloc(alignedSize));
