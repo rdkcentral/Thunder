@@ -119,7 +119,7 @@ namespace Core {
     };
 
     template <typename ACTUALSERVICE>
-    class Service : public ProxyService<ACTUALSERVICE> {
+    class Service : public ProxyObject<ACTUALSERVICE> {
     private:
         Service(const Service<ACTUALSERVICE>&) = delete;
         Service<ACTUALSERVICE> operator=(const Service<ACTUALSERVICE>&) = delete;
@@ -127,7 +127,7 @@ namespace Core {
     protected:
         template<typename... Args>
         Service(Args&&... args)
-            : ProxyService<ACTUALSERVICE>(std::forward<Args>(args)...)
+            : ProxyObject<ACTUALSERVICE>(std::forward<Args>(args)...)
         {
             ServiceAdministrator::Instance().AddRef();
         }
@@ -262,7 +262,7 @@ namespace Core {
         virtual void* Create(const Library& library, const uint32_t interfaceNumber)
         {
             void* result = nullptr;
-            IUnknown* object = new (0) ProxyService< ServiceImplementation<ACTUALSERVICE> >(library);
+            IUnknown* object = new (0) ProxyObject< ServiceImplementation<ACTUALSERVICE> >(library);
 
             if (object != nullptr) {
                 // This quety interface will increment the refcount of the Service at least to 1.
