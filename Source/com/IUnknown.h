@@ -224,7 +224,7 @@ namespace ProxyStub {
 
                 _adminLock.Lock();
 
-                if (m_refCount == 0) {
+                if (_refCount == 0) {
                     result = Core::ERROR_DESTRUCTION_SUCCEEDED;
                 }
                 else {
@@ -363,7 +363,7 @@ namespace ProxyStub {
     private:
         mutable Core::CriticalSection _adminLock;
         mutable uint32_t _refCount;
-        uint8_t _mode;
+        mutable uint8_t _mode;
         const uint32_t _interfaceId;
         RPC::instance_id _implementation;
         Core::IUnknown& _parent;
