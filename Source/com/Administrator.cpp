@@ -319,6 +319,7 @@ namespace RPC {
 
                 loop++;
             }
+            _channelProxyMap.erase(index);
         }
 
         _adminLock.Unlock();
