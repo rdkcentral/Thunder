@@ -134,7 +134,8 @@ namespace ProxyStub {
     private:
         enum mode : uint8_t {
             CACHING_ADDREF   = 0x01,
-            CACHING_RELEASE  = 0x02
+            CACHING_RELEASE  = 0x02,
+            INVALID          = 0x04
         };
 
     public:
@@ -193,12 +194,9 @@ namespace ProxyStub {
             _adminLock.Lock();
             _refCount--;
 
-            if (_refCount != 0) {
-                _adminLock.Unlock();
-            }
-            else {
+            if (_refCount == 0) {
 
-                if ( (_mode & (CACHING_RELEASE|CACHING_ADDREF)) == 0) {
+                if ( (_mode & (CACHING_RELEASE|CACHING_ADDREF|INVALID)) == 0) {
 
                     // We have reached "0", signal the other side..
                     Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
@@ -224,8 +222,18 @@ namespace ProxyStub {
                 // Remove our selves from the Administration, we are done..
                 RPC::Administrator::Instance().UnregisterProxy(*this);
 
-                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
+                _adminLock.Lock();
+
+                if (m_refCount == 0) {
+                    result = Core::ERROR_DESTRUCTION_SUCCEEDED;
+                }
+                else {
+                    _mode |= INVALID;
+                }
             }
+
+            _adminLock.Unlock();
+
             return (result);
         }
         inline void* RemoteInterface(const uint32_t id) const
