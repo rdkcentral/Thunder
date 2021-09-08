@@ -34,7 +34,12 @@
 namespace WPEFramework {
 namespace Core {
 
-    /* static */ uint32_t Thread::_defaultStackSize = 0;
+    //Definitions of static members
+    uint32_t Thread::_defaultStackSize = 0;
+    #ifdef __CORE_EXCEPTION_CATCHING__
+    Thread::IExceptionCallback* Thread::_exceptionHandler = nullptr;
+    #endif
+
 
     Thread::Thread(const uint32_t stackSize, const TCHAR* threadName)
         : m_enumState(BLOCKED)
@@ -169,7 +174,23 @@ namespace Core {
                     // O.K. befor using the state, lock it.
                     adminLock.Unlock();
 
-                    delayed = cClassPointer->Worker();
+                    #ifdef __CORE_EXCEPTION_CATCHING__
+                    try {
+                        delayed = cClassPointer->Worker();
+                    }
+                    catch(const std::exception& type) {
+                        if(_exceptionHandler != nullptr){
+                            _exceptionHandler->Exception(type.what());
+                        }
+                    }
+                    catch(...) {
+                        if(_exceptionHandler != nullptr){
+                            _exceptionHandler->Exception(_T("Unknown"));
+                        }
+                    }
+                    #else
+                        delayed = cClassPointer->Worker();
+                    #endif
 
                     // Change the state, we are done with it.
                     adminLock.Lock();
