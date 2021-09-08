@@ -368,7 +368,7 @@ namespace ProxyStub {
     private:
         mutable Core::CriticalSection _adminLock;
         mutable uint32_t _refCount;
-        mutable uint8_t _mode;
+        uint8_t _mode;
         const uint32_t _interfaceId;
         RPC::instance_id _implementation;
         Core::IUnknown& _parent;
