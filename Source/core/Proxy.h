@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+
+
 #ifndef __PROXY_H
 #define __PROXY_H
 
@@ -41,17 +43,17 @@ namespace WPEFramework {
 namespace Core {
 
     template <typename CONTEXT>
-    class ProxyService : public CONTEXT {
-    private:
+    class ProxyObject : public CONTEXT, virtual public IReferenceCounted {
+    public:
         // ----------------------------------------------------------------
         // Never, ever allow reference counted objects to be assigned.
         // Create a new object and modify it. If the assignment operator
         // is used, give a compile error.
         // ----------------------------------------------------------------
-        ProxyService<CONTEXT>& operator=(const ProxyService<CONTEXT>& rhs) = delete;
+        ProxyObject<CONTEXT>& operator=(const ProxyObject<CONTEXT>& rhs) = delete;
 
     protected:
-        ProxyService(CONTEXT& copy)
+        ProxyObject(CONTEXT& copy)
             : CONTEXT(copy)
             , m_RefCount(0)
         {
@@ -92,13 +94,13 @@ namespace Core {
 
     public:
         template <typename... Args>
-        inline ProxyService(Args&&... args)
+        inline ProxyObject(Args&&... args)
             : CONTEXT(std::forward<Args>(args)...)
             , m_RefCount(0)
         {
             __Initialize();
         }
-        virtual ~ProxyService()
+        ~ProxyObject() override
         {
             __Deinitialize();
 
@@ -112,12 +114,12 @@ namespace Core {
         }
 
     public:
-        virtual void AddRef() const
+        void AddRef() const override
         {
             Core::InterlockedIncrement(m_RefCount);
         }
 
-        virtual uint32_t Release() const
+        uint32_t Release() const override
         {
             uint32_t Result;
 
@@ -142,7 +144,7 @@ namespace Core {
 
         inline uint32_t Size() const
         {
-            size_t alignedSize = ((sizeof(ProxyService<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
+            size_t alignedSize = ((sizeof(ProxyObject<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
 
             return (*(reinterpret_cast<const uint32_t*>(&(reinterpret_cast<const uint8_t*>(this)[alignedSize]))));
         }
@@ -150,7 +152,7 @@ namespace Core {
         template <typename TYPE>
         TYPE* Store()
         {
-            size_t alignedSize = ((sizeof(ProxyService<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
+            size_t alignedSize = ((sizeof(ProxyObject<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
             void* data = reinterpret_cast<void*>(&(reinterpret_cast<uint8_t*>(this)[alignedSize + sizeof(void*)]));
             void* result = Alignment(alignof(TYPE), data);
             return (reinterpret_cast<TYPE*>(result));
@@ -159,7 +161,7 @@ namespace Core {
         template <typename TYPE>
         const TYPE* Store() const
         {
-            size_t alignedSize = ((sizeof(ProxyService<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
+            size_t alignedSize = ((sizeof(ProxyObject<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
             void* data = const_cast<void*>(reinterpret_cast<const void*>(&(reinterpret_cast<const uint8_t*>(this)[alignedSize + sizeof(void*)])));
             const void* result = Alignment(alignof(TYPE), data);
             return (reinterpret_cast<const TYPE*>(result));
@@ -247,44 +249,6 @@ namespace Core {
         mutable uint32_t m_RefCount;
     };
 
-    template <typename CONTEXT>
-    class ProxyObject : public ProxyService<CONTEXT>, virtual public IReferenceCounted {
-    private:
-        // ----------------------------------------------------------------
-        // Never, ever allow reference counted objects to be assigned.
-        // Create a new object and modify it. If the assignment operator
-        // is used, give a compile error.
-        // ----------------------------------------------------------------
-        ProxyObject<CONTEXT>& operator=(const ProxyObject<CONTEXT>& rhs) = delete;
-
-    protected:
-        ProxyObject(CONTEXT& copy)
-            : ProxyService<CONTEXT>(copy)
-        {
-        }
-
-    public:
-        template <typename... Args>
-        inline ProxyObject(Args&&... args)
-            : ProxyService<CONTEXT>(std::forward<Args>(args)...)
-        {
-        }
-        virtual ~ProxyObject()
-        {
-        }
-
-    public:
-        void AddRef() const override
-        {
-            ProxyService<CONTEXT>::AddRef();
-        }
-
-        uint32_t Release() const override
-        {
-            return (ProxyService<CONTEXT>::Release());
-        }
-    };
-
     // ------------------------------------------------------------------------------
     // Reference counted object can only exist on heap (if reference count reaches 0)
     // delete is done. To avoid creation on the stack, this object can only be created
@@ -349,13 +313,13 @@ namespace Core {
         template <typename... Args>
         inline static ProxyType<CONTEXT> Create(Args&&... args)
         {
-            return (CreateObject(TemplateIntToType<std::is_base_of<IReferenceCounted, CONTEXT>::value>(), 0, std::forward<Args>(args)...));
+            return (CreateObject(0, std::forward<Args>(args)...));
         }
 
         template <typename... Args>
         inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, Args&&... args)
         {
-            return (CreateObject(TemplateIntToType<std::is_base_of<IReferenceCounted, CONTEXT>::value>(), size, std::forward<Args>(args)...));
+            return (CreateObject(size, std::forward<Args>(args)...));
         }
 
         ProxyType<CONTEXT>& operator=(const ProxyType<CONTEXT>& rhs)
@@ -466,14 +430,9 @@ namespace Core {
         }
 
         template <typename... Args>
-        inline static ProxyType<CONTEXT> CreateObject(const ::TemplateIntToType<false>&, const uint32_t size, Args&&... args)
+        inline static ProxyType<CONTEXT> CreateObject(const uint32_t size, Args&&... args)
         {
             return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(std::forward<Args>(args)...));
-        }
-        template <typename... Args>
-        inline static ProxyType<CONTEXT> CreateObject(const ::TemplateIntToType<true>&, const uint32_t size, Args&&... args)
-        {
-            return ProxyType<CONTEXT>(*new (size) ProxyService<CONTEXT>(std::forward<Args>(args)...));
         }
 
     private:
@@ -1017,7 +976,7 @@ namespace Core {
         virtual void Unlink() = 0;
     };
     template <typename ELEMENT>
-    using ProxyContainerElement = typename std::conditional<std::is_base_of<IReferenceCounted, ELEMENT>::value != 0, ProxyService<ELEMENT>, ProxyObject<ELEMENT>>::type;
+    using ProxyContainerElement = ProxyObject<ELEMENT>;
 
     template <typename CONTAINER, typename ELEMENT, typename EXPOSED = ELEMENT>
     class ProxyContainerType : public ProxyContainerElement<ELEMENT>, public IProxyContainerElement {
@@ -1067,22 +1026,22 @@ namespace Core {
     public:
         void AddRef() const override
         {
-            if (ProxyService<ELEMENT>::LastRef() == true) {
+            if (ProxyObject<ELEMENT>::LastRef() == true) {
                 const_cast<ThisClass*>(this)->__Acquire();
             }
-            ProxyService<ELEMENT>::AddRef();
+            ProxyObject<ELEMENT>::AddRef();
         }
         uint32_t Release() const override
         {
-            if (ProxyService<ELEMENT>::LastRef() == true) {
+            if (ProxyObject<ELEMENT>::LastRef() == true) {
                 // This can only happen of the parent has unlinked us, other wise 
                 // the last release is always in the Unlink..
                 ASSERT(_parent == nullptr);
                 const_cast<ThisClass*>(this)->__Relinquish();
             }
-            uint32_t result = ProxyService<ELEMENT>::Release();
+            uint32_t result = ProxyObject<ELEMENT>::Release();
 
-            if ((result != Core::ERROR_DESTRUCTION_SUCCEEDED) && (ProxyService<ELEMENT>::LastRef() == true)) {
+            if ((result != Core::ERROR_DESTRUCTION_SUCCEEDED) && (ProxyObject<ELEMENT>::LastRef() == true)) {
                 const_cast<ThisClass*>(this)->Notify();
 
                 result = Core::ERROR_DESTRUCTION_SUCCEEDED;
@@ -1094,17 +1053,17 @@ namespace Core {
         {
             ASSERT(_parent != nullptr);
 
-            if (ProxyService<ELEMENT>::LastRef() == false) {
+            if (ProxyObject<ELEMENT>::LastRef() == false) {
                 // This can only happen if the parent has unlinked us, while we are still being used somewhere..
                 const_cast<ThisClass*>(this)->__Unlink();
             }
 
             // By incrementing this refcount the last reference count is definitily not reached, so safe to remove the parent as we are sure
             // that it will not be used while we clear it... 
-            ProxyService<ELEMENT>::AddRef();
+            ProxyObject<ELEMENT>::AddRef();
             _parent = nullptr;
-            ProxyService<ELEMENT>::Release();
-            ProxyService<ELEMENT>::Release();
+            ProxyObject<ELEMENT>::Release();
+            ProxyObject<ELEMENT>::Release();
         }
  
     private:

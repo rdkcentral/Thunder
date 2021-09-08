@@ -849,7 +849,7 @@ namespace Web {
                                    }
                                 }
 
-                                result += (headerSize + payloadSizeInControlFrame); // actualDataSize
+                                result += static_cast<uint16_t>(headerSize + payloadSizeInControlFrame); // actualDataSize
 
                             } else {
                                 _parent.ReceiveData(&(dataFrame[result + headerSize]), actualDataSize);
