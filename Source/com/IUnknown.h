@@ -155,6 +155,18 @@ namespace ProxyStub {
         }
 
     public:
+	bool Invalidate() {
+            bool invalidated = false;
+            _adminLock.Lock();
+            if (_refCount > 0) {
+                _refCount++;
+                _mode |= INVALID;
+                invalidated = true;
+            }
+            _adminLock.Unlock();
+
+            return (invalidated);
+        }
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy/Stub (both) environment calls
         // -------------------------------------------------------------------------------------------------------------------------------
@@ -194,8 +206,10 @@ namespace ProxyStub {
             _adminLock.Lock();
             _refCount--;
 
-            if (_refCount == 0) {
-
+            if (_refCount != 0) {
+                _adminLock.Unlock();
+            }
+            else {
                 if ( (_mode & (CACHING_RELEASE|CACHING_ADDREF|INVALID)) == 0) {
 
                     // We have reached "0", signal the other side..
@@ -222,17 +236,8 @@ namespace ProxyStub {
                 // Remove our selves from the Administration, we are done..
                 RPC::Administrator::Instance().UnregisterProxy(*this);
 
-                _adminLock.Lock();
-
-                if (_refCount == 0) {
-                    result = Core::ERROR_DESTRUCTION_SUCCEEDED;
-                }
-                else {
-                    _mode |= INVALID;
-                }
+                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
             }
-
-            _adminLock.Unlock();
 
             return (result);
         }
