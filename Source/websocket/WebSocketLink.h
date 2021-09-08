@@ -647,23 +647,13 @@ namespace Web {
             {
                 return (_path);
             }
-            inline const string& Protocol() const
+            inline const ProtocolsArray& Protocols() const
             {
                 return (_protocol);
             }
-            inline bool IsProtocolSupported(const string& protocol)
+            inline void Protocols(const ProtocolsArray& protocols)
             {
-                if (protocol == _T("notification")) {
-                    return true;
-                } else if (protocol == _T("json")) {
-                    return true;
-                } else if (protocol == _T("text")) {
-                    return true;
-                } else if (protocol == _T("jsonrpc")) {
-                    return true;
-                } else {
-                    return false;
-                }
+                _protocol = protocols;
             }
             inline const string& Query() const
             {
@@ -979,14 +969,7 @@ namespace Web {
                         _webSocketMessage->Message = _T("State of the link can not be upgraded.");
                     } else {
                         _state = static_cast<EnumlinkState>((_state & 0xF0) | UPGRADING);
-
-                        for (const auto& protocol : element->WebSocketProtocol.Value()) {
-                            if (IsProtocolSupported(protocol)) {
-                                _protocol = protocol;
-                                break;
-                            }
-                        }
-
+                        _protocol = element->WebSocketProtocol.Value();
                         _path = element->Path;
                         if (element->Query.IsSet() == true) {
                             _query = element->Query.Value();
@@ -1003,13 +986,15 @@ namespace Web {
                             _state = static_cast<EnumlinkState>((_state & 0xF0) | WEBSERVER);
                             _path.clear();
                             _query.clear();
-                            _protocol.clear();
+                            _protocol.Clear();
                         } else {
                             _webSocketMessage->Connection = Web::Response::CONNECTION_UPGRADE;
                             _webSocketMessage->Upgrade = Web::Response::UPGRADE_WEBSOCKET;
                             _webSocketMessage->WebSocketAccept = _handler.ResponseKey(element->WebSocketKey.Value());
-                            if (_protocol.empty() == false) {
-                                _webSocketMessage->WebSocketProtocol = _protocol;
+                            if (_protocol.Empty() == false) {
+                                //only one protocol should be selected
+                                ASSERT(_protocol.Size() == 1);
+                                _webSocketMessage->WebSocketProtocol = _protocol.First();
                             }
                         }
                     }
@@ -1121,7 +1106,7 @@ namespace Web {
             SerializerImpl _serializerImpl;
             DeserializerImpl _deserialiserImpl;
             string _path;
-            string _protocol;
+            ProtocolsArray _protocol;
             string _query;
             string _origin;
             string _commandData;
@@ -1289,9 +1274,13 @@ namespace Web {
         {
             return (_channel.Query());
         }
-        inline const string& Protocol() const
+        inline const ProtocolsArray& Protocols() const
         {
-            return (_channel.Protocol());
+            return (_channel.Protocols());
+        }
+        inline void Protocols(const ProtocolsArray& protocols)
+        {
+            _channel.Protocols(protocols);
         }
         inline bool Upgrade(const string& protocol, const string& path, const string& query, const string& origin)
         {
