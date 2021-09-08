@@ -234,11 +234,12 @@ macro(write_config)
             endif()
         endif()
 
-        json_write("${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}.json" ${plugin_config})
+        json_write("${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}.generated.json" ${plugin_config})
 
         install(
-                FILES ${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}.json DESTINATION
-                "${CMAKE_INSTALL_PREFIX}/../etc/${NAMESPACE}/plugins/"
+                FILES ${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}.generated.json
+                RENAME ${plugin}.json
+                DESTINATION "${CMAKE_INSTALL_PREFIX}/../etc/${NAMESPACE}/plugins/"
                 COMPONENT ${_component})
     endforeach()
 
