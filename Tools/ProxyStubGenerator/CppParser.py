@@ -25,7 +25,6 @@ import re, uuid, sys, copy, hashlib, os
 from collections import OrderedDict
 from enum import IntEnum
 
-
 class ParserError(RuntimeError):
     def __init__(self, msg):
         msg = "%s(%s): parse error: %s" % (CurrentFile(), CurrentLine(), msg)
@@ -1198,7 +1197,7 @@ class TemplateClass(Class):
 
 
 # Source file test into a list of tokens, removing comments and preprocessor directives.
-def __Tokenize(contents):
+def __Tokenize(contents,log = None):
     global current_file
     global current_line
 
@@ -1303,6 +1302,8 @@ def __Tokenize(contents):
                 if _find("@stubgen", token):
                     if "@stubgen:skip" in token:
                         skipmode = True
+                        if log :
+                            log.Warn("The Use of @stubgen:skip is deprecated, Please use @stubgen:omit instead",(CurrentFile()+" Line: "+str(CurrentLine())))
                     elif "@stubgen:omit" in token:
                         tagtokens.append("@OMIT")
                     elif "@stubgen:stub" in token:
@@ -1429,7 +1430,7 @@ def CurrentLine():
 
 
 # Builds a syntax tree (data structures only) of C++ source code
-def Parse(contents):
+def Parse(contents,log = None):
     # Start in global namespace.
     global global_namespace
     global current_file
@@ -1447,7 +1448,7 @@ def Parse(contents):
     current_file = "undefined"
 
     # Split into tokens first
-    line_tokens = __Tokenize(contents)
+    line_tokens = __Tokenize(contents,log)
 
     for token in line_tokens:
         if isinstance(token, str) and token.startswith("@LINE:"):
@@ -1641,6 +1642,10 @@ def Parse(contents):
                 new_class.is_iterator = True
                 event_next = False
 
+            if new_class.parent.omit:
+                # Inherit omiting...
+                new_class.omit = True
+
             if last_template_def:
                 new_class.specifiers.append(" ".join(last_template_def))
                 last_template_def = []
@@ -1723,10 +1728,7 @@ def Parse(contents):
             # locate return value
             while j >= min_index and tokens[j] not in ['{', '}', ';', ':']:
                 j -= 1
-            if not current_block[-1].omit and not omit_next:
-                ret_type = tokens[j + 1:k]
-            else:
-                ret_type = []
+            ret_type = tokens[j + 1:k]
 
             if isinstance(current_block[-1], Class):
                 if name[0] == "~":
@@ -1971,13 +1973,13 @@ def ParseFile(source_file, includePaths = []):
     return Parse(contents)
 
 
-def ParseFiles(source_files, includePaths = []):
+def ParseFiles(source_files, includePaths = [], log = None):
     contents = ""
     for source_file in source_files:
         if source_file:
             quiet = (source_file[0] == "@")
             contents += ReadFile((source_file[1:] if quiet else source_file), includePaths, quiet, "")
-    return Parse(contents)
+    return Parse(contents,log)
 
 
 # -------------------------------------------------------------------------
