@@ -1106,16 +1106,20 @@ namespace Core {
         return (l_Received);
     }
 
+    struct IUnlink {
+        virtual ~IUnlink() = default;
+        virtual void Unlink() = 0;
+    };
 
-    template <typename CONTAINER, typename CONTEXT>
-    class ProxyContainerType : public CONTEXT {
+    template <typename CONTAINER, typename CONTEXT, typename STORED>
+    class ProxyContainerType : public CONTEXT, public IUnlink {
     private:
-        using ThisClass = ProxyContainerType<CONTAINER, CONTEXT>;
+        using ThisClass = ProxyContainerType<CONTAINER, CONTEXT, STORED>;
 
     public:
         ProxyContainerType() = delete;
-        ProxyContainerType(const ProxyContainerType<CONTAINER, CONTEXT>&) = delete;
-        ProxyContainerType<CONTAINER, CONTEXT>& operator=(const ProxyContainerType<CONTAINER, CONTEXT>&) = delete;
+        ProxyContainerType(const ProxyContainerType<CONTAINER, CONTEXT, STORED>&) = delete;
+        ProxyContainerType<CONTAINER, CONTEXT, STORED>& operator=(const ProxyContainerType<CONTAINER, CONTEXT, STORED>&) = delete;
 
         template <typename... Args>
         ProxyContainerType(CONTAINER& parent, Args&&... args)
@@ -1130,7 +1134,7 @@ namespace Core {
         }
 
     public:
-        void Unlink() {
+        void Unlink() override {
             ASSERT(_parent != nullptr);
 
             _parent = nullptr;
@@ -1153,7 +1157,7 @@ namespace Core {
             __Deinitialize();
         }
         void Acquire(Core::ProxyType<ThisClass>& source) {
-            Core::ProxyType<CONTEXT> base(std::move(source));
+            Core::ProxyType<STORED> base(std::move(source));
             __Acquire(base);
         }
         void Relinquish(Core::ProxyType<ThisClass>& source) {
@@ -1161,7 +1165,7 @@ namespace Core {
 
             if (_parent != nullptr) {
                 // The parent is the only one still holding this proxy. Let him now...
-                _parent->Notify(source);
+                Notify(source, TemplateIntToType<Core::TypeTraits::is_same<CONTEXT, STORED>::value>());
             }
             else {
                 Core::ProxyType<CONTEXT> base(std::move(source));
@@ -1172,7 +1176,15 @@ namespace Core {
             __Relinquish(base);
         }
 
-    private:        
+    private:    
+        void Notify(ProxyType<ThisClass>& source, const TemplateIntToType<true>&) {
+            _parent->Notify(source);
+        }
+        void Notify(ProxyType<ThisClass>& source, const TemplateIntToType<false>&) {
+            Core::ProxyType<STORED> base(std::move(source));
+
+            _parent->Notify(base);
+        }
         // -----------------------------------------------------
         // Check for Clear method on Object
         // -----------------------------------------------------
@@ -1302,7 +1314,7 @@ namespace Core {
     template <typename PROXYELEMENT>
     class ProxyPoolType {
     private:
-        using ContainerElement = ProxyContainerType< ProxyPoolType<PROXYELEMENT>, PROXYELEMENT>;
+        using ContainerElement = ProxyContainerType< ProxyPoolType<PROXYELEMENT>, PROXYELEMENT, PROXYELEMENT>;
         using ContainerList = std::list< Core::ProxyType<ContainerElement> >;
 
     public:
@@ -1426,8 +1438,9 @@ namespace Core {
     template <typename PROXYKEY, typename PROXYELEMENT>
     class ProxyMapType {
     private:
-        using ContainerElement = ProxyContainerType< ProxyMapType< PROXYKEY, PROXYELEMENT>, PROXYELEMENT>;
-        using ContainerMap = std::map<PROXYKEY, Core::ProxyType<ContainerElement> >;
+        using ContainerElement = ProxyContainerType< ProxyMapType< PROXYKEY, PROXYELEMENT>, PROXYELEMENT, PROXYELEMENT>;
+        using ContainerStorage = std::pair < Core::ProxyType<ContainerElement>, IUnlink*>;
+        using ContainerMap = std::map<PROXYKEY, ContainerStorage>;
 
     public:
         ProxyMapType(const ProxyMapType<PROXYKEY, PROXYELEMENT>&) = delete;
@@ -1443,9 +1456,11 @@ namespace Core {
         }
 
     public:
-        template <typename... Args>
-        Core::ProxyType<PROXYELEMENT> Instance(PROXYKEY& key, Args&&... args)
+        template <typename ACTUALOBJECT, typename... Args>
+        Core::ProxyType<PROXYELEMENT> Instance(const PROXYKEY& key, Args&&... args)
         {
+            using ActualElement = ProxyContainerType< ProxyMapType< PROXYKEY, PROXYELEMENT>, ACTUALOBJECT, PROXYELEMENT>;
+
             Core::ProxyType<PROXYELEMENT> result;
 
             _lock.Lock();
@@ -1454,19 +1469,22 @@ namespace Core {
 
             if (index == _map.end()) {
                 // Oops we do not have such an element, create it...
-                Core::ProxyType<ContainerElement> newItem = Core::ProxyType<ContainerElement>::template Create(*this, std::forward<Args>(args)...);
+                Core::ProxyType<ActualElement> newItem = Core::ProxyType<ActualElement>::template Create(*this, std::forward<Args>(args)...);
 
                 if (newItem.IsValid() == true) {
-                    _map.emplace(std::piecewise_construct,
-                        std::forward_as_tuple(key),
-                        std::forward_as_tuple(newItem));
+                    IUnlink* unlinkInterface = newItem.operator->();
 
                     // Make sure the return value is already "accounted" for otherwise the copy of the
                     // element into the map will trigger the "last" on map reference.
-                    result = Core::ProxyType<PROXYELEMENT>(newItem);
+                    result = Core::ProxyType<PROXYELEMENT>(std::move(newItem));
+
+                    _map.emplace(std::piecewise_construct,
+                        std::forward_as_tuple(key),
+                        std::forward_as_tuple(ContainerStorage(result, unlinkInterface)));
+
                 }
             } else {
-                result = Core::ProxyType<PROXYELEMENT>(index->second);
+                result = Core::ProxyType<PROXYELEMENT>(index->second.first);
             }
 
             _lock.Unlock();
@@ -1482,7 +1500,7 @@ namespace Core {
             typename ContainerMap::iterator index(_map.find(key));
 
             if (index != _map.end()) {
-                result = Core::ProxyType<PROXYELEMENT>(index->second);
+                result = Core::ProxyType<PROXYELEMENT>(index->second.first);
             }
 
             _lock.Unlock();
@@ -1493,16 +1511,16 @@ namespace Core {
         template<typename ACTION>
         void Visit(ACTION&& action ) const {
             _lock.Lock();
-            for (const std::pair< PROXYKEY, Core::ProxyType<ContainerElement> >& entry : _map) {
-                action(entry.first, Core::ProxyType<PROXYELEMENT>(entry.second.second));
+            for (const std::pair< PROXYKEY, ContainerStorage >& entry : _map) {
+                action(entry.first, entry.second.first);
             }
             _lock.Unlock();
         }
         void Clear()
         {
             _lock.Lock();
-            for (const std::pair< PROXYKEY, Core::ProxyType<ContainerElement> >& entry : _map) {
-                entry.second->Unlink();
+            for (const std::pair< PROXYKEY, ContainerStorage >& entry : _map) {
+                entry.second.second->Unlink();
             }
             _map.clear();
             _lock.Unlock();
@@ -1514,14 +1532,34 @@ namespace Core {
             typename ContainerMap::iterator index(_map.begin());
 
             // Find the element in the map..
-            while ((index != _map.end()) && (index->second != source)) {
+            while ((index != _map.end()) && (index->second.first != source)) {
                 index++;
             }
 
             ASSERT(index != _map.end());
 
             if (index != _map.end()) {
-                source->Unlink();
+                index->second.second->Unlink();
+                _map.erase(index);
+            }
+
+            _lock.Unlock();
+        }
+        void Notify(Core::ProxyType<PROXYELEMENT>& source)
+        {
+            _lock.Lock();
+
+            typename ContainerMap::iterator index(_map.begin());
+
+            // Find the element in the map..
+            while ((index != _map.end()) && (index->second.first != source)) {
+                index++;
+            }
+
+            ASSERT(index != _map.end());
+
+            if (index != _map.end()) {
+                index->second.second->Unlink();
                 _map.erase(index);
             }
 
@@ -1536,8 +1574,9 @@ namespace Core {
     template <typename PROXYELEMENT>
     class ProxyListType {
     private:
-        using ContainerElement = ProxyContainerType< ProxyListType<PROXYELEMENT>, PROXYELEMENT>;
-        using ContainerList = std::list< Core::ProxyType<ContainerElement> >;
+        using ContainerElement = ProxyContainerType< ProxyListType<PROXYELEMENT>, PROXYELEMENT, PROXYELEMENT>;
+        using ContainerStorage = std::pair < Core::ProxyType<ContainerElement>, IUnlink*>;
+        using ContainerList = std::list< ContainerStorage >;
 
     public:
         ProxyListType(const ProxyListType<PROXYELEMENT>&) = delete;
@@ -1554,21 +1593,27 @@ namespace Core {
         }
 
     public:
-        template <typename... Args>
+        template <typename ACTUALOBJECT, typename... Args>
         Core::ProxyType<PROXYELEMENT> Instance(Args&&... args)
         {
+            using ActualElement = ProxyContainerType < ProxyListType<PROXYELEMENT>, ACTUALOBJECT, PROXYELEMENT>;
+
             Core::ProxyType<PROXYELEMENT> result;
 
             _lock.Lock();
 
-            Core::ProxyType<ContainerElement> newItem = Core::ProxyType<ContainerElement>::template Create(*this, std::forward<Args>(args)...);
+            Core::ProxyType<ActualElement> newItem = Core::ProxyType<ActualElement>::template Create(*this, std::forward<Args>(args)...);
 
-            if (newItem != nullptr) {
-                _list.emplace_back(newItem);
+            if (newItem.IsValid() == true) {
+
+                IUnlink* unlinkInterface = newItem.operator->();
 
                 // Make sure the return value is already "accounted" for otherwise the copy of the
-                // element into the map will trigger the "last" on map reference.
-                result = Core::ProxyType<PROXYELEMENT>(newItem);
+                // element into the map will trigger the "last" on list reference.
+                result = Core::ProxyType<PROXYELEMENT>(std::move(newItem));
+
+                _list.emplace_back(ContainerStorage(newItem, unlinkInterface));
+
             }
 
             _lock.Unlock();
@@ -1579,8 +1624,8 @@ namespace Core {
         void Clear()
         {
             _lock.Lock();
-            for (const Core::ProxyType<ContainerElement>& entry : _list) {
-                entry->Unlink();
+            for (const ContainerStorage& entry : _list) {
+                entry.second->Unlink();
             }
             _list.clear();
             _lock.Unlock();
@@ -1591,14 +1636,33 @@ namespace Core {
 
             typename ContainerList::iterator index = _list.begin();
 
-            while ( (index != _list.end()) && (index != source) ) {
+            while ( (index != _list.end()) && (index->first != source) ) {
                 index++;
             }
 
             ASSERT(index != _list.end());
 
             if (index != _list.end()) {
-                source->Unlink();
+                index->second->Unlink();
+                _list.erase(index);
+            }
+
+            _lock.Unlock();
+        }
+        void Notify(Core::ProxyType<PROXYELEMENT>& source)
+        {
+            _lock.Lock();
+
+            typename ContainerList::iterator index = _list.begin();
+
+            while ((index != _list.end()) && (index->first != source)) {
+                index++;
+            }
+
+            ASSERT(index != _list.end());
+
+            if (index != _list.end()) {
+                index->second->Unlink();
                 _list.erase(index);
             }
 
