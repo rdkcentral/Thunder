@@ -1106,13 +1106,29 @@ namespace Core {
         return (l_Received);
     }
 
-    struct IUnlink {
-        virtual ~IUnlink() = default;
-        virtual void Unlink() = 0;
+    class Decouple {
+        public:
+        Decouple(const Decouple&) = delete;
+        Decouple& operator=(const Decouple&) = delete;
+        Decouple(void (*callback)(void*), void* thisptr)
+            : _callback(callback)
+            , _thisptr(thisptr)
+        {
+        }
+
+        ~Decouple() = default;
+
+        void Clear() {
+            _callback(_thisptr);
+        }
+
+    private:
+        void (*_callback)(void*);
+        void* _thisptr;
     };
 
     template <typename CONTAINER, typename CONTEXT, typename STORED>
-    class ProxyContainerType : public CONTEXT, public IUnlink {
+    class ProxyContainerType : public CONTEXT, public Decouple {
     private:
         using ThisClass = ProxyContainerType<CONTAINER, CONTEXT, STORED>;
 
@@ -1124,6 +1140,7 @@ namespace Core {
         template <typename... Args>
         ProxyContainerType(CONTAINER& parent, Args&&... args)
             : CONTEXT(std::forward<Args>(args)...)
+            , Decouple(&UnlinkFromParent, this)
             , _parent(&parent)
         {
         }
@@ -1133,15 +1150,24 @@ namespace Core {
             }
         }
 
+    private:
+
+        static void UnlinkFromParent(void* parent)
+        {
+            reinterpret_cast<ThisClass*>(parent)->Unlink();
+        }
+
     public:
-        void Unlink() override {
+
+        void Unlink()
+        {
             ASSERT(_parent != nullptr);
 
             _parent = nullptr;
 
             // This can only happen if the parent has unlinked us, while we are still being used somewhere..
             __Unlink();
-        }
+        } 
 
         // Forwarders as SFINEA is not lokking through calls inheritance trees..
         bool IsInitialized() const {
@@ -1345,7 +1371,7 @@ namespace Core {
                     // This way the Notify (that uses the _parent in the ContainerElment)
                     // will not be used, fired used, as that pointer is not protected there..
                     Core::ProxyType<ContainerElement> expendable(_queue.front());
-                    expendable->Unlink();
+                    expendable->Decouple::Clear();
                     _queue.pop_front();
                     _createdElements--;
 
@@ -1439,7 +1465,7 @@ namespace Core {
     class ProxyMapType {
     private:
         using ContainerElement = ProxyContainerType< ProxyMapType< PROXYKEY, PROXYELEMENT>, PROXYELEMENT, PROXYELEMENT>;
-        using ContainerStorage = std::pair < Core::ProxyType<ContainerElement>, IUnlink*>;
+        using ContainerStorage = std::pair < Core::ProxyType<ContainerElement>, Decouple*>;
         using ContainerMap = std::map<PROXYKEY, ContainerStorage>;
 
     public:
@@ -1472,7 +1498,7 @@ namespace Core {
                 Core::ProxyType<ActualElement> newItem = Core::ProxyType<ActualElement>::template Create(*this, std::forward<Args>(args)...);
 
                 if (newItem.IsValid() == true) {
-                    IUnlink* unlinkInterface = newItem.operator->();
+                    Decouple* unlinkInterface = newItem.operator->();
 
                     // Make sure the return value is already "accounted" for otherwise the copy of the
                     // element into the map will trigger the "last" on map reference.
@@ -1520,7 +1546,7 @@ namespace Core {
         {
             _lock.Lock();
             for (const std::pair< PROXYKEY, ContainerStorage >& entry : _map) {
-                entry.second.second->Unlink();
+                entry.second.second->Clear();
             }
             _map.clear();
             _lock.Unlock();
@@ -1539,7 +1565,7 @@ namespace Core {
             ASSERT(index != _map.end());
 
             if (index != _map.end()) {
-                index->second.second->Unlink();
+                index->second.second->Clear();
                 _map.erase(index);
             }
 
@@ -1559,7 +1585,7 @@ namespace Core {
             ASSERT(index != _map.end());
 
             if (index != _map.end()) {
-                index->second.second->Unlink();
+                index->second.second->Clear();
                 _map.erase(index);
             }
 
@@ -1575,7 +1601,7 @@ namespace Core {
     class ProxyListType {
     private:
         using ContainerElement = ProxyContainerType< ProxyListType<PROXYELEMENT>, PROXYELEMENT, PROXYELEMENT>;
-        using ContainerStorage = std::pair < Core::ProxyType<ContainerElement>, IUnlink*>;
+        using ContainerStorage = std::pair < Core::ProxyType<ContainerElement>, Decouple*>;
         using ContainerList = std::list< ContainerStorage >;
 
     public:
@@ -1606,7 +1632,7 @@ namespace Core {
 
             if (newItem.IsValid() == true) {
 
-                IUnlink* unlinkInterface = newItem.operator->();
+                Decouple* unlinkInterface = newItem.operator->();
 
                 // Make sure the return value is already "accounted" for otherwise the copy of the
                 // element into the map will trigger the "last" on list reference.
@@ -1625,7 +1651,7 @@ namespace Core {
         {
             _lock.Lock();
             for (const ContainerStorage& entry : _list) {
-                entry.second->Unlink();
+                entry.second->Clear();
             }
             _list.clear();
             _lock.Unlock();
@@ -1643,7 +1669,7 @@ namespace Core {
             ASSERT(index != _list.end());
 
             if (index != _list.end()) {
-                index->second->Unlink();
+                index->second->Clear();
                 _list.erase(index);
             }
 
@@ -1662,7 +1688,7 @@ namespace Core {
             ASSERT(index != _list.end());
 
             if (index != _list.end()) {
-                index->second->Unlink();
+                index->second->Clear();
                 _list.erase(index);
             }
 
