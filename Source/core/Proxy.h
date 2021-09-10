@@ -319,18 +319,20 @@ namespace Core {
     template <typename CONTEXT>
     class ProxyType {
     private:
+        template <typename CONTAINER, typename PROXYCONTEXT, typename STORED>
+        friend class ProxyContainerType;
         friend class ProxyObject<CONTEXT>;
 
-	template <typename DERIVED>
+    	template <typename DERIVED>
         friend class ProxyType;
 
-        void Load(IReferenceCounted& refObject, CONTEXT& realObject)
+        void Load(IReferenceCounted* refObject, CONTEXT* realObject)
         {
-            if (_refCount == nullptr) {
+            if (_refCount != nullptr) {
                 _refCount->Release();
             }
-            _refCount = &refObject;
-            _realObject = &realObject;
+            _refCount = refObject;
+            _realObject = realObject;
 
             ASSERT((_refCount == nullptr) || (_realObject != nullptr));
         }
@@ -370,24 +372,25 @@ namespace Core {
                 _refCount->AddRef();
             }
         }
-        template <typename DERIVEDTYPE>
-        explicit ProxyType(const ProxyType<DERIVEDTYPE>& copy)
-        {
-            CopyConstruct<DERIVEDTYPE>(copy, TemplateIntToType<Core::TypeTraits::same_or_inherits<CONTEXT, DERIVEDTYPE>::value>());
-        }
         ProxyType(const ProxyType<CONTEXT>& copy)
             : _refCount(copy._refCount)
             , _realObject(copy._realObject)
         {
+            ASSERT((_refCount == nullptr) || (_realObject != nullptr));
+
+            if (_refCount != nullptr) {
+                _refCount->AddRef();
+            }
         }
         template <typename DERIVEDTYPE>
-        explicit ProxyType(ProxyType<DERIVEDTYPE>&& move)
+        ProxyType(const ProxyType<DERIVEDTYPE>& copy)
         {
-            MoveConstruct<DERIVEDTYPE>(move, TemplateIntToType<Core::TypeTraits::same_or_inherits<CONTEXT, DERIVEDTYPE>::value>());
+            CopyConstruct<DERIVEDTYPE>(copy, TemplateIntToType<Core::TypeTraits::same_or_inherits<CONTEXT, DERIVEDTYPE>::value>());
         }
-        explicit ProxyType(ProxyType<CONTEXT>&& move)
-            : ProxyType<CONTEXT>(move)
+        template <typename DERIVEDTYPE>
+        ProxyType(ProxyType<DERIVEDTYPE>&& move)
         {
+            MoveConstruct<DERIVEDTYPE>(std::move(move), TemplateIntToType<Core::TypeTraits::same_or_inherits<CONTEXT, DERIVEDTYPE>::value>());
         }
         ~ProxyType()
         {
@@ -398,14 +401,25 @@ namespace Core {
 
     public:
         template <typename... Args>
+        inline static void CreateMove(ProxyType<CONTEXT>& newObject, const uint32_t size, Args&&... args)
+        {
+            ProxyObject<CONTEXT>* result = CreateObject(size, std::forward<Args>(args)...);
+
+            newObject = std::move(ProxyType<CONTEXT>(static_cast<IReferenceCounted*>(result), static_cast<CONTEXT*>(result)));
+        }
+        template <typename... Args>
         inline static ProxyType<CONTEXT> Create(Args&&... args)
         {
-            return (CreateEx(0, std::forward<Args>(args)...));
+            ProxyObject<CONTEXT>* result = CreateObject(0, std::forward<Args>(args)...);
+
+            return (ProxyType<CONTEXT>(static_cast<IReferenceCounted*>(result), static_cast<CONTEXT*>(result)));
         }
         template <typename... Args>
         inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, Args&&... args)
         {
-            return (CreateObject(size, std::forward<Args>(args)...));
+            ProxyObject<CONTEXT>* result = CreateObject(size, std::forward<Args>(args)...);
+
+            return (ProxyType<CONTEXT>(static_cast<IReferenceCounted*>(result), static_cast<CONTEXT*>(result)));
         }
 
         ProxyType<CONTEXT>& operator=(const ProxyType<CONTEXT>& rhs)
@@ -426,6 +440,20 @@ namespace Core {
             }
 
             return (*this);
+        }
+
+        template <typename DERIVEDTYPE>
+        ProxyType<CONTEXT>& operator=(ProxyType<DERIVEDTYPE>&& rhs)
+        {
+            MoveConstruct<DERIVEDTYPE>(std::move(rhs), TemplateIntToType<Core::TypeTraits::same_or_inherits<CONTEXT, DERIVEDTYPE>::value>());
+
+            return(*this);
+        }
+        ProxyType<CONTEXT>& operator=(ProxyType<CONTEXT>&& rhs)
+        {
+            MoveConstruct<CONTEXT>(std::move(rhs), TemplateIntToType<Core::TypeTraits::same_or_inherits<CONTEXT, CONTEXT>::value>());
+
+            return(*this);
         }
 
     public:
@@ -512,7 +540,8 @@ namespace Core {
         template <typename DERIVED>
         inline void CopyConstruct(const ProxyType<DERIVED>& source, const TemplateIntToType<false>&)
         {
-            _realObject = (dynamic_cast<CONTEXT*>(source.operator->()));
+            DERIVED* sourceClass = source.operator->();
+            _realObject = (dynamic_cast<CONTEXT*>(sourceClass));
 
             if (_realObject == nullptr) {
                 _refCount = nullptr;
@@ -523,7 +552,7 @@ namespace Core {
             }
         }
         template <typename DERIVED>
-        inline void MoveConstruct(ProxyType<DERIVED>& source, const TemplateIntToType<true>&)
+        inline void MoveConstruct(ProxyType<DERIVED>&& source, const TemplateIntToType<true>&)
         {
             _refCount = source;
 
@@ -536,7 +565,7 @@ namespace Core {
             }
         }
         template <typename DERIVED>
-        inline void MoveConstruct(ProxyType<DERIVED>& source, const TemplateIntToType<false>&)
+        inline void MoveConstruct(ProxyType<DERIVED>&& source, const TemplateIntToType<false>&)
         {
             _realObject = (dynamic_cast<CONTEXT*>(source.operator->()));
 
@@ -549,21 +578,18 @@ namespace Core {
             }
         }
         template <typename... Args>
-        inline static ProxyType<CONTEXT> CreateObject(const uint32_t size, Args&&... args)
+        inline static ProxyObject<CONTEXT>* CreateObject(const uint32_t size, Args&&... args)
         {
-            ProxyType<CONTEXT> result;
             ProxyObject<CONTEXT>* newItem = new (size) ProxyObject<CONTEXT>(std::forward<Args>(args)...);
 
             ASSERT(newItem != nullptr);
 
             if (newItem->IsInitialized() == false) {
                 delete newItem;
-            }
-            else {
-                result = ProxyType<CONTEXT>(static_cast<IReferenceCounted*>(newItem), static_cast<CONTEXT*>(newItem));
+                newItem = nullptr;
             }
 
-            return (result);
+            return (newItem);
         }
 
     private:
@@ -573,7 +599,7 @@ namespace Core {
 
     template<typename CONTEXT>
     void ProxyObject<CONTEXT>::Myself(Core::ProxyType<CONTEXT>& myself) {
-        myself.Load(static_cast<IReferenceCounted&>(*this), static_cast<CONTEXT&>(*this));
+        myself.Load(static_cast<IReferenceCounted*>(this), static_cast<CONTEXT*>(this));
     }
 
     template <typename CASTOBJECT, typename SOURCE>
@@ -821,19 +847,11 @@ namespace Core {
 
     template <typename CONTEXT>
     class ProxyQueue {
-    private:
-        // -------------------------------------------------------------------
-        // This object should not be copied or assigned. Prevent the copy
-        // constructor and assignment constructor from being used. Compiler
-        // generated assignment and copy methods will be blocked by the
-        // following statements.
-        // Define them but do not implement them, compile error/link error.
-        // -------------------------------------------------------------------
-        ProxyQueue();
-        ProxyQueue(const ProxyQueue<CONTEXT>&);
-        ProxyQueue& operator=(const ProxyQueue<CONTEXT>&);
-
     public:
+        ProxyQueue() = delete;
+        ProxyQueue(const ProxyQueue<CONTEXT>&) = delete;
+        ProxyQueue& operator=(const ProxyQueue<CONTEXT>&) = delete;
+
         explicit ProxyQueue(
             const unsigned int a_HighWaterMark)
             : m_Queue(a_HighWaterMark)
@@ -1106,19 +1124,24 @@ namespace Core {
         return (l_Received);
     }
 
-    class Decouple {
-        public:
-        Decouple(const Decouple&) = delete;
-        Decouple& operator=(const Decouple&) = delete;
-        Decouple(void (*callback)(void*), void* thisptr)
+    class UnlinkStorage {
+    public:
+        UnlinkStorage() = delete;
+        UnlinkStorage& operator= (const UnlinkStorage&) = delete;
+
+        UnlinkStorage(void (*callback)(void*), void* thisPtr)
             : _callback(callback)
-            , _thisptr(thisptr)
-        {
+            , _thisptr(thisPtr) {
         }
+        UnlinkStorage(const UnlinkStorage& copy)
+            : _callback(copy._callback)
+            , _thisptr(copy._thisptr) {
+        }
+        ~UnlinkStorage() = default;
 
-        ~Decouple() = default;
-
-        void Clear() {
+    public:
+        void Unlink() {
+            ASSERT(_callback != nullptr);
             _callback(_thisptr);
         }
 
@@ -1128,7 +1151,7 @@ namespace Core {
     };
 
     template <typename CONTAINER, typename CONTEXT, typename STORED>
-    class ProxyContainerType : public CONTEXT, public Decouple {
+    class ProxyContainerType : public CONTEXT {
     private:
         using ThisClass = ProxyContainerType<CONTAINER, CONTEXT, STORED>;
 
@@ -1140,7 +1163,6 @@ namespace Core {
         template <typename... Args>
         ProxyContainerType(CONTAINER& parent, Args&&... args)
             : CONTEXT(std::forward<Args>(args)...)
-            , Decouple(&UnlinkFromParent, this)
             , _parent(&parent)
         {
         }
@@ -1150,15 +1172,10 @@ namespace Core {
             }
         }
 
-    private:
-
-        static void UnlinkFromParent(void* parent)
-        {
-            reinterpret_cast<ThisClass*>(parent)->Unlink();
-        }
-
     public:
-
+        UnlinkStorage Handler() {
+            return (UnlinkStorage(UnlinkFromParent, static_cast<ThisClass*>(this)));
+        }
         void Unlink()
         {
             ASSERT(_parent != nullptr);
@@ -1168,7 +1185,6 @@ namespace Core {
             // This can only happen if the parent has unlinked us, while we are still being used somewhere..
             __Unlink();
         } 
-
         // Forwarders as SFINEA is not lokking through calls inheritance trees..
         bool IsInitialized() const {
             return (__IsInitialized());
@@ -1183,19 +1199,15 @@ namespace Core {
             __Deinitialize();
         }
         void Acquire(Core::ProxyType<ThisClass>& source) {
-            Core::ProxyType<STORED> base(std::move(source));
-            __Acquire(base);
+            __Acquire(source);
         }
         void Relinquish(Core::ProxyType<ThisClass>& source) {
-            __Clear();
+
+            __Relinquish(source);
 
             if (_parent != nullptr) {
                 // The parent is the only one still holding this proxy. Let him now...
                 Notify(source, TemplateIntToType<Core::TypeTraits::is_same<CONTEXT, STORED>::value>());
-            }
-            else {
-                Core::ProxyType<CONTEXT> base(std::move(source));
-                __Relinquish(base);
             }
         }
         void Relinquish(Core::ProxyType<CONTEXT>& base) {
@@ -1203,6 +1215,10 @@ namespace Core {
         }
 
     private:    
+        static void UnlinkFromParent(void* parent)
+        {
+            reinterpret_cast<ThisClass*>(parent)->Unlink();
+        }
         void Notify(ProxyType<ThisClass>& source, const TemplateIntToType<true>&) {
             _parent->Notify(source);
         }
@@ -1210,6 +1226,8 @@ namespace Core {
             Core::ProxyType<STORED> base(std::move(source));
 
             _parent->Notify(base);
+
+            base.Reset();
         }
         // -----------------------------------------------------
         // Check for Clear method on Object
@@ -1288,14 +1306,18 @@ namespace Core {
         HAS_MEMBER(Acquire, hasAcquire);
 
         template < typename TYPE = CONTEXT>
-        inline typename Core::TypeTraits::enable_if<hasAcquire<TYPE, void (TYPE::*)(Core::ProxyType<TYPE>& source)>::value, void>::type
-            __Acquire(Core::ProxyType<TYPE>& source)
+        inline typename Core::TypeTraits::enable_if<hasAcquire<TYPE, void (TYPE::*)(Core::ProxyType<STORED>& source)>::value, void>::type
+            __Acquire(Core::ProxyType<ThisClass>& source)
         {
-            TYPE::Acquire(source);
+            Core::ProxyType<STORED> base(std::move(source));
+
+            TYPE::Acquire(base);
+
+            source = std::move(base);
         }
         template <typename TYPE = CONTEXT>
-        inline typename Core::TypeTraits::enable_if<!hasAcquire<TYPE, void (TYPE::*)(Core::ProxyType<TYPE>& source)>::value, void>::type
-            __Acquire(Core::ProxyType<TYPE>& source)
+        inline typename Core::TypeTraits::enable_if<!hasAcquire<TYPE, void (TYPE::*)(Core::ProxyType<STORED>& source)>::value, void>::type
+            __Acquire(Core::ProxyType<ThisClass>& source)
         {
         }
 
@@ -1305,14 +1327,18 @@ namespace Core {
         HAS_MEMBER(Relinquish, hasRelinquish);
 
         template <typename TYPE = CONTEXT>
-        inline typename Core::TypeTraits::enable_if<hasRelinquish<TYPE, void (TYPE::*)(Core::ProxyType<TYPE>&)>::value, void>::type
-            __Relinquish(Core::ProxyType<TYPE>& source)
+        inline typename Core::TypeTraits::enable_if<hasRelinquish<TYPE, void (TYPE::*)(Core::ProxyType<STORED>&)>::value, void>::type
+            __Relinquish(Core::ProxyType<ThisClass>& source)
         {
-            TYPE::Relinquish(source);
+            Core::ProxyType<STORED> base(std::move(source));
+
+            TYPE::Relinquish(base);
+
+            source = std::move(base);
         }
         template < typename TYPE = CONTEXT>
-        inline typename Core::TypeTraits::enable_if<!hasRelinquish<TYPE, void (TYPE::*)(Core::ProxyType<TYPE>&)>::value, void>::type
-            __Relinquish(Core::ProxyType<TYPE>& source )
+        inline typename Core::TypeTraits::enable_if<!hasRelinquish<TYPE, void (TYPE::*)(Core::ProxyType<STORED>&)>::value, void>::type
+            __Relinquish(Core::ProxyType<ThisClass>& source )
         {
         }
 
@@ -1353,7 +1379,10 @@ namespace Core {
             , _lock()
         {
             for (uint32_t index = 0; index < initialQueueSize; index++) {
-                _queue.emplace_back(Core::ProxyType<ContainerElement>::template Create(*this, std::forward<Args>(args)...));
+                Core::ProxyType<ContainerElement> newElement;
+
+                Core::ProxyType<ContainerElement>::template CreateMove(newElement, 0, *this, std::forward<Args>(args)...);
+                _queue.emplace_back(std::move(newElement));
                 ASSERT(_queue.back().IsValid() == true);
             }
         }
@@ -1366,12 +1395,8 @@ namespace Core {
 
                     _lock.Lock();
 
-                    // Make sure we store it in a ProxyType, so that the refcount is
-                    // by definition 2, one in the queue and 1 in the expandable.
-                    // This way the Notify (that uses the _parent in the ContainerElment)
-                    // will not be used, fired used, as that pointer is not protected there..
-                    Core::ProxyType<ContainerElement> expendable(_queue.front());
-                    expendable->Decouple::Clear();
+                    Core::ProxyType<ContainerElement> expendable(std::move(_queue.front()));
+                    expendable->Unlink();
                     _queue.pop_front();
                     _createdElements--;
 
@@ -1408,7 +1433,8 @@ namespace Core {
 
                 _lock.Unlock();
 
-                element = Core::ProxyType<ContainerElement>::template Create(*this, std::forward<Args>(args)...);
+                Core::ProxyType<ContainerElement>::template CreateMove(element, 0, *this, std::forward<Args>(args)...);
+ 
                 result = Core::ProxyType<PROXYELEMENT>(element);
             }
             else {
@@ -1449,6 +1475,8 @@ namespace Core {
 
             _lock.Lock();
 
+            source->Clear();
+
             // TRACE_L1("Returned an element for: %s [%p]\n", typeid(PROXYPOOLELEMENT).name(), &static_cast<PROXYPOOLELEMENT&>(*element));
             _queue.emplace_back(std::move(source));
 
@@ -1465,7 +1493,7 @@ namespace Core {
     class ProxyMapType {
     private:
         using ContainerElement = ProxyContainerType< ProxyMapType< PROXYKEY, PROXYELEMENT>, PROXYELEMENT, PROXYELEMENT>;
-        using ContainerStorage = std::pair < Core::ProxyType<ContainerElement>, Decouple*>;
+        using ContainerStorage = std::pair < Core::ProxyType<PROXYELEMENT>, UnlinkStorage>;
         using ContainerMap = std::map<PROXYKEY, ContainerStorage>;
 
     public:
@@ -1483,7 +1511,7 @@ namespace Core {
 
     public:
         template <typename ACTUALOBJECT, typename... Args>
-        Core::ProxyType<PROXYELEMENT> Instance(const PROXYKEY& key, Args&&... args)
+        Core::ProxyType<PROXYELEMENT>&& Instance(const PROXYKEY& key, Args&&... args)
         {
             using ActualElement = ProxyContainerType< ProxyMapType< PROXYKEY, PROXYELEMENT>, ACTUALOBJECT, PROXYELEMENT>;
 
@@ -1495,10 +1523,12 @@ namespace Core {
 
             if (index == _map.end()) {
                 // Oops we do not have such an element, create it...
-                Core::ProxyType<ActualElement> newItem = Core::ProxyType<ActualElement>::template Create(*this, std::forward<Args>(args)...);
+                Core::ProxyType<ActualElement> newItem;
+                Core::ProxyType<ActualElement>::template CreateMove(newItem, 0, *this, std::forward<Args>(args)...);
 
                 if (newItem.IsValid() == true) {
-                    Decouple* unlinkInterface = newItem.operator->();
+
+                    UnlinkStorage linkInfo(newItem->Handler());
 
                     // Make sure the return value is already "accounted" for otherwise the copy of the
                     // element into the map will trigger the "last" on map reference.
@@ -1506,7 +1536,7 @@ namespace Core {
 
                     _map.emplace(std::piecewise_construct,
                         std::forward_as_tuple(key),
-                        std::forward_as_tuple(ContainerStorage(result, unlinkInterface)));
+                        std::forward_as_tuple(ContainerStorage(result, linkInfo)));
 
                 }
             } else {
@@ -1517,7 +1547,7 @@ namespace Core {
 
             return (result);
         }
-        Core::ProxyType<PROXYELEMENT> Find(const PROXYKEY& key)
+        Core::ProxyType<PROXYELEMENT>&& Find(const PROXYKEY& key)
         {
             Core::ProxyType<PROXYELEMENT> result;
 
@@ -1537,7 +1567,7 @@ namespace Core {
         template<typename ACTION>
         void Visit(ACTION&& action ) const {
             _lock.Lock();
-            for (const std::pair< PROXYKEY, ContainerStorage >& entry : _map) {
+            for (auto entry : _map) {
                 action(entry.first, entry.second.first);
             }
             _lock.Unlock();
@@ -1545,8 +1575,8 @@ namespace Core {
         void Clear()
         {
             _lock.Lock();
-            for (const std::pair< PROXYKEY, ContainerStorage >& entry : _map) {
-                entry.second.second->Clear();
+            for (auto entry : _map) {
+                entry.second.second.Unlink();
             }
             _map.clear();
             _lock.Unlock();
@@ -1565,7 +1595,7 @@ namespace Core {
             ASSERT(index != _map.end());
 
             if (index != _map.end()) {
-                index->second.second->Clear();
+                index->second.second.Unlink();
                 _map.erase(index);
             }
 
@@ -1585,7 +1615,7 @@ namespace Core {
             ASSERT(index != _map.end());
 
             if (index != _map.end()) {
-                index->second.second->Clear();
+                index->second.second.Unlink();
                 _map.erase(index);
             }
 
@@ -1601,7 +1631,7 @@ namespace Core {
     class ProxyListType {
     private:
         using ContainerElement = ProxyContainerType< ProxyListType<PROXYELEMENT>, PROXYELEMENT, PROXYELEMENT>;
-        using ContainerStorage = std::pair < Core::ProxyType<ContainerElement>, Decouple*>;
+        using ContainerStorage = std::pair < Core::ProxyType<PROXYELEMENT>, UnlinkStorage>;
         using ContainerList = std::list< ContainerStorage >;
 
     public:
@@ -1626,23 +1656,23 @@ namespace Core {
 
             Core::ProxyType<PROXYELEMENT> result;
 
-            _lock.Lock();
-
-            Core::ProxyType<ActualElement> newItem = Core::ProxyType<ActualElement>::template Create(*this, std::forward<Args>(args)...);
+            Core::ProxyType<ActualElement> newItem;
+            Core::ProxyType<ActualElement>::template CreateMove(newItem, 0, *this, std::forward<Args>(args)...);
 
             if (newItem.IsValid() == true) {
 
-                Decouple* unlinkInterface = newItem.operator->();
+                UnlinkStorage linkInfo(newItem->Handler());
 
                 // Make sure the return value is already "accounted" for otherwise the copy of the
                 // element into the map will trigger the "last" on list reference.
                 result = Core::ProxyType<PROXYELEMENT>(std::move(newItem));
 
-                _list.emplace_back(ContainerStorage(newItem, unlinkInterface));
+                _lock.Lock();
 
+                _list.emplace_back(ContainerStorage(result, linkInfo));
+
+                _lock.Unlock();
             }
-
-            _lock.Unlock();
 
             return (result);
         }
@@ -1650,8 +1680,8 @@ namespace Core {
         void Clear()
         {
             _lock.Lock();
-            for (const ContainerStorage& entry : _list) {
-                entry.second->Clear();
+            for (ContainerStorage& entry : _list) {
+                entry.second.Unlink();
             }
             _list.clear();
             _lock.Unlock();
@@ -1669,7 +1699,7 @@ namespace Core {
             ASSERT(index != _list.end());
 
             if (index != _list.end()) {
-                index->second->Clear();
+                index->second.Unlink();
                 _list.erase(index);
             }
 
@@ -1688,7 +1718,7 @@ namespace Core {
             ASSERT(index != _list.end());
 
             if (index != _list.end()) {
-                index->second->Clear();
+                index->second.Unlink();
                 _list.erase(index);
             }
 
