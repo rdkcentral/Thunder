@@ -1511,7 +1511,7 @@ namespace Core {
 
     public:
         template <typename ACTUALOBJECT, typename... Args>
-        Core::ProxyType<PROXYELEMENT>&& Instance(const PROXYKEY& key, Args&&... args)
+        Core::ProxyType<PROXYELEMENT> Instance(const PROXYKEY& key, Args&&... args)
         {
             using ActualElement = ProxyContainerType< ProxyMapType< PROXYKEY, PROXYELEMENT>, ACTUALOBJECT, PROXYELEMENT>;
 
@@ -1547,7 +1547,7 @@ namespace Core {
 
             return (result);
         }
-        Core::ProxyType<PROXYELEMENT>&& Find(const PROXYKEY& key)
+        Core::ProxyType<PROXYELEMENT> Find(const PROXYKEY& key)
         {
             Core::ProxyType<PROXYELEMENT> result;
 
