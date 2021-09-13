@@ -151,7 +151,7 @@ namespace Core {
                 : _dispatcher(dispatcher)
                 , _queue(queue)
                 , _adminLock()
-                , _signal(false, false)
+                , _signal(false, true)
                 , _interestCount(0)
                 , _currentRequest()
                 , _runs(0)
@@ -171,7 +171,8 @@ namespace Core {
                 uint32_t result = Core::ERROR_NONE;
 
                 _adminLock.Lock();
-                Core::InterlockedIncrement(_interestCount);
+                _interestCount++;
+
                 if (_currentRequest != job) {
                     _adminLock.Unlock();
                 }
@@ -180,7 +181,7 @@ namespace Core {
                     result = _signal.Lock(waitTime);
                 }
 
-                Core::InterlockedDecrement(_interestCount);
+                _interestCount--;
 
                 return(result);
             }
@@ -222,7 +223,7 @@ namespace Core {
             MessageQueue& _queue;
             Core::CriticalSection _adminLock;
             Core::Event _signal;
-            uint32_t _interestCount;
+            std::atomic<uint32_t> _interestCount;
             Core::ProxyType<Core::IDispatch> _currentRequest;
             uint32_t _runs;
         };
