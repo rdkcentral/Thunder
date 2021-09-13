@@ -213,7 +213,7 @@ namespace JSONRPC {
 
                 string searchLine = remoteNode.HostAddress() + '@' + callsign;
 
-                return (channelMap.Instance(searchLine, remoteNode, callsign, query));
+                return (channelMap.template Instance<CommunicationChannel>(searchLine, remoteNode, callsign, query));
             }
     
         public:
