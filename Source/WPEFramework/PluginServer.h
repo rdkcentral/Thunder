@@ -1503,6 +1503,15 @@ namespace PluginHost {
 
                 void Revoke(const Core::IUnknown* remote, const uint32_t interfaceId) override
                 {
+                    if (interfaceId == PluginHost::IPlugin::INotification::ID) {
+                        const PluginHost::IPlugin::INotification* notification = remote->QueryInterface<const PluginHost::IPlugin::INotification>();
+
+                        ASSERT(notification != nullptr);
+
+                        _parent.Unregister(notification);
+                        notification->Release();
+                    }
+
                     _adminLock.Lock();
 
                     for (auto& observer : _requestObservers) {
@@ -1855,7 +1864,7 @@ namespace PluginHost {
 
                 _notificationLock.Unlock();
             }
-            void Unregister(PluginHost::IPlugin::INotification* sink)
+            void Unregister(const PluginHost::IPlugin::INotification* sink)
             {
                 _notificationLock.Lock();
 
