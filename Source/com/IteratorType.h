@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,31 +18,12 @@
  */
 
 #pragma once
-#include <core/core.h>
+
 
 namespace WPEFramework {
 
 namespace RPC {
 
-    // @iterator
-    template<typename ELEMENT, const uint32_t INTERFACE_ID>
-    struct IIteratorType : virtual public Core::IUnknown {
-
-        typedef ELEMENT Element;
-
-        enum { ID = INTERFACE_ID };
-
-        virtual ~IIteratorType(){};
-
-        virtual bool Next(ELEMENT& info /* @out */) = 0;
-        virtual bool Previous(ELEMENT& info /* @out */) = 0;
-        virtual void Reset(const uint32_t position) = 0;
-        virtual bool IsValid() const = 0;
-        virtual uint32_t Count() const = 0;
-        virtual ELEMENT Current() const = 0;
-    };
-
-    /* @stubgen:skip */
     template<typename INTERFACE>
     class IteratorType : public INTERFACE {
     public:
@@ -71,7 +52,7 @@ namespace RPC {
             : _container()
             , _index(0)
         {
-            std::copy_if(container.begin(), container.end(), std::back_inserter(_container), [](const typename INTERFACE::Element& data) { return (true); });
+            std::copy_if(container.begin(), container.end(), std::back_inserter(_container), [](const typename INTERFACE::Element& /* data */) { return (true); });
             _iterator = _container.begin();
         }
         template <typename KEY, typename VALUE>

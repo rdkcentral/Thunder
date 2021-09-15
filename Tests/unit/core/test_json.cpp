@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,6 +99,11 @@ public:
 
     ~CommandRequest()
     {
+    }
+
+    void Clear()
+    {
+        WPEFramework::Core::JSON::Container::Clear();
     }
 
 public:
@@ -224,32 +229,32 @@ TEST(Core_JSON, simpleSet)
         command.FromString(input);
         command.ToString(output);
         printf("\n\n Case 1: \n");
-        printf("input  %d --- = %s \n", input.length(), input.c_str());
-        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("input  %zd --- = %s \n", input.length(), input.c_str());
+        printf("output %zd --- = %s \n", output.length(), output.c_str());
         EXPECT_STREQ(input.c_str(), output.c_str());
 
         input = R"({"jsonrpc":"2.0","id":1234567890,"method1":"Te\\st","params":{"ssid":"Te\\st","type":"WPA2","hidden":false,"accesspoint":false,"psk":"12345678"}})";
         command.FromString(input);
         command.ToString(output);
         printf("\n\n Case 2: \n");
-        printf("input  %d --- = %s \n", input.length(), input.c_str());
-        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("input  %zd --- = %s \n", input.length(), input.c_str());
+        printf("output %zd --- = %s \n", output.length(), output.c_str());
         EXPECT_STREQ(input.c_str(), output.c_str());
 
         input = R"({"jsonrpc":"2.0","id":1234567890,"method":"WifiControl.1.config@Test","params":{"ssid":"Test\\","type":"WPA2","hidden":false,"accesspoint":false,"psk":"12345678"}})";
         command.FromString(input);
         command.ToString(output);
         printf("\n\n Case 3: \n");
-        printf("input  %d --- = %s \n", input.length(), input.c_str());
-        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("input  %zd --- = %s \n", input.length(), input.c_str());
+        printf("output %zd --- = %s \n", output.length(), output.c_str());
         EXPECT_STREQ(input.c_str(), output.c_str());
 
         input = R"({"jsonrpc":"2.0","id":1234567890,"method":"hPho\\ne","params":{"ssid":"iPh\one"}})";
         command.FromString(input);
         command.ToString(output);
         printf("\n\n Case 4: \n");
-        printf("input  %d --- = %s \n", input.length(), input.c_str());
-        printf("output %d --- = %s \n\n\n", output.length(), output.c_str());
+        printf("input  %zd --- = %s \n", input.length(), input.c_str());
+        printf("output %zd --- = %s \n\n\n", output.length(), output.c_str());
         EXPECT_STREQ(input.c_str(), output.c_str());
 
         input = R"("hPh\\one")";
@@ -258,8 +263,8 @@ TEST(Core_JSON, simpleSet)
         str.ToString(output);
         printf("\n\n Case 5: \n");
         printf("string --- = %s \n", str.Value().c_str());
-        printf("input  %d --- = %s \n", input.length(), input.c_str());
-        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("input  %zd --- = %s \n", input.length(), input.c_str());
+        printf("output %zd --- = %s \n", output.length(), output.c_str());
         EXPECT_STREQ(input.c_str(), output.c_str());
 
         input = R"({"name":"Iphone\\"})";
@@ -283,7 +288,7 @@ TEST(Core_JSON, simpleSet)
         printf("\n\n Case 8: \n");
         printf("name --- = %s \n", strInput.Name.Value().c_str());
         strInput.ToString(output);
-        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("output %zd --- = %s \n", output.length(), output.c_str());
         strOutput.FromString(output);
         printf("name --- = %s \n", strInput.Name.Value().c_str());
         EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
@@ -293,9 +298,9 @@ TEST(Core_JSON, simpleSet)
         strInput.ToString(output);
         strOutput.FromString(output);
         printf("\n\n Case 9: \n");
-        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("input  %zd --- = %s \n", input.length(), input.c_str());
         printf("strInput.Name --- = %s \n", strInput.Name.Value().c_str());
-        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("output %zd --- = %s \n", output.length(), output.c_str());
         printf("strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
         EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
         EXPECT_STREQ(input.c_str(), output.c_str());
@@ -305,9 +310,9 @@ TEST(Core_JSON, simpleSet)
         strInput.ToString(output);
         strOutput.FromString(output);
         printf("\n\n Case 10: \n");
-        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("input  %zd --- = %s \n", input.length(), input.c_str());
         printf("strInput.Name --- = %s \n", strInput.Name.Value().c_str());
-        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("output %zd --- = %s \n", output.length(), output.c_str());
         printf("strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
         EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
         EXPECT_STREQ(input.c_str(), output.c_str());
@@ -317,9 +322,9 @@ TEST(Core_JSON, simpleSet)
         strInput.ToString(output);
         strOutput.FromString(output);
         printf("\n\n Case 11: \n");
-        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("input  %zd --- = %s \n", input.length(), input.c_str());
         printf("strInput.Name --- = %s \n", strInput.Name.Value().c_str());
-        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("output %zd --- = %s \n", output.length(), output.c_str());
         printf("strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
         EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
         EXPECT_STREQ(input.c_str(), output.c_str());
@@ -329,9 +334,9 @@ TEST(Core_JSON, simpleSet)
         strInput.ToString(output);
         strOutput.FromString(output);
         printf("\n\n Case 12: \n");
-        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("input  %zd --- = %s \n", input.length(), input.c_str());
         printf("strInput.Name --- = %s \n", strInput.Name.Value().c_str());
-        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("output %zd --- = %s \n", output.length(), output.c_str());
         printf("strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
         EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
         EXPECT_STREQ(input.c_str(), output.c_str());
@@ -341,9 +346,9 @@ TEST(Core_JSON, simpleSet)
         strInput.ToString(output);
         strOutput.FromString(output);
         printf("\n\n Case 13: \n");
-        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("input  %zd --- = %s \n", input.length(), input.c_str());
         printf("strInput.Name --- = %s \n", strInput.Name.Value().c_str());
-        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("output %zd --- = %s \n", output.length(), output.c_str());
         printf("strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
         EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
         EXPECT_STREQ(input.c_str(), output.c_str());
@@ -353,9 +358,9 @@ TEST(Core_JSON, simpleSet)
         strInput.ToString(output);
         strOutput.FromString(output);
         printf("\n\n Case 14: \n");
-        printf("input  %d --- = %s \n", input.length(), input.c_str());
+        printf("input  %zd --- = %s \n", input.length(), input.c_str());
         printf("strInput.Name --- = %s \n", strInput.Name.Value().c_str());
-        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("output %zd --- = %s \n", output.length(), output.c_str());
         printf("strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
         EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
         EXPECT_STREQ(input.c_str(), output.c_str());
@@ -366,9 +371,9 @@ TEST(Core_JSON, simpleSet)
         strInput.ToString(output);
         strOutput.FromString(output);
         printf("\n\n Case 15: \n");
-        printf("     input  %d --- = %s \n", input.length(), input.c_str());
+        printf("     input  %zd --- = %s \n", input.length(), input.c_str());
         printf("     strInput.Name --- = %s \n", strInput.Name.Value().c_str());
-        printf("     output %d --- = %s \n", output.length(), output.c_str());
+        printf("     output %zd --- = %s \n", output.length(), output.c_str());
         printf("     strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
         EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
 
@@ -378,9 +383,9 @@ TEST(Core_JSON, simpleSet)
         strInput.ToString(output);
         strOutput.FromString(output);
         printf("\n\n Case 16: \n");
-        printf("     input  %d --- = %s \n", input.length(), input.c_str());
+        printf("     input  %zd --- = %s \n", input.length(), input.c_str());
         printf("     strInput.Name --- = %s \n", strInput.Name.Value().c_str());
-        printf("     output %d --- = %s \n", output.length(), output.c_str());
+        printf("     output %zd --- = %s \n", output.length(), output.c_str());
         printf("     strOutput.Name --- = %s \n", strOutput.Name.Value().c_str());
         EXPECT_STREQ(strInput.Name.Value().c_str(), strOutput.Name.Value().c_str());
 
@@ -418,16 +423,16 @@ TEST(Core_JSON, simpleSet)
         message.ToString(output);
         EXPECT_STREQ(input.c_str(), output.c_str());
         printf("\n\n Case 18: \n");
-        printf("input  %d --- = %s \n", input.length(), input.c_str());
-        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("input  %zd --- = %s \n", input.length(), input.c_str());
+        printf("output %zd --- = %s \n", output.length(), output.c_str());
         ParamsInfo paramsInfo;
         message.Parameters.ToString(input);
         paramsInfo.FromString(message.Parameters.Value());
         paramsInfo.ToString(output);
         printf("message.params = %s\n", message.Parameters.Value().c_str());
         printf("message.params.ssid = %s\n", paramsInfo.Ssid.Value().c_str());
-        printf("input  %d --- = %s \n", input.length(), input.c_str());
-        printf("output %d --- = %s \n", output.length(), output.c_str());
+        printf("input  %zd --- = %s \n", input.length(), input.c_str());
+        printf("output %zd --- = %s \n", output.length(), output.c_str());
 
         EXPECT_STREQ(input.c_str(), output.c_str());
     }

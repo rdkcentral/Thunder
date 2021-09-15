@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -393,22 +393,20 @@ namespace Core {
     private:
         inline ProxyType<IIPC> InvokeAllowed(const Client& client, const ProxyType<IIPC>& command) const
         {
-            return (__InvokeAllowed<EXTENSION, INTERNALFACTORY>(client, command));
+            return (__InvokeAllowed(client, command));
         }
 
         HAS_MEMBER(InvokeAllowed, hasInvokeAllowed);
 
-        typedef hasInvokeAllowed<EXTENSION, ProxyType<IIPC> (EXTENSION::*)(const ProxyType<IIPC>&) const> TraitInvokeAllowed;
-
-        template <typename A, const bool B>
-        inline typename Core::TypeTraits::enable_if<IPCChannelServerType<A, B>::TraitInvokeAllowed::value, ProxyType<IIPC>>::type
+        template <typename CLASSNAME = EXTENSION>
+        inline typename Core::TypeTraits::enable_if<hasInvokeAllowed<CLASSNAME, ProxyType<IIPC> (CLASSNAME::*)(const ProxyType<IIPC>&) const>::value, ProxyType<IIPC>>::type
         __InvokeAllowed(const Client& client, const ProxyType<IIPC>& command) const
         {
             return (client.Extension().InvokeAllowed(command));
         }
 
-        template <typename A, const bool B>
-        inline typename Core::TypeTraits::enable_if<!IPCChannelServerType<A, B>::TraitInvokeAllowed::value, ProxyType<IIPC>>::type
+        template <typename CLASSNAME = EXTENSION>
+        inline typename Core::TypeTraits::enable_if<!hasInvokeAllowed<CLASSNAME, ProxyType<IIPC> (CLASSNAME::*)(const ProxyType<IIPC>&) const>::value, ProxyType<IIPC>>::type
         __InvokeAllowed(const Client&, const ProxyType<IIPC>& command) const
         {
             return (command);

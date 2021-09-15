@@ -1,7 +1,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 
 get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
-set(THREADPOOL_COUNT 4 CACHE STRING "The number of threads in the thread pool")
+set(THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool")
 
 # JsonGenerator(CODE INPUT ${CMAKE_CURRENT_SOURCE_DIR}/json/Controller.json OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/json")
 
@@ -45,7 +45,7 @@ if (TREE_REFERENCE)
             )
 endif()
 
-if(EXCEPTION_CATCHING) 
+if (EXCEPTION_CATCHING)
     set_source_files_properties( PluginServer.cpp PROPERTIES COMPILE_FLAGS "-fexceptions" )
 endif()
 
@@ -57,9 +57,11 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
+          ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
+          ${NAMESPACE}COM::${NAMESPACE}COM
         )
         
-if(PROCESSCONTAINERS)
+if (PROCESSCONTAINERS)
     target_link_libraries(${TARGET}
         PUBLIC
             ${NAMESPACE}ProcessContainers::${NAMESPACE}ProcessContainers)
@@ -67,19 +69,6 @@ if(PROCESSCONTAINERS)
         PUBLIC
             PROCESSCONTAINERS_ENABLED=1)
 endif(PROCESSCONTAINERS)
-
-if (PROTOCOLS)
-    target_link_libraries(${TARGET}
-            PRIVATE
-              ${NAMESPACE}Protocols::${NAMESPACE}Protocols
-            )
-else()
-    target_link_libraries(${TARGET}
-            PRIVATE
-              ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
-              ${NAMESPACE}COM::${NAMESPACE}COM
-            )
-endif ()
 
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
@@ -96,5 +85,6 @@ install(
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
 )
 
+add_subdirectory(scripts)
 include(GenericConfig.cmake)
 

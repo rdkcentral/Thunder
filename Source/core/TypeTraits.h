@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,68 +88,25 @@ namespace Core {
 			enum { Arguments = sizeof...(TArgs) };
         };
 
-        template <typename SCALAR>
-        struct sign {
-            enum { Signed = 1 };
-        };
-        template <>
-        struct sign<unsigned char> {
-            enum { Signed = 0 };
-        };
-        template <>
-        struct sign<unsigned short> {
-            enum { Signed = 0 };
-        };
-        template <>
-        struct sign<unsigned int> {
-            enum { Signed = 0 };
-        };
-        template <>
-        struct sign<unsigned long> {
-            enum { Signed = 0 };
-        };
-        template <>
-        struct sign<unsigned long long> {
-            enum { Signed = 0 };
-        };
+        template< bool B, class T = void>
+        using enable_if = std::enable_if<B, T>;
 
-        typedef struct {
-            char c[2];
-        } tester_t;
-
-        template <class T>
-        struct inherits_checker {
-            static tester_t f(...);
-            static char f(T*);
-        };
+        template<class T1, class T2>
+        using is_same = std::is_same<T1,T2>;
 
         template <class T1, class T2>
-        struct is_same {
-            enum {
-                value = 0
-            };
-        };
-
-        template <class T>
-        struct is_same<T, T> {
-            enum {
-                value = 1
-            };
-        };
-
-        template <class T1, class T2>
-        struct inherits {
-            enum {
-                value = sizeof(char) == sizeof(inherits_checker<T1>::f((T2*)0)) && !is_same<T1, T2>::value
-            };
-        };
+        using inherits = std::is_base_of<T1, T2>;
 
         template <class T1, class T2>
         struct same_or_inherits {
-            enum {
-                value = sizeof(char) == sizeof(inherits_checker<T1>::f((T2*)0))
-            };
+            constexpr static bool value = is_same<T1, T2>::value || inherits<T1, T2>::value;
         };
+
+        template <class T>
+        struct sign {
+            constexpr static bool Signed = std::is_signed<T>::value;
+        };
+
 
 // HPL todo this one can be used with overloads, could not get that to work with the HAS_MEMBER
 #define HAS_MEMBER_NAME(func, name)                                 \
@@ -207,14 +164,6 @@ namespace Core {
         static bool const value = sizeof(chk<T>(0)) == sizeof(yes); \
     };
 
-        template <bool C, typename T = void>
-        struct enable_if {
-            typedef T type;
-        };
-
-        template <typename T>
-        struct enable_if<false, T> {
-        };
     }
 }
 } // namespace Core::TypeTraits

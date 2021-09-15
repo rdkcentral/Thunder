@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,9 +48,10 @@ namespace Core {
         template <const char** MODULENAME>
         struct CallsignAccess {
             static const char* Callsign() {
+                static string modulename(string(_T("???  (Module:"))+*MODULENAME+_T(')')); 
                 const char* callsign = CallsignTLS::Callsign();
                 if( callsign == nullptr ) {
-                    callsign = *MODULENAME;
+                    callsign = modulename.c_str();
                 }
                 return callsign;
             }

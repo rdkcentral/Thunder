@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ namespace Plugin {
     // Signing will be done on BackOffice level. The Controller I/F will never be exposed to the outside world.
     static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData>> jsonBodyMetaDataFactory(1);
     static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData::Service>> jsonBodyServiceFactory(1);
+    static Core::ProxyPoolType<JSONCallstack> jsonBodyCallstackFactory(1);
     static Core::ProxyPoolType<Web::TextBody> jsonBodyTextFactory(2);
 
     void Controller::SubSystems(Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator& index)
@@ -254,6 +255,27 @@ namespace Plugin {
             WorkerPoolMetaData(response->Process);
 
             result->Body(Core::proxy_cast<Web::IBody>(response));
+        } else if (index.Current() == _T ("Callstack")) {
+            if (index.Next() == false) {
+                result->ErrorCode = Web::STATUS_BAD_REQUEST;
+                result->Message = _T("Please supply an index for the callstack you need!");
+            }
+            else {
+                Core::NumberType<uint8_t> threadIndex(index.Current());
+                Core::ProxyType<JSONCallstack> response = jsonBodyCallstackFactory.Element();
+
+                std::list<string> stackList;
+
+                ThreadId threadId = _pluginServer->WorkerPool().Id(threadIndex.Value());
+
+                DumpCallStack(threadId, stackList);
+
+                for (const string& entry : stackList) {
+                    response->Add() = entry;
+                }
+
+                result->Body(Core::proxy_cast<Web::IBody>(response));
+            }
         } else if (index.Current() == _T("Discovery")) {
 
             if (_probe == nullptr) {
@@ -351,6 +373,29 @@ namespace Plugin {
                         }
                     }
                 }
+            } else if (index.Current() == _T("Unavailable")) {
+                if (index.Next()) {
+                    const string callSign(index.Current().Text());
+                    if (callSign == _service->Callsign()) {
+                        result->ErrorCode = Web::STATUS_FORBIDDEN;
+                        result->Message = _T("The PluginHost Controller can not set Unavailable.");
+                    } else {
+                        Core::ProxyType<PluginHost::Server::Service> pluginInfo(FromIdentifier(callSign));
+
+                        if (pluginInfo.IsValid()) {
+                            if (pluginInfo->State() == PluginHost::IShell::DEACTIVATED) {
+                                // Mark the plugin as unavailable.
+                                if (pluginInfo->Unavailable(PluginHost::IShell::REQUESTED) != Core::ERROR_NONE) {
+                                    result->ErrorCode = Web::STATUS_NOT_MODIFIED;
+                                    result->Message = _T("Marking the plugin as Unavailble failed.");
+                                }
+                            }
+                        } else {
+                            result->ErrorCode = Web::STATUS_NOT_FOUND;
+                            result->Message = _T("There is no callsign: ") + callSign;
+                        }
+                    }
+                }
             } else if (index.Current() == _T("Configuration")) {
                 if ((index.Next() == true) && (request.HasBody() == true)) {
 
@@ -388,8 +433,8 @@ namespace Plugin {
                     result->Message = _T("Discovery cycle initiated");
                 }
             } else if (index.Current() == _T("Persist")) {
-
-                _pluginServer->Services().Persist();
+                
+                _pluginServer->Persist();
 
                 result->ErrorCode = Web::STATUS_OK;
                 result->Message = _T("Current configuration stored");
@@ -467,6 +512,10 @@ namespace Plugin {
         event_statechange(callsign, PluginHost::IShell::DEACTIVATED, plugin->Reason());
     }
 
+    void Controller::Unavailable(const string& callsign, PluginHost::IShell* plugin)
+    {
+        event_statechange(callsign, PluginHost::IShell::UNAVAILABLE, plugin->Reason());
+    }
 
     void Controller::SubSystems()
     {

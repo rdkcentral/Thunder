@@ -2,7 +2,7 @@
 * If not stated otherwise in this file or this component's LICENSE file the
 * following copyright and licenses apply:
 *
-* Copyright 2020 RDK Management
+* Copyright 2020 Metrological
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -196,7 +196,7 @@ namespace WPEFramework {
 								}
 							}
 							else {
-								if (__Complete<TEXTTERMINATOR, HANDLER>(_buffer, character) == true) {
+								if (__Complete(_buffer, character) == true) {
 									_parent.Parse(_buffer, false);
 									_buffer.clear();
 								}
@@ -223,7 +223,7 @@ namespace WPEFramework {
 								_buffer.clear();
 							}
 							else if ((terminated & 0x40) != 0x40) {
-								if ((stream[current] == ' ') || (stream[current] == '\t') || (stream[current] == '\r') || (__Complete<TEXTTERMINATOR, HANDLER>(_buffer, character))) {
+								if ((stream[current] == ' ') || (stream[current] == '\t') || (stream[current] == '\r') || (__Complete(_buffer, character))) {
 									if ((_state & WORD_CAPTURE) == WORD_CAPTURE) {
 										if (_splitChar == character) {
 											_buffer += character;
@@ -235,7 +235,7 @@ namespace WPEFramework {
 										}
 
 										if ((_splitChar != character) && (character != ' ') && (character != '\t') && (character != '\r')) {
-											__Complete<TEXTTERMINATOR, HANDLER>(_buffer, character);
+											__Complete(_buffer, character);
 											_buffer = string(&character, 1);
 										}
 										else {
@@ -269,17 +269,15 @@ namespace WPEFramework {
 			// -----------------------------------------------------
 			HAS_MEMBER(Complete, hasComplete);
 
-			typedef hasComplete<HANDLER, bool (HANDLER::*)(const string&, const TCHAR)> TraitComplete;
-
-			template <typename TEXTTERMINATOR2, typename HANDLER2>
-			inline typename Core::TypeTraits::enable_if<ParserType<TEXTTERMINATOR2, HANDLER2>::TraitComplete::value, bool>::type
+			template < typename T=HANDLER>
+			inline typename Core::TypeTraits::enable_if<hasComplete<T, bool (T::*)(const string&, const TCHAR)>::value, bool>::type
 				__Complete(const string& buffer, const TCHAR character)
 			{
 				return (_parent.Complete(buffer, character));
 			}
 
-			template <typename TEXTTERMINATOR2, typename HANDLER2>
-			inline typename Core::TypeTraits::enable_if<!ParserType<TEXTTERMINATOR2, HANDLER2>::TraitComplete::value, bool>::type
+			template < typename T=HANDLER>
+			inline typename Core::TypeTraits::enable_if<!hasComplete<T, bool (T::*)(const string&, const TCHAR)>::value, bool>::type
 				__Complete(const string& /* buffer */, const TCHAR character)
 			{
 				return (((_state & SPLITCHAR) == SPLITCHAR) && (character == _splitChar));

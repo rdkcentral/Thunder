@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #ifndef NETLINK_MESSAGE_H_
 #define NETLINK_MESSAGE_H_
 
@@ -36,7 +36,7 @@ namespace WPEFramework {
 namespace Core {
 
     class EXTERNAL Netlink {
-    private:
+    public:
         template <typename HEADER>
         class Parameters {
         public:
@@ -378,8 +378,8 @@ namespace Core {
         typedef std::list<Message> PendingList;
 
     public:
-        SocketNetlink(const NodeId& destination)
-            : SocketDatagram(true, destination, NodeId(), 512, 4096)
+        SocketNetlink(const NodeId& source)
+            : SocketDatagram(true, source, NodeId(), 512, 8192, ~0, ~0)
             , _adminLock()
         {
         }

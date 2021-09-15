@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -372,6 +372,17 @@ namespace Core {
             }                                                                                                          \
         }                                                                                                              \
     }                                                                                                                  \
+    } // extern "C" Core::System
+
+#define MODULE_NAME_ARCHIVE_DECLARATION                                                          \
+    extern "C" {                                                                                 \
+    namespace WPEFramework {                                                                     \
+        namespace Core {                                                                         \
+            namespace System {                                                                   \
+                const char* MODULE_NAME = SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(MODULE_NAME); \
+            }                                                                                    \
+        }                                                                                        \
+    }                                                                                            \
     } // extern "C" Core::System
 
 #endif // __SYSTEMINFO_H

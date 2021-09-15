@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -283,7 +283,7 @@ namespace Core {
                     _lock.Lock();
 
                     // If the CLient has a method to receive it's Id pass it on..
-                    __Id<HANDLECLIENT>(*client, _nextClient);
+                    __Id(*client, _nextClient);
 
                     // A new connection is available, open up a new client
                     _clients.insert(std::pair<uint32_t, ProxyType<HANDLECLIENT>>(_nextClient++, client));
@@ -306,17 +306,16 @@ namespace Core {
             // -----------------------------------------------------
             HAS_MEMBER(Id, hasId);
 
-            typedef hasId<HANDLECLIENT, void (HANDLECLIENT::*)(uint32_t)> TraitId;
 
-            template <typename SUBJECT>
-            inline typename Core::TypeTraits::enable_if<SocketHandler<SUBJECT>::TraitId::value, void>::type
+            template <typename SUBJECT=HANDLECLIENT>
+            inline typename Core::TypeTraits::enable_if<hasId<SUBJECT, void (SUBJECT::*)(uint32_t)>::value, void>::type
             __Id(HANDLECLIENT& object, const uint32_t id)
             {
                 object.Id(id);
             }
 
-            template <typename SUBJECT>
-            inline typename Core::TypeTraits::enable_if<!SocketHandler<SUBJECT>::TraitId::value, void>::type
+            template <typename SUBJECT=HANDLECLIENT>
+            inline typename Core::TypeTraits::enable_if<!hasId<SUBJECT, void (SUBJECT::*)(uint32_t)>::value, void>::type
             __Id(HANDLECLIENT&, const uint32_t)
             {
             }

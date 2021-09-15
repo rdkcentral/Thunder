@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -271,6 +271,10 @@ namespace Web {
         {
             return (_hash);
         }
+        uint16_t Serialize(uint8_t stream[], const uint16_t maxLength) const override
+        {
+            return Core::File::Read(stream, maxLength);
+        }
 
     protected:
         uint32_t Deserialize() override
@@ -333,6 +337,7 @@ namespace Web {
 
         JSONBodyType()
             : JSONOBJECT()
+            , _lastPosition(0)
             , _offset(0)
         {
         }

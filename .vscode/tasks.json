@@ -1,0 +1,98 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Prepare WPEFramework for remote gdb debugging",
+            "dependsOn": [
+                "Clean debugging run",
+                "Syncronize new binaries to remote",
+                "Start WPEFramework in gdbserver"
+            ],
+            "dependsOrder": "sequence",
+        },
+        {
+            "label": "Syncronize new binaries to remote",
+            "type": "process",
+            "command": "rsync",
+            "args": [
+                "-avzz",
+                "-e",
+                "ssh -i ${config:thunder.remoteTargetID}",
+                "${config:thunder.installPath}/",
+                "${config:thunder.remoteTargetUser}@${config:thunder.remoteTargetHost}:/"
+            ],
+            "presentation": {
+                "reveal": "never",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "close": false
+            }
+        },
+        {
+            "label": "Syncronize remote filesystem",
+            "type": "process",
+            "command": "ssh",
+            "args": [
+                "-i", "${config:thunder.remoteTargetID}",
+                "${config:thunder.remoteTargetUser}@${config:thunder.remoteTargetHost}",
+                "sync"
+            ],
+            "presentation": {
+                "reveal": "never",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "close": true
+            }
+        },
+        {
+            "label": "Clean debugging run",
+            "type": "process",
+            "command": "ssh",
+            "args": [
+                "-i", "${config:thunder.remoteTargetID}",
+                "${config:thunder.remoteTargetUser}@${config:thunder.remoteTargetHost}",
+                "killall -9 gdbserver WPEFramework WPEProcess || echo 'allowedtofail'"
+            ],
+            "presentation": {
+                "reveal": "never",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "close": true
+            }
+        },
+        {
+            "label": "Start WPEFramework in gdbserver",
+            "type": "process",
+            "command": "ssh",
+            "args": [
+                "-i", "${config:thunder.remoteTargetID}",
+                "${config:thunder.remoteTargetUser}@${config:thunder.remoteTargetHost}",
+                "gdbserver 0.0.0.0:${config:thunder.remoteTargetDebugPort} WPEFramework"
+            ],
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                  "regexp": ".*",
+                  "file": 1,
+                  "line": 1,
+                  "message": 1
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^.*Listening on port*",
+                    "endsPattern": "^.*"
+                 }
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true,
+                "focus": true,
+                "close": true
+            }
+        }
+    ],
+}

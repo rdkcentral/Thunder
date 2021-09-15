@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,10 +86,15 @@ namespace Core {
             {
                 if (requiredSize > _bufferSize) {
 
-                    _bufferSize = static_cast<uint16_t>(((requiredSize / (STARTSIZE ? STARTSIZE : 1)) + 1) * STARTSIZE);
+                    uint16_t bufferSize = static_cast<uint16_t>(((requiredSize / (STARTSIZE ? STARTSIZE : 1)) + 1) * STARTSIZE);
 
                     // oops we need to "reallocate".
-                    _data = reinterpret_cast<uint8_t*>(::realloc(_data, _bufferSize));
+                    uint8_t* data = reinterpret_cast<uint8_t*>(::realloc(_data, bufferSize));
+
+                    if (data != nullptr) {
+                        _data = data;
+                        _bufferSize = bufferSize;
+                    }
                 }
             }
             inline void RealAllocate(const uint32_t requiredSize, const TemplateIntToType<0>& /* For compile time diffrentiation */)

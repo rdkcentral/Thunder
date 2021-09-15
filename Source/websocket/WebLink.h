@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -168,6 +168,7 @@ namespace Web {
             template <typename... Args>
             HandlerType(PARENTCLASS& parent, Args&&... args)
                 : ACTUALLINK(std::forward<Args>(args)...)
+                , _activity(true)
                 , _parent(parent)
             {
             }
@@ -196,12 +197,12 @@ namespace Web {
             uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) override
             {
                 _activity = true;
-                return (_parent.SendData(_parent, dataFrame, maxSendSize));
+                return (_parent.SendData( dataFrame, maxSendSize));
             }
             uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize) override
             {
                 _activity = true;
-                return (_parent.ReceiveData(_parent, dataFrame, receivedSize));
+                return (_parent.ReceiveData(dataFrame, receivedSize));
             }
             // Signal a state change, Opened, Closed or Accepted
             void StateChange() override
@@ -323,33 +324,30 @@ namespace Web {
         // -------------------------------------------------------------
         HAS_MEMBER(Transform, hasTransform);
 
-        typedef hasTransform<TRANSFORM, uint16_t (TRANSFORM::*)(BaseDeserializer&, uint8_t* data, const uint16_t maxSize)> TraitDeserializer;
-        typedef hasTransform<TRANSFORM, uint16_t (TRANSFORM::*)(BaseSerializer&, uint8_t* data, const uint16_t maxSize)> TraitSerializer;
-
-        template <typename CLASSNAME>
-        inline typename Core::TypeTraits::enable_if<CLASSNAME::TraitDeserializer::value, uint16_t>::type
-        ReceiveData(const CLASSNAME&, uint8_t* dataFrame, const uint16_t receivedSize)
+        template <typename CLASSNAME=TRANSFORM>
+        inline typename Core::TypeTraits::enable_if<hasTransform<CLASSNAME, uint16_t (CLASSNAME::*)(BaseDeserializer&, uint8_t* data, const uint16_t maxSize)>::value, uint16_t>::type
+        ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize)
         {
             return (_transformer.Transform(_deserialiserImpl, dataFrame, receivedSize));
         }
 
-        template <typename CLASSNAME>
-        inline typename Core::TypeTraits::enable_if<!CLASSNAME::TraitDeserializer::value, uint16_t>::type
-        ReceiveData(const CLASSNAME&, uint8_t* dataFrame, const uint16_t receivedSize)
+        template <typename CLASSNAME= TRANSFORM>
+        inline typename Core::TypeTraits::enable_if<!hasTransform<CLASSNAME, uint16_t (CLASSNAME::*)(BaseDeserializer&, uint8_t* data, const uint16_t maxSize)>::value, uint16_t>::type
+        ReceiveData( uint8_t* dataFrame, const uint16_t receivedSize)
         {
             return (_deserialiserImpl.Deserialize(dataFrame, receivedSize));
         }
 
-        template <typename CLASSNAME>
-        inline typename Core::TypeTraits::enable_if<CLASSNAME::TraitSerializer::value, uint16_t>::type
-        SendData(const CLASSNAME&, uint8_t* dataFrame, const uint16_t receivedSize)
+        template <typename CLASSNAME=TRANSFORM>
+        inline typename Core::TypeTraits::enable_if<hasTransform<CLASSNAME, uint16_t (CLASSNAME::*)(BaseSerializer&,uint8_t* data, const uint16_t maxSize)>::value, uint16_t>::type
+        SendData(uint8_t* dataFrame, const uint16_t receivedSize)
         {
             return (_transformer.Transform(_serializerImpl, dataFrame, receivedSize));
         }
 
-        template <typename CLASSNAME>
-        inline typename Core::TypeTraits::enable_if<!CLASSNAME::TraitSerializer::value, uint16_t>::type
-        SendData(const CLASSNAME&, uint8_t* dataFrame, const uint16_t receivedSize)
+        template <typename CLASSNAME=TRANSFORM>
+        inline typename Core::TypeTraits::enable_if<!hasTransform<CLASSNAME, uint16_t (CLASSNAME::*)(BaseSerializer&,uint8_t* data, const uint16_t maxSize)>::value, uint16_t>::type
+        SendData(uint8_t* dataFrame, const uint16_t receivedSize)
         {
             return (_serializerImpl.Serialize(dataFrame, receivedSize));
         }

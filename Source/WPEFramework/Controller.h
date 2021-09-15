@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@
 
 namespace WPEFramework {
 namespace Plugin {
+
+    using JSONCallstack =  Web::JSONBodyType < Core::JSON::ArrayType < Core::JSON::String > >;
 
     class Controller : public PluginHost::IPlugin, public PluginHost::IWeb, public PluginHost::JSONRPC {
     private:
@@ -98,6 +100,10 @@ namespace Plugin {
             {
                 _parent.Deactivated(callsign, plugin);
             }
+            void Unavailable(const string& callsign, PluginHost::IShell* plugin) override
+            {
+                _parent.Unavailable(callsign, plugin);
+            }
 
             BEGIN_INTERFACE_MAP(Sink)
             INTERFACE_ENTRY(PluginHost::IPlugin::INotification)
@@ -166,9 +172,9 @@ namespace Plugin {
         Controller& operator=(const Controller&);
 
     protected:
-        #ifdef __WINDOWS__
-        #pragma warning(disable : 4355)
-        #endif
+#ifdef __WINDOWS__
+#pragma warning(disable : 4355)
+#endif
         Controller()
             : _adminLock()
             , _skipURL(0)
@@ -182,9 +188,9 @@ namespace Plugin {
         {
             RegisterAll();
         }
-        #ifdef __WINDOWS__
-        #pragma warning(default : 4355)
-        #endif
+#ifdef __WINDOWS__
+#pragma warning(default : 4355)
+#endif
 
     public:
         virtual ~Controller()
@@ -192,10 +198,11 @@ namespace Plugin {
             UnregisterAll();
             SetServer(nullptr);
         }
-		inline void Notification(const PluginHost::Server::ForwardMessage& message) {
+        inline void Notification(const PluginHost::Server::ForwardMessage& message)
+        {
             Notify("all", message);
-		}
-           
+        }
+
         inline void SetServer(PluginHost::Server* pluginServer)
         {
             ASSERT((_pluginServer == nullptr) ^ (pluginServer == nullptr));
@@ -297,6 +304,7 @@ namespace Plugin {
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         void Activated(const string& callsign, PluginHost::IShell* plugin);
         void Deactivated(const string& callsign, PluginHost::IShell* plugin);
+        void Unavailable(const string& callsign, PluginHost::IShell* plugin);
 
         void RegisterAll();
         void UnregisterAll();
@@ -305,10 +313,12 @@ namespace Plugin {
         uint32_t endpoint_activate(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_clone(const JsonData::Controller::CloneParamsInfo& params, Core::JSON::String& response);
         uint32_t endpoint_deactivate(const JsonData::Controller::ActivateParamsInfo& params);
+        uint32_t endpoint_unavailable(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_startdiscovery(const JsonData::Controller::StartdiscoveryParamsData& params);
         uint32_t endpoint_storeconfig();
         uint32_t endpoint_delete(const JsonData::Controller::DeleteParamsData& params);
         uint32_t endpoint_harakiri();
+        uint32_t get_callstack(const string& index, Core::JSON::ArrayType<Core::JSON::String>& response) const;
         uint32_t get_status(const string& index, Core::JSON::ArrayType<PluginHost::MetaData::Service>& response) const;
         uint32_t get_links(Core::JSON::ArrayType<PluginHost::MetaData::Channel>& response) const;
         uint32_t get_processinfo(PluginHost::MetaData::Server& response) const;
@@ -317,6 +327,16 @@ namespace Plugin {
         uint32_t get_environment(const string& index, Core::JSON::String& response) const;
         uint32_t get_configuration(const string& index, Core::JSON::String& response) const;
         uint32_t set_configuration(const string& index, const Core::JSON::String& params);
+        uint32_t get_version(Core::JSON::String& response) const;
+        uint32_t set_version(const Core::JSON::String& params);
+        uint32_t get_prefix(Core::JSON::String& response) const;
+        uint32_t set_prefix(const Core::JSON::String& params);
+        uint32_t get_idletime(Core::JSON::DecUInt16& response) const;
+        uint32_t set_idletime(const Core::JSON::DecUInt16& params);
+        uint32_t get_latitude(Core::JSON::DecSInt32& response) const;
+        uint32_t set_latitude(const Core::JSON::DecSInt32& params);
+        uint32_t get_longitude(Core::JSON::DecSInt32& response) const;
+        uint32_t set_longitude(const Core::JSON::DecSInt32& params);
         void event_all(const string& callsign, const Core::JSON::String& data);
         void event_statechange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
 

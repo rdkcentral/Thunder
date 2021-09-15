@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,15 @@
 
 #pragma once
 
+#ifndef MODULE_NAME
+#error "Please define a MODULE_NAME that describes the binary/library you are building."
+#endif
+
 #include "Administrator.h"
 #include "Communicator.h"
 #include "ConnectorType.h"
-#include "IRPCIterator.h"
+#include "IteratorType.h"
+#include "IIteratorType.h"
 #include "IStringIterator.h"
 #include "IUnknown.h"
 #include "IValueIterator.h"

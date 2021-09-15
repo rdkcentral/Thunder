@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,69 +20,65 @@
 #pragma once
 
 #include "Module.h"
+#include <iostream>
 
 namespace WPEFramework {
 namespace WarningReporting {
 
     class EXTERNAL TooLongWaitingForLock {
     public:
-        TooLongWaitingForLock(const TooLongWaitingForLock& a_Copy) = delete;
-        TooLongWaitingForLock& operator=(const TooLongWaitingForLock& a_RHS) = delete;
-
-        TooLongWaitingForLock()
-        {
-        }
-
+        TooLongWaitingForLock(const TooLongWaitingForLock&) = delete;
+        TooLongWaitingForLock& operator=(const TooLongWaitingForLock&) = delete;
+        TooLongWaitingForLock() = default;
         ~TooLongWaitingForLock() = default;
 
-        uint16_t Serialize(uint8_t[], const uint16_t) const {
-            // HPL Todo: implement
-            return(0); 
+        //nothing to serialize/deserialize here
+        uint16_t Serialize(uint8_t[], const uint16_t) const
+        {
+            return 0;
         }
 
-        uint16_t Deserialize(const uint8_t[], const uint16_t) {
-            // HPL Todo: implement
-            return(0);
+        uint16_t Deserialize(const uint8_t[], const uint16_t)
+        {
+            return 0;
         }
 
-        void ToString(string& visitor) const {
-            visitor = (_T("it took suspiciously long to aquire a critical section"));
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
+        {
+            visitor = (_T("It took suspiciously long to aquire a critical section"));
+            visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, maxValue);
         };
 
-        static constexpr uint32_t DefaultWarningBound = {1000};
-        static constexpr uint32_t DefaultReportBound = {1000};
+        static constexpr uint32_t DefaultWarningBound = { 1000 };
+        static constexpr uint32_t DefaultReportBound = { 1000 };
     };
 
     class EXTERNAL SinkStillHasReference {
     public:
-        SinkStillHasReference(const SinkStillHasReference& a_Copy) = delete;
-        SinkStillHasReference& operator=(const SinkStillHasReference& a_RHS) = delete;
-
-        SinkStillHasReference() 
-        {
-        }
-
+        SinkStillHasReference(const SinkStillHasReference&) = delete;
+        SinkStillHasReference& operator=(const SinkStillHasReference&) = delete;
+        SinkStillHasReference() = default;
         ~SinkStillHasReference() = default;
 
-        uint16_t Serialize(uint8_t[], const uint16_t) const {
-            // HPL Todo: implement
-            return(0); 
+        //nothing to serialize/deserialize here
+        uint16_t Serialize(uint8_t[], const uint16_t) const
+        {
+            return 0;
         }
 
-        uint16_t Deserialize(const uint8_t[], const uint16_t) {
-            // HPL Todo: implement
-            return(0); 
+        uint16_t Deserialize(const uint8_t[], const uint16_t)
+        {
+            return 0;
         }
 
-        void ToString(string& visitor) const {
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
+        {
             visitor = (_T("A sink still holds a reference when it is being destructed"));
+            visitor += Core::Format(_T(", value %lld, max allowed %lld"), actualValue, maxValue);
         };
 
-        static constexpr uint32_t DefaultWarningBound = {0};
-        static constexpr uint32_t DefaultReportBound = {0};
+        static constexpr uint32_t DefaultWarningBound = { 0 };
+        static constexpr uint32_t DefaultReportBound = { 0 };
     };
-    
 }
-} 
-
-
+}

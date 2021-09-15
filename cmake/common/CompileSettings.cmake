@@ -1,7 +1,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ else()
 endif()
 
 if(PERFORMANCE_MONITOR)
-    target_compile_definitions(CompileSettings INTERFACE -DTHUNDER_PERFORMANCE=1)
+    target_compile_definitions(CompileSettings INTERFACE "THUNDER_PERFORMANCE=1")
 endif()
 
 if(NOT BUILD_TYPE)
@@ -59,8 +59,8 @@ if(NOT BUILD_TYPE)
     message(AUTHOR_WARNING "BUILD_TYPE not set, assuming '${BUILD_TYPE}'")
 endif()
 
-target_compile_definitions(CompileSettings INTERFACE PLATFORM_${PLATFORM}=1)
-message(STATUS "Selected platform ${PLATFORM}")
+# target_compile_definitions(CompileSettings INTERFACE "THUNDER_PLATFORM=${THUNDER_PLATFORM}")
+# message(STATUS "Selected platform ${THUNDER_PLATFORM}")
 
 target_compile_options(CompileSettings INTERFACE -std=c++11 -Wno-psabi)
 

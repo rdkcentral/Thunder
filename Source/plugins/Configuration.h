@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,7 @@
  * limitations under the License.
  */
 
-#ifndef __WEBBRIDGESUPPORT_CONFIGURATION_H
-#define __WEBBRIDGESUPPORT_CONFIGURATION_H
+#pragma once
 
 #include "Module.h"
 #include "Config.h"
@@ -29,6 +28,14 @@
 namespace WPEFramework {
 namespace Plugin {
     class EXTERNAL Config : public Core::JSON::Container {
+    public:
+        enum startup : uint8_t {
+            UNAVAILABLE,
+            DEACTIVATED,
+            SUSPENDED,
+            RESUMED
+	};
+
     public:
         Config()
             : Core::JSON::Container()
@@ -45,6 +52,7 @@ namespace Plugin {
             , PersistentPathPostfix()
             , VolatilePathPostfix()
             , StartupOrder(50)
+            , Startup(startup::DEACTIVATED)
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -59,6 +67,7 @@ namespace Plugin {
             Add(_T("persistentpathpostfix"), &PersistentPathPostfix);
             Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
             Add(_T("startuporder"), &StartupOrder);
+            Add(_T("startmode"), &Startup);
         }
         Config(const Config& copy)
             : Core::JSON::Container()
@@ -75,6 +84,7 @@ namespace Plugin {
             , PersistentPathPostfix(copy.PersistentPathPostfix)
             , VolatilePathPostfix(copy.VolatilePathPostfix)
             , StartupOrder(copy.StartupOrder)
+            , Startup(copy.Startup)
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -88,10 +98,10 @@ namespace Plugin {
             Add(_T("configuration"), &Configuration);
             Add(_T("persistentpathpostfix"), &PersistentPathPostfix);
             Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
+            Add(_T("startuporder"), &StartupOrder);
+            Add(_T("startmode"), &Startup);
         }
-        ~Config()
-        {
-        }
+        ~Config() override = default;
 
         Config& operator=(const Config& RHS)
         {
@@ -108,6 +118,7 @@ namespace Plugin {
             PersistentPathPostfix = RHS.PersistentPathPostfix;
             VolatilePathPostfix = RHS.VolatilePathPostfix;
             StartupOrder = RHS.StartupOrder;
+            Startup = RHS.Startup;
 
             return (*this);
         }
@@ -138,6 +149,7 @@ namespace Plugin {
         Core::JSON::String PersistentPathPostfix;
         Core::JSON::String VolatilePathPostfix;
         Core::JSON::DecUInt32 StartupOrder;
+        Core::JSON::EnumType<startup> Startup;
 
         static Core::NodeId IPV4UnicastNode(const string& ifname);
 
@@ -181,5 +193,3 @@ namespace Plugin {
     };
 }
 }
-
-#endif // __WEBBRIDGESUPPORT_CONFIGURATION_H

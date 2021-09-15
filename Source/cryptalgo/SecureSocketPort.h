@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,8 @@ namespace Crypto {
 
             int32_t Read(uint8_t buffer[], const uint16_t length) const override;
             int32_t Write(const uint8_t buffer[], const uint16_t length) override;
+
+            uint32_t Close(const uint32_t waitTime);
 
             // Methods to extract and insert data into the socket buffers
             uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) override {

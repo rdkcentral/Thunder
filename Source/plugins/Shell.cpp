@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,13 @@
 
 #include "Module.h"
 #include "IShell.h"
+#include "Configuration.h"
 
 namespace WPEFramework {
 
 ENUM_CONVERSION_BEGIN(PluginHost::IShell::state)
 
+    { PluginHost::IShell::UNAVAILABLE, _TXT("Unavailable") },
     { PluginHost::IShell::DEACTIVATED, _TXT("Deactivated") },
     { PluginHost::IShell::DEACTIVATION, _TXT("Deactivation") },
     { PluginHost::IShell::ACTIVATED, _TXT("Activated") },
@@ -45,6 +47,16 @@ ENUM_CONVERSION_BEGIN(PluginHost::IShell::reason)
     { PluginHost::IShell::WATCHDOG_EXPIRED, _TXT("WatchdogExpired") },
 
 ENUM_CONVERSION_END(PluginHost::IShell::reason)
+
+ENUM_CONVERSION_BEGIN(Plugin::Config::startup)
+
+    { Plugin::Config::startup::UNAVAILABLE, _TXT("Unavailable") },
+    { Plugin::Config::startup::DEACTIVATED, _TXT("Deactivated") },
+    { Plugin::Config::startup::SUSPENDED,   _TXT("Suspended")   },
+    { Plugin::Config::startup::RESUMED,     _TXT("Resumed")     },
+    { Plugin::Config::startup::RESUMED,     _TXT("Activated")   },
+
+ENUM_CONVERSION_END(Plugin::Config::startup)
 
 namespace PluginHost
 {

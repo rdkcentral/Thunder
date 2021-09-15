@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,7 +105,35 @@ namespace PluginHost {
             string _firmwareVersion;
         };
 
-        typedef RPC::IteratorType<PluginHost::ISubSystem::IProvisioning> Provisioning;
+        class Provisioning : public RPC::IteratorType<PluginHost::ISubSystem::IProvisioning> {
+        public:
+            Provisioning(const Provisioning&) = delete;
+            Provisioning& operator=(const Provisioning&) = delete;
+
+            Provisioning() = delete;
+
+            Provisioning(PluginHost::ISubSystem::IProvisioning* info)
+                : RPC::IteratorType<PluginHost::ISubSystem::IProvisioning>(info)
+                , _storage(info->Storage())
+            {
+            }
+
+            Provisioning(std::list<std::string>&& labels, const std::string& storage)
+                : RPC::IteratorType<PluginHost::ISubSystem::IProvisioning>(labels)
+                , _storage(storage)
+            {
+            }
+
+            ~Provisioning() override = default;
+
+            string Storage() const override
+            {
+                return _storage;
+            }
+
+        private:
+            string _storage;
+        };
 
         class Internet : public PluginHost::ISubSystem::IInternet {
         public:
@@ -498,22 +526,33 @@ namespace PluginHost {
                 break;
             }
             case PROVISIONING: {
-                PluginHost::ISubSystem::IProvisioning* info = (information != nullptr ? information->QueryInterface<PluginHost::ISubSystem::IProvisioning>() : nullptr);
+                PluginHost::ISubSystem::IProvisioning* info = (information != nullptr) ? information->QueryInterface<PluginHost::ISubSystem::IProvisioning>() : nullptr;
 
-                _adminLock.Lock();
+                if (info == nullptr) {
+                    _adminLock.Lock();
+                    
+                    if (_provisioning != nullptr) {
+                        _provisioning->Release();
+                        _provisioning = nullptr;
+                    }
 
-                if (_provisioning != nullptr) {
-                    _provisioning->Release();
-                }
+                    _provisioning = Core::Service<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(std::move(std::list<std::string>()), "");
 
-                _provisioning = Core::Service<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(info);
+                    _adminLock.Unlock();
+                } else {
+                    _adminLock.Lock();
+                    
+                    if (_provisioning != nullptr) {
+                        _provisioning->Release();
+                    }
 
-                _adminLock.Unlock();
+                    _provisioning = Core::Service<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(info);
 
-                if (info != nullptr) {
+                    _adminLock.Unlock();
+                    
                     info->Release();
                 }
-
+                
                 /* No information to set yet */
                 SYSLOG(Logging::Startup, (_T("EVENT: Provisioning")));
                 break;

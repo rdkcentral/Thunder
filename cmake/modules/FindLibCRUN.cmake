@@ -1,7 +1,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,13 +38,13 @@ if(${PKG_CONFIG_FOUND})
             LIBCRUN_CFLAGS
             LIBCRUN_LDFLAGS
             LIBCRUN_LIBRARIES
-            LIBCRUN_LIBRARY_DIRS
+            LIBCRUN_LIBDIR
         VERSION_VAR
             LIBCRUN_VERSION
     )
 
     find_library(LIBCRUN_ACTUAL_LIBRARY NAMES crun
-        HINTS ${LIBCRUN_LIBRARY_DIRS} )
+        HINTS ${LIBCRUN_LIBDIR})
 
     if(LIBCRUN_FOUND AND NOT TARGET libcrun::libcrun)
         add_library(libcrun::libcrun UNKNOWN IMPORTED)

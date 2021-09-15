@@ -1,7 +1,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,17 +27,13 @@ option(BLUETOOTH
 option(BROADCAST
         "Include the broadcasting library." OFF)
 option(WEBSOCKET
-        "Include the websocket library." OFF)
-option(PROTOCOLS
-        "Include the protocols library." ON)
+        "Include the websocket library." ON)
 option(TRACING
         "Include the tracing library." ON)
 option(PROFILER
         "Include the profiler library." OFF)
 option(COM
-        "Include the COM library." OFF)
-option(PROTOCOLS
-        "Include Protocols lib." ON)
+        "Include the COM library." ON)
 option(PROCESS
         "Include the COM hosting process executable." ON)
 option(PROXY_STUB
@@ -60,8 +56,8 @@ option(WCHAR_SUPPORT
         "Enable support for WCHAR." OFF)
 option(DISABLE_TRACING
         "Disable tracing in debug" OFF)
-option(HIDE_NON_EXTERNAL_SYMBOLS 
-        "Hide all non EXTERNAL tagged symbols" OFF)
+option(HIDE_NON_EXTERNAL_SYMBOLS
+        "Hide all non EXTERNAL tagged symbols" ON)
 
 option(EXCEPTION_CATCHING
         "Enable unhandled exception handling catching." OFF)

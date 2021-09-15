@@ -3,7 +3,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@
 import re, uuid, sys, copy, hashlib, os
 from collections import OrderedDict
 from enum import IntEnum
-
 
 class ParserError(RuntimeError):
     def __init__(self, msg):
@@ -72,8 +71,8 @@ class Ref(IntEnum):
     RVALUE_REFERENCE = 8
     CONST = 16,
     VOLATILE = 32,
-    CONST_POINTER = 64,
-    VOLATILE_POINTER = 128,
+    POINTER_TO_CONST = 64,
+    POINTER_TO_VOLATILE = 128,
 
 
 class Metadata:
@@ -84,6 +83,7 @@ class Metadata:
         self.output = False
         self.is_property = False
         self.is_deprecated = False
+        self.is_obsolete = False
         self.length = None
         self.maxlength = None
         self.interface = None
@@ -109,14 +109,17 @@ class Undefined(BaseType):
         self.comment = comment
 
     def Proto(self):
+        proto = self.comment
         if isinstance(self.type, list):
             if (type(self.type[0]) is str):
-                return self.comment + " ".join(self.type).replace(" < ", "<").replace(" :: ", "::").replace(
-                    " >", ">").replace(" *", "*").replace(" &", "&").replace(" &&", "&&")
+                proto += " ".join(self.type).replace(" < ", "<").replace(" :: ", "::").replace(
+                    " >", ">").replace(" *", "*").replace(" &", "&").replace(" &&", "&&").replace(" ,",",")
             else:
-                return self.comment + " ".join([str(x) for x in self.type])
+                proto += " ".join([str(x) for x in self.type])
         else:
-            return self.comment + str(self.type)
+            proto += str(self.type)
+
+        return proto
 
     def __repr__(self):
         return "undefined %s" % self.Proto()
@@ -254,7 +257,11 @@ class Identifier():
                 if nest2 == 0 and not nest1:
                     type_found = True
             elif nest1 or nest2:
-                type[-1] += " " + token
+                # keep double collon-separated tokens together
+                if token == "::" or type[-1].endswith("::"):
+                    type[-1] += token
+                else:
+                    type[-1] += " " + token
 
             # handle pointer/reference markers
             elif token[0] == "@":
@@ -304,6 +311,8 @@ class Identifier():
                     skip = 2
                 elif token[1:] == "DEPRECATED":
                     self.meta.is_deprecated = True
+                elif token[1:] == "OBSOLETE":
+                    self.meta.is_obsolete = True
                 elif token[1:] == "TEXT":
                     self.meta.text = "".join(string[i + 1])
                     skip = 1
@@ -451,10 +460,11 @@ class Identifier():
                 elif self.type[typeIdx] == "&&":
                     ref |= Ref.RVALUE_REFERENCE
                 elif self.type[typeIdx] == "const":
-                    ref |= Ref.CONST_POINTER
+                    ref |= Ref.CONST
                 elif self.type[typeIdx] == "volatile":
-                    ref |= Ref.VOLATILE_POINTER
+                    ref |= Ref.VOLATILE
                 typeIdx -= 1
+                cnt += 1
 
             # Skip template parsing here
             if isinstance(self.type[typeIdx], str):
@@ -500,9 +510,15 @@ class Identifier():
             if isinstance(self.type[typeIdx], Type):
                 for i in range(len(self.type) - cnt - 1):
                     if self.type[i] == "const":
-                        self.type[typeIdx].ref |= Ref.CONST
+                        if self.type[typeIdx].ref & Ref.POINTER:
+                            self.type[typeIdx].ref |= Ref.POINTER_TO_CONST
+                        else:
+                            self.type[typeIdx].ref |= Ref.CONST
                     elif self.type[i] == "volatile":
-                        self.type[typeIdx].ref |= Ref.VOLATILE
+                        if self.type[typeIdx].ref | Ref.POINTER:
+                            self.type[typeIdx].ref |= Ref.POINTER_TO_VOLATILE
+                        else:
+                            self.type[typeIdx].ref |= Ref.VOLATILE
 
                 self.type = self.type[typeIdx]
 
@@ -661,10 +677,10 @@ class Type:
         return self.ref & Ref.POINTER != 0
 
     def IsConstPointer(self):
-        return self.ref & Ref.CONST_POINTER != 0
+        return self.IsPointer() and self.IsConst()
 
     def IsVolatilePointer(self):
-        return self.ref & Ref.VOLATILE_POINTER != 0
+        return self.IsPointer() and self.IsVolatile()
 
     def IsReference(self):
         return self.ref & Ref.REFERENCE != 0
@@ -673,10 +689,13 @@ class Type:
         return self.ref & Ref.RVALUE_REFERENCE
 
     def IsPointerToConst(self):
-        return self.IsConst() and self.IsPointer()
+        return self.ref & Ref.POINTER_TO_CONST
+
+    def IsPointerToVolatile(self):
+        return self.ref & Ref.POINTER_TO_VOLATILE
 
     def IsConstPointerToConst(self):
-        return self.IsConst() and self.IsConstPointer()
+        return self.IsConst() and self.IsPointerToConst()
 
     def IsConstReference(self):
         return self.IsConst() and self.IsReference()
@@ -712,12 +731,13 @@ class Type:
         return str
 
     def Proto(self):
-        _str = "const " if self.IsConst() else ""
+        _str = "const " if ((self.IsConst() and not self.IsPointer()) or self.IsPointerToConst()) else ""
+        _str += "volatile " if (self.IsVolatile() and not self.IsPointer()) or self.IsPointerToVolatile() else ""
         _str += self.TypeName()
         _str += "*" if self.IsPointer() else ""
-        _str += "&" if self.IsReference() else "&&" if self.IsRvalueReference() else ""
         _str += " const" if self.IsConstPointer() else ""
         _str += " volatile" if self.IsVolatilePointer() else ""
+        _str += "&" if self.IsReference() else "&&" if self.IsRvalueReference() else ""
         return _str
 
     def __str__(self):
@@ -844,6 +864,7 @@ class Function(Block, Name):
         self.retval = Identifier(self, self, ret_type, valid_specifiers, False)
         self.omit = False
         self.stub = False
+        self.is_excluded = False
         self.parent.methods.append(self)
 
     def Proto(self):
@@ -852,6 +873,9 @@ class Function(Block, Name):
         _str += (" " if str(self.retval) else "") + self.name
         _str += "(%s)" % (", ".join([str(v) for v in self.vars]))
         return _str
+
+    def IsStatic(self):
+        return "static" in self.specifiers
 
     def __str__(self):
         return self.Proto()
@@ -916,9 +940,6 @@ class Method(Function):
 
     def IsVolatile(self):
         return "volatile" in self.qualifiers
-
-    def IsStatic(self):
-        return "static" in self.specifiers
 
     def CVString(self):
         str = "const" if self.IsConst() else ""
@@ -991,7 +1012,7 @@ class Attribute(Variable):
 class Enumerator(Identifier, Name):
     def __init__(self, parent_block, name, value=None, type=["int"]):
         parent_enum = parent_block if parent_block.scoped else parent_block.parent
-        Identifier.__init__(self, parent_enum, self, [type, name], [])
+        Identifier.__init__(self, parent_enum, self, [type] + name, [])
         Name.__init__(self, parent_enum, self.name)
         self.parent = parent_block
         self.value = parent_block.GetValue() if value == None else Evaluate(value)
@@ -1176,7 +1197,7 @@ class TemplateClass(Class):
 
 
 # Source file test into a list of tokens, removing comments and preprocessor directives.
-def __Tokenize(contents):
+def __Tokenize(contents,log = None):
     global current_file
     global current_line
 
@@ -1281,6 +1302,8 @@ def __Tokenize(contents):
                 if _find("@stubgen", token):
                     if "@stubgen:skip" in token:
                         skipmode = True
+                        if log :
+                            log.Warn("The Use of @stubgen:skip is deprecated, Please use @stubgen:omit instead",(CurrentFile()+" Line: "+str(CurrentLine())))
                     elif "@stubgen:omit" in token:
                         tagtokens.append("@OMIT")
                     elif "@stubgen:stub" in token:
@@ -1306,8 +1329,12 @@ def __Tokenize(contents):
                     tagtokens.append("@PROPERTY")
                 if _find("@deprecated", token):
                     tagtokens.append("@DEPRECATED")
+                if _find("@obsolete", token):
+                    tagtokens.append("@OBSOLETE")
                 if _find("@json", token):
                     tagtokens.append("@JSON")
+                if _find("@json:omit", token):
+                    tagtokens.append("@JSON_OMIT")
                 if _find("@event", token):
                     tagtokens.append("@EVENT")
                 if _find("@extended", token):
@@ -1403,7 +1430,7 @@ def CurrentLine():
 
 
 # Builds a syntax tree (data structures only) of C++ source code
-def Parse(contents):
+def Parse(contents,log = None):
     # Start in global namespace.
     global global_namespace
     global current_file
@@ -1421,7 +1448,7 @@ def Parse(contents):
     current_file = "undefined"
 
     # Split into tokens first
-    line_tokens = __Tokenize(contents)
+    line_tokens = __Tokenize(contents,log)
 
     for token in line_tokens:
         if isinstance(token, str) and token.startswith("@LINE:"):
@@ -1445,6 +1472,7 @@ def Parse(contents):
     omit_next = False
     stub_next = False
     json_next = False
+    exclude_next = False
     event_next = False
     extended_next = False
     iterator_next = False
@@ -1469,6 +1497,10 @@ def Parse(contents):
         elif tokens[i] == "@JSON":
             json_next = True
             tokens[i] = ";"
+            i += 1
+        elif tokens[i] == "@JSON_OMIT":
+            exclude_next = True
+            tokens[i] = ';'
             i += 1
         elif tokens[i] == "@EVENT":
             event_next = True
@@ -1610,6 +1642,10 @@ def Parse(contents):
                 new_class.is_iterator = True
                 event_next = False
 
+            if new_class.parent.omit:
+                # Inherit omiting...
+                new_class.omit = True
+
             if last_template_def:
                 new_class.specifiers.append(" ".join(last_template_def))
                 last_template_def = []
@@ -1692,10 +1728,7 @@ def Parse(contents):
             # locate return value
             while j >= min_index and tokens[j] not in ['{', '}', ';', ':']:
                 j -= 1
-            if not current_block[-1].omit and not omit_next:
-                ret_type = tokens[j + 1:k]
-            else:
-                ret_type = []
+            ret_type = tokens[j + 1:k]
 
             if isinstance(current_block[-1], Class):
                 if name[0] == "~":
@@ -1715,6 +1748,10 @@ def Parse(contents):
                 stub_next = False
             elif method.parent.stub:
                 method.stub = True
+
+            if exclude_next:
+                method.is_excluded = True
+                exclude_next = False
 
             if last_template_def:
                 method.specifiers.append(" ".join(last_template_def))
@@ -1841,7 +1878,22 @@ def Parse(contents):
             j = i
             while True:
                 if tokens[i] in ['}', ',']:
-                    Enumerator(enum, tokens[j], tokens[j + 2:i] if tokens[j + 1] == '=' else None, enum.type)
+
+                    # disentangle @text tag and enumerator value (if any)
+                    value = None
+                    entry = tokens[j:i]
+                    if "@TEXT" in entry:
+                        where = entry.index("@TEXT")
+                        text = entry[where + 1]
+                        del entry[where:where + 2]
+                        entry = entry[:1] + ["@TEXT", text] + entry[1:]
+
+                    if '=' in entry:
+                        where = entry.index('=')
+                        value = entry[where + 1:]
+                        del entry[where:]
+
+                    Enumerator(enum, entry, value, enum.type)
                     if tokens[i + 1] == '}':
                         i += 1 # handle ,} situation
                         break
@@ -1921,13 +1973,13 @@ def ParseFile(source_file, includePaths = []):
     return Parse(contents)
 
 
-def ParseFiles(source_files, includePaths = []):
+def ParseFiles(source_files, includePaths = [], log = None):
     contents = ""
     for source_file in source_files:
         if source_file:
             quiet = (source_file[0] == "@")
             contents += ReadFile((source_file[1:] if quiet else source_file), includePaths, quiet, "")
-    return Parse(contents)
+    return Parse(contents,log)
 
 
 # -------------------------------------------------------------------------

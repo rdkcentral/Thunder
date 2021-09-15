@@ -1,7 +1,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -72,6 +72,7 @@ set(PUBLIC_HEADERS
         Enumerate.h
         Factory.h
         FileSystem.h
+        FileObserver.h
         Frame.h
         IAction.h
         IIterator.h
@@ -160,6 +161,7 @@ endif()
 
 if (EXCEPTION_CATCHING)
     target_compile_definitions(${TARGET} PUBLIC __CORE_EXCEPTION_CATCHING__)
+    set_source_files_properties( Thread.cpp PROPERTIES COMPILE_FLAGS "-fexceptions" )
     message(STATUS "Unhandled Exception catching enabled")
 endif()
 

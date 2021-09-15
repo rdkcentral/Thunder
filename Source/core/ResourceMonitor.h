@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -258,14 +258,14 @@ namespace Core {
     private:
         HAS_MEMBER(Arm, hasArm);
 
-        template <typename TYPE>
+        template <typename TYPE=WATCHDOG>
         inline typename Core::TypeTraits::enable_if<hasArm<TYPE, void (TYPE::*)()>::value, void>::type
         Arm()
         {
             _watchDog.Arm();
         }
 
-        template <typename TYPE>
+        template <typename TYPE=WATCHDOG>
         inline typename Core::TypeTraits::enable_if<!hasArm<TYPE, void (TYPE::*)()>::value, void>::type
         Arm()
         {
@@ -273,14 +273,14 @@ namespace Core {
 
         HAS_MEMBER(Reset, hasReset);
 
-        template <typename TYPE>
+        template <typename TYPE=WATCHDOG>
         inline typename Core::TypeTraits::enable_if<hasReset<TYPE, void (TYPE::*)()>::value, void>::type
         Reset()
         {
             _watchDog.Reset();
         }
 
-        template <typename TYPE>
+        template <typename TYPE=WATCHDOG>
         inline typename Core::TypeTraits::enable_if<!hasReset<TYPE, void (TYPE::*)()>::value, void>::type
         Reset()
         {
@@ -420,12 +420,12 @@ namespace Core {
 
                         uint16_t flagsSet = _descriptorArray[fd_index].revents;
 
-                        Arm<WATCHDOG>();
+                        Arm();
 
                         // Event if the flagsSet == 0, call handle, maybe a break was issued by this RESOURCE..
                         entry->Handle(flagsSet);
 
-                        Reset<WATCHDOG>();
+                        Reset();
                     }
 
                     index++;
@@ -496,12 +496,12 @@ namespace Core {
 
                         uint16_t flagsSet = static_cast<uint16_t>(networkEvents.lNetworkEvents);
 
-                        Arm<WATCHDOG>();
+                        Arm();
 
                         // Event if the flagsSet == 0, call handle, maybe a break was issued by this RESOURCE..
                         entry->Handle(flagsSet);
 
-                        Reset<WATCHDOG>();
+                        Reset();
                     }
                     index++;
                 }

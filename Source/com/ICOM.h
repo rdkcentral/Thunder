@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@
 #pragma once
 
 #include "Ids.h"
-#include "IRPCIterator.h"
+#include "IIteratorType.h"
 
-// @stubgen:include "IRPCIterator.h"
+// @stubgen:include "IIteratorType.h"
 
 namespace WPEFramework {
     namespace RPC {

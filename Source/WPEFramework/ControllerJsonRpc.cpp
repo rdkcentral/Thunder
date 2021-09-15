@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ namespace Plugin {
     {
         Register<ActivateParamsInfo,void>(_T("activate"), &Controller::endpoint_activate, this);
         Register<ActivateParamsInfo,void>(_T("deactivate"), &Controller::endpoint_deactivate, this);
+        Register<ActivateParamsInfo,void>(_T("unavailable"), &Controller::endpoint_unavailable, this);
         Register<ActivateParamsInfo,void>(_T("suspend"), &Controller::endpoint_suspend, this);
         Register<ActivateParamsInfo,void>(_T("resume"), &Controller::endpoint_resume, this);
         Register<StartdiscoveryParamsData,void>(_T("startdiscovery"), &Controller::endpoint_startdiscovery, this);
@@ -49,16 +50,24 @@ namespace Plugin {
         Property<Core::JSON::String>(_T("environment"), &Controller::get_environment, nullptr, this);
         Property<Core::JSON::String>(_T("configuration"), &Controller::get_configuration, &Controller::set_configuration, this);
         Register<CloneParamsInfo,Core::JSON::String>(_T("clone"), &Controller::endpoint_clone, this);
+        Property<Core::JSON::ArrayType<Core::JSON::String>>(_T("callstack"), &Controller::get_callstack, nullptr, this);
+        Property<Core::JSON::String>(_T("version"), &Controller::get_version, &Controller::set_version, this);
+        Property<Core::JSON::String>(_T("prefix"), &Controller::get_prefix, &Controller::set_prefix, this);
+        Property<Core::JSON::DecUInt16>(_T("idletime"), &Controller::get_idletime, &Controller::set_idletime, this);
+        Property<Core::JSON::DecSInt32>(_T("latitude"), &Controller::get_latitude, &Controller::set_latitude, this);
+        Property<Core::JSON::DecSInt32>(_T("longitude"), &Controller::get_longitude, &Controller::set_longitude, this);
     }
 
     void Controller::UnregisterAll()
     {
+        Unregister(_T("callstack"));
         Unregister(_T("harakiri"));
         Unregister(_T("delete"));
         Unregister(_T("storeconfig"));
         Unregister(_T("startdiscovery"));
         Unregister(_T("suspend"));
         Unregister(_T("resume"));
+        Unregister(_T("unavailable"));
         Unregister(_T("deactivate"));
         Unregister(_T("activate"));
         Unregister(_T("configuration"));
@@ -69,6 +78,12 @@ namespace Plugin {
         Unregister(_T("links"));
         Unregister(_T("status"));
         Unregister(_T("clone"));
+        Unregister(_T("version"));
+        Unregister(_T("prefix"));
+        Unregister(_T("idletime"));
+        Unregister(_T("latitude"));
+        Unregister(_T("longitude"));
+
     }
 
     // API implementation
@@ -151,7 +166,44 @@ namespace Plugin {
         return result;
     }
 
-    // Method: activate - Resume a plugin
+    // Method: unavailable- Mark the plugin as unavailable
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_UNKNOWN_KEY: The plugin does not exist
+    //  - ERROR_ILLEGAL_STATE: Current state of the plugin does not allow deactivation
+    //  - ERROR_CLOSING_FAILED: Failed to activate the plugin
+    //  - ERROR_PRIVILEGED_REQUEST: Deactivation of the plugin is not allowed (e.g. Controller)
+    uint32_t Controller::endpoint_unavailable(const ActivateParamsInfo& params)
+    {
+        uint32_t result = Core::ERROR_OPENING_FAILED;
+        const string& callsign = params.Callsign.Value();
+
+        ASSERT(_pluginServer != nullptr);
+
+        if (callsign != Callsign()) {
+            Core::ProxyType<PluginHost::Server::Service> service;
+
+            if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
+                ASSERT(service.IsValid());
+                result = service->Unavailable(PluginHost::IShell::REQUESTED);
+
+                // Normalise return code
+                if ((result != Core::ERROR_NONE) && (result != Core::ERROR_ILLEGAL_STATE) && (result !=  Core::ERROR_INPROGRESS)) {
+                    result = Core::ERROR_CLOSING_FAILED;
+                }
+            }
+            else {
+                result = Core::ERROR_UNKNOWN_KEY;
+            }
+        }
+        else {
+            result = Core::ERROR_PRIVILIGED_REQUEST;
+        }
+
+        return result;
+    }
+
+    // Method: resume - Resume a plugin
     // Return codes:
     //  - ERROR_NONE: Success
     //  - ERROR_PENDING_CONDITIONS: The plugin will be activated once its activation preconditions are met
@@ -228,6 +280,32 @@ namespace Plugin {
         return result;
     }
 
+    // Property: callstack - Information the callstack associated with the given index 0 - <Max number of threads in the threadpool>
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_UNKNOWN_KEY: The index (uint8_t) is not supplied
+    uint32_t Controller::get_callstack(const string& index, Core::JSON::ArrayType<Core::JSON::String>& response) const
+    {
+        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+
+        if (index.empty() == true) {
+            uint8_t indexValue = Core::NumberType<uint8_t>(Core::TextFragment(index)).Value();
+
+            result = Core::ERROR_NONE;
+            std::list<string> stackList;
+
+            ThreadId threadId = _pluginServer->WorkerPool().Id(indexValue);
+
+            DumpCallStack(threadId, stackList);
+
+            for (const string& entry : stackList) {
+                response.Add() = entry;
+            }
+        }
+
+        return result;
+    }
+
     // Starts the network discovery.
     // Return codes:
     //  - ERROR_NONE: Success
@@ -250,7 +328,7 @@ namespace Plugin {
     {
         ASSERT(_pluginServer != nullptr);
 
-        uint32_t result = _pluginServer->Services().Persist();
+        uint32_t result = _pluginServer->Persist();
 
         // Normalise return code
         if (result != Core::ERROR_NONE) {
@@ -293,6 +371,7 @@ namespace Plugin {
 
         return result;
     }
+
 
     // Method: harakiri - Reboots the device
     // Return codes:
@@ -433,8 +512,6 @@ namespace Plugin {
     //  - ERROR_NONE: Success
     uint32_t Controller::get_discoveryresults(Core::JSON::ArrayType<PluginHost::MetaData::Bridge>& response) const
     {
-        ASSERT(_probe != nullptr);
-
         if (_probe != nullptr) {
             Probe::Iterator index(_probe->Instances());
 
@@ -520,6 +597,198 @@ namespace Plugin {
 
         Notify(_T("statechange"), params);
     }
+
+    // Property: version of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to get the version
+    uint32_t Controller::get_version(Core::JSON::String& response) const
+    {
+        uint32_t result = Core::ERROR_NONE;
+   
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer !=nullptr)  {
+            response = _pluginServer->Configuration().Version();
+        } else {
+            result = Core::ERROR_GENERAL;
+        }
+        return  result ;
+    }
+
+    // Property: version of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to set the version
+    uint32_t Controller::set_version(const Core::JSON::String& params)
+    {
+        uint32_t result = Core::ERROR_NONE;
+        
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer !=nullptr)  {
+            const string& version = params.Value();
+            _pluginServer->Configuration().SetVersion(version);
+        } else {
+            result = Core::ERROR_GENERAL;
+        }
+    
+        return  result ;
+    }
+
+    // Property: prefix of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to get the prefix
+    uint32_t Controller::get_prefix(Core::JSON::String& response) const
+    {
+        uint32_t result = Core::ERROR_NONE;
+   
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer !=nullptr)  {
+            response = _pluginServer->Configuration().Prefix();
+        } else {
+            result = Core::ERROR_GENERAL;
+        }
+    
+        return  result ;
+    }
+
+    // Property: prefix of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to set the prefix
+    uint32_t Controller::set_prefix(const Core::JSON::String& params)
+    {
+         uint32_t result = Core::ERROR_NONE;
+        
+        ASSERT(_pluginServer != nullptr);
+
+        if (_pluginServer !=nullptr)  {
+            const string& prefix = params.Value();
+            _pluginServer->Configuration().SetPrefix(prefix);
+        } else {
+            result = Core::ERROR_GENERAL;
+        }
+    
+        return  result ;
+    }
+
+    // Property: idletime of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to get the idletime
+    uint32_t Controller::get_idletime(Core::JSON::DecUInt16& response) const
+    {
+        uint32_t result = Core::ERROR_NONE;
+   
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer !=nullptr)  {
+            response = _pluginServer->Configuration().IdleTime();
+        } else {
+            result = Core::ERROR_GENERAL;
+        }
+    
+        return  result ;
+    }
+
+    // Property: idletime of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to set the idletime
+    uint32_t Controller::set_idletime(const Core::JSON::DecUInt16& params)
+    {
+        uint32_t result = Core::ERROR_NONE;
+        
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer !=nullptr)  {
+            _pluginServer->Configuration().SetIdleTime(params.Value());
+        } else {
+            result = Core::ERROR_GENERAL;
+        }
+    
+        return  result ;
+    }
+
+    // Property: latitude of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to get the latitude
+    uint32_t Controller::get_latitude(Core::JSON::DecSInt32& response) const
+    {
+        uint32_t result = Core::ERROR_NONE;
+   
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer !=nullptr)  {
+            response = _pluginServer->Configuration().Latitude();
+        } else {
+            result = Core::ERROR_GENERAL;
+        }
+    
+        return  result ;
+    }
+
+    // Property: latitude of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to set the latitude
+    uint32_t Controller::set_latitude(const Core::JSON::DecSInt32& params)
+    {
+        uint32_t result = Core::ERROR_NONE;
+        
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer !=nullptr)  {
+            _pluginServer->Configuration().SetLatitude(params.Value());
+        } else {
+            result = Core::ERROR_GENERAL;
+        }
+    
+        return  result ;
+    }
+
+    // Property: longitude of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to get the longitude
+    uint32_t Controller::get_longitude(Core::JSON::DecSInt32& response) const
+    {
+        uint32_t result = Core::ERROR_NONE;
+   
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer !=nullptr)  {
+            response = _pluginServer->Configuration().Longitude();
+        } else {
+            result = Core::ERROR_GENERAL;
+        }
+    
+        return  result ;
+    }
+
+    // Property: longitude of the controller
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_GENERAL: Failed to set the longitude
+    uint32_t Controller::set_longitude(const Core::JSON::DecSInt32& params)
+    {
+         uint32_t result = Core::ERROR_NONE;
+        
+        ASSERT(_pluginServer != nullptr);
+        
+        if (_pluginServer !=nullptr)  {
+            _pluginServer->Configuration().SetLongitude(params.Value());
+        } else {
+            result = Core::ERROR_GENERAL;
+        }
+    
+        return  result ;
+    }
+
 
     // Note: event_all and event_subsytemchange are handled internally within the Controller
 

@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,12 +66,11 @@ namespace PluginHost
     /* static */ const TCHAR* Server::ConfigFile = _T("/etc/" EXPAND_AND_QUOTE(NAMESPACE) "/config.json");
 #endif
 
-    /* static */ const TCHAR* Server::PluginOverrideFile = _T("PluginHost/override.json");
+    /* static */ const TCHAR* Server::PluginOverrideFile = _T("PluginHost/override_V2.json");
     /* static */ const TCHAR* Server::PluginConfigDirectory = _T("plugins/");
     /* static */ const TCHAR* Server::CommunicatorConnector = _T("COMMUNICATOR_CONNECTOR");
 
     static const TCHAR _defaultControllerCallsign[] = _T("Controller");
-    static const TCHAR _defaultDispatcherCallsign[] = _T("Dispatcher");
 
     class DefaultSecurity : public ISecurity {
     public:
@@ -160,14 +159,17 @@ namespace PluginHost
     };
 
     void Server::WorkerPoolImplementation::Dispatcher::Dispatch(Core::IDispatch* job) /* override */ {
-    #ifdef __CORE_EXCEPTION_CATCHING__
-        string callsign(_T("Unknown"));
+    #if defined(__CORE_EXCEPTION_CATCHING__) || defined(__CORE_WARNING_REPORTING__)
+        string callsign(_T("Callsign Unknown"));
         Channel::Job* rootObject = dynamic_cast<Channel::Job*>(job);
         if (rootObject != nullptr) {
             callsign = rootObject->Callsign();
         }
 
         WARNING_REPORTING_THREAD_SETCALLSIGN_GUARD(callsign.c_str());
+    #endif
+
+    #ifdef __CORE_EXCEPTION_CATCHING__
 
         try {
             job->Dispatch();
@@ -310,7 +312,7 @@ namespace PluginHost
 
         if (currentState == IShell::ACTIVATION) {
             result = Core::ERROR_INPROGRESS;
-        } else if ((currentState == IShell::DEACTIVATION) || (currentState == IShell::DESTROYED)) {
+        } else if ((currentState == IShell::UNAVAILABLE) || (currentState == IShell::DEACTIVATION) || (currentState == IShell::DESTROYED)) {
             result = Core::ERROR_ILLEGAL_STATE;
         } else if ((currentState == IShell::DEACTIVATED) || (currentState == IShell::PRECONDITION)) {
 
@@ -366,8 +368,6 @@ namespace PluginHost
 
                 REPORT_DURATION_WARNING( { ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
 
-                
-
                 if (HasError() == true) {
                     result = Core::ERROR_GENERAL;
 
@@ -393,7 +393,7 @@ namespace PluginHost
                     SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
                     Lock();
                     State(ACTIVATED);
-                    _administrator.Activated(this);
+                    _administrator.Activated(callSign, this);
 
 #if THUNDER_RESTFULL_API
                     _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
@@ -452,6 +452,7 @@ namespace PluginHost
         return (result);
     }
 
+
     uint32_t Server::Service::Deactivate(const reason why)
     {
         uint32_t result = Core::ERROR_NONE;
@@ -464,11 +465,9 @@ namespace PluginHost
             result = Core::ERROR_INPROGRESS;
         } else if ((currentState == IShell::ACTIVATION) || (currentState == IShell::DESTROYED)) {
             result = Core::ERROR_ILLEGAL_STATE;
-        } else if ((currentState == IShell::ACTIVATED) || (currentState == IShell::PRECONDITION)) {
+        } else if ((currentState == IShell::UNAVAILABLE) || (currentState == IShell::ACTIVATED) || (currentState == IShell::PRECONDITION)) {
 
             const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
-
-            ASSERT(_handler != nullptr);
 
             const string className(PluginHost::Service::Configuration().ClassName.Value());
             const string callSign(PluginHost::Service::Configuration().Callsign.Value());
@@ -476,8 +475,10 @@ namespace PluginHost
             _reason = why;
 
             if (currentState == IShell::ACTIVATED) {
+                ASSERT(_handler != nullptr);
+
                 State(DEACTIVATION);
-                _administrator.Deactivated(this);
+                _administrator.Deactivated(callSign, this);
 
                 Unlock();
 
@@ -519,10 +520,11 @@ namespace PluginHost
 #endif
 
             _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
-            if (State() != ACTIVATED) {
-                // We have no need for his module anymore..
-                ReleaseInterfaces();
-            }
+
+            ASSERT(State() != ACTIVATED);
+
+            // We have no need for his module anymore..
+            ReleaseInterfaces();
         }
 
         Unlock();
@@ -566,6 +568,49 @@ namespace PluginHost
         }
 
         return (result);
+    }
+
+    uint32_t Server::Service::Unavailable(const reason why) {
+        uint32_t result = Core::ERROR_NONE;
+
+        Lock();
+
+        IShell::state currentState(State());
+
+        if ((currentState == IShell::DEACTIVATION) || 
+            (currentState == IShell::ACTIVATION)   || 
+            (currentState == IShell::DESTROYED)    || 
+            (currentState == IShell::ACTIVATED)    ||
+            (currentState == IShell::PRECONDITION)) {
+            result = Core::ERROR_ILLEGAL_STATE;
+        }
+        else if (currentState == IShell::DEACTIVATED) {
+
+            const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
+
+            const string className(PluginHost::Service::Configuration().ClassName.Value());
+            const string callSign(PluginHost::Service::Configuration().Callsign.Value());
+
+            _reason = why;
+
+            SYSLOG(Logging::Shutdown, (_T("Unavailable plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
+
+            TRACE(Activity, (Core::Format(_T("Unavailable plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
+
+            State(UNAVAILABLE);
+            _administrator.Unavailable(callSign, this);
+
+#if THUNDER_RESTFULL_API
+            _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"unavailable\",\"reason\":\"") + textReason.Data() + _T("\"}"));
+#endif
+
+            _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
+        }
+
+        Unlock();
+
+        return (result);
+
     }
 
     /* virtual */ uint32_t Server::Service::Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response)
@@ -725,7 +770,7 @@ namespace PluginHost
         }
 
         // Get the configuration from the persistent location.
-        _services.Load();
+        Load();
 
         // Create input handle
         _inputHandler.Initialize(

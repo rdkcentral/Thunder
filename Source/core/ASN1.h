@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -227,6 +227,7 @@ namespace Core {
             OID(const string& OID)
                 : _length(0)
             {
+                _buffer[0] = 0;
                 uint16_t firstSet = ~0;
                 uint16_t index = 0;
                 uint32_t value = 0;

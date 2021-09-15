@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,6 +70,9 @@ namespace Core {
             JobType(const JobType<IMPLEMENTATION>& copy) = delete;
             JobType<IMPLEMENTATION>& operator=(const JobType<IMPLEMENTATION>& RHS) = delete;
 
+            #ifdef __WINDOWS__
+            #pragma warning(disable: 4355)
+            #endif
             template <typename... Args>
             JobType(Args&&... args)
                 : _implementation(args...)
@@ -78,6 +81,10 @@ namespace Core {
             {
                 _job.AddRef();
             }
+            #ifdef __WINDOWS__
+            #pragma warning(default: 4355)
+            #endif
+
             ~JobType()
             {
                 ASSERT (_state == IDLE);
@@ -144,7 +151,7 @@ namespace Core {
                 : _dispatcher(dispatcher)
                 , _queue(queue)
                 , _adminLock()
-                , _signal(false, false)
+                , _signal(false, true)
                 , _interestCount(0)
                 , _currentRequest()
                 , _runs(0)
@@ -164,7 +171,8 @@ namespace Core {
                 uint32_t result = Core::ERROR_NONE;
 
                 _adminLock.Lock();
-                Core::InterlockedIncrement(_interestCount);
+                _interestCount++;
+
                 if (_currentRequest != job) {
                     _adminLock.Unlock();
                 }
@@ -173,7 +181,7 @@ namespace Core {
                     result = _signal.Lock(waitTime);
                 }
 
-                Core::InterlockedDecrement(_interestCount);
+                _interestCount--;
 
                 return(result);
             }
@@ -215,7 +223,7 @@ namespace Core {
             MessageQueue& _queue;
             Core::CriticalSection _adminLock;
             Core::Event _signal;
-            uint32_t _interestCount;
+            std::atomic<uint32_t> _interestCount;
             Core::ProxyType<Core::IDispatch> _currentRequest;
             uint32_t _runs;
         };

@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -314,11 +314,13 @@ namespace RPC {
                 // interface is released in the same time before we report this interface
                 // to be dead. So lets keep a refernce so we can work on a real object
                 // still. This race condition, was observed by customer testing.
-                (*loop)->AddRef();
-                pendingProxies.push_back(*loop);
+                if ((*loop)->Invalidate() == true) {
+                    pendingProxies.push_back(*loop);
+                }
 
                 loop++;
             }
+            _channelProxyMap.erase(index);
         }
 
         _adminLock.Unlock();

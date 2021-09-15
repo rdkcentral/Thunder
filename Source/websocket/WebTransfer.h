@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -244,10 +244,10 @@ namespace Web {
                         _request.Verb = Web::Request::HTTP_PUT;
                         _request.Path = '/' + destination.Path().Value();
                         _request.Host = destination.Host().Value();
-                        _request.Body(_fileBody);
+                        _request.Body(Core::ProxyType<FILEBODY>(_fileBody));
 
                         // Maybe we need to add a hash value...
-                        _CalculateHash<LINK, FILEBODY>(_request);
+                        _CalculateHash(_request);
 
                         // Prepare the request for processing
                         result = _channel.StartTransfer(Core::ProxyType<Web::Request>(_request));
@@ -326,9 +326,7 @@ namespace Web {
         }
  
     private:
-        HAS_MEMBER(Hash, hasHash);
-
-        typedef hasHash<FILEBODY, typename FILEBODY::HashType& (FILEBODY::*)() const> TraitHasHash;
+    
 
         inline void EndTransfer(const Core::ProxyType<Web::Response>& response)
         {
@@ -347,7 +345,7 @@ namespace Web {
                            (((Transferred() == 0) && (FileSize() == 0)) || (FileSize() < Transferred()))) {
                     errorCode = Core::ERROR_WRITE_ERROR;
                 } else if ((response->ErrorCode == Web::STATUS_UNAUTHORIZED) || 
-                          ((_state == TRANSFER_DOWNLOAD) && (_ValidateHash<LINK, FILEBODY>(response->ContentSignature) == false))) {
+                          ((_state == TRANSFER_DOWNLOAD) && (_ValidateHash(response->ContentSignature) == false))) {
                     errorCode = Core::ERROR_INCORRECT_HASH;
                 } else if (response->ErrorCode == Web::STATUS_REQUEST_RANGE_NOT_SATISFIABLE) {
                     errorCode = Core::ERROR_INVALID_RANGE;
@@ -378,8 +376,11 @@ namespace Web {
                 _fileBody.Release();
             }
         }
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type
+
+        HAS_MEMBER(Hash, hasHash);
+
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _CalculateHash(Web::Request& request)
         {
             uint8_t   buffer[64];
@@ -397,27 +398,30 @@ namespace Web {
                 size -= chunk;
             }
 
-            _fileBody.Position(pos);
+            _fileBody.Position(false, pos);
 
-            request.ContentSignature = Signature(hash.HashType(), hash.Result());
+            const Crypto::EnumHashType type = ACTUALFILEBODY::HashType::Type;
+            request.ContentSignature = Signature(type, hash.Result());
         }
 
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<!ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _CalculateHash()
         {
         }
 
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, bool>::type
+        template <typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, bool>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             // See if this is a valid. frame
-            return ((signature.IsSet() == false) || (signature.Value().Equal(_fileBody.HashType(), _fileBody.Hash().Result()) == true));
+            typename ACTUALFILEBODY::HashType& hash = const_cast<typename ACTUALFILEBODY::HashType&>(_fileBody.Hash());
+            const Crypto::EnumHashType type = ACTUALFILEBODY::HashType::Type;
+            return ((signature.IsSet() == false) || (signature.Value().Equal(type, hash.Result()) == true));
         }
 
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<!ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, bool>::type
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, bool>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             return (true);
@@ -483,7 +487,7 @@ namespace Web {
                     _response->Message = _T("File: ") + element->Path + _T(" could not be stored server side.");
                 } else {
                     // See if the keys we received correspond.
-                    if (_ValidateHash<LINK, FILEBODY>(element->ContentSignature) == true) {
+                    if (_ValidateHash<FILEBODY>(element->ContentSignature) == true) {
                         string message = Authorize(*element);
 
                         if (message.empty() == true) {
@@ -513,7 +517,7 @@ namespace Web {
                     string message = Authorize(*element);
 
                     if (message.empty() == true) {
-                        _CalculateHash<LINK, FILEBODY>(*_response);
+                        _CalculateHash(*_response);
                         _response->Body(_fileBody);
                     } else {
                         // Somehow we are not Authorzed. Kill it....
@@ -548,48 +552,48 @@ namespace Web {
     private:
         HAS_MEMBER(Hash, hasHash);
 
-        typedef hasHash<FILEBODY, typename FILEBODY::HashType& (FILEBODY::*)() const> TraitHasHash;
-
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
         _CalculateHash(Web::Response& request)
         {
             uint8_t   buffer[64];
-            typename ACTUALFILEBODY::HashType& hash = _fileBody.Hash();
-            uint32_t  pos  = _fileBody.Position();
-            std::size_t  size = _fileBody.Size() - pos;
+            typename ACTUALFILEBODY::HashType& hash = _fileBody->Hash();
+            uint32_t  pos  = _fileBody->Position();
+            std::size_t  size = _fileBody->Size() - pos;
 
             hash.Reset();
 
             // Read all Data to calculate the HASH/HMAC
             while (size > 0) {
                 uint16_t chunk = std::min(static_cast<uint16_t>(sizeof(buffer)), static_cast<uint16_t>(size));
-                _fileBody.Serialize(buffer, chunk);
+                _fileBody->Serialize(buffer, chunk);
                 hash.Input(buffer, chunk);
                 size -= chunk;
             }
 
-            _fileBody.Position(pos);
-
-            request.ContentSignature = Signature(hash.HashType(), hash.Result());
+            _fileBody->Position(false,pos);
+            const Crypto::EnumHashType type = ACTUALFILEBODY::HashType::Type;
+            request.ContentSignature = Signature(type, hash.Result());
         }
 
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<!ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type
-        _CalculateHash()
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
+        _CalculateHash(Web::Response& request)
         {
         }
 
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, bool>::type
+        template <typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, bool>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             // See if this is a valid. frame
-            return ((signature.IsSet() == false) || (signature.Value().Equal(_fileBody.HashType(), _fileBody.Hash().Result()) == true));
+            typename ACTUALFILEBODY::HashType& hash = _fileBody->Hash();
+            const Crypto::EnumHashType type = ACTUALFILEBODY::HashType::Type;
+            return ((signature.IsSet() == false) || (signature.Value().Equal(type, hash.Result()) == true));
         }
 
-        template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<!ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, bool>::type
+        template <typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, bool>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             return (true);

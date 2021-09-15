@@ -1,7 +1,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,7 +37,8 @@ set(PUBLIC_HEADERS
         Communicator.h
         ConnectorType.h
         Ids.h
-        IRPCIterator.h
+        IteratorType.h
+        IIteratorType.h
         IStringIterator.h
         IValueIterator.h
         ICOM.h
@@ -56,7 +57,19 @@ target_link_libraries(${TARGET}
           CompileSettingsDebug::CompileSettingsDebug
         )
 
-target_include_directories(${TARGET} 
+if (WARNING_REPORTING)
+target_compile_definitions(${TARGET}
+PUBLIC
+        WARNING_REPORTING_ENABLED
+)
+
+target_link_libraries(${TARGET}
+PUBLIC
+        ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting
+)
+endif()
+
+target_include_directories(${TARGET}
         PRIVATE
           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,15 +165,15 @@ namespace ProcessContainers {
                                                                     windowParams, run_id);
             TRACE_L1("%s starting result result=%d run_id=%d", _TRACE_FUNCTION_, awc_result, run_id);
             result = (awc_result == awc::AWCClient::AWC_STATUS_OK);
-            if (result)
+            while (result && _pid == 0 && _appState != awc::AWC_STATE_STARTED)
             {
                 _runId = run_id; _waitForResponse = true;
                 TRACE_L1("%s waiting for start _name=%s", _TRACE_FUNCTION_, _name.c_str());
                 _cv.wait_for(lock, std::chrono::seconds(30), [this] { return !_waitForResponse; });
                 _waitForResponse = false;
-                if (_pid == 0 || _appState != awc::AWC_STATE_STARTED)
+                if (_appState != awc::AWC_STATE_STARTED && _appState != awc::AWC_STATE_STARTING)
                 {
-                    TRACE_L1("%s startup notification not arrived _pid=%d _appState=%d", _TRACE_FUNCTION_, _pid, _appState);
+                    TRACE_L1("%s unexpected notification arrived _pid=%d _appState=%d", _TRACE_FUNCTION_, _pid, _appState);
                     result = false;
                 }
             }
@@ -224,7 +224,7 @@ namespace ProcessContainers {
 
     void AWCContainer::notifyStateChange(int req_id, awc::awc_app_state_t app_state, int status, unsigned int pid)
     {
-        std::lock_guard<std::mutex> lock(_mutex); 
+        std::lock_guard<std::mutex> lock(_mutex);
         if (_runId >= 0 && req_id == _runId)
         {
             TRACE_L1("%s _name=%s _runId=%d req_id=%d app_state=%d status=%d pid=%d", _TRACE_FUNCTION_, _name.c_str(), _runId, req_id, app_state, status, pid);

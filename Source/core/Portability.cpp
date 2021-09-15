@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,6 +95,9 @@ static void* GetPCFromUContext(void* secret)
 #if defined(__arm__)
     ucontext_t* ucp = reinterpret_cast<ucontext_t*>(secret);
     pnt = reinterpret_cast<void*>(ucp->uc_mcontext.arm_pc);
+#elif defined(__aarch64__)
+    ucontext_t* ucp = reinterpret_cast<ucontext_t*>(secret);
+    pnt = reinterpret_cast<void*>(ucp->uc_mcontext.pc);
 #elif defined(__APPLE__)
     ucontext_t* uc = (ucontext_t*)secret;
     pnt = reinterpret_cast<void*>(uc->uc_mcontext->__ss.__rip);
@@ -260,7 +263,7 @@ void SleepMs(const unsigned int time) {
         elapse.tv_sec = time / 1000;
         elapse.tv_nsec = (time % 1000) * 1000000;
     }
- 
+
     while ( ((result = ::nanosleep(&elapse, &elapse)) != 0) && (errno == EINTR) ) /* Intentionally left empty */;
 }
 
