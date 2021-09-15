@@ -20,23 +20,13 @@
 #include "Module.h"
 #include "SDPSocket.h"
 
-
 namespace WPEFramework {
 
 namespace Bluetooth {
 
-    enum sizetype {
-        SIZE_8 = 0,
-        SIZE_16 = 1,
-        SIZE_32 = 2,
-        SIZE_64 = 3,
-        SIZE_128 = 4,
-        SIZE_U8_FOLLOWS = 5,
-        SIZE_U16_FOLLOWS = 6,
-        SIZE_U32_FOLLOWS = 7
-    };
+namespace SDP {
 
-    void SDPSocket::Payload::PushDescriptor(const elementtype type, const uint32_t size)
+    void Payload::PushDescriptor(const elementtype type, const uint32_t size)
     {
         ASSERT(Free() >= 1);
 
@@ -48,8 +38,7 @@ namespace Bluetooth {
         switch (type) {
             case NIL:
                 ASSERT(size == 0);
-                // Exception: even if size descriptor says BYTE for NIL type,
-                // actually there's no data following.
+                // Exception: even if size descriptor says BYTE, for NIL type there's no data following.
                 break;
             case BOOL:
                 ASSERT(size == 1);
@@ -104,7 +93,7 @@ namespace Bluetooth {
         _writerOffset += offset;
     }
 
-    uint8_t SDPSocket::Payload::PopDescriptor(elementtype& type, uint32_t& size) const
+    uint8_t Payload::ReadDescriptor(elementtype& type, uint32_t& size) const
     {
         uint8_t offset = 0;
         uint8_t t = _buffer[_readerOffset + offset++];
@@ -152,17 +141,16 @@ namespace Bluetooth {
         return (offset);
     }
 
-    uint16_t SDPSocket::Command::Response::Deserialize(const uint16_t reqTransactionId, const uint8_t stream[], const uint16_t length)
+    uint16_t ClientSocket::Command::Response::Deserialize(const uint16_t reqTransactionId, const uint8_t stream[], const uint16_t length)
     {
         uint16_t result = 0;
 
-        printf("SDP received [%d]: ", length);
-        for (uint8_t index = 0; index < (length - 1); index++) { printf("%02X:", stream[index]); } printf("%02X\n", stream[length - 1]);
+        CMD_DUMP("SDP client received", stream, length);
 
         if (length >= PDU::HEADER_SIZE) {
-            Payload header(stream, PDU::HEADER_SIZE);
-            uint16_t transactionId;
-            uint16_t payloadLength;
+            const Payload header(stream, PDU::HEADER_SIZE);
+            uint16_t transactionId{};
+            uint16_t payloadLength{};
 
             // Pick up the response header
             header.Pop(_type);
@@ -171,7 +159,7 @@ namespace Bluetooth {
 
             if (reqTransactionId == transactionId) {
                 if (length >= (header.Length() + payloadLength)) {
-                    Payload parameters((stream + header.Length()), payloadLength);
+                    const Payload parameters((stream + header.Length()), payloadLength);
 
                     switch(_type) {
                     case PDU::ErrorResponse:
@@ -203,7 +191,7 @@ namespace Bluetooth {
         return (result);
     }
 
-    SDPSocket::Command::PDU::errorid SDPSocket::Command::Response::DeserializeServiceSearchResponse(const SDPSocket::Payload& params)
+    ClientSocket::PDU::errorid ClientSocket::Command::Response::DeserializeServiceSearchResponse(const Payload& params)
     {
         PDU::errorid result = PDU::DeserializationFailed;
 
@@ -240,7 +228,7 @@ namespace Bluetooth {
         return (result);
     }
 
-    SDPSocket::Command::PDU::errorid SDPSocket::Command::Response::DeserializeServiceAttributeResponse(const SDPSocket::Payload& params)
+    ClientSocket::PDU::errorid ClientSocket::Command::Response::DeserializeServiceAttributeResponse(const Payload& params)
     {
         PDU::errorid result = PDU::DeserializationFailed;
 
@@ -271,9 +259,7 @@ namespace Bluetooth {
                         // Pick up the pair and store it.
                         sequence.Pop(use_descriptor, attribute);
                         sequence.Pop(use_descriptor, value);
-                        _attributes.emplace(std::piecewise_construct,
-                                            std::forward_as_tuple(attribute),
-                                            std::forward_as_tuple(value));
+                        _attributes.emplace(attribute, value);
                     }
 
                     if (sequence.Available() == 0) {
@@ -289,6 +275,173 @@ namespace Bluetooth {
 
         return (result);
     }
+
+    uint16_t ServerSocket::Request::Deserialize(const uint8_t stream[], const uint16_t length)
+    {
+        uint16_t result = 0;
+
+        if (length >= PDU::HEADER_SIZE) {
+            const Payload header(stream, PDU::HEADER_SIZE);
+            uint16_t payloadLength{};
+
+            // Pick up the response header
+            header.Pop(_type);
+            header.Pop(_transactionId);
+            header.Pop(payloadLength);
+
+            if (length >= (header.Length() + payloadLength)) {
+                const Payload parameters((stream + header.Length()), payloadLength);
+
+                switch(_type) {
+                case PDU::ServiceSearchAttributeRequest:
+                    _status = DeserializeServiceSearchAttributeRequest(parameters);
+                    break;
+                default:
+                    TRACE_L1("Unknown SDP request [%d]", _type);
+                    _status = PDU::DeserializationFailed;
+                    break;
+                }
+
+                result = length;
+            } else {
+                TRACE_L1("SDP request too short [%d]", length);
+            }
+        }
+
+        return (result);
+    }
+
+    ServerSocket::PDU::errorid SDP::ServerSocket::Request::DeserializeServiceSearchAttributeRequest(const Payload& params)
+    {
+        // ServiceSearchAttributeRequest frame format:
+        // - ServiceSearchPattern (sequence of UUIDs)
+        // - MaximumAttributeByteCount (word)
+        // - AttributeIDList (sequence of UUID ranges or UUIDs)
+
+        PDU::errorid result = PDU::InvalidRequestSyntax;
+
+        if (params.Length() >= 2) {
+            std::list<UUID> services;
+            std::list<uint32_t> attributeRanges;
+            uint16_t maxByteCount;
+
+            params.Pop(use_descriptor, [&](const Payload& sequence) {
+                while (sequence.Available() > 0) {
+                    UUID uuid;
+                    sequence.Pop(use_descriptor, uuid);
+                    services.push_back(uuid);
+                }
+            });
+
+            params.Pop(maxByteCount); // no descriptor!
+
+            params.Pop(use_descriptor, [&](const Payload& sequence) {
+                while (sequence.Available() > 0) {
+                    uint32_t range{};
+                    uint32_t size{};
+                    sequence.Pop(use_descriptor, range, &size);
+                    if (size == 4) {
+                        attributeRanges.push_back(range);
+                    } else {
+                        // Not a range, but single 16-bit UUID
+                        attributeRanges.push_back((static_cast<uint16_t>(range) << 16) | static_cast<uint16_t>(range));
+                    }
+                }
+            });
+
+            Payload::Continuation cont;
+            params.Pop(cont, _continuationData);
+            if (cont != Payload::Continuation::ABSENT) {
+                // TODO: Add continuation support to the server.
+                ASSERT(false && "Unexpected Continuation data as not supported in SDP server");
+                result = PDU::InvalidContinuationState;
+            } else {
+                result = PDU::Success;
+            }
+
+            _server.OnServiceSearchAttribute(_transactionId, services, maxByteCount, attributeRanges);
+        } else {
+            TRACE_L1("Truncated payload in ServiceAttributeResponse [%d]", params.Length());
+        }
+
+        if (result != PDU::Success) {
+            _server.OnError(_transactionId, result);
+        }
+
+        return (result);
+    }
+
+    void ServerSocket::Response::SerializeErrorResponse(PDU::errorid error)
+    {
+        // Error Response frame format
+        // - ErrorCode
+
+        const uint16_t errorCode = error;
+        uint8_t scratchPad[8];
+
+        Payload payload(scratchPad, sizeof(scratchPad), 0);
+        payload.Push(errorCode);
+
+        _pdu.Construct(PDU::ErrorResponse, payload);
+    }
+
+    void ServerSocket::Response::SerializeServiceSearchResponse(const std::list<UUID>& /* serviceUuids */, const uint16_t /* maxResults */ )
+    {
+        // TODO?
+        TRACE_L1("SDP ServiceSearechResponse not supported");
+        SerializeErrorResponse(PDU::UnsupportedSdpVersion);
+    }
+
+    void ServerSocket::Response::SerializeServiceAttributeResponse(const uint32_t /* serviceHandle */ , const uint16_t /* maxBytes */,  const std::list<uint32_t>& /* attributeRanges */)
+    {
+        // TODO?
+        TRACE_L1("SDP ServiceAttributeResponse not supported");
+
+    }
+
+    void ServerSocket::Response::SerializeServiceSearchAttributeResponse(const std::list<UUID>& uuids, uint16_t maxBytes, const std::list<uint32_t>& attributeRanges)
+    {
+        // ServiceSearchAttribute frame format:
+        // - AttributeListsByteCount (word)
+        // - AttributeLists (sequences of sequences of sequences of attribute id and attribute data)
+        // - ContinuationState
+
+        uint8_t scratchPad[1024];
+        Payload payload(scratchPad, sizeof(scratchPad), 0);
+
+        payload.Push(use_length /* no descriptor! */, [&](Payload& payload) {
+            payload.Push(use_descriptor, [&](Payload& payload) {
+                for (const UUID& uuid : uuids) {
+                    payload.Push(use_descriptor, [&](Payload& sequence) {
+                        std::list<uint32_t> handles;
+                        _server.Services(uuid, handles);
+                        for (const uint32_t handle : handles) {
+                            for (const uint32_t range : attributeRanges) {
+                                _server.Serialize(handle, std::pair<uint16_t, uint16_t>(range >> 16, range), [&](const uint16_t id, const Buffer& buffer) {
+                                    if (buffer.size() != 0) {
+                                        sequence.Push([&](Payload& record) {
+                                            record.Push(use_descriptor, id);
+                                            record.Push(buffer); // no descriptor here!
+                                        });
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+        });
+
+        if (payload.Length() > maxBytes) {
+            ASSERT(false && "ServiceSearchAttribute response exceeded maxBytes");
+            // TODO: Add continuation support to the server.
+            SerializeErrorResponse(PDU::InsufficientResources); // for the lack of a better error code...
+        } else {
+            _pdu.Construct(PDU::ServiceSearchAttributeResponse, payload);
+        }
+    }
+
+} // namespace SDP
 
 } // namespace Bluetooth
 

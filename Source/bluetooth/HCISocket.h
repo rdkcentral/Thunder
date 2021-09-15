@@ -23,13 +23,6 @@
 #include "UUID.h"
 #include "BluetoothUtils.h"
 
-#if defined(BLUETOOTH_CMD_DUMP)
-#define CMD_DUMP(descr, buffer, length) \
-    do { fprintf(stderr,"%s [%i]: ", descr, length); for (int i = 0; i < length; i++) { printf("%02x:", buffer[i]); } printf("\n"); } while(0)
-#else
-#define CMD_DUMP(descr, buffer, length)
-#endif
-
 namespace WPEFramework {
 
 namespace Bluetooth {

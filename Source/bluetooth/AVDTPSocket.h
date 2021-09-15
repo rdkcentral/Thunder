@@ -196,7 +196,7 @@ namespace Bluetooth {
                     : _offset(0)
                     , _signalScratchPad(static_cast<uint8_t*>(::malloc(bufferSize)))
                     , _signal(_signalScratchPad, bufferSize, 0)
-                    , _label(0)
+                    , _label(0xF)
                 {
                     ASSERT(bufferSize != 0);
                     ASSERT(_signalScratchPad != nullptr);
@@ -311,9 +311,6 @@ namespace Bluetooth {
                 uint8_t NewLabel()
                 {
                     _label = ((_label + 1) & 0xF);
-                    if (_label == 0) {
-                        _label = 1;
-                    }
                     return (_label);
                 }
 
@@ -506,7 +503,7 @@ namespace Bluetooth {
         public:
             Entry() = delete;
             Entry(const Entry&) = delete;
-            Entry& operator= (const Entry&) = delete;
+            Entry& operator=(const Entry&) = delete;
             Entry(const uint32_t waitTime, Command& cmd, const Handler& handler)
                 : _waitTime(waitTime)
                 , _cmd(cmd)
@@ -595,7 +592,7 @@ namespace Bluetooth {
         {
             uint32_t result = 0;
 
-            if (availableData == 0) {
+            if (availableData != 0) {
                 TRACE_L1("Unexpected data for deserialization [%d]", availableData);
             }
 

@@ -31,6 +31,15 @@
 #include <../include/bluetooth/mgmt.h>
 #include <../include/bluetooth/l2cap.h>
 
+#define BLUETOOTH_CMD_DUMP
+
+#if defined(BLUETOOTH_CMD_DUMP)
+#define CMD_DUMP(descr, buffer, length) \
+    do { fprintf(stderr, "%s [%i]: ", descr, length); for (int i = 0; i < length; i++) { printf("%02x:", buffer[i]); } printf("\n"); } while(0)
+#else
+#define CMD_DUMP(descr, buffer, length)
+#endif
+
 #if defined(__WINDOWS__) && defined(BLUETOOTH_EXPORTS)
 #undef EXTERNAL
 #define EXTERNAL EXTERNAL_EXPORT

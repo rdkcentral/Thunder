@@ -44,7 +44,7 @@ namespace Bluetooth {
             , _writerOffset(0)
         {
         }
-        explicit DataRecord(const Buffer& buffer)
+        DataRecord(const Buffer& buffer)
             // It is ensured that the buffer will never be written.
             : _buffer(const_cast<uint8_t*>(buffer.data()))
             , _bufferSize(buffer.size())
@@ -102,6 +102,10 @@ namespace Bluetooth {
         {
             return (_writerOffset > _readerOffset? (_writerOffset - _readerOffset) : 0);
         }
+        uint16_t Position() const
+        {
+            return (_readerOffset);
+        }
         const uint8_t* Data() const
         {
             return (_buffer);
@@ -137,20 +141,27 @@ namespace Bluetooth {
         {
             output.assign(Data(), Length());
         }
+        operator Buffer() const
+        {
+            return (Buffer(Data(), Length()));
+        }
 
     public:
         void Push(const bool value)
         {
+            ASSERT(Free() > sizeof(uint8_t));
             Push(static_cast<uint8_t>(value));
         }
         void Push(const string& value)
         {
             ASSERT(value.size() < 0x10000);
+            ASSERT(Free() >= value.size());
             Push(reinterpret_cast<const uint8_t*>(value.data()), static_cast<uint16_t>(value.length()));
         }
         void Push(const Buffer& value)
         {
             ASSERT(value.size() < 0x10000);
+            ASSERT(Free() >= value.size());
             Push(value.data(), static_cast<uint16_t>(value.length()));
         }
         void Push(const uint8_t value[], const uint16_t size)
@@ -200,10 +211,10 @@ namespace Bluetooth {
             }
         }
         template<typename TYPE, /* if enum */ typename std::enable_if<std::is_enum<TYPE>::value, int>::type = 0>
-        void Pop(TYPE& value)
+        void Pop(TYPE& value) const
         {
             ASSERT(sizeof(TYPE) <= 4);
-            typename std::underlying_type<TYPE>::type temp;
+            typename std::underlying_type<TYPE>::type temp{};
             Pop(temp);
             value = static_cast<TYPE>(temp);
         }
@@ -253,23 +264,33 @@ namespace Bluetooth {
         }
         void PopIntegerValue(uint8_t& value) const
         {
-            value = _buffer[_readerOffset++];
+            if (Available() >= 1) {
+                value = _buffer[_readerOffset++];
+            } else {
+                TRACE_L1("DataRecord: Truncated payload");
+            }
         }
         virtual void PushIntegerValue(const uint16_t value)
         {
-            ASSERT(false && "Push uint16_t");
+            ASSERT(false && "Push uint16_t not supported on no-endian DataRecord");
+            _writerOffset += 2;
         }
         virtual void PushIntegerValue(const uint32_t value)
         {
-            ASSERT(false && "Push uint32_t");
+            ASSERT(false && "Push uint32_t not supported on no-endian DataRecord");
+            _writerOffset += 4;
         }
         virtual void PopIntegerValue(uint16_t& value) const
         {
-            ASSERT(false && "Pop uint16_t");
+            ASSERT(false && "Pop uint16_t not supported on no-endian DataRecord");
+            value = 0xBAAD;
+            _readerOffset += 2;
         }
         virtual void PopIntegerValue(uint32_t& value) const
         {
-            ASSERT(false && "Pop uint32_t");
+            ASSERT(false && "Pop uint32_t not supported on no-endian DataRecord");
+            value = 0xBAAAAAAD;
+            _readerOffset += 4;
         }
 
     protected:
@@ -303,14 +324,24 @@ namespace Bluetooth {
         }
         void PopIntegerValue(uint16_t& value) const override
         {
-            value = ((_buffer[_readerOffset] << 8) | _buffer[_readerOffset + 1]);
-            _readerOffset += 2;
+            if (Available() >= 2) {
+                value = ((_buffer[_readerOffset] << 8) | _buffer[_readerOffset + 1]);
+                _readerOffset += 2;
+            } else {
+                TRACE_L1("DataRecord: Truncated payload");
+                _readerOffset = _writerOffset;
+            }
         }
         void PopIntegerValue(uint32_t& value) const override
         {
-            value = ((_buffer[_readerOffset] << 24) | (_buffer[_readerOffset + 1] << 16)
-                        | (_buffer[_readerOffset + 2] << 8) | _buffer[_readerOffset + 3]);
-            _readerOffset += 4;
+            if (Available() >= 4) {
+                value = ((_buffer[_readerOffset] << 24) | (_buffer[_readerOffset + 1] << 16)
+                            | (_buffer[_readerOffset + 2] << 8) | _buffer[_readerOffset + 3]);
+                _readerOffset += 4;
+            } else {
+                TRACE_L1("DataRecord: Truncated payload");
+                _readerOffset = _writerOffset;
+            }
         }
     }; // class DataRecordLE
 
@@ -337,13 +368,21 @@ namespace Bluetooth {
         }
         void PopIntegerValue(uint16_t& value) const override
         {
-            value = ((_buffer[_readerOffset + 1] << 8) | _buffer[_readerOffset]);
+            if (Available() >= sizeof(uint16_t)) {
+                value = ((_buffer[_readerOffset + 1] << 8) | _buffer[_readerOffset]);
+            } else {
+                TRACE_L1("DataRecord: Truncated payload");
+            }
             _readerOffset += 2;
         }
         void PopIntegerValue(uint32_t& value) const override
         {
-            value = ((_buffer[_readerOffset + 3] << 24) | (_buffer[_readerOffset + 2] << 16)
-                        | (_buffer[_readerOffset + 1] << 8) | _buffer[_readerOffset]);
+            if (Available() >= sizeof(uint32_t)) {
+                value = ((_buffer[_readerOffset + 3] << 24) | (_buffer[_readerOffset + 2] << 16)
+                            | (_buffer[_readerOffset + 1] << 8) | _buffer[_readerOffset]);
+            } else {
+                TRACE_L1("DataRecord: Truncated payload");
+            }
             _readerOffset += 4;
         }
     }; // class DataRecordLE
