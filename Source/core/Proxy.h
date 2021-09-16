@@ -1310,11 +1310,13 @@ namespace Core {
         inline typename Core::TypeTraits::enable_if<hasAcquire<TYPE, void (TYPE::*)(Core::ProxyType<STORED>& source)>::value, void>::type
             __Acquire(Core::ProxyType<ThisClass>& source)
         {
-            Core::ProxyType<STORED> base(std::move(source));
+            Core::ProxyType<STORED> base;
+            
+            base.Load(source._refCount, source._realObject);
 
             TYPE::Acquire(base);
 
-            source = std::move(base);
+            base.Reset();
         }
         template <typename TYPE = CONTEXT>
         inline typename Core::TypeTraits::enable_if<!hasAcquire<TYPE, void (TYPE::*)(Core::ProxyType<STORED>& source)>::value, void>::type
@@ -1331,11 +1333,13 @@ namespace Core {
         inline typename Core::TypeTraits::enable_if<hasRelinquish<TYPE, void (TYPE::*)(Core::ProxyType<STORED>&)>::value, void>::type
             __Relinquish(Core::ProxyType<ThisClass>& source)
         {
-            Core::ProxyType<STORED> base(std::move(source));
+            Core::ProxyType<STORED> base;
+
+            base.Load(source._refCount, source._realObject);
 
             TYPE::Relinquish(base);
 
-            source = std::move(base);
+            base.Reset();
         }
         template < typename TYPE = CONTEXT>
         inline typename Core::TypeTraits::enable_if<!hasRelinquish<TYPE, void (TYPE::*)(Core::ProxyType<STORED>&)>::value, void>::type
