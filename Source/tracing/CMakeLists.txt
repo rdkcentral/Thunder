@@ -33,6 +33,7 @@ set(PUBLIC_HEADERS
         TraceMedia.h
         TraceUnit.h
         Logging.h
+        SyslogMonitor.h
         tracing.h
         Module.h
         )

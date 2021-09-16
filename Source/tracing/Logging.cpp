@@ -18,12 +18,14 @@
  */
 
 #include "Logging.h"
+#include "SyslogMonitor.h"
 
 #ifndef __WINDOWS__
 #include <syslog.h>
 #endif
 
 #include <fstream>
+#include <sstream>
 
 namespace WPEFramework {
 namespace Logging {
@@ -57,6 +59,27 @@ namespace Logging {
         Core::SystemInfo::SetEnvironment(LoggingToConsole, (toConsole ? _T("1") : nullptr));
     }
 
+    string ToLogMessage(const char fileName[], const uint32_t lineNumber, const Trace::ITrace* information)
+    {
+        std::stringstream logMessage;
+        Core::Time now(Core::Time::Now());
+        string time(now.ToRFC1123(true));
+        logMessage<<"[";
+        logMessage<<time;
+        logMessage<<"]:[";
+        logMessage<<Core::FileNameOnly(fileName);
+        logMessage<<":";
+        logMessage<<lineNumber;
+        logMessage<<"]: ";
+        logMessage<<information->Category() ;
+        logMessage<<": ";
+        logMessage<<information->Data();
+        logMessage<< "\n";
+        return logMessage.str();
+
+
+    }
+
     void SysLog(const char fileName[], const uint32_t lineNumber, const Trace::ITrace* information)
     {
         // Time to printf...
@@ -64,8 +87,9 @@ namespace Logging {
 
 #ifndef __WINDOWS__
         if (_syslogging == true) {
-            string time(now.ToRFC1123(true));
-            syslog(LOG_NOTICE, "[%s]:[%s:%d]: %s: %s\n", time.c_str(), Core::FileNameOnly(fileName), lineNumber, information->Category(), information->Data());
+            string logMsg (ToLogMessage(fileName, lineNumber, information));
+            syslog(LOG_NOTICE, "%s", logMsg.c_str());
+            Logging::SyslogMonitor::Instance().SendLogMessage(logMsg);
         } else
 #endif
         {
