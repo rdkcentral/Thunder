@@ -615,13 +615,11 @@ namespace Core {
     public:
         template <typename... Args>
         inline Void(Args&&...) {}
-        inline Void(const Void&) {}
-        inline ~Void() {}
+        inline Void(const Void&) = default;
+        inline Void(Void&&) = default;
+        inline ~Void() = default;
 
-        inline Void& operator=(const Void&)
-        {
-            return (*this);
-        }
+        inline Void& operator=(const Void&) = default;
     };
 
     struct EXTERNAL IReferenceCounted {
@@ -630,7 +628,7 @@ namespace Core {
         virtual uint32_t Release() const = 0;
     };
 
-    struct EXTERNAL IUnknown : virtual public IReferenceCounted  {
+    struct EXTERNAL IUnknown : public IReferenceCounted  {
         enum { ID = 0x00000000 };
 
         ~IUnknown() override = default;
