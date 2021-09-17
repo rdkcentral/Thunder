@@ -126,7 +126,7 @@ namespace Core {
         {
             uint32_t result = Core::ERROR_NONE;
 
-            if ((_refCount--) == 0) {
+            if (--_refCount == 0) {
                 delete this;
                 result = Core::ERROR_DESTRUCTION_SUCCEEDED;
             }
@@ -467,9 +467,10 @@ namespace Core {
             // Only allowed on valid objects.
             ASSERT(_refCount != nullptr);
 
-            uint32_t result = _refCount->Release();
-
+            IReferenceCounted* resource = _refCount;
             _refCount = nullptr;
+
+            uint32_t result = resource->Release();
 
             return (result);
         }
@@ -516,12 +517,6 @@ namespace Core {
         inline operator IReferenceCounted* () const
         {
             return (_refCount);
-        }
-
-        void Destroy()
-        {
-            delete _refCount;
-            _refCount = nullptr;
         }
 
     private:
