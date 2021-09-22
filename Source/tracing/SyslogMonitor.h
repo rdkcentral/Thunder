@@ -18,24 +18,20 @@
  */
 
 #include "Module.h"
+#include "ISyslogMonitorClient.h"
 namespace WPEFramework {
 namespace Logging {
-    class EXTERNAL SyslogMonitorClient
-    {
-        public:
-            virtual void NotifyLog(const std::string& logmessage) = 0;
-    };
     class EXTERNAL SyslogMonitor
     {
         public:
             SyslogMonitor(const SyslogMonitor& ) = delete;
             SyslogMonitor& operator= (const SyslogMonitor& ) = delete;
-            void RegisterClient(SyslogMonitorClient* client)
+            void RegisterClient(ISyslogMonitorClient* client)
             {
                 _monitorClients.push_back(client);
                 return;
             }
-            void UnregisterClient(SyslogMonitorClient* client)
+            void UnregisterClient(ISyslogMonitorClient* client)
             {
                 auto iter = std::find(begin(_monitorClients), end(_monitorClients), client);
                 if( iter != _monitorClients.end())
@@ -46,8 +42,8 @@ namespace Logging {
             }
             static SyslogMonitor& Instance()
             {
-                static SyslogMonitor syslogMonitor;
-                return syslogMonitor;
+                static SyslogMonitor& _syslogMonitor = Core::SingletonType<SyslogMonitor>::Instance();
+                return _syslogMonitor;
             }
             void SendLogMessage(const std::string& logMessage)
             {
@@ -58,11 +54,11 @@ namespace Logging {
                 return;
             }
             ~SyslogMonitor() = default;
-        private:
+        protected:
             SyslogMonitor():_monitorClients(){}
 
         private:
-            std::vector<SyslogMonitorClient*> _monitorClients;
+            std::vector<ISyslogMonitorClient*> _monitorClients;
     };
 }
 }
