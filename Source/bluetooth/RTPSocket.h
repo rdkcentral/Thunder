@@ -31,11 +31,10 @@ namespace Bluetooth {
         static constexpr uint32_t MinMTU = 48;
 
     public:
-        class MediaPacket : public Core::IOutbound {
+        template<uint16_t SIZE, uint8_t TYPE, typename ENCODER, uint8_t VERSION = 2>
+        class MediaPacketType : public Core::IOutbound {
         private:
             struct RTPHeader {
-                static constexpr uint8_t VERSION = 2;
-
                 uint8_t octet0;
                 uint8_t octet1;
                 uint16_t sequence;
@@ -44,36 +43,45 @@ namespace Bluetooth {
                 uint32_t csrc[0];
             } __attribute__((packed));
 
-        public:
-            using Encoder = std::function<uint32_t(uint8_t buffer[], const uint32_t max, uint32_t& consumed)>;
+            static_assert(SIZE >= MinMTU, "Too small packet buffer");
 
         public:
-            MediaPacket(const MediaPacket&) = delete;
-            MediaPacket& operator=(const MediaPacket&) = delete;
-            MediaPacket(const uint32_t synchronisationSource, const uint8_t packetType, uint16_t sequence, const uint32_t timestamp, const uint16_t scratchPadSize, uint8_t scratchPad[])
-                : _bufferSize(scratchPadSize)
-                , _buffer(scratchPad)
-                , _dataSize(sizeof(RTPHeader))
+            MediaPacketType(const MediaPacketType&) = delete;
+            MediaPacketType& operator=(const MediaPacketType&) = delete;
+            MediaPacketType(const ENCODER& encoder, const uint32_t synchronisationSource, uint16_t sequence, const uint32_t timestamp)
+                : _dataSize(sizeof(RTPHeader))
                 , _offset(0)
+                , _encoder(encoder)
             {
-                ASSERT(_buffer != nullptr);
-                ASSERT(_bufferSize >= MinMTU);
-
                 RTPHeader* header = reinterpret_cast<RTPHeader*>(_buffer);
-                header->octet0 = (RTPHeader::VERSION << 6);
-                header->octet1 = (packetType & 0x7F);
+                header->octet0 = (VERSION << 6);
+                header->octet1 = (TYPE & 0x7F);
                 header->sequence = htons(sequence);
                 header->timestamp = htonl(timestamp);
                 header->ssrc = htonl(synchronisationSource);
             }
-            ~MediaPacket() = default;
+            ~MediaPacketType() = default;
 
         public:
-            uint32_t Ingest(const Encoder& encode)
+            uint16_t Ingest(const uint16_t length, const uint8_t inputBuffer[])
             {
-                uint32_t consumed = 0;
-                _dataSize += encode((_buffer + _dataSize), (_bufferSize - _dataSize), consumed);
+                ASSERT(inputBuffer != nullptr);
+                uint16_t produced = (SIZE - _dataSize);
+                const uint16_t consumed = _encoder.Encode(length, inputBuffer, produced, (_buffer + _dataSize));
+                _dataSize += produced;
                 return (consumed);
+            }
+            uint16_t Length() const
+            {
+                return (_dataSize);
+            }
+            uint16_t Capacity() const
+            {
+                return (SIZE);
+            }
+            uint8_t Type() const
+            {
+                return (TYPE);
             }
 
         private:
@@ -83,7 +91,9 @@ namespace Bluetooth {
             }
             uint16_t Serialize(uint8_t stream[], const uint16_t length) const override
             {
-                uint16_t result = std::min((_dataSize - _offset), static_cast<uint32_t>(length));
+                ASSERT(stream != nullptr);
+
+                uint16_t result = std::min<uint16_t>((_dataSize - _offset), length);
                 if (result > 0) {
                     ::memcpy(stream, (_buffer + _offset), result);
                     _offset += result;
@@ -95,11 +105,11 @@ namespace Bluetooth {
             }
 
         private:
-            uint32_t _bufferSize;
-            uint8_t* _buffer;
-            uint32_t _dataSize;
-            mutable uint32_t _offset;
-        }; // class MediaPacket
+            uint8_t _buffer[SIZE];
+            uint16_t _dataSize;
+            mutable uint16_t _offset;
+            const ENCODER& _encoder;
+        }; // class MediaPacketType
 
     public:
         RTPSocket(const Core::NodeId& localNode, const Core::NodeId& remoteNode)
@@ -129,7 +139,7 @@ namespace Bluetooth {
         {
             uint32_t result = 0;
 
-            if (availableData == 0) {
+            if (availableData != 0) {
                 TRACE_L1("Unexpected data for deserialization [%d]", availableData);
             }
 
