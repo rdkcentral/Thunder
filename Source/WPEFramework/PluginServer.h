@@ -660,7 +660,7 @@ namespace PluginHost {
                     Unlock();
 
                     result = Core::proxy_cast<Core::JSONRPC::Message>(Factories::Instance().JSONRPC());
-                    result->Error.SetError(Core::ERROR_BAD_REQUEST);
+                    result->Error.SetError(Core::ERROR_UNAVAILABLE);
                     result->Error.Text = _T("Service is not active");
                     result->Id = message.Id;
                 }
@@ -1060,6 +1060,207 @@ namespace PluginHost {
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;
         };
+        class Override : public Core::JSON::Container {
+        private:
+            Override(const Override&) = delete;
+            Override& operator=(const Override&) = delete;
+
+        public:
+            class Plugin : public Core::JSON::Container {
+            private:
+                Plugin& operator=(Plugin const& other) = delete;
+
+            public:
+                Plugin()
+                    : Core::JSON::Container()
+                    , AutoStart()
+                    , Configuration(_T("{}"), false)
+                {
+                    Add(_T("autostart"), &AutoStart);
+                    Add(_T("configuration"), &Configuration);
+                }
+                Plugin(const string& config, const bool autoStart)
+                    : Core::JSON::Container()
+                    , AutoStart(autoStart)
+                    , Configuration(config, false)
+                {
+                    Add(_T("autostart"), &AutoStart);
+                    Add(_T("configuration"), &Configuration);
+                }
+                Plugin(Plugin const& copy)
+                    : Core::JSON::Container()
+                    , AutoStart(copy.AutoStart)
+                    , Configuration(copy.Configuration)
+                {
+                    Add(_T("autostart"), &AutoStart);
+                    Add(_T("configuration"), &Configuration);
+                }
+
+                virtual ~Plugin()
+                {
+                }
+
+            public:
+                Core::JSON::Boolean AutoStart;
+                Core::JSON::String Configuration;
+            };
+
+            typedef std::map<string, Plugin>::iterator Iterator;
+
+        public:
+            Override(PluginHost::Config& serverconfig, ServiceMap& services, const string& persitentFile)
+                : Services()
+                , Version(serverconfig.Version())
+                , Prefix(serverconfig.Prefix())
+                , IdleTime(serverconfig.IdleTime())
+                , Latitude(serverconfig.Latitude())
+                , Longitude(serverconfig.Longitude())
+                , _services(services)
+                , _serverconfig(serverconfig)
+                , _fileName(persitentFile)
+                , _callsigns()
+            {
+                Add(_T("Services"), &Services);
+
+                // Add all service names (callsigns) that are not yet in there...
+                ServiceMap::Iterator service(services.Services());
+
+                while (service.Next() == true) {
+                    const string& name(service->Callsign());
+
+                    // Create an element for this service with its callsign
+                    std::pair<Iterator, bool> index(_callsigns.insert(std::pair<string, Plugin>(name, Plugin(_T("{}"), false))));
+
+                    // Store the override config in the JSON String created in the map
+                    Services.Add(index.first->first.c_str(), &(index.first->second));
+                }
+
+                Add(_T("version"), &Version);
+                Add(_T("prefix"), &Prefix);
+                Add(_T("idletime"), &IdleTime);
+                Add(_T("latitude"), &Latitude);
+                Add(_T("longitude"), &Longitude);
+
+            }
+            ~Override()
+            {
+            }
+
+        public:
+            uint32_t Load()
+            {
+
+                uint32_t result = Core::ERROR_NONE;
+
+                Core::File storage(_fileName);
+
+                if ((storage.Exists() == true) && (storage.Open(true) == true)) {
+
+                    result = true;
+
+                    // Clear all currently set values, they might be from the precious run.
+                    Clear();
+
+                    // Red the file and parse it into this object.
+                    IElement::FromFile(storage);
+
+                    _serverconfig.SetVersion(Version.Value());
+                    _serverconfig.SetPrefix(Prefix.Value());
+                    _serverconfig.SetIdleTime(IdleTime.Value());
+                    _serverconfig.SetLatitude(Latitude.Value());
+                    _serverconfig.SetLongitude(Longitude.Value());
+                    // Convey the real JSON struct information into the specific services.
+                    ServiceMap::Iterator index(_services.Services());
+
+                    while (index.Next() == true) {
+
+                        std::map<string, Plugin>::const_iterator current(_callsigns.find(index->Callsign()));
+
+                        // ServiceMap should *NOT* change runtime...
+                        ASSERT(current != _callsigns.end());
+
+                        if (current->second.IsSet() == true) {
+                            if (current->second.Configuration.IsSet() == true) {
+                                (*index)->Configuration(current->second.Configuration.Value());
+                            }
+                            if (current->second.AutoStart.IsSet() == true) {
+                                (*index)->AutoStart(current->second.AutoStart.Value());
+                            }
+                        }
+                    }
+
+                    storage.Close();
+                } else {
+                    result = storage.ErrorCode();
+                }
+
+                return (result);
+            }
+
+            bool Save()
+            {
+
+                uint32_t result = Core::ERROR_NONE;
+
+                Core::File storage(_fileName);
+
+                if (storage.Create() == true) {
+
+                    // Clear all currently set values, they might be from the precious run.
+                    Clear();
+
+                    Version   = _serverconfig.Version();
+                    Prefix    = _serverconfig.Prefix();
+                    IdleTime  = _serverconfig.IdleTime();
+                    Latitude  = _serverconfig.Latitude();
+                    Longitude = _serverconfig.Longitude();
+
+                    // Convey the real information from he specific services into the JSON struct.
+                    ServiceMap::Iterator index(_services.Services());
+
+                    while (index.Next() == true) {
+
+                        std::map<string, Plugin>::iterator current(_callsigns.find(index->Callsign()));
+
+                        // ServiceMap should *NOT* change runtime...
+                        ASSERT(current != _callsigns.end());
+
+                        string config((*index)->Configuration());
+
+                        if (config.empty() == true) {
+                            current->second.Configuration = _T("{}");
+                        } else {
+                            current->second.Configuration = config;
+                        }
+                        current->second.AutoStart = (index)->AutoStart();
+                    }
+
+                    // Persist the currently set information
+                    IElement::ToFile(storage);
+
+                    storage.Close();
+                } else {
+                    result = storage.ErrorCode();
+                }
+
+                return (result);
+            }
+
+            Core::JSON::Container Services;
+
+            Core::JSON::String Version;
+            Core::JSON::String Prefix;
+            Core::JSON::DecUInt16 IdleTime;
+            Core::JSON::DecSInt32 Latitude;
+            Core::JSON::DecSInt32 Longitude;
+
+        private:
+            ServiceMap& _services;
+            PluginHost::Config& _serverconfig;
+            Core::string _fileName;
+            std::map<string, Plugin> _callsigns;
+        };
+
         class ServiceMap {
         public:
             using Iterator = Core::IteratorMapType<std::map<const string, Core::ProxyType<Service>>, Core::ProxyType<Service>, const string&>;
@@ -1302,6 +1503,15 @@ namespace PluginHost {
 
                 void Revoke(const Core::IUnknown* remote, const uint32_t interfaceId) override
                 {
+                    if (interfaceId == PluginHost::IPlugin::INotification::ID) {
+                        const PluginHost::IPlugin::INotification* notification = remote->QueryInterface<const PluginHost::IPlugin::INotification>();
+
+                        ASSERT(notification != nullptr);
+
+                        _parent.Unregister(notification);
+                        notification->Release();
+                    }
+
                     _adminLock.Lock();
 
                     for (auto& observer : _requestObservers) {
@@ -1408,171 +1618,6 @@ namespace PluginHost {
                 ServiceMap& _parent;
                 const CommunicatorServer& _comms;
                 const string _connector;
-            };
-            class Override : public Core::JSON::Container {
-            private:
-                Override(const Override&) = delete;
-                Override& operator=(const Override&) = delete;
-
-            public:
-                class Plugin : public Core::JSON::Container {
-                private:
-                    Plugin& operator=(Plugin const& other) = delete;
-
-                public:
-                    Plugin()
-                        : Core::JSON::Container()
-                        , AutoStart()
-                        , Configuration(_T("{}"), false)
-                    {
-                        Add(_T("autostart"), &AutoStart);
-                        Add(_T("configuration"), &Configuration);
-                    }
-                    Plugin(const string& config, const bool autoStart)
-                        : Core::JSON::Container()
-                        , AutoStart(autoStart)
-                        , Configuration(config, false)
-                    {
-                        Add(_T("autostart"), &AutoStart);
-                        Add(_T("configuration"), &Configuration);
-                    }
-                    Plugin(Plugin const& copy)
-                        : Core::JSON::Container()
-                        , AutoStart(copy.AutoStart)
-                        , Configuration(copy.Configuration)
-                    {
-                        Add(_T("autostart"), &AutoStart);
-                        Add(_T("configuration"), &Configuration);
-                    }
-
-                    virtual ~Plugin()
-                    {
-                    }
-
-                public:
-                    Core::JSON::Boolean AutoStart;
-                    Core::JSON::String Configuration;
-                };
-
-                typedef std::map<string, Plugin>::iterator Iterator;
-
-            public:
-                Override(ServiceMap& services, const string& persitentFile)
-                    : _services(services)
-                    , _fileName(persitentFile)
-                    , _callsigns()
-                {
-
-                    // Add all service names (callsigns) that are not yet in there...
-                    ServiceMap::Iterator service(services.Services());
-
-                    while (service.Next() == true) {
-                        const string& name(service->Callsign());
-
-                        // Create an element for this service with its callsign
-                        std::pair<Iterator, bool> index(_callsigns.insert(std::pair<string, Plugin>(name, Plugin(_T("{}"), false))));
-
-                        // Store the override config in the JSON String created in the map
-                        Add(index.first->first.c_str(), &(index.first->second));
-                    }
-                }
-                ~Override()
-                {
-                }
-
-            public:
-                uint32_t Load()
-                {
-
-                    uint32_t result = Core::ERROR_NONE;
-
-                    Core::File storage(_fileName);
-
-                    if ((storage.Exists() == true) && (storage.Open(true) == true)) {
-
-                        result = true;
-
-                        // Clear all currently set values, they might be from the precious run.
-                        Clear();
-
-                        // Red the file and parse it into this object.
-                        IElement::FromFile(storage);
-
-                        // Convey the real JSON struct information into the specific services.
-                        ServiceMap::Iterator index(_services.Services());
-
-                        while (index.Next() == true) {
-
-                            std::map<string, Plugin>::const_iterator current(_callsigns.find(index->Callsign()));
-
-                            // ServiceMap should *NOT* change runtime...
-                            ASSERT(current != _callsigns.end());
-
-                            if (current->second.IsSet() == true) {
-                                if (current->second.Configuration.IsSet() == true) {
-                                    (*index)->Configuration(current->second.Configuration.Value());
-                                }
-                                if (current->second.AutoStart.IsSet() == true) {
-                                    (*index)->AutoStart(current->second.AutoStart.Value());
-                                }
-                            }
-                        }
-
-                        storage.Close();
-                    } else {
-                        result = storage.ErrorCode();
-                    }
-
-                    return (result);
-                }
-
-                bool Save()
-                {
-
-                    uint32_t result = Core::ERROR_NONE;
-
-                    Core::File storage(_fileName);
-
-                    if (storage.Create() == true) {
-
-                        // Clear all currently set values, they might be from the precious run.
-                        Clear();
-
-                        // Convey the real information from he specific services into the JSON struct.
-                        ServiceMap::Iterator index(_services.Services());
-
-                        while (index.Next() == true) {
-
-                            std::map<string, Plugin>::iterator current(_callsigns.find(index->Callsign()));
-
-                            // ServiceMap should *NOT* change runtime...
-                            ASSERT(current != _callsigns.end());
-
-                            string config((*index)->Configuration());
-
-                            if (config.empty() == true) {
-                                current->second.Configuration = _T("{}");
-                            } else {
-                                current->second.Configuration = config;
-                            }
-                            current->second.AutoStart = (index)->AutoStart();
-                        }
-
-                        // Persist the currently set information
-                        IElement::ToFile(storage);
-
-                        storage.Close();
-                    } else {
-                        result = storage.ErrorCode();
-                    }
-
-                    return (result);
-                }
-
-            private:
-                ServiceMap& _services;
-                Core::string _fileName;
-                std::map<string, Plugin> _callsigns;
             };
             class SubSystems : public Core::IDispatch, public SystemInfo {
             private:
@@ -1819,7 +1864,7 @@ namespace PluginHost {
 
                 _notificationLock.Unlock();
             }
-            void Unregister(PluginHost::IPlugin::INotification* sink)
+            void Unregister(const PluginHost::IPlugin::INotification* sink)
             {
                 _notificationLock.Lock();
 
@@ -1872,18 +1917,6 @@ namespace PluginHost {
             RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId)
             {
                 return (connectionId != 0 ? _processAdministrator.Connection(connectionId) : nullptr);
-            }
-            uint32_t Persist()
-            {
-                Override infoBlob(*this, _webbridgeConfig.PersistentPath() + PluginOverrideFile);
-
-                return (infoBlob.Save());
-            }
-            uint32_t Load()
-            {
-                Override infoBlob(*this, _webbridgeConfig.PersistentPath() + PluginOverrideFile);
-
-                return (infoBlob.Load());
             }
             inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration)
             {
@@ -2790,6 +2823,10 @@ namespace PluginHost {
 
                     State(CLOSED, false);
                     _parent.Dispatcher().TriggerCleanup();
+                } else if (IsUpgrading() == true) {
+                  if (Allowed(Path(), Query()) == false) {
+                    AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Security prohibites this connection."));
+                  }
                 } else if (IsWebSocket() == true) {
                     ASSERT(_service.IsValid() == false);
                     bool serviceCall;
@@ -3049,15 +3086,34 @@ namespace PluginHost {
         {
             _dispatcher.Revoke(job);
         }
+
+        inline PluginHost::Config& Configuration()
+        {
+            return (_config);
+        }  
         inline const PluginHost::Config& Configuration() const
         {
             return (_config);
         }
+
         void Notification(const ForwardMessage& message);
         void Open();
         void Close();
 
         static void PostMortem(Service& service, const IShell::reason why, RPC::IRemoteConnection* connection);
+
+        uint32_t Persist()
+        {
+            Override infoBlob( _config, _services, Configuration().PersistentPath() + PluginOverrideFile);
+
+            return (infoBlob.Save());
+        }
+        uint32_t Load()
+        {
+            Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideFile);
+
+            return (infoBlob.Load());
+        }
 
     private:
         inline Core::ProxyType<Service> Controller()

@@ -1,8 +1,8 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2021 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,28 @@
  */
 
 #pragma once
-
-#include "Module.h"
+#include <core/core.h>
 
 namespace WPEFramework {
-namespace WarningReporting {
-    struct EXTERNAL IWarningReportingMedia {
-        virtual ~IWarningReportingMedia() = default;
-        virtual void Output(const char fileName[], const uint32_t lineNumber, const char identifer[], const IWarningEvent* information) = 0; 
+
+namespace RPC {
+
+    // @iterator
+    template<typename ELEMENT, const uint32_t INTERFACE_ID>
+    struct IIteratorType : virtual public Core::IUnknown {
+
+        typedef ELEMENT Element;
+
+        enum { ID = INTERFACE_ID };
+
+        virtual ~IIteratorType(){};
+
+        virtual bool Next(ELEMENT& info /* @out */) = 0;
+        virtual bool Previous(ELEMENT& info /* @out */) = 0;
+        virtual void Reset(const uint32_t position) = 0;
+        virtual bool IsValid() const = 0;
+        virtual uint32_t Count() const = 0;
+        virtual ELEMENT Current() const = 0;
     };
 }
-} 
-
-
+}

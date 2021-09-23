@@ -134,7 +134,8 @@ namespace ProxyStub {
     private:
         enum mode : uint8_t {
             CACHING_ADDREF   = 0x01,
-            CACHING_RELEASE  = 0x02
+            CACHING_RELEASE  = 0x02,
+            INVALID          = 0x04
         };
 
     public:
@@ -154,6 +155,18 @@ namespace ProxyStub {
         }
 
     public:
+	bool Invalidate() {
+            bool invalidated = false;
+            _adminLock.Lock();
+            if (_refCount > 0) {
+                _refCount++;
+                _mode |= INVALID;
+                invalidated = true;
+            }
+            _adminLock.Unlock();
+
+            return (invalidated);
+        }
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy/Stub (both) environment calls
         // -------------------------------------------------------------------------------------------------------------------------------
@@ -197,8 +210,7 @@ namespace ProxyStub {
                 _adminLock.Unlock();
             }
             else {
-
-                if ( (_mode & (CACHING_RELEASE|CACHING_ADDREF)) == 0) {
+                if ( (_mode & (CACHING_RELEASE|CACHING_ADDREF|INVALID)) == 0) {
 
                     // We have reached "0", signal the other side..
                     Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
@@ -226,6 +238,7 @@ namespace ProxyStub {
 
                 result = Core::ERROR_DESTRUCTION_SUCCEEDED;
             }
+
             return (result);
         }
         inline void* RemoteInterface(const uint32_t id) const
