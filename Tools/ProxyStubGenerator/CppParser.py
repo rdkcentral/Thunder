@@ -84,6 +84,8 @@ class Metadata:
         self.is_property = False
         self.is_deprecated = False
         self.is_obsolete = False
+        self.is_index = False
+        self.is_listener = False
         self.length = None
         self.maxlength = None
         self.interface = None
@@ -275,6 +277,11 @@ class Identifier():
                         self.meta.output = True
                     else:
                         raise ParserError("in/out tags not allowed on return value")
+                elif token[1:] == "INDEX":
+                    if tags_allowed:
+                        self.meta.is_index = True
+                    else:
+                        raise ParserError("@index tag not allowed on return value")
                 elif token[1:] == "LENGTH":
                     self.meta.length = string[i + 1]
                     skip = 1
@@ -283,7 +290,7 @@ class Identifier():
                     if tags_allowed:
                         self.meta.maxlength = string[i + 1]
                     else:
-                        raise ParserError("maxlength tag not allowed on return value")
+                        raise ParserError("@maxlength tag not allowed on return value")
                     skip = 1
                     continue
                 elif token[1:] == "INTERFACE":
@@ -291,6 +298,8 @@ class Identifier():
                     skip = 1
                 elif token[1:] == "PROPERTY":
                     self.meta.is_property = True
+                elif token[1:] == "LISTENER":
+                    self.meta.is_listener = True
                 elif token[1:] == "BRIEF":
                     self.meta.brief = string[i + 1]
                     skip = 1
@@ -1248,7 +1257,7 @@ def __Tokenize(contents,log = None):
                 else:
                     continue
 
-            def __ParseLength(string, tag):
+            def __ParseParameterValue(string, tag):
                 formula = (r"(\"[^\"]+\")"
                            r"|(\'[^\']+\')"
                            r"|(\*/)|(::)|(==)|(!=)|(>=)|(<=)|(&&)|(\|\|)"
@@ -1325,6 +1334,10 @@ def __Tokenize(contents,log = None):
                 if _find("@inout", token):
                     tagtokens.append("@IN")
                     tagtokens.append("@OUT")
+                if _find("@index", token):
+                    tagtokens.append("@INDEX")
+                if _find("@listener", token):
+                    tagtokens.append("@LISTENER")
                 if _find("@property", token):
                     tagtokens.append("@PROPERTY")
                 if _find("@deprecated", token):
@@ -1342,13 +1355,13 @@ def __Tokenize(contents,log = None):
                 if _find("@iterator", token):
                     tagtokens.append("@ITERATOR")
                 if _find("@text", token):
-                    tagtokens.append(__ParseLength(token, "@text"))
+                    tagtokens.append(__ParseParameterValue(token, "@text"))
                 if _find("@length", token):
-                    tagtokens.append(__ParseLength(token, "@length"))
+                    tagtokens.append(__ParseParameterValue(token, "@length"))
                 if _find("@maxlength", token):
-                    tagtokens.append(__ParseLength(token, "@maxlength"))
+                    tagtokens.append(__ParseParameterValue(token, "@maxlength"))
                 if _find("@interface", token):
-                    tagtokens.append(__ParseLength(token, "@interface"))
+                    tagtokens.append(__ParseParameterValue(token, "@interface"))
 
                 def FindDoxyString(tag, hasParam, string, tagtokens):
                     def EndOfTag(string, start):
