@@ -4434,6 +4434,53 @@ namespace Core {
         private:
             char _buffer[SIZE];
         };
+
+        template <typename JSONOBJECT>
+        class LabelType : public JSONOBJECT {
+        private:
+            LabelType(const LabelType<JSONOBJECT>&) = delete;
+            LabelType<JSONOBJECT>& operator=(const LabelType<JSONOBJECT>) = delete;
+
+        public:
+            LabelType()
+                : JSONOBJECT()
+            {
+            }
+            virtual ~LabelType()
+            {
+            }
+
+        public:
+            static const char* Id()
+            {
+                return (__ID<JSONOBJECT>());
+            }
+
+            virtual const char* Label() const
+            {
+                return (LabelType<JSONOBJECT>::Id());
+            }
+
+        private:
+            HAS_MEMBER(Id, hasID);
+
+            typedef hasID<JSONOBJECT, const char* (JSONOBJECT::*)()> TraitID;
+
+            template <typename TYPE>
+            static inline typename Core::TypeTraits::enable_if<LabelType<TYPE>::TraitID::value, const char*>::type __ID()
+            {
+                return (JSONOBJECT::Id());
+            }
+
+            template <typename TYPE>
+            static inline typename Core::TypeTraits::enable_if<!LabelType<TYPE>::TraitID::value, const char*>::type __ID()
+            {
+                static std::string className = (Core::ClassNameOnly(typeid(JSONOBJECT).name()).Text());
+
+                return (className.c_str());
+            }
+        };
+
     } // namespace JSON
 } // namespace Core
 } // namespace WPEFramework

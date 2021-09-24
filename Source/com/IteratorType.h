@@ -18,31 +18,12 @@
  */
 
 #pragma once
-#include <core/core.h>
+
 
 namespace WPEFramework {
 
 namespace RPC {
 
-    // @iterator
-    template<typename ELEMENT, const uint32_t INTERFACE_ID>
-    struct IIteratorType : virtual public Core::IUnknown {
-
-        typedef ELEMENT Element;
-
-        enum { ID = INTERFACE_ID };
-
-        virtual ~IIteratorType(){};
-
-        virtual bool Next(ELEMENT& info /* @out */) = 0;
-        virtual bool Previous(ELEMENT& info /* @out */) = 0;
-        virtual void Reset(const uint32_t position) = 0;
-        virtual bool IsValid() const = 0;
-        virtual uint32_t Count() const = 0;
-        virtual ELEMENT Current() const = 0;
-    };
-
-    /* @stubgen:skip */
     template<typename INTERFACE>
     class IteratorType : public INTERFACE {
     public:

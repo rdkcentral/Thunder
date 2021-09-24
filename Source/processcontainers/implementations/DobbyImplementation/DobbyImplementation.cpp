@@ -175,31 +175,74 @@ namespace ProcessContainers {
         if (_pid.IsSet() == false) {
             std::string containerInfoString = admin.mDobbyProxy->getContainerInfo(_descriptor);
 
-            if (containerInfoString.empty())
-            {
+            if (containerInfoString.empty()) {
                 TRACE_L1("Failed to get info for container %s", _name.c_str());
-            }else{
+            } else {
                 // Dobby returns the container info as JSON, so parse it
                 JsonObject containerInfoJson;
                 WPEFramework::Core::OptionalType<WPEFramework::Core::JSON::Error> error;
                 if (!WPEFramework::Core::JSON::IElement::FromString(containerInfoString, containerInfoJson, error)) {
                     TRACE_L1("Failed to parse Dobby Spec JSON due to: %s", WPEFramework::Core::JSON::ErrorDisplayMessage(error).c_str());
-                }
+                } else {
+                    JsonArray pids = containerInfoJson["pids"].Array();
 
-                JsonArray pids = containerInfoJson["pids"].Array();
+                    // In Dobby containers, DobbyInit is always the parent process of
+                    // the container
 
-                if(pids.Length() > 0) {
-                    // first PID is the DobbyInit process which launches the container
-                    returnedPid = pids[0].Number();
-                    TRACE_L1("%s container PID is: %d", _name.c_str(), returnedPid);
+                    // If we're running a plugin in container, the plugin should run
+                    // under WPEProcess. Return the WPEProcess PID if available to
+                    // ensure consistency with non-containerised oop plugins
+                    if (pids.Length() > 0) {
+                        if (pids.Length() == 1) {
+                            returnedPid = pids[0].Number();
+                            _pid = returnedPid;
+                        } else {
+                            JsonArray processes = containerInfoJson["processes"].Array();
+                            JsonArray::Iterator index(processes.Elements());
 
-                    // remember PID so it doesn't need to be read again
-                    _pid = returnedPid;
+                            uint32_t dobbyInitPid = 0;
+                            uint32_t wpeProcessPid = 0;
+
+                            while (index.Next()) {
+                                if (Core::JSON::Variant::type::OBJECT == index.Current().Content()) {
+                                    JsonObject process = index.Current().Object();
+
+                                    uint32_t pid = process["pid"].Number();
+                                    uint32_t nsPid = process["nspid"].Number();
+
+                                    if (nsPid == 1) {
+                                        dobbyInitPid = pid;
+                                        continue;
+                                    }
+
+                                    string executable = process["executable"].String();
+                                    if (executable.find("WPEProcess") != std::string::npos) {
+                                        wpeProcessPid = pid;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (wpeProcessPid == 0 && dobbyInitPid > 0) {
+                                // We didn't find WPEProcess, just return DobbyInit
+                                returnedPid = dobbyInitPid;
+                                _pid = returnedPid;
+                            } else if (wpeProcessPid > 0) {
+                                // Found WPEProcess, return its PID
+                                returnedPid = wpeProcessPid;
+                                _pid = returnedPid;
+                            } else {
+                                // Unable to determine the PID for some reason
+                                // Just return the first PID in the pids array
+                                // which 99% of the time is DobbyInit
+                                returnedPid = pids[0].Number();
+                                _pid = returnedPid;
+                            }
+                        }
+                    }
                 }
             }
-        }
-        else
-        {
+        } else {
             // Value was already read before, use this value
             returnedPid = _pid;
         }

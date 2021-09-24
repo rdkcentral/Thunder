@@ -1321,9 +1321,13 @@ namespace RPC {
             std::list<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
             while (loop != deadProxies.end()) {
                 Revoke((*loop)->Parent(), (*loop)->InterfaceId());
+
                 // To avoid race conditions, the creation of the deadProxies took a reference
                 // on the interfaces, we presented here. Do not forget to release this reference.
-                (*loop)->Parent()->Release();
+                if ((*loop)->Parent()->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) {
+                    // This is a leak, someone is still referencing a Proxy that is as dead as a pier !
+                    TRACE_L1("The Proxy for [%d] is still being referenced although the link is gone !!!", (*loop)->InterfaceId());
+                }
                 loop++;
             }
         }
