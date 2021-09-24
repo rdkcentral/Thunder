@@ -44,6 +44,18 @@ namespace PluginHost {
 
     /* virtual */ SystemInfo::~SystemInfo()
     {
+      if (_identifier)
+        _identifier->Release();
+      if (_location)
+        _location->Release();
+      if (_internet)
+        _internet->Release();
+      if (_security)
+        _security->Release();
+      if (_time)
+        _time->Release();
+      if (_provisioning)
+        _provisioning->Release();
     }
 
     void SystemInfo::Register(PluginHost::ISubSystem::INotification* notification)
@@ -171,15 +183,27 @@ namespace PluginHost {
 
         return (result);
     }
+    /* virtual */ string SystemInfo::Id::Architecture() const
+    {
+        return _architecture;
+    }
+    /* virtual */ string SystemInfo::Id::Chipset() const
+    {
+        return _chipset;
+    }
+
+    /* virtual */ string SystemInfo::Id::FirmwareVersion() const
+    {
+        return _firmwareVersion;
+    }
 
     bool SystemInfo::Id::Set(const PluginHost::ISubSystem::IIdentifier* info)
     {
-
         uint8_t buffer[119];
 
         uint8_t length = info->Identifier(sizeof(buffer), buffer);
 
-        return Set(length, buffer);
+        return Set(length, buffer, info->Architecture(), info->Chipset(), info->FirmwareVersion());
     }
 
     // Time synchronisation

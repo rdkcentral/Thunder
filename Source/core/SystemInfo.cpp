@@ -34,10 +34,12 @@
 #import <mach/host_info.h>
 #import <mach/mach_host.h>
 #include <sys/sysctl.h>
+#include <sys/utsname.h>
 #elif defined(__LINUX__)
 #include <cinttypes>
 #include <cstdint>
 #include <sys/sysinfo.h>
+#include <sys/utsname.h>
 #endif
 
 namespace WPEFramework {
@@ -470,6 +472,73 @@ namespace Core {
         return (_systemInfo);
     }
 #endif
+
+    const string SystemInfo::Architecture() const
+    {
+        string result;
+#if defined(__LINUX__) || defined(__APPLE__)
+        struct utsname buf;
+        if (uname(&buf) == 0) {
+            result = buf.machine;
+        }
+#endif
+        return result;
+    }
+
+    const string SystemInfo::Chipset() const
+    {
+        string result;
+#if defined(__LINUX__)
+            string line;
+            std::ifstream file("/proc/cpuinfo");
+
+            if (file.is_open()) {
+                while (getline(file, line)) {
+                    if (line.find("Hardware") != std::string::npos) {
+                        std::size_t position = line.find(':');
+                        if (position != std::string::npos) {
+                            result.assign(line.substr(position + 1, string::npos));
+                        }
+                    }
+                }
+
+                if(result.empty() == true)
+                {
+                    file.clear();
+                    file.seekg(0, file.beg);
+
+                    while (getline(file, line))
+                    {
+                        if (line.find("model name") != std::string::npos) {
+                            std::size_t position = line.find(':');
+                            if (position != std::string::npos) {
+                                result.assign(line.substr(position + 1, string::npos));
+                            }
+                        }
+                    }
+                }
+                file.close();
+            }
+#elif defined(__APPLE__)
+        char buffer[128];
+        size_t bufferlen = sizeof(buffer);
+        sysctlbyname("machdep.cpu.brand_string", &buffer, &bufferlen, NULL, 0);
+        result = string(buffer, bufferlen);
+#endif
+        return result;
+    }
+
+    const string SystemInfo::FirmwareVersion() const
+    {
+        string result;
+#if defined(__LINUX__) || defined(__APPLE__)
+        struct utsname buf;
+        if (uname(&buf) == 0) {
+            result = buf.release;
+        }
+#endif
+        return result;
+    }
 
     namespace System {
 
