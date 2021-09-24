@@ -220,7 +220,7 @@ class Identifier():
         elif string.count("[") > 1:
             raise ParserError("multi-dimensional arrays are not supported: '%s'" % (" ".join(string)))
         elif "[" in string and "*" in string:
-            raise ParserError("arrays of pointers are not supported: '%s'" % (" ".join(string)))
+            raise ParserError("arrays of pointers are not supported: '%s'" % (" ".join([str(i) for i in string])))
         elif "&&" in string:
             raise ParserError("rvalue references are not supported: '%s'" % (" ".join(string)))
 
@@ -624,6 +624,21 @@ class Name:
         self.full_name = parentName + ("" if not self.name else "::" + self.name)
         self.parser_file = CurrentFile()
         self.parser_line = CurrentLine()
+        exists = []
+        if isinstance(parent_block, Function):
+            exists = exists + [x for x in self.parent.vars if x.name == self.name]
+        if isinstance(parent_block, Class) or isinstance(parent_block, Union) or isinstance(parent_block, Namespace):
+            exists = exists + [x for x in self.parent.vars if x.name == self.name]
+            exists = exists + [x for x in self.parent.unions if x.name == self.name]
+            exists = exists + [x for x in self.parent.enums if x.name == self.name]
+            exists = exists + [x for x in self.parent.typedefs if x.name == self.name]
+            if not isinstance(self, Function):
+                exists = exists + [x for x in self.parent.methods if x.name == self.name]
+            #exists = exists + [x for x in self.parent.classes if x.name == self.name]
+        if isinstance(parent_block, Namespace) and not isinstance(self, Namespace):
+            exists = exists + [x for x in self.parent.namespaces if x.name == self.name]
+        if exists:
+            raise ParserError("duplicate indentifier: %s" % self.name)
 
     def Name(self):
         return self.full_name
@@ -899,6 +914,7 @@ class Variable(Identifier, Name):
         Identifier.__init__(self, parent_block, self, string, valid_specifiers)
         Name.__init__(self, parent_block, self.name)
         self.value = Evaluate(value) if value else None
+        self.parent.vars
         self.parent.vars.append(self)
 
     def Proto(self):
@@ -1304,15 +1320,14 @@ def __Tokenize(contents,log = None):
                 raise ParserError("multi-line comment not closed")
 
             if ((token[:2] == "/*") or (token[:2] == "//")):
-
                 def _find(word, string):
                     return re.compile(r"[ \r\n/\*]({0})([: \r\n\*]|$)".format(word)).search(string) != None
 
                 if _find("@stubgen", token):
                     if "@stubgen:skip" in token:
                         skipmode = True
-                        if log :
-                            log.Warn("The Use of @stubgen:skip is deprecated, Please use @stubgen:omit instead",(CurrentFile()+" Line: "+str(CurrentLine())))
+                        if log:
+                            log.Warn("The Use of @stubgen:skip is deprecated, use @stubgen:omit instead", ("%s(%i): " % (CurrentFile(), CurrentLine())))
                     elif "@stubgen:omit" in token:
                         tagtokens.append("@OMIT")
                     elif "@stubgen:stub" in token:

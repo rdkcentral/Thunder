@@ -47,7 +47,13 @@ class Log:
     def WarnLine(self, obj, text, file=""):
         if self.show_warnings:
             if not file: file = self.file
-            self.warnings.append("%s: %s%s: %s(%i)%s%s" % (self.name, self.cwarn, self.creset, file, obj.parser_line, ": " if file else "", text))
+            try:
+                if not file: file = obj.parser_file
+                line = str(obj.parser_line)
+            except:
+                file = ""
+                line = ""
+            self.warnings.append("%s: %s%s: %s%s" % (self.name, self.cwarn, self.creset, ("%s(%s): " % (file, line)) if file else "", text))
             self.__Print(self.warnings[-1])
 
     def Error(self, text, file=""):
