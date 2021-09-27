@@ -521,7 +521,7 @@ namespace Core {
                     if (line.find("Hardware") != std::string::npos) {
                         std::size_t position = line.find(':');
                         if (position != std::string::npos) {
-                            result.assign(line.substr(position + 1, string::npos));
+                            result.assign(line.substr(position + 2, string::npos));
                         }
                     }
                 }
@@ -536,7 +536,7 @@ namespace Core {
                         if (line.find("model name") != std::string::npos) {
                             std::size_t position = line.find(':');
                             if (position != std::string::npos) {
-                                result.assign(line.substr(position + 1, string::npos));
+                                result.assign(line.substr(position + 2, string::npos));
                             }
                         }
                     }
