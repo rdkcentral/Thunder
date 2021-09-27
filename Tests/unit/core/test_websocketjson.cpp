@@ -68,7 +68,7 @@ namespace Tests {
     public:
 	    Core::ProxyType<Core::JSON::IElement> Element(const string&)
         {
-		    return (Core::proxy_cast<Core::JSON::IElement>(Core::ProxyPoolType<Message>::Element()));
+		    return (Core::ProxyType<Core::JSON::IElement>(Core::ProxyPoolType<Message>::Element()));
 	    }
     };
 
@@ -239,7 +239,7 @@ namespace Tests {
             JsonSocketClient<Core::JSON::IElement> jsonWebSocketClient(Core::NodeId(connector.c_str()));
             jsonWebSocketClient.Open(Core::infinite);
             testAdmin.Sync("server open");
-            jsonWebSocketClient.Submit(Core::proxy_cast<Core::JSON::IElement>(sendObject));
+            jsonWebSocketClient.Submit(Core::ProxyType<Core::JSON::IElement>(sendObject));
             jsonWebSocketClient.Wait();
             string received;
             jsonWebSocketClient.Retrieve(received);

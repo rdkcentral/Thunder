@@ -748,13 +748,13 @@ namespace Core {
         template <typename ACTUALELEMENT>
         inline uint32_t Invoke(ProxyType<ACTUALELEMENT>& command, IDispatchType<IIPC>* completed)
         {
-            Core::ProxyType<IIPC> base(Core::proxy_cast<IIPC>(command));
+            Core::ProxyType<IIPC> base(command);
             return (Execute(base, completed));
         }
         template <typename ACTUALELEMENT>
         inline uint32_t Invoke(ProxyType<ACTUALELEMENT>& command, const uint32_t waitTime)
         {
-            Core::ProxyType<IIPC> base(Core::proxy_cast<IIPC>(command));
+            Core::ProxyType<IIPC> base(command);
             return (Execute(base, waitTime));
         }
         inline uint32_t Invoke(ProxyType<Core::IIPC>& command, IDispatchType<IIPC>* completed)
