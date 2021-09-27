@@ -4,7 +4,7 @@
 namespace WPEFramework {
 namespace Core {
 
-    template <char SEPARATOR, bool REMOVE_WHITESPACES>
+    template <TCHAR SEPARATOR, bool REMOVE_WHITESPACES>
     class TokenizedStringList {
     public:
         TokenizedStringList() = default;
@@ -21,7 +21,7 @@ namespace Core {
         {
 
             if (!buffer.empty()) {
-                //remove spaces and tokenize by comma
+                //remove spaces and tokenize by SEPARATOR
                 if (REMOVE_WHITESPACES) {
                     string result = buffer;
                     result.erase(std::remove_if(result.begin(), result.end(), ::isspace), result.end());
@@ -58,7 +58,7 @@ namespace Core {
                     result += SEPARATOR;
                 }
 
-                result.erase(result.rfind(','));
+                result.erase(result.rfind(SEPARATOR));
             }
 
             return result;
