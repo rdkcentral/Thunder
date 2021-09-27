@@ -269,7 +269,7 @@ namespace Plugin {
 
         // Here come the responses, see f they are what we expect them to be..
         Web::Response response;
-        response.Body(Core::proxy_cast<Web::IBody>(_answer));
+        response.Body(Core::ProxyType<Web::IBody>(_answer));
 
         response.FromString(string(reinterpret_cast<const char*>(dataFrame), receivedSize));
 
