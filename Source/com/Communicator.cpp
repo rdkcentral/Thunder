@@ -169,7 +169,10 @@ namespace RPC {
                     if (_process.Id() != 0) {
                         _process.Kill(false);
                     } else {
-                        _container->Stop(0);
+                        if(_container->Stop(0)) {
+                            nextinterval = 0;
+                            break;
+                        }
                     }
                 }
                     nextinterval = 10000;

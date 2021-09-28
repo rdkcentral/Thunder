@@ -137,7 +137,7 @@ namespace RPC {
 
         if (index != _stubs.end()) {
             uint32_t methodId(message->Parameters().MethodId());
-            index->second->Handle(methodId, channel, message);
+            REPORT_DURATION_WARNING({ index->second->Handle(methodId, channel, message); },  WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
         } else {
             // Oops this is an unknown interface, Do not think this could happen.
             TRACE_L1("Unknown interface. %d", interfaceId);
@@ -314,11 +314,13 @@ namespace RPC {
                 // interface is released in the same time before we report this interface
                 // to be dead. So lets keep a refernce so we can work on a real object
                 // still. This race condition, was observed by customer testing.
-                (*loop)->AddRef();
-                pendingProxies.push_back(*loop);
+                if ((*loop)->Invalidate() == true) {
+                    pendingProxies.push_back(*loop);
+                }
 
                 loop++;
             }
+            _channelProxyMap.erase(index);
         }
 
         _adminLock.Unlock();

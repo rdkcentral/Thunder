@@ -56,7 +56,7 @@ namespace Core {
         public:
             Core::ProxyType<BASEOBJECT> GetElement() override
             {
-                return (Core::proxy_cast<BASEOBJECT>(_warehouse.Element()));
+                return (Core::ProxyType<BASEOBJECT>(_warehouse.Element()));
             }
             uint32_t CreatedElements() const override
             {
@@ -210,7 +210,7 @@ namespace Core {
         template <typename ACTUALELEMENT>
         inline Core::ProxyType<ACTUALELEMENT> Get(const IDENTIFIER& identifier)
         {
-            return (Core::proxy_cast<ACTUALELEMENT>(Element(identifier)));
+            return (Core::ProxyType<ACTUALELEMENT>(Element(identifier)));
         }
 
         Core::ProxyType<BASEOBJECT> Element(const IDENTIFIER& identifier)

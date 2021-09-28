@@ -274,7 +274,7 @@ namespace Web {
                     if (_parent._webSocketMessage == realItem) {
                         _parent.UpgradeCompleted();
                     } else {
-                        _parent.Serialized(Core::proxy_cast<OUTBOUND>(realItem));
+                        _parent.Serialized(Core::ProxyType<OUTBOUND>(realItem));
                     }
 
                     _adminLock.Lock();
@@ -853,7 +853,7 @@ namespace Web {
                                    }
                                 }
 
-                                result += (headerSize + payloadSizeInControlFrame); // actualDataSize
+                                result += static_cast<uint16_t>(headerSize + payloadSizeInControlFrame); // actualDataSize
 
                             } else {
                                 _parent.ReceiveData(&(dataFrame[result + headerSize]), actualDataSize);
@@ -930,7 +930,7 @@ namespace Web {
             }
             inline void Serialized(const Core::ProxyType<OUTBOUND>& element)
             {
-                _parent.Send(Core::proxy_cast<OUTBOUND>(element));
+                _parent.Send(Core::ProxyType<OUTBOUND>(element));
             }
             inline void Deserialized(Core::ProxyType<INBOUND>& element)
             {

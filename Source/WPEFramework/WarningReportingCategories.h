@@ -55,7 +55,7 @@ namespace WarningReporting {
             if (_callsign.size() + 1 + sizeof(_stateChange) <= length) {
 
                 std::copy(_callsign.begin(), _callsign.end(), buffer);
-                serialized = _callsign.size();
+                serialized = static_cast<uint16_t>(_callsign.size());
                 buffer[serialized++] = 0; //terminating first string and then incrementing serialized count
 
                 uint8_t stateChange = static_cast<uint8_t>(_stateChange);
@@ -74,7 +74,7 @@ namespace WarningReporting {
             memcpy(&stateChange, buffer + callsign.size() + 1, sizeof(stateChange));
 
             //include null terminator
-            uint16_t deserialized = callsign.size() + 1 + sizeof(stateChange);
+            uint16_t deserialized = static_cast<uint16_t>(callsign.size() + 1 + sizeof(stateChange));
             if (deserialized <= length) {
                 _callsign = callsign;
                 _stateChange = static_cast<StateChange>(stateChange);
@@ -175,7 +175,7 @@ namespace WarningReporting {
             if (_content.size() + 1 + sizeof(_type) <= length) {
 
                 std::copy(_content.begin(), _content.end(), buffer);
-                serialized = _content.size();
+                serialized = static_cast<uint16_t>(_content.size());
                 buffer[serialized++] = 0; //terminating first string and then incrementing serialized count
 
                 uint8_t type = static_cast<uint8_t>(_type);
@@ -194,7 +194,7 @@ namespace WarningReporting {
             memcpy(&type, buffer + content.size() + 1, sizeof(type));
 
             //include null terminator
-            uint16_t deserialzed = content.size() + 1 + sizeof(type);
+            uint16_t deserialzed = static_cast<uint16_t>(content.size() + 1 + sizeof(type));
             if (deserialzed <= length) {
                 _content = content;
                 _type = static_cast<Type>(type);
