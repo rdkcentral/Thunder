@@ -24,6 +24,8 @@
 
 namespace WPEFramework {
 namespace Web {
+    using ProtocolsArray = Core::TokenizedStringList<',', true>;
+
     static const uint8_t MajorVersion = 1;
     static const uint8_t MinorVersion = 1;
 
@@ -630,7 +632,7 @@ namespace Web {
         Core::OptionalType<string> AccessControlHeaders;
         Core::OptionalType<uint16_t> AccessControlMethod;
         Core::OptionalType<string> WebSocketKey;
-        Core::OptionalType<string> WebSocketProtocol;
+        Core::OptionalType<ProtocolsArray> WebSocketProtocol;
         Core::OptionalType<uint32_t> WebSocketVersion;
         Core::OptionalType<string> WebSocketExtensions;
         Core::OptionalType<string> Man;
