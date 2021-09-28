@@ -1175,7 +1175,7 @@ namespace Core {
                         }
 
                         offset = 0;
-                        _strValue.Clear();
+                        _strValue.clear();
                     }
                 }
 

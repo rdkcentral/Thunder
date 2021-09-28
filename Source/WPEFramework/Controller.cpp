@@ -292,7 +292,7 @@ namespace Plugin {
                     response->Bridges.Add(newElement);
                 }
 
-                result->Body(Core::proxyType<Web::IBody>(response));
+                result->Body(Core::ProxyType<Web::IBody>(response));
             }
 
         } else if (index.Current() == _T("SubSystems")) {
