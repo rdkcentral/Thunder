@@ -21,7 +21,7 @@
 # C++ header parser
 #
 
-import re, uuid, sys, copy, hashlib, os
+import re, uuid, sys, copy, hashlib, random, os
 from collections import OrderedDict
 from enum import IntEnum
 
@@ -1085,7 +1085,7 @@ class TemplateTypeParameter(Name):
 
 class InstantiatedTemplateClass(Class):
     def __init__(self, parent_block, name, params, args):
-        hash = hashlib.sha1("_".join(args).encode('utf-8')).hexdigest()[:8].upper()
+        hash = hashlib.sha1("_".join(args+[str(random.random())]).encode('utf-8')).hexdigest()[:8].upper()
         Class.__init__(self, parent_block, name + "Instance" + hash)
         self.baseName = Name(parent_block, name)
         self.params = params
