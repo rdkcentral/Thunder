@@ -143,7 +143,7 @@ namespace JSONRPC {
             public:
                 virtual void Received(Core::ProxyType<INTERFACE>& jsonObject) override
                 {
-                    Core::ProxyType<Core::JSONRPC::Message> inbound(Core::proxy_cast<Core::JSONRPC::Message>(jsonObject));
+                    Core::ProxyType<Core::JSONRPC::Message> inbound(jsonObject);
     
                     ASSERT(inbound.IsValid() == true);
     
@@ -171,7 +171,7 @@ namespace JSONRPC {
             private:
                 void ToMessage(const Core::ProxyType<Core::JSON::IElement>& jsonObject, string& message) const
                 {
-                    Core::ProxyType<Core::JSONRPC::Message> inbound(Core::proxy_cast<Core::JSONRPC::Message>(jsonObject));
+                    Core::ProxyType<Core::JSONRPC::Message> inbound(jsonObject);
 
                     ASSERT(inbound.IsValid() == true);
                     if (inbound.IsValid() == true) {
@@ -180,7 +180,7 @@ namespace JSONRPC {
                 }
                 void ToMessage(const Core::ProxyType<Core::JSON::IMessagePack>& jsonObject, string& message) const
                 {
-                    Core::ProxyType<Core::JSONRPC::Message> inbound(Core::proxy_cast<Core::JSONRPC::Message>(jsonObject));
+                    Core::ProxyType<Core::JSONRPC::Message> inbound(jsonObject);
 
                     ASSERT(inbound.IsValid() == true);
                     if (inbound.IsValid() == true) {

@@ -80,5 +80,65 @@ namespace WarningReporting {
         static constexpr uint32_t DefaultWarningBound = { 0 };
         static constexpr uint32_t DefaultReportBound = { 0 };
     };
+
+    class EXTERNAL TooLongInvokeRPC {
+    public:
+        TooLongInvokeRPC(const TooLongInvokeRPC&) = delete;
+        TooLongInvokeRPC& operator=(const TooLongInvokeRPC&) = delete;
+        TooLongInvokeRPC() = default;
+        ~TooLongInvokeRPC() = default;
+
+        uint16_t Serialize(uint8_t buffer[], const uint16_t length) const
+        {
+            uint16_t serialized = 0;
+            
+            if(sizeof(_interfaceId) + sizeof(_methodId) <= length){
+                memcpy(buffer, &_interfaceId, sizeof(_interfaceId));
+                serialized += sizeof(_interfaceId);
+
+                memcpy(buffer + serialized, &_methodId, sizeof(_methodId));
+                serialized += sizeof(_methodId);
+            }
+
+            return serialized;
+        }
+
+        uint16_t Deserialize(const uint8_t buffer[], const uint16_t length)
+        {
+            uint16_t deserialized = 0;
+
+            if(sizeof(_interfaceId) + sizeof(_methodId) <= length){
+                memcpy(&_interfaceId, buffer, sizeof(_interfaceId));
+                deserialized += sizeof(_interfaceId);
+
+                memcpy(&_methodId, buffer + deserialized, sizeof(_methodId));
+                deserialized += sizeof(_methodId);
+            }
+
+            return deserialized;
+        }
+
+        bool Analyze(const char[], const char[], const uint32_t interfaceId, const uint32_t methodId)
+        {
+            _interfaceId = interfaceId;
+            _methodId = methodId;
+            
+            return true;
+        }
+
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
+        {
+            visitor = _T("RPC call of method ");
+            visitor += Core::Format(_T("[%d] on interface [%d] took to long"), _methodId, _interfaceId);
+            visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, maxValue);
+        };
+
+        static constexpr uint32_t DefaultWarningBound = { 750 };
+        static constexpr uint32_t DefaultReportBound = { 250 };
+
+        private:
+        uint32_t _interfaceId;
+        uint32_t _methodId;
+    };
 }
 }

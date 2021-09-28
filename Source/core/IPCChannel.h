@@ -297,7 +297,7 @@ namespace Core {
             }
 
             if (current != _clients.end()) {
-                result = Core::proxy_cast<const Client>(current->second);
+                result = Core::ProxyType<const Client>(current->second);
             }
 
             _adminLock.Unlock();
