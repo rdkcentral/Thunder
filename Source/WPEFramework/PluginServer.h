@@ -231,7 +231,7 @@ namespace PluginHost {
             WebFlow& operator=(const WebFlow& a_RHS) = delete;
 
         public:
-            WebFlow(const Core::ProxyType<Web::Request>& request)
+            WebFlow(const Core::ProxyType<Request>& request)
             {
                 if (request.IsValid() == true) {
                     string text;
@@ -2555,7 +2555,7 @@ namespace PluginHost {
             LinkBody(Core::ProxyType<Request>& request)
             {
                 // This is the time where we determine what body is needed for the incoming request.
-                TRACE(WebFlow, (Core::ProxyType<Web::Request>(request)));
+                TRACE(WebFlow, (request));
 
                 // Remember the path and options..
                 Core::ProxyType<Service> service;
@@ -2582,7 +2582,7 @@ namespace PluginHost {
             {
                 ISecurity* security = nullptr;
 
-                TRACE(WebFlow, (Core::ProxyType<Web::Request>(request)));
+                TRACE(WebFlow, (request));
 
                 // See if a token has been hooked up to the request, maybe we need a
                 // different security provider.
