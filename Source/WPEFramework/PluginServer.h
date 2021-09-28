@@ -2824,10 +2824,7 @@ namespace PluginHost {
                     State(CLOSED, false);
                     _parent.Dispatcher().TriggerCleanup();
                 } else if (IsUpgrading() == true) {
-                  if (Allowed(Path(), Query()) == false) {
-                    AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Security prohibites this connection."));
-                  }
-                } else if (IsWebSocket() == true) {
+
                     ASSERT(_service.IsValid() == false);
                     bool serviceCall;
                     // see if we need to subscribe...
@@ -2837,38 +2834,23 @@ namespace PluginHost {
                         AbortUpgrade(Web::STATUS_SERVICE_UNAVAILABLE, _T("Could not find a correct service for this socket."));
                     } else if (Allowed(Path(), Query()) == false) {
                         AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Security prohibites this connection."));
-                    } else if (serviceCall == true) {
-                        const string& serviceHeader(_parent._config.WebPrefix());
+                    } else {
+                        //select supported protocol and let know which one was choosen
+                        auto protocol = SelectSupportedProtocol(Protocols());
+                        Protocols(Web::ProtocolsArray(protocol));
 
-                        if (Protocol() == _T("notification")) {
-                            State(TEXT, true);
-                        } else if (Protocol() == _T("json")) {
-                            State(JSON, false);
-                        } else if (Protocol() == _T("text")) {
-                            State(TEXT, false);
-                        } else if (Protocol() == _T("jsonrpc")) {
+                        if (serviceCall == false) {
+                            const string& JSONRPCHeader(_parent._config.JSONRPCPrefix());
+                            if (Name().length() > (JSONRPCHeader.length() + 1)) {
+                                Properties(static_cast<uint32_t>(JSONRPCHeader.length()) + 1);
+                            }
                             State(JSONRPC, false);
                         } else {
-                            // Channel is a raw communication channel.
-                            // This channel allows for passing binary data back and forth
-                            State(RAW, false);
+                            const string& serviceHeader(_parent._config.WebPrefix());
+                            if (Name().length() > (serviceHeader.length() + 1)) {
+                                Properties(static_cast<uint32_t>(serviceHeader.length()) + 1);
+                            }
                         }
-                        if (Name().length() > (serviceHeader.length() + 1)) {
-                            Properties(static_cast<uint32_t>(serviceHeader.length()) + 1);
-                        }
-                        // The state needs to be correct before we c
-                        if (_service->Subscribe(*this) == false) {
-                            State(WEB, false);
-                            AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
-                        }
-                    } else {
-                        const string& JSONRPCHeader(_parent._config.JSONRPCPrefix());
-                        if (Name().length() > (JSONRPCHeader.length() + 1)) {
-                            Properties(static_cast<uint32_t>(JSONRPCHeader.length()) + 1);
-                        }
-                        State(JSONRPC, false);
-
-                        // The state needs to be correct before we c
                         if (_service->Subscribe(*this) == false) {
                             State(WEB, false);
                             AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
@@ -2885,6 +2867,28 @@ namespace PluginHost {
             }
 
         private:
+            inline string SelectSupportedProtocol(const Web::ProtocolsArray& protocols)
+            {
+                for (const auto& protocol : protocols) {
+                    if (protocol == _T("notification")) {
+                        State(TEXT, true);
+                        return protocol;
+                    } else if (protocol == _T("json")) {
+                        State(JSON, false);
+                        return protocol;
+                    } else if (protocol == _T("text")) {
+                        State(TEXT, false);
+                        return protocol;
+                    } else if (protocol == _T("jsonrpc")) {
+                        State(JSONRPC, false);
+                        return protocol;
+                    }
+                }
+
+                State(RAW, false);
+                return _T("");
+            }
+
             Server& _parent;
             PluginHost::ISecurity* _security;
             Core::ProxyType<Service> _service;
