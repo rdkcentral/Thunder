@@ -80,5 +80,35 @@ namespace WarningReporting {
         static constexpr uint32_t DefaultWarningBound = { 0 };
         static constexpr uint32_t DefaultReportBound = { 0 };
     };
+
+
+    class EXTERNAL TooLongDecrypt {
+    public:
+        TooLongDecrypt(const TooLongDecrypt&) = delete;
+        TooLongDecrypt& operator=(const TooLongDecrypt&) = delete;
+        TooLongDecrypt() = default;
+        ~TooLongDecrypt() = default;
+
+        //nothing to serialize/deserialize here
+        uint16_t Serialize(uint8_t[], const uint16_t) const
+        {
+            return 0;
+        }
+
+        uint16_t Deserialize(const uint8_t[], const uint16_t)
+        {
+            return 0;
+        }
+
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
+        {
+            visitor = (_T("Decrypt call took too long"));
+            visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, maxValue);
+
+        };
+
+        static constexpr uint32_t DefaultWarningBound = { 20 };
+        static constexpr uint32_t DefaultReportBound = { 15 };
+    };
 }
 }
