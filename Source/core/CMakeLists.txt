@@ -142,6 +142,7 @@ set(PUBLIC_HEADERS
         WarningReportingCategories.h
         Module.h
         CallsignTLS.h
+        TokenizedStringList.h
         )
 
 # non-buildable interface target to carry the definitions

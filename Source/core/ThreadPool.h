@@ -164,7 +164,7 @@ namespace Core {
                 Core::ProxyType<Core::IDispatch> result;
 
                 if (_state.compare_exchange_strong(expected, SUBMITTED) == true) {
-                    result = Core::ProxyType<Core::IDispatch>(&_job, &_job);
+                    result = Core::ProxyType<Core::IDispatch>(Core::ProxyType<Worker>(_job));
                 }
 
                 return (result);
@@ -174,7 +174,7 @@ namespace Core {
                 state expected = SUBMITTED;
                 _state.compare_exchange_strong(expected, IDLE);
 
-                return (Core::ProxyType<Core::IDispatch>(&_job, &_job));
+                return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<Worker>(_job)));
             }
             operator IMPLEMENTATION& () {
                 return (_implementation);
@@ -189,7 +189,7 @@ namespace Core {
                 state expected = IDLE;
                 _state.compare_exchange_strong(expected, SUBMITTED);
 
-                return (Core::ProxyType<Core::IDispatch>(&_job, &_job));
+                return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<Worker>(_job)));
             }
             
 

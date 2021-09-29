@@ -117,7 +117,7 @@ namespace PluginHost {
                     }
 #if THUNDER_PERFORMANCE
                     else {
-			Core::ProxyType<const TrackingJSONRPC> tracking(Core::proxy_cast<const TrackingJSONRPC>(_current));
+			Core::ProxyType<const TrackingJSONRPC> tracking(_current);
                         ASSERT (tracking.IsValid() == true);
                         const_cast<TrackingJSONRPC&>(*tracking).Out(loaded);
                     }
@@ -166,7 +166,7 @@ namespace PluginHost {
                 if (_current.IsValid() == true) {
                     loaded = _current->Deserialize(stream, length, _offset);
 #if THUNDER_PERFORMANCE
-		    Core::ProxyType<TrackingJSONRPC> tracking (Core::proxy_cast<TrackingJSONRPC>(_current));
+		    Core::ProxyType<TrackingJSONRPC> tracking (_current);
                     ASSERT (tracking.IsValid() == true);
                     if(loaded > 0) {
                         tracking->In(loaded);
