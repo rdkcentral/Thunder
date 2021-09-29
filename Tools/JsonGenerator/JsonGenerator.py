@@ -1473,15 +1473,15 @@ def EmitEvent(emit, root, event, static=False):
         emit.Line()
     if event.HasSendif():
         index_var = "designatorId"
-        emit.Line('Notify(_T("%s")%s, [&id](const string& designator) -> bool {' %
-                  (event.JsonName(), ", params" if params != "void" else ""))
+        emit.Line('%sNotify(_T("%s")%s, [&id](const string& designator) -> bool {' %
+                  ("module." if static else "", event.JsonName(), ", params" if params != "void" else ""))
         emit.Indent()
         emit.Line("const string %s = designator.substr(0, designator.find('.'));" % index_var)
         if isinstance(event.sendif, JsonInteger):
             index_var = "_designatorIdInt"
             type = event.sendif.CppStdClass()
             emit.Line("%s %s{};" % (type, index_var))
-            emit.Line("if (Core::FromString(%s, %s) == false) {" % ("id", index_var))
+            emit.Line("if (Core::FromString(%s, %s) == false) {" % ("designatorId", index_var))
             emit.Indent()
             emit.Line("return (false);")
             emit.Unindent()
@@ -1490,7 +1490,7 @@ def EmitEvent(emit, root, event, static=False):
         elif isinstance(event.sendif, JsonEnum):
             index_var = "_designatorIdEnum"
             type = event.sendif.CppStdClass()
-            emit.Line("Core::EnumerateType<%s> _value(%s.c_str());" % (type, "id"))
+            emit.Line("Core::EnumerateType<%s> _value(%s.c_str());" % (type, "designatorId"))
             emit.Line("const %s %s = _value.Value();" % ( type, index_var))
             emit.Line("if (_value.IsSet() == false) {")
             emit.Indent()
@@ -1538,12 +1538,12 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
         emit.Indent()
         emit.Line()
     namespace = DATA_NAMESPACE + "::" + namespace
+    emit.Line("namespace %s {" % struct)
+    emit.Indent()
+    emit.Line()
     if data_emitted:
         emit.Line("using namespace %s;" % namespace)
         emit.Line()
-    emit.Line("struct %s {" % struct)
-    emit.Indent()
-    emit.Line()
     emit.Line("static void Register(PluginHost::JSONRPC& module, %s* %s)" % (face, destination_var))
     emit.Line("{")
     emit.Indent()
@@ -1663,10 +1663,10 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                         if "iterator" in t[0].schema:
                             if t[1] == READ_ONLY:
                                 emit.Line("std::list<%s> elements;" %(t[0].items.CppStdClass()))
-                                emit.Line("auto iterator = %s.Elements();" % (t[0].CppName()))
+                                emit.Line("auto iterator = %s.Elements();" % ((parent if parent else "") + t[0].CppName()))
                                 emit.Line("while (iterator.Next() == true) {")
                                 emit.Indent()
-                                emit.Line("elements.push_back(iterator.Current().Value());")
+                                emit.Line("elements.push_back(iterator.Current()%s);" % (".Value()" if not isinstance(t[0].items, JsonObject) else ""))
                                 emit.Unindent()
                                 emit.Line("}")
                                 impl = t[0].schema["iterator"][:t[0].schema["iterator"].index('<')].replace("IIterator", "Iterator") + "<%s>" % t[0].schema["iterator"]
@@ -1767,8 +1767,8 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                                 emit.Line("%s %s{};" % (elem.items.CppStdClass(), elem.items.JsonName()))
                                 emit.Line("while (%s->Next(%s) == true) {" % (elem.JsonName(), elem.items.JsonName()))
                                 emit.Indent()
-                                emit.Line("%s& %s(%s.Add());" % (elem.items.CppType(), elem.items.CppName(), elem.CppName()))
-                                EmitResponse(elem.items)
+                                emit.Line("%s& element(%s.Add());" % (elem.items.CppType(), parent + elem.CppName()))
+                                emit.Line("element = %s;" % elem.items.JsonName())
                                 emit.Unindent()
                                 emit.Line("}")
                                 emit.Line("%s->Release();" % elem.JsonName())
@@ -1872,17 +1872,17 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
     emit.Line()
 
     if events:
-        emit.Line("struct Event {")
-        emit.Line()
+        emit.Line("namespace Event {")
         emit.Indent()
+        emit.Line()
         for event in events:
             EmitEvent(emit, root, event, True)
         emit.Unindent()
-        emit.Line("}; // struct Event")
+        emit.Line("}; // namespace Event")
         emit.Line()
 
     emit.Unindent()
-    emit.Line("}; // struct %s" % struct)
+    emit.Line("}; // namespace %s" % struct)
     emit.Line()
     if "info" in root.schema and "namespace" in root.schema["info"]:
         emit.Unindent()
@@ -2237,7 +2237,7 @@ def EmitObjects(root, emit, if_file, emitCommon=False):
             emit.Line("}")
 
         def EmitConversionOperator(jsonObj):
-            emit.Line("explicit operator %s() const" % (jsonObj.CppStdClass()))
+            emit.Line("operator %s() const" % (jsonObj.CppStdClass()))
             emit.Line("{")
             emit.Indent();
             emit.Line("%s val;" % (jsonObj.CppStdClass()))
@@ -2276,19 +2276,18 @@ def EmitObjects(root, emit, if_file, emitCommon=False):
             global emittedItems
             emittedItems += 1
             EmitCtor(jsonObj, jsonObj.NeedsCopyCtor())
-            emit.Line()
+            if jsonObj.NeedsCopyCtor():
+                emit.Line()
+                EmitCtor(jsonObj, True, True, False)
+                emit.Line()
+                EmitAssignmentOperator(jsonObj, True, False)
             if "typename" in jsonObj.schema:
+                emit.Line()
                 EmitCtor(jsonObj, True, False, True)
                 emit.Line()
                 EmitAssignmentOperator(jsonObj, False, True)
                 emit.Line()
                 EmitConversionOperator(jsonObj)
-                emit.Line()
-            if jsonObj.NeedsCopyCtor():
-                EmitCtor(jsonObj, True, True)
-                emit.Line()
-                EmitAssignmentOperator(jsonObj, True)
-                emit.Line()
             if jsonObj.NeedsCopyCtor() or "typename" in jsonObj.schema:
                 emit.Unindent()
                 emit.Line()
@@ -2302,6 +2301,7 @@ def EmitObjects(root, emit, if_file, emitCommon=False):
                 emit.Line("}")
                 emit.Line()
             else:
+                emit.Line()
                 emit.Line("%s(const %s&) = delete;" % (jsonObj.CppClass(), jsonObj.CppClass()))
                 emit.Line("%s& operator=(const %s&) = delete;" % (jsonObj.CppClass(), jsonObj.CppClass()))
                 emit.Line()
