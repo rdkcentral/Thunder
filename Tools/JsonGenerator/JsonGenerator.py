@@ -2461,7 +2461,7 @@ def CreateDocument(schema, path):
                             "required" in parent
                             and name not in parent["required"]) or ("required" in parent
                                                                     and len(parent["required"]) == 0)
-
+                name = (name if not "original" in obj else obj["original"])
                 # include information about enum values in description
                 enum = ' (must be one of the following: %s)' % (", ".join(
                     '*{0}*'.format(w) for w in obj["enum"])) if "enum" in obj else ""
@@ -2482,7 +2482,8 @@ def CreateDocument(schema, path):
                     if "required" not in obj and name and len(obj["properties"]) > 1:
                         log.Warn("'%s': no 'required' field present (assuming all members optional)" % name)
                     for pname, props in obj["properties"].items():
-                        __TableObj(pname, props, parentName + "/" + name, obj, prefix, False)
+                        print(name,"/", props)
+                        __TableObj(pname, props, parentName + "/" + (name if not "original" in props else props["original"]), obj, prefix, False)
                 elif obj["type"] == "array":
                     __TableObj("", obj["items"], parentName + "/" + name, obj, (prefix + "[#]") if name else "",
                                optional)
@@ -2508,13 +2509,14 @@ def CreateDocument(schema, path):
             MdBr()
 
         def __ExampleObj(name, obj):
+            name = (name if not "original" in obj else obj["original"])
             objType = obj["type"]
             default = obj["example"] if "example" in obj else obj["default"] if "default" in obj else ""
             if not default and "enum" in obj:
                 default = obj["enum"][0]
             jsonData = '"%s": ' % name if name else ''
             if objType == "string":
-                jsonData += '"%s"' % (default)
+                jsonData += '"%s"' % (default if default else "abcd")
             elif objType in ["integer", "number"]:
                 jsonData += '%s' % (default if default else 0)
             elif objType in ["float", "double"]:
