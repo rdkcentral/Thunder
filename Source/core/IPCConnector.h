@@ -147,11 +147,10 @@ namespace Core {
         };
 
         class Deserializer {
-        private:
-            Deserializer(const Deserializer&);
-            Deserializer& operator=(const Deserializer&);
-
         public:
+            Deserializer(const Deserializer&) = delete;
+            Deserializer& operator=(const Deserializer&) = delete;
+
             Deserializer()
                 : _length(0)
                 , _offset(0)
@@ -159,9 +158,7 @@ namespace Core {
                 , _current(nullptr)
             {
             }
-            virtual ~Deserializer()
-            {
-            }
+            virtual ~Deserializer() = default;
 
         public:
             virtual void Deserialized(IMessage& element) = 0;
@@ -239,7 +236,7 @@ namespace Core {
         };
 
     public:
-        virtual ~IMessage() {}
+        virtual ~IMessage() = default;
 
         virtual uint32_t Label() const = 0;
         virtual uint32_t Length() const = 0;
@@ -248,8 +245,7 @@ namespace Core {
     };
 
     struct EXTERNAL IIPC {
-        inline IIPC() {}
-        virtual ~IIPC();
+        virtual ~IIPC() = default;
 
         virtual uint32_t Label() const = 0;
         virtual ProxyType<IMessage> IParameters() = 0;
@@ -257,40 +253,36 @@ namespace Core {
     };
 
     struct EXTERNAL IIPCServer {
-        inline IIPCServer() {}
-        virtual ~IIPCServer();
+        virtual ~IIPCServer() = default;
 
-        // ================================== CALLED ON COMMUNICATION THREAD =====================================
-        // Procedure is always called on the communication thread. so it means that during the context of this
-        // call, no state changes on the communication channel can happen. That in turn allows us to "check" for
-        // reference counted channels and if needed, increment our reference count before any state changes on
-        // the communication channel can happen.
         virtual void Procedure(IPCChannel& source, Core::ProxyType<IIPC>& message) = 0;
     };
 
     template <const uint32_t IDENTIFIER, typename PARAMETERS, typename RESPONSE>
-    class IPCMessageType : public IIPC {
+    class IPCMessageType : public IIPC, public IReferenceCounted {
     private:
+        using CompoundClass = IPCMessageType<IDENTIFIER, PARAMETERS, RESPONSE>;
+
         template <typename PACKAGE, const uint32_t REALIDENTIFIER>
-        class RawSerializedType : public Core::IMessage, public IReferenceCounted {
-        private:
+        class RawSerializedType : public Core::IMessage {
+        public:
+            using ThisClass = RawSerializedType<PACKAGE, REALIDENTIFIER>;
+
+            RawSerializedType() = delete;
             RawSerializedType(const RawSerializedType<PACKAGE, REALIDENTIFIER>& copy) = delete;
             RawSerializedType<PACKAGE, REALIDENTIFIER>& operator=(const RawSerializedType<PACKAGE, REALIDENTIFIER>& copy) = delete;
 
-        public:
-            RawSerializedType(IPCMessageType<IDENTIFIER, PARAMETERS, RESPONSE>& parent)
-                : _package()
-                , _parent(parent)
+            RawSerializedType(CompoundClass& parent)
+                : _parent(parent)
+                , _package()
             {
             }
-            RawSerializedType(IPCMessageType<IDENTIFIER, PARAMETERS, RESPONSE>& parent, const PACKAGE& package)
-                : _package(package)
-                , _parent(parent)
+            RawSerializedType(CompoundClass& parent, const PACKAGE& package)
+                : _parent(parent)
+                , _package(package)
             {
             }
-            virtual ~RawSerializedType()
-            {
-            }
+            ~RawSerializedType() override = default;
 
         public:
             inline void Clear()
@@ -301,29 +293,27 @@ namespace Core {
             {
                 return (_package);
             }
-            virtual uint32_t Label() const
+            uint32_t Label() const override
             {
                 return (REALIDENTIFIER);
             }
-            virtual uint32_t Length() const
+            uint32_t Length() const override
             {
                 return (_Length());
             }
-            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const override
             {
                 return (_Serialize(stream, maxLength, offset));
             }
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset)
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset) override
             {
                 return _Deserialize(stream, maxLength, offset);
             }
-            virtual void AddRef() const
-            {
+            void Acquire(Core::ProxyType<ThisClass>& source) {
                 _parent.AddRef();
             }
-            virtual uint32_t Release() const
-            {
-                return (_parent.Release());
+            void Relinquish(Core::ProxyType<ThisClass>& source) {
+                _parent.Release();
             }
 
         private:
@@ -331,7 +321,6 @@ namespace Core {
             // Check for Clear method on Object
             // -----------------------------------------------------
             HAS_MEMBER(Clear, hasClear);
-
 
             template <typename SUBJECT=PACKAGE>
             inline typename Core::TypeTraits::enable_if<hasClear<SUBJECT, void (SUBJECT::*)()>::value, void>::type
@@ -350,7 +339,6 @@ namespace Core {
             // Search for custom handling, Compile time !!!
             // -----------------------------------------------------
             HAS_MEMBER(Length, hasLength);
-
 
             template <typename SUBJECT=PACKAGE>
             inline typename Core::TypeTraits::enable_if<hasLength<SUBJECT, uint32_t (SUBJECT::*)() const>::value, uint32_t>::type
@@ -391,7 +379,6 @@ namespace Core {
 
             HAS_MEMBER(Deserialize, hasDeserialize);
 
-
             template <typename SUBJECT=PACKAGE>
             inline typename Core::TypeTraits::enable_if<hasDeserialize<SUBJECT, uint16_t (SUBJECT::*)(const uint8_t[], const uint16_t, const uint32_t)>::value, uint16_t>::type
             _Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset)
@@ -413,17 +400,16 @@ namespace Core {
             }
 
         private:
+            CompoundClass& _parent;
             PACKAGE _package;
-            IPCMessageType<IDENTIFIER, PARAMETERS, RESPONSE>& _parent;
         };
 
-    private:
+    public:
+        using ParameterType = RawSerializedType < PARAMETERS, (IDENTIFIER << 1) >;
+        using ResponseType = RawSerializedType < RESPONSE, ((IDENTIFIER << 1) | 0x1) >;
+
         IPCMessageType(const IPCMessageType<IDENTIFIER, PARAMETERS, RESPONSE>&) = delete;
         IPCMessageType<IDENTIFIER, PARAMETERS, RESPONSE>& operator=(const IPCMessageType<IDENTIFIER, PARAMETERS, RESPONSE>&) = delete;
-
-    public:
-        typedef PARAMETERS ParameterType;
-        typedef RESPONSE ResponseType;
 
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
@@ -432,18 +418,23 @@ namespace Core {
             : _parameters(*this)
             , _response(*this)
         {
+            _parameters.AddRef();
+            _response.AddRef();
         }
         IPCMessageType(const PARAMETERS& info)
             : _parameters(*this, info)
             , _response(*this)
         {
+            _parameters.AddRef();
+            _response.AddRef();
         }
 #ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 
-        virtual ~IPCMessageType()
-        {
+        ~IPCMessageType() override {
+            _parameters.CompositRelease();
+            _response.CompositRelease();
         }
 
     public:
@@ -470,35 +461,23 @@ namespace Core {
         }
         virtual ProxyType<IMessage> IParameters()
         {
-            return ProxyType<IMessage>(&_parameters, &_parameters);
+            return (ProxyType<IMessage>(Core::ProxyType<ParameterType>(_parameters)));
         }
         virtual ProxyType<IMessage> IResponse()
         {
-            return ProxyType<IMessage>(&_response, &_response);
+            return (ProxyType<IMessage>(Core::ProxyType<ResponseType>(_response)));
         }
 
     private:
-        // Make sure you created the final class as a ProxyType
-        virtual void AddRef() const = 0;
-        virtual uint32_t Release() const = 0;
-
-    private:
-        RawSerializedType<PARAMETERS, (IDENTIFIER << 1)> _parameters;
-        RawSerializedType<RESPONSE, ((IDENTIFIER << 1) | 0x1)> _response;
+        ProxyObject< ParameterType > _parameters;
+        ProxyObject< ResponseType > _response;
     };
 
     class EXTERNAL IPCChannel {
-    private:
-        IPCChannel(const IPCChannel&) = delete;
-        IPCChannel& operator=(const IPCChannel&) = delete;
-
     public:
         class EXTERNAL IPCFactory {
         private:
             friend IPCChannel;
-
-            IPCFactory(const IPCFactory& copy) = delete;
-            IPCFactory& operator=(const IPCFactory&) = delete;
 
             IPCFactory()
                 : _lock()
@@ -517,6 +496,9 @@ namespace Core {
             }
 
         public:
+            IPCFactory(const IPCFactory& copy) = delete;
+            IPCFactory& operator=(const IPCFactory&) = delete;
+
             IPCFactory(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
                 : _lock()
                 , _inbound()
@@ -724,11 +706,14 @@ namespace Core {
         }
 
     public:
+        IPCChannel(const IPCChannel&) = delete;
+        IPCChannel& operator=(const IPCChannel&) = delete;
+
         IPCChannel(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
             : _administration(factory)
         {
         }
-        virtual ~IPCChannel();
+        virtual ~IPCChannel() = default;
 
     public:
         inline void Register(const uint32_t id, const ProxyType<IIPCServer>& handler)
@@ -779,62 +764,23 @@ namespace Core {
     template <typename ACTUALSOURCE, typename EXTENSION>
     class IPCChannelType : public IPCChannel {
     private:
-        IPCChannelType(const IPCChannelType<ACTUALSOURCE, EXTENSION>&) = delete;
-        IPCChannelType<ACTUALSOURCE, EXTENSION>& operator=(const IPCChannelType<ACTUALSOURCE, EXTENSION>&) = delete;
-
         class IPCLink : public LinkType<ACTUALSOURCE, IMessage, IMessage, IPCFactory&> {
         private:
-            typedef LinkType<ACTUALSOURCE, IMessage, IMessage, IPCFactory&> BaseClass;
+            using BaseClass = LinkType<ACTUALSOURCE, IMessage, IMessage, IPCFactory&>;
 
+        public:
             IPCLink() = delete;
             IPCLink(const IPCLink&) = delete;
             IPCLink& operator=(const IPCLink&) = delete;
 
-        public:
-            IPCLink(IPCChannelType<ACTUALSOURCE, EXTENSION>* parent, IPCFactory* factory)
-                : LinkType<ACTUALSOURCE, IMessage, IMessage, IPCFactory&>(2, *factory)
+            template <typename... Args>
+            IPCLink(IPCChannelType<ACTUALSOURCE, EXTENSION>* parent, IPCFactory* factory, Args&&... args)
+                : LinkType<ACTUALSOURCE, IMessage, IMessage, IPCFactory&>(2, *factory, std::forward<Args>(args)...)
                 , _factory(*factory)
                 , _parent(*parent)
             {
             }
-            template <typename ARG1>
-            IPCLink(IPCChannelType<ACTUALSOURCE, EXTENSION>* parent, IPCFactory* factory, ARG1 arg1)
-                : LinkType<ACTUALSOURCE, IMessage, IMessage, IPCFactory&>(2, *factory, arg1)
-                , _factory(*factory)
-                , _parent(*parent)
-            {
-            }
-            template <typename ARG1, typename ARG2>
-            IPCLink(IPCChannelType<ACTUALSOURCE, EXTENSION>* parent, IPCFactory* factory, ARG1 arg1, ARG2 arg2)
-                : LinkType<ACTUALSOURCE, IMessage, IMessage, IPCFactory&>(2, *factory, arg1, arg2)
-                , _factory(*factory)
-                , _parent(*parent)
-            {
-            }
-            template <typename ARG1, typename ARG2, typename ARG3>
-            IPCLink(IPCChannelType<ACTUALSOURCE, EXTENSION>* parent, IPCFactory* factory, ARG1 arg1, ARG2 arg2, ARG3 arg3)
-                : LinkType<ACTUALSOURCE, IMessage, IMessage, IPCFactory&>(2, *factory, arg1, arg2, arg3)
-                , _factory(*factory)
-                , _parent(*parent)
-            {
-            }
-            template <typename ARG1, typename ARG2, typename ARG3, typename ARG4>
-            IPCLink(IPCChannelType<ACTUALSOURCE, EXTENSION>* parent, IPCFactory* factory, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4)
-                : LinkType<ACTUALSOURCE, IMessage, IMessage, IPCFactory&>(2, *factory, arg1, arg2, arg3, arg4)
-                , _factory(*factory)
-                , _parent(*parent)
-            {
-            }
-            template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5>
-            IPCLink(IPCChannelType<ACTUALSOURCE, EXTENSION>* parent, IPCFactory* factory, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5)
-                : LinkType<ACTUALSOURCE, IMessage, IMessage, IPCFactory&>(2, *factory, arg1, arg2, arg3, arg4, arg5)
-                , _factory(*factory)
-                , _parent(*parent)
-            {
-            }
-            ~IPCLink()
-            {
-            }
+            ~IPCLink() override = default;
 
         public:
             inline bool SendResponse(Core::ProxyType<IIPC>& inbound)
@@ -846,7 +792,7 @@ namespace Core {
             }
 
             // Notification of a INBOUND element received.
-            virtual void Received(Core::ProxyType<IMessage>& message)
+            void Received(Core::ProxyType<IMessage>& message) override
             {
 
                 Core::ProxyType<IIPC> inbound;
@@ -858,13 +804,13 @@ namespace Core {
             }
 
             // Notification of a Response send.
-            virtual void Send(const Core::ProxyType<IMessage>& message VARIABLE_IS_NOT_USED)
+            void Send(const Core::ProxyType<IMessage>& message VARIABLE_IS_NOT_USED) override
             {
                 // Oke, nice we send out the info. Nothing to do. It will all be triggered by the Receive..
             }
 
             // Notification of a channel state change..
-            virtual void StateChange()
+            void StateChange() override
             {
                 if (_parent.Source().IsOpen() == false) {
                     // Whatever s hapening, Flush what we were doing..
@@ -879,22 +825,18 @@ namespace Core {
             IPCFactory& _factory;
             IPCChannelType<ACTUALSOURCE, EXTENSION>& _parent;
         };
-
         class IPCTrigger : public IDispatchType<IIPC> {
-        private:
+        public:
             IPCTrigger() = delete;
             IPCTrigger(const IPCTrigger&) = delete;
             IPCTrigger& operator=(const IPCTrigger&) = delete;
 
-        public:
             IPCTrigger(IPCFactory& administration)
                 : _administration(administration)
                 , _signal(false, true)
             {
             }
-            virtual ~IPCTrigger()
-            {
-            }
+            ~IPCTrigger() override = default;
 
         public:
             uint32_t Wait(const uint32_t waitTime)
@@ -912,7 +854,7 @@ namespace Core {
 
                 return (result);
             }
-            virtual void Dispatch(IIPC& /* element */)
+            void Dispatch(IIPC& /* element */) override
             {
                 _signal.SetEvent();
             }
@@ -923,76 +865,23 @@ namespace Core {
         };
 
     public:
+        IPCChannelType(const IPCChannelType<ACTUALSOURCE, EXTENSION>&) = delete;
+        IPCChannelType<ACTUALSOURCE, EXTENSION>& operator=(const IPCChannelType<ACTUALSOURCE, EXTENSION>&) = delete;
+
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
-        template <typename ARG1>
-        IPCChannelType(ARG1 arg1)
+        template <typename... Args>
+        IPCChannelType(Args&&... args)
             : IPCChannel()
-            , _link(this, &_administration, arg1)
+            , _link(this, &_administration, std::forward<Args>(args)...)
             , _extension(this)
         {
         }
-        template <typename ARG1, typename ARG2>
-        IPCChannelType(ARG1 arg1, ARG2 arg2)
-            : IPCChannel()
-            , _link(this, &_administration, arg1, arg2)
-            , _extension(this)
-        {
-        }
-        template <typename ARG1, typename ARG2, typename ARG3>
-        IPCChannelType(ARG1 arg1, ARG2 arg2, ARG3 arg3)
-            : IPCChannel()
-            , _link(this, &_administration, arg1, arg2, arg3)
-            , _extension(this)
-        {
-        }
-        template <typename ARG1, typename ARG2, typename ARG3, typename ARG4>
-        IPCChannelType(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4)
-            : IPCChannel()
-            , _link(this, &_administration, arg1, arg2, arg3, arg4)
-            , _extension(this)
-        {
-        }
-        template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5>
-        IPCChannelType(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5)
-            : IPCChannel()
-            , _link(this, &_administration, arg1, arg2, arg3, arg4, arg5)
-            , _extension(this)
-        {
-        }
-        template <typename ARG1>
-        IPCChannelType(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory, ARG1 arg1)
+        template <typename... Args>
+        IPCChannelType(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory, Args&&... args)
             : IPCChannel(factory)
-            , _link(this, &_administration, arg1)
-            , _extension(this)
-        {
-        }
-        template <typename ARG1, typename ARG2>
-        IPCChannelType(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory, ARG1 arg1, ARG2 arg2)
-            : IPCChannel(factory)
-            , _link(this, &_administration, arg1, arg2)
-            , _extension(this)
-        {
-        }
-        template <typename ARG1, typename ARG2, typename ARG3>
-        IPCChannelType(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory, ARG1 arg1, ARG2 arg2, ARG3 arg3)
-            : IPCChannel(factory)
-            , _link(this, &_administration, arg1, arg2, arg3)
-            , _extension(this)
-        {
-        }
-        template <typename ARG1, typename ARG2, typename ARG3, typename ARG4>
-        IPCChannelType(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4)
-            : IPCChannel(factory)
-            , _link(this, &_administration, arg1, arg2, arg3, arg4)
-            , _extension(this)
-        {
-        }
-        template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5>
-        IPCChannelType(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5)
-            : IPCChannel(factory)
-            , _link(this, &_administration, arg1, arg2, arg3, arg4, arg5)
+            , _link(this, &_administration, std::forward<Args>(args)...)
             , _extension(this)
         {
         }
@@ -1000,9 +889,7 @@ namespace Core {
 #pragma warning(default : 4355)
 #endif
 
-        virtual ~IPCChannelType()
-        {
-        }
+        ~IPCChannelType() override = default;
 
     public:
         inline EXTENSION& Extension()
@@ -1025,7 +912,7 @@ namespace Core {
         {
             return (_administration.InProgress());
         }
-        virtual uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound)
+        uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) override
         {
 
             // We got the event, start the invoke, wait for the event to be set again..
@@ -1055,7 +942,7 @@ namespace Core {
         {
         }
 
-        virtual uint32_t Execute(ProxyType<IIPC>& command, IDispatchType<IIPC>* completed)
+        uint32_t Execute(ProxyType<IIPC>& command, IDispatchType<IIPC>* completed) override
         {
             uint32_t success = Core::ERROR_UNAVAILABLE;
 
@@ -1078,7 +965,7 @@ namespace Core {
 
             return (success);
         }
-        virtual uint32_t Execute(ProxyType<IIPC>& command, const uint32_t waitTime)
+        uint32_t Execute(ProxyType<IIPC>& command, const uint32_t waitTime) override
         {
             uint32_t success = Core::ERROR_CONNECTION_CLOSED;
 
