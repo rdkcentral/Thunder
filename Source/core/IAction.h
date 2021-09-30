@@ -26,13 +26,13 @@ namespace WPEFramework {
 namespace Core {
     template <typename ELEMENT>
     struct IDispatchType {
-        virtual ~IDispatchType(){};
+        virtual ~IDispatchType() = default;
         virtual void Dispatch(ELEMENT& element) = 0;
     };
 
     template <>
     struct IDispatchType<void> {
-        virtual ~IDispatchType(){};
+        virtual ~IDispatchType() = default;
         virtual void Dispatch() = 0;
     };
 

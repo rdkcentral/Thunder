@@ -1146,7 +1146,7 @@ namespace RPC {
             public:
                 virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override
                 {
-                    Core::ProxyType<AnnounceMessage> message(Core::proxy_cast<AnnounceMessage>(data));
+                    Core::ProxyType<AnnounceMessage> message(data);
 
                     ASSERT(message.IsValid() == true);
                     ASSERT(dynamic_cast<Client*>(&channel) != nullptr);

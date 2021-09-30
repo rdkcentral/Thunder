@@ -22,6 +22,7 @@
 
 // ---- Include system wide include files ----
 #include <memory>
+#include <atomic>
 
 // ---- Include local include files ----
 #include "Portability.h"
@@ -44,7 +45,7 @@ namespace Core {
     class ProxyType;
 
     template <typename CONTEXT>
-    class ProxyObject final : public CONTEXT, virtual public IReferenceCounted {
+    class ProxyObject final : public CONTEXT, public std::conditional<std::is_base_of<IReferenceCounted, CONTEXT>::value, Void, IReferenceCounted>::type {
     public:
         // ----------------------------------------------------------------
         // Never, ever allow reference counted objects to be assigned.
@@ -119,13 +120,13 @@ namespace Core {
         void AddRef() const override
         {
             const_cast<ProxyObject<CONTEXT>*>(this)->__Acquire();
-            Core::InterlockedIncrement(_refCount);
+            _refCount++;
         }
         uint32_t Release() const override
         {
             uint32_t result = Core::ERROR_NONE;
 
-            if (Core::InterlockedDecrement(_refCount) == 0) {
+            if (--_refCount == 0) {
                 delete this;
                 result = Core::ERROR_DESTRUCTION_SUCCEEDED;
             }
@@ -186,7 +187,7 @@ namespace Core {
             // At the moment these go out of scope, this CompositRelease has to be called. It is assuming the
             // last release but will not delete this object as that the the responsibility of the object that
             // has this object as a composit.
-            Core::InterlockedDecrement(_refCount);
+            _refCount--;
 
             ASSERT(_refCount == 0);
         }
@@ -309,7 +310,7 @@ namespace Core {
         }
 
     protected:
-        mutable uint32_t _refCount;
+        mutable std::atomic<uint32_t> _refCount;
     };
 
     // ------------------------------------------------------------------------------
@@ -466,9 +467,10 @@ namespace Core {
             // Only allowed on valid objects.
             ASSERT(_refCount != nullptr);
 
-            uint32_t result = _refCount->Release();
-
+            IReferenceCounted* resource = _refCount;
             _refCount = nullptr;
+
+            uint32_t result = resource->Release();
 
             return (result);
         }
@@ -515,12 +517,6 @@ namespace Core {
         inline operator IReferenceCounted* () const
         {
             return (_refCount);
-        }
-
-        void Destroy()
-        {
-            delete _refCount;
-            _refCount = nullptr;
         }
 
     private:
@@ -1309,11 +1305,13 @@ namespace Core {
         inline typename Core::TypeTraits::enable_if<hasAcquire<TYPE, void (TYPE::*)(Core::ProxyType<STORED>& source)>::value, void>::type
             __Acquire(Core::ProxyType<ThisClass>& source)
         {
-            Core::ProxyType<STORED> base(std::move(source));
+            Core::ProxyType<STORED> base;
+            
+            base.Load(source._refCount, source._realObject);
 
             TYPE::Acquire(base);
 
-            source = std::move(base);
+            base.Reset();
         }
         template <typename TYPE = CONTEXT>
         inline typename Core::TypeTraits::enable_if<!hasAcquire<TYPE, void (TYPE::*)(Core::ProxyType<STORED>& source)>::value, void>::type
@@ -1330,11 +1328,13 @@ namespace Core {
         inline typename Core::TypeTraits::enable_if<hasRelinquish<TYPE, void (TYPE::*)(Core::ProxyType<STORED>&)>::value, void>::type
             __Relinquish(Core::ProxyType<ThisClass>& source)
         {
-            Core::ProxyType<STORED> base(std::move(source));
+            Core::ProxyType<STORED> base;
+
+            base.Load(source._refCount, source._realObject);
 
             TYPE::Relinquish(base);
 
-            source = std::move(base);
+            base.Reset();
         }
         template < typename TYPE = CONTEXT>
         inline typename Core::TypeTraits::enable_if<!hasRelinquish<TYPE, void (TYPE::*)(Core::ProxyType<STORED>&)>::value, void>::type
