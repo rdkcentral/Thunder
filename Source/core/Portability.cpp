@@ -333,21 +333,6 @@ uint64_t ntohll(const uint64_t& value)
 namespace WPEFramework {
 namespace Core {
 
-    /* virtual */ IIPC::~IIPC() {}
-    /* virtual */ IIPCServer::~IIPCServer() {}
-    /* virtual */ IPCChannel::~IPCChannel() {}
-
-
-
-    // In windows you need the newest compiler for this...
-    //template <typename First, typename... Rest> const string Format(const First* first, const Rest&... rest) {
-    //	TCHAR buffer[2057];
-
-    //	::vsnprintf_s (buffer, sizeof(buffer),sizeof(buffer), first, rest...);
-
-    //	return (string(buffer));
-    //}
-
 #ifndef va_copy
 #ifdef _MSC_VER
 #define va_copy(dst, src) dst = src
