@@ -985,6 +985,7 @@ namespace Core {
                 : _set(0)
                 , _value(0.0)
                 , _default(0.0)
+                , _strValue()
             {
             }
 
@@ -992,6 +993,7 @@ namespace Core {
                 : _set(set ? SET : 0)
                 , _value(Value)
                 , _default(Value)
+                , _strValue()
             {
             }
 
@@ -999,6 +1001,7 @@ namespace Core {
                 : _set(copy._set)
                 , _value(copy._value)
                 , _default(copy._default)
+                , _strValue()
             {
             }
 
@@ -1063,6 +1066,29 @@ namespace Core {
             }
 
         private:
+            uint16_t Convert(char stream[], const uint16_t maxLength, uint32_t& offset) const
+            {
+                uint16_t loaded = 0;
+
+                if (_strValue.empty() == true) {
+                    char str[16];
+                    std::sprintf(str, "%g", _value);
+                    const_cast<FloatType*>(this)->_strValue = str;
+                }
+
+                while ((loaded < maxLength) && (offset < _strValue.size())) {
+                    stream[loaded] = _strValue[offset];
+                    loaded++;
+                    offset++;
+                }
+                if (offset == _strValue.size()) {
+                    offset = 0;
+                    const_cast<FloatType*>(this)->_strValue.clear();
+                }
+
+                return loaded;
+            }
+
             // IElement iface:
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
@@ -1085,73 +1111,73 @@ namespace Core {
                 }
                 else
                 {
-                    auto num = std::snprintf(stream,maxLength,"%g",_value);
-                    loaded = num > 0 ? num : 0;
+                    loaded += Convert(stream, maxLength, offset);
                 }
                 
                 return loaded;
             }
             
-            uint16_t Deserialize(const char stream[], const uint16_t, uint32_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
 
                 if (offset == 0) {
                     _value = 0;
                     _set = 0;
+                    _strValue.clear();
                 }
 
-                std::string str;
-
-                if (stream[loaded] == '\"') {
+                if ((stream[loaded] == '\"') && ((_set & QUOTED) == 0)) {
                     _set = QUOTED;
                     offset++;
                     loaded++;
                 }
 
-                while(stream[loaded] != '\"' && 
-                      stream[loaded] != ',' && 
-                      stream[loaded] != ']' && 
-                      stream[loaded] != '}' &&
-                      stream[loaded] != ')') {
-                    
-                    str += stream[loaded++];
+                bool completed = false;
 
-                }
+                while ((loaded < maxLength) && (completed == false)) {
 
-                if (stream[loaded] == '\"') {
-                    loaded++;
-                }
-
-                if(str == IElement::NullTag)
-                {
-                    _set |= UNDEFINED;
-                    return loaded;
-                }
-
-                TYPE val;
-                char* end;
-                if(std::is_same<float,TYPE>::value)
-                {
-                    val = std::strtof(str.c_str(), &end);
-                }
-                else
-                {
-                    val = static_cast<TYPE>(std::strtod(str.c_str(), &end));
+                    if (((_set & QUOTED) != 0) && (stream[loaded] == '\"')) {
+                        completed = true;
+                        loaded++;
+                        offset++;
+                        _set &= ~QUOTED;
+                    } else if (((_set & QUOTED) == 0) && (::isspace(stream[loaded]) || (stream[loaded] == '\0') ||
+                               (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']') ||
+                               (stream[loaded] == ')'))) {
+                        completed = true;
+                    } else {
+                        _strValue += stream[loaded++];
+                        offset++;
+                    }
                 }
 
-                if(end == str.c_str())
-                {
-                    error = Error{ "Error converting \"" + str + "\" to a float/double" };
-                    _set = ERROR;
+                if (completed == true) {
+
+                    if (_strValue == IElement::NullTag) {
+                        _set |= UNDEFINED;
+
+                    } else {
+                        TYPE val;
+                        char* end;
+                        if (std::is_same<float,TYPE>::value) {
+                            val = std::strtof(_strValue.c_str(), &end);
+                        } else {
+                            val = static_cast<TYPE>(std::strtod(_strValue.c_str(), &end));
+                        }
+
+                        if (end == _strValue.c_str()) {
+                            error = Error{ "Error converting \"" + _strValue + "\" to a float/double" };
+                            _set = ERROR;
+                        } else {
+                            _value = val;
+                            _set |= SET;
+                        }
+
+                        offset = 0;
+                        _strValue.clear();
+                    }
                 }
-                else
-                {
-                    _value = val;
-                    _set |= SET;
-                }
-                
-                offset = 0;
 
                 return loaded;
             }
@@ -1232,6 +1258,7 @@ namespace Core {
             uint16_t _set;
             TYPE _value;
             TYPE _default;
+            std::string _strValue;
         };
 
         typedef FloatType<float> Float;

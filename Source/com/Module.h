@@ -26,6 +26,10 @@
 #include <core/core.h>
 #include <tracing/tracing.h>
 
+#ifdef __CORE_WARNING_REPORTING__
+#include <warningreporting/warningreporting.h>
+#endif
+
 #if defined(__WINDOWS__) && defined(COM_EXPORTS)
 #undef EXTERNAL
 #define EXTERNAL EXTERNAL_EXPORT
