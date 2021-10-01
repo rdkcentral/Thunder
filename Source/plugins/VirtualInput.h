@@ -226,6 +226,7 @@ namespace PluginHost {
                 _passThrough = enabled;
             }
             uint32_t Load(const string& mappingFile);
+            uint32_t LoadFromArray(const Core::JSON::ArrayType<KeyMapEntry>& mappingTable);
             uint32_t Save(const string& mappingFile);
 
             inline const ConversionInfo* operator[](const uint32_t code) const

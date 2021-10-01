@@ -135,6 +135,84 @@ namespace PluginHost
         return (result);
     }
 
+    uint32_t VirtualInput::KeyMap::LoadFromArray(const Core::JSON::ArrayType<KeyMapEntry>& mappingTable)
+    {
+        uint32_t result = Core::ERROR_ILLEGAL_STATE;
+
+        if(mappingTable.Length() > 0) {
+            std::map<uint16_t, uint16_t> previousKeys;
+            std::map<uint16_t, int16_t> updatedKeys;
+
+            result = Core::ERROR_NONE;
+
+            while (_keyMap.size() > 0) {
+                // Keep reference count of repeated keys
+                previousKeys[_keyMap.begin()->second.Code]++;
+
+                // Create an empty list
+                updatedKeys[_keyMap.begin()->second.Code] = 0;
+
+                _keyMap.erase(_keyMap.begin());
+            }
+
+            Core::JSON::ArrayType<KeyMapEntry>::ConstIterator index(mappingTable.Elements());
+            while (index.Next() == true) {
+                if ((index.Current().Code.IsSet()) && (index.Current().Key.IsSet())) {
+                    uint32_t code(index.Current().Code.Value());
+                    ConversionInfo conversionInfo;
+
+                    conversionInfo.Code = index.Current().Key.Value();
+                    conversionInfo.Modifiers = 0;
+
+                    // Build the device info array..
+                    Core::JSON::ArrayType<JSONModifier>::ConstIterator flags(index.Current().Modifiers.Elements());
+
+                    while (flags.Next() == true) {
+                        switch (flags.Current().Value()) {
+                            case KeyMap::modifier::LEFTSHIFT:
+                            case KeyMap::modifier::RIGHTSHIFT:
+                            case KeyMap::modifier::LEFTALT:
+                            case KeyMap::modifier::RIGHTALT:
+                            case KeyMap::modifier::LEFTCTRL:
+                            case KeyMap::modifier::RIGHTCTRL:
+                                conversionInfo.Modifiers |= flags.Current().Value();
+                                break;
+                            default:
+                                ASSERT(false);
+                                break;
+                        }
+                    }
+
+                    // Do not allow same device code to point multiple input keys, it is not a real use-case
+                    if (_keyMap.find(code) == _keyMap.end()) {
+                        _keyMap.insert(std::pair<const uint32_t, const ConversionInfo>(code, conversionInfo));
+
+                        std::map<uint16_t, uint16_t>::iterator index = previousKeys.find(conversionInfo.Code);
+
+                        if (index != previousKeys.end()) {
+                            updatedKeys[index->first]++;
+                        } else {
+                            updatedKeys[conversionInfo.Code]++;
+                        }
+                    }
+                }
+            }
+
+            std::map<uint16_t, uint16_t>::const_iterator updatedKey(previousKeys.begin());
+
+            while (updatedKey != previousKeys.end()) {
+                // Get differences with the latest key map and create delta list
+                updatedKeys[updatedKey->first] -= previousKeys[updatedKey->first];
+                updatedKey++;
+            }
+
+            ChangeIterator updated(updatedKeys);
+            _parent.MapChanges(updated);
+        }
+
+        return (result);
+    }
+
     uint32_t VirtualInput::KeyMap::Save(const string& keyMap)
     {
         uint32_t result = Core::ERROR_ILLEGAL_STATE;
