@@ -91,8 +91,8 @@ namespace WarningReporting {
         uint16_t Serialize(uint8_t buffer[], const uint16_t length) const
         {
             uint16_t serialized = 0;
-            
-            if(sizeof(_interfaceId) + sizeof(_methodId) <= length){
+
+            if (sizeof(_interfaceId) + sizeof(_methodId) <= length) {
                 memcpy(buffer, &_interfaceId, sizeof(_interfaceId));
                 serialized += sizeof(_interfaceId);
 
@@ -107,7 +107,7 @@ namespace WarningReporting {
         {
             uint16_t deserialized = 0;
 
-            if(sizeof(_interfaceId) + sizeof(_methodId) <= length){
+            if (sizeof(_interfaceId) + sizeof(_methodId) <= length) {
                 memcpy(&_interfaceId, buffer, sizeof(_interfaceId));
                 deserialized += sizeof(_interfaceId);
 
@@ -122,7 +122,7 @@ namespace WarningReporting {
         {
             _interfaceId = interfaceId;
             _methodId = methodId;
-            
+
             return true;
         }
 
@@ -136,9 +136,65 @@ namespace WarningReporting {
         static constexpr uint32_t DefaultWarningBound = { 750 };
         static constexpr uint32_t DefaultReportBound = { 250 };
 
-        private:
+    private:
         uint32_t _interfaceId;
         uint32_t _methodId;
+    };
+
+    class EXTERNAL JobTooLongToFinish {
+    public:
+        JobTooLongToFinish(const JobTooLongToFinish&) = delete;
+        JobTooLongToFinish& operator=(const JobTooLongToFinish&) = delete;
+        JobTooLongToFinish() = default;
+        ~JobTooLongToFinish() = default;
+
+        //nothing to serialize/deserialize here
+        uint16_t Serialize(uint8_t[], const uint16_t) const
+        {
+            return 0;
+        }
+
+        uint16_t Deserialize(const uint8_t[], const uint16_t)
+        {
+            return 0;
+        }
+
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
+        {
+            visitor = (_T("Job took too long to finish"));
+            visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, maxValue);
+        };
+
+        static constexpr uint32_t DefaultWarningBound = { 7500 };
+        static constexpr uint32_t DefaultReportBound = { 5000 };
+    };
+
+    class EXTERNAL JobTooLongWaitingInQueue {
+    public:
+        JobTooLongWaitingInQueue(const JobTooLongWaitingInQueue&) = delete;
+        JobTooLongWaitingInQueue& operator=(const JobTooLongWaitingInQueue&) = delete;
+        JobTooLongWaitingInQueue() = default;
+        ~JobTooLongWaitingInQueue() = default;
+
+        //nothing to serialize/deserialize here
+        uint16_t Serialize(uint8_t[], const uint16_t) const
+        {
+            return 0;
+        }
+
+        uint16_t Deserialize(const uint8_t[], const uint16_t)
+        {
+            return 0;
+        }
+
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
+        {
+            visitor = (_T("Job waiting in queue to be executed took too long"));
+            visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, maxValue);
+        };
+
+        static constexpr uint32_t DefaultWarningBound = { 400 };
+        static constexpr uint32_t DefaultReportBound = { 200 };
     };
 }
 }
