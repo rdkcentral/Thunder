@@ -641,9 +641,20 @@ namespace Core {
                 InternalProperty<PARAMETER, GET_METHOD, SET_METHOD, REALOBJECT>(::TemplateIntToType<SET_COUNT::Arguments>(), methodName, getMethod, setMethod, objectPtr);
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD>
-            void Register(const string& methodName, const METHOD& method)
+            typename std::enable_if<!std::is_same<std::string, typename std::remove_cv<typename std::remove_reference<typename TypeTraits::func_traits<METHOD>::template argument<0>::type>::type>::type>::value, void>::type
+            Register(const string& methodName, const METHOD& method)
             {
                 InternalRegister<INBOUND, OUTBOUND, METHOD>(
+                    ::TemplateIntToType<std::is_same<INBOUND, void>::value>(),
+                    ::TemplateIntToType<std::is_same<OUTBOUND, void>::value>(),
+                    methodName,
+                    method);
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD>
+            typename std::enable_if<std::is_same<std::string, typename std::remove_cv<typename std::remove_reference<typename TypeTraits::func_traits<METHOD>::template argument<0>::type>::type>::type>::value, void>::type
+            Register(const string& methodName, const METHOD& method)
+            {
+                InternalRegisterWithIndex<INBOUND, OUTBOUND, METHOD>(
                     ::TemplateIntToType<std::is_same<INBOUND, void>::value>(),
                     ::TemplateIntToType<std::is_same<OUTBOUND, void>::value>(),
                     methodName,
@@ -987,6 +998,51 @@ namespace Core {
                     OUTBOUND outbound;
                     inbound.FromString(parameters);
                     uint32_t code = actualMethod(inbound, outbound);
+                    if (code == Core::ERROR_NONE) {
+                        outbound.ToString(result);
+                    } else {
+                        result.clear();
+                    }
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD>
+            void InternalRegisterWithIndex(const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
+            {
+                std::function<uint32_t(const string& index, const INBOUND&)> actualMethod = method;
+                InvokeFunction implementation = [actualMethod](const string& method, const string& parameters, string&) -> uint32_t {
+                    INBOUND inbound;
+                    inbound.FromString(parameters);
+                    return (actualMethod(Message::Index(method), inbound));
+                };
+                Register(methodName, implementation);
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD>
+            void InternalRegisterWithIndex(const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
+            {
+                std::function<uint32_t(const string& index, OUTBOUND&)> actualMethod = method;
+                InvokeFunction implementation = [actualMethod](const string& method, const string&, string& result) -> uint32_t {
+                    OUTBOUND outbound;
+                    uint32_t code = actualMethod(Message::Index(method), outbound);
+                    if (code == Core::ERROR_NONE) {
+                        outbound.ToString(result);
+                    } else {
+                        result.clear();
+                    }
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD>
+            void InternalRegisterWithIndex(const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
+            {
+                std::function<uint32_t(const string& index, const INBOUND&, OUTBOUND&)> actualMethod = method;
+                InvokeFunction implementation = [actualMethod](const string& method, const string& parameters, string& result) -> uint32_t {
+                    INBOUND inbound;
+                    OUTBOUND outbound;
+                    inbound.FromString(parameters);
+                    uint32_t code = actualMethod(Message::Index(method), inbound, outbound);
                     if (code == Core::ERROR_NONE) {
                         outbound.ToString(result);
                     } else {

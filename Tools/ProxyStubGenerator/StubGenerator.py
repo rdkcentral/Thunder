@@ -408,7 +408,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                             return "Buffer<%s>" % self.length_type
                     elif isinstance(self.expanded_typename, CppParser.Integer):
                         if not self.expanded_typename.IsFixed():
-                            log.Warn("%s: integer size is not fixed, use a stdint type instead" % self.str_typename)
+                            log.WarnLine(self.oclass, "%s: integer size is not fixed, use a stdint type instead" % self.str_typename)
                         return "Number<%s>" % noref
                     elif isinstance(self.expanded_typename, CppParser.String):
                         return "Text"
@@ -416,11 +416,11 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                         return "Boolean"
                     elif isinstance(self.expanded_typename, CppParser.Enum):
                         if not self.expanded_typename.type.Type().IsFixed():
-                            log.Warn("%s: underlying type of enumeration is not fixed" % self.str_typename)
+                            log.WarnLine(self.oclass, "%s: underlying type of enumeration is not fixed" % self.str_typename)
                         return "Number<%s>" % noref
                     elif isinstance(self.expanded_typename, CppParser.BuiltinInteger):
                         if not self.expanded_typename.IsFixed():
-                            log.Warn("%s: %s size is not fixed, use a stdint type instead" % (self.str_typename, noref))
+                            log.WarnLine(self.oclass, "%s: %s size is not fixed, use a stdint type instead" % (self.str_typename, noref))
                         return "Number<%s>" % noref
                     elif isinstance(self.expanded_typename, CppParser.Typedef):
                         et = EmitType(self.oclass, self.ocv)
@@ -669,17 +669,20 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                             # if parameter is passed by value or by reference, then try to  decompose it
                             if not p.is_ptr and not p.CheckRpcType():
                                 if p.obj:
-                                    emit.Line("// (decompose %s)" % p.str_typename)
-                                    emit.Line("%s %s;" % (p.str_typename, p.name))
-                                    # TODO: make this recursive
-                                    if p.obj.vars:
-                                        for attr in p.obj.vars:
-                                            emit.Line("param%i.%s = reader.%s();" %
-                                                      (c, attr.name, EmitParam(attr).RpcTypeNoCV()))
+                                    if p.is_input or not p.is_output:
+                                        emit.Line("// (decompose %s)" % p.str_typename)
+                                        emit.Line("%s %s;" % (p.str_typename, p.name))
+                                        # TODO: make this recursive
+                                        if p.obj.vars:
+                                            for attr in p.obj.vars:
+                                                emit.Line("param%i.%s = reader.%s();" %
+                                                        (c, attr.name, EmitParam(attr).RpcTypeNoCV()))
+                                        else:
+                                            raise TypenameError(
+                                                m, "method '%s': unable to decompose parameter '%s': non-POD type" %
+                                                (m.name, p.str_typename))
                                     else:
-                                        raise TypenameError(
-                                            m, "method '%s': unable to decompose parameter '%s': non-POD type" %
-                                            (m.name, p.str_typename))
+                                        emit.Line("%s %s{}; // storage" % (p.str_nocvref, p.name))
                                 elif not p.RpcType():
                                     raise TypenameError(
                                         m, "method '%s': unable to decompose parameter '%s': unknown type" %
@@ -807,10 +810,13 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                         call += "%s %s = " % (retval.str_noref, retval.name)
                     call += "implementation->%s(" % m.name
                     for c, p in enumerate(params):
-                        parameter = "%s%s%s%s" % ("&" if p.length_type == "void" else "", p.name,
-                                              ("_proxy" if p.proxy else ""), (", " if c < len(params) - 1 else ""))
-                        if p.is_inputptr and p.is_inputref and p.proxy:
+                        parameter = "%s%s%s" % ("&" if p.length_type == "void" else "", p.name,
+                                              ("_proxy" if p.proxy else ""))
+                        if (p.is_inputptr and p.is_inputref and p.proxy):
                             parameter = "static_cast<%s* const&>(%s)" % (p.str_typename, parameter)
+                        elif (p.obj and not p.is_output and not p.is_interface and not p.proxy):
+                            parameter = "static_cast<const %s>(%s)" % (p.str_typename, parameter)
+                        parameter = parameter + (", " if c < len(params) - 1 else "")
                         call += parameter
                     call += ");"
                     emit.Line(call)
@@ -872,7 +878,16 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                     emit.IndentDec()
                                     emit.Line("}")
                             elif p.is_nonconstref:
-                                if not p.is_length:
+                                if p.obj and not p.is_interface:
+                                    emit.Line("// (decompose %s)" % p.str_typename)
+                                    if p.obj.vars:
+                                        for attr in p.obj.vars:
+                                            emit.Line("writer.%s(%s.%s);" % (EmitParam(attr).RpcTypeNoCV(), p.name, attr.name))
+                                    else:
+                                        raise TypenameError(
+                                            m, "method '%s': unable to decompose parameter type '%s': non-POD type" %
+                                            (m.name, p.str_typename))
+                                elif not p.is_length:
                                     if p.is_interface:
                                         emit.Line("writer.%s(RPC::instance_cast<%s>(%s));" % (p.RpcType(), p.CppType(), p.name))
                                     else:
@@ -1050,7 +1065,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                         emit.Line()
 
                     for c, p in enumerate(params):
-                        if not p.is_ptr and not p.CheckRpcType():
+                        if not p.obj and not p.is_ptr and not p.CheckRpcType():
                             pass
                         else:
                             if (p.is_nonconstref and p.obj) or (not p.obj and p.is_outputptr) or (p.is_nonconstref
@@ -1124,8 +1139,11 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                             emit.Line("reader.%s(%s, %s);" % (p.RpcType(), p.length_expr, p.name))
                             emit.IndentDec()
                             emit.Line("}")
-                        elif p.is_nonconstref and not p.is_length:
+                        elif not p.obj and p.is_nonconstref and not p.is_length:
                             emit.Line("%s = reader.%s();" % (p.name, p.RpcTypeNoCV()))
+                        elif p.obj and not p.is_interface and p.is_output:
+                             for attr in p.obj.vars:
+                                emit.Line("%s.%s = reader.%s();" % (p.name, attr.name, EmitParam(attr, cv=["const"]).RpcTypeNoCV()))
 
                     # emit Complete() only if there were interfaces passed
                     if proxy_params > 0:
