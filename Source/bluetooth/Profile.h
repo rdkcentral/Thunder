@@ -617,8 +617,55 @@ namespace Bluetooth {
 
             return (index != _services.end() ? &(*index) : nullptr);
         }
+        void Find(const UUID& serviceUuid, const UUID& charUuid, std::list<const Service::Characteristic*>& characteristics) const
+        {
+            const Service* service = (*this)[serviceUuid];
+            if (service != nullptr) {
+                auto it = service->Characteristics();
+                while (it.Next() == true) {
+                    if (it.Current() == charUuid) {
+                        characteristics.push_back(&it.Current());
+                    }
+                }
+            }
+        }
+        uint16_t FindHandle(const Service::Characteristic& characteristic, const UUID& descUuid) const
+        {
+            uint16_t handle = 0;
+            const Service::Characteristic::Descriptor* descriptor = characteristic[descUuid];
+            if (descriptor != nullptr) {
+                handle = descriptor->Handle();
+            }
+            return (handle);
+        }
+        uint16_t FindHandle(const UUID& serviceUuid, const UUID& charUuid) const
+        {
+            const Service::Characteristic* characteristic = FindCharacteristic(serviceUuid, charUuid);
+            return (characteristic == nullptr ? 0 : characteristic->Handle());
+        }
+        uint16_t FindHandle(const UUID& serviceUuid, const UUID& charUuid, const UUID& descUuid) const
+        {
+            uint16_t handle = 0;
+            const Service::Characteristic* characteristic = FindCharacteristic(serviceUuid, charUuid);
+            if (characteristic != nullptr) {
+                const Service::Characteristic::Descriptor* descriptor = (*characteristic)[descUuid];
+                if (descriptor != nullptr) {
+                    handle = descriptor->Handle();
+                }
+            }
+            return (handle);
+        }
 
     private:
+        const Service::Characteristic* FindCharacteristic(const UUID& serviceUuid, const UUID& charUuid) const
+        {
+            const Service::Characteristic* result = nullptr;
+            const Service* service = (*this)[serviceUuid];
+            if (service != nullptr) {
+                result = (*service)[charUuid];
+            }
+            return (result);
+        }
         std::list<Service>::iterator ValidService(const std::list<Service>::iterator& input) {
             std::list<Service>::iterator index (input);
             while ( (index != _services.end()) && 
