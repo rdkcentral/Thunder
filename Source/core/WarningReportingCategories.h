@@ -1,13 +1,14 @@
-/*
- * If not stated otherwise in this file or this component's LICENSE file the
- * following copyright and licenses apply:
- *
- * Copyright 2020 Metrological
- *
+
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
+ 
+@MFransen69 
+rdkcentral
+/
+Thunder
+Public
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -195,6 +196,35 @@ namespace WarningReporting {
 
         static constexpr uint32_t DefaultWarningBound = { 400 };
         static constexpr uint32_t DefaultReportBound = { 200 };
+    };
+
+    class EXTERNAL TooLongDecrypt {
+    public:
+        TooLongDecrypt(const TooLongDecrypt&) = delete;
+        TooLongDecrypt& operator=(const TooLongDecrypt&) = delete;
+        TooLongDecrypt() = default;
+        ~TooLongDecrypt() = default;
+
+        //nothing to serialize/deserialize here
+        uint16_t Serialize(uint8_t[], const uint16_t) const
+        {
+            return 0;
+        }
+
+        uint16_t Deserialize(const uint8_t[], const uint16_t)
+        {
+            return 0;
+        }
+
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
+        {
+            visitor = (_T("Decrypt call took too long"));
+            visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, maxValue);
+
+        };
+
+        static constexpr uint32_t DefaultWarningBound = { 20 };
+        static constexpr uint32_t DefaultReportBound = { 15 };
     };
 }
 }
