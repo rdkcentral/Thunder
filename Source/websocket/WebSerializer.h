@@ -337,6 +337,7 @@ namespace Web {
 
         JSONBodyType()
             : JSONOBJECT()
+            , _lastPosition(0)
             , _offset(0)
         {
         }

@@ -117,11 +117,11 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                                 faces.append(Interface(c, item.value, source_file))
                                                 has_id = True
                                                 break
-                                if not has_id:
+                                if not has_id and not c.omit:
                                     log.Warn("class %s does not have ID enumerator" % c.full_name, source_file)
-                            else:
+                            elif not c.omit:
                                 log.Info("class %s not does not inherit from %s" % (c.full_name, CLASS_IUNKNOWN), source_file)
-                        else:
+                        elif not c.omit:
                             log.Info("class %s not in %s namespace" % (c.full_name, INTERFACE_NAMESPACE), source_file)
 
                     __Traverse(c, faces)
@@ -408,7 +408,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                             return "Buffer<%s>" % self.length_type
                     elif isinstance(self.expanded_typename, CppParser.Integer):
                         if not self.expanded_typename.IsFixed():
-                            log.Warn("%s: integer size is not fixed, use a stdint type instead" % self.str_typename)
+                            log.WarnLine(self.oclass, "%s: integer size is not fixed, use a stdint type instead" % self.str_typename)
                         return "Number<%s>" % noref
                     elif isinstance(self.expanded_typename, CppParser.String):
                         return "Text"
@@ -416,11 +416,11 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                         return "Boolean"
                     elif isinstance(self.expanded_typename, CppParser.Enum):
                         if not self.expanded_typename.type.Type().IsFixed():
-                            log.Warn("%s: underlying type of enumeration is not fixed" % self.str_typename)
+                            log.WarnLine(self.oclass, "%s: underlying type of enumeration is not fixed" % self.str_typename)
                         return "Number<%s>" % noref
                     elif isinstance(self.expanded_typename, CppParser.BuiltinInteger):
                         if not self.expanded_typename.IsFixed():
-                            log.Warn("%s: %s size is not fixed, use a stdint type instead" % (self.str_typename, noref))
+                            log.WarnLine(self.oclass, "%s: %s size is not fixed, use a stdint type instead" % (self.str_typename, noref))
                         return "Number<%s>" % noref
                     elif isinstance(self.expanded_typename, CppParser.Typedef):
                         et = EmitType(self.oclass, self.ocv)
@@ -605,6 +605,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
             for m in emit_methods:
                 proxy_count = 0
                 output_params = 0
+                interface_params = 0
 
                 # enumerate and prepare parameters for emitting
                 # force non-ptr, non-ref parameters to be const
@@ -612,11 +613,15 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                 params = [EmitParam(v, cv=["const"]) for v in m.vars]
                 orig_params = [EmitParam(v) for v in m.vars]
                 for i, p in enumerate(params):
+                    if p.is_interface:
+                        interface_params += 1
                     if p.proxy and p.obj:
                         proxy_count += 1
                     if p.is_output:
                         output_params += 1
                     p.name += str(i)
+
+                interface_params += 1 if retval.is_interface else 0
 
                 if m.omit:
                     log.Info("omitted method %s" % m.full_name, source_file)
@@ -638,7 +643,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                 # emit the lambda prototype
                 emit.Line(
                     "[](Core::ProxyType<Core::IPCChannel>& channel%s, Core::ProxyType<RPC::InvokeMessage>& message%s) {" %
-                    (" VARIABLE_IS_NOT_USED" if not proxy_count or m.stub else "", " VARIABLE_IS_NOT_USED" if m.stub else ""))
+                    (" VARIABLE_IS_NOT_USED" if ((not interface_params and not proxy_count) or m.stub) else "", " VARIABLE_IS_NOT_USED" if m.stub else ""))
                 emit.IndentInc()
 
                 if EMIT_TRACES:
@@ -664,17 +669,20 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                             # if parameter is passed by value or by reference, then try to  decompose it
                             if not p.is_ptr and not p.CheckRpcType():
                                 if p.obj:
-                                    emit.Line("// (decompose %s)" % p.str_typename)
-                                    emit.Line("%s %s;" % (p.str_typename, p.name))
-                                    # TODO: make this recursive
-                                    if p.obj.vars:
-                                        for attr in p.obj.vars:
-                                            emit.Line("param%i.%s = reader.%s();" %
-                                                      (c, attr.name, EmitParam(attr).RpcTypeNoCV()))
+                                    if p.is_input or not p.is_output:
+                                        emit.Line("// (decompose %s)" % p.str_typename)
+                                        emit.Line("%s %s;" % (p.str_typename, p.name))
+                                        # TODO: make this recursive
+                                        if p.obj.vars:
+                                            for attr in p.obj.vars:
+                                                emit.Line("param%i.%s = reader.%s();" %
+                                                        (c, attr.name, EmitParam(attr).RpcTypeNoCV()))
+                                        else:
+                                            raise TypenameError(
+                                                m, "method '%s': unable to decompose parameter '%s': non-POD type" %
+                                                (m.name, p.str_typename))
                                     else:
-                                        raise TypenameError(
-                                            m, "method '%s': unable to decompose parameter '%s': non-POD type" %
-                                            (m.name, p.str_typename))
+                                        emit.Line("%s %s{}; // storage" % (p.str_nocvref, p.name))
                                 elif not p.RpcType():
                                     raise TypenameError(
                                         m, "method '%s': unable to decompose parameter '%s': unknown type" %
@@ -735,7 +743,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                                               length_var)
                                                 emit.Line("%s = static_cast<%s>(ALLOCA(%s));" %
                                                           (p.name, p.str_nocvref, length_var))
-                                                emit.Line("ASSERT(%s != nullptr);" % p.name)
+                                                emit.Line("ASSERT(%s != %s);" % (p.name, NULLPTR))
                                             else:
                                                 # is input/output but maxlength not defined
                                                 emit.Line("%s = const_cast<%s>(%s); // reuse the input buffer" %
@@ -752,7 +760,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                                           length_var)
                                             emit.Line("%s = static_cast<%s>(ALLOCA(%s));" %
                                                       (p.name, p.str_nocvref, length_var))
-                                            emit.Line("ASSERT(%s != nullptr);" % p.name)
+                                            emit.Line("ASSERT(%s != %s);" % (p.name, NULLPTR))
                                             if not p.length_constant:
                                                 emit.IndentDec()
                                                 emit.Line("}")
@@ -802,10 +810,13 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                         call += "%s %s = " % (retval.str_noref, retval.name)
                     call += "implementation->%s(" % m.name
                     for c, p in enumerate(params):
-                        parameter = "%s%s%s%s" % ("&" if p.length_type == "void" else "", p.name,
-                                              ("_proxy" if p.proxy else ""), (", " if c < len(params) - 1 else ""))
-                        if p.is_inputptr and p.is_inputref and p.proxy:
+                        parameter = "%s%s%s" % ("&" if p.length_type == "void" else "", p.name,
+                                              ("_proxy" if p.proxy else ""))
+                        if (p.is_inputptr and p.is_inputref and p.proxy):
                             parameter = "static_cast<%s* const&>(%s)" % (p.str_typename, parameter)
+                        elif (p.obj and not p.is_output and not p.is_interface and not p.proxy):
+                            parameter = "static_cast<const %s>(%s)" % (p.str_typename, parameter)
+                        parameter = parameter + (", " if c < len(params) - 1 else "")
                         call += parameter
                     call += ");"
                     emit.Line(call)
@@ -838,12 +849,16 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                             else:
                                 emit.Line("writer.%s(%s);" % (retval.RpcType(), retval.name))
                             if retval.is_interface:
+                                emit.Line("if (%s != %s) {" % (retval.name, NULLPTR))
+                                emit.IndentInc()
                                 if isinstance(retval.type.Type(), CppParser.Void):
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s, %s);" %
                                               (retval.name, retval.interface_ref.length_name))
                                 else:
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s);" %
                                               retval.name)
+                                emit.IndentDec()
+                                emit.Line("}")
 
                     if output_params:
                         for p in params:
@@ -863,13 +878,26 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                     emit.IndentDec()
                                     emit.Line("}")
                             elif p.is_nonconstref:
-                                if not p.is_length:
+                                if p.obj and not p.is_interface:
+                                    emit.Line("// (decompose %s)" % p.str_typename)
+                                    if p.obj.vars:
+                                        for attr in p.obj.vars:
+                                            emit.Line("writer.%s(%s.%s);" % (EmitParam(attr).RpcTypeNoCV(), p.name, attr.name))
+                                    else:
+                                        raise TypenameError(
+                                            m, "method '%s': unable to decompose parameter type '%s': non-POD type" %
+                                            (m.name, p.str_typename))
+                                elif not p.is_length:
                                     if p.is_interface:
                                         emit.Line("writer.%s(RPC::instance_cast<%s>(%s));" % (p.RpcType(), p.CppType(), p.name))
                                     else:
                                         emit.Line("writer.%s(%s);" % (p.RpcType(), p.name))
                                 if p.is_interface and not p.type.IsConst():
+                                    emit.Line("if (%s != %s) {" % (p.name, NULLPTR))
+                                    emit.IndentInc()
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s);" % p.name)
+                                    emit.IndentDec()
+                                    emit.Line("}")
 
                     if proxy_count:
                         # emit release proxy call if applicable
@@ -1037,7 +1065,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                         emit.Line()
 
                     for c, p in enumerate(params):
-                        if not p.is_ptr and not p.CheckRpcType():
+                        if not p.obj and not p.is_ptr and not p.CheckRpcType():
                             pass
                         else:
                             if (p.is_nonconstref and p.obj) or (not p.obj and p.is_outputptr) or (p.is_nonconstref
@@ -1111,8 +1139,11 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                             emit.Line("reader.%s(%s, %s);" % (p.RpcType(), p.length_expr, p.name))
                             emit.IndentDec()
                             emit.Line("}")
-                        elif p.is_nonconstref and not p.is_length:
+                        elif not p.obj and p.is_nonconstref and not p.is_length:
                             emit.Line("%s = reader.%s();" % (p.name, p.RpcTypeNoCV()))
+                        elif p.obj and not p.is_interface and p.is_output:
+                             for attr in p.obj.vars:
+                                emit.Line("%s.%s = reader.%s();" % (p.name, attr.name, EmitParam(attr, cv=["const"]).RpcTypeNoCV()))
 
                     # emit Complete() only if there were interfaces passed
                     if proxy_params > 0:
@@ -1280,7 +1311,7 @@ if __name__ == "__main__":
     argparser.add_argument("--no-warnings",
                            dest="no_warnings",
                            action="store_true",
-                           default=False,
+                           default=not SHOW_WARNINGS,
                            help="suppress all warnings (default: show warnings)")
     argparser.add_argument("--keep",
                            dest="keep_incomplete",
@@ -1290,8 +1321,8 @@ if __name__ == "__main__":
     argparser.add_argument("--verbose",
                            dest="verbose",
                            action="store_true",
-                           default=False,
-                           help="enable verbose output (default: verbose output disabled)")
+                           default=BE_VERBOSE,
+                           help="enable verbose logging (default: verbose logging disabled)")
     argparser.add_argument('-I', dest="includePaths", metavar="INCLUDE_DIR", action='append', default=[], type=str,
                            help='add an include path (can be used multiple times)')
 

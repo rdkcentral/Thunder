@@ -142,6 +142,7 @@ set(PUBLIC_HEADERS
         WarningReportingCategories.h
         Module.h
         CallsignTLS.h
+        TokenizedStringList.h
         )
 
 # non-buildable interface target to carry the definitions
@@ -161,6 +162,7 @@ endif()
 
 if (EXCEPTION_CATCHING)
     target_compile_definitions(${TARGET} PUBLIC __CORE_EXCEPTION_CATCHING__)
+    set_source_files_properties( Thread.cpp PROPERTIES COMPILE_FLAGS "-fexceptions" )
     message(STATUS "Unhandled Exception catching enabled")
 endif()
 

@@ -206,7 +206,7 @@ namespace PluginHost {
             typedef Core::IteratorMapType<const LookupMap, const ConversionInfo&, uint32_t, LookupMap::const_iterator> Iterator;
 
         public:
-            KeyMap(KeyMap&&) = default;
+            KeyMap(KeyMap&&) noexcept = default;
             KeyMap(VirtualInput& parent)
                 : _parent(parent)
                 , _passThrough(false)

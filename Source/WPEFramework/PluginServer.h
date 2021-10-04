@@ -163,7 +163,7 @@ namespace PluginHost {
             }
             Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> JSONRPC() override
             {
-                return (Core::proxy_cast< Web::JSONBodyType<Core::JSONRPC::Message> >(_jsonRPCFactory.Element()));
+                return (Core::ProxyType< Web::JSONBodyType<Core::JSONRPC::Message> >(_jsonRPCFactory.Element()));
             }
 
         private:
@@ -231,7 +231,7 @@ namespace PluginHost {
             WebFlow& operator=(const WebFlow& a_RHS) = delete;
 
         public:
-            WebFlow(const Core::ProxyType<Web::Request>& request)
+            WebFlow(const Core::ProxyType<Request>& request)
             {
                 if (request.IsValid() == true) {
                     string text;
@@ -659,7 +659,7 @@ namespace PluginHost {
                 if ( (_jsonrpc == nullptr) || (IsActive() == false) ) {
                     Unlock();
 
-                    result = Core::proxy_cast<Core::JSONRPC::Message>(Factories::Instance().JSONRPC());
+                    result = Core::ProxyType<Core::JSONRPC::Message>(Factories::Instance().JSONRPC());
                     result->Error.SetError(Core::ERROR_UNAVAILABLE);
                     result->Error.Text = _T("Service is not active");
                     result->Id = message.Id;
@@ -1503,6 +1503,15 @@ namespace PluginHost {
 
                 void Revoke(const Core::IUnknown* remote, const uint32_t interfaceId) override
                 {
+                    if (interfaceId == PluginHost::IPlugin::INotification::ID) {
+                        const PluginHost::IPlugin::INotification* notification = remote->QueryInterface<const PluginHost::IPlugin::INotification>();
+
+                        ASSERT(notification != nullptr);
+
+                        _parent.Unregister(notification);
+                        notification->Release();
+                    }
+
                     _adminLock.Lock();
 
                     for (auto& observer : _requestObservers) {
@@ -1855,7 +1864,7 @@ namespace PluginHost {
 
                 _notificationLock.Unlock();
             }
-            void Unregister(PluginHost::IPlugin::INotification* sink)
+            void Unregister(const PluginHost::IPlugin::INotification* sink)
             {
                 _notificationLock.Lock();
 
@@ -2370,11 +2379,11 @@ namespace PluginHost {
 
                     if (_jsonrpc == true) {
 #if THUNDER_PERFORMANCE
-                        Core::ProxyType<TrackingJSONRPC> tracking (Core::proxy_cast<TrackingJSONRPC>(_element));
+                        Core::ProxyType<TrackingJSONRPC> tracking (_element);
                         ASSERT (tracking.IsValid() == true);
 			tracking->Dispatch();
 #endif
-                        Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(_element));
+                        Core::ProxyType<Core::JSONRPC::Message> message(_element);
                         ASSERT(message.IsValid() == true);
 
                         _element = Core::ProxyType<Core::JSON::IElement>(Job::Process(_token, message));
@@ -2546,7 +2555,7 @@ namespace PluginHost {
             LinkBody(Core::ProxyType<Request>& request)
             {
                 // This is the time where we determine what body is needed for the incoming request.
-                TRACE(WebFlow, (Core::proxy_cast<Web::Request>(request)));
+                TRACE(WebFlow, (request));
 
                 // Remember the path and options..
                 Core::ProxyType<Service> service;
@@ -2554,7 +2563,7 @@ namespace PluginHost {
 
                 uint32_t status = _parent.Services().FromLocator(request->Path, service, serviceCall);
 
-                request->Service(status, Core::proxy_cast<PluginHost::Service>(service), serviceCall);
+                request->Service(status, Core::ProxyType<PluginHost::Service>(service), serviceCall);
 
                 ASSERT(request->State() != Request::INCOMPLETE);
 
@@ -2573,7 +2582,7 @@ namespace PluginHost {
             {
                 ISecurity* security = nullptr;
 
-                TRACE(WebFlow, (Core::proxy_cast<Web::Request>(request)));
+                TRACE(WebFlow, (request));
 
                 // See if a token has been hooked up to the request, maybe we need a
                 // different security provider.
@@ -2611,7 +2620,7 @@ namespace PluginHost {
                         bool serviceCall;
                         uint32_t status = _parent.Services().FromLocator(request->Path, service, serviceCall);
 
-                        request->Service(status, Core::proxy_cast<PluginHost::Service>(service), serviceCall);
+                        request->Service(status, Core::ProxyType<PluginHost::Service>(service), serviceCall);
                     } else if ((request->State() == Request::COMPLETE) && (request->HasBody() == true)) {
                         Core::ProxyType<Core::JSONRPC::Message> message(request->Body<Core::JSONRPC::Message>());
                         if ((message.IsValid() == true) && (security->Allowed(*message) == false)) {
@@ -2657,7 +2666,7 @@ namespace PluginHost {
                     break;
                 }
                 case Request::COMPLETE: {
-                    Core::ProxyType<Service> service(Core::proxy_cast<Service>(request->Service()));
+                    Core::ProxyType<Service> service(request->Service());
 
                     ASSERT(service.IsValid());
 
@@ -2674,9 +2683,9 @@ namespace PluginHost {
                         ASSERT(job.IsValid() == true);
 
                         if (job.IsValid() == true) {
-                            Core::ProxyType<Web::Request> baseRequest(Core::proxy_cast<Web::Request>(request));
+                            Core::ProxyType<Web::Request> baseRequest(request);
                             job->Set(Id(), &_parent, service, baseRequest, _security->Token(), !request->ServiceCall());
-                            _parent.Submit(Core::proxy_cast<Core::IDispatchType<void>>(job));
+                            _parent.Submit(Core::ProxyType<Core::IDispatchType<void>>(job));
                         }
                     }
                     break;
@@ -2725,7 +2734,7 @@ namespace PluginHost {
                 TRACE(SocketFlow, (element));
 
                 if (securityClearance == false) {
-                    Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(element));
+                    Core::ProxyType<Core::JSONRPC::Message> message(element);
                     if (message.IsValid()) {
                         PluginHost::Channel::Lock();
                         securityClearance = _security->Allowed(*message);
@@ -2750,7 +2759,7 @@ namespace PluginHost {
 
                     if ((_service.IsValid() == true) && (job.IsValid() == true)) {
                         job->Set(Id(), &_parent, _service, element, _security->Token(), ((State() & Channel::JSONRPC) != 0));
-                        _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
+                        _parent.Submit(Core::ProxyType<Core::IDispatch>(job));
                     }
                 }
             }
@@ -2768,7 +2777,7 @@ namespace PluginHost {
 
                 if ((_service.IsValid() == true) && (job.IsValid() == true)) {
                     job->Set(Id(), &_parent, _service, value);
-                    _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
+                    _parent.Submit(Core::ProxyType<Core::IDispatch>(job));
                 }
             }
 
@@ -2815,10 +2824,7 @@ namespace PluginHost {
                     State(CLOSED, false);
                     _parent.Dispatcher().TriggerCleanup();
                 } else if (IsUpgrading() == true) {
-                  if (Allowed(Path(), Query()) == false) {
-                    AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Security prohibites this connection."));
-                  }
-                } else if (IsWebSocket() == true) {
+
                     ASSERT(_service.IsValid() == false);
                     bool serviceCall;
                     // see if we need to subscribe...
@@ -2828,38 +2834,23 @@ namespace PluginHost {
                         AbortUpgrade(Web::STATUS_SERVICE_UNAVAILABLE, _T("Could not find a correct service for this socket."));
                     } else if (Allowed(Path(), Query()) == false) {
                         AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Security prohibites this connection."));
-                    } else if (serviceCall == true) {
-                        const string& serviceHeader(_parent._config.WebPrefix());
+                    } else {
+                        //select supported protocol and let know which one was choosen
+                        auto protocol = SelectSupportedProtocol(Protocols());
+                        Protocols(Web::ProtocolsArray(protocol));
 
-                        if (Protocol() == _T("notification")) {
-                            State(TEXT, true);
-                        } else if (Protocol() == _T("json")) {
-                            State(JSON, false);
-                        } else if (Protocol() == _T("text")) {
-                            State(TEXT, false);
-                        } else if (Protocol() == _T("jsonrpc")) {
+                        if (serviceCall == false) {
+                            const string& JSONRPCHeader(_parent._config.JSONRPCPrefix());
+                            if (Name().length() > (JSONRPCHeader.length() + 1)) {
+                                Properties(static_cast<uint32_t>(JSONRPCHeader.length()) + 1);
+                            }
                             State(JSONRPC, false);
                         } else {
-                            // Channel is a raw communication channel.
-                            // This channel allows for passing binary data back and forth
-                            State(RAW, false);
+                            const string& serviceHeader(_parent._config.WebPrefix());
+                            if (Name().length() > (serviceHeader.length() + 1)) {
+                                Properties(static_cast<uint32_t>(serviceHeader.length()) + 1);
+                            }
                         }
-                        if (Name().length() > (serviceHeader.length() + 1)) {
-                            Properties(static_cast<uint32_t>(serviceHeader.length()) + 1);
-                        }
-                        // The state needs to be correct before we c
-                        if (_service->Subscribe(*this) == false) {
-                            State(WEB, false);
-                            AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
-                        }
-                    } else {
-                        const string& JSONRPCHeader(_parent._config.JSONRPCPrefix());
-                        if (Name().length() > (JSONRPCHeader.length() + 1)) {
-                            Properties(static_cast<uint32_t>(JSONRPCHeader.length()) + 1);
-                        }
-                        State(JSONRPC, false);
-
-                        // The state needs to be correct before we c
                         if (_service->Subscribe(*this) == false) {
                             State(WEB, false);
                             AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
@@ -2876,6 +2867,28 @@ namespace PluginHost {
             }
 
         private:
+            inline string SelectSupportedProtocol(const Web::ProtocolsArray& protocols)
+            {
+                for (const auto& protocol : protocols) {
+                    if (protocol == _T("notification")) {
+                        State(TEXT, true);
+                        return protocol;
+                    } else if (protocol == _T("json")) {
+                        State(JSON, false);
+                        return protocol;
+                    } else if (protocol == _T("text")) {
+                        State(TEXT, false);
+                        return protocol;
+                    } else if (protocol == _T("jsonrpc")) {
+                        State(JSONRPC, false);
+                        return protocol;
+                    }
+                }
+
+                State(RAW, false);
+                return _T("");
+            }
+
             Server& _parent;
             PluginHost::ISecurity* _security;
             Core::ProxyType<Service> _service;

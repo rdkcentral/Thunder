@@ -150,7 +150,7 @@ namespace Plugin {
             index.Next();
 
             if ( (index.Next() == true) && (index.Current() == _T("Configuration")) ) {
-                request.Body(Core::proxy_cast<Web::IBody>(jsonBodyTextFactory.Element()));
+                request.Body(Core::ProxyType<Web::IBody>(jsonBodyTextFactory.Element()));
             }
         }
     }
@@ -197,19 +197,19 @@ namespace Plugin {
             _pluginServer->Services().GetMetaData(response->Plugins);
             WorkerPoolMetaData(response->Process);
 
-            result->Body(Core::proxy_cast<Web::IBody>(response));
+            result->Body(Core::ProxyType<Web::IBody>(response));
         } else if (index.Current() == _T("Links")) {
             Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData>> response(jsonBodyMetaDataFactory.Element());
 
             _pluginServer->Dispatcher().GetMetaData(response->Channels);
 
-            result->Body(Core::proxy_cast<Web::IBody>(response));
+            result->Body(Core::ProxyType<Web::IBody>(response));
         } else if (index.Current() == _T("Plugins")) {
             Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData>> response(jsonBodyMetaDataFactory.Element());
 
             _pluginServer->Services().GetMetaData(response->Plugins);
 
-            result->Body(Core::proxy_cast<Web::IBody>(response));
+            result->Body(Core::ProxyType<Web::IBody>(response));
         } else if (index.Current() == _T("Environment")) {
             // We do not want Environment to be included in the variable
             if (index.Next() == true) {
@@ -219,7 +219,7 @@ namespace Plugin {
                     Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData>> response(jsonBodyMetaDataFactory.Element());
                     response->Value = value;
 
-                    result->Body(Core::proxy_cast<Web::IBody>(response));
+                    result->Body(Core::ProxyType<Web::IBody>(response));
                 } else {
                     result->ErrorCode = Web::STATUS_NO_CONTENT;
                     result->Message = _T("Environment variable does not exist");
@@ -234,7 +234,7 @@ namespace Plugin {
 
                     serviceInfo->GetMetaData(*response);
 
-                    result->Body(Core::proxy_cast<Web::IBody>(response));
+                    result->Body(Core::ProxyType<Web::IBody>(response));
                 }
             }
         } else if (index.Current() == _T("Configuration")) {
@@ -246,7 +246,7 @@ namespace Plugin {
 
                     *response = serviceInfo->ConfigLine();
 
-                    result->Body(Core::proxy_cast<Web::IBody>(response));
+                    result->Body(Core::ProxyType<Web::IBody>(response));
                 }
             }
         } else if (index.Current() == _T("Process")) {
@@ -254,7 +254,7 @@ namespace Plugin {
 
             WorkerPoolMetaData(response->Process);
 
-            result->Body(Core::proxy_cast<Web::IBody>(response));
+            result->Body(Core::ProxyType<Web::IBody>(response));
         } else if (index.Current() == _T ("Callstack")) {
             if (index.Next() == false) {
                 result->ErrorCode = Web::STATUS_BAD_REQUEST;
@@ -274,7 +274,7 @@ namespace Plugin {
                     response->Add() = entry;
                 }
 
-                result->Body(Core::proxy_cast<Web::IBody>(response));
+                result->Body(Core::ProxyType<Web::IBody>(response));
             }
         } else if (index.Current() == _T("Discovery")) {
 
@@ -292,7 +292,7 @@ namespace Plugin {
                     response->Bridges.Add(newElement);
                 }
 
-                result->Body(Core::proxy_cast<Web::IBody>(response));
+                result->Body(Core::ProxyType<Web::IBody>(response));
             }
 
         } else if (index.Current() == _T("SubSystems")) {
@@ -309,7 +309,7 @@ namespace Plugin {
                 subSystem->Release();
             }
 
-            result->Body(Core::proxy_cast<Web::IBody>(response));
+            result->Body(Core::ProxyType<Web::IBody>(response));
         }
 
         return (result);

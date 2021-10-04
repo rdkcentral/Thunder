@@ -801,7 +801,7 @@ namespace PluginHost
         static Core::ProxyType<IVirtualInput::KeyMessage> message(Core::ProxyType<IVirtualInput::KeyMessage>::Create());
 
         message->Parameters() = data;
-        Core::ProxyType<Core::IIPC> base(Core::proxy_cast<Core::IIPC>(message));
+        Core::ProxyType<Core::IIPC> base(message);
         _service.Invoke(base, RPC::CommunicationTimeOut);
     }
 
@@ -810,7 +810,7 @@ namespace PluginHost
         static Core::ProxyType<IVirtualInput::MouseMessage> message(Core::ProxyType<IVirtualInput::MouseMessage>::Create());
 
         message->Parameters() = data;
-        Core::ProxyType<Core::IIPC> base(Core::proxy_cast<Core::IIPC>(message));
+        Core::ProxyType<Core::IIPC> base(message);
         _service.Invoke(base, RPC::CommunicationTimeOut);
     }
 
@@ -819,7 +819,7 @@ namespace PluginHost
         static Core::ProxyType<IVirtualInput::TouchMessage> message(Core::ProxyType<IVirtualInput::TouchMessage>::Create());
 
         message->Parameters() = data;
-        Core::ProxyType<Core::IIPC> base(Core::proxy_cast<Core::IIPC>(message));
+        Core::ProxyType<Core::IIPC> base(message);
         _service.Invoke(base, RPC::CommunicationTimeOut);
     }
 

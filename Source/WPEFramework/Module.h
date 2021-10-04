@@ -27,8 +27,11 @@
 #include <cryptalgo/cryptalgo.h>
 #include <plugins/plugins.h>
 #include <tracing/tracing.h>
-#include <warningreporting/warningreporting.h>
 #include <websocket/websocket.h>
+
+#ifdef __CORE_WARNING_REPORTING__
+#include <warningreporting/warningreporting.h>
+#endif
 
 #ifndef TREE_REFERENCE
 #define TREE_REFERENCE engineering_build_for_debug_purpose_only

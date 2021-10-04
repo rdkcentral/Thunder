@@ -16,11 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #ifndef __DERIVEDCHECK_H
 #define __DERIVEDCHECK_H
 
 #include "Portability.h"
+#include <functional>
 
 namespace WPEFramework {
 
@@ -45,7 +46,18 @@ namespace Core {
         };
 
         template <typename Func>
-        struct func_traits;
+        struct func_traits {
+            typedef std::nullptr_t result_type;
+
+            typedef std::nullptr_t classtype;
+
+            template <unsigned Idx>
+            struct argument {
+                typedef std::nullptr_t type;
+            };
+
+            enum { Arguments = -1 };
+        };
 
         template <typename TObj, typename R, typename... TArgs>
         struct func_traits<R (TObj::*)(TArgs...)> {
@@ -58,7 +70,7 @@ namespace Core {
                 typedef typename pick<Idx, TArgs...>::result type;
             };
 
-			enum { Arguments = sizeof...(TArgs) };
+            enum { Arguments = sizeof...(TArgs) };
         };
 
         template <typename TObj, typename R, typename... TArgs>
@@ -85,7 +97,33 @@ namespace Core {
                 typedef typename pick<Idx, TArgs...>::result type;
             };
 
-			enum { Arguments = sizeof...(TArgs) };
+            enum { Arguments = sizeof...(TArgs) };
+        };
+
+        template <typename R, typename... TArgs>
+        struct func_traits<std::function<R(TArgs...)>> {
+            typedef R result_type;
+
+            typedef void classtype;
+            template <unsigned Idx>
+            struct argument {
+                typedef typename pick<Idx, TArgs...>::result type;
+            };
+
+            enum { Arguments = sizeof...(TArgs) };
+        };
+
+        template <typename R, typename... TArgs>
+        struct func_traits<const std::function<R(TArgs...)>> {
+            typedef R result_type;
+
+            typedef void classtype;
+            template <unsigned Idx>
+            struct argument {
+                typedef typename pick<Idx, TArgs...>::result type;
+            };
+
+            enum { Arguments = sizeof...(TArgs) };
         };
 
         template< bool B, class T = void>
