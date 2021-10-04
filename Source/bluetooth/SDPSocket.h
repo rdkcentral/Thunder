@@ -760,12 +760,8 @@ namespace SDP {
                     : Inward(payloadSize)
                 {
                 }
-                ~Response()
-                {
-                    if (_scratchPad != nullptr) {
-                        ::free(_scratchPad);
-                    }
-                }
+
+                ~Response() = default;
 
             public:
                 void Clear()
