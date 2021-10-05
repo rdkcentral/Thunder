@@ -545,6 +545,16 @@ namespace PluginHost {
                 Core::NodeId::ClearIPV6Enabled();
             }
 
+            // Workaround solution for DELIA-46168 where WPEFramework crashes 
+            // in SingletonList::Dispose while shutting down. When  WPEFramework
+            // shuts down, it unloads  plugin shared objects first and then 
+            // calls  SingletonList::Dispose. It is observed that the crash 
+            // occurs while disposing SingletonType object that is allocated in 
+            // plugin shared object. The following solution creates dummy 
+            // JSONRPC::LinkType object so as to create corresponding 
+            // SingletonType objects in Thunder.
+            WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement>("", "", false, "");
+
             // Load plugin configs from a directory.
             LoadPlugins(pluginPath, *_config);
 
