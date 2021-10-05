@@ -89,10 +89,26 @@ namespace Core {
             const uint16_t receiveBufferSize);
 
         SocketPort(const enumType socketType,
+            const NodeId& localNode,
+            const NodeId& remoteNode,
+            const uint16_t sendBufferSize,
+            const uint16_t receiveBufferSize,
+            const uint32_t socketSendBufferSize,
+            const uint32_t socketReceiveBufferSize);
+
+        SocketPort(const enumType socketType,
             const SOCKET& connector,
             const NodeId& remoteNode,
             const uint16_t sendBufferSize,
             const uint16_t receiveBufferSize);
+
+        SocketPort(const enumType socketType,
+            const SOCKET& connector,
+            const NodeId& remoteNode,
+            const uint16_t sendBufferSize,
+            const uint16_t receiveBufferSize,
+            const uint32_t socketSendBufferSize,
+            const uint32_t socketReceiveBufferSize);
 
         virtual ~SocketPort();
 
@@ -184,6 +200,14 @@ namespace Core {
         {
             return (m_ReceiveBufferSize);
         }
+        inline uint32_t SocketSendBufferSize() const
+        {
+            return (m_SocketSendBufferSize);
+        }
+        inline uint32_t SocketReceiveBufferSize() const
+        {
+            return (m_SocketReceiveBufferSize);
+        }
         inline void Flush()
         {
             m_syncAdmin.Lock();
@@ -258,6 +282,8 @@ namespace Core {
         NodeId m_RemoteNode;
         uint16_t m_ReceiveBufferSize;
         uint16_t m_SendBufferSize;
+        uint32_t m_SocketReceiveBufferSize;
+        uint32_t m_SocketSendBufferSize;
         enumType m_SocketType;
         SOCKET m_Socket;
         mutable CriticalSection m_syncAdmin;
@@ -284,7 +310,18 @@ namespace Core {
             const NodeId& remoteNode,
             const uint16_t sendBufferSize,
             const uint16_t receiveBufferSize)
-            : SocketPort((rawSocket ? SocketPort::RAW : SocketPort::STREAM), localNode, remoteNode, sendBufferSize, receiveBufferSize)
+            : SocketStream(rawSocket, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+        {
+        }
+
+        SocketStream(const bool rawSocket,
+            const NodeId& localNode,
+            const NodeId& remoteNode,
+            const uint16_t sendBufferSize,
+            const uint16_t receiveBufferSize,
+            const uint32_t socketSendBufferSize,
+            const uint32_t socketReceiveBufferSize)
+            : SocketPort((rawSocket ? SocketPort::RAW : SocketPort::STREAM), localNode, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
         {
         }
 
@@ -293,8 +330,18 @@ namespace Core {
             const NodeId& remoteNode,
             const uint16_t sendBufferSize,
             const uint16_t receiveBufferSize)
-            : SocketPort((rawSocket ? SocketPort::RAW : SocketPort::STREAM),
-                  connector, remoteNode, sendBufferSize, receiveBufferSize)
+            : SocketStream(rawSocket, connector, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+        {
+        }
+
+        SocketStream(const bool rawSocket,
+            const SOCKET& connector,
+            const NodeId& remoteNode,
+            const uint16_t sendBufferSize,
+            const uint16_t receiveBufferSize,
+            const uint32_t socketSendBufferSize,
+            const uint32_t socketReceiveBufferSize)
+            : SocketPort((rawSocket ? SocketPort::RAW : SocketPort::STREAM), connector, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
         {
         }
 
@@ -322,8 +369,25 @@ namespace Core {
             const NodeId& localNode,
             const NodeId& remoteNode,
             const uint16_t sendBufferSize,
-            const uint16_t receiveBufferSize);
-        virtual ~SocketDatagram();
+            const uint16_t receiveBufferSize)
+            : SocketDatagram(rawSocket, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+        {
+        }
+
+        SocketDatagram(const bool rawSocket,
+            const NodeId& localNode,
+            const NodeId& remoteNode,
+            const uint16_t sendBufferSize,
+            const uint16_t receiveBufferSize,
+            const uint32_t socketSendBufferSize,
+            const uint32_t socketReceiveBufferSize)
+            : SocketPort((rawSocket ? SocketPort::RAW : SocketPort::DATAGRAM), localNode, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
+        {
+        }
+
+        ~SocketDatagram() override
+        {
+        }
 
     public:
         // Methods to extract and insert data into the socket buffers

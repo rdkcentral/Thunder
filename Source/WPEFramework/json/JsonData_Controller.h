@@ -25,7 +25,6 @@
 #pragma once
 
 #include <core/JSON.h>
-#include "../PluginServer.h"
 #include "../Probe.h"
 
 namespace WPEFramework {
@@ -103,6 +102,7 @@ namespace JsonData {
         public:
             Core::JSON::String Path; // Path to directory (within the persistent storage) to delete contents of
         }; // class DeleteParamsData
+
 
         class DownloadParamsData : public Core::JSON::Container {
         public:
