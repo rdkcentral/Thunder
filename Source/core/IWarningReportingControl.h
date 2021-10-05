@@ -44,12 +44,16 @@ namespace WarningReporting {
             virtual const char* Category() const = 0;
             virtual bool Enabled() const = 0;
             virtual void Enabled(const bool enabled) = 0;
+
+            virtual void Exclude(const string& toExclude) = 0;
+
             virtual void Configure(const string& setting) = 0;
+            virtual IWarningEvent* Clone() const = 0;
         };
 
         virtual ~IWarningReportingUnit() = default;
         virtual void ReportWarningEvent(const char identifier[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information) = 0;
-        virtual bool IsDefaultCategory(const string& category, bool& enabled, string& configuration) const = 0;
+        virtual void FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const = 0;
         virtual void Announce(IWarningReportingControl& Category) = 0;
         virtual void Revoke(IWarningReportingControl& Category) = 0;
     };

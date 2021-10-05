@@ -16,11 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #ifndef __DERIVEDCHECK_H
 #define __DERIVEDCHECK_H
 
 #include "Portability.h"
+#include <functional>
 
 namespace WPEFramework {
 
@@ -45,7 +46,18 @@ namespace Core {
         };
 
         template <typename Func>
-        struct func_traits;
+        struct func_traits {
+            typedef std::nullptr_t result_type;
+
+            typedef std::nullptr_t classtype;
+
+            template <unsigned Idx>
+            struct argument {
+                typedef std::nullptr_t type;
+            };
+
+            enum { Arguments = -1 };
+        };
 
         template <typename TObj, typename R, typename... TArgs>
         struct func_traits<R (TObj::*)(TArgs...)> {
@@ -58,7 +70,7 @@ namespace Core {
                 typedef typename pick<Idx, TArgs...>::result type;
             };
 
-			enum { Arguments = sizeof...(TArgs) };
+            enum { Arguments = sizeof...(TArgs) };
         };
 
         template <typename TObj, typename R, typename... TArgs>
@@ -85,71 +97,54 @@ namespace Core {
                 typedef typename pick<Idx, TArgs...>::result type;
             };
 
-			enum { Arguments = sizeof...(TArgs) };
+            enum { Arguments = sizeof...(TArgs) };
         };
 
-        template <typename SCALAR>
-        struct sign {
-            enum { Signed = 1 };
-        };
-        template <>
-        struct sign<unsigned char> {
-            enum { Signed = 0 };
-        };
-        template <>
-        struct sign<unsigned short> {
-            enum { Signed = 0 };
-        };
-        template <>
-        struct sign<unsigned int> {
-            enum { Signed = 0 };
-        };
-        template <>
-        struct sign<unsigned long> {
-            enum { Signed = 0 };
-        };
-        template <>
-        struct sign<unsigned long long> {
-            enum { Signed = 0 };
+        template <typename R, typename... TArgs>
+        struct func_traits<std::function<R(TArgs...)>> {
+            typedef R result_type;
+
+            typedef void classtype;
+            template <unsigned Idx>
+            struct argument {
+                typedef typename pick<Idx, TArgs...>::result type;
+            };
+
+            enum { Arguments = sizeof...(TArgs) };
         };
 
-        typedef struct {
-            char c[2];
-        } tester_t;
+        template <typename R, typename... TArgs>
+        struct func_traits<const std::function<R(TArgs...)>> {
+            typedef R result_type;
 
-        template <class T>
-        struct inherits_checker {
-            static tester_t f(...);
-            static char f(T*);
+            typedef void classtype;
+            template <unsigned Idx>
+            struct argument {
+                typedef typename pick<Idx, TArgs...>::result type;
+            };
+
+            enum { Arguments = sizeof...(TArgs) };
         };
+
+        template< bool B, class T = void>
+        using enable_if = std::enable_if<B, T>;
+
+        template<class T1, class T2>
+        using is_same = std::is_same<T1,T2>;
 
         template <class T1, class T2>
-        struct is_same {
-            enum {
-                value = 0
-            };
-        };
-
-        template <class T>
-        struct is_same<T, T> {
-            enum {
-                value = 1
-            };
-        };
-
-        template <class T1, class T2>
-        struct inherits {
-            enum {
-                value = sizeof(char) == sizeof(inherits_checker<T1>::f((T2*)0)) && !is_same<T1, T2>::value
-            };
-        };
+        using inherits = std::is_base_of<T1, T2>;
 
         template <class T1, class T2>
         struct same_or_inherits {
-            enum {
-                value = sizeof(char) == sizeof(inherits_checker<T1>::f((T2*)0))
-            };
+            constexpr static bool value = is_same<T1, T2>::value || inherits<T1, T2>::value;
         };
+
+        template <class T>
+        struct sign {
+            constexpr static bool Signed = std::is_signed<T>::value;
+        };
+
 
 // HPL todo this one can be used with overloads, could not get that to work with the HAS_MEMBER
 #define HAS_MEMBER_NAME(func, name)                                 \
@@ -207,14 +202,6 @@ namespace Core {
         static bool const value = sizeof(chk<T>(0)) == sizeof(yes); \
     };
 
-        template <bool C, typename T = void>
-        struct enable_if {
-            typedef T type;
-        };
-
-        template <typename T>
-        struct enable_if<false, T> {
-        };
     }
 }
 } // namespace Core::TypeTraits

@@ -21,6 +21,7 @@
 
 #include "Module.h"
 
+
 namespace WPEFramework {
 
 namespace PluginHost {
@@ -512,13 +513,15 @@ namespace PluginHost {
             , _plugins()
             , _reasons()
             , _substituter(*this)
+            , _configLock()
         {
             JSONConfig config;
 
             config.IElement::FromFile(file, error);
 
             if (error.IsSet() == false) {
-                _webPrefix = '/' + config.Prefix.Value();
+                _prefix = config.Prefix.Value();
+                _webPrefix = '/' + _prefix;
                 _JSONRPCPrefix = '/' + config.JSONRPC.Value();
 #ifdef PROCESSCONTAINERS_ENABLED
                 _ProcessContainersLogging = config.ProcessContainers.Logging.Value();
@@ -604,9 +607,24 @@ namespace PluginHost {
         }
 
     public:
+        inline const string& Prefix() const
+        {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            return (_prefix);
+        }
+        inline void SetPrefix(const string& newValue) {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            _prefix = newValue;
+            _webPrefix = '/' + _prefix;
+        }
         inline const string& Version() const
         {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_version);
+        }
+        inline void SetVersion(const string& newValue) {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            _version = newValue;
         }
         inline const string& Model() const
         {
@@ -630,12 +648,13 @@ namespace PluginHost {
         }
         inline const string& WebPrefix() const
         {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_webPrefix);
         }
         inline const string& JSONRPCPrefix() const
         {
             return (_JSONRPCPrefix);
-        }
+        } 
 #ifdef PROCESSCONTAINERS_ENABLED
         inline const string& ProcessContainersLogging() const {
             return (_ProcessContainersLogging);
@@ -659,6 +678,7 @@ namespace PluginHost {
         }
         inline const Core::NodeId& Accessor() const
         {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_accessor);
         }
         inline const Core::NodeId& Communicator() const
@@ -707,7 +727,12 @@ namespace PluginHost {
             return (_substituter.Substitute(input, &plugin));
         }
         inline uint16_t IdleTime() const {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_idleTime);
+        }
+        inline void SetIdleTime(const uint16_t newValue)  {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            _idleTime = newValue;
         }
         inline const string& URL() const {
             return (_URL);
@@ -716,10 +741,20 @@ namespace PluginHost {
             return (_stackSize);
         }
         inline int32_t Latitude() const {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_latitude);
         }
+        inline void SetLatitude(const int32_t newValue){
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            _latitude = newValue;
+        }
         inline int32_t Longitude() const {
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_longitude);
+        }
+        inline void SetLongitude(const int32_t newValue){
+            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
+            _longitude = newValue;
         }
         inline const InputInfo& Input() const {
             return(_inputInfo);
@@ -762,22 +797,26 @@ namespace PluginHost {
 
             if (_interface.empty() == false) {
                 Core::NodeId selectedNode = Plugin::Config::IPV4UnicastNode(_interface);
-
+    
+                _configLock.Lock();
                 if (selectedNode.IsValid() == true) {
                     _accessor = selectedNode;
                     result = _accessor;
+                    
                 }
             } else if (result.IsAnyInterface() == true) {
                 // TODO: We should iterate here over all interfaces to find a suitable IPv4 address or IPv6.
                 Core::NodeId selectedNode = Plugin::Config::IPV4UnicastNode(_interface);
 
+                _configLock.Lock();
                 if (selectedNode.IsValid() == true) {
                     _accessor = selectedNode;
                 }
             } else {
+                _configLock.Lock();
                 _accessor = result;
             }
-
+            string hostaddress;
             if (_accessor.IsValid() == false) {
 
                 // Let's go for the default and make the best of it :-)
@@ -788,19 +827,28 @@ namespace PluginHost {
                 value.sin_port = htons(_portNumber);
 
                 _accessor = value;
+
+                _accessor.PortNumber(_portNumber);
+                hostaddress = _accessor.HostAddress();
+                _configLock.Unlock();
                 SYSLOG(Logging::Startup, ("Invalid config information could not resolve to a proper IP"));
-            }
-
-            if (_portNumber == 80) {
-                _URL = string(_T("http://")) + _accessor.HostAddress() + _webPrefix;
             } else {
-                _URL = string(_T("http://")) + _accessor.HostAddress() + ':' + Core::NumberType<uint16_t>(_portNumber).Text() + _webPrefix;
+                _accessor.PortNumber(_portNumber);
+                hostaddress= _accessor.HostAddress();
+                _configLock.Unlock();
             }
 
-            _accessor.PortNumber(_portNumber);
+            
+            if (_portNumber == 80) {
+                _URL = string(_T("http://")) + hostaddress + WebPrefix();
+            } else {
+                _URL = string(_T("http://")) + hostaddress + ':' + Core::NumberType<uint16_t>(_portNumber).Text() + WebPrefix();
+            }
+            
 
             SYSLOG(Logging::Startup, (_T("Accessor: %s"), _URL.c_str()));
-            SYSLOG(Logging::Startup, (_T("Interface IP: %s"), _accessor.HostAddress().c_str()));
+            SYSLOG(Logging::Startup, (_T("Interface IP: %s"), hostaddress.c_str()));
+
         }
 
         inline const std::vector<std::string>& LinkerPluginPaths() const
@@ -841,6 +889,7 @@ namespace PluginHost {
 
     private:
         const bool _background;
+        string _prefix; // store prefix to make it overridable
         string _webPrefix;
         string _JSONRPCPrefix;
         string _volatilePath;
@@ -876,6 +925,7 @@ namespace PluginHost {
         Core::JSON::ArrayType<Plugin::Config> _plugins;
         std::list<PluginHost::IShell::reason> _reasons;
         Substituter _substituter;
+        mutable Core::CriticalSection _configLock;
 #ifdef PROCESSCONTAINERS_ENABLED
         string _ProcessContainersLogging;
 #endif

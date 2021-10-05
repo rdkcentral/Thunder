@@ -54,11 +54,15 @@ public:
         , H(0)
         , I()
         , J()
+        , K(1)
+        , L(0.0)
     {
         Add(_T("g"), &G);
         Add(_T("h"), &H);
         Add(_T("i"), &I);
         Add(_T("j"), &J);
+        Add(_T("k"), &K);
+        Add(_T("l"), &L);
     }
 
     ~CommandParameters()
@@ -70,6 +74,8 @@ public:
     WPEFramework::Core::JSON::DecSInt16 H;
     WPEFramework::Core::JSON::EnumType<CommandType> I;
     WPEFramework::Core::JSON::ArrayType<WPEFramework::Core::JSON::DecUInt16> J;
+    WPEFramework::Core::JSON::Float K;
+    WPEFramework::Core::JSON::Double L;
 };
 
 class CommandRequest : public WPEFramework::Core::JSON::Container {
@@ -86,7 +92,9 @@ public:
         , D(false)
         , E(00)
         , F()
-        , K()
+        , M()
+        , N(0.0)
+        , O(0.0)
     {
         Add(_T("a"), &A);
         Add(_T("b"), &B);
@@ -94,11 +102,18 @@ public:
         Add(_T("d"), &D);
         Add(_T("e"), &E);
         Add(_T("f"), &F);
-        Add(_T("k"), &K);
+        Add(_T("m"), &M);
+        Add(_T("n"), &N);
+        Add(_T("o"), &O);
     }
 
     ~CommandRequest()
     {
+    }
+
+    void Clear()
+    {
+        WPEFramework::Core::JSON::Container::Clear();
     }
 
 public:
@@ -108,15 +123,17 @@ public:
     WPEFramework::Core::JSON::Boolean D;
     WPEFramework::Core::JSON::OctUInt16 E;
     CommandParameters F;
-    WPEFramework::Core::JSON::ArrayType<WPEFramework::Core::JSON::String> K;
+    WPEFramework::Core::JSON::ArrayType<WPEFramework::Core::JSON::String> M;
+    WPEFramework::Core::JSON::Float N;
+    WPEFramework::Core::JSON::Double O;
 };
 
 TEST(Core_JSON, simpleSet)
 {
     {
         //Tester
-        string input = R"({"a":"-0x5A","b":"TestIdentifier","c":"0x5A","d":true,"e":"014","f":{"g":"-014","h":"-44","i":"enum_4","j":["6","14","22"]},"k":["Test"]})";
-        string inputRequired = R"({"a":"-0x5A","b":"TestIdentifier","c":"0x5A","d":true,"e":"014","f":{"g":"-014","h":-44,"i":"enum_4","j":[6,14,22]},"k":["Test"]})";
+        string input = R"({"a":"-0x5A","b":"TestIdentifier","c":"0x5A","d":true,"e":"014","f":{"g":"-014","h":"-44","i":"enum_4","j":["6","14","22"],"k":"1.1","l":"2.11"},"m":["Test"],"n":"3.2","o":"-65.22"})";
+        string inputRequired = R"({"a":"-0x5A","b":"TestIdentifier","c":"0x5A","d":true,"e":"014","f":{"g":"-014","h":-44,"i":"enum_4","j":[6,14,22],"k":1.1,"l":2.11},"m":["Test"],"n":3.2,"o":-65.22})";
         string output;
         WPEFramework::Core::ProxyType<CommandRequest> command = WPEFramework::Core::ProxyType<CommandRequest>::Create();
         command->A = -90;
@@ -130,10 +147,14 @@ TEST(Core_JSON, simpleSet)
         command->F.J.Add(WPEFramework::Core::JSON::DecUInt16(6, true));
         command->F.J.Add(WPEFramework::Core::JSON::DecUInt16(14, true));
         command->F.J.Add(WPEFramework::Core::JSON::DecUInt16(22, true));
+        command->F.K = 1.1;
+        command->F.L = 2.11;
+        command->N = 3.2;
+        command->O = -65.22;
 
         WPEFramework::Core::JSON::String str;
         str = string("Test");
-        command->K.Add(str);
+        command->M.Add(str);
         WPEFramework::Core::JSON::Tester<1, CommandRequest> parser;
         //ToString
         parser.ToString(command, output);

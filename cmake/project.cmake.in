@@ -58,10 +58,10 @@ endif()
 set(NAMESPACE "@NAMESPACE@" CACHE INTERNAL "" FORCE)
 set("${NAMESPACE}_FOUND" TRUE CACHE INTERNAL "" FORCE)
 
+add_definitions("-DTHUNDER_PLATFORM_@PLATFORM@=1")
+
 string(TOLOWER ${NAMESPACE} _STORAGE_DIRECTORY)
 set(STORAGE_DIRECTORY ${_STORAGE_DIRECTORY} CACHE INTERNAL "" FORCE)
-
-option(HIDE_NON_EXTERNAL_SYMBOLS "Export all symbols that have been marked EXTERNAL" OFF)
 
 if (NOT HIDE_NON_EXTERNAL_SYMBOLS)
     set(HIDE_NON_EXTERNAL_SYMBOLS @HIDE_NON_EXTERNAL_SYMBOLS@)
@@ -82,7 +82,7 @@ list(SORT CMAKE_MODULE_PATH)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} CACHE INTERNAL "" FORCE)
 
 get_directory_property(hasParent PARENT_DIRECTORY)
-if(hasParent) 
+if(hasParent)
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} PARENT_SCOPE)
 endif()
 
@@ -117,13 +117,13 @@ endmacro()
 # ----------------------------------------------------------------------------------------
 # write_config
 # ----------------------------------------------------------------------------------------
-# Writes and installs a json configs for a plugin. 
+# Writes and installs a json configs for a plugin.
 #
 #    optional:
-#    PLUGINS     List of the config files to write without extention defaults to 
+#    PLUGINS     List of the config files to write without extention defaults to
 #                PROJECT_NAME only
 #                e.g. "UX" will generate and install UX.json for the WebkitBrowser plugin.
-#    CLASSNAME   Name of the package, defaults to PROJECT_NAME of 
+#    CLASSNAME   Name of the package, defaults to PROJECT_NAME of
 #                the latest cmake project call.
 #    LOCATOR     Version of the package, defaults to lib + MODULE_NAME + CMAKE_SHARED_LIBRARY_SUFFIX
 #                of the latest cmake project call.
@@ -135,7 +135,7 @@ macro(write_config)
     set(multiValueArgs PLUGINS)
 
     cmake_parse_arguments(ARG "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-    
+
     if(ARG_UNPARSED_ARGUMENTS)
         if(ARG_PLUGINS)
             message(FATAL_ERROR "Unknown keywords given to write_config: \"${ARG_UNPARSED_ARGUMENTS}\"")
@@ -162,18 +162,18 @@ macro(write_config)
     else()
         set(_classname ${PROJECT_NAME})
     endif()
-    
+
     if(ARG_PLUGINS)
         set(_plugins ${ARG_PLUGINS})
     else()
         set(_plugins ${PROJECT_NAME})
-    endif() 
+    endif()
 
     if(ARG_COMPONENT)
         set(_component ${ARG_COMPONENT})
     else()
         set(_component ${PROJECT_NAME})
-    endif() 
+    endif()
     endif()
 
     if(ARG_LOCATOR)
@@ -183,7 +183,7 @@ macro(write_config)
     endif()
 
     IncludeConfig()
-    
+
     foreach(plugin ${_plugins})
         message(STATUS "Writing configuration for ${plugin}")
 
@@ -257,7 +257,7 @@ endfunction()
 
 function(add_linker_flags modulename options)
     get_target_property(original ${modulename} LINK_FLAGS)
-    if (original) 
+    if (original)
         set(cleanLine ${options} ${original})
     else(original)
         set(cleanLine ${options})
@@ -267,13 +267,13 @@ function(add_linker_flags modulename options)
     foreach(VAL ${options})
         string(APPEND linkoptions "${VAL} ")
     endforeach()
-   
+
     if (NOT "${linkoptions}" STREQUAL "")
         set_target_properties(${modulename} PROPERTIES LINK_FLAGS "${linkoptions}")
     endif()
 endfunction()# Get all propreties that cmake supports
 
-# for debugging cmake targets 
+# for debugging cmake targets
 execute_process(COMMAND cmake --help-property-list OUTPUT_VARIABLE CMAKE_PROPERTY_LIST)
 
 # Convert command output into a CMake list

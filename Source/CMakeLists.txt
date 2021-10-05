@@ -56,8 +56,8 @@ option(WCHAR_SUPPORT
         "Enable support for WCHAR." OFF)
 option(DISABLE_TRACING
         "Disable tracing in debug" OFF)
-option(HIDE_NON_EXTERNAL_SYMBOLS 
-        "Hide all non EXTERNAL tagged symbols" OFF)
+option(HIDE_NON_EXTERNAL_SYMBOLS
+        "Hide all non EXTERNAL tagged symbols" ON)
 
 option(EXCEPTION_CATCHING
         "Enable unhandled exception handling catching." OFF)

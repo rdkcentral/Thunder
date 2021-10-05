@@ -762,6 +762,7 @@ namespace Core {
                         result = Update(false, reinterpret_cast<const struct ifaddrmsg*>(stream), length);
                         break;
                     default:
+                        TRACE_L1("NetworkInfo: unhandled Netlink notification type [%i]", Type());
                         break;
                     }
 
@@ -865,12 +866,15 @@ namespace Core {
                 private:
                     uint16_t Write(uint8_t stream[], const uint16_t maxLength) const override
                     {
-                        const uint16_t length = sizeof(struct rtgenmsg);
+                        const uint16_t length = sizeof(struct ifinfomsg);
                         ASSERT(length <= maxLength);
 
-                        struct rtgenmsg* message(reinterpret_cast<struct rtgenmsg*>(stream));
-                        ::memset(message, 0, sizeof(struct rtgenmsg));
-                        message->rtgen_family = AF_UNSPEC;
+                        struct ifinfomsg* message(reinterpret_cast<struct ifinfomsg*>(stream));
+                        ::memset(message, 0, sizeof(struct ifinfomsg));
+                        message->ifi_family = AF_UNSPEC;
+                        message->ifi_index = 0 /* all of them */;
+                        message->ifi_change = 0xFFFFFFFF;
+
 
                         return (length);
                     }
@@ -915,8 +919,10 @@ namespace Core {
             LinkSocket(const LinkSocket&) = delete;
             LinkSocket& operator=(const LinkSocket&) = delete;
 
-            LinkSocket(IPNetworks& parent)
-                : SocketNetlink(NodeId(NETLINK_ROUTE, 0, (RTMGRP_LINK | RTMGRP_IPV4_IFADDR | RTMGRP_IPV6_IFADDR)))
+            LinkSocket(IPNetworks& parent, bool listener)
+                : SocketNetlink(NodeId(NETLINK_ROUTE,
+                                       0 /* kernel takes care of assigining a unique socket ID */,
+                                       (listener? (RTMGRP_LINK | RTMGRP_IPV4_IFADDR | RTMGRP_IPV6_IFADDR) : 0)))
                 , _messageSink(parent)
             {
             }
@@ -929,17 +935,27 @@ namespace Core {
             void Open()
             {
                 if (SocketDatagram::IsOpen() != true) {
-                    if (SocketDatagram::Open(1000) == ERROR_NONE) {
-                        // Must request the complete interface structure first, synchronously,
-                        // further updates are only notifications of changes.
-                        RequestUpdate();
+                    if (SocketDatagram::Open(1000) != ERROR_NONE) {
+                        TRACE_L1("NetworkInfo: Failed to open Netlink socket");
                     }
                 }
             }
             void Close()
             {
-                if (SocketDatagram::IsOpen() == true) {
-                    SocketDatagram::Close(Core::infinite);
+                SocketDatagram::Close(Core::infinite);
+            }
+
+        public:
+            void RequestStatus()
+            {
+                TRACE_L1("NetworkInfo: Requesting interface information update via Netlink...");
+
+                if (Exchange(Message::GetLink(), _messageSink, 2000) != ERROR_NONE) {
+                    TRACE_L1("NetworkInfo: Failed to retrieve interface information");
+                } else {
+                    if (Exchange(Message::GetAddress(), _messageSink, 2000) != ERROR_NONE) {
+                        TRACE_L1("NetworkInfo: Failed to retrieve interface address information");
+                    }
                 }
             }
 
@@ -948,20 +964,6 @@ namespace Core {
             {
                 // Spontaneous notification...
                 return (_messageSink.Deserialize(stream, length));
-            }
-
-        private:
-            void RequestUpdate()
-            {
-                TRACE_L1("NetworkInfo: Requesting interface information update via Netlink...");
-
-                if (Exchange(Message::GetLink(), _messageSink, 500) != ERROR_NONE) {
-                    TRACE_L1("NetworkInfo: Failed to retrieve interface information");
-                } else {
-                    if (Exchange(Message::GetAddress(), _messageSink, 500) != ERROR_NONE) {
-                        TRACE_L1("NetworkInfo: Failed to retrieve interface address information");
-                    }
-                }
             }
 
         private:
@@ -1044,11 +1046,21 @@ namespace Core {
             : _adminLock()
             , _channel(ProxyType<Channel>::Create())
             , _networks()
-            , _linkSocket(*this)
+            , _linkSocket(*this, true)
             , _observers()
         {
             ASSERT(IsValid());
+
+            // Listen for link updates...
             _linkSocket.Open();
+
+            // Request link status explicilty in case any interfaces were constructed before the listener started.
+            LinkSocket request(*this, false);
+            request.Open();
+            if (request.IsOpen() == true) {
+                request.RequestStatus();
+                request.Close();
+            }
         }
 
     public:
@@ -1071,7 +1083,7 @@ namespace Core {
         {
             return ((_channel.IsValid()) && (_channel->IsValid() == true));
         }
-        void Load (std::list<Core::ProxyType<Network> >& list) {
+        void Load(std::list<Core::ProxyType<Network>>& list) {
             _adminLock.Lock();
             for (const Element& element : _networks) {
                 list.push_back(element.second);
@@ -1140,20 +1152,24 @@ namespace Core {
             }
         }
         void Added(const uint32_t id, const Core::IPNode& node) {
+            _adminLock.Lock();
             Map::iterator index(_networks.find(id));
             if (index != _networks.end()) {
                 if (index->second->Added(node) == true) {
                     NotifyAddressUpdate(index->second->Name(), node, true);
                 }
             }
+            _adminLock.Unlock();
         }
         void Removed(const uint32_t id, const Core::IPNode& node) {
+            _adminLock.Lock();
             Map::iterator index(_networks.find(id));
             if (index != _networks.end()) {
                 if (index->second->Removed(node) == true ) {
                     NotifyAddressUpdate(index->second->Name(), node, false);
                 }
             }
+            _adminLock.Unlock();
         }
 
     private:

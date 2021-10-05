@@ -21,6 +21,7 @@
 
 #include "Thread.h"
 #include "ResourceMonitor.h"
+#include "Number.h"
 
 namespace WPEFramework {
 
@@ -28,8 +29,6 @@ namespace Core {
 
     class EXTERNAL ThreadPool {
     public:
-        typedef Core::QueueType< Core::ProxyType<IDispatch> > MessageQueue;
-
         struct IDispatcher {
             virtual ~IDispatcher() = default;
 
@@ -38,6 +37,73 @@ namespace Core {
             virtual void Dispatch(Core::IDispatchType<void>*) = 0;
         };
 
+    private:
+        #ifdef __CORE_WARNING_REPORTING__
+        class MeasurableJob {
+        public:
+            MeasurableJob()
+                : _job()
+                , _time(Core::NumberType<uint64_t>::Max())
+            {
+            }
+
+            /**
+             * @brief Measurable job is used with warning reporting to measure 
+             *        time job was in queue and it's execution time.
+             *        
+             *        NOTE: Constructor is not marked as explicit to allow implicit
+             *        conversion from Core::ProxyType<IDispatch> to MeasurableJob in
+             *        QueueType methods such as Post or Insert.
+             */
+            MeasurableJob(const Core::ProxyType<IDispatch>& job)
+                : _job(job)
+                , _time(Core::Time::Now().Ticks())
+            {
+            }
+
+            MeasurableJob(const MeasurableJob&) = default;
+            MeasurableJob& operator=(const MeasurableJob&) = default;
+
+            bool operator==(const MeasurableJob& other) const
+            {
+                return _job == other._job;
+            }
+
+            bool operator!=(const MeasurableJob& other) const
+            {
+                return _job != other._job;
+            }
+
+            void Process(IDispatcher* dispatcher)
+            {
+                ASSERT(dispatcher != nullptr);
+                ASSERT(_job.IsValid());
+                ASSERT(_time != Core::NumberType<uint64_t>::Max());
+
+                Core::IDispatch* request = &(*_job);
+
+                REPORT_OUTOFBOUNDS_WARNING(WarningReporting::JobTooLongWaitingInQueue, (Core::Time::Now().Ticks() - _time) / Core::Time::TicksPerMillisecond);
+                REPORT_DURATION_WARNING({ dispatcher->Dispatch(request); }, WarningReporting::JobTooLongToFinish);
+
+                _job.Release();
+            }
+
+            bool IsValid() const
+            {
+                return _job.IsValid();
+            }
+
+        private:
+            Core::ProxyType<IDispatch> _job;
+            uint64_t _time;
+        };
+        typedef Core::QueueType< MeasurableJob > MessageQueue;
+        #else
+        typedef Core::QueueType< Core::ProxyType<IDispatch> > MessageQueue;
+        #endif
+
+    public:
+        
         template<typename IMPLEMENTATION>
         class JobType {
         private:
@@ -98,7 +164,7 @@ namespace Core {
                 Core::ProxyType<Core::IDispatch> result;
 
                 if (_state.compare_exchange_strong(expected, SUBMITTED) == true) {
-                    result = Core::ProxyType<Core::IDispatch>(&_job, &_job);
+                    result = Core::ProxyType<Core::IDispatch>(Core::ProxyType<Worker>(_job));
                 }
 
                 return (result);
@@ -108,7 +174,7 @@ namespace Core {
                 state expected = SUBMITTED;
                 _state.compare_exchange_strong(expected, IDLE);
 
-                return (Core::ProxyType<Core::IDispatch>(&_job, &_job));
+                return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<Worker>(_job)));
             }
             operator IMPLEMENTATION& () {
                 return (_implementation);
@@ -123,7 +189,7 @@ namespace Core {
                 state expected = IDLE;
                 _state.compare_exchange_strong(expected, SUBMITTED);
 
-                return (Core::ProxyType<Core::IDispatch>(&_job, &_job));
+                return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<Worker>(_job)));
             }
             
 
@@ -151,7 +217,7 @@ namespace Core {
                 : _dispatcher(dispatcher)
                 , _queue(queue)
                 , _adminLock()
-                , _signal(false, false)
+                , _signal(false, true)
                 , _interestCount(0)
                 , _currentRequest()
                 , _runs(0)
@@ -171,7 +237,8 @@ namespace Core {
                 uint32_t result = Core::ERROR_NONE;
 
                 _adminLock.Lock();
-                Core::InterlockedIncrement(_interestCount);
+                _interestCount++;
+
                 if (_currentRequest != job) {
                     _adminLock.Unlock();
                 }
@@ -180,7 +247,7 @@ namespace Core {
                     result = _signal.Lock(waitTime);
                 }
 
-                Core::InterlockedDecrement(_interestCount);
+                _interestCount--;
 
                 return(result);
             }
@@ -194,9 +261,14 @@ namespace Core {
 
                     _runs++;
 
+                    
+                    #ifdef __CORE_WARNING_REPORTING__
+                    _currentRequest.Process(_dispatcher);
+                    #else
                     Core::IDispatch* request = &(*_currentRequest);
-                    _dispatcher->Dispatch(request);
+                    _dispatcher->Dispatch(request); 
                     _currentRequest.Release();
+                    #endif
 
                     // if someone is observing this run, (WaitForCompletion) make sure that
                     // thread, sees that his object was running and is now completed.
@@ -222,8 +294,12 @@ namespace Core {
             MessageQueue& _queue;
             Core::CriticalSection _adminLock;
             Core::Event _signal;
-            uint32_t _interestCount;
+            std::atomic<uint32_t> _interestCount;
+            #ifdef __CORE_WARNING_REPORTING__
+            MeasurableJob _currentRequest;
+            #else
             Core::ProxyType<Core::IDispatch> _currentRequest;
+            #endif
             uint32_t _runs;
         };
 
