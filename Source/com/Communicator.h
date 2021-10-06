@@ -843,7 +843,7 @@ namespace RPC {
                     uint32_t launchResult = result->Launch();
 
                     // wait for the announce message to be exchanged
-                    if (launchResult == Core::ERROR_NONE && trigger.Lock(waitTime) == Core::ERROR_NONE) {
+                    if ((launchResult == Core::ERROR_NONE) && (trigger.Lock(waitTime) == Core::ERROR_NONE)) {
 
                         interfaceReturned = locator.first->second.Interface();
 
