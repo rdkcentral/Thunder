@@ -1393,7 +1393,8 @@ def __Tokenize(contents,log = None):
                     start = string.find(tag)
                     if (start != -1):
                         start += len(tag) + 1
-                        desc = string[start:EndOfTag(token, start)].strip(" *\n")
+                        end = EndOfTag(token, start)
+                        desc = string[start:end].strip(" *\n")
                         if desc:
                             tagtokens.append(tag.upper())
                             if hasParam:
@@ -1401,7 +1402,8 @@ def __Tokenize(contents,log = None):
                                 tagtokens.append(desc.split(" ",1)[1])
                             else:
                                 tagtokens.append(desc)
-                            FindDoxyString(tag, hasParam, string[start+1], tagtokens)
+                            if end != None:
+                                FindDoxyString(tag, hasParam, string[end:], tagtokens)
 
                 FindDoxyString("@brief", False, token, tagtokens)
                 FindDoxyString("@details", False, token, tagtokens)
@@ -1873,16 +1875,16 @@ def Parse(contents,log = None):
             next_block = Block(current_block[-1]) # new anonymous scope
 
         # Parse variables and member attributes
-        elif isinstance(current_block[-1],
-                        (Namespace, Class)) and tokens[i] == ';' and (is_valid(tokens[i - 1]) or tokens[i - 1] == "]"):
+        elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == ';':
             j = i - 1
             while j >= min_index and tokens[j] not in ['{', '}', ';', ":"]:
                 j -= 1
-            if not current_block[-1].omit:
+            identifier = tokens[j + 1:i]
+            if len(identifier) != 0 and not current_block[-1].omit:
                 if isinstance(current_block[-1], Class):
-                    Attribute(current_block[-1], tokens[j + 1:i])
+                    Attribute(current_block[-1], identifier)
                 else:
-                    Variable(current_block[-1], tokens[j + 1:i])
+                    Variable(current_block[-1], identifier)
             i += 1
 
         # Parse constants and member constants
@@ -1893,12 +1895,14 @@ def Parse(contents,log = None):
                 j -= 1
             while tokens[k] != ';':
                 k += 1
-            if not current_block[-1].omit:
+            identifier = tokens[j + 1:i]
+            value = tokens[i + 1:k]
+            if len(identifier) != 0 and not current_block[-1].omit:
                 if isinstance(current_block[-1], Class):
-                    Attribute(current_block[-1], tokens[j + 1:i], tokens[i + 1:k])
+                    Attribute(current_block[-1], identifier, value)
                 else:
-                    Variable(current_block[-1], tokens[j + 1:i], tokens[i + 1:k])
-            i = k
+                    Variable(current_block[-1], identifier, value)
+            i = k + 1
 
         # Parse an enum block...
         elif isinstance(current_block[-1], Enum):
