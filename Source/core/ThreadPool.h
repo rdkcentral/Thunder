@@ -158,6 +158,9 @@ namespace Core {
             }
 
         public:
+            bool IsIdle() const {
+                return (_state == IDLE);
+            }
             Core::ProxyType<Core::IDispatch> Aquire() {
 
                 state expected = IDLE;
