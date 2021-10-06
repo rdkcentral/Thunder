@@ -373,8 +373,12 @@ namespace WPEFramework {
                 _refCount->AddRef();
             }
             explicit ProxyType(CONTEXT& realObject)
-                : ProxyType(*(const_cast<Core::ProxyObject<CONTEXT>*>(static_cast<const Core::ProxyObject<CONTEXT>*>(&realObject))))
+                : _refCount(const_cast<IReferenceCounted*>(dynamic_cast<const IReferenceCounted*>(&realObject)))
+                , _realObject(&realObject)
             {
+                if (_refCount != nullptr) {
+                    _refCount->AddRef();
+                }
             }
             template <typename DERIVEDTYPE>
             ProxyType(const ProxyType<DERIVEDTYPE>& copy)
