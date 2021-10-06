@@ -248,7 +248,14 @@ namespace RPC {
 
             _adminLock.Unlock();
         }
-        void UnregisterProxy(const ProxyStub::UnknownProxy& proxy);
+        // should be invoked with already taken lock
+        void UnregisterProxyLocked(const ProxyStub::UnknownProxy& proxy);
+        void Lock() {
+            _adminLock.Lock();
+        }
+        void UnLock() {
+            _adminLock.Unlock();
+        }
         
    private:
         // ----------------------------------------------------------------------------------------------------
