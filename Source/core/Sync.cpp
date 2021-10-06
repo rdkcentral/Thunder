@@ -243,8 +243,9 @@ namespace Core {
         TRACE_L5("Destructor CriticalSection <%p>", (this));
 
 #ifdef __POSIX__
-        if (pthread_mutex_destroy(&m_syncMutex) != 0) {
-            TRACE_L1("Probably trying to delete a used CriticalSection <%d>.", 0);
+        int result = pthread_mutex_destroy(&m_syncMutex);
+        if (result != 0) {
+            TRACE_L1("Probably trying to delete a used CriticalSection <%d>.", result);
         }
 #endif
 #ifdef __WINDOWS__
