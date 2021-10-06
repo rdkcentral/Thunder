@@ -800,10 +800,10 @@ namespace RPC {
                     _adminLock.Unlock();
 
                     // Start the process, and....
-                    result->Launch();
+                    uint32_t launchResult = result->Launch();
 
                     // wait for the announce message to be exchanged
-                    if (trigger.Lock(waitTime) == Core::ERROR_NONE) {
+                    if ((launchResult == Core::ERROR_NONE) && (trigger.Lock(waitTime) == Core::ERROR_NONE)) {
 
                         interfaceReturned = locator.first->second.Interface();
 
