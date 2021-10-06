@@ -776,7 +776,7 @@ def TypeStr(s):
 
 
 def ValueStr(s):
-    return str(s) if isinstance(s, int) else str(Undefined(s, "/* unparsable */ ")) if not isinstance(s, str) else s
+    return str(s) if isinstance(s, int) else str(Undefined(s, "/* unparsable expression */ ")) if not isinstance(s, str) else s
 
 
 # Holds typedef definition
@@ -1094,7 +1094,7 @@ class InstantiatedTemplateClass(Class):
         self.type = self.TypeName()
 
     def TypeName(self):
-        return "%s<%s>" % (self.baseName.full_name, ", ".join([str("".join(p.type) if isinstance(p.type, list) else p.type) for p in self.resolvedArgs]))
+        return "%s<%s> /* instatiated template class */ " % (self.baseName.full_name, ", ".join([str("".join(p.type) if isinstance(p.type, list) else p.type) for p in self.resolvedArgs]))
 
     def Proto(self):
         return self.TypeName()
@@ -1595,8 +1595,13 @@ def Parse(contents,log = None):
                 typedef.is_event = True
                 event_next = False
             if not isinstance(typedef.type, Type) and typedef.type[0] == "enum":
+                # To be removed
+                if log:
+                    log.Warn("Support for typedefs to anonymous enums is deprecated, (%s(%i): " % (CurrentFile(), CurrentLine()))
                 in_typedef = True
                 i += 1
+            elif not isinstance(typedef.type, Type) and (not isinstance(typedef.type, list) or typedef.type[0] in ["struct", "class", "union"]):
+                raise ParserError("typedef to anonymous struct, class or union is not supported")
             else:
                 i = j + 1
 
