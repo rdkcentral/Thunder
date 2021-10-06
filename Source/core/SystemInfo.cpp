@@ -195,14 +195,17 @@ namespace Core {
         sysinfo(&info);
 
         m_uptime = info.uptime;
-        m_totalram = info.totalram;
         m_pageSize = static_cast<uint32_t>(sysconf(_SC_PAGESIZE));
-        m_freeram = info.freeram;
-        m_totalswap = info.totalswap;
-        m_freeswap = info.freeswap;
         m_cpuloadavg[0]=info.loads[0];
         m_cpuloadavg[1]=info.loads[1];
         m_cpuloadavg[2]=info.loads[2];
+
+        MemorySnapshot snapshot = TakeMemorySnapshot();
+        m_freeram = snapshot.Available() * 1024; //Convert to bytes
+        m_totalram = snapshot.Total() * 1024;
+        m_totalswap = snapshot.SwapTotal() * 1024;
+        m_freeswap = snapshot.SwapFree() * 1024;
+
 #endif
 #endif
 
@@ -399,13 +402,15 @@ namespace Core {
         sysinfo(&info);
 
         m_uptime = info.uptime;
-        m_freeram = info.freeram;
-        m_totalram = info.totalram;
-        m_totalswap = info.totalswap;
-        m_freeswap = info.freeswap;
         m_cpuloadavg[0] = info.loads[0];
         m_cpuloadavg[1] = info.loads[1];
         m_cpuloadavg[2] = info.loads[2];
+
+        MemorySnapshot snapshot = TakeMemorySnapshot();
+        m_freeram = snapshot.Available() * 1024;
+        m_totalram = snapshot.Total() * 1024;
+        m_totalswap = snapshot.SwapTotal() * 1024;
+        m_freeswap = snapshot.SwapFree() * 1024;
 #endif
     }
 
