@@ -1081,6 +1081,8 @@ namespace Web {
                     _parent.StateChange();
 
                     _adminLock.Unlock();
+
+                    ACTUALLINK::Trigger();
                 } else if ((_webSocketMessage.IsValid() == true) && (element->ErrorCode == Web::STATUS_FORBIDDEN)) {
                     ASSERT((_state & UPGRADING) != 0);
 
