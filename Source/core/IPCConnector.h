@@ -309,10 +309,10 @@ namespace Core {
             {
                 return _Deserialize(stream, maxLength, offset);
             }
-            void Acquire(Core::ProxyType<ThisClass>& source) {
+            void Acquire(Core::ProxyType<ThisClass>&) {
                 _parent.AddRef();
             }
-            void Relinquish(Core::ProxyType<ThisClass>& source) {
+            void Relinquish(Core::ProxyType<ThisClass>&) {
                 _parent.Release();
             }
 

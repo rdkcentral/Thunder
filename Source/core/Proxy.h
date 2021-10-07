@@ -1315,7 +1315,7 @@ namespace WPEFramework {
             }
             template <typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<!hasAcquire<TYPE, void (TYPE::*)(Core::ProxyType<STORED>& source)>::value, void>::type
-                __Acquire(Core::ProxyType<ThisClass>& source)
+                __Acquire(Core::ProxyType<ThisClass>&)
             {
             }
 
@@ -1338,7 +1338,7 @@ namespace WPEFramework {
             }
             template < typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<!hasRelinquish<TYPE, void (TYPE::*)(Core::ProxyType<STORED>&)>::value, void>::type
-                __Relinquish(Core::ProxyType<ThisClass>& source)
+                __Relinquish(Core::ProxyType<ThisClass>&)
             {
             }
 
