@@ -50,8 +50,6 @@ option(TEST_APPS
         "Include test applications." OFF)
 option(STUB_HARDWARE
         "Use hardware stubs for unittests)." OFF)
-option(BUILD_TYPE
-        "How do you want to build it, Production, Release or Debug" Production)
 option(WCHAR_SUPPORT
         "Enable support for WCHAR." OFF)
 option(DISABLE_TRACING
@@ -65,6 +63,9 @@ option(DEADLOCK_DETECTION
         "Enable deadlock detection tooling." OFF)
 option(WARNING_REPORTING
         "Include warning reporting in the build." OFF)
+
+set(BUILD_TYPE "Production" CACHE STRING "How do you want to build it, Production, Release/ReleaseSymbols or Debug/DebugOptimized")
+
 #
 # Build type specific options
 #
