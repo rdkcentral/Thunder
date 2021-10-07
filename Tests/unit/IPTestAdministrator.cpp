@@ -27,6 +27,8 @@
 #include <string.h>
 #include <core/core.h>
 
+MODULE_NAME_DECLARATION(BUILD_REFERENCE);
+
 #ifdef WITH_CODE_COVERAGE
 extern "C" void __gcov_flush();
 #endif

@@ -37,7 +37,8 @@ set(PUBLIC_HEADERS
         Communicator.h
         ConnectorType.h
         Ids.h
-        IRPCIterator.h
+        IteratorType.h
+        IIteratorType.h
         IStringIterator.h
         IValueIterator.h
         ICOM.h
@@ -52,12 +53,23 @@ target_link_libraries(${TARGET}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
-          ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
         )
 
-target_include_directories(${TARGET} 
+if (WARNING_REPORTING)
+target_compile_definitions(${TARGET}
+PUBLIC
+        WARNING_REPORTING_ENABLED
+)
+
+target_link_libraries(${TARGET}
+PUBLIC
+        ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting
+)
+endif()
+
+target_include_directories(${TARGET}
         PRIVATE
           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

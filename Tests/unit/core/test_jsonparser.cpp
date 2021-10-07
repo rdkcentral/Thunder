@@ -368,6 +368,82 @@ namespace Tests {
             EXPECT_EQ(data.value, v.Value());
         });
     }
+    
+    TEST(JSONParser, GreekString)
+    {
+        TestData data;
+        data.key = "λόγους";
+        data.keyToPutInJson = "\"" + data.key + "\"";
+        printf("     input key :   %zd --- = %s \n", data.key.length(), data.key.c_str());
+        data.value = "Φίλιππον ὁρῶ";
+        printf("     input value :   %zd --- = %s \n", data.value.length(), data.value.c_str());
+        data.valueToPutInJson = "\"" + data.value + "\"";
+        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
+            printf("     output value :   %zd --- = %s \n", v.Value().length(), v.Value().c_str());
+            EXPECT_EQ(data.value, v.Value());
+        });
+    }
+
+
+    TEST(JSONParser, GeorgianString)
+    {
+        TestData data;
+        data.key = "კონფერენციაზე";
+        printf("     input key :   %zd --- = %s \n", data.key.length(), data.key.c_str());
+        data.keyToPutInJson = "\"" + data.key + "\"";
+        data.value = "კონფერენცია შეჰკრებს";
+        printf("     input value :   %zd --- = %s \n", data.value.length(), data.value.c_str());
+        data.valueToPutInJson = "\"" + data.value + "\"";
+        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
+            printf("     output value :   %zd --- = %s \n", v.Value().length(), v.Value().c_str());
+            EXPECT_EQ(data.value, v.Value());
+        });
+    }
+
+    TEST(JSONParser, RussianString)
+    {
+        TestData data;
+        data.key = "Зарегистрируйтесь";
+        printf("     input key :   %zd --- = %s \n", data.key.length(), data.key.c_str());
+        data.keyToPutInJson = "\"" + data.key + "\"";
+        data.value = "Десятую Международную";
+        printf("     input value :   %zd --- = %s \n", data.value.length(), data.value.c_str());
+        data.valueToPutInJson = "\"" + data.value + "\"";
+        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
+            printf("     output value :   %zd --- = %s \n", v.Value().length(), v.Value().c_str());
+            EXPECT_EQ(data.value, v.Value());
+        });
+    }
+
+    TEST(JSONParser, FrenchString)
+    {
+        TestData data;
+        data.key = "suis ravi de";
+        printf("     input key :   %zd --- = %s \n", data.key.length(), data.key.c_str());
+        data.keyToPutInJson = "\"" + data.key + "\"";
+        data.value = "suis heureuse";
+        printf("     input value :   %zd --- = %s \n", data.value.length(), data.value.c_str());
+        data.valueToPutInJson = "\"" + data.value + "\"";
+        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
+            printf("     output value :   %zd --- = %s \n", v.Value().length(), v.Value().c_str());
+            EXPECT_EQ(data.value, v.Value());
+        });
+    }
+
+    TEST(JSONParser, ThaiString)
+    {
+        TestData data;
+        data.key = "ต้องรบราฆ่าฟันจนบรรลัย";
+        printf("     input key :   %zd --- = %s \n", data.key.length(), data.key.c_str());
+        data.keyToPutInJson = "\"" + data.key + "\"";
+        data.value = "ใช้สาวนั้นเป็นชนวนชื่นชวนใจ";
+        printf("     input value :   %zd --- = %s \n", data.value.length(), data.value.c_str());
+        data.valueToPutInJson = "\"" + data.value + "\"";
+        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
+            printf("     output value :   %zd --- = %s \n", v.Value().length(), v.Value().c_str());
+            EXPECT_EQ(data.value, v.Value());
+        });
+    }
 
     TEST(JSONParser, StringLeftQuoteOnly)
     {

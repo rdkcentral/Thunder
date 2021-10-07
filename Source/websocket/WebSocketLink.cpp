@@ -242,12 +242,12 @@ namespace Web {
 
                         // We might not have the full body yet...
                         if ((actualHeader + bytesToMove) > receivedSize) {
-                            _pendingReceiveBytes = (actualHeader + bytesToMove - receivedSize);
+                            _pendingReceiveBytes = static_cast<uint32_t>(actualHeader + bytesToMove - receivedSize);
                             bytesToMove = receivedSize - actualHeader;
                             _progressInfo &= (~0x20);
                         }
 
-                        receivedSize = bytesToMove;
+                        receivedSize = static_cast<uint32_t>(bytesToMove);
 
                         // If it is masked, we need to onvert..
                         if ((dataFrame[1] & MASKING_FRAME) != 0) {

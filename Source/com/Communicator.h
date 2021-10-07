@@ -35,7 +35,10 @@
 #endif
 
 #include "../tracing/TraceUnit.h"
+
+#if defined(WARNING_REPORTING_ENABLED)
 #include "../warningreporting/WarningReportingUnit.h"
+#endif
 
 namespace WPEFramework {
 namespace RPC {
@@ -381,13 +384,13 @@ namespace RPC {
                     (Logging::LoggingType<Logging::ParsingError>::IsEnabled() ? 0x10 : 0) |
                     (Logging::LoggingType<Logging::Error>::IsEnabled() ? 0x20 : 0) |
                     (Logging::LoggingType<Logging::Fatal>::IsEnabled() ? 0x40 : 0);
-            _options.Add(_T("-e")).Add(Core::NumberType<uint32_t>(loggingSettings).Text());           
+            _options.Add(_T("-e")).Add(Core::NumberType<uint32_t>(loggingSettings).Text());
 
 
             string oldPath;
             _ldLibLock.Lock();
             if (_linkLoaderPath.empty() == false) {
-                
+
                 Core::SystemInfo::GetEnvironment(_T("LD_LIBRARY_PATH"), oldPath);
                 string newPath = _linkLoaderPath+':'+oldPath ;
                 Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), newPath, true);
@@ -401,7 +404,7 @@ namespace RPC {
             //restore the original value
             if (_linkLoaderPath.empty() == false) {
                 Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), oldPath, true);
-                
+
             }
             _ldLibLock.Unlock();
 
@@ -837,10 +840,10 @@ namespace RPC {
                     _adminLock.Unlock();
 
                     // Start the process, and....
-                    result->Launch();
+                    uint32_t launchResult = result->Launch();
 
                     // wait for the announce message to be exchanged
-                    if (trigger.Lock(waitTime) == Core::ERROR_NONE) {
+                    if ((launchResult == Core::ERROR_NONE) && (trigger.Lock(waitTime) == Core::ERROR_NONE)) {
 
                         interfaceReturned = locator.first->second.Interface();
 
@@ -1143,7 +1146,7 @@ namespace RPC {
             public:
                 virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override
                 {
-                    Core::ProxyType<AnnounceMessage> message(Core::proxy_cast<AnnounceMessage>(data));
+                    Core::ProxyType<AnnounceMessage> message(data);
 
                     ASSERT(message.IsValid() == true);
                     ASSERT(dynamic_cast<Client*>(&channel) != nullptr);
@@ -1152,7 +1155,11 @@ namespace RPC {
 
                     // Anounce the interface as completed
                     string jsonDefaultCategories(Trace::TraceUnit::Instance().Defaults());
-                    string jsonDefaultWarningCategories(WarningReporting::WarningReportingUnit::Instance().Defaults());
+                    string jsonDefaultWarningCategories;
+
+#if defined(WARNING_REPORTING_ENABLED)
+                    jsonDefaultWarningCategories = WarningReporting::WarningReportingUnit::Instance().Defaults();
+#endif
                     void* result = _parent.Announce(proxyChannel, message->Parameters());
 
                     message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultCategories, jsonDefaultWarningCategories);
@@ -1314,9 +1321,13 @@ namespace RPC {
             std::list<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
             while (loop != deadProxies.end()) {
                 Revoke((*loop)->Parent(), (*loop)->InterfaceId());
+
                 // To avoid race conditions, the creation of the deadProxies took a reference
                 // on the interfaces, we presented here. Do not forget to release this reference.
-                (*loop)->Parent()->Release();
+                if ((*loop)->Parent()->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) {
+                    // This is a leak, someone is still referencing a Proxy that is as dead as a pier !
+                    TRACE_L1("The Proxy for [%d] is still being referenced although the link is gone !!!", (*loop)->InterfaceId());
+                }
                 loop++;
             }
         }
