@@ -11,14 +11,14 @@
 #    optional:
 #    SOURCE_DIR      Specify the local destination location for the sources
 #                       * Default: '${CMAKE_CURRENT_LIST_DIR}/git'
-#    GIT_TAG         Specify a tag/branch name
-#    GIT_HASH        Checkout of this hash
+#    GIT_VERSION     Specify a tag/branch name and/or hash value. eg:- "branch=test;hash=XXXX"
 #    FORCE           Clear out the source dir before runnning the git logic.
 #
 # ----------------------------------------------------------------------------------------
 function(GetExternalCode)
     set(optionsArgs FORCE)
-    set(oneValueArgs GIT_REPOSITORY GIT_TAG GIT_HASH SOURCE_DIR)
+    set(oneValueArgs GIT_REPOSITORY  SOURCE_DIR)
+    set(multiValueArgs GIT_VERSION)
 
     cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -31,12 +31,7 @@ function(GetExternalCode)
     set(GIT_REPOSITORY "not set")
     set(SOURCE_DIR "git")
 
-    set(GIT_CMD ${GIT_EXECUTABLE} clone --single-branch)
-
-    if(Argument_GIT_TAG)
-        list(APPEND --branch ${Argument_GIT_TAG})
-    endif()
-
+    set(GIT_CMD ${GIT_EXECUTABLE} clone)
     if(Argument_GIT_REPOSITORY)
         # Should be second last in the GIT_CMD list since we always specify a location
         list(APPEND GIT_CMD ${Argument_GIT_REPOSITORY})
@@ -59,7 +54,35 @@ function(GetExternalCode)
         file(REMOVE_RECURSE "${REPO_LOCATION}")
     endif()
 
+    if(Argument_GIT_VERSION)
+        foreach (_keyvalue ${Argument_GIT_VERSION})
+            string(REPLACE "=" ";" _keyvalue ${_keyvalue})
+            list(GET _keyvalue 0 _key)
+            list(LENGTH _keyvalue length)
+            if (_key AND (length EQUAL 2))
+                string( TOLOWER "${_key}" _key)
+                if(${_key} STREQUAL "branch")
+                    list(GET _keyvalue 1 _value)
+                    set(GIT_BRANCH ${_value})
+                elseif(${_key} STREQUAL "hash")
+                    list(GET _keyvalue 1 _value)
+                    set(GIT_HASH ${_value})
+                else()
+                        message(FATAL_ERROR "the given key is not supproted: " ${_key})
+                endif()
+            else()
+                    message(FATAL_ERROR "wrong key value pair: " ${_keyvalue})
+            endif()
+        endforeach ()
+    endif()
+
+    if(GIT_TAG)
+        list(APPEND GIT_CMD --single-branch --branch ${GIT_BRANCH})
+    endif()
+
+
     if(GIT_FOUND)
+        message("GIT_CMD = " ${GIT_CMD})
         if(EXISTS ${REPO_LOCATION}/.git)
             message(STATUS "Git repo detected in ${REPO_LOCATION}, skipping clone")
         else()
@@ -72,14 +95,14 @@ function(GetExternalCode)
             endif()
         endif()
 
-        if(Argument_GIT_HASH)
+        if(GIT_HASH)
             if(EXISTS ${REPO_LOCATION})
-                message(STATUS "Checkout ${Argument_GIT_HASH}")
-                execute_process(COMMAND ${GIT_EXECUTABLE} checkout ${Argument_GIT_HASH}
+                message(STATUS "Checkout ${GIT_HASH}")
+                execute_process(COMMAND ${GIT_EXECUTABLE} checkout ${GIT_HASH}
                                 WORKING_DIRECTORY ${REPO_LOCATION}
                                 RESULT_VARIABLE GIT_CLONE_RESULT)
                 if(NOT GIT_CLONE_RESULT EQUAL "0")
-                    message(FATAL_ERROR "Git checkout of ${Argument_GIT_HASH} failed!")
+                    message(FATAL_ERROR "Git checkout of ${GIT_HASH} failed!")
                 endif()
             else()
                 message(FATAL_ERROR "Repo ${REPO_LOCATION} not found!")
