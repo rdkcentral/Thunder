@@ -1020,7 +1020,7 @@ def LoadInterface(file, includePaths = []):
                                 obj["index"]["example"] = obj["index"]["enum"][0]
                             if "example" not in obj["index"]:
                                 # example not specified, let's invent something...
-                                obj["index"]["example"] = ("0" if obj["index"]["type"] == "integer" else "abc")
+                                obj["index"]["example"] = ("0" if obj["index"]["type"] == "integer" else "xyz")
                             if obj["index"]["type"] not in ["integer", "string"]:
                                 raise CppParseError(method.vars[0], "index to a property must be integer, enum or string type")
                         else:
@@ -2482,7 +2482,6 @@ def CreateDocument(schema, path):
                     if "required" not in obj and name and len(obj["properties"]) > 1:
                         log.Warn("'%s': no 'required' field present (assuming all members optional)" % name)
                     for pname, props in obj["properties"].items():
-                        print(name,"/", props)
                         __TableObj(pname, props, parentName + "/" + (name if not "original" in props else props["original"]), obj, prefix, False)
                 elif obj["type"] == "array":
                     __TableObj("", obj["items"], parentName + "/" + name, obj, (prefix + "[#]") if name else "",
@@ -2508,15 +2507,15 @@ def CreateDocument(schema, path):
                 ])
             MdBr()
 
-        def __ExampleObj(name, obj):
-            name = (name if not "original" in obj else obj["original"])
+        def __ExampleObj(name, obj, root=False):
+            name = (name if not "original" in obj else obj["original"] if not root else name)
             objType = obj["type"]
             default = obj["example"] if "example" in obj else obj["default"] if "default" in obj else ""
             if not default and "enum" in obj:
                 default = obj["enum"][0]
             jsonData = '"%s": ' % name if name else ''
             if objType == "string":
-                jsonData += '"%s"' % (default if default else "abcd")
+                jsonData += '"%s"' % (default if default else "...")
             elif objType in ["integer", "number"]:
                 jsonData += '%s' % (default if default else 0)
             elif objType in ["float", "double"]:
@@ -2627,7 +2626,7 @@ def CreateDocument(schema, path):
                     MdCode(jsonRequest, "json")
                     MdHeader("Get Response", 4)
                     jsonResponse = json.dumps(json.loads('{ "jsonrpc": "2.0", "id": 42, %s }' %
-                                                         __ExampleObj("result", parameters),
+                                                         __ExampleObj("result", parameters, True),
                                                          object_pairs_hook=OrderedDict),
                                               indent=4)
                     MdCode(jsonResponse, "json")
@@ -2641,7 +2640,7 @@ def CreateDocument(schema, path):
 
                 jsonRequest = json.dumps(json.loads('{ "jsonrpc": "2.0", %s"method": "%s"%s }' %
                                                     ('"id": 42, ' if not is_notification else "", method,
-                                                     (", " + __ExampleObj("params", parameters)) if parameters else ""),
+                                                     (", " + __ExampleObj("params", parameters, True)) if parameters else ""),
                                                     object_pairs_hook=OrderedDict),
                                          indent=4)
                 MdCode(jsonRequest, "json")
@@ -2650,7 +2649,7 @@ def CreateDocument(schema, path):
                     if "result" in props:
                         MdHeader("Response", 4)
                         jsonResponse = json.dumps(json.loads('{ "jsonrpc": "2.0", "id": 42, %s }' %
-                                                             __ExampleObj("result", props["result"]),
+                                                             __ExampleObj("result", props["result"], True),
                                                              object_pairs_hook=OrderedDict),
                                                   indent=4)
                         MdCode(jsonResponse, "json")
