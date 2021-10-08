@@ -374,4 +374,15 @@ namespace Core {
     }                                                                                                                  \
     } // extern "C" Core::System
 
+#define MODULE_NAME_ARCHIVE_DECLARATION                                                          \
+    extern "C" {                                                                                 \
+    namespace WPEFramework {                                                                     \
+        namespace Core {                                                                         \
+            namespace System {                                                                   \
+                const char* MODULE_NAME = SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(MODULE_NAME); \
+            }                                                                                    \
+        }                                                                                        \
+    }                                                                                            \
+    } // extern "C" Core::System
+
 #endif // __SYSTEMINFO_H

@@ -58,7 +58,7 @@ namespace Core {
 
             REPORT_DURATION_WARNING( { result = pthread_mutex_lock(&m_syncMutex); }, WarningReporting::TooLongWaitingForLock);
             if (result != 0) {
-                TRACE_L1("Probably creating a deadlock situation. <%d>", 0);
+                TRACE_L1("Probably creating a deadlock situation or lock on already destroyed mutex. <%d>", result);
             }
 
 #endif
@@ -72,8 +72,9 @@ namespace Core {
         inline void Unlock()
         {
 #ifdef __POSIX__
-            if (pthread_mutex_unlock(&m_syncMutex) != 0) {
-                TRACE_L1("Probably does the calling thread not own this CCriticalSection. <%d>", 0);
+            int result = pthread_mutex_unlock(&m_syncMutex);
+            if (result != 0) {
+                TRACE_L1("Probably does the calling thread not own this CriticalSection or unlock on already destroyed mutex. <%d>", result);
             }
 #endif
 

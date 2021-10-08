@@ -43,6 +43,7 @@ namespace Core {
 
     public:
         Library();
+        Library(const void* functionInLibrary);
         Library(const TCHAR fileName[]);
         Library(const Library& copy);
         ~Library();

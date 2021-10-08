@@ -557,7 +557,76 @@
           "$ref": "#/common/errors/general"
         }
       ]
-    }
+    },
+    "version": {
+			"description": "version of the controller",
+      "params": {
+        "example": "1.0",
+        "type": "string"
+      },
+			"errors": [
+				{
+					"description": "Failed to get/update the version",
+					"$ref": "#/common/errors/general"
+				}
+			]
+		},
+		"prefix": {
+			"type": "string",
+			"description": "prefix",
+      "params": {
+        "example": "prefix",
+        "type": "string"
+      },
+			"errors": [
+				{
+					"description": "Failed to update the prefix",
+					"$ref": "#/common/errors/general"
+				}
+			]
+		},
+		"idletime": {
+			"type": "number",
+			"description": "idle time",
+      "params": {
+        "example": "1",
+        "type": "number"
+      },
+			"errors": [
+				{
+					"description": "Failed to update the idletime",
+					"$ref": "#/common/errors/general"
+				}
+			]
+		},
+		"latitude": {
+			"type": "number",
+			"description": "latitude ",
+      "params": {
+        "example": "100",
+        "type": "number"
+      },
+			"errors": [
+				{
+					"description": "Failed to update the latitude",
+					"$ref": "#/common/errors/general"
+				}
+			]
+		},
+		"longitude": {
+			"type": "number",
+			"description": "longitude ",
+      "params": {
+        "example": "200",
+        "type": "number"
+      },
+			"errors": [
+				{
+					"description": "Failed to update the longitude",
+					"$ref": "#/common/errors/general"
+				}
+			]
+		}
   },
   "events": {
     "all": {

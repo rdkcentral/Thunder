@@ -132,7 +132,7 @@ namespace Core {
 
         static WinSocketInitializer g_SocketInitializer;
 
-        
+
 
     } // Nameless namespace
 
@@ -309,13 +309,27 @@ namespace Core {
     SocketPort::SocketPort(
         const enumType socketType,
         const NodeId& refLocalNode,
-        const NodeId& refremoteNode,
+        const NodeId& refRemoteNode,
         const uint16_t nSendBufferSize,
         const uint16_t nReceiveBufferSize)
+        : SocketPort(socketType, refLocalNode, refRemoteNode, nSendBufferSize, nReceiveBufferSize, nSendBufferSize, nReceiveBufferSize)
+    {
+    }
+
+    SocketPort::SocketPort(
+        const enumType socketType,
+        const NodeId& refLocalNode,
+        const NodeId& refremoteNode,
+        const uint16_t nSendBufferSize,
+        const uint16_t nReceiveBufferSize,
+        const uint32_t nSocketSendBufferSize,
+        const uint32_t nSocketReceiveBufferSize)
         : m_LocalNode(refLocalNode)
         , m_RemoteNode(refremoteNode)
         , m_ReceiveBufferSize(nReceiveBufferSize)
         , m_SendBufferSize(nSendBufferSize)
+        , m_SocketReceiveBufferSize(nSocketReceiveBufferSize)
+        , m_SocketSendBufferSize(nSocketSendBufferSize)
         , m_SocketType(socketType)
         , m_Socket(INVALID_SOCKET)
         , m_syncAdmin()
@@ -335,10 +349,24 @@ namespace Core {
         const NodeId& remoteNode,
         const uint16_t nSendBufferSize,
         const uint16_t nReceiveBufferSize)
+        : SocketPort(socketType, refConnector, remoteNode, nSendBufferSize, nReceiveBufferSize, nSendBufferSize, nReceiveBufferSize)
+    {
+    }
+
+    SocketPort::SocketPort(
+        const enumType socketType,
+        const SOCKET& refConnector,
+        const NodeId& remoteNode,
+        const uint16_t nSendBufferSize,
+        const uint16_t nReceiveBufferSize,
+        const uint32_t nSocketSendBufferSize,
+        const uint32_t nSocketReceiveBufferSize)
         : m_LocalNode(remoteNode.AnyInterface())
         , m_RemoteNode(remoteNode)
         , m_ReceiveBufferSize(nReceiveBufferSize)
         , m_SendBufferSize(nSendBufferSize)
+        , m_SocketReceiveBufferSize(nSocketSendBufferSize)
+        , m_SocketSendBufferSize(nSocketReceiveBufferSize)
         , m_SocketType(socketType)
         , m_Socket(refConnector)
         , m_syncAdmin()
@@ -522,7 +550,6 @@ namespace Core {
 
     uint32_t SocketPort::Close(const uint32_t waitTime)
     {
-
         // Make sure the state does not change in the mean time.
         m_syncAdmin.Lock();
 
@@ -596,41 +623,65 @@ namespace Core {
     void SocketPort::BufferAlignment(SOCKET socket)
     {
         socklen_t valueLength = sizeof(int);
-        int value;
-        uint32_t receiveBuffer = m_ReceiveBufferSize;
-        uint32_t sendBuffer = m_SendBufferSize;
+
+        const uint32_t origSocketReceiveBufferSize = m_SocketReceiveBufferSize;
+
+        if (m_SocketReceiveBufferSize != static_cast<uint32_t>(~0)) {
+            // Also allow setting a 0 size buffer for kernel to allocate the required mininum.
+            if (::setsockopt(socket, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<const char*>(&m_SocketReceiveBufferSize), sizeof(m_SocketReceiveBufferSize)) == SOCKET_ERROR) {
+                TRACE_L1("Error could not set socket receive buffer size (%u)", m_SocketReceiveBufferSize);
+            }
+        }
+
+        ::getsockopt(socket, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<char*>(&m_SocketReceiveBufferSize), &valueLength);
+        // Kernel doubles the buffer size, take that into account.
+        m_SocketReceiveBufferSize /= 2;
+        if (origSocketReceiveBufferSize != m_SocketReceiveBufferSize) {
+            TRACE_L2("Adjusted socket receive buffer size (%u->%u)", origSocketReceiveBufferSize, m_SocketReceiveBufferSize);
+        }
 
         if (m_ReceiveBufferSize == static_cast<uint16_t>(~0)) {
-            ::getsockopt(socket, SOL_SOCKET, SO_RCVBUF, (char*)&value, &valueLength);
+            if (m_SocketReceiveBufferSize < 0xFFFF) {
+                m_ReceiveBufferSize = static_cast<uint16_t>(m_SocketReceiveBufferSize);
+            }
 
-            receiveBuffer = static_cast<uint32_t>(value);
+            TRACE_L2("Chosen user receive buffer size (%u)", m_ReceiveBufferSize);
+        }
 
-            TRACE_L1("Receive buffer size. %d", receiveBuffer);
-        } else if ((receiveBuffer != 0) && (::setsockopt(socket, SOL_SOCKET, SO_RCVBUF, (const char*)&receiveBuffer, sizeof(receiveBuffer)) == SOCKET_ERROR)) {
-            TRACE_L1("Error could not set Receive buffer size (%d).", receiveBuffer);
+        const uint32_t origSocketSendBufferSize = m_SocketSendBufferSize;
+
+        if (origSocketSendBufferSize != static_cast<uint32_t>(~0)) {
+            if (::setsockopt(socket, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<const char*>(&m_SocketSendBufferSize), sizeof(m_SocketSendBufferSize)) == SOCKET_ERROR) {
+                TRACE_L1("Error could not set socket send buffer size (%u)", m_SocketSendBufferSize);
+            }
+        }
+
+        ::getsockopt(socket, SOL_SOCKET, SO_SNDBUF, (char*)&m_SocketSendBufferSize, &valueLength);
+        m_SocketSendBufferSize /= 2;
+        if (origSocketSendBufferSize != m_SocketSendBufferSize) {
+            TRACE_L2("Adjusted socket send buffer size (%u->%u)", origSocketSendBufferSize, m_SocketSendBufferSize);
         }
 
         if (m_SendBufferSize == static_cast<uint16_t>(~0)) {
-            ::getsockopt(socket, SOL_SOCKET, SO_SNDBUF, (char*)&value, &valueLength);
+            if (m_SocketSendBufferSize < 0xFFFF) {
+                m_SendBufferSize = static_cast<uint16_t>(m_SocketSendBufferSize);
+            }
 
-            sendBuffer = static_cast<uint32_t>(value);
-
-            TRACE_L1("Send buffer size. %d", sendBuffer);
-        } else if ((sendBuffer != 0) && (::setsockopt(socket, SOL_SOCKET, SO_SNDBUF, (const char*)&sendBuffer, sizeof(sendBuffer)) == SOCKET_ERROR)) {
-            TRACE_L1("Error could not set Send buffer size (%d).", sendBuffer);
+            TRACE_L2("Chosen user send buffer size (%u)", m_SendBufferSize);
         }
 
-        if ((receiveBuffer != 0) || (sendBuffer != 0)) {
-            uint8_t* allocatedMemory = static_cast<uint8_t*>(::calloc(sendBuffer + receiveBuffer, 1));
-            if (sendBuffer != 0) {
-                if (m_SendBuffer != nullptr) {
-                    free(m_SendBuffer);
-                }
-                m_SendBuffer = allocatedMemory;
+        if ((m_ReceiveBufferSize != 0) || (m_SendBufferSize != 0)) {
+            uint8_t* allocatedMemory = static_cast<uint8_t*>(::calloc(m_SendBufferSize + m_ReceiveBufferSize, 1));
+            ASSERT(allocatedMemory != nullptr);
+
+            if (m_SendBuffer != nullptr) {
+                ::free(m_SendBuffer);
+            } else if (m_ReceiveBuffer != nullptr) {
+                ::free(m_ReceiveBuffer);
             }
-            if (receiveBuffer != 0) {
-                m_ReceiveBuffer = &(allocatedMemory[sendBuffer]);
-            }
+
+            m_SendBuffer = (m_SendBufferSize != 0? allocatedMemory : nullptr);
+            m_ReceiveBuffer = (m_ReceiveBufferSize != 0? &(allocatedMemory[m_SendBufferSize]) : nullptr);
         }
     }
 
@@ -732,7 +783,7 @@ namespace Core {
                 l_Result = INVALID_SOCKET;
             }
         }
-        else 
+        else
 #endif
         if ((localNode.IsAnyInterface() == true) && (SocketMode() != SOCK_STREAM)) {
 
@@ -758,7 +809,7 @@ namespace Core {
             //  - IPV4 or IPV6 UDP server
             //  - IPV4 or IPV6 TCP server with port set
             if ((SocketMode() != SOCK_STREAM) || (m_SocketType == SocketPort::LISTEN) || (((localNode.Type() == NodeId::TYPE_IPV4) || (localNode.Type() == NodeId::TYPE_IPV6)) && (localNode.PortNumber() != 0))) {
-                  
+
                 if (::bind(l_Result, static_cast<const NodeId&>(localNode), localNode.Size()) != SOCKET_ERROR) {
 
 #ifndef __WINDOWS__
@@ -893,7 +944,17 @@ namespace Core {
     {
         uint16_t result = 0;
 
-        if (m_State != 0) {
+        if (HasError() == true) {
+            // Socket is in exceptional state, hold off reads and writes, allow only HUP events.
+            // While HUP has meaning only for connection-oriented sockets, having it non-zero
+            // prevents the ResourceMonitor from unregistering the socket whatever type it is.
+#ifdef __WINDOWS__
+            result = FD_CLOSE;
+#else
+            result = POLLHUP;
+#endif
+        }
+        else if (m_State != 0) {
 #ifdef __WINDOWS__
             result = FD_CLOSE;
 #else
@@ -936,7 +997,6 @@ namespace Core {
 
     void SocketPort::Handle(const uint16_t flagsSet)
     {
-
         bool breakIssued = ((m_State & SocketPort::WRITESLOT) != 0);
 
         if ((flagsSet != 0) || (breakIssued == true)) {
@@ -1087,6 +1147,7 @@ namespace Core {
                 } else if (l_Result == __ERROR_CONNRESET__) {
                     m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::EXCEPTION);
                 } else if (l_Result != 0) {
+                    printf("Read exception %d: %s\n", l_Result, strerror(__ERRORRESULT__));
                     m_State |= SocketPort::EXCEPTION;
                     StateChange();
                 }
@@ -1131,7 +1192,7 @@ namespace Core {
             DestroySocket(m_Socket);
             ResourceMonitor::Instance().Unregister(*this);
             // Remove socket descriptor for UNIX domain datagram socket.
-            if ((m_LocalNode.Type() == NodeId::TYPE_DOMAIN) && 
+            if ((m_LocalNode.Type() == NodeId::TYPE_DOMAIN) &&
                 ((m_SocketType == SocketPort::LISTEN) || (SocketMode() != SOCK_STREAM)) &&
                 !m_SystemdSocket) {
                 TRACE_L1("CLOSED: Remove socket descriptor %s", m_LocalNode.HostName().c_str());
@@ -1173,7 +1234,7 @@ namespace Core {
         if ((result = ::accept(m_Socket, (struct sockaddr*)&address, &size)) != SOCKET_ERROR) {
         #else
         if ((result = ::accept4(m_Socket, (struct sockaddr*)&address, &size, SOCK_CLOEXEC)) != SOCKET_ERROR) {
-        #endif  
+        #endif
             // Align the buffer to what is requested
             BufferAlignment(result);
 
@@ -1327,19 +1388,6 @@ namespace Core {
         }
 
         return (true);
-    }
-
-    SocketDatagram::SocketDatagram(const bool rawSocket,
-        const NodeId& localNode,
-        const NodeId& remoteNode,
-        const uint16_t sendBufferSize,
-        const uint16_t receiveBufferSize)
-        : SocketPort((rawSocket ? SocketPort::RAW : SocketPort::DATAGRAM), localNode, remoteNode, sendBufferSize, receiveBufferSize)
-    {
-    }
-
-    /* virtual */ SocketDatagram::~SocketDatagram()
-    {
     }
 
 }
