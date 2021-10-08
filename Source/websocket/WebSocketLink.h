@@ -1055,12 +1055,12 @@ namespace Web {
                         _webSocketMessage->Query = query;
                     }
                     if (protocol.empty() == false) {
-                        _webSocketMessage->WebSocketProtocol = protocol;
+                        _webSocketMessage->WebSocketProtocol = Web::ProtocolsArray(protocol);
                     }
 
                     _query = query;
                     _path = path;
-                    _protocol = protocol;
+                    _protocol = Web::ProtocolsArray(protocol);
 
                     _serializerImpl.Submit(_webSocketMessage);
                     ACTUALLINK::Trigger();
@@ -1088,6 +1088,8 @@ namespace Web {
                     _parent.StateChange();
 
                     _adminLock.Unlock();
+
+                    ACTUALLINK::Trigger();
                 } else if ((_webSocketMessage.IsValid() == true) && (element->ErrorCode == Web::STATUS_FORBIDDEN)) {
                     ASSERT((_state & UPGRADING) != 0);
 
