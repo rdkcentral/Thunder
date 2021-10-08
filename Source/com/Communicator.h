@@ -20,6 +20,7 @@
 #ifndef __COM_PROCESSLAUNCH_H
 #define __COM_PROCESSLAUNCH_H
 
+#include <atomic>
 #include "Module.h"
 #include "Ids.h"
 #include "Administrator.h"
@@ -410,13 +411,17 @@ namespace RPC {
                 : _channel()
                 , _id(_sequenceId++)
                 , _remoteId(0)
+                , _stopInvokedFlag()
             {
+                _stopInvokedFlag.clear();
             }
             RemoteConnection(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const uint32_t remoteId)
                 : _channel(channel)
                 , _id(_sequenceId++)
                 , _remoteId(remoteId)
+                , _stopInvokedFlag()
             {
+                _stopInvokedFlag.clear();
             }
 
         public:
@@ -474,6 +479,9 @@ namespace RPC {
             uint32_t _id;
             uint32_t _remoteId;
             static std::atomic<uint32_t> _sequenceId;
+
+        protected:
+            std::atomic_flag _stopInvokedFlag;
         };
 
     private:
