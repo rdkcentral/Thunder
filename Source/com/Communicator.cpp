@@ -276,7 +276,11 @@ namespace RPC {
 
         // Time to shoot the application, it will trigger a close by definition of the channel, if it is still standing..
         if (_id != 0) {
-            ProcessShutdown::Start<LocalClosingInfo>(_id);
+            if (!_stopInvokedFlag.test_and_set()) {
+                ProcessShutdown::Start<LocalClosingInfo>(_id);
+            } else {
+                TRACE_L1("Process terminate already started");
+            }
         }
     }
 
@@ -299,8 +303,10 @@ namespace RPC {
     void Communicator::ContainerProcess::Terminate() /* override */
     {
         ASSERT(_container != nullptr);
-        if (_container != nullptr) {
+        if (!_stopInvokedFlag.test_and_set()) {
             ProcessShutdown::Start<ContainerClosingInfo>(_container);
+        } else {
+            TRACE_L1("Containter terminate already started");
         }
     }
 
