@@ -34,7 +34,7 @@ function(GetExternalCode)
     set(GIT_CMD ${GIT_EXECUTABLE} clone --single-branch)
 
     if(Argument_GIT_TAG)
-        list(APPEND --branch ${Argument_GIT_TAG})
+        list(APPEND GIT_CMD --branch ${Argument_GIT_TAG})
     endif()
 
     if(Argument_GIT_REPOSITORY)
