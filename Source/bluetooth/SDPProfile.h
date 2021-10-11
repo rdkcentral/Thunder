@@ -638,13 +638,12 @@ namespace SDP {
                     _languageBases.emplace_back(language, charset, base);
                     _freeBase = base + 3;
                 }
-                void Add(const string languageStr, const uint16_t charset, const uint16_t base)
+                void Add(const string& language, const uint16_t charset, const uint16_t base)
                 {
-                    ASSERT(languageStr.size() == 2);
-                    const uint16_t language = (static_cast<uint16_t>(languageStr[0]) << 8 | languageStr[1]);
-                    Add(language, charset, base);
+                    ASSERT(language.size() == 2);
+                    Add(ToCode(language), charset, base);
                 }
-                uint16_t Add(const string language = "en", const uint16_t charset = CHARSET_US_ASCII)
+                uint16_t Add(const string& language = "en", const uint16_t charset = CHARSET_US_ASCII)
                 {
                     const uint16_t base = _freeBase;
                     Add(language, charset, base);
@@ -680,11 +679,17 @@ namespace SDP {
                 }
                 uint16_t LanguageBase(const string& language, const uint16_t charset) const
                 {
-                    return (LanguageBase(static_cast<uint16_t>(language[0]) << 8 | language[1]), charset);
+                    return (LanguageBase(ToCode(language), charset));
                 }
                 uint16_t LanguageBase(const string& language) const
                 {
-                    return (LanguageBase(static_cast<uint16_t>(language[0]) << 8 | language[1]));
+                    return (LanguageBase(ToCode(language)));
+                }
+
+            private:
+                static uint16_t ToCode(const string& language)
+                {
+                    return ((static_cast<uint16_t>(language[0]) << 8) | language[1]);
                 }
 
             private:
@@ -863,6 +868,34 @@ namespace SDP {
         {
             return ((HasClassID(id) == true) || (IsInBrowseGroup(id) == true) || (Protocol(id) != nullptr) || (Profile(id) != 0));
         }
+        bool Metadata(const string& language, const uint16_t charset, string& name, string& description, string& provider) const
+        {
+            bool result = false;
+
+            if (LanguageBaseAttributeIDList() != nullptr) {
+                uint16_t lb = LanguageBaseAttributeIDList()->LanguageBase(language, charset);
+                if (lb != 0) {
+                    const Buffer* buffer = Attribute(lb);
+                    if (buffer != nullptr) {
+                        name = Data::Element<std::string>(*buffer).Value();
+                    }
+
+                    buffer = Attribute(lb + 1);
+                    if (buffer != nullptr) {
+                        description = Data::Element<std::string>(*buffer).Value();
+                    }
+
+                    buffer = Attribute(lb + 2);
+                    if (buffer != nullptr) {
+                        provider = Data::Element<std::string>(*buffer).Value();
+                    }
+
+                    result = true;
+                }
+            }
+
+            return (result);
+        }
 
     public:
         Attribute::ServiceRecordHandle* ServiceRecordHandle()
@@ -957,10 +990,7 @@ namespace SDP {
         void Add(const uint16_t id, const Buffer& buffer)
         {
             if (buffer.empty() == false) {
-                printf("adding attribute %i\n",id);
                 _attributes.emplace(id, buffer);
-            } else {
-                printf("EMPTY\n");
             }
         }
 
@@ -970,13 +1000,17 @@ namespace SDP {
             uint16_t id = LanguageBaseAttributeIDList()->Add(args...);
 
             if (name.empty() == false) {
-                Add(id++, Data::Element<std::string>(name));
+                Add(id, Data::Element<std::string>(name));
             }
+            id++;
+
             if (description.empty() == false) {
-                Add(id++, Data::Element<std::string>(description));
+                Add(id, Data::Element<std::string>(description));
             }
+            id++;
+
             if (provider.empty() == false) {
-                Add(id++, Data::Element<std::string>(provider));
+                Add(id, Data::Element<std::string>(provider));
             }
         }
 
@@ -991,9 +1025,8 @@ namespace SDP {
                     if (attribute == nullptr) {
                         attribute = new Attribute(buffer.data(), buffer.size());
                         ASSERT(attribute != nullptr);
-#ifdef __DEBUG__
-printf("adding %i\n");
 
+#ifdef __DEBUG__
                         // In debug, store all the attributes in raw form for inspection.
                         Add(id, buffer);
 #endif
