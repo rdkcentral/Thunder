@@ -76,7 +76,7 @@ function(GetExternalCode)
         endforeach ()
     endif()
 
-    if(GIT_TAG)
+    if(GIT_BRANCH)
         list(APPEND GIT_CMD --single-branch --branch ${GIT_BRANCH})
     endif()
 
