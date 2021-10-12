@@ -1834,8 +1834,6 @@ namespace Core {
             }
 
             void FlushCodePoint(Core::OptionalType<Error>& error) {
-                bool result = true;
-
                 if ((_flagsAndCounters & EscapeFoundBit) != 0) {
                     TCHAR buffer[6];
                     ASSERT(_storage <= 0xFFFF);
