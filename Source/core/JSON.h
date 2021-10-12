@@ -85,7 +85,9 @@ namespace Core {
 
         struct EXTERNAL IElement {
 
-            static char NullTag[];
+            static TCHAR NullTag[5];
+            static TCHAR TrueTag[5];
+            static TCHAR FalseTag[6];
 
             virtual ~IElement() {}
 
@@ -144,7 +146,7 @@ namespace Core {
                     handled += loaded;
                 }
 
-                if ((offset != 0 || handled < size) && error.IsSet() == false) {
+                if (((offset != 0) || (handled < size)) && (error.IsSet() == false)) {
                     error = Error{ "Malformed JSON. Missing closing quotes or brackets" };
                     realObject.Clear();
                 }
@@ -537,15 +539,15 @@ namespace Core {
             void Null(const bool enabled)
             {
                 if (enabled == true)
-                    _set |= UNDEFINED;
+                    _set |= (SET | UNDEFINED);
                 else
-                    _set &= ~UNDEFINED;
+                    _set &= ~(SET | UNDEFINED);
             }
 
             // IElement and IMessagePack iface:
             bool IsSet() const override
             {
-                return ((_set & (SET | UNDEFINED)) != 0);
+                return ((_set & SET) != 0);
             }
 
             bool IsNull() const override
@@ -629,13 +631,12 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                if (offset == 0) {
-                    // We are starting, see what the current char is
-                    _value = 0;
-                    _set = 0;
-                }
+                // Peamble investigation, determine the right flags..
                 while ((offset < 4) && (loaded < maxLength)) {
                     if (offset == 0) {
+                        _value = 0;
+                        _set = 0;
+
                         if (stream[loaded] == '\"') {
                             _set = QUOTED;
                             offset++;
@@ -721,7 +722,7 @@ namespace Core {
                     loaded++;
                 }
 
-                bool completed = ((_set & ERROR) != 0);
+                bool completed = ((_set & (ERROR|UNDEFINED)) != 0);
 
                 while ((loaded < maxLength) && (completed == false)) {
                     if (isdigit(stream[loaded])) {
@@ -752,7 +753,7 @@ namespace Core {
                             offset = 0;
                         }
                     }
-                } else if (completed == true) {
+                } else if ( (completed == true) && (offset >= 4) ) {
                     if (_set & NEGATIVE) {
                         _value *= -1;
                     }
@@ -1043,15 +1044,15 @@ namespace Core {
             void Null(const bool enabled)
             {
                 if (enabled == true)
-                    _set |= UNDEFINED;
+                    _set |= (UNDEFINED|SET);
                 else
-                    _set &= ~UNDEFINED;
+                    _set &= ~(UNDEFINED|SET);
             }
 
             // IElement and IMessagePack iface:
             bool IsSet() const override
             {
-                return ((_set & (SET | UNDEFINED)) != 0);
+                return ((_set & SET) != 0);
             }
 
             bool IsNull() const override
@@ -1101,13 +1102,10 @@ namespace Core {
                     std::isinf(_value) ||
                     std::isnan(_value)) 
                 {
-                    auto len = strlen(IElement::NullTag);
-                    ASSERT (offset < len);
-                    while(loaded < (len - offset))
-                    {
-                        stream[loaded] = IElement::NullTag[offset + loaded];
-                        loaded++;
-                    }
+                    ASSERT(offset < (sizeof(IElement::NullTag) - 1));
+                    loaded = std::min(static_cast<uint16_t>((sizeof(IElement::NullTag) - 1) - offset), maxLength);
+                    ::memcpy(stream, &(IElement::NullTag[offset]), loaded);
+                    offset = (((offset + loaded) == (sizeof(IElement::NullTag) - 1)) ? 0 : offset + loaded);
                 }
                 else
                 {
@@ -1142,9 +1140,8 @@ namespace Core {
                         loaded++;
                         offset++;
                         _set &= ~QUOTED;
-                    } else if (((_set & QUOTED) == 0) && (::isspace(stream[loaded]) || (stream[loaded] == '\0') ||
-                               (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']') ||
-                               (stream[loaded] == ')'))) {
+                    } else if ( (((_set & QUOTED) == 0) && (::isspace(stream[loaded]))) || (stream[loaded] == '\0') ||
+                               (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']') ) {
                         completed = true;
                     } else {
                         _strValue += stream[loaded++];
@@ -1155,7 +1152,7 @@ namespace Core {
                 if (completed == true) {
 
                     if (_strValue == IElement::NullTag) {
-                        _set |= UNDEFINED;
+                        _set |= (SET|UNDEFINED);
 
                     } else {
                         TYPE val;
@@ -1174,9 +1171,9 @@ namespace Core {
                             _set |= SET;
                         }
 
-                        offset = 0;
                         _strValue.clear();
                     }
+                    offset = 0;
                 }
 
                 return loaded;
@@ -1328,15 +1325,15 @@ namespace Core {
             void Null(const bool enabled)
             {
                 if (enabled == true)
-                    _value |= NullBit;
+                    _value |= (SetBit|NullBit);
                 else
-                    _value &= ~NullBit;
+                    _value &= ~(SetBit|NullBit);
             }
 
             // IElement and IMessagePack iface:
             bool IsSet() const override
             {
-                return ((_value & (SetBit | NullBit)) != 0);
+                return ((_value & SetBit) != 0);
             }
 
             bool IsNull() const override
@@ -1397,7 +1394,7 @@ namespace Core {
                         _value = (_value & DefaultBit);
                         offset = 1;
                         loaded = 1;
-                    } else if (stream[0] == 'n') {
+                    } else if (stream[0] == IElement::NullTag[0]) {
                         offset = 1;
                         _value = NullBit | (_value & DefaultBit);
                         loaded = 1;
@@ -1414,7 +1411,7 @@ namespace Core {
                 }
 
                 if (offset > 0) {
-                    uint8_t length = (_value & NullBit ? 4 : _value & DeserializeBit ? sizeof(trueBuffer) : sizeof(falseBuffer)) - 1;
+                    uint8_t length = (_value & NullBit ? sizeof(IElement::NullTag) : _value & DeserializeBit ? sizeof(trueBuffer) : sizeof(falseBuffer)) - 1;
                     const char* buffer = (_value & NullBit ? IElement::NullTag : _value & DeserializeBit ? trueBuffer : falseBuffer);
 
                     while ((loaded < maxLength) && (offset < length) && ((_value & ErrorBit) == 0)) {
@@ -1472,47 +1469,42 @@ namespace Core {
 
         class EXTERNAL String : public IElement, public IMessagePack {
         private:
-            static constexpr uint32_t None = 0x00000000;
-            static constexpr uint32_t ScopeMask = 0x003FFFFF;
-            static constexpr uint32_t DepthCountMask = 0x07C00000;
-            static constexpr uint32_t EscapeFoundBit = 0x08000000;
-            static constexpr uint32_t QuotedSerializeBit = 0x80000000;
-            static constexpr uint32_t SetBit = 0x40000000;
-            static constexpr uint32_t QuoteFoundBit = 0x20000000;
-            static constexpr uint32_t NullBit = 0x10000000;
+            static constexpr uint16_t FlagMask = 0xFC00;
+            static constexpr uint16_t EscapeFoundBit = 0x0400;
+            static constexpr uint16_t SpecialSequenceBit = 0x0800;
+            static constexpr uint16_t QuotedSerializeBit = 0x1000;
+            static constexpr uint16_t QuoteFoundBit = 0x2000;
+            static constexpr uint16_t NullBit = 0x4000;
+            static constexpr uint16_t SetBit = 0x8000;
 
-            template <int N>
-            uint8_t MaxOpaqueObjectDepth()
-            {
-                return ((N >> 1) > 0) ? 1 + MaxOpaqueObjectDepth<(N >> 1)>() : 1;
-            }
-            const std::map<uint8_t, uint8_t> EscapeKeyLookupTable = {
-                {'b',0x08}, {'f', 0x0c}, {'n', 0x0a}, {'r', 0x0d}, {'t', 0x09}
+            enum class ScopeBracket : uint8_t {
+                CURLY_BRACKET = 0,
+                SQUARE_BRACKET = 1
             };
 
         public:
             explicit String(const bool quoted = true)
                 : _default()
-                , _scopeCount(quoted ? QuotedSerializeBit : None)
-                , _unaccountedCount(0)
                 , _value()
+                , _storage(0)
+                , _flagsAndCounters(quoted ? QuotedSerializeBit : 0)
             {
             }
 
             explicit String(const string& Value, const bool quoted = true)
                 : _default()
-                , _scopeCount(quoted ? QuotedSerializeBit : None)
-                , _unaccountedCount(0)
                 , _value()
+                , _storage(0)
+                , _flagsAndCounters(quoted ? QuotedSerializeBit : 0)
             {
                 Core::ToString(Value.c_str(), _default);
             }
 
             explicit String(const char Value[], const bool quoted = true)
                 : _default()
-                , _scopeCount(quoted ? QuotedSerializeBit : None)
-                , _unaccountedCount(0)
                 , _value()
+                , _storage(0)
+                , _flagsAndCounters(quoted ? QuotedSerializeBit : 0)
             {
                 Core::ToString(Value, _default);
             }
@@ -1520,9 +1512,9 @@ namespace Core {
 #ifndef __CORE_NO_WCHAR_SUPPORT__
             explicit String(const wchar_t Value[], const bool quoted = true)
                 : _default()
-                , _scopeCount(quoted ? QuotedSerializeBit : None)
-                , _unaccountedCount(0)
                 , _value()
+                , _storage(0)
+                , _flagsAndCounters(quoted ? QuotedSerializeBit : 0)
             {
                 Core::ToString(Value, _default);
             }
@@ -1530,20 +1522,18 @@ namespace Core {
 
             String(const String& copy)
                 : _default(copy._default)
-                , _scopeCount(copy._scopeCount)
-                , _unaccountedCount(copy._unaccountedCount)
                 , _value(copy._value)
+                , _storage(copy._storage)
+                , _flagsAndCounters(copy._flagsAndCounters)
             {
             }
 
-            ~String() override
-            {
-            }
+            ~String() override = default;
 
             String& operator=(const string& RHS)
             {
                 Core::ToString(RHS.c_str(), _value);
-                _scopeCount |= SetBit;
+                _flagsAndCounters |= SetBit;
 
                 return (*this);
             }
@@ -1551,7 +1541,7 @@ namespace Core {
             String& operator=(const char RHS[])
             {
                 Core::ToString(RHS, _value);
-                _scopeCount |= SetBit;
+                _flagsAndCounters |= SetBit;
 
                 return (*this);
             }
@@ -1560,7 +1550,7 @@ namespace Core {
             String& operator=(const wchar_t RHS[])
             {
                 Core::ToString(RHS, _value);
-                _scopeCount |= SetBit;
+                _flagsAndCounters |= SetBit;
 
                 return (*this);
             }
@@ -1570,8 +1560,7 @@ namespace Core {
             {
                 _default = RHS._default;
                 _value = RHS._value;
-                _scopeCount = RHS._scopeCount;
-                _unaccountedCount = RHS._unaccountedCount;
+                _flagsAndCounters = RHS._flagsAndCounters;
 
                 return (*this);
             }
@@ -1632,10 +1621,10 @@ namespace Core {
 
             inline const string Value() const
             {
-                if ((_scopeCount & (SetBit | QuoteFoundBit | QuotedSerializeBit)) == (SetBit | QuoteFoundBit)) {
+                if ((_flagsAndCounters & (SetBit | QuoteFoundBit | QuotedSerializeBit)) == (SetBit | QuoteFoundBit)) {
                     return ('\"' + Core::ToString(_value.c_str()) + '\"');
                 }
-                return (((_scopeCount & (SetBit | NullBit)) == SetBit) ? Core::ToString(_value.c_str()) : Core::ToString(_default.c_str()));
+                return (((_flagsAndCounters & (SetBit | NullBit)) == SetBit) ? Core::ToString(_value.c_str()) : Core::ToString(_default.c_str()));
             }
 
             inline const string& Default() const
@@ -1645,128 +1634,224 @@ namespace Core {
 
             void Null(const bool enabled)
             {
-                if (enabled == true)
-                    _scopeCount |= NullBit;
-                else
-                    _scopeCount &= ~NullBit;
+                if (enabled == true) {
+                    _flagsAndCounters |= (NullBit | SetBit);
+                    _value = IElement::NullTag;
+                }
+                else {
+                    _flagsAndCounters &= ~(NullBit | SetBit);
+                    _value.clear();
+                }
             }
 
             // IElement iface:
             bool IsNull() const override
             {
-                return (_scopeCount & NullBit) != 0;
+                return (_flagsAndCounters & NullBit) != 0;
             }
 
             bool IsSet() const override
             {
-                return ((_scopeCount & (SetBit | NullBit)) != 0);
+                return ((_flagsAndCounters & SetBit) != 0);
             }
 
             void Clear() override
             {
-                _scopeCount = (_scopeCount & QuotedSerializeBit);
+                _flagsAndCounters = (_flagsAndCounters & QuotedSerializeBit);
+                _value.clear();
             }
 
             inline bool IsQuoted() const
             {
-                return ((_scopeCount & (QuotedSerializeBit | QuoteFoundBit)) != 0);
-            }
-
-            inline bool IsEscaped() const
-            {
-                return ((_scopeCount & EscapeFoundBit) != 0);
+                return (((_flagsAndCounters & NullBit) == 0) && ((_flagsAndCounters & (QuotedSerializeBit | QuoteFoundBit)) != 0));
             }
 
             inline void SetQuoted(const bool enable)
             {
                 if (enable == true) {
-                    _scopeCount |= QuotedSerializeBit;
-                } else {
-                    _scopeCount &= (~QuotedSerializeBit);
+                    _flagsAndCounters |= QuotedSerializeBit;
                 }
-            }
-
-            inline void SetEscaped(const bool enable)
-            {
-                if (enable == true) {
-                    _scopeCount |= EscapeFoundBit;
-                } else {
-                    _scopeCount &= (~EscapeFoundBit);
+                else {
+                    _flagsAndCounters &= (~QuotedSerializeBit);
                 }
             }
 
         protected:
-            inline bool MatchLastCharacter(const string& str, char ch) const
-            {
-                return (str.length() > 0) && (str[str.length() - 1] == ch);
-            }
-
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                bool quoted = IsQuoted();
                 uint16_t result = 0;
 
                 ASSERT(maxLength > 0);
 
-                if ((quoted == false) || ((_scopeCount & NullBit) != 0)) {
-                    std::string source((_value.empty() || (_scopeCount & NullBit)) ? NullTag : _value);
-                    result = static_cast<uint16_t>(source.copy(stream, maxLength, offset));
-                    offset = (result < maxLength ? 0 : offset + result);
-                } else {
-                    if (offset == 0) {
-                        // We always start with a quote or Block marker
-                        stream[result++] = '\"';
+                if ((_flagsAndCounters & SetBit) != 0) {
+                    bool isQuoted = IsQuoted();
+                    if (offset == 0)  {
+                        if (isQuoted == true) {
+                            // We always start with a quote or Block marker
+                            stream[result++] = '\"';
+                        }
                         offset = 1;
-                        _unaccountedCount = 0;
+                        _flagsAndCounters &= (FlagMask ^ (SpecialSequenceBit|EscapeFoundBit));
                     }
 
                     uint32_t length = static_cast<uint32_t>(_value.length()) - (offset - 1);
-                    if (length > 0) {
-                        const TCHAR* source = &(_value[offset - 1]);
-                        offset += length;
 
-                        while ((result < maxLength) && (length > 0)) {
+                    while ((result < maxLength) && (length > 0)) {
+                        const uint16_t current = static_cast<uint16_t>((_value[offset - 1]) & 0xFF);
+                           
+                        // See if this is a printable character
+                        if ((isQuoted == false) || ((::isprint(current)) && (current != '\"') && (current != '\\') && (current != '/')) ) {
+                            stream[result++] = static_cast<TCHAR>(current);
+                            length--;
+                            offset++;
+                        }
+                        else if ((_flagsAndCounters & SpecialSequenceBit) == 0) {
+                            // We need to escape these..
+                            stream[result++] = '\\';
+                            _flagsAndCounters |= SpecialSequenceBit;
+                        }
+                        else if ((_flagsAndCounters & 0xFF) == 0x00) {
+                            // Check if it is a single character drop or a \u
+                            switch (current) {
+                            case 0x08: stream[result++] = 'b'; break;
+                            case 0x09: stream[result++] = 't'; break;
+                            case 0x0a: stream[result++] = 'n'; break;
+                            case 0x0c: stream[result++] = 'f'; break;
+                            case 0x0d: stream[result++] = 'r'; break;
+                            case '\\': stream[result++] = '\\'; break;
+                            case '/': stream[result++] = '/'; break;
+                            case '"': stream[result++] = '"'; break;
+                            default: {
+                                uint16_t lowPart, highPart;
+                                int8_t codeSize = ToCodePoint(&(_value[offset - 1]), length, _storage);
 
-                            // See where we are and add...
-                            if (((*source == '\"') || (*source == '\\')) && (_unaccountedCount == 0)) {
-                                stream[result++] = '\\';
-                                _unaccountedCount = 1;
-                            }
-                            
-                            if (result < maxLength) {
-
-                                char convertedValue = IsEscapeSequenceValue(*source);
-                                if (convertedValue != *source) {
-                                    if (IsEscaped() == false) {
-                                        stream[result++] = '\\';
-                                        const_cast<String*>(this)->SetEscaped(true);
-                                    }
-                                    if (result < maxLength) {
-                                        stream[result++] = convertedValue;
-                                        length--;
-                                        const_cast<String*>(this)->SetEscaped(false);
-                                    }
-                                } else {
-                                    stream[result++] = *source;
-                                    length--;
+                                if (codeSize < 0) {
+                                    // Oops it is a bad code thingy, Skip it..
+                                    // TODO: report an error
+                                    codeSize = -codeSize;
                                 }
-                                source++;
-                                _unaccountedCount = 0;
+
+                                ASSERT(codeSize <= 7);
+
+                                if (CodePointToUTF16(_storage, lowPart, highPart) == false) {
+                                    // Oops we have a bad transaltion of the code point
+                                    // TODO: report an error
+                                }
+
+                                _storage = (highPart << 16) | lowPart;
+
+                                // Oke start processing an escape squence and remember how many bytes we jump if
+                                // we are completed, start at 2 index now as we already wrote /u 
+                                _flagsAndCounters |= ((codeSize & 0x07) << 3) | 0x02;
+
+                                stream[result++] = 'u';
+                                break;
+                            }
+                            }
+
+                            // If all has been writeen it is time to move back to the "copying situation...
+                            if ((_flagsAndCounters & 0xFF) == 0x00) {
+                                _flagsAndCounters ^= SpecialSequenceBit;
+                                length--;
+                                offset++;
+                            }
+                        }
+                        else {
+                            if ((_flagsAndCounters & 0x7) < 0x2) {
+                                stream[result++] = ((_flagsAndCounters & 0x07) == 0 ? '\\' : 'u');
+                            }
+                            else {
+                                uint8_t part;
+
+                                // Write out the CodePoint....
+                                if (_storage > 0xFFFF) {
+                                    // First write the Most Significant part
+                                    part = (_storage >> (16 + ((5 - (_flagsAndCounters & 0x07)) * 4))) & 0x0F;
+                                }
+                                else {
+                                    part = (_storage >> ((5 - (_flagsAndCounters & 0x07)) * 4)) & 0x0F;
+                                }
+                                stream[result++] = (part > 9 ? 'A' + (part - 10) : '0' + part);
+                            }
+
+                            _flagsAndCounters += 1;
+
+                            if ((_flagsAndCounters & 0x7) == 6) {
+                                // Oke we flushed a HEX value of 4 digits, lets determine the next step..
+                                if (_storage > 0xFFFF) {
+                                    _storage = (_storage & 0xFFFF);
+                                    _flagsAndCounters &= (FlagMask | 0xF8);
+                                }
+                                else {
+                                    // We are done ! Move on, strange character has been handled and converted
+                                    uint8_t skip = ((_flagsAndCounters >> 3) & 0x07);
+                                    length -= skip;
+                                    offset += skip;
+
+                                    _flagsAndCounters &= (FlagMask ^ SpecialSequenceBit);
+                                }
                             }
                         }
                     }
 
-                    if (result == maxLength) {
-                        offset -= length;
-                    } else {
+                    if (length == 0) {
                         // And we close with a quote..
-                        stream[result++] = '\"';
-                        offset = 0;
+                        if (isQuoted == false) {
+                            offset = 0;
+                        }
+                        else if (result < maxLength) {
+                            stream[result++] = '\"';
+                            offset = 0;
+                        }
                     }
                 }
 
                 return (result);
+            }
+            bool InScope(const ScopeBracket mode) {
+                bool added = false;
+                uint8_t depth = (_flagsAndCounters & 0x1F);
+
+                if ( ((depth != 0) || (_value.empty() == true)) && ((depth + 1) <= 31) ) {
+                    _storage <<= 1;
+                    _storage |= static_cast<uint8_t>(mode);
+                    _flagsAndCounters++;
+                    added = true;
+                }
+                return (added);
+            }
+            bool OutScope(const ScopeBracket mode) {
+                bool succcesfull = false;
+                ScopeBracket bracket = static_cast<ScopeBracket>(_storage & 0x1);
+                uint8_t depth = (_flagsAndCounters & 0x1F);
+                if ((depth > 0) && (bracket == mode)) {
+                    _storage >>= 1;
+                    _flagsAndCounters--;
+                    succcesfull = true;
+                }
+                return (succcesfull);
+            }
+
+            void FlushCodePoint(Core::OptionalType<Error>& error) {
+                bool result = true;
+
+                if ((_flagsAndCounters & EscapeFoundBit) != 0) {
+                    TCHAR buffer[6];
+                    ASSERT(_storage <= 0xFFFF);
+
+                    // Seems like we have a pending code point to be added, before we add anaything elese :-)
+                    int8_t bytes = FromCodePoint(_storage, buffer, sizeof(buffer));
+
+                    if (bytes <= 0) {
+                        error = Error{ "There is no valid codepoint defined." };
+                    }
+                    else {
+                        _value += string(buffer, bytes);
+                    }
+                    _flagsAndCounters ^= EscapeFoundBit;
+                    _storage = 0;
+                }
             }
 
             uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
@@ -1777,114 +1862,152 @@ namespace Core {
 
                 if (offset == 0) {
                     _value.clear();
-                    if (stream[result] != '\"') {
-                        _unaccountedCount = 0;
-                    } else {
+                    _flagsAndCounters &= (FlagMask ^ (SpecialSequenceBit|EscapeFoundBit|QuoteFoundBit));
+                    _storage = 0;
+                    if (stream[result] == '\"') {
                         result++;
-                        _scopeCount |= QuoteFoundBit;
-                        _unaccountedCount = 1;
+                        _flagsAndCounters |= QuoteFoundBit;
                     }
+                    offset = 1;
                 }
-
-                bool escapedSequence = MatchLastCharacter(_value, '\\');
 
                 // Might be that the last character we added was a
                 while ((result < maxLength) && (finished == false)) {
 
                     TCHAR current = stream[result];
 
-                    if (escapedSequence == false) {
-                        // Do not interpret anything if it's quoted.
-                        if ((_scopeCount & QuoteFoundBit) != 0) {
-                            if (current == '\"') {
-                                uint8_t depth = static_cast<uint8_t>((_scopeCount & DepthCountMask) >> MaxOpaqueObjectDepth<ScopeMask>());
-                                if (depth == 0) {
-                                    result++;
-                                    finished = true;
-                                } else {
-                                    _scopeCount = ((_scopeCount ^ QuoteFoundBit) & ~DepthCountMask) | ((depth - 1) << MaxOpaqueObjectDepth<ScopeMask>());
-                                }                                
-                            }
-                        } else if (current == '\"') {
-                            _scopeCount = ((_scopeCount ^ QuoteFoundBit) & (~DepthCountMask)) | (((_scopeCount & DepthCountMask) + (1 << MaxOpaqueObjectDepth<ScopeMask>())) & DepthCountMask);
-                        } 
-                        else {
-                            uint8_t depth = ((_scopeCount & DepthCountMask) >> MaxOpaqueObjectDepth<ScopeMask>());
-                            if ((current == '{') || (current == '[')) {
-                                if (depth + 1 > MaxOpaqueObjectDepth<ScopeMask>()) {
-                                    error = Error{ "Opaque object nesting too deep" };
-                                    finished = true;
-                                } else {
-                                    ++depth;
-                                    uint32_t scope = _scopeCount & ScopeMask;
-                                    scope <<= 1;
-                                    scope |= static_cast<uint32_t>(current == '{' ? ScopeBracket::CURLY_BRACKET : ScopeBracket::SQUARE_BRACKET);
-                                    _scopeCount &= ~(DepthCountMask | ScopeMask);
-                                    _scopeCount |= (depth << MaxOpaqueObjectDepth<ScopeMask>()) | scope;
-                                }
-                            } else if ((current == '}') || (current == ']')) {
-                                if (depth > 0) {
-                                    uint32_t scope = _scopeCount & ScopeMask;
-                                    ScopeBracket bracket = static_cast<ScopeBracket>(scope & 0x1);
-                                    if ((current == '}') && (bracket != ScopeBracket::CURLY_BRACKET)) {
-                                        error = Error{ "Expected \"]\" but got \"}\" in opaque object" };
-                                        finished = true;
-                                    } else if ((current == ']') && (bracket != ScopeBracket::SQUARE_BRACKET)) {
-                                        error = Error{ "Expected \"}\" but got \"]\" in opaque object" };
-                                        finished = true;
-                                    } else {
-                                        --depth;
-                                        scope >>= 1;
-                                        _scopeCount &= ~(DepthCountMask | ScopeMask);
-                                        _scopeCount |= (depth << MaxOpaqueObjectDepth<ScopeMask>()) | scope;
-                                    }
-                                } else {
-                                    finished = true;
-                                }
-                            } else if (depth == 0) {
-                                finished = ((current == ',') || (current == ' ') || (current == '\t') || (current == '\0'));
+                    // What are we deserializing a string, or an opaque JSON object!!!
+                    if ((_flagsAndCounters & QuoteFoundBit) == 0) {
+                        // It's an opaque structure, so *no* decoding required. Leave as is !
+                        if (current == '{') {
+                            if (InScope(ScopeBracket::CURLY_BRACKET) == false) {
+                                error = Error{ "Opaque object nesting too deep" };
                             }
                         }
-                    }
-
-                    if (finished == false) {
-                        EscapeSequenceAction escapeHandling = EscapeSequenceAction::NOTHING;
-
-                        if ((escapedSequence == true) && ((_scopeCount & DepthCountMask) == 0)) {
-                            if ((current == '\\') && (_value[_value.length() - 1] == '\\')) {
-                                escapeHandling = EscapeSequenceAction::COLLAPSE;
-                            } else if (!IsValidEscapeSequence(current)) {
-                                finished = true;
-                                error = Error{ "Invalid escape sequence \"\\" + std::string(1, current) + "\"." };
-                                ++result;
-                                break;
-                            } else {
-                                escapeHandling = GetEscapeSequenceAction(current);
+                        else if (current == '[') {
+                            if (InScope(ScopeBracket::SQUARE_BRACKET) == false) {
+                                error = Error{ "Opaque object nesting too deep" };
+                            }
+                        }
+                        else if ((_flagsAndCounters & 0x1F) == 0) {
+                            // If we did not open an object, the only thing we allow are whitespaces as they can 
+                            // always be dropped!
+                            finished = (((_flagsAndCounters & EscapeFoundBit) == 0) && ((current == ',') || (current == '}') || (current == ']')));
+                        }
+                        else if (current == '}') {
+                            if (OutScope(ScopeBracket::CURLY_BRACKET) == false) {
+                                error = Error{ "Expected \"]\" but got \"}\" in opaque object" };
+                            }
+                        }
+                        else if (current == ']') {
+                            if (OutScope(ScopeBracket::SQUARE_BRACKET) == false) {
+                                error = Error{ "Expected \"}\" but got \"]\" in opaque object" };
                             }
                         }
 
-                        escapedSequence = ((escapedSequence == 0) && (current == '\\') && (escapeHandling != EscapeSequenceAction::COLLAPSE));
-                        if (escapeHandling == EscapeSequenceAction::COLLAPSE) {
-                            _value[_value.length() - 1] = current;
-                            ++_unaccountedCount;
-                        } else if (escapeHandling == EscapeSequenceAction::REPLACE) {
-                            _value[_value.length() - 1] = GetEscapeSequenceValue(current);
-                        } else {
+                        if (finished == false) {
                             // Write the amount we possibly can..
                             _value += current;
+
+                            if ((current == '\"') && ((_value.empty() == true) || (_value[_value.length() - 1] != '\\'))) {
+                                // Oke we are going to enetr a Serialized thingy... lets be opaque from here on
+                                _flagsAndCounters ^= EscapeFoundBit;
+                            }
+
+                            result++;
                         }
+                    }
+                    // Since it is a "real" string translate back all escaped stuff.. are we in an unescaping mode?
+                    else if ((_flagsAndCounters & SpecialSequenceBit) == 0x00) {
+                        // Nope we are not, so see if we need to start it and otherwise, just copy...
+                        if (current == '\\') {
+                            // And we need to start it.
+                            _flagsAndCounters |= SpecialSequenceBit;
+                        }
+                        else {
+                            FlushCodePoint(error);
 
-
-                        // Move on to the next position
+                            if (current == '\"') {
+                                // We are done! leave this element.
+                                finished = true;
+                            }
+                            else {
+                                // Just copy, we and onto the next;
+                                _value += current;
+                            }
+                        }
                         result++;
+                    }
+                    else if ((_flagsAndCounters & 0xFF) == 0x00) {
+
+                        if (current == 'u') {
+                            _flagsAndCounters |= 0x4;
+                        }
+                        else {
+                            FlushCodePoint(error);
+
+                            // We are in a string mode, so we need to decode. Decode what we receive..
+                            switch (current) {
+                            case '\"': _value += '\"'; break;
+                            case '\\': _value += '\\'; break;
+                            case '/':  _value += '/';  break;
+                            case 'b':  _value += static_cast<TCHAR>(0x08); break;
+                            case 't':  _value += static_cast<TCHAR>(0x09); break;
+                            case 'n':  _value += static_cast<TCHAR>(0x0a); break;
+                            case 'f':  _value += static_cast<TCHAR>(0x0c); break;
+                            case 'r':  _value += static_cast<TCHAR>(0x0d); break;
+                            default:
+                                error = Error{ "unknown escaping code." };
+                                break;
+                            }
+                            _flagsAndCounters ^= SpecialSequenceBit;
+                        }
+                        result++;
+                    }
+                    else {
+                        // If we end up here, we are actually gathering unicode values to be decoded.
+                        _flagsAndCounters--;
+
+                        if (::isxdigit(current) == false) {
+                            error = Error{ "the unescaping of the u requires hexadecimal characters" };
+                        }
+                        else {
+                            _storage = (_storage << 4) | ((::isdigit(current) ? current - '0' : 10 + (::toupper(current) - 'A')) & 0xF);
+                            result++;
+                            if ((_flagsAndCounters & 0xFF) == 0x00) {
+                                _flagsAndCounters ^= SpecialSequenceBit;
+
+                                if ((_flagsAndCounters & EscapeFoundBit) != 0) {
+                                    // We have a full monty, 2 x UTF16 to be translated :-)
+                                    uint32_t codePoint;
+                                    TCHAR buffer[6];
+                                    ASSERT(_storage >= 0xFFFF);
+
+                                    UTF16ToCodePoint((_storage & 0xFFFF), ((_storage >> 16) & 0xFFFF), codePoint);
+
+                                    // Seems like we have a pending code point to be added, before we add anaything elese :-)
+                                    int8_t bytes = FromCodePoint(codePoint, buffer, sizeof(buffer));
+
+                                    if (bytes <= 0) {
+                                        error = Error{ "There is no valid codepoint defined." };
+                                    }
+                                    else {
+                                        _value += string(buffer, bytes);
+                                    }
+                                    _storage = 0;
+                                }
+
+                                _flagsAndCounters ^= EscapeFoundBit;
+                            }
+                        }
                     }
                 }
 
-                if (finished == false) {
-                    offset = static_cast<uint32_t>(_value.length()) + _unaccountedCount;
+                if ( (finished == false) && (error.IsSet() == false) ) {
+                    offset += static_cast<uint32_t>(_value.length()) ;
                 } else {
                     offset = 0;
-                    _scopeCount |= ((_scopeCount & QuoteFoundBit) ? SetBit : (_value == NullTag ? NullBit : SetBit));
+                    _flagsAndCounters |= (_value == IElement::NullTag ? NullBit|SetBit : SetBit);
                 }
 
                 return (result);
@@ -1895,18 +2018,18 @@ namespace Core {
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
-                    if ((_scopeCount & NullBit) != 0) {
+                    if ((_flagsAndCounters & NullBit) != 0) {
                         stream[loaded++] = IMessagePack::NullValue;
                     } else if (_value.length() <= 31) {
-                        _unaccountedCount = 1;
+                        _storage = 1;
                         stream[loaded++] = static_cast<uint8_t>(_value.length() | 0xA0);
                         offset++;
                     } else if (_value.length() <= 0xFF) {
-                        _unaccountedCount = 2;
+                        _storage = 2;
                         stream[loaded++] = 0xD9;
                         offset++;
                     } else if (_value.length() <= 0xFFFF) {
-                        _unaccountedCount = 3;
+                        _storage = 3;
                         stream[loaded++] = 0xDA;
                         offset++;
                     } else {
@@ -1915,19 +2038,19 @@ namespace Core {
                 }
 
                 if (offset != 0) {
-                    while ((loaded < maxLength) && (offset < _unaccountedCount)) {
-                        stream[loaded++] = static_cast<uint8_t>((_value.length() >> (8 * (_unaccountedCount - offset - 1))) & 0xFF);
+                    while ((loaded < maxLength) && (offset < (_storage & 0x0F))) {
+                        stream[loaded++] = static_cast<uint8_t>((_value.length() >> (8 * ( (_storage & 0x0F) - offset - 1))) & 0xFF);
                         offset++;
                     }
 
                     uint16_t copied = 0;
                     while ((loaded < maxLength) && (offset != 0)) {
-                        copied = static_cast<uint16_t>(_value.copy(reinterpret_cast<char*>(&stream[loaded]), (maxLength - loaded), offset - _unaccountedCount));
+                        copied = static_cast<uint16_t>(_value.copy(reinterpret_cast<char*>(&stream[loaded]), (maxLength - loaded), offset - (_storage & 0x0F)));
                         offset += copied;
                         loaded += copied;
-                        if (_unaccountedCount) {
-                           offset -=_unaccountedCount;
-                           _unaccountedCount = 0;
+                        if ((_storage & 0x0F) != 0) {
+                           offset -= (_storage & 0x0F);
+                           _storage = 0;
                         }
 
                         if (offset >= _value.length()) {
@@ -1945,18 +2068,18 @@ namespace Core {
                 if (offset == 0) {
                     _value.clear();
                     if (stream[loaded] == IMessagePack::NullValue) {
-                        _scopeCount |= NullBit;
+                        _flagsAndCounters |= NullBit;
                         loaded++;
                     } else if ((stream[loaded] & 0xA0) == 0xA0) {
-                        _unaccountedCount = stream[loaded] & 0x1F;
+                        _storage = stream[loaded] & 0x1F;
                         offset = 3;
                         loaded++;
                     } else if (stream[loaded] == 0xD9) {
-                        _unaccountedCount = 0;
+                        _storage = 0;
                         offset = 2;
                         loaded++;
                     } else if (stream[loaded] == 0xDA) {
-                        _unaccountedCount = 0;
+                        _storage = 0;
                         offset = 1;
                         loaded++;
                     } else {
@@ -1966,18 +2089,18 @@ namespace Core {
 
                 if (offset != 0) {
                     while ((loaded < maxLength) && (offset < 3)) {
-                        _unaccountedCount = (_unaccountedCount << 8) + stream[loaded++];
+                        _storage = (_storage << 8) + stream[loaded++];
                         offset++;
                     }
 
-                    while ((loaded < maxLength) && ((offset - 3) < static_cast<uint16_t>(_unaccountedCount))) {
+                    while ((loaded < maxLength) && ((offset - 3) < static_cast<uint16_t>(_storage))) {
                         _value += static_cast<char>(stream[loaded++]);
                         offset++;
                     }
 
-                    if ((offset >= 3) && (static_cast<uint16_t>(offset - 3) == _unaccountedCount)) {
+                    if ((offset >= 3) && (static_cast<uint16_t>(offset - 3) == _storage)) {
                         offset = 0;
-                        _scopeCount |= ((_scopeCount & QuoteFoundBit) ? SetBit : (_value == NullTag ? NullBit : SetBit));
+                        _flagsAndCounters |= ((_flagsAndCounters & QuoteFoundBit) ? SetBit : (_value == NullTag ? NullBit : SetBit));
                     }
                 }
 
@@ -1985,75 +2108,20 @@ namespace Core {
             }
 
         private:
-            bool IsValidEscapeSequence(char current) const
-            {
-                ASSERT(MatchLastCharacter(_value, '\\') == true);
-                // Any character may be escaped using \uXXXX. The serlializer should escape
-                // control chars with values less that 0x1F using this convention. Also serializer
-                // should change '"' '\' '\n' '\t' '\f' '\r' '\f' to
-                // '\''"' '\''\' '\''n' '\''t' '\''f' '\''r' '\''f' and deserisalizer has to change tham back
-                return (current == '"') || (EscapeKeyLookupTable.find(current) != EscapeKeyLookupTable.end());
-            }
-
-            enum class EscapeSequenceAction {
-                NOTHING,
-                COLLAPSE,
-                REPLACE
-            };
-
-            char GetEscapeSequenceValue(const char current) const
-            {
-                char value = 0;
-                const auto index = EscapeKeyLookupTable.find(current);
-                if (index != EscapeKeyLookupTable.end()) {
-                    value = index->second;
-                }
-
-                return value;
-            }
-
-            EscapeSequenceAction GetEscapeSequenceAction(const char current) const
-            {
-
-                EscapeSequenceAction action = EscapeSequenceAction::COLLAPSE;
-                const auto index = EscapeKeyLookupTable.find(current);
-                if (index != EscapeKeyLookupTable.end()) {
-                    action = EscapeSequenceAction::REPLACE;
-                } else if((current == '\"') && (_scopeCount & DepthCountMask)) {
-                    action = EscapeSequenceAction::NOTHING;
-                }
-                return action;
-            }
-
-            char IsEscapeSequenceValue(const char current) const
-            {
-                char value = current;
-                for (const auto& index : EscapeKeyLookupTable) {
-                    if (index.second == current) {
-                        value = index.first;
-                        break;
-                    }
-                }
-
-                return value;
-            }
-            enum class ScopeBracket : bool {
-                CURLY_BRACKET = 0,
-                SQUARE_BRACKET = 1
-            };
-
             std::string _default;
-            // The value stores the following BITS:
-            // | 5  | 5  |         22         |
-            // FFFFFDDDDDSSSSSSSSSSSSSSSSSSSSSS
-            // Where:
-            // F are flags bits (Null, Set etc.)
-            // D are depth value bits
-            // S bits keep scope stack.
-            // This constrains the maximal depth of the opaque object to be 22.
-            uint32_t _scopeCount;
-            mutable uint32_t _unaccountedCount;
             std::string _value;
+
+            mutable uint32_t _storage;
+
+            // The value stores the following BITS:
+            // | 8 | 2 |  3  |  3  |
+            //   F   U   LLL   III
+            // Where:
+            // F are flags bits (See statics at the beginning of the class)
+            // U is unused
+            // L Length of the bytes under process (8)
+            // I Index to the written bytes (8).
+            mutable uint16_t _flagsAndCounters;
         };
 
         class EXTERNAL Buffer : public IElement, public IMessagePack {
@@ -2456,9 +2524,9 @@ namespace Core {
             void Null(const bool enabled)
             {
                 if (enabled == true)
-                    _state |= UNDEFINED;
+                    _state |= (UNDEFINED|SET);
                 else
-                    _state &= ~UNDEFINED;
+                    _state &= ~(UNDEFINED|SET);
             }
 
             bool IsSet() const override
@@ -2497,7 +2565,7 @@ namespace Core {
                 if (offset == 0) {
 
                     if (_parser.IsNull() == true) {
-                        _state = UNDEFINED;
+                        _state = (UNDEFINED|SET);
                     } else if (_parser.IsSet() == true) {
                         // Looks like we parsed the value. Lets see if we can find it..
                         Core::EnumerateType<ENUMERATE> converted(_parser.Value().c_str(), false);
@@ -2506,7 +2574,7 @@ namespace Core {
                             _value = converted.Value();
                             _state = SET;
                         } else {
-                            _state = UNDEFINED;
+                            _state = (SET|UNDEFINED);
                             TRACE_L1(_T("Unknown enum value: %s"), _parser.Value().c_str());
                         }
                     } else {
@@ -4473,19 +4541,19 @@ namespace Core {
                 : JSONOBJECT()
             {
             }
-            virtual ~LabelType()
-            {
-            }
+            ~LabelType() override = default;
 
         public:
             static const char* Id()
             {
                 return (__ID<JSONOBJECT>());
-            }
-
+            } 
             virtual const char* Label() const
             {
                 return (LabelType<JSONOBJECT>::Id());
+            }
+            void Clear() {
+                __Clear();
             }
 
         private:
@@ -4493,18 +4561,35 @@ namespace Core {
 
             typedef hasID<JSONOBJECT, const char* (JSONOBJECT::*)()> TraitID;
 
-            template <typename TYPE>
+            template <typename TYPE = JSONOBJECT>
             static inline typename Core::TypeTraits::enable_if<LabelType<TYPE>::TraitID::value, const char*>::type __ID()
             {
                 return (JSONOBJECT::Id());
             }
 
-            template <typename TYPE>
+            template <typename TYPE = JSONOBJECT>
             static inline typename Core::TypeTraits::enable_if<!LabelType<TYPE>::TraitID::value, const char*>::type __ID()
             {
                 static std::string className = (Core::ClassNameOnly(typeid(JSONOBJECT).name()).Text());
 
                 return (className.c_str());
+            }
+
+            // -----------------------------------------------------
+            // Check for Clear method on Object
+            // -----------------------------------------------------
+            HAS_MEMBER(Clear, hasClear);
+
+            template <typename TYPE = JSONOBJECT>
+            inline typename Core::TypeTraits::enable_if<hasClear<TYPE, void (TYPE::*)()>::value, void>::type
+                __Clear()
+            {
+                TYPE::Clear();
+            }
+            template <typename TYPE = JSONOBJECT>
+            inline typename Core::TypeTraits::enable_if<!hasClear<TYPE, void (TYPE::*)()>::value, void>::type
+                __Clear()
+            {
             }
         };
 
