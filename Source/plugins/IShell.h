@@ -336,19 +336,8 @@ namespace PluginHost {
             return std::vector<string> {};
         }
     };
+
 } // namespace PluginHost
-
-namespace Core {
-
-    template <>
-    EXTERNAL /* static */ const EnumerateConversion<PluginHost::IShell::state>*
-    EnumerateType<PluginHost::IShell::state>::Table(const uint16_t);
-
-    template <>
-    EXTERNAL /* static */ const EnumerateConversion<PluginHost::IShell::reason>*
-    EnumerateType<PluginHost::IShell::reason>::Table(const uint16_t);
-
-} // namespace Core
-} // namespace WPEFramework
+}
 
 #endif //__ISHELL_H__
