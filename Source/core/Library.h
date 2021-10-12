@@ -26,9 +26,10 @@
 namespace WPEFramework {
 namespace Core {
     class EXTERNAL Library {
+    typedef void (*ModuleUnload)();
+    
     private:
-        typedef struct {
-            uint32_t _referenceCount;
+        struct RefCountedHandle {
 #ifdef __LINUX__
             void* _handle;
 #endif
@@ -37,13 +38,11 @@ namespace Core {
 #endif
             string _name;
 
-        } RefCountedHandle;
-
-        typedef void (*ModuleUnload)();
+            void Release(ModuleUnload cleanupFunction);
+        };
 
     public:
         Library();
-        Library(const void* functionInLibrary);
         Library(const TCHAR fileName[]);
         Library(const Library& copy);
         ~Library();
@@ -68,13 +67,11 @@ namespace Core {
         void* LoadFunction(const TCHAR functionName[]);
 
     private:
-        void AddRef();
-
         friend class ServiceAdministrator;
         uint32_t Release();
 
     private:
-        RefCountedHandle* _refCountedHandle;
+        std::shared_ptr<RefCountedHandle> _refCountedHandle;
         string _error;
     };
 }

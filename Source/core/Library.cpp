@@ -25,6 +25,37 @@
 #include <fstream>
 #endif
 
+
+namespace Functions {
+void* LoadFunction(void* handle, string& outError, const TCHAR functionName[])
+{
+    void* function = nullptr;
+
+#ifdef __LINUX__
+    ASSERT(handle != nullptr);
+
+    dlerror(); /* clear error code */
+    function = dlsym(handle, functionName);
+    char* error = dlerror();
+    if (error != nullptr) {
+        outError = error;
+        /* handle error, the symbol wasn't found */
+        function = nullptr;
+    }
+#endif
+
+#ifdef __WINDOWS__
+    function = ::GetProcAddress(handle, functionName);
+
+    if (function == nullptr) {
+        outError = "Could not load funtion.";
+    }
+#endif
+
+    return (function);
+}
+}
+
 namespace WPEFramework {
 namespace Core {
 
@@ -32,44 +63,6 @@ namespace Core {
         : _refCountedHandle(nullptr)
         , _error()
     {
-    }
-    Library::Library(const void* functionInLibrary) {
-        TCHAR filename[512];
-
-#ifdef __WINDOWS__
-        HMODULE handle = nullptr;
-        GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
-            GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-            (LPCSTR)functionInLibrary, &handle);
-
-        if (handle != nullptr) {
-            GetModuleFileName(handle, filename, sizeof(filename));
-
-            // Looks like we need to add a ref count by opening it..
-            handle = ::LoadLibrary(filename);
-        }
-#endif
-#ifdef __LINUX__
-        void* handle = nullptr;
-        Dl_info info;
-        if (dladdr(functionInLibrary, &info) != 0) {
-            _tcsncpy (filename, info.dli_fname, sizeof(filename) - 1);
-            handle = ::dlopen(filename, RTLD_NOLOAD);
-        }
-#endif
-        if (handle != nullptr) {
-            // Seems we have an dynamic library opened..
-            _refCountedHandle = new RefCountedHandle;
-            _refCountedHandle->_referenceCount = 1;
-            _refCountedHandle->_handle = handle;
-            _refCountedHandle->_name = filename;
-        }
-        else {
-#ifdef __LINUX__
-            _error = dlerror();
-            TRACE_L1("Failed to load library: %s, error %s", filename, _error.c_str());
-#endif
-        }
     }
     Library::Library(const TCHAR fileName[])
         : _refCountedHandle(nullptr)
@@ -83,9 +76,18 @@ namespace Core {
 #endif
 
         if (handle != nullptr) {
+
+            auto deleter = [](RefCountedHandle* ptr, ModuleUnload function) {
+                ptr->Release(function);
+                delete ptr;
+            };
+            ModuleUnload cleanupFunction = reinterpret_cast<ModuleUnload>(Functions::LoadFunction(handle, _error, _T("ModuleUnload")));
+
+
             // Seems we have an dynamic library opened..
-            _refCountedHandle = new RefCountedHandle;
-            _refCountedHandle->_referenceCount = 1;
+            // bind cleanup function to a custom deleter
+            _refCountedHandle.reset(new RefCountedHandle, std::bind(deleter, std::placeholders::_1, cleanupFunction));
+            
             _refCountedHandle->_handle = handle;
             _refCountedHandle->_name = fileName;
             TRACE_L1("Loaded library: %s", fileName);
@@ -99,7 +101,6 @@ namespace Core {
     Library::Library(const Library& copy)
         : _refCountedHandle(copy._refCountedHandle)
     {
-        AddRef();
     }
     Library::~Library()
     {
@@ -108,7 +109,10 @@ namespace Core {
 
     Library& Library::operator=(const Library& RHS)
     {
-        // Only do this if we have different libraries..
+        // Only do this if we have different libraries and not self assigning
+        if(this == &RHS) { 
+            return *this; 
+        }
         if (RHS._refCountedHandle != _refCountedHandle) {
             Release();
 
@@ -116,7 +120,6 @@ namespace Core {
             _refCountedHandle = RHS._refCountedHandle;
             _error = RHS._error;
 
-            AddRef();
         }
 
         return (*this);
@@ -124,68 +127,31 @@ namespace Core {
 
     void* Library::LoadFunction(const TCHAR functionName[])
     {
-        void* function = nullptr;
-
         ASSERT(_refCountedHandle != nullptr);
-
-#ifdef __LINUX__
         ASSERT(_refCountedHandle->_handle != nullptr);
-
-        dlerror(); /* clear error code */
-        function = dlsym(_refCountedHandle->_handle, functionName);
-        char* error = dlerror();
-        if (error != nullptr) {
-            _error = error;
-            /* handle error, the symbol wasn't found */
-            function = nullptr;
-        }
-#endif
-
-#ifdef __WINDOWS__
-        function = ::GetProcAddress(_refCountedHandle->_handle, functionName);
-
-        if (function == nullptr) {
-            _error = "Could not load funtion.";
-        }
-#endif
-
-        return (function);
-    }
-
-    void Library::AddRef()
-    {
-        // Reference count the new, if it exists..
-        if (_refCountedHandle != nullptr) {
-            Core::InterlockedIncrement(_refCountedHandle->_referenceCount);
-        }
+        return Functions::LoadFunction(_refCountedHandle->_handle, _error, functionName);
     }
 
     uint32_t Library::Release()
     {
-        if (_refCountedHandle != nullptr) {
-            if (_refCountedHandle->_referenceCount == 1) {
+        _refCountedHandle.reset();
+        return Core::ERROR_NONE;
+    }
 
-                ModuleUnload function = reinterpret_cast<ModuleUnload>(LoadFunction(_T("ModuleUnload")));
-
-                if (function != nullptr) {
-                    // Cleanup class
-                    function();
-                }
+    void Library::RefCountedHandle::Release(Library::ModuleUnload cleanupFunction)
+    {
+        if (cleanupFunction != nullptr) {
+            // Cleanup class
+            cleanupFunction();
+        }
 
 #ifdef __LINUX__
-                dlclose(_refCountedHandle->_handle);
+        dlclose(_handle);
 #endif
 #ifdef __WINDOWS__
-                ::FreeLibrary(_refCountedHandle->_handle);
+        ::FreeLibrary(_handle);
 #endif
-                TRACE_L1("Unloaded library: %s", _refCountedHandle->_name.c_str());
-                delete _refCountedHandle;
-            } else {
-                Core::InterlockedDecrement(_refCountedHandle->_referenceCount);
-            }
-            _refCountedHandle = nullptr;
-        }
-        return (Core::ERROR_NONE);
+        TRACE_L1("Unloaded library: %s", _name.c_str());
     }
 }
 } // namespace Core
