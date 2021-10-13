@@ -282,6 +282,18 @@ namespace Core {
 
                     _lock.Lock();
 
+                    // Check if we can remove closed clients.
+                    typename ClientMap::iterator index = _clients.begin();
+
+                    while (index != _clients.end()) {
+                        if (index->second->IsClosed() == true) {
+                            index = _clients.erase(index);
+                        }
+                        else {
+                            ++index;
+                        }
+                    }
+
                     // If the CLient has a method to receive it's Id pass it on..
                     __Id<HANDLECLIENT>(*client, _nextClient);
 
