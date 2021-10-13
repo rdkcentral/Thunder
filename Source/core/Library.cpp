@@ -141,6 +141,7 @@ namespace Core {
                 ::FreeLibrary(_refCountedHandle->_handle);
 #endif
                 TRACE_L1("Unloaded library: %s", _refCountedHandle->_name.c_str());
+                delete _refCountedHandle;
             } else {
                 Core::InterlockedDecrement(_refCountedHandle->_referenceCount);
             }
