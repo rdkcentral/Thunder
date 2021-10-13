@@ -275,9 +275,9 @@ namespace Tests {
           Core::NodeId remoteNode(connector.c_str());
 
           Core::ProxyType<RPC::InvokeServerType<4, 0, 1>> engine = Core::ProxyType<RPC::InvokeServerType<4, 0, 1>>::Create();
-          EXPECT_TRUE(engine != nullptr);
+          EXPECT_TRUE(engine.IsValid());
           Core::ProxyType<RPC::CommunicatorClient> client = Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, Core::ProxyType<Core::IIPCServer>(engine));
-          EXPECT_TRUE(client != nullptr);
+          EXPECT_TRUE(client.IsValid());
           engine->Announcements(client->Announcement());
 
           // Create remote instance of "IAdder".

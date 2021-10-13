@@ -525,11 +525,6 @@ namespace WPEFramework {
                 return (static_cast<ProxyObject<CONTEXT>*>(_realObject));
             }
 
-            inline operator IReferenceCounted* () const
-            {
-                return (_refCount);
-            }
-
         private:
             template <typename DERIVED>
             inline void CopyConstruct(const ProxyType<DERIVED>& source, const TemplateIntToType<true>&)
