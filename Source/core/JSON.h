@@ -1833,25 +1833,6 @@ namespace Core {
                 return (succcesfull);
             }
 
-            void FlushCodePoint(Core::OptionalType<Error>& error) {
-                if ((_flagsAndCounters & EscapeFoundBit) != 0) {
-                    TCHAR buffer[6];
-                    ASSERT(_storage <= 0xFFFF);
-
-                    // Seems like we have a pending code point to be added, before we add anaything elese :-)
-                    int8_t bytes = FromCodePoint(_storage, buffer, sizeof(buffer));
-
-                    if (bytes <= 0) {
-                        error = Error{ "There is no valid codepoint defined." };
-                    }
-                    else {
-                        _value += string(buffer, bytes);
-                    }
-                    _flagsAndCounters ^= EscapeFoundBit;
-                    _storage = 0;
-                }
-            }
-
             uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 bool finished = false;
@@ -1922,17 +1903,13 @@ namespace Core {
                             // And we need to start it.
                             _flagsAndCounters |= SpecialSequenceBit;
                         }
+                        else if (current == '\"') {
+                            // We are done! leave this element.
+                            finished = true;
+                        }
                         else {
-                            FlushCodePoint(error);
-
-                            if (current == '\"') {
-                                // We are done! leave this element.
-                                finished = true;
-                            }
-                            else {
-                                // Just copy, we and onto the next;
-                                _value += current;
-                            }
+                            // Just copy, we and onto the next;
+                            _value += current;
                         }
                         result++;
                     }
@@ -1942,8 +1919,6 @@ namespace Core {
                             _flagsAndCounters |= 0x4;
                         }
                         else {
-                            FlushCodePoint(error);
-
                             // We are in a string mode, so we need to decode. Decode what we receive..
                             switch (current) {
                             case '\"': _value += '\"'; break;
@@ -1975,11 +1950,12 @@ namespace Core {
                             if ((_flagsAndCounters & 0xFF) == 0x00) {
                                 _flagsAndCounters ^= SpecialSequenceBit;
 
-                                if ((_flagsAndCounters & EscapeFoundBit) != 0) {
+                                // Examine the codePoint, if ot is a pair ot not..
+                                if ( (_storage >= 0xFFFF) || ((_storage & 0xFC00) != 0xD800) ) {
+
                                     // We have a full monty, 2 x UTF16 to be translated :-)
                                     uint32_t codePoint;
                                     TCHAR buffer[6];
-                                    ASSERT(_storage >= 0xFFFF);
 
                                     UTF16ToCodePoint((_storage & 0xFFFF), ((_storage >> 16) & 0xFFFF), codePoint);
 
@@ -1994,8 +1970,6 @@ namespace Core {
                                     }
                                     _storage = 0;
                                 }
-
-                                _flagsAndCounters ^= EscapeFoundBit;
                             }
                         }
                     }
