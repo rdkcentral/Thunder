@@ -153,6 +153,7 @@ namespace Core {
 
                 if (error.IsSet() == true) {
                     TRACE_L1("Parsing failed: %s", ErrorDisplayMessage(error.Value()).c_str());
+                    realObject.Clear();
                 }
 
                 return (error.IsSet() == false);
