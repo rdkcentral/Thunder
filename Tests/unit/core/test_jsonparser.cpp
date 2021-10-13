@@ -1063,7 +1063,8 @@ namespace Tests {
         data.valueToPutInJson = "\"" + data.value + "\"";
         ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
             Core::JSON::String value;
-            value.FromString(data.value);
+            value.FromString(data.valueToPutInJson);
+
             EXPECT_EQ(value.Value(), v.Value());
         });
     }
