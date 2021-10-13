@@ -4477,7 +4477,7 @@ namespace Core {
 
                 } while ((loaded == size) && (offset != 0));
 
-                return (offset == 0);
+                return (error.IsSet() == false);
             }
 
             bool ToString(const Core::ProxyType<INSTANCEOBJECT>& receptor, string& value)
