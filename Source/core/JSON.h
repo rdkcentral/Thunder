@@ -2548,6 +2548,7 @@ namespace Core {
                         } else {
                             _state = (SET|UNDEFINED);
                             TRACE_L1(_T("Unknown enum value: %s"), _parser.Value().c_str());
+                            error = Error{ "Unknown enum value: " +  _parser.Value()};
                         }
                     } else {
                         error = Error{ "Invalid enum" };
