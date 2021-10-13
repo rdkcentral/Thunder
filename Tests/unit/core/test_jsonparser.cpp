@@ -1228,7 +1228,7 @@ namespace Tests {
             "{\"key2\":{\"key2\":{\"key2\":{\"key2\":{\"key2\":{\"key2\":{\"key2\":"
             "{\"key2\":{\"key2\":{\"key2\":{\"key2\":\"value\"}}}}}}}}}}}}}}}}}}}}}}}}}";
         data.valueToPutInJson = data.value;
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, nullptr);
+        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, nullptr);
     }
 
     TEST(JSONParser, MalformedOpaqueObject1)
@@ -1274,7 +1274,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "three";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::EnumType<JSONTestEnum>>(data, true, nullptr);
+        ExecutePrimitiveJsonTest<Core::JSON::EnumType<JSONTestEnum>>(data, false, nullptr);
     }
 
     TEST(JSONParser, Variant)
