@@ -20,11 +20,10 @@
 #include "Module.h"
 namespace WPEFramework {
 namespace Logging {
-    class EXTERNAL ISyslogMonitorClient
+    struct EXTERNAL ISyslogMonitorClient
     {
-        public:
-            virtual void NotifyLog(const std::string& logmessage) = 0;
-            virtual ~ISyslogMonitorClient(){}
+        virtual void NotifyLog(const std::string& logmessage) = 0;
+        virtual ~ISyslogMonitorClient() = default;
     };
 }
 }

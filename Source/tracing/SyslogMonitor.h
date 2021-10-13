@@ -28,37 +28,51 @@ namespace Logging {
             SyslogMonitor& operator= (const SyslogMonitor& ) = delete;
             void RegisterClient(ISyslogMonitorClient* client)
             {
-                _monitorClients.push_back(client);
-                return;
+                ASSERT(client!=nullptr);
+                _lock.Lock();
+                auto iter = std::find(begin(_monitorClients), end(_monitorClients), client);
+                if( iter == _monitorClients.end())
+                {
+                    _monitorClients.push_back(client);
+                }
+                _lock.Unlock();
             }
             void UnregisterClient(ISyslogMonitorClient* client)
             {
+                ASSERT(client != nullptr);
+                _lock.Lock();
                 auto iter = std::find(begin(_monitorClients), end(_monitorClients), client);
                 if( iter != _monitorClients.end())
                 {
                     _monitorClients.erase(iter);
                 }
-                return;
+                _lock.Unlock();
             }
             static SyslogMonitor& Instance()
             {
                 static SyslogMonitor& _syslogMonitor = Core::SingletonType<SyslogMonitor>::Instance();
                 return _syslogMonitor;
             }
-            void SendLogMessage(const std::string& logMessage)
+            void SendLogMessage(const string& logMessage)
             {
+                _lock.Lock();
                 for(auto& client: _monitorClients)
                 {
                     client->NotifyLog(logMessage);
                 }
-                return;
+                _lock.Unlock();
             }
             ~SyslogMonitor() = default;
         protected:
-            SyslogMonitor():_monitorClients(){}
+            SyslogMonitor():_monitorClients()
+                            , _lock()
+            {
+
+            }
 
         private:
             std::vector<ISyslogMonitorClient*> _monitorClients;
+            Core::CriticalSection _lock;
     };
 }
 }
