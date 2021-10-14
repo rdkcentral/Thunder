@@ -547,6 +547,7 @@ namespace WPEFramework {
 
                 if (_realObject == nullptr) {
                     _refCount = nullptr;
+                    _realObject = nullptr;
                 }
                 else {
                     _refCount = source._refCount;
@@ -573,6 +574,7 @@ namespace WPEFramework {
 
                 if (_realObject == nullptr) {
                     _refCount = nullptr;
+                    _realObject = nullptr;
                 }
                 else {
                     _refCount = source._refCount;
