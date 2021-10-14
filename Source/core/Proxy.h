@@ -542,15 +542,21 @@ namespace WPEFramework {
             template <typename DERIVED>
             inline void CopyConstruct(const ProxyType<DERIVED>& source, const TemplateIntToType<false>&)
             {
-                DERIVED* sourceClass = source.operator->();
-                _realObject = (dynamic_cast<CONTEXT*>(sourceClass));
-
-                if (_realObject == nullptr) {
+                if (source.IsValid() == false) {
                     _refCount = nullptr;
                 }
                 else {
-                    _refCount = source._refCount;
-                    _refCount->AddRef();
+                    DERIVED* sourceClass = source.operator->();
+                    _realObject = (dynamic_cast<CONTEXT*>(sourceClass));
+
+                    if (_realObject == nullptr) {
+                        _refCount = nullptr;
+                    }
+                    else {
+                        _refCount = source._refCount;
+                        _refCount->AddRef();
+                    }
+
                 }
             }
             template <typename DERIVED>
@@ -569,14 +575,19 @@ namespace WPEFramework {
             template <typename DERIVED>
             inline void MoveConstruct(ProxyType<DERIVED>&& source, const TemplateIntToType<false>&)
             {
-                _realObject = (dynamic_cast<CONTEXT*>(source.operator->()));
-
-                if (_realObject == nullptr) {
+                if (source.IsValid() == false) {
                     _refCount = nullptr;
                 }
                 else {
-                    _refCount = source._refCount;
-                    source.Reset();
+                    _realObject = (dynamic_cast<CONTEXT*>(source.operator->()));
+
+                    if (_realObject == nullptr) {
+                        _refCount = nullptr;
+                    }
+                    else {
+                        _refCount = source._refCount;
+                        source.Reset();
+                    }
                 }
             }
             template <typename... Args>

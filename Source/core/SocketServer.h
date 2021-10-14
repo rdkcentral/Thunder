@@ -263,7 +263,8 @@ namespace Core {
                     if ((index->second->IsClosed() == true) || ((index->second->IsSuspended() == true) && (index->second->Close(100) == Core::ERROR_NONE))) {
                         // Step forward but remember where we were and delete that one....
                         index = _clients.erase(index);
-                    } else {
+                    }
+                    else {
                         index++;
                     }
                 }
@@ -272,7 +273,6 @@ namespace Core {
             }
             virtual void Accept(SOCKET& newClient, const NodeId& remoteId)
             {
-
                 ProxyType<HANDLECLIENT> client = ProxyType<HANDLECLIENT>::Create(newClient, remoteId, &_parent);
 
                 ASSERT(client.IsValid() == true);
@@ -281,6 +281,18 @@ namespace Core {
                 if (client->Open(0) == ERROR_NONE) {
 
                     _lock.Lock();
+
+                    // Check if we can remove closed clients.
+                    typename ClientMap::iterator index = _clients.begin();
+
+                    while (index != _clients.end()) {
+                        if (index->second->IsClosed() == true) {
+                            index = _clients.erase(index);
+                        }
+                        else {
+                            ++index;
+                        }
+                    }
 
                     // If the CLient has a method to receive it's Id pass it on..
                     __Id(*client, _nextClient);
@@ -305,7 +317,6 @@ namespace Core {
             // Check for Id  method on Object
             // -----------------------------------------------------
             HAS_MEMBER(Id, hasId);
-
 
             template <typename SUBJECT=HANDLECLIENT>
             inline typename Core::TypeTraits::enable_if<hasId<SUBJECT, void (SUBJECT::*)(uint32_t)>::value, void>::type
