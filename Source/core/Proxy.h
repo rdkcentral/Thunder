@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -16,15 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #ifndef __PROXY_H
 #define __PROXY_H
 
 // ---- Include system wide include files ----
-#include <map>
 #include <memory>
 
 // ---- Include local include files ----
+#include "Portability.h"
 #include "StateTrigger.h"
 #include "Sync.h"
 #include "TypeTraits.h"
@@ -186,6 +186,7 @@ namespace Core {
             ASSERT(m_RefCount == 0);
         }
 
+    private:
         // -----------------------------------------------------
         // Check for Clear method on Object
         // -----------------------------------------------------
@@ -211,19 +212,20 @@ namespace Core {
         // -----------------------------------------------------
         HAS_MEMBER(Initialize, hasInitialize);
 
-        typedef hasInitialize<CONTEXT, void (CONTEXT::*)()> TraitInitialize;
+        typedef hasInitialize<CONTEXT, uint32_t (CONTEXT::*)()> TraitInitialize;
 
         template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<ProxyService<TYPE>::TraitInitialize::value, void>::type
+        inline typename Core::TypeTraits::enable_if<ProxyService<TYPE>::TraitInitialize::value, uint32_t>::type
         __Initialize()
         {
-            CONTEXT::Initialize();
+            return (CONTEXT::Initialize());
         }
 
         template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<!ProxyService<TYPE>::TraitInitialize::value, void>::type
+        inline typename Core::TypeTraits::enable_if<!ProxyService<TYPE>::TraitInitialize::value, uint32_t>::type
         __Initialize()
         {
+            return (Core::ERROR_NONE);
         }
 
         // -----------------------------------------------------
@@ -442,7 +444,8 @@ namespace Core {
             return (m_RefCount);
         }
 
-        void Destroy() {
+        void Destroy()
+        {
             delete m_RefCount;
             m_RefCount = nullptr;
         }
@@ -1331,13 +1334,14 @@ namespace Core {
     public:
         ProxyMapType(const ProxyMapType<PROXYKEY, PROXYELEMENT>&) = delete;
         ProxyMapType<PROXYKEY, PROXYELEMENT>& operator=(const ProxyMapType<PROXYKEY, PROXYELEMENT>&) = delete;
+
         ProxyMapType()
             : _map()
             , _lock()
         {
         }
-        ~ProxyMapType()
-        {
+        ~ProxyMapType() {
+            Clear();
         }
 
     public:
@@ -1512,7 +1516,6 @@ namespace Core {
         }
 
     private:
-        mutable std::map<PROXYKEY, ProxyType<ProxyMapElement>> _map;
         mutable Core::CriticalSection _lock;
         ContainerList _list;
     };
