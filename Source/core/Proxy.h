@@ -544,6 +544,7 @@ namespace WPEFramework {
             {
                 if (source.IsValid() == false) {
                     _refCount = nullptr;
+                    _realObject = nullptr;
                 }
                 else {
                     DERIVED* sourceClass = source.operator->();
@@ -577,6 +578,7 @@ namespace WPEFramework {
             {
                 if (source.IsValid() == false) {
                     _refCount = nullptr;
+                    _realObject = nullptr;
                 }
                 else {
                     _realObject = (dynamic_cast<CONTEXT*>(source.operator->()));
