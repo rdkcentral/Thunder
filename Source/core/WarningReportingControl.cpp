@@ -73,6 +73,13 @@ namespace WarningReporting {
         return (Core::SingletonType<WarningReportingUnitProxy>::Instance());
     }
 
+    WarningReportingUnitProxy::~WarningReportingUnitProxy()
+    {
+        while (!_waitingannounces.empty()) {
+            _waitingannounces.back()->Destroy();
+        }
+    }
+
     void WarningReportingUnitProxy::ReportWarningEvent(const char module[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information) {
         Core::SafeSyncType<Core::CriticalSection> guard(adminlock);
         if( _handler != nullptr ) {

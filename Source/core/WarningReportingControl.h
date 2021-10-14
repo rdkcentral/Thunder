@@ -211,7 +211,7 @@ namespace WarningReporting {
         WarningReportingUnitProxy(const WarningReportingUnitProxy&) = delete;
         WarningReportingUnitProxy& operator=(const WarningReportingUnitProxy&) = delete;
 
-        ~WarningReportingUnitProxy() = default;
+        ~WarningReportingUnitProxy();
 
         static WarningReportingUnitProxy& Instance();
 
