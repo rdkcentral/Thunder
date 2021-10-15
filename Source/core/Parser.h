@@ -265,17 +265,17 @@ namespace WPEFramework {
 			// -----------------------------------------------------
 			// Check for Clear method on Object
 			// -----------------------------------------------------
-			HAS_MEMBER(Complete, hasComplete);
+            IS_MEMBER_AVAILABLE(Complete, hasComplete);
 
 			template < typename T=HANDLER>
-			inline typename Core::TypeTraits::enable_if<hasComplete<T, bool (T::*)(const string&, const TCHAR)>::value, bool>::type
+			inline typename Core::TypeTraits::enable_if<hasComplete<T, bool, const string&, const TCHAR>::value, bool>::type
 				__Complete(const string& buffer, const TCHAR character)
 			{
 				return (_parent.Complete(buffer, character));
 			}
 
 			template < typename T=HANDLER>
-			inline typename Core::TypeTraits::enable_if<!hasComplete<T, bool (T::*)(const string&, const TCHAR)>::value, bool>::type
+			inline typename Core::TypeTraits::enable_if<!hasComplete<T, bool, const string&, const TCHAR>::value, bool>::type
 				__Complete(const string& /* buffer */, const TCHAR character)
 			{
 				return (((_state & SPLITCHAR) == SPLITCHAR) && (character == _splitChar));
