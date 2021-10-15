@@ -157,7 +157,7 @@ namespace Core {
         typedef char no[2];                                                                     \
         template <typename U,                                                                   \
                   typename RR = decltype(std::declval<U>().func(std::declval<Args>()...)),      \
-                  typename Z = std::enable_if<std::is_same<R, RR>::value>::type>                \
+                  typename Z = typename std::enable_if<std::is_same<R, RR>::value>::type>                \
         static yes& chk(int);                                                                   \
         template <typename U>                                                                   \
         static no& chk(...);                                                                    \
@@ -178,7 +178,7 @@ namespace Core {
         typedef char no[2];                                                          \
         template <typename U,                                                        \
             typename RR = decltype(U::func(std::declval<Args>()...)), \
-            typename Z = std::enable_if<std::is_same<R, RR>::value>::type>           \
+            typename Z = typename std::enable_if<std::is_same<R, RR>::value>::type>           \
         static yes& chk(int);                                                        \
         template <typename U>                                                        \
         static no& chk(...);                                                         \
@@ -198,7 +198,7 @@ namespace Core {
         typedef char no[2];                                                          \
         template <typename U,                                                        \
             typename RR = decltype(std::declval<U>().func<P>(std::declval<Args>()...)), \
-            typename Z = std::enable_if<std::is_same<R, RR>::value>::type>           \
+            typename Z = typename std::enable_if<std::is_same<R, RR>::value>::type>           \
         static yes& chk(int);                                                        \
         template <typename U>                                                        \
         static no& chk(...);                                                         \
