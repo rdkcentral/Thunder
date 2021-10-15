@@ -46,7 +46,7 @@ namespace Web {
     public:
         inline Core::ProxyType<ELEMENT> Element()
         {
-            return (Core::ProxyType<ELEMENT>(&_singleElement, &_singleElement));
+            return (Core::ProxyType<ELEMENT>(_singleElement));
         }
 
     private:
