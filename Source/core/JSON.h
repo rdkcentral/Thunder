@@ -4489,18 +4489,16 @@ namespace Core {
             }
 
         private:
-            HAS_MEMBER(Id, hasID);
+            IS_MEMBER_AVAILABLE(Id, hasID);
 
-            typedef hasID<JSONOBJECT, const char* (JSONOBJECT::*)()> TraitID;
-
-            template <typename TYPE>
-            static inline typename Core::TypeTraits::enable_if<LabelType<TYPE>::TraitID::value, const char*>::type __ID()
+            template <typename TYPE = JSONOBJECT>
+            static inline typename Core::TypeTraits::enable_if<hasID<TYPE, const char*>::value, const char*>::type __ID()
             {
                 return (JSONOBJECT::Id());
             }
 
-            template <typename TYPE>
-            static inline typename Core::TypeTraits::enable_if<!LabelType<TYPE>::TraitID::value, const char*>::type __ID()
+            template <typename TYPE = JSONOBJECT>
+            static inline typename Core::TypeTraits::enable_if<!hasID<TYPE, const char*>::value, const char*>::type __ID()
             {
                 static std::string className = (Core::ClassNameOnly(typeid(JSONOBJECT).name()).Text());
 
