@@ -150,14 +150,14 @@ namespace Core {
 // T:    type on which it should be chekced if func is available
 //.R:    expected return type for func
 // Args: arguments that func should have, note it will also work if overrides of Func are available on T. Note: passing Args&&... itself is also allowed here to allow for variable parameters
-#define IS_MEMBER_AVAILABLE(func, name)                                                                  \
+#define IS_MEMBER_AVAILABLE(func, name)                                                         \
     template <typename T, typename R, typename... Args>                                         \
     struct name {                                                                               \
         typedef char yes[1];                                                                    \
         typedef char no[2];                                                                     \
         template <typename U,                                                                   \
                   typename RR = decltype(std::declval<U>().func(std::declval<Args>()...)),      \
-                  typename Z = typename std::enable_if<std::is_same<R, RR>::value>::type>                \
+                  typename Z = typename std::enable_if<std::is_same<R, RR>::value>::type>       \
         static yes& chk(int);                                                                   \
         template <typename U>                                                                   \
         static no& chk(...);                                                                    \
@@ -171,14 +171,14 @@ namespace Core {
 // Args: arguments that func should have, note it will also work if overrides of Func are available on T. Note: passing Args&&... itself is also allowed here to allow for variable parameters
 // (Note: theoritcally also IS_MEMBER_AVAILABLE could be used for statics (and IS_MEMBER_AVAILABLE will actually find statics a match) but we made the differentiation so it is possibe to have non 
 //        none statics not taken into account when checking if func is available
-#define IS_STATIC_MEMBER_AVIALABLE(func, name)                               \
+#define IS_STATIC_MEMBER_AVAILABLE(func, name)                                       \
     template <typename T, typename R, typename... Args>                              \
     struct name {                                                                    \
         typedef char yes[1];                                                         \
         typedef char no[2];                                                          \
         template <typename U,                                                        \
-            typename RR = decltype(U::func(std::declval<Args>()...)), \
-            typename Z = typename std::enable_if<std::is_same<R, RR>::value>::type>           \
+            typename RR = decltype(U::func(std::declval<Args>()...)),                \
+            typename Z = typename std::enable_if<std::is_same<R, RR>::value>::type>  \
         static yes& chk(int);                                                        \
         template <typename U>                                                        \
         static no& chk(...);                                                         \
@@ -191,18 +191,18 @@ namespace Core {
 // P:    desired template type for func 
 //.R:    expected return type for func
 // Args: arguments that func should have, note it will also work if overrides of Func are available on T. Note: passing Args&&... itself is also allowed here to allow for variable parameters
-#define IS_TEMPLATE_MEMBER_AVAILABLE(func, name)                  \
-    template <typename T, typename P, typename R, typename... Args>                    \
-    struct name {                                                                    \
-        typedef char yes[1];                                                         \
-        typedef char no[2];                                                          \
-        template <typename U,                                                        \
+#define IS_TEMPLATE_MEMBER_AVAILABLE(func, name)                                        \
+    template <typename T, typename P, typename R, typename... Args>                     \
+    struct name {                                                                       \
+        typedef char yes[1];                                                            \
+        typedef char no[2];                                                             \
+        template <typename U,                                                           \
             typename RR = decltype(std::declval<U>().func<P>(std::declval<Args>()...)), \
-            typename Z = typename std::enable_if<std::is_same<R, RR>::value>::type>           \
-        static yes& chk(int);                                                        \
-        template <typename U>                                                        \
-        static no& chk(...);                                                         \
-        static bool const value = sizeof(chk<T>(0)) == sizeof(yes);                  \
+            typename Z = typename std::enable_if<std::is_same<R, RR>::value>::type>     \
+        static yes& chk(int);                                                           \
+        template <typename U>                                                           \
+        static no& chk(...);                                                            \
+        static bool const value = sizeof(chk<T>(0)) == sizeof(yes);                     \
     }
 
     }

@@ -307,7 +307,7 @@ namespace WarningReporting {
         {
             return _category.Analyze(modulename, identifier, std::forward<Args>(args)...);
         }
-        IS_STATIC_MEMBER_AVIALABLE(Configure, hasConfigure);
+        IS_STATIC_MEMBER_AVAILABLE(Configure, hasConfigure);
         template <typename T = CONTROLCATEGORY>
         inline static typename Core::TypeTraits::enable_if<!hasConfigure<T, void, const string&>::value, void>::type
         CallConfigure(const string&)
@@ -359,7 +359,7 @@ namespace WarningReporting {
         class WarningReportingControl : public IWarningReportingUnit::IWarningReportingControl {
         private:
             // HPL todo: The code is duplicated, perhaps possible to nest it?
-            IS_STATIC_MEMBER_AVIALABLE(Configure, hasConfigure);
+            IS_STATIC_MEMBER_AVAILABLE(Configure, hasConfigure);
             template <typename T = CONTROLCATEGORY>
             static inline typename Core::TypeTraits::enable_if<!hasConfigure<T, void, const string&>::value, void>::type
             CallConfigure(const string&)
@@ -371,7 +371,7 @@ namespace WarningReporting {
             {
                 return CONTROLCATEGORY::Configure(settings);
             }
-            IS_STATIC_MEMBER_AVIALABLE(CategoryName, hasCategoryName);
+            IS_STATIC_MEMBER_AVAILABLE(CategoryName, hasCategoryName);
             template <typename T = CONTROLCATEGORY>
             static inline typename Core::TypeTraits::enable_if<!hasCategoryName<T, string>::value, string>::type
             CallCategoryName()
