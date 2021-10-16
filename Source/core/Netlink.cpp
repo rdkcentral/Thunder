@@ -76,14 +76,14 @@ namespace Core {
         const nlmsghdr* header = reinterpret_cast<const nlmsghdr*>(stream);
         uint16_t dataLeft = streamLength;
         bool completed = true;
-        
+
         while (NLMSG_OK(header, dataLeft)) {
             if (header->nlmsg_type != NLMSG_NOOP) {
                 _type = header->nlmsg_type;
                 _flags = header->nlmsg_flags;
                 _mySequence = header->nlmsg_seq;
 
-                if (header->nlmsg_type != NLMSG_DONE) {
+                if ((header->nlmsg_len - sizeof(header)) > 0) {
                     Read(reinterpret_cast<const uint8_t *>(NLMSG_DATA(header)), header->nlmsg_len - sizeof(header));
                 }
 
