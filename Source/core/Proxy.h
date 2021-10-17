@@ -253,13 +253,13 @@ namespace WPEFramework {
             IS_MEMBER_AVAILABLE(IsInitialized, hasIsInitialized);
 
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<hasIsInitialized<TYPE, bool>::value, bool>::type
+            inline typename Core::TypeTraits::enable_if<hasIsInitialized<const TYPE, bool>::value, bool>::type
                 __IsInitialized() const
             {
                 return(TYPE::IsInitialized());
             }
             template < typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<!hasIsInitialized<TYPE, bool>::value, bool>::type
+            inline typename Core::TypeTraits::enable_if<!hasIsInitialized<const TYPE, bool>::value, bool>::type
                 __IsInitialized() const
             {
                 return (true);
@@ -1295,13 +1295,13 @@ namespace WPEFramework {
             IS_MEMBER_AVAILABLE(IsInitialized, hasIsInitialized);
 
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<hasIsInitialized<TYPE, bool>::value, bool>::type
+            inline typename Core::TypeTraits::enable_if<hasIsInitialized<const TYPE, bool>::value, bool>::type
                 __IsInitialized() const
             {
                 reurn(TYPE::IsInitialized());
             }
             template < typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<!hasIsInitialized<TYPE, bool>::value, bool>::type
+            inline typename Core::TypeTraits::enable_if<!hasIsInitialized<const TYPE, bool>::value, bool>::type
                 __IsInitialized() const
             {
                 return (true);

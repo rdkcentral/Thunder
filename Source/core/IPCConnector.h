@@ -341,14 +341,14 @@ namespace Core {
             IS_MEMBER_AVAILABLE(Length, hasLength);
 
             template <typename SUBJECT=PACKAGE>
-            inline typename Core::TypeTraits::enable_if<hasLength<SUBJECT, uint32_t>::value, uint32_t>::type
+            inline typename Core::TypeTraits::enable_if<hasLength<const SUBJECT, uint32_t>::value, uint32_t>::type
             _Length() const
             {
                 return (_package.Length());
             }
 
             template <typename SUBJECT=PACKAGE>
-            inline typename Core::TypeTraits::enable_if<!hasLength<SUBJECT, uint32_t>::value, uint32_t>::type
+            inline typename Core::TypeTraits::enable_if<!hasLength<const SUBJECT, uint32_t>::value, uint32_t>::type
             _Length() const
             {
                 return (sizeof(PACKAGE));
@@ -357,14 +357,14 @@ namespace Core {
             IS_MEMBER_AVAILABLE(Serialize, hasSerialize);
 
             template <typename SUBJECT= PACKAGE>
-            inline typename Core::TypeTraits::enable_if<hasSerialize<SUBJECT, uint16_t, uint8_t[], const uint16_t, const uint32_t>::value, uint16_t>::type
+            inline typename Core::TypeTraits::enable_if<hasSerialize<const SUBJECT, uint16_t, uint8_t[], const uint16_t, const uint32_t>::value, uint16_t>::type
             _Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
             {
                 return (_package.Serialize(stream, maxLength, offset));
             }
 
             template <typename SUBJECT= PACKAGE>
-            inline typename Core::TypeTraits::enable_if<!hasSerialize<SUBJECT, uint16_t, uint8_t[], const uint16_t, const uint32_t>::value, uint16_t>::type
+            inline typename Core::TypeTraits::enable_if<!hasSerialize<const SUBJECT, uint16_t, uint8_t[], const uint16_t, const uint32_t>::value, uint16_t>::type
             _Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
             {
                 uint16_t result = 0;

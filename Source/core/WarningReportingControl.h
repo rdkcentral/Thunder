@@ -321,13 +321,13 @@ namespace WarningReporting {
         }
         IS_MEMBER_AVAILABLE(IsWarning, hasIsWarning);
         template <typename T = CONTROLCATEGORY>
-        inline typename Core::TypeTraits::enable_if<!hasIsWarning<T, bool>::value, bool>::type
+        inline typename Core::TypeTraits::enable_if<!hasIsWarning<const T, bool>::value, bool>::type
         CallIsWarning() const
         {
             return true;
         }
         template <typename T = CONTROLCATEGORY>
-        inline typename Core::TypeTraits::enable_if<hasIsWarning<T, bool>::value, bool>::type
+        inline typename Core::TypeTraits::enable_if<hasIsWarning<const T, bool>::value, bool>::type
         CallIsWarning() const
         {
             return _category.IsWarning();
@@ -482,13 +482,13 @@ namespace WarningReporting {
         // HPL todo: The code is duplicated, perhaps possible to nest it?        
         IS_MEMBER_AVAILABLE(IsWarning, hasIsWarning);
         template <typename T = CATEGORY>
-        inline typename Core::TypeTraits::enable_if<!hasIsWarning<T, bool>::value, bool>::type
+        inline typename Core::TypeTraits::enable_if<!hasIsWarning<const T, bool>::value, bool>::type
         CallIsWarning() const
         {
             return true;
         }
         template <typename T = CATEGORY>
-        inline typename Core::TypeTraits::enable_if<hasIsWarning<T, bool>::value, bool>::type
+        inline typename Core::TypeTraits::enable_if<hasIsWarning<const T, bool>::value, bool>::type
         CallIsWarning() const
         {
             return _info.IsWarning();

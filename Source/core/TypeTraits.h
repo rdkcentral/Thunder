@@ -147,8 +147,8 @@ namespace Core {
 
 // func: name of function that should be present
 // name: name of the struct that later can be used to override using SFINEA
-// T:    type on which it should be chekced if func is available
-//.R:    expected return type for func
+// T:    type on which it should be chekced if func is available. If only const versions of func need to be taken into account specify it as const T
+// R:    expected return type for func
 // Args: arguments that func should have, note it will also work if overrides of Func are available on T. Note: passing Args&&... itself is also allowed here to allow for variable parameters
 #define IS_MEMBER_AVAILABLE(func, name)                                                         \
     template <typename T, typename R, typename... Args>                                         \
@@ -167,7 +167,7 @@ namespace Core {
 // func: name of static function that should be present
 // name: name of the struct that later can be used to override using SFINEA
 // T:    type on which it should be chekced if func is available
-//.R:    expected return type for func
+// R:    expected return type for func
 // Args: arguments that func should have, note it will also work if overrides of Func are available on T. Note: passing Args&&... itself is also allowed here to allow for variable parameters
 // (Note: theoritcally also IS_MEMBER_AVAILABLE could be used for statics (and IS_MEMBER_AVAILABLE will actually find statics a match) but we made the differentiation so it is possibe to have non 
 //        none statics not taken into account when checking if func is available
@@ -187,9 +187,9 @@ namespace Core {
 
 // func: name of static function that should be present
 // name: name of the struct that later can be used to override using SFINEA
-// T:    type on which it should be chekced if func is available
+// T:    type on which it should be chekced if func is available. If only const versions of func need to be taken into account specify it as const T
 // P:    desired template type for func 
-//.R:    expected return type for func
+// R:    expected return type for func
 // Args: arguments that func should have, note it will also work if overrides of Func are available on T. Note: passing Args&&... itself is also allowed here to allow for variable parameters
 #define IS_TEMPLATE_MEMBER_AVAILABLE(func, name)                                        \
     template <typename T, typename P, typename R, typename... Args>                     \
