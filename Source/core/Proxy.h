@@ -198,16 +198,16 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Clear method on Object
             // -----------------------------------------------------
-            HAS_MEMBER(Clear, hasClear);
+            IS_MEMBER_AVAILABLE(Clear, hasClear);
 
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<hasClear<TYPE, void (TYPE::*)()>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<hasClear<TYPE, void>::value, void>::type
                 __Clear()
             {
                 TYPE::Clear();
             }
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<!hasClear<TYPE, void (TYPE::*)()>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<!hasClear<TYPE, void>::value, void>::type
                 __Clear()
             {
             }
@@ -215,16 +215,16 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Initialize method on Object
             // -----------------------------------------------------
-            HAS_MEMBER(Initialize, hasInitialize);
+            IS_MEMBER_AVAILABLE(Initialize, hasInitialize);
 
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<hasInitialize<TYPE, uint32_t(TYPE::*)()>::value, uint32_t>::type
+            inline typename Core::TypeTraits::enable_if<hasInitialize<TYPE, uint32_t>::value, uint32_t>::type
                 __Initialize()
             {
                 return (TYPE::Initialize());
             }
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<!hasInitialize<TYPE, uint32_t(TYPE::*)()>::value, uint32_t>::type
+            inline typename Core::TypeTraits::enable_if<!hasInitialize<TYPE, uint32_t>::value, uint32_t>::type
                 __Initialize()
             {
                 return (Core::ERROR_NONE);
@@ -233,16 +233,16 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Deinitialize method on Object
             // -----------------------------------------------------
-            HAS_MEMBER(Deinitialize, hasDeinitialize);
+            IS_MEMBER_AVAILABLE(Deinitialize, hasDeinitialize);
 
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<hasDeinitialize<TYPE, void (TYPE::*)()>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<hasDeinitialize<TYPE, void>::value, void>::type
                 __Deinitialize()
             {
                 TYPE::Deinitialize();
             }
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<!hasDeinitialize<TYPE, void (TYPE::*)()>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<!hasDeinitialize<TYPE, void>::value, void>::type
                 __Deinitialize()
             {
             }
@@ -250,16 +250,16 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for IsInitialized method on Object
             // -----------------------------------------------------
-            HAS_MEMBER(IsInitialized, hasIsInitialized);
+            IS_MEMBER_AVAILABLE(IsInitialized, hasIsInitialized);
 
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<hasIsInitialized<TYPE, bool (TYPE::*)() const>::value, bool>::type
+            inline typename Core::TypeTraits::enable_if<hasIsInitialized<const TYPE, bool>::value, bool>::type
                 __IsInitialized() const
             {
                 return(TYPE::IsInitialized());
             }
             template < typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<!hasIsInitialized<TYPE, bool (TYPE::*)() const>::value, bool>::type
+            inline typename Core::TypeTraits::enable_if<!hasIsInitialized<const TYPE, bool>::value, bool>::type
                 __IsInitialized() const
             {
                 return (true);
@@ -268,10 +268,10 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Aquire method on Object
             // -----------------------------------------------------
-            HAS_MEMBER(Acquire, hasAcquire);
+            IS_MEMBER_AVAILABLE(Acquire, hasAcquire);
 
             template < typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<hasAcquire<TYPE, void (TYPE::*)(Core::ProxyType<TYPE>&)>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<hasAcquire<TYPE, void, Core::ProxyType<TYPE>&>::value, void>::type
                 __Acquire()
             {
                 if (LastRef() == true) {
@@ -282,7 +282,7 @@ namespace WPEFramework {
                 }
             }
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<!hasAcquire<TYPE, void (TYPE::*)(Core::ProxyType<TYPE>&)>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<!hasAcquire<TYPE, void, Core::ProxyType<TYPE>&>::value, void>::type
                 __Acquire()
             {
             }
@@ -290,10 +290,10 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Relinquish method on Object
             // -----------------------------------------------------
-            HAS_MEMBER(Relinquish, hasRelinquish);
+            IS_MEMBER_AVAILABLE(Relinquish, hasRelinquish);
 
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<hasRelinquish<TYPE, void (TYPE::*)(Core::ProxyType<TYPE>&)>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<hasRelinquish<TYPE, void, Core::ProxyType<TYPE>&>::value, void>::type
                 __Relinquish()
             {
                 if (LastRef() == true) {
@@ -304,7 +304,7 @@ namespace WPEFramework {
                 }
             }
             template < typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<!hasRelinquish<TYPE, void (TYPE::*)(Core::ProxyType<TYPE>&)>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<!hasRelinquish<TYPE, void, Core::ProxyType<TYPE>&>::value, void>::type
                 __Relinquish()
             {
             }
@@ -1240,16 +1240,16 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Clear method on Object
             // -----------------------------------------------------
-            HAS_MEMBER(Clear, hasClear);
+            IS_MEMBER_AVAILABLE(Clear, hasClear);
 
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<hasClear<TYPE, void (TYPE::*)()>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<hasClear<TYPE, void>::value, void>::type
                 __Clear()
             {
                 CONTEXT::Clear();
             }
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<!hasClear<TYPE, void (TYPE::*)()>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<!hasClear<TYPE, void>::value, void>::type
                 __Clear()
             {
             }
@@ -1257,16 +1257,16 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Initialize method on Object
             // -----------------------------------------------------
-            HAS_MEMBER(Initialize, hasInitialize);
+            IS_MEMBER_AVAILABLE(Initialize, hasInitialize);
 
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<hasInitialize<TYPE, uint32_t(TYPE::*)()>::value, uint32_t>::type
+            inline typename Core::TypeTraits::enable_if<hasInitialize<TYPE, uint32_t>::value, uint32_t>::type
                 __Initialize()
             {
                 return (CONTEXT::Initialize());
             }
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<!hasInitialize<TYPE, uint32_t(TYPE::*)()>::value, uint32_t>::type
+            inline typename Core::TypeTraits::enable_if<!hasInitialize<TYPE, uint32_t>::value, uint32_t>::type
                 __Initialize()
             {
                 return (Core::ERROR_NONE);
@@ -1275,16 +1275,16 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Deinitialize method on Object
             // -----------------------------------------------------
-            HAS_MEMBER(Deinitialize, hasDeinitialize);
+            IS_MEMBER_AVAILABLE(Deinitialize, hasDeinitialize);
 
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<hasDeinitialize<TYPE, void (TYPE::*)()>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<hasDeinitialize<TYPE, void>::value, void>::type
                 __Deinitialize()
             {
                 CONTEXT::Deinitialize();
             }
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<!hasDeinitialize<TYPE, void (TYPE::*)()>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<!hasDeinitialize<TYPE, void>::value, void>::type
                 __Deinitialize()
             {
             }
@@ -1292,16 +1292,16 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for IsInitialized method on Object
             // -----------------------------------------------------
-            HAS_MEMBER(IsInitialized, hasIsInitialized);
+            IS_MEMBER_AVAILABLE(IsInitialized, hasIsInitialized);
 
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<hasIsInitialized<TYPE, bool (TYPE::*)() const>::value, bool>::type
+            inline typename Core::TypeTraits::enable_if<hasIsInitialized<const TYPE, bool>::value, bool>::type
                 __IsInitialized() const
             {
                 reurn(TYPE::IsInitialized());
             }
             template < typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<!hasIsInitialized<TYPE, bool (TYPE::*)() const>::value, bool>::type
+            inline typename Core::TypeTraits::enable_if<!hasIsInitialized<const TYPE, bool>::value, bool>::type
                 __IsInitialized() const
             {
                 return (true);
@@ -1311,10 +1311,10 @@ namespace WPEFramework {
             // Check for Aquire method on Object
             // -----------------------------------------------------
 
-            HAS_MEMBER(Acquire, hasAcquire);
+            IS_MEMBER_AVAILABLE(Acquire, hasAcquire);
 
             template < typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<hasAcquire<TYPE, void (TYPE::*)(Core::ProxyType<STORED>& source)>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<hasAcquire<TYPE, void, Core::ProxyType<STORED>&>::value, void>::type
                 __Acquire(Core::ProxyType<ThisClass>& source)
             {
                 Core::ProxyType<STORED> base;
@@ -1327,7 +1327,7 @@ namespace WPEFramework {
                 base.Reset();
             }
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<!hasAcquire<TYPE, void (TYPE::*)(Core::ProxyType<STORED>& source)>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<!hasAcquire<TYPE, void, Core::ProxyType<STORED>&>::value, void>::type
                 __Acquire(Core::ProxyType<ThisClass>&)
             {
             }
@@ -1335,10 +1335,10 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Relinquish method on Object
             // -----------------------------------------------------
-            HAS_MEMBER(Relinquish, hasRelinquish);
+            IS_MEMBER_AVAILABLE(Relinquish, hasRelinquish);
 
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<hasRelinquish<TYPE, void (TYPE::*)(Core::ProxyType<STORED>&)>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<hasRelinquish<TYPE, void, Core::ProxyType<STORED>&>::value, void>::type
                 __Relinquish(Core::ProxyType<ThisClass>& source)
             {
                 Core::ProxyType<STORED> base;
@@ -1350,7 +1350,7 @@ namespace WPEFramework {
                 base.Reset();
             }
             template < typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<!hasRelinquish<TYPE, void (TYPE::*)(Core::ProxyType<STORED>&)>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<!hasRelinquish<TYPE, void, Core::ProxyType<STORED>&>::value, void>::type
                 __Relinquish(Core::ProxyType<ThisClass>&)
             {
             }
@@ -1358,16 +1358,16 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Unlink method on Object
             // -----------------------------------------------------
-            HAS_MEMBER(Unlink, hasUnlink);
+            IS_MEMBER_AVAILABLE(Unlink, hasUnlink);
 
             template <typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<hasUnlink<TYPE, void (TYPE::*)()>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<hasUnlink<TYPE, void>::value, void>::type
                 __Unlink()
             {
                 TYPE::Unlink();
             }
             template < typename TYPE = CONTEXT>
-            inline typename Core::TypeTraits::enable_if<!hasUnlink<TYPE, void (TYPE::*)()>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<!hasUnlink<TYPE, void>::value, void>::type
                 __Unlink()
             {
             }

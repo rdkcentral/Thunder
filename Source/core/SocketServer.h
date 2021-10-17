@@ -316,17 +316,17 @@ namespace Core {
             // -----------------------------------------------------
             // Check for Id  method on Object
             // -----------------------------------------------------
-            HAS_MEMBER(Id, hasId);
+            IS_MEMBER_AVAILABLE(Id, hasId);
 
             template <typename SUBJECT=HANDLECLIENT>
-            inline typename Core::TypeTraits::enable_if<hasId<SUBJECT, void (SUBJECT::*)(uint32_t)>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<hasId<SUBJECT, void, uint32_t>::value, void>::type
             __Id(HANDLECLIENT& object, const uint32_t id)
             {
                 object.Id(id);
             }
 
             template <typename SUBJECT=HANDLECLIENT>
-            inline typename Core::TypeTraits::enable_if<!hasId<SUBJECT, void (SUBJECT::*)(uint32_t)>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<!hasId<SUBJECT, void, uint32_t>::value, void>::type
             __Id(HANDLECLIENT&, const uint32_t)
             {
             }

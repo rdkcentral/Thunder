@@ -294,40 +294,40 @@ namespace WarningReporting {
         }
 
     private:
-        HAS_MEMBER_NAME(Analyze, hasAnalyze);
+        IS_MEMBER_AVAILABLE(Analyze, hasAnalyze);
         template <typename T = CONTROLCATEGORY, typename... Args>
-        inline typename Core::TypeTraits::enable_if<!hasAnalyze<T, const char[], const char[], Args&&...>::value, bool>::type
+        inline typename Core::TypeTraits::enable_if<!hasAnalyze<T, bool, const char[], const char[], Args&&...>::value, bool>::type
         CallAnalyze(const char[], const char[], Args&&...)
         {
             return true;
         }
         template <typename T = CONTROLCATEGORY, typename... Args>
-        inline typename Core::TypeTraits::enable_if<hasAnalyze<T, const char[], const char[], Args&&...>::value, bool>::type
+        inline typename Core::TypeTraits::enable_if<hasAnalyze<T, bool, const char[], const char[], Args&&...>::value, bool>::type
         CallAnalyze(const char modulename[], const char identifier[], Args&&... args)
         {
             return _category.Analyze(modulename, identifier, std::forward<Args>(args)...);
         }
-        HAS_STATIC_MEMBER(Configure, hasConfigure);
+        IS_STATIC_MEMBER_AVAILABLE(Configure, hasConfigure);
         template <typename T = CONTROLCATEGORY>
-        inline static typename Core::TypeTraits::enable_if<!hasConfigure<T>::value, void>::type
+        inline static typename Core::TypeTraits::enable_if<!hasConfigure<T, void, const string&>::value, void>::type
         CallConfigure(const string&)
         {
         }
         template <typename T = CONTROLCATEGORY>
-        inline static typename Core::TypeTraits::enable_if<hasConfigure<T>::value, void>::type
+        inline static typename Core::TypeTraits::enable_if<hasConfigure<T, void, const string&>::value, void>::type
         CallConfigure(const string& settings)
         {
             return CONTROLCATEGORY::Configure(settings);
         }
-        HAS_MEMBER(IsWarning, hasIsWarning);
+        IS_MEMBER_AVAILABLE(IsWarning, hasIsWarning);
         template <typename T = CONTROLCATEGORY>
-        inline typename Core::TypeTraits::enable_if<!hasIsWarning<T, bool (T::*)() const>::value, bool>::type
+        inline typename Core::TypeTraits::enable_if<!hasIsWarning<const T, bool>::value, bool>::type
         CallIsWarning() const
         {
             return true;
         }
         template <typename T = CONTROLCATEGORY>
-        inline typename Core::TypeTraits::enable_if<hasIsWarning<T, bool (T::*)() const>::value, bool>::type
+        inline typename Core::TypeTraits::enable_if<hasIsWarning<const T, bool>::value, bool>::type
         CallIsWarning() const
         {
             return _category.IsWarning();
@@ -359,27 +359,27 @@ namespace WarningReporting {
         class WarningReportingControl : public IWarningReportingUnit::IWarningReportingControl {
         private:
             // HPL todo: The code is duplicated, perhaps possible to nest it?
-            HAS_STATIC_MEMBER(Configure, hasConfigure);
+            IS_STATIC_MEMBER_AVAILABLE(Configure, hasConfigure);
             template <typename T = CONTROLCATEGORY>
-            static inline typename Core::TypeTraits::enable_if<!hasConfigure<T>::value, void>::type
+            static inline typename Core::TypeTraits::enable_if<!hasConfigure<T, void, const string&>::value, void>::type
             CallConfigure(const string&)
             {
             }
             template <typename T = CONTROLCATEGORY>
-            static inline typename Core::TypeTraits::enable_if<hasConfigure<T>::value, void>::type
+            static inline typename Core::TypeTraits::enable_if<hasConfigure<T, void, const string&>::value, void>::type
             CallConfigure(const string& settings)
             {
                 return CONTROLCATEGORY::Configure(settings);
             }
-            HAS_STATIC_MEMBER(CategoryName, hasCategoryName);
+            IS_STATIC_MEMBER_AVAILABLE(CategoryName, hasCategoryName);
             template <typename T = CONTROLCATEGORY>
-            static inline typename Core::TypeTraits::enable_if<!hasCategoryName<T>::value, string>::type
+            static inline typename Core::TypeTraits::enable_if<!hasCategoryName<T, string>::value, string>::type
             CallCategoryName()
             {
                 return Core::ClassNameOnly(typeid(CONTROLCATEGORY).name()).Text();
             }
             template <typename T = CONTROLCATEGORY>
-            static inline typename Core::TypeTraits::enable_if<hasCategoryName<T>::value, string>::type
+            static inline typename Core::TypeTraits::enable_if<hasCategoryName<T, string>::value, string>::type
             CallCategoryName()
             {
                 return CONTROLCATEGORY::CategoryName();
@@ -480,28 +480,28 @@ namespace WarningReporting {
 
     private:
         // HPL todo: The code is duplicated, perhaps possible to nest it?        
-        HAS_MEMBER(IsWarning, hasIsWarning);
+        IS_MEMBER_AVAILABLE(IsWarning, hasIsWarning);
         template <typename T = CATEGORY>
-        inline typename Core::TypeTraits::enable_if<!hasIsWarning<T, bool (T::*)() const>::value, bool>::type
+        inline typename Core::TypeTraits::enable_if<!hasIsWarning<const T, bool>::value, bool>::type
         CallIsWarning() const
         {
             return true;
         }
         template <typename T = CATEGORY>
-        inline typename Core::TypeTraits::enable_if<hasIsWarning<T, bool (T::*)() const>::value, bool>::type
+        inline typename Core::TypeTraits::enable_if<hasIsWarning<const T, bool>::value, bool>::type
         CallIsWarning() const
         {
             return _info.IsWarning();
         }
-        HAS_MEMBER_NAME(Analyze, hasAnalyze);
+        IS_MEMBER_AVAILABLE(Analyze, hasAnalyze);
         template <typename T = CATEGORY, typename... Args>
-        inline static typename Core::TypeTraits::enable_if<!hasAnalyze<T, const char[], const char[], Args&&...>::value, bool>::type
+        inline static typename Core::TypeTraits::enable_if<!hasAnalyze<T, bool, const char[], const char[], Args&&...>::value, bool>::type
         CallAnalyze(T& category, const char[], const char[], Args&&...)
         {
             return true;
         }
         template <typename T = CATEGORY, typename... Args>
-        inline static typename Core::TypeTraits::enable_if<hasAnalyze<T, const char[], const char[], Args&&...>::value, bool>::type
+        inline static typename Core::TypeTraits::enable_if<hasAnalyze<T, bool, const char[], const char[], Args&&...>::value, bool>::type
         CallAnalyze(T& category, const char modulename[], const char identifier[], Args&&... args)
         {
             return category.Analyze(modulename, identifier, std::forward<Args>(args)...);

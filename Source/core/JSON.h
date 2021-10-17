@@ -4531,18 +4531,16 @@ namespace Core {
             }
 
         private:
-            HAS_MEMBER(Id, hasID);
-
-            typedef hasID<JSONOBJECT, const char* (JSONOBJECT::*)()> TraitID;
+            IS_MEMBER_AVAILABLE(Id, hasID);
 
             template <typename TYPE = JSONOBJECT>
-            static inline typename Core::TypeTraits::enable_if<LabelType<TYPE>::TraitID::value, const char*>::type __ID()
+            static inline typename Core::TypeTraits::enable_if<hasID<TYPE, const char*>::value, const char*>::type __ID()
             {
                 return (JSONOBJECT::Id());
             }
 
             template <typename TYPE = JSONOBJECT>
-            static inline typename Core::TypeTraits::enable_if<!LabelType<TYPE>::TraitID::value, const char*>::type __ID()
+            static inline typename Core::TypeTraits::enable_if<!hasID<TYPE, const char*>::value, const char*>::type __ID()
             {
                 static std::string className = (Core::ClassNameOnly(typeid(JSONOBJECT).name()).Text());
 
@@ -4552,16 +4550,16 @@ namespace Core {
             // -----------------------------------------------------
             // Check for Clear method on Object
             // -----------------------------------------------------
-            HAS_MEMBER(Clear, hasClear);
+            IS_MEMBER_AVAILABLE(Clear, hasClear);
 
             template <typename TYPE = JSONOBJECT>
-            inline typename Core::TypeTraits::enable_if<hasClear<TYPE, void (TYPE::*)()>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<hasID<TYPE, void>::value, void>::type 
                 __Clear()
             {
                 TYPE::Clear();
             }
             template <typename TYPE = JSONOBJECT>
-            inline typename Core::TypeTraits::enable_if<!hasClear<TYPE, void (TYPE::*)()>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<!hasID<TYPE, void>::value, void>::type
                 __Clear()
             {
             }
