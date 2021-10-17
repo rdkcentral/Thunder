@@ -4550,16 +4550,16 @@ namespace Core {
             // -----------------------------------------------------
             // Check for Clear method on Object
             // -----------------------------------------------------
-            HAS_MEMBER(Clear, hasClear);
+            IS_MEMBER_AVAILABLE(Clear, hasClear);
 
             template <typename TYPE = JSONOBJECT>
-            inline typename Core::TypeTraits::enable_if<hasClear<TYPE, void (TYPE::*)()>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<hasID<TYPE, void>::value, void>::type 
                 __Clear()
             {
                 TYPE::Clear();
             }
             template <typename TYPE = JSONOBJECT>
-            inline typename Core::TypeTraits::enable_if<!hasClear<TYPE, void (TYPE::*)()>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<!hasID<TYPE, void>::value, void>::type
                 __Clear()
             {
             }
