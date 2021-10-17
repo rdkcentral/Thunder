@@ -396,17 +396,17 @@ namespace Core {
             return (__InvokeAllowed(client, command));
         }
 
-        HAS_MEMBER(InvokeAllowed, hasInvokeAllowed);
+        IS_MEMBER_AVAILABLE(InvokeAllowed, hasInvokeAllowed);
 
         template <typename CLASSNAME = EXTENSION>
-        inline typename Core::TypeTraits::enable_if<hasInvokeAllowed<CLASSNAME, ProxyType<IIPC> (CLASSNAME::*)(const ProxyType<IIPC>&) const>::value, ProxyType<IIPC>>::type
+        inline typename Core::TypeTraits::enable_if<hasInvokeAllowed<const CLASSNAME, ProxyType<IIPC>, const ProxyType<IIPC>&>::value, ProxyType<IIPC>>::type
         __InvokeAllowed(const Client& client, const ProxyType<IIPC>& command) const
         {
             return (client.Extension().InvokeAllowed(command));
         }
 
         template <typename CLASSNAME = EXTENSION>
-        inline typename Core::TypeTraits::enable_if<!hasInvokeAllowed<CLASSNAME, ProxyType<IIPC> (CLASSNAME::*)(const ProxyType<IIPC>&) const>::value, ProxyType<IIPC>>::type
+        inline typename Core::TypeTraits::enable_if<!hasInvokeAllowed<const CLASSNAME, ProxyType<IIPC>, const ProxyType<IIPC>&>::value, ProxyType<IIPC>>::type
         __InvokeAllowed(const Client&, const ProxyType<IIPC>& command) const
         {
             return (command);
