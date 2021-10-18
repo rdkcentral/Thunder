@@ -70,6 +70,9 @@ namespace Core {
             JobType(const JobType<IMPLEMENTATION>& copy) = delete;
             JobType<IMPLEMENTATION>& operator=(const JobType<IMPLEMENTATION>& RHS) = delete;
 
+            #ifdef __WINDOWS__
+            #pragma warning(disable: 4355)
+            #endif
             template <typename... Args>
             JobType(Args&&... args)
                 : _implementation(args...)
@@ -78,6 +81,10 @@ namespace Core {
             {
                 _job.AddRef();
             }
+            #ifdef __WINDOWS__
+            #pragma warning(default: 4355)
+            #endif
+
             ~JobType()
             {
                 ASSERT (_state == IDLE);
