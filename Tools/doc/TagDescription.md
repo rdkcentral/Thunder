@@ -1,39 +1,39 @@
 <a name="table"> </a>
-| Tag|Short Description|StubGen|JsonGen|
-|--|--|:--:|:--:|
-|[@stubgen:include](#stubgen_include)|insert another C++ file FILE|Yes| Yes|
-|[@insert](#insert)|same as @stubgen:include FILE| Yes|Yes|
-|[@stubgen:skip](#stubgen_skip)|stop processing current file, now deprecated FILE| Yes|Yes|
-|[@stop](#stop)|same as @stubgen:skip, not deprecated, but also never advertised FILE|Yes| Yes|
-|[@stubgen:omit](#stubgen_omit)|omit processing of the next class or method CLASS, METHOD (PROXYSTUB-ONLY)| Yes| No (but has side-effects)|
-|[@omit](#omit)|same as @stubgen:omit CLASS, METHOD (PROXYSTUB-ONLY)| Yes| No (but has side-effects)|
-|[@stubgen:stub](#stubgen_stub)|emit empty function stub instead of full proxy implementation METHOD (PROXYSTUB-ONLY)| Yes| No|
-|[@stub](#stub)|same as @stubgen:stub METHOD (PROXYSTUB-ONLY)| Yes| No|
-|[@in](#in)|marks an input parameter PARAM| Yes| Yes|
-|[@out](#out)|marks an output parameter PARAM| Yes|Yes|
-|[@length](#length)|specifies the expresion to evaluate length of an array parameter PARAM(can be other parameter name, or constant, or math expression)| No | Yes |
-|[@maxlength](#maxlength)|specifies a maximum buffer length value (a constant, a parameter name or a math expression),") if not specified @length is used as maximum length, use round parenthesis for expressions",) e.g.: @length:bufferSize @length:(width * height * 4) | No | Yes |
-|[@interface](#interface)| specifies a parameter holding interface ID value for void* interface passing | Yes | No |
-|[@inout](#inout)|marks as input and output parameter (a.k.a @in @out) PARAM| Yes|Yes|
-|[@json](#json)|marks a class as JsonGenerator input CLASS (JSON-ONLY)| No| Yes|
-|[@json:omit](#json_omit)|marks a method/property/notification to omit METHOD (JSON-ONLY| No| Yes|
-|[@event](#event)|marks a class as JSON notification CLASS (JSON-ONLY)| No| Yes|
-|[@extended](#extended)|(JSON-ONLY)| No| Yes|
-|[@iterator](#iterator)|marks a class as an iterator CLASS (JSON-ONLY)| Yes| Yes|
-|[@deprecated](#deprecated)|marks a method/property/notification deprecated (i.e. obsolete and candidate for removal) METHOD (JSON-ONLY)| No| Yes|
-|[@obsolete](#obsolete)|marks a method/property/notification as obsolete METHOD (JSON-ONLY)| No| Yes|
-|[@index](#index)|marks an index parameter to a property or notification PARAM (JSON-ONLY)| No| Yes|
-|[@listener](#listener)|marks the notification as a "status listener" METHOD (JSON-ONLY)| No| Yes|
-|[@brief ](#brief)|specifies brief description of a method/property/notification or parameter or POD structure member METHOD, PARAM, POD MEMBER (JSON-ONLY)| No| Yes|
-|[@details ](#details)|specifies detaild description of a method/property/notification METHOD (JSON-ONLY)| No| Yes|
-|[@param ](#param)|provide description for method/notification parameter or property/notification index METHOD| No | Yes|
-|[@retval ](#retval)|specifies possible return error codes for method/property (can be many) METHOD (JSON-ONLY)| No|Yes|
-|[@text](#text)|renames identifier METHOD, PARAM, POD MEMBER, ENUM (JSON-ONLY)| No| Yes|
-|[@property](#property)||No|Yes|
+| Tag|Short Description|StubGen|JsonGen|scope|
+|--|--|:--:|:--:|:--:|
+|[@stubgen:include](#stubgen_include)|Insert another C++ file |Yes| Yes|File|
+|[@insert](#insert)|Same as @stubgen:include | Yes|Yes|File|
+|[@stubgen:skip](#stubgen_skip)|Stop processing current file, now deprecated FILE| Yes|Yes|File|
+|[@stop](#stop)|Same as @stubgen:skip, not deprecated, but also never advertised |Yes| Yes|File|
+|[@stubgen:omit](#stubgen_omit)|Omit processing of the next class or method | Yes| No (but has side-effects)| Class, Method|
+|[@omit](#omit)|Same as @stubgen:omit | Yes| No (but has side-effects)| Class, Method|
+|[@stubgen:stub](#stubgen_stub)|Emit empty function stub instead of full proxy implementation | Yes| No| Method|
+|[@stub](#stub)|Same as @stubgen:stub | Yes| No|Method|
+|[@in](#in)|Marks an input parameter | Yes| Yes| Method Parameter|
+|[@out](#out)|Marks an output parameter | Yes|Yes|Method Parameter|
+|[@length](#length)|Specifies the expresion to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)| No | Yes | Method Parameter|
+|[@maxlength](#maxlength)|Specifies a maximum buffer length value (a constant, a parameter name or a math expression),") if not specified @length is used as maximum length, use round parenthesis for expressions",) e.g.: @length:bufferSize @length:(width * height * 4) | No | Yes |Method parameter|
+|[@interface](#interface)| Specifies a parameter holding interface ID value for void* interface passing | Yes | No |Method paramter|
+|[@inout](#inout)|Marks as input and output parameter (a.k.a @in @out) | Yes|Yes| Method Parameter|
+|[@json](#json)|Marks a class as JsonGenerator input | No| Yes| Class|
+|[@json:omit](#json_omit)|Marks a method/property/notification to omit | No| Yes|Method|
+|[@event](#event)|Marks a class as JSON notification | No| Yes|Class|
+|[@extended](#extended)|Generates the extended format instead of the short one| No| Yes|Class|
+|[@iterator](#iterator)|Marks a class as an iterator | Yes| Yes|Class|
+|[@deprecated](#deprecated)|Marks a method/property/notification deprecated (i.e. obsolete and candidate for removal) | No| Yes|Method|
+|[@obsolete](#obsolete)|Marks a method/property/notification as obsolete | No| Yes|Method|
+|[@index](#index)|Marks an index parameter to a property or notification | No| Yes|Method paramter|
+|[@brief ](#brief)|Specifies brief description method/property/notification or parameter or POD structure member | No| Yes|Method, Method parameter, POD member |
+|[@details ](#details)|Specifies detaild description of a method/property/notification | No| Yes|Method|
+|[@param ](#param)|Provide description for method/notification parameter or property/notification index | No | Yes|Method|
+|[@retval ](#retval)|Specifies possible return error codes for method/property (can be many) | No|Yes|Method|
+|[@text](#text)|Renames identifier METHOD, PARAM, POD MEMBER, enum | No| Yes|enum, Method paramters, Method names, PoD member|
+|[@property](#property)|Marks a method as a property |No|Yes| Method|
+
 <a name="stubgen_include"></a>
 # @stubgen:include
 ### Description
-This tag is used when we need to include definitions from another file. This tag imports the contents of the file while creating json generation and as well as in stub generation. 
+This tag is used to include definitions from another file. This tag imports the contents of the file while creating json generation and as well as in stub generation. 
 Like #include preprocessor the contents of the files are included before processing any other tags
 ### Example
 IDeviceInfo.h [includes](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IDeviceInfo.h#L24) com/IIteratorType.h to get the definition for RPC::IIteratorType
@@ -107,9 +107,7 @@ Same as [@stubgen:omit](#stubgen_omit)
 # @stubgen:stub
 ### Description
 
-When we dont want to create a proxy implementation for a function we mark it with this tag.
-
-??? May be those functions which doesnt make sense to call from the other side of the process boundary ???
+To avoid proxy implementation for a function, mark it with this tag.
 
 ### Example
 
@@ -131,7 +129,7 @@ Same as [@stubgen:stub](#stubgen_stub)
 ### Description
 
 This tag will mark a parameter in a function as an input parameter. By default, all parameters in a function are treated as input paramter. 
-All input paramters are expected to be const. If not, warning will be thrown during JSONRPC code generation.
+All input paramters are expected to be const. If not, warning will be thrown during JSON-RPC code generation.
 
 ### Example
 
@@ -144,7 +142,7 @@ In [IDolby.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interf
 ### Description
 This tag will mark a parameter in a function as an output parameter. By default, all parameters in a function are treated as input parameter.
 Output parameters should either be a reference or a pointer and should not be constant.
-If these conditions are not met, Error will be thrown during JSONRPC code generation.
+If these conditions are not met, Error will be thrown during JSON-RPC code generation.
 
 ### Example
 In [IDolby.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IDolby.h#L67) supported parameter is marked as output paramter.
@@ -221,18 +219,18 @@ When the function returns, the parameter will have the modified length value. Th
 # @json
 ### Description
 
-This tag helps to generate JSONRPC files for the given Class/Struct/Enum.
-It will creates files JsonData_<InterfaceName>Output.h, JsonEnum_<InterfaceName>Output.cpp, J<InterfaceName>Output.cpp
+This tag helps to generate JSON-RPC files for the given Class/Struct/enum.
+It will creates files JsonData_<InterfaceName>Output.h, Jsonenum_<InterfaceName>Output.cpp, J<InterfaceName>Output.cpp
 
 JsonData_<structname>Output.h will have definitions for structs that are used in JsonMethods.
-JsonEnum_<Structname>Output.cpp will have definition for Enums
-J<InterfaceFilename>Output.h will have definition for the methods for JSONRPC.
+Jsonenum_<Structname>Output.cpp will have definition for enums
+J<InterfaceFilename>Output.h will have definition for the methods for JSON-RPC.
 
 ### Example
 
-[IDisplayInfo.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IDisplayInfo.h#L121) uses this tag to generate JSONRPC files. 
+[IDisplayInfo.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IDisplayInfo.h#L121) uses this tag to generate JSON-RPC files. 
 It will create the following files
-JsonEnum_HDRProperties.cpp
+Jsonenum_HDRProperties.cpp
 JHDRProperties.h
 
 
@@ -242,11 +240,11 @@ JHDRProperties.h
 # @json:omit
 ### Description
 
-This tag is used to leave out any Class/Struct/Enum from generating JSONRPC file.
+This tag is used to leave out any Class/Struct/enum from generating JSON-RPC file.
 
 ### Example
 
-[IBrowser.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IBrowser.h#L117) uses this tag to remove HeaderList function from JsonRPC file generation.
+[IBrowser.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IBrowser.h#L117) uses this tag to remove HeaderList function from JSON-RPC file generation.
 
 [top](#table)
 
@@ -254,7 +252,7 @@ This tag is used to leave out any Class/Struct/Enum from generating JSONRPC file
 # @event
 ### Description
 
-This tag is used in JSONRPC file generation. This tag is used to mark a struct/class that will be called back as an notification by the framework.
+This tag is used in JSON-RPC file generation. This tag is used to mark a struct/class that will be called back as an notification by the framework.
 
 ### Example
 
@@ -267,10 +265,8 @@ This tag is used in JSONRPC file generation. This tag is used to mark a struct/c
 ### Description
 
 This tag is deprecated.
-By default, while creating the JSONRPC, if a method has a single POD paramenter, It's equivalent Json class is used.
+By default, while creating the JSON-RPC, if a method has a single POD paramenter, It's equivalent Json class is used.
 If a class is marked with this tag, such conversion will not take place. It will still create a separate Data class to access that parameter.
-
-???When to use???
 
 ### Example
 
@@ -326,32 +322,22 @@ When a method is marked with this tag, in the generated .md, it will be marked w
 <a name="index"></a>
 # @index
 ### Description
-In some cases, clients are interested only in certain events. In such cases, we can use this tag.
+In some cases, clients are interested only in certain events. In such cases, use this tag.
 Index should be the first parameter in the function. 
 
-??? Not able to find an example ??? 
 
 ### Example
+TBD
 
 [top](#table)
 
-<a name="listener"></a>
-# @listener
-### Description
-
-??? Not able to find an example ???
-
-### Example
-
-[top](#table)
 
 <a name="brief"></a>
 # @brief
 ### Description
 
-This is a short description about the function. This description will be appeneded to the method description in the JSONRPC generated file.
+This is a short description about the function. This description will be appeneded to the method description in the JSON-RPC generated file.
 
-??? From the code, it is understood that it can extract the example following the text e.g. but not able to find a working example???
 
 ### Example
 
@@ -427,15 +413,15 @@ In [IVolumeControl.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa16
 # @text
 ### Description
 
-This tag is applicable to Enums, function names and function parameters. 
-When used with ENUMS, it will associate the Enum values to the given text in the JSON code.
-When used in function names like below, it will replace the actual function name with the text that is given.
-When used in function parameter like below, it will replace the parameter name with the text that is given in the tag.
+This tag is applicable to enums, function names and function parameters. 
+When used with enum, it will associate the enum values to the given text in the JSON code.
+When used in function names, it will replace the actual function name with the text that is given.
+When used in function parameter, it will replace the parameter name with the text that is given in the tag.
 
 ### Example
 
-[IBrowser.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IBrowser.h#L61) uses this tag for ENUMS. The generated code for this header will map the text for these 
-enums as allowed and not as Allowed, blocked and not as Blocked. Without these tags the string equivalent of the enums will be first letter caps followed by all small. Now with this tag, we have changed it to all small.
+[IBrowser.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IBrowser.h#L61) uses this tag for enum. The generated code for this header will map the text for these 
+enums as allowed and not as Allowed, blocked and not as Blocked. Without these tags the string equivalent of the enums will be first letter caps followed by all small. This tag has changed it to all small.
 
 [top](#table)
 
@@ -444,7 +430,7 @@ enums as allowed and not as Allowed, blocked and not as Blocked. Without these t
 # @property
 ### Description
 
-We mark a method to be a property when we intented to simple get and set. It cannot have more than one parameter. 
+Mark a method to be a property when the intention is to perform simple get and set. It cannot have more than one parameter. 
 A method which does more than get and set should not be marked as property even if it is having a single parameter.
 A property is said to be write only if its parameter is const and there no ther method definition with non const is given for reading.
 A property is said to be read only if its parameter is non-const and there no ther method definition with const is given for setting.
