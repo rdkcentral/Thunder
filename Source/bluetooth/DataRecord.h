@@ -48,9 +48,9 @@ namespace Bluetooth {
             // It is ensured that the buffer will never be written.
             : _buffer(const_cast<uint8_t*>(buffer.data()))
             , _bufferSize(buffer.size())
-            , _filledSize(_bufferSize)
+            , _filledSize(buffer.size())
             , _readerOffset(0)
-            , _writerOffset(_bufferSize)
+            , _writerOffset(buffer.size())
         {
             ASSERT(buffer.size() < 0x10000);
             ASSERT(_buffer != nullptr);

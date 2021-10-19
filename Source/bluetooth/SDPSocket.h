@@ -487,9 +487,7 @@ namespace SDP {
             }
             ~PDU()
             {
-                if (_buffer != nullptr) {
-                    ::free(_buffer);
-                }
+                ::free(_buffer);
             }
 
         public:
@@ -660,9 +658,7 @@ namespace SDP {
             }
             ~Inward()
             {
-                if (_scratchPad != nullptr) {
-                    ::free(_scratchPad);
-                }
+                ::free(_scratchPad);
             }
 
         public:

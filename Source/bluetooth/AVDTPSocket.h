@@ -334,7 +334,10 @@ namespace Bluetooth {
                     , _payload(_payloadScratchPad, bufferSize)
                 {
                 }
-                ~Response() = default;
+                ~Response()
+                {
+                    ::free(_payloadScratchPad);
+                }
 
             public:
                 void Clear()
