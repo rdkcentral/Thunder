@@ -20,13 +20,12 @@
 #pragma once
 
 #include "Module.h"
-#include <functional>
 
 namespace WPEFramework {
 
 namespace WarningReporting { 
 
-    struct IWarningEvent { 
+    struct EXTERNAL IWarningEvent { 
 
         virtual ~IWarningEvent() = default;
         virtual const char* Category() const = 0;
@@ -36,9 +35,9 @@ namespace WarningReporting {
         virtual bool IsWarning() const = 0; 
     };
 
-    struct IWarningReportingUnit {
+    struct EXTERNAL IWarningReportingUnit {
 
-        struct IWarningReportingControl {
+        struct EXTERNAL IWarningReportingControl {
             virtual ~IWarningReportingControl() = default;
             virtual void Destroy() = 0;
             virtual const char* Category() const = 0;
