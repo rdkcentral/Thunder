@@ -29,18 +29,24 @@ namespace Tests {
     protected:
         void SetUp() override
         {
-            ASSERT_EQ(Core::ERROR_NONE, _dispatcher.Open(_doorBellName, _cyclicBufferName));
+            _dispatcher.reset(new Core::MessageDispatcher());
+            ASSERT_EQ(Core::ERROR_NONE, _dispatcher->Open(_doorBellName + std::to_string(_testCount), _cyclicBufferName + std::to_string(_testCount)));
         }
 
         void TearDown() override
         {
-            _dispatcher.Close();
+            _dispatcher->Close();
+            _dispatcher.reset(nullptr);
+            ++_testCount;
         }
 
+        static int _testCount;
         string _cyclicBufferName = "/tmp/test_cyclic_buffer";
         string _doorBellName = "/tmp/test_doorbell";
-        Core::MessageDispatcher _dispatcher;
+        std::unique_ptr<Core::MessageDispatcher> _dispatcher;
     };
+
+    int Core_MessageDispatcher::_testCount = 0;
 
     TEST_F(Core_MessageDispatcher, NonBlockingWriteAndReadMessageDataAreEqualInSameProcess)
     {
@@ -51,8 +57,8 @@ namespace Tests {
         uint16_t readLength;
         uint8_t readData[2] = { 0, 0 };
 
-        auto& writer = _dispatcher.GetWriter();
-        auto& reader = _dispatcher.GetReader();
+        auto& writer = _dispatcher->GetWriter();
+        auto& reader = _dispatcher->GetReader();
 
         //act
         writer.Data(0, sizeof(testData), testData);
@@ -69,7 +75,8 @@ namespace Tests {
     {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
             Core::MessageDispatcher dispatcher;
-            ASSERT_EQ(dispatcher.Open(this->_doorBellName, this->_cyclicBufferName), Core::ERROR_NONE);
+            ASSERT_EQ(dispatcher.Open(this->_doorBellName + std::to_string(this->_testCount), this->_cyclicBufferName + std::to_string(this->_testCount)),
+                Core::ERROR_NONE);
 
             auto& reader = dispatcher.GetReader();
             uint8_t readType;
@@ -99,7 +106,7 @@ namespace Tests {
             testAdmin.Sync("setup reader");
 
             uint8_t testData[2] = { 13, 37 };
-            auto& writer = _dispatcher.GetWriter();
+            auto& writer = _dispatcher->GetWriter();
             writer.Data(0, sizeof(testData), testData);
 
             testAdmin.Sync("writer wrote");
@@ -110,6 +117,7 @@ namespace Tests {
         Core::Singleton::Dispose();
     }
 
+    
     TEST_F(Core_MessageDispatcher, NonBlockingWriteAndReadMessageDataAreEqualInSameProcessTwice)
     {
         uint8_t testData[2] = { 13, 37 };
@@ -118,8 +126,8 @@ namespace Tests {
         uint16_t readLength;
         uint8_t readData[2] = { 0, 0 };
 
-        auto& writer = _dispatcher.GetWriter();
-        auto& reader = _dispatcher.GetReader();
+        auto& writer = _dispatcher->GetWriter();
+        auto& reader = _dispatcher->GetReader();
 
         //first read, write, assert
         ASSERT_EQ(true, reader.IsEmpty());
@@ -139,6 +147,107 @@ namespace Tests {
         ASSERT_EQ(readType, 1);
         ASSERT_EQ(readLength, 1);
         ASSERT_EQ(readData[0], 40);
+    }
+    
+
+    TEST_F(Core_MessageDispatcher, RingShouldBellOnDataPush)
+    {
+        auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
+            Core::MessageDispatcher dispatcher;
+            ASSERT_EQ(dispatcher.Open(this->_doorBellName + std::to_string(this->_testCount), this->_cyclicBufferName + std::to_string(this->_testCount)),
+                Core::ERROR_NONE);
+            auto& reader = dispatcher.GetReader();
+            uint8_t readType;
+            uint16_t readLength;
+            uint8_t readData[2] = { 0, 0 };
+            testAdmin.Sync("init");
+
+            if (reader.Wait(Core::infinite) == Core::ERROR_NONE) {
+                reader.Data(readType, readLength, readData);
+
+                ASSERT_EQ(readType, 0);
+                ASSERT_EQ(readLength, 2);
+                ASSERT_EQ(readData[0], 13);
+                ASSERT_EQ(readData[1], 37);
+            }
+            testAdmin.Sync("done");
+        };
+
+        static std::function<void(IPTestAdministrator&)> lambdaVar = lambdaFunc;
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin) { lambdaVar(testAdmin); };
+
+        // This side (tested) acts as writer
+        IPTestAdministrator testAdmin(otherSide);
+        {
+
+            uint8_t testData[2] = { 13, 37 };
+            auto& writer = _dispatcher->GetWriter();
+
+            testAdmin.Sync("init");
+            ::SleepMs(10); //not a nice way, but now Wait will be called before Data (and thus Ring)
+            writer.Data(0, sizeof(testData), testData);
+        }
+        testAdmin.Sync("done");
+
+        Core::Singleton::Dispose();
+    }
+
+    //Assert that ringbell got reset inside
+    TEST_F(Core_MessageDispatcher, RingShouldBellOnDataPushTwice)
+    {
+        auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
+            Core::MessageDispatcher dispatcher;
+            ASSERT_EQ(dispatcher.Open(this->_doorBellName + std::to_string(this->_testCount), this->_cyclicBufferName + std::to_string(this->_testCount)),
+                Core::ERROR_NONE);
+            auto& reader = dispatcher.GetReader();
+            uint8_t readType;
+            uint16_t readLength;
+            uint8_t readData[2] = { 0, 0 };
+            bool called[2] = { false, false };
+
+            testAdmin.Sync("init");
+
+            if (reader.Wait(Core::infinite) == Core::ERROR_NONE) {
+                reader.Data(readType, readLength, readData);
+                //first ring
+                called[0] = true;
+                testAdmin.Sync("first ring");
+            }
+
+            if (reader.Wait(Core::infinite) == Core::ERROR_NONE) {
+                reader.Data(readType, readLength, readData);
+                //first ring
+                called[1] = true;
+                testAdmin.Sync("second ring");
+            }
+
+            ASSERT_EQ(called[0], true);
+            ASSERT_EQ(called[1], true);
+
+            testAdmin.Sync("done");
+        };
+
+        static std::function<void(IPTestAdministrator&)> lambdaVar = lambdaFunc;
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin) { lambdaVar(testAdmin); };
+
+        // This side (tested) acts as writer
+        IPTestAdministrator testAdmin(otherSide);
+        {
+
+            uint8_t testData[2] = { 13, 37 };
+            auto& writer = _dispatcher->GetWriter();
+            testAdmin.Sync("init");
+            ::SleepMs(10); //not a nice way, but now Wait will be called before Data (and thus Ring)
+
+            writer.Data(0, sizeof(testData), testData);
+            testAdmin.Sync("first ring");
+
+            writer.Data(0, sizeof(testData), testData);
+            testAdmin.Sync("second ring");
+        }
+        testAdmin.Sync("done");
+
+        Core::Singleton::Dispose();
     }
 
 } // Tests
