@@ -1263,7 +1263,7 @@ namespace WPEFramework {
             inline typename Core::TypeTraits::enable_if<hasInitialize<TYPE, uint32_t>::value, uint32_t>::type
                 __Initialize()
             {
-                return (CONTEXT::Initialize());
+                return (TYPE::Initialize());
             }
             template <typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<!hasInitialize<TYPE, uint32_t>::value, uint32_t>::type
@@ -1281,7 +1281,7 @@ namespace WPEFramework {
             inline typename Core::TypeTraits::enable_if<hasDeinitialize<TYPE, void>::value, void>::type
                 __Deinitialize()
             {
-                CONTEXT::Deinitialize();
+                TYPE::Deinitialize();
             }
             template <typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<!hasDeinitialize<TYPE, void>::value, void>::type
