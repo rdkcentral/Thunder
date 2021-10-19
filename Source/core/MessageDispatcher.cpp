@@ -63,11 +63,7 @@ namespace Core {
         }
 
         if (available) {
-            std::cerr << "ADDR: " << _parent._outputChannel.get() << std::endl;
-            std::cerr << "BEFORE: " << _parent._outputChannel->Used() << std::endl;
             length = _parent._outputChannel->Read(_buffer, sizeof(_buffer) - 8);
-            std::cerr << "AFTER: " << _parent._outputChannel->Used() << std::endl;
-            std::cerr << "LENGTH: " << length << std::endl;
 
             if (length < 3) {
                 //did not receive type and length, this is not valid message
@@ -114,8 +110,6 @@ namespace Core {
 
     uint32_t MessageDispatcher::Writer::Data(const uint8_t type, const uint16_t length, const uint8_t* value)
     {
-        std::cerr << "ADDR: " << _parent._outputChannel.get() << std::endl;
-
         ASSERT(length > 0);
         const uint16_t fullLength = sizeof(type) + sizeof(length) + length; // headerLength + informationLength
 
