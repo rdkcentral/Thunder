@@ -272,6 +272,7 @@ namespace RPC {
 
                 if (_controller != nullptr) {
 
+                    _controller->AddRef();
                     _monitor.Register(_controller, callsign);
                 }
             }
