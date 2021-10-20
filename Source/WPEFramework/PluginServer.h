@@ -2376,6 +2376,7 @@ namespace PluginHost {
                 {
                     ASSERT(Job::HasService() == true);
                     ASSERT(_element.IsValid() == true);
+                    Core::ProxyType<Core::JSON::IElement> result;
 
                     if (_jsonrpc == true) {
 #if THUNDER_PERFORMANCE
@@ -2386,19 +2387,21 @@ namespace PluginHost {
                         Core::ProxyType<Core::JSONRPC::Message> message(_element);
                         ASSERT(message.IsValid() == true);
 
-                        _element = Core::ProxyType<Core::JSON::IElement>(Job::Process(_token, message));
+                       result = Core::ProxyType<Core::JSON::IElement>(Job::Process(_token, message));
 
 #if THUNDER_PERFORMANCE
 			tracking->Execution();
 #endif
 
                     } else {
-                        _element = Job::Process(_element);
+                        result = Job::Process(_element);
                     }
 
-                    if (_element.IsValid()) {
+                    if(result.IsValid()){
                         // Fire and forget, We are done !!!
-                        Job::Submit(_element);
+                        Job::Submit(result);
+                    }
+                    if (_element.IsValid()) {
                         _element.Release();
                     }
 
