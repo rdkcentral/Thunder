@@ -256,32 +256,32 @@ namespace Core {
         };
 
     private:
-        HAS_MEMBER(Arm, hasArm);
+        IS_MEMBER_AVAILABLE(Arm, hasArm);
 
         template <typename TYPE=WATCHDOG>
-        inline typename Core::TypeTraits::enable_if<hasArm<TYPE, void (TYPE::*)()>::value, void>::type
+        inline typename Core::TypeTraits::enable_if<hasArm<TYPE, void>::value, void>::type
         Arm()
         {
             _watchDog.Arm();
         }
 
         template <typename TYPE=WATCHDOG>
-        inline typename Core::TypeTraits::enable_if<!hasArm<TYPE, void (TYPE::*)()>::value, void>::type
+        inline typename Core::TypeTraits::enable_if<!hasArm<TYPE, void>::value, void>::type
         Arm()
         {
         }
 
-        HAS_MEMBER(Reset, hasReset);
+        IS_MEMBER_AVAILABLE(Reset, hasReset);
 
         template <typename TYPE=WATCHDOG>
-        inline typename Core::TypeTraits::enable_if<hasReset<TYPE, void (TYPE::*)()>::value, void>::type
+        inline typename Core::TypeTraits::enable_if<hasReset<TYPE, void>::value, void>::type
         Reset()
         {
             _watchDog.Reset();
         }
 
         template <typename TYPE=WATCHDOG>
-        inline typename Core::TypeTraits::enable_if<!hasReset<TYPE, void (TYPE::*)()>::value, void>::type
+        inline typename Core::TypeTraits::enable_if<!hasReset<TYPE, void>::value, void>::type
         Reset()
         {
         }

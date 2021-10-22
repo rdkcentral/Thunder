@@ -320,17 +320,17 @@ namespace Core {
             // -----------------------------------------------------
             // Check for Clear method on Object
             // -----------------------------------------------------
-            HAS_MEMBER(Clear, hasClear);
+            IS_MEMBER_AVAILABLE(Clear, hasClear);
 
             template <typename SUBJECT=PACKAGE>
-            inline typename Core::TypeTraits::enable_if<hasClear<SUBJECT, void (SUBJECT::*)()>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<hasClear<SUBJECT, void>::value, void>::type
             __Clear()
             {
                 _package.Clear();
             }
 
             template <typename SUBJECT=PACKAGE>
-            inline typename Core::TypeTraits::enable_if<!hasClear<SUBJECT, void (SUBJECT::*)()>::value, void>::type
+            inline typename Core::TypeTraits::enable_if<!hasClear<SUBJECT, void>::value, void>::type
             __Clear()
             {
             }
@@ -338,33 +338,33 @@ namespace Core {
             // -----------------------------------------------------
             // Search for custom handling, Compile time !!!
             // -----------------------------------------------------
-            HAS_MEMBER(Length, hasLength);
+            IS_MEMBER_AVAILABLE(Length, hasLength);
 
             template <typename SUBJECT=PACKAGE>
-            inline typename Core::TypeTraits::enable_if<hasLength<SUBJECT, uint32_t (SUBJECT::*)() const>::value, uint32_t>::type
+            inline typename Core::TypeTraits::enable_if<hasLength<const SUBJECT, uint32_t>::value, uint32_t>::type
             _Length() const
             {
                 return (_package.Length());
             }
 
             template <typename SUBJECT=PACKAGE>
-            inline typename Core::TypeTraits::enable_if<!hasLength<SUBJECT, uint32_t (SUBJECT::*)() const>::value, uint32_t>::type
+            inline typename Core::TypeTraits::enable_if<!hasLength<const SUBJECT, uint32_t>::value, uint32_t>::type
             _Length() const
             {
                 return (sizeof(PACKAGE));
             }
 
-            HAS_MEMBER(Serialize, hasSerialize);
+            IS_MEMBER_AVAILABLE(Serialize, hasSerialize);
 
             template <typename SUBJECT= PACKAGE>
-            inline typename Core::TypeTraits::enable_if<hasSerialize<PACKAGE, uint16_t (SUBJECT::*)(uint8_t[], const uint16_t, const uint32_t) const> ::value, uint16_t>::type
+            inline typename Core::TypeTraits::enable_if<hasSerialize<const SUBJECT, uint16_t, uint8_t[], const uint16_t, const uint32_t>::value, uint16_t>::type
             _Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
             {
                 return (_package.Serialize(stream, maxLength, offset));
             }
 
             template <typename SUBJECT= PACKAGE>
-            inline typename Core::TypeTraits::enable_if<!hasSerialize<SUBJECT, uint16_t (SUBJECT::*)(uint8_t[], const uint16_t, const uint32_t) const> ::value, uint16_t>::type
+            inline typename Core::TypeTraits::enable_if<!hasSerialize<const SUBJECT, uint16_t, uint8_t[], const uint16_t, const uint32_t>::value, uint16_t>::type
             _Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
             {
                 uint16_t result = 0;
@@ -377,17 +377,17 @@ namespace Core {
                 return (result);
             }
 
-            HAS_MEMBER(Deserialize, hasDeserialize);
+            IS_MEMBER_AVAILABLE(Deserialize, hasDeserialize);
 
             template <typename SUBJECT=PACKAGE>
-            inline typename Core::TypeTraits::enable_if<hasDeserialize<SUBJECT, uint16_t (SUBJECT::*)(const uint8_t[], const uint16_t, const uint32_t)>::value, uint16_t>::type
+            inline typename Core::TypeTraits::enable_if<hasDeserialize<SUBJECT, uint16_t, const uint8_t[], const uint16_t, const uint32_t>::value, uint16_t>::type
             _Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset)
             {
                 return (_package.Deserialize(stream, maxLength, offset));
             }
 
             template <typename SUBJECT=PACKAGE>
-            inline typename Core::TypeTraits::enable_if<!hasDeserialize<SUBJECT, uint16_t (SUBJECT::*)(const uint8_t[], const uint16_t, const uint32_t)>::value, uint16_t>::type
+            inline typename Core::TypeTraits::enable_if<!hasDeserialize<SUBJECT, uint16_t, const uint8_t[], const uint16_t, const uint32_t>::value, uint16_t>::type
             _Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset)
             {
                 uint16_t result = 0;
@@ -926,10 +926,10 @@ namespace Core {
         }
 
     private:
-        HAS_MEMBER(StateChange, hasStateChange);
+        IS_MEMBER_AVAILABLE(StateChange, hasStateChange);
 
         template <typename T=EXTENSION>
-        inline typename Core::TypeTraits::enable_if<hasStateChange<T, void (T::*)()> ::value, void>::type
+        inline typename Core::TypeTraits::enable_if<hasStateChange<T, void> ::value, void>::type
         __StateChange()
         {
             _extension.StateChange();
@@ -937,7 +937,7 @@ namespace Core {
 
 
         template <typename T=EXTENSION>
-        inline typename Core::TypeTraits::enable_if<!hasStateChange<T, void (T::*)()> ::value, void>::type
+        inline typename Core::TypeTraits::enable_if<!hasStateChange<T, void> ::value, void>::type
         __StateChange()
         {
         }

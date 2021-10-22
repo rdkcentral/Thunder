@@ -4,10 +4,11 @@
   "info": {
     "title": "Controller API",
     "class": "Controller",
-    "description": "Controller JSON-RPC interface"
+    "description": "Controller JSON-RPC interface",
+    "sourcelocation": "https://github.com/rdkcentral/Thunder/blob/master/Source/WPEFramework/json/{interfacefile}"
   },
   "common": {
-    "$ref": "../../interfaces/json/common.json"
+    "$ref": "common.json"
   },
   "definitions": {
     "state": {
@@ -559,74 +560,74 @@
       ]
     },
     "version": {
-			"description": "version of the controller",
+      "summary": "version of the controller",
       "params": {
         "example": "1.0",
         "type": "string"
       },
-			"errors": [
-				{
-					"description": "Failed to get/update the version",
-					"$ref": "#/common/errors/general"
-				}
-			]
-		},
-		"prefix": {
-			"type": "string",
-			"description": "prefix",
+      "errors": [
+        {
+          "description": "Failed to get/update the version",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    },
+    "prefix": {
+      "type": "string",
+      "summary": "prefix",
       "params": {
         "example": "prefix",
         "type": "string"
       },
-			"errors": [
-				{
-					"description": "Failed to update the prefix",
-					"$ref": "#/common/errors/general"
-				}
-			]
-		},
-		"idletime": {
-			"type": "number",
-			"description": "idle time",
+      "errors": [
+        {
+          "description": "Failed to update the prefix",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    },
+    "idletime": {
+      "type": "number",
+      "summary": "idle time",
       "params": {
         "example": "1",
         "type": "number"
       },
-			"errors": [
-				{
-					"description": "Failed to update the idletime",
-					"$ref": "#/common/errors/general"
-				}
-			]
-		},
-		"latitude": {
-			"type": "number",
-			"description": "latitude ",
+      "errors": [
+        {
+          "description": "Failed to update the idletime",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    },
+    "latitude": {
+      "type": "number",
+      "summary": "latitude",
       "params": {
         "example": "100",
         "type": "number"
       },
-			"errors": [
-				{
-					"description": "Failed to update the latitude",
-					"$ref": "#/common/errors/general"
-				}
-			]
-		},
-		"longitude": {
-			"type": "number",
-			"description": "longitude ",
+      "errors": [
+        {
+          "description": "Failed to update the latitude",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    },
+    "longitude": {
+      "type": "number",
+      "summary": "longitude",
       "params": {
         "example": "200",
         "type": "number"
       },
-			"errors": [
-				{
-					"description": "Failed to update the longitude",
-					"$ref": "#/common/errors/general"
-				}
-			]
-		}
+      "errors": [
+        {
+          "description": "Failed to update the longitude",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    }
   },
   "events": {
     "all": {
