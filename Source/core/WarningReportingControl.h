@@ -118,7 +118,7 @@
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) { \
         WPEFramework::Core::Time start = WPEFramework::Core::Time::Now();                                                                                      \
         CODE                                                                                                                                                   \
-            uint32_t duration((Core::Time::Now().Ticks() - start.Ticks()) / Core::Time::TicksPerMillisecond);                                                  \
+            uint32_t duration = static_cast<uint32_t>((Core::Time::Now().Ticks() - start.Ticks()) / Core::Time::TicksPerMillisecond);                          \
         WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;            \
         if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME,                                                                                       \
                 WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),                                         \

@@ -82,7 +82,7 @@ namespace Core {
 
                 Core::IDispatch* request = &(*_job);
 
-                REPORT_OUTOFBOUNDS_WARNING(WarningReporting::JobTooLongWaitingInQueue, (Core::Time::Now().Ticks() - _time) / Core::Time::TicksPerMillisecond);
+                REPORT_OUTOFBOUNDS_WARNING(WarningReporting::JobTooLongWaitingInQueue, static_cast<uint32_t>((Core::Time::Now().Ticks() - _time) / Core::Time::TicksPerMillisecond));
                 REPORT_DURATION_WARNING({ dispatcher->Dispatch(request); }, WarningReporting::JobTooLongToFinish);
 
                 _job.Release();
