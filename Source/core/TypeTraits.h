@@ -197,7 +197,7 @@ namespace Core {
         typedef char yes[1];                                                            \
         typedef char no[2];                                                             \
         template <typename U,                                                           \
-            typename RR = decltype(std::declval<U>().func<P>(std::declval<Args>()...)), \
+            typename RR = decltype(std::declval<U>().template func<P>(std::declval<Args>()...)), \
             typename Z = typename std::enable_if<std::is_same<R, RR>::value>::type>     \
         static yes& chk(int);                                                           \
         template <typename U>                                                           \
