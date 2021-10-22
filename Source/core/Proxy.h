@@ -381,12 +381,12 @@ namespace WPEFramework {
                 }
             }
             template <typename DERIVEDTYPE>
-            ProxyType(const ProxyType<DERIVEDTYPE>& copy)
+            explicit ProxyType(const ProxyType<DERIVEDTYPE>& copy)
             {
                 CopyConstruct<DERIVEDTYPE>(copy, TemplateIntToType<Core::TypeTraits::same_or_inherits<CONTEXT, DERIVEDTYPE>::value>());
             }
             template <typename DERIVEDTYPE>
-            ProxyType(ProxyType<DERIVEDTYPE>&& move)
+            explicit ProxyType(ProxyType<DERIVEDTYPE>&& move)
             {
                 MoveConstruct<DERIVEDTYPE>(std::move(move), TemplateIntToType<Core::TypeTraits::same_or_inherits<CONTEXT, DERIVEDTYPE>::value>());
             }
@@ -1601,7 +1601,7 @@ namespace WPEFramework {
                 typename ContainerMap::iterator index(_map.begin());
 
                 // Find the element in the map..
-                while ((index != _map.end()) && (index->second.first != source)) {
+                while ((index != _map.end()) && (index->second.first.operator->() != source.operator->())) {
                     index++;
                 }
 

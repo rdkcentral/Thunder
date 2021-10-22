@@ -765,6 +765,13 @@ def LoadInterface(file, includePaths = []):
         if not face.obj.parent.full_name.endswith(INTERFACE_NAMESPACE):
             info["namespace"] = face.obj.parent.name
         info["class"] = face.obj.name[1:] if face.obj.name[0] == "I" else face.obj.name
+        qualified_face = face.obj.full_name.split("::")[1:]
+        if qualified_face[0] == FRAMEWORK_NAMESPACE:
+            qualified_face = qualified_face[1:]
+        info["interface"] = "::".join(qualified_face)
+        info["sourcefile"] = os.path.basename(file)
+        if face.obj.sourcelocation:
+            info["sourcelocation"] = face.obj.sourcelocation
         info["title"] = info["class"] + " API"
         info["description"] = info["class"] + " JSON-RPC interface"
         schema["info"] = info
@@ -2402,7 +2409,8 @@ def EmitObjects(root, emit, if_file, emitCommon=False):
 #
 
 def CreateDocument(schema, path):
-    output_path = os.path.dirname(path) + "/" + os.path.basename(path).replace(".json", "") + ".md"
+    input_basename = os.path.basename(path)
+    output_path = os.path.dirname(path) + "/" + input_basename.replace(".json", "") + ".md"
     with open(output_path, "w") as output_file:
         emit = Emitter(output_file, INDENT_SIZE)
 
@@ -2415,14 +2423,17 @@ def CreateDocument(schema, path):
         def link(string):
             return "[%s](#%s)" % (string.split(".", 1)[1].replace("_", " "), string)
 
+        def weblink(string, link):
+            return "[%s](%s)" % (string,link)
+
         def MdBr():
             emit.Line()
 
-        def MdHeader(string, level=1, id="head", include=None):
+        def MdHeader(string, level=1, id="head", section=None):
             if level < 3:
                 emit.Line("<a name=\"%s\"></a>" % (id + "." + string.replace(" ", "_")))
             if id != "head":
-                string += " <sup>%s</sup>" % id
+                string += " [<sup>%s</sup>](#head.%s)" % (id, section)
             emit.Line("%s %s" % ("#" * level, "*%s*" % string if id != "head" else string))
             MdBr()
 
@@ -2532,11 +2543,11 @@ def CreateDocument(schema, path):
                              obj["properties"]))[0:obj["maxProperties"] if "maxProperties" in obj else None])
             return jsonData
 
-        def MethodDump(method, props, classname, is_notification=False, is_property=False, include=None):
+        def MethodDump(method, props, classname, section, is_notification=False, is_property=False, include=None):
             method = (method.rsplit(".", 1)[1] if "." in method else method)
             type =  "property" if is_property else "event" if is_notification else "method"
             log.Info("Emitting documentation for %s '%s'..." % (type, method))
-            MdHeader(method, 2, type, include)
+            MdHeader(method, 2, type, section)
             readonly = False
             writeonly = False
             if "summary" in props:
@@ -2738,6 +2749,23 @@ def CreateDocument(schema, path):
         else:
             raise RuntimeError("missing class in 'info'")
 
+        def SourceLocation(face):
+            sourcelocation = None
+            if "sourcelocation" in face["info"]:
+                sourcelocation = face["info"]["sourcelocation"]
+            elif "sourcelocation" in info:
+                sourcelocation = info["sourcelocation"]
+            elif "common" in face and "sourcelocation" in face["common"]:
+                sourcelocation = face["common"]["sourcelocation"]
+            elif "sourcelocation" in commons:
+                sourcelocation = commons["sourcelocation"]
+            else:
+                sourcelocation = None
+
+            if sourcelocation:
+                sourcelocation = sourcelocation.replace("{interfacefile}", face["info"]["sourcefile"] if "sourcefile" in face["info"] else ((face["info"]["class"] if "class" in face["info"] else input_basename) + ".json"))
+            return sourcelocation
+
         document_type = "plugin"
         if ("interfaceonly" in schema and schema["interfaceonly"]) or ("$schema" in schema and schema["$schema"] == "interface.schema.json"):
             document_type = "interface"
@@ -2747,7 +2775,21 @@ def CreateDocument(schema, path):
             MdHeader(info["title"])
         MdParagraph(bold("Version: " + version))
         MdParagraph(bold("Status: " + rating * ":black_circle:" + (3 - rating) * ":white_circle:"))
-        MdParagraph("%s %s for Thunder framework." % (plugin_class, document_type))
+        MdParagraph("A %s %s for Thunder framework." % (plugin_class, document_type))
+
+        if document_type == "interface":
+            face = interfaces[0]
+            sourcelocation = SourceLocation(interfaces[0])
+            iface = (face["info"]["interface"] if "interface" in face["info"] else (face["info"]["class"] + ".json"))
+            if sourcelocation:
+                if "sourcefile" in face["info"]:
+                    wl = "with " + iface + " in " + weblink(face["info"]["sourcefile"], sourcelocation)
+                else:
+                    wl = "by " + weblink(iface, sourcelocation)
+            else:
+                wl = iface
+            MdBody("(Defined %s)" % wl)
+            MdBr()
 
         # Emit TOC.
         MdHeader("Table of Contents", 3)
@@ -2756,6 +2798,8 @@ def CreateDocument(schema, path):
             MdBody("- " + link("head.Description"))
         if document_type == "plugin":
             MdBody("- " + link("head.Configuration"))
+        if document_type == "plugin" and (method_count or property_count or event_count):
+            MdBody("- " + link("head.Interfaces"))
         if method_count:
             MdBody("- " + link("head.Methods"))
         if property_count:
@@ -2771,6 +2815,7 @@ def CreateDocument(schema, path):
             if prop in d2:
                 tmp.update(d2[prop])
             return tmp
+
 
         MdHeader("Introduction")
         MdHeader("Scope", 2)
@@ -2882,6 +2927,22 @@ def CreateDocument(schema, path):
 
                 ParamTable("", totalConfig)
 
+            if document_type == "plugin" and (method_count or property_count or event_count):
+                MdHeader("Interfaces")
+                MdParagraph("This plugin implements the following interfaces:")
+                for face in interfaces:
+                    iface = (face["info"]["interface"] if "interface" in face["info"] else (face["info"]["class"] + ".json"))
+                    sourcelocation = SourceLocation(face)
+                    if sourcelocation:
+                        if "sourcefile" in face["info"]:
+                            wl = iface + " (" + weblink(face["info"]["sourcefile"], sourcelocation) + ")"
+                        else:
+                            wl = weblink(iface, sourcelocation)
+                    else:
+                        wl = iface
+                    MdBody("- " + wl)
+                MdBr()
+
         def SectionDump(section_name, section, header, description=None, description2=None, event=False, prop=False):
             skip_list = []
 
@@ -2937,7 +2998,7 @@ def CreateDocument(schema, path):
                 if section in interface:
                     for method, props in interface[section].items():
                         if props and method not in skip_list:
-                            MethodDump(method, props, plugin_class, event, prop)
+                            MethodDump(method, props, plugin_class, section_name, event, prop)
                         skip_list.append(method)
 
         if method_count:
