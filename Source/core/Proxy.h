@@ -430,35 +430,43 @@ namespace WPEFramework {
                 return (ProxyType<CONTEXT>(*CreateObject(size, std::forward<Args>(args)...)));
             }
 
+            template <typename DERIVEDTYPE>
+            ProxyType<CONTEXT>& operator=(const ProxyType<DERIVEDTYPE>& rhs)
+            {
+                // If we already have one, lets remove the one we got first
+                if (_refCount != nullptr) _refCount->Release();
+
+                CopyConstruct<DERIVEDTYPE>(rhs, TemplateIntToType<Core::TypeTraits::same_or_inherits<CONTEXT, DERIVEDTYPE>::value>());
+
+                return(*this);
+            }
+
             ProxyType<CONTEXT>& operator=(const ProxyType<CONTEXT>& rhs)
             {
-                if (_refCount != rhs._refCount) {
-                    // Release the current holding object
-                    if (_refCount != nullptr) {
-                        _refCount->Release();
-                    }
+                // If we already have one, lets remove the one we got first
+                if (_refCount != nullptr) _refCount->Release();
 
-                    // Get the new object
-                    _refCount = rhs._refCount;
-                    _realObject = rhs._realObject;
+                CopyConstruct<CONTEXT>(rhs, TemplateIntToType<Core::TypeTraits::same_or_inherits<CONTEXT, CONTEXT>::value>());
 
-                    if (_refCount != nullptr) {
-                        _refCount->AddRef();
-                    }
-                }
-
-                return (*this);
+                return(*this);
             }
 
             template <typename DERIVEDTYPE>
             ProxyType<CONTEXT>& operator=(ProxyType<DERIVEDTYPE>&& rhs)
             {
+                // If we already have one, lets remove the one we got first
+                if (_refCount != nullptr) _refCount->Release();
+
                 MoveConstruct<DERIVEDTYPE>(std::move(rhs), TemplateIntToType<Core::TypeTraits::same_or_inherits<CONTEXT, DERIVEDTYPE>::value>());
 
                 return(*this);
             }
+
             ProxyType<CONTEXT>& operator=(ProxyType<CONTEXT>&& rhs)
             {
+                // If we already have one, lets remove the one we got first
+                if (_refCount != nullptr) _refCount->Release();
+
                 MoveConstruct<CONTEXT>(std::move(rhs), TemplateIntToType<Core::TypeTraits::same_or_inherits<CONTEXT, CONTEXT>::value>());
 
                 return(*this);
@@ -1494,6 +1502,9 @@ namespace WPEFramework {
                 _queue.emplace_back(std::move(source));
 
                 _lock.Unlock();
+            }
+            uint32_t Count() const {
+                return (_createdElements);
             }
 
         private:
