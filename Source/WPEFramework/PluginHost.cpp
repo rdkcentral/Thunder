@@ -601,6 +601,18 @@ namespace PluginHost {
                         }
                         break;
                     }
+                    case 'E': {
+                        uint32_t requests, responses, filebodies, jsonrequests;
+                        _dispatcher->Statistics(requests, responses, filebodies, jsonrequests);
+                        printf("\nProxyPool Elements:\n");
+                        printf("============================================================\n");
+                        printf("HTTP requests:    %d\n", requests);
+                        printf("HTTP responses:   %d\n", responses);
+                        printf("HTTP Files:       %d\n", filebodies);
+                        printf("JSONRPC messages: %d\n", jsonrequests);
+
+                        break;
+                    }
                     case 'P': {
                         Core::JSON::ArrayType<MetaData::Service> metaData;
                         _dispatcher->Services().GetMetaData(metaData);
