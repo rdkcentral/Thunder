@@ -4550,7 +4550,7 @@ namespace Core {
             // -----------------------------------------------------
             // Check for Clear method on Object
             // -----------------------------------------------------
-            IS_MEMBER_AVAILABLE(Clear, hasClear);
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Clear, hasClear);
 
             template <typename TYPE = JSONOBJECT>
             inline typename Core::TypeTraits::enable_if<hasID<TYPE, void>::value, void>::type 

@@ -198,7 +198,7 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Clear method on Object
             // -----------------------------------------------------
-            IS_MEMBER_AVAILABLE(Clear, hasClear);
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Clear, hasClear);
 
             template <typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<hasClear<TYPE, void>::value, void>::type
@@ -215,7 +215,7 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Initialize method on Object
             // -----------------------------------------------------
-            IS_MEMBER_AVAILABLE(Initialize, hasInitialize);
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Initialize, hasInitialize);
 
             template <typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<hasInitialize<TYPE, uint32_t>::value, uint32_t>::type
@@ -233,7 +233,7 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Deinitialize method on Object
             // -----------------------------------------------------
-            IS_MEMBER_AVAILABLE(Deinitialize, hasDeinitialize);
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Deinitialize, hasDeinitialize);
 
             template <typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<hasDeinitialize<TYPE, void>::value, void>::type
@@ -250,7 +250,7 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for IsInitialized method on Object
             // -----------------------------------------------------
-            IS_MEMBER_AVAILABLE(IsInitialized, hasIsInitialized);
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(IsInitialized, hasIsInitialized);
 
             template <typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<hasIsInitialized<const TYPE, bool>::value, bool>::type
@@ -268,7 +268,7 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Aquire method on Object
             // -----------------------------------------------------
-            IS_MEMBER_AVAILABLE(Acquire, hasAcquire);
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Acquire, hasAcquire);
 
             template < typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<hasAcquire<TYPE, void, Core::ProxyType<TYPE>&>::value, void>::type
@@ -290,7 +290,7 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Relinquish method on Object
             // -----------------------------------------------------
-            IS_MEMBER_AVAILABLE(Relinquish, hasRelinquish);
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Relinquish, hasRelinquish);
 
             template <typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<hasRelinquish<TYPE, void, Core::ProxyType<TYPE>&>::value, void>::type
@@ -1248,7 +1248,7 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Clear method on Object
             // -----------------------------------------------------
-            IS_MEMBER_AVAILABLE(Clear, hasClear);
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Clear, hasClear);
 
             template <typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<hasClear<TYPE, void>::value, void>::type
@@ -1265,7 +1265,7 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Initialize method on Object
             // -----------------------------------------------------
-            IS_MEMBER_AVAILABLE(Initialize, hasInitialize);
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Initialize, hasInitialize);
 
             template <typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<hasInitialize<TYPE, uint32_t>::value, uint32_t>::type
@@ -1283,7 +1283,7 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Deinitialize method on Object
             // -----------------------------------------------------
-            IS_MEMBER_AVAILABLE(Deinitialize, hasDeinitialize);
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Deinitialize, hasDeinitialize);
 
             template <typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<hasDeinitialize<TYPE, void>::value, void>::type
@@ -1300,7 +1300,7 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for IsInitialized method on Object
             // -----------------------------------------------------
-            IS_MEMBER_AVAILABLE(IsInitialized, hasIsInitialized);
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(IsInitialized, hasIsInitialized);
 
             template <typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<hasIsInitialized<const TYPE, bool>::value, bool>::type
@@ -1319,7 +1319,7 @@ namespace WPEFramework {
             // Check for Aquire method on Object
             // -----------------------------------------------------
 
-            IS_MEMBER_AVAILABLE(Acquire, hasAcquire);
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Acquire, hasAcquire);
 
             template < typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<hasAcquire<TYPE, void, Core::ProxyType<STORED>&>::value, void>::type
@@ -1343,7 +1343,7 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Relinquish method on Object
             // -----------------------------------------------------
-            IS_MEMBER_AVAILABLE(Relinquish, hasRelinquish);
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Relinquish, hasRelinquish);
 
             template <typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<hasRelinquish<TYPE, void, Core::ProxyType<STORED>&>::value, void>::type
@@ -1366,7 +1366,7 @@ namespace WPEFramework {
             // -----------------------------------------------------
             // Check for Unlink method on Object
             // -----------------------------------------------------
-            IS_MEMBER_AVAILABLE(Unlink, hasUnlink);
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Unlink, hasUnlink);
 
             template <typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<hasUnlink<TYPE, void>::value, void>::type
