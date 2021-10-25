@@ -150,8 +150,8 @@ namespace SDP {
         }
         void Push(use_length_t, const Payload& sequence, const bool = false)
         {
+            Push(sequence.Length()); // opposite to use_descriptor, here do store the zero length
             if (sequence.Length() != 0) {
-                Push(sequence.Length());
                 Push(sequence);
             }
         }
@@ -164,9 +164,9 @@ namespace SDP {
         }
         void Push(use_length_t, const Buffer& sequence, const bool = false)
         {
+            ASSERT(sequence.size() < 0x10000);
+            Push(static_cast<uint16_t>(sequence.size()));
             if (sequence.size() != 0) {
-                ASSERT(sequence.size() < 0x10000);
-                Push(static_cast<uint16_t>(sequence.size()));
                 Push(sequence);
             }
         }
@@ -179,8 +179,8 @@ namespace SDP {
         }
         void Push(use_length_t, const uint8_t sequence[], const uint16_t length)
         {
+            Push(length);
             if (length != 0) {
-                Push(length);
                 Push(sequence, length);
             }
         }
@@ -978,8 +978,7 @@ namespace SDP {
         }
 
     private:
-        virtual void Operational() = 0;
-        virtual void Inoperational() { };
+        virtual void Operational(const bool upAndRunning) = 0;
 
         void StateChange() override
         {
@@ -989,9 +988,9 @@ namespace SDP {
                 socklen_t len = sizeof(_connectionInfo);
                 ::getsockopt(Handle(), SOL_L2CAP, L2CAP_CONNINFO, &_connectionInfo, &len);
 
-                Operational();
+                Operational(true);
             } else {
-                Inoperational();
+                Operational(false);
             }
         }
 
@@ -1118,15 +1117,8 @@ namespace SDP {
         uint16_t Deserialize(const uint8_t stream[], const uint16_t length) override
         {
             // This is a SDP request from a client.
-            _lastActivity = Core::Time().Now().Ticks();
             CMD_DUMP("SDP server received", stream, length);
             return (_request.Deserialize(stream, length));
-        }
-
-    public:
-        uint64_t LastActivity() const
-        {
-            return (_lastActivity);
         }
 
     protected:
@@ -1167,7 +1159,6 @@ namespace SDP {
     private:
         Request _request;
         Response _response;
-        uint64_t _lastActivity;
     };
 
 } // namespace SDP
