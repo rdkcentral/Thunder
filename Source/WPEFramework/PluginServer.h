@@ -149,6 +149,12 @@ namespace PluginHost {
             ~FactoriesImplementation() override = default;
 
         public:
+            void Statistics(uint32_t& requests, uint32_t& responses, uint32_t& fileBodies, uint32_t& jsonrpc) const {
+                requests = _requestFactory.Count();
+                responses = _responseFactory.Count();
+                fileBodies = _fileBodyFactory.Count();
+                jsonrpc = _jsonRPCFactory.Count();
+            }
             Core::ProxyType<Web::Request> Request() override
             {
                 return (_requestFactory.Element());
@@ -2381,7 +2387,7 @@ namespace PluginHost {
 #if THUNDER_PERFORMANCE
                         Core::ProxyType<TrackingJSONRPC> tracking (_element);
                         ASSERT (tracking.IsValid() == true);
-			tracking->Dispatch();
+			            tracking->Dispatch();
 #endif
                         Core::ProxyType<Core::JSONRPC::Message> message(_element);
                         ASSERT(message.IsValid() == true);
@@ -3066,6 +3072,9 @@ namespace PluginHost {
         virtual ~Server();
 
     public:
+        inline void Statistics(uint32_t& requests, uint32_t& responses, uint32_t& fileBodies, uint32_t& jsonrpc) const {
+            _factoriesImplementation.Statistics(requests, responses, fileBodies, jsonrpc);
+        }
         inline ChannelMap& Dispatcher()
         {
             return (_connections);

@@ -225,10 +225,6 @@ namespace JSONRPC {
             {
                 return (FactoryImpl::Instance().Element(string()));
             }
-            bool IsOperational() const
-            {
-                return (const_cast< CommunicationChannel&>(*this).Open(0));
-            }
             uint32_t Sequence() const
             {
                 return (++_sequence);
@@ -261,7 +257,11 @@ namespace JSONRPC {
             {
                 return (_channel.IsSuspended());
             }
-    
+            uint32_t Initialize()
+            {
+                return (Open(0));
+            }
+
         protected:
             void StateChange()
             {
