@@ -69,8 +69,7 @@ namespace Core {
 
         private:
             MessageDispatcher& _parent;
-            std::vector <uint8_t> _dataBuffer;
-            //uint8_t _dataBuffer[5120 - 136];
+            std::vector<uint8_t> _dataBuffer;
         };
         class Writer {
         public:
@@ -85,6 +84,8 @@ namespace Core {
             //Non-blocking call
             uint32_t Data(const uint8_t type, const uint16_t length, const uint8_t* value);
 
+            void Ring();
+
         private:
             MessageDispatcher& _parent;
         };
@@ -92,14 +93,12 @@ namespace Core {
     public:
         //public methods
         MessageDispatcher();
-        ~MessageDispatcher() = default;
-
+        ~MessageDispatcher();
         MessageDispatcher(const MessageDispatcher&) = delete;
         MessageDispatcher& operator=(const MessageDispatcher&) = delete;
 
         uint32_t Open(const string& identifier, const uint32_t instanceId);
         uint32_t Create(const string& identifier, const uint32_t instanceId, uint32_t totalSize, uint8_t percentage);
-        uint32_t Close();
         Reader& GetReader();
         Writer& GetWriter();
 

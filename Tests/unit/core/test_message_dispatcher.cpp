@@ -44,7 +44,6 @@ namespace Tests {
         }
         void TearDown() override
         {
-            _dispatcher->Close();
             _dispatcher.reset(nullptr);
             ++_instanceId;
         }
@@ -92,7 +91,6 @@ namespace Tests {
         Core::MessageDispatcher readerDispatcher;
         readerDispatcher.Open(_T("/tmp/md1"), 0);
 
-        //arrange
         uint8_t testData[2] = { 13, 37 };
 
         uint8_t readType;
@@ -102,11 +100,42 @@ namespace Tests {
         auto& writer = writerDispatcher.GetWriter();
         auto& reader = readerDispatcher.GetReader();
 
-        //act
         ASSERT_EQ(writer.Data(0, sizeof(testData), testData), Core::ERROR_NONE);
         ASSERT_EQ(reader.Data(readType, readLength, readData), Core::ERROR_NONE);
 
-        //assert
+        ASSERT_EQ(readType, 0);
+        ASSERT_EQ(readLength, sizeof(testData));
+        ASSERT_EQ(readData[0], 13);
+        ASSERT_EQ(readData[1], 37);
+    }
+
+    TEST_F(Core_MessageDispatcher, MessageDispatcherCanBeOpenedAndClosed)
+    {
+        Core::MessageDispatcher writerDispatcher;
+        writerDispatcher.Create(_T("/tmp/md1"), 0, 2048, 50);
+
+        {
+            Core::MessageDispatcher readerDispatcher;
+            readerDispatcher.Open(_T("/tmp/md1"), 0);
+            //destructor is called
+        }
+
+        //reopen
+        Core::MessageDispatcher readerDispatcher;
+        readerDispatcher.Open(_T("/tmp/md1"), 0);
+
+        uint8_t testData[2] = { 13, 37 };
+
+        uint8_t readType;
+        uint16_t readLength;
+        uint8_t readData[2] = { 0, 0 };
+
+        auto& writer = writerDispatcher.GetWriter();
+        auto& reader = readerDispatcher.GetReader();
+
+        ASSERT_EQ(writer.Data(0, sizeof(testData), testData), Core::ERROR_NONE);
+        ASSERT_EQ(reader.Data(readType, readLength, readData), Core::ERROR_NONE);
+
         ASSERT_EQ(readType, 0);
         ASSERT_EQ(readLength, sizeof(testData));
         ASSERT_EQ(readData[0], 13);
@@ -229,6 +258,51 @@ namespace Tests {
         ASSERT_EQ(readLength, sizeof(testData));
         ASSERT_EQ(readData[0], 12);
         ASSERT_EQ(readData[1], 21);
+
+        Core::Singleton::Dispose();
+    }
+
+    TEST_F(Core_MessageDispatcher, ReaderShouldWaitUntillRingBells)
+    {
+        auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
+            Core::MessageDispatcher dispatcher;
+            ASSERT_EQ(dispatcher.Open(this->_identifier, this->_instanceId), Core::ERROR_NONE);
+            auto& reader = dispatcher.GetReader();
+            uint8_t readType;
+            uint16_t readLength;
+            uint8_t readData[2] = { 0, 0 };
+            bool called = false;
+            testAdmin.Sync("init");
+
+            if (reader.Wait(Core::infinite) == Core::ERROR_NONE) {
+                ASSERT_EQ(reader.Data(readType, readLength, readData), Core::ERROR_NONE);
+
+                ASSERT_EQ(readType, 0);
+                ASSERT_EQ(readLength, 2);
+                ASSERT_EQ(readData[0], 13);
+                ASSERT_EQ(readData[1], 37);
+                called = true;
+            }
+            ASSERT_EQ(called, true);
+
+            testAdmin.Sync("done");
+        };
+
+        static std::function<void(IPTestAdministrator&)> lambdaVar = lambdaFunc;
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin) { lambdaVar(testAdmin); };
+
+        // This side (tested) acts as writer
+        IPTestAdministrator testAdmin(otherSide);
+        {
+            uint8_t testData[2] = { 13, 37 };
+            auto& writer = _dispatcher->GetWriter();
+            testAdmin.Sync("init");
+
+            ASSERT_EQ(writer.Data(0, sizeof(testData), testData), Core::ERROR_NONE);
+            ::SleepMs(10); //not a nice way, but now Wait will be called before ringing
+            writer.Ring();
+        }
+        testAdmin.Sync("done");
 
         Core::Singleton::Dispose();
     }

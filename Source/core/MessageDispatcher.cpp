@@ -11,6 +11,16 @@ namespace Core {
     {
     }
 
+    MessageDispatcher::~MessageDispatcher()
+    {
+        auto metaDataBufferSize = _metaDataBuffer->Size();
+        auto dataBufferSize = _dataBuffer->Size();
+
+        //size reported by buffers is lower by the size of control.
+        _mappedFile->SetNumber<decltype(metaDataBufferSize), ENDIAN_BIG>(0, metaDataBufferSize + sizeof(Core::CyclicBuffer::control));
+        _mappedFile->SetNumber<decltype(metaDataBufferSize), ENDIAN_BIG>(sizeof(metaDataBufferSize), dataBufferSize + sizeof(Core::CyclicBuffer::control));
+    }
+
     /**
      * @brief Creates a message dispatcher
      * 
@@ -102,20 +112,11 @@ namespace Core {
         _dataBuffer.reset(new MessageBuffer(doorBellName, *_mappedFile, true, offset + metadataSize, dataSize, true));
 
         ASSERT(_dataBuffer->IsValid() && _metaDataBuffer->IsValid());
+        //real size of buffers is lower by sizeof control, so the read buffer should also be smaller
         _reader.reset(new Reader(*this, dataSize - sizeof(Core::CyclicBuffer::control)));
         _writer.reset(new Writer(*this));
 
         return (_dataBuffer->IsValid() && _metaDataBuffer->IsValid() ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
-    }
-
-    uint32_t MessageDispatcher::Close()
-    {
-        Core::SafeSyncType<Core::CriticalSection> _guard(_lock);
-
-        _dataBuffer.reset(nullptr);
-        _metaDataBuffer.reset(nullptr);
-
-        return (Core::ERROR_NONE);
     }
 
     MessageDispatcher::Reader& MessageDispatcher::GetReader()
@@ -216,6 +217,11 @@ namespace Core {
         }
 
         return result;
+    }
+
+    void MessageDispatcher::Writer::Ring()
+    {
+        _parent._dataBuffer->Ring();
     }
 
     //------------MESSAGE BUFFER-----------
