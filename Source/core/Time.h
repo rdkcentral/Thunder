@@ -33,7 +33,7 @@ namespace Core {
 #ifdef __POSIX__
         Time(const struct timeval& info);
 #endif
-        Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t seconds, const uint16_t milliseconds, const bool localTime);
+        Time(const uint16_t year, const uint8_t month, const uint16_t day, const uint8_t hour, const uint8_t minute, const uint8_t seconds, const uint16_t milliseconds, const bool localTime);
 
 #ifdef __POSIX__
         Time(const struct timespec& time, const bool localTime = false);
@@ -132,7 +132,6 @@ namespace Core {
         {
             text = ToRFC1123(localTime);
         }
-        bool FromString(const string& text);
         const TCHAR* WeekDayName() const;
         const TCHAR* MonthName() const;
 

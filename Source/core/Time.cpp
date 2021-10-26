@@ -545,7 +545,7 @@ namespace Core {
 
 #ifdef __WINDOWS__
 
-    Time::Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
+    Time::Time(const uint16_t year, const uint8_t month, const uint16_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
     {
         _time.wYear = year;
         _time.wMonth = month;
@@ -808,7 +808,7 @@ namespace Core {
         }
 
         // Calculate ticks..
-        _ticks = (static_cast<uint64_t>(time.tv_sec) * MicroSecondsPerSecond) + (time.tv_nsec / NanoSecondsPerMicroSecond) + OffsetTicksForEpoch;
+        _ticks = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
     }
 
     Time Time::ToLocal() const {
@@ -886,7 +886,7 @@ namespace Core {
         return seconds;
     }
 
-    Time::Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
+    Time::Time(const uint16_t year, const uint8_t month, const uint16_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond VARIABLE_IS_NOT_USED, const bool localTime)
     {
         struct tm source {
         };
@@ -899,11 +899,12 @@ namespace Core {
         source.tm_sec = second;
 
         time_t flatTime{};
-        if (localTime)
+        if (localTime) {
+            source.tm_isdst = -1;
             flatTime = mktime(&source);
-        else
+	} else {
             flatTime = mktimegm(&source);
-
+	}
         if (localTime) {
             localtime_r(&flatTime, &_time);
         } else {
@@ -911,7 +912,7 @@ namespace Core {
         }
 
         // Calculate ticks..
-        _ticks = (static_cast<uint64_t>(flatTime) * static_cast<uint64_t>(MicroSecondsPerSecond)) + (static_cast<uint64_t>(millisecond) * static_cast<uint64_t>(MicroSecondsPerMilliSecond)) + OffsetTicksForEpoch;
+        _ticks = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
     }
 
     /**
