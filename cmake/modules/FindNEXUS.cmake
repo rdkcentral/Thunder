@@ -74,4 +74,10 @@ if(EXISTS "${LIBNEXUS_LIBRARY}")
     set_target_properties(NEXUS::NEXUS PROPERTIES
             INTERFACE_COMPILE_DEFINITIONS "PLATFORM_BRCM"
             )
+else()
+    if(NEXUS_FIND_REQUIRED)
+        message(FATAL_ERROR "LIBNEXUS_LIBRARY not available")
+    elseif(NOT NEXUS_FIND_QUIETLY)
+        message(STATUS "LIBNEXUS_LIBRARY not available")
+    endif()
 endif()
