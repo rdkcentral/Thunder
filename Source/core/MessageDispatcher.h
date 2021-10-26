@@ -21,15 +21,15 @@
 #include "CyclicBuffer.h"
 #include "DoorBell.h"
 #include "Module.h"
+#include "SharedBuffer.h"
 
 namespace WPEFramework {
 namespace Core {
 
-    constexpr uint32_t CyclicBufferSize = ((8 * 1024) - (sizeof(struct Core::CyclicBuffer::control))); /* 8Kb */
-
     class EXTERNAL MessageDispatcher {
     private:
         //Private classes
+        //flusing buffer
         class EXTERNAL MessageBuffer : public Core::CyclicBuffer {
         private:
             MessageBuffer() = delete;
@@ -37,17 +37,13 @@ namespace Core {
             MessageBuffer& operator=(const MessageBuffer&) = delete;
 
         public:
-            MessageBuffer(const string& doorBell, const string& name);
+            MessageBuffer(const string& doorBell, Core::DataElementFile& buffer, const bool initiator, const uint32_t offset, const uint32_t bufferSize, const bool overwrite);
             ~MessageBuffer() override = default;
-
             void Ring();
-            void Acknowledge();
             uint32_t Wait(const uint32_t waitTime);
             void Relinquish();
             uint32_t GetOverwriteSize(Cursor& cursor) override;
-
-        private:
-            void DataAvailable() override;
+            uint32_t GetReadSize(Cursor& cursor) override;
 
         private:
             Core::DoorBell _doorBell;
@@ -55,7 +51,7 @@ namespace Core {
 
         class Reader {
         public:
-            Reader(MessageDispatcher& parent);
+            Reader(MessageDispatcher& parent, uint32_t dataBufferSize);
             ~Reader() = default;
 
             Reader(const Reader&) = delete;
@@ -73,7 +69,8 @@ namespace Core {
 
         private:
             MessageDispatcher& _parent;
-            uint8_t _buffer[CyclicBufferSize];
+            std::vector <uint8_t> _dataBuffer;
+            //uint8_t _dataBuffer[5120 - 136];
         };
         class Writer {
         public:
@@ -100,7 +97,8 @@ namespace Core {
         MessageDispatcher(const MessageDispatcher&) = delete;
         MessageDispatcher& operator=(const MessageDispatcher&) = delete;
 
-        uint32_t Open(const string& doorBell, const string& fileName);
+        uint32_t Open(const string& identifier, const uint32_t instanceId);
+        uint32_t Create(const string& identifier, const uint32_t instanceId, uint32_t totalSize, uint8_t percentage);
         uint32_t Close();
         Reader& GetReader();
         Writer& GetWriter();
@@ -108,11 +106,13 @@ namespace Core {
     private:
         //private variables
         Core::CriticalSection _lock;
-        std::unique_ptr<MessageBuffer> _outputChannel;
+        std::unique_ptr<Core::DataElementFile> _mappedFile;
+        std::unique_ptr<MessageBuffer> _dataBuffer;
+        std::unique_ptr<MessageBuffer> _metaDataBuffer;
         bool _directOutput;
 
-        Reader _reader;
-        Writer _writer;
+        std::unique_ptr<Reader> _reader;
+        std::unique_ptr<Writer> _writer;
     };
 }
 }
