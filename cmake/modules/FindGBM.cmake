@@ -1,4 +1,4 @@
-# If not stated otherwise in this file or this component's license file the
+# If not stated otherwise in this file or this component's LICENSE file the
 # following copyright and licenses apply:
 #
 # Copyright 2020 Metrological
@@ -20,35 +20,40 @@ cmake_minimum_required(VERSION 3.7)
 # Be compatible even if a newer CMake version is available
 cmake_policy(VERSION 3.7...3.12)
 
-find_package(PkgConfig)
+if(GBM_FIND_QUIETLY)
+    set(_GBM_MODE QUIET)
+elseif(GBM_FIND_REQUIRED)
+    set(_GBM_MODE REQUIRED)
+endif()
 
+find_package(PkgConfig)
 if(${PKG_CONFIG_FOUND})
 
     # Just check if the gbm.pc exist, and create the PkgConfig::gbm target
     # No version requirement (yet)
-    pkg_check_modules(GBM REQUIRED IMPORTED_TARGET gbm)
+    pkg_check_modules(GBM ${_GBM_MODE} IMPORTED_TARGET gbm)
+    find_library(GBM_ACTUAL_LIBRARY NAMES gbm
+        HINTS ${GBM_LIBRARY_DIRS} )
 
     include(FindPackageHandleStandardArgs)
-
     # Sets the FOUND variable to TRUE if all required variables are present and set
     find_package_handle_standard_args(
-        gbm
+        GBM
         REQUIRED_VARS
             GBM_INCLUDE_DIRS
             GBM_CFLAGS
             GBM_LDFLAGS
             GBM_LIBRARIES
             GBM_LIBRARY_DIRS
+            GBM_ACTUAL_LIBRARY
         VERSION_VAR
             GBM_VERSION
     )
+    mark_as_advanced(LIBDRM_INCLUDE_DIRS LIBDRM_LIBRARIES GBM_ACTUAL_LIBRARY)
 
-    find_library(GBM_ACTUAL_LIBRARY NAMES gbm 
-        HINTS ${GBM_LIBRARY_DIRS} )
-
-    if(GBM_FOUND AND NOT TARGET libgbm::libgbm)
-        add_library(libgbm::libgbm UNKNOWN IMPORTED)
-        set_target_properties(libgbm::libgbm PROPERTIES
+    if(GBM_FOUND AND NOT TARGET GBM::GBM)
+        add_library(GBM::GBM UNKNOWN IMPORTED)
+        set_target_properties(GBM::GBM PROPERTIES
             IMPORTED_LOCATION "${GBM_ACTUAL_LIBRARY}"
             INTERFACE_LINK_LIBRARIES "${GBM_LIBRARIES}"
             INTERFACE_COMPILE_OPTIONS "${GBM_CFLAGS}"
@@ -57,8 +62,6 @@ if(${PKG_CONFIG_FOUND})
     else()
         message(FATAL_ERROR "Some required variable(s) is (are) not found / set! Does gbm.pc exist?")
     endif()
-
-    mark_as_advanced(LIBDRM_INCLUDE_DIRS LIBDRM_LIBRARIES)
 
 else()
 
