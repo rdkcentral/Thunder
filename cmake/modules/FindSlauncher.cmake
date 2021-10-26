@@ -15,8 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if(Slauncher_FIND_QUIETLY)
+    set(_SLAUNCHER_MODE QUIET)
+elseif(Slauncher_FIND_REQUIRED)
+    set(_SLAUNCHER_MODE REQUIRED)
+endif()
+
 find_package(PkgConfig)
-pkg_check_modules(PC_AWC libslauncher_client)
+pkg_check_modules(PC_AWC ${_SLAUNCHER_MODE} libslauncher_client)
 
 if(${PC_AWC_FOUND})
     find_library(AWC_LIBRARY slauncher_client
@@ -26,7 +32,12 @@ if(${PC_AWC_FOUND})
         PATH_SUFFIXES awc
         )
 
-    if(NOT TARGET Slauncher::Slauncher)
+    include(FindPackageHandleStandardArgs)
+    find_package_handle_standard_args(Slauncher DEFAULT_MSG AWC_LIBRARY AWC_INCLUD)
+
+    mark_as_advanced(AWC_LIBRARY AWC_INCLUDE)
+
+    if(Slauncher_FOUND AND NOT TARGET Slauncher::Slauncher)
         add_library(Slauncher::Slauncher UNKNOWN IMPORTED)
 
         set_target_properties(Slauncher::Slauncher

@@ -33,19 +33,21 @@ find_library(LIBNXCLIENT_LIBRARY nxclient)
 
 if(EXISTS "${LIBNXCLIENT_LIBRARY}")
     include(FindPackageHandleStandardArgs)
-
-    set(NXCLIENT_FOUND TRUE)
-
-    find_package_handle_standard_args(LIBNXCLIENT DEFAULT_MSG NXCLIENT_FOUND LIBNXCLIENT_INCLUDE LIBNXCLIENT_LIBRARY)
+    find_package_handle_standard_args(NXCLIENT DEFAULT_MSG LIBNXCLIENT_INCLUDE LIBNXCLIENT_LIBRARY)
     mark_as_advanced(LIBNXCLIENT_LIBRARY)
 
-    if(NOT TARGET NXCLIENT::NXCLIENT)
+    if(NXCLIENT_FOUND AND NOT TARGET NXCLIENT::NXCLIENT)
         add_library(NXCLIENT::NXCLIENT UNKNOWN IMPORTED)
-        
         set_target_properties(NXCLIENT::NXCLIENT PROPERTIES
                 IMPORTED_LINK_INTERFACE_LANGUAGES "C"
                 IMPORTED_LOCATION "${LIBNXCLIENT_LIBRARY}"
                 INTERFACE_INCLUDE_DIRECTORIES "${LIBNXCLIENT_INCLUDE}"
                 )
+    endif()
+else()
+    if(NXCLIENT_FIND_REQUIRED)
+        message(FATAL_ERROR "LIBNXCLIENT_LIBRARY not available")
+    elseif(NOT NXCLIENT_FIND_QUIETLY)
+        message(STATUS "LIBNXCLIENT_LIBRARY not available")
     endif()
 endif()

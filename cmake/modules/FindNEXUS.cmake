@@ -32,21 +32,15 @@ find_path(LIBNEXUS_INCLUDE nexus_config.h
 find_library(LIBNEXUS_LIBRARY nexus)
 
 if(EXISTS "${LIBNEXUS_LIBRARY}")
-    set(NEXUS_FOUND TRUE)
-    
     find_library(LIBB_OS_LIBRARY b_os)
-
     find_library(LIBNEXUS_CLIENT_LIBRARY nexus_client)
-
     find_library(LIBNXCLIENT_LIBRARY nxclient)
 
     include(FindPackageHandleStandardArgs)
-
-    find_package_handle_standard_args(LIBNEXUS DEFAULT_MSG LIBNEXUS_INCLUDE LIBNEXUS_LIBRARY)
-
+    find_package_handle_standard_args(NEXUS DEFAULT_MSG LIBNEXUS_INCLUDE LIBNEXUS_LIBRARY)
     mark_as_advanced(LIBNEXUS_INCLUDE LIBNEXUS_LIBRARY)
 
-    if(NOT TARGET NEXUS::NEXUS)
+    if(NEXUS_FOUND AND NOT TARGET NEXUS::NEXUS)
         add_library(NEXUS::NEXUS UNKNOWN IMPORTED)
         set_target_properties(NEXUS::NEXUS PROPERTIES
                 IMPORTED_LINK_INTERFACE_LANGUAGES "C"
@@ -80,4 +74,10 @@ if(EXISTS "${LIBNEXUS_LIBRARY}")
     set_target_properties(NEXUS::NEXUS PROPERTIES
             INTERFACE_COMPILE_DEFINITIONS "PLATFORM_BRCM"
             )
+else()
+    if(NEXUS_FIND_REQUIRED)
+        message(FATAL_ERROR "LIBNEXUS_LIBRARY not available")
+    elseif(NOT NEXUS_FIND_QUIETLY)
+        message(STATUS "LIBNEXUS_LIBRARY not available")
+    endif()
 endif()
