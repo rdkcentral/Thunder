@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2021 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -590,6 +590,7 @@ namespace SDP {
 
         class Outward {
         public:
+            Outward() = delete;
             Outward(const Outward&) = delete;
             Outward& operator=(const Outward&) = delete;
 
@@ -642,6 +643,7 @@ namespace SDP {
 
         class Inward {
         private:
+            Inward() = delete;
             Inward(const Inward&) = delete;
             Inward& operator=(const Inward&) = delete;
 
@@ -699,6 +701,7 @@ namespace SDP {
         public:
             class Request : public Outward {
             public:
+                Request() = delete;
                 Request(const Request&) = delete;
                 Request& operator=(const Request&) = delete;
 

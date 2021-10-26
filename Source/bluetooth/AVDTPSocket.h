@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2021 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ namespace Bluetooth {
         }; // class Callback
 
     public:
-        static constexpr uint32_t CommunicationTimeout = 2000; /* 2 seconds. */
+        static constexpr uint32_t CommunicationTimeout = 2000; /* ms */
 
     public:
         using SEPConfiguration = std::map<uint8_t, Buffer>;
@@ -183,7 +183,7 @@ namespace Bluetooth {
                     }
 
                     if (truncated == true) {
-                        TRACE_L1("Truncated AVDTP signal header!");
+                        TRACE_L1("AVDTP: Truncated signal header!");
                     }
                 }
             }; // class Signal
@@ -222,8 +222,7 @@ namespace Bluetooth {
                         ::memcpy(stream, (_signal.Data() + _offset), result);
                         _offset += result;
 
-                        printf("AVDTP send [%d]: ", result);
-                        for (uint8_t index = 0; index < (result - 1); index++) { printf("%02X:", stream[index]); } printf("%02X\n", stream[result - 1]);
+                        CMD_DUMP("AVDTP send", stream, result);
                     }
                     return (result);
                 }
@@ -281,7 +280,7 @@ namespace Bluetooth {
                 }
 
             public:
-                uint8_t Label()
+                uint8_t Label() const
                 {
                     return (_label);
                 }
@@ -308,7 +307,7 @@ namespace Bluetooth {
                 }
 
             private:
-                uint8_t NewLabel()
+                uint8_t NewLabel() const
                 {
                     _label = ((_label + 1) & 0xF);
                     return (_label);
@@ -318,7 +317,7 @@ namespace Bluetooth {
                 mutable uint16_t _offset;
                 uint8_t* _signalScratchPad;
                 Signal _signal;
-                uint8_t _label;
+                mutable uint8_t _label;
             }; // class Request
 
         public:
@@ -333,6 +332,8 @@ namespace Bluetooth {
                     : _payloadScratchPad(static_cast<uint8_t*>(::malloc(bufferSize)))
                     , _payload(_payloadScratchPad, bufferSize)
                 {
+                    ASSERT(_payloadScratchPad != nullptr);
+                    ASSERT(bufferSize != 0);
                 }
                 ~Response()
                 {
@@ -454,7 +455,8 @@ namespace Bluetooth {
             }
 
         public:
-            Response& Result() {
+            Response& Result()
+            {
                 return (_response);
             }
             const Response& Result() const
@@ -517,6 +519,10 @@ namespace Bluetooth {
 
         public:
             Command& Cmd()
+            {
+                return (_cmd);
+            }
+            const Command& Cmd() const
             {
                 return (_cmd);
             }
@@ -596,7 +602,8 @@ namespace Bluetooth {
             uint32_t result = 0;
 
             if (availableData != 0) {
-                TRACE_L1("Unexpected data for deserialization [%d]", availableData);
+                TRACE_L1("Unexpected data for deserialization [%d bytes]", availableData);
+                CMD_DUMP("AVTDP received unexpected", dataFrame, availableData);
             }
 
             return (result);
@@ -606,7 +613,7 @@ namespace Bluetooth {
             _adminLock.Lock();
 
             if ((_queue.size() == 0) || (*(_queue.begin()) != &data)) {
-                ASSERT (false && "Always the first one should be the one to be handled!!");
+                ASSERT(false && "Always the first one should be the one to be handled!");
             }
             else {
                 _queue.begin()->Completed(error_code);

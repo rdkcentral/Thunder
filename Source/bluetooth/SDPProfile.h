@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2021 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -214,10 +214,10 @@ namespace SDP {
         public:
             // universal attributes
             enum id : uint16_t {
-                // required:
+                // required
                 ServiceRecordHandle             = 0x0000,
                 ServiceClassIDList              = 0x0001,
-                // optional:
+                // optional
                 ServiceRecordState              = 0x0002,
                 ServiceID                       = 0x0003,
                 ProtocolDescriptorList          = 0x0004,
@@ -272,7 +272,7 @@ namespace SDP {
             string Name() const
             {
                 Core::EnumerateType<id> value(_id);
-                string name = (value.IsSet() == true? string(value.Data()) : "<custom>");
+                string name = (value.IsSet() == true? string(value.Data()) : _T("<custom>"));
                 return (name);
             }
 
@@ -643,7 +643,7 @@ namespace SDP {
                     ASSERT(language.size() == 2);
                     Add(ToCode(language), charset, base);
                 }
-                uint16_t Add(const string& language = "en", const uint16_t charset = CHARSET_US_ASCII)
+                uint16_t Add(const string& language = _T("en"), const uint16_t charset = CHARSET_US_ASCII)
                 {
                     const uint16_t base = _freeBase;
                     Add(language, charset, base);

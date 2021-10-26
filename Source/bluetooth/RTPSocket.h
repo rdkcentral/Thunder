@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2021 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,8 +97,7 @@ namespace Bluetooth {
                 if (result > 0) {
                     ::memcpy(stream, (_buffer + _offset), result);
                     _offset += result;
-
-                    //printf("RTP send [%d]: ", result); for (uint16_t index = 0; index < (32 - 1); index++) { printf("%02X:", stream[index]); } printf("%02X ...\n", stream[32 - 1]);
+                    //CMD_DUMP("RTP send", stream, length);
                 }
 
                 return (result);
@@ -140,7 +139,8 @@ namespace Bluetooth {
             uint32_t result = 0;
 
             if (availableData != 0) {
-                TRACE_L1("Unexpected data for deserialization [%d]", availableData);
+                TRACE_L1("Unexpected data for deserialization [%d bytes]", availableData);
+                CMD_DUMP("RTP received unexpected", dataFrame, availableData);
             }
 
             return (result);

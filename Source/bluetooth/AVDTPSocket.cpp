@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2021 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,7 @@ namespace Bluetooth {
     {
         uint16_t result = 0;
 
-        printf("AVDTP received [%d]: ", length);
-        for (uint8_t index = 0; index < (length - 1); index++) { printf("%02X:", stream[index]); } printf("%02X\n", stream[length - 1]);
+        CMD_DUMP("AVDTP received", stream, length);
 
         Signal::signalidentifier signalId{};
         Signal::packettype pktType{};
@@ -53,6 +52,7 @@ namespace Bluetooth {
                     uint8_t failedSeid{};
                     signal.Pop(failedSeid);
                 }
+
                 signal.Pop(_status);
             } else {
                 // GENERIC_REJECT or anything else unexpected
@@ -62,7 +62,7 @@ namespace Bluetooth {
             _type = signalId;
             result = length;
         } else {
-            TRACE_L1("Unexpected signal label [%d vs %d]", label, expectedLabel);
+            TRACE_L1("Out of order signal label [got %d, expected %d]", label, expectedLabel);
         }
 
         return (result);
@@ -72,6 +72,7 @@ namespace Bluetooth {
     {
         // Split the payload into SEP sections and pass to the handler for deserialisation
         ASSERT(Type() == Signal::signalidentifier::AVDTP_DISCOVER);
+
         while (_payload.Available() >= 2) {
             Buffer sep;
             _payload.Pop(sep, 2);
