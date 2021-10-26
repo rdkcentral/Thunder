@@ -46,11 +46,36 @@ namespace PluginHost
         if ((keyMap.empty() == false) && (Core::File(keyMap).Exists() == true)) {
             result = Core::ERROR_OPENING_FAILED;
 
+            Core::File mappingFile(keyMap);
+            Core::JSON::ArrayType<KeyMapEntry> mappingTable;
+
+            if (mappingFile.Open(true) == true) {
+                result = Core::ERROR_ILLEGAL_STATE;
+                Core::OptionalType<Core::JSON::Error> error;
+                mappingTable.IElement::FromFile(mappingFile, error);
+                if (error.IsSet() == true) {
+                    SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                } else {
+                    result = Import(mappingTable);
+                }
+                mappingFile.Close();
+            }
+        }
+
+        return (result);
+    }
+
+    uint32_t VirtualInput::KeyMap::Import(const Core::JSON::ArrayType<KeyMapEntry>& mappingTable)
+    {
+        uint32_t result = Core::ERROR_ILLEGAL_STATE;
+
+        if(mappingTable.Length() > 0) {
             std::map<uint16_t, uint16_t> previousKeys;
             std::map<uint16_t, int16_t> updatedKeys;
 
-            while (_keyMap.size() > 0) {
+            result = Core::ERROR_NONE;
 
+            while (_keyMap.size() > 0) {
                 // Keep reference count of repeated keys
                 previousKeys[_keyMap.begin()->second.Code]++;
 
@@ -60,34 +85,20 @@ namespace PluginHost
                 _keyMap.erase(_keyMap.begin());
             }
 
-            Core::File mappingFile(keyMap);
-            Core::JSON::ArrayType<KeyMapEntry> mappingTable;
+            Core::JSON::ArrayType<KeyMapEntry>::ConstIterator index(mappingTable.Elements());
+            while (index.Next() == true) {
+                if ((index.Current().Code.IsSet()) && (index.Current().Key.IsSet())) {
+                    uint32_t code(index.Current().Code.Value());
+                    ConversionInfo conversionInfo;
 
-            if (mappingFile.Open(true) == true) {
-                result = Core::ERROR_NONE;
+                    conversionInfo.Code = index.Current().Key.Value();
+                    conversionInfo.Modifiers = 0;
 
-                Core::OptionalType<Core::JSON::Error> error;
-                mappingTable.IElement::FromFile(mappingFile, error);
-                if (error.IsSet() == true) {
-                    SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
-                }
+                    // Build the device info array..
+                    Core::JSON::ArrayType<JSONModifier>::ConstIterator flags(index.Current().Modifiers.Elements());
 
-                // Build the device info array..
-                Core::JSON::ArrayType<KeyMapEntry>::Iterator index(mappingTable.Elements());
-
-                while (index.Next() == true) {
-                    if ((index.Current().Code.IsSet()) && (index.Current().Key.IsSet())) {
-                        uint32_t code(index.Current().Code.Value());
-                        ConversionInfo conversionInfo;
-
-                        conversionInfo.Code = index.Current().Key.Value();
-                        conversionInfo.Modifiers = 0;
-
-                        // Build the device info array..
-                        Core::JSON::ArrayType<JSONModifier>::Iterator flags(index.Current().Modifiers.Elements());
-
-                        while (flags.Next() == true) {
-                            switch (flags.Current().Value()) {
+                    while (flags.Next() == true) {
+                        switch (flags.Current().Value()) {
                             case KeyMap::modifier::LEFTSHIFT:
                             case KeyMap::modifier::RIGHTSHIFT:
                             case KeyMap::modifier::LEFTALT:
@@ -99,37 +110,34 @@ namespace PluginHost
                             default:
                                 ASSERT(false);
                                 break;
-                            }
                         }
+                    }
 
-                        // Do not allow same device code to point multiple input keys, it is not a real use-case
-                        if (_keyMap.find(code) == _keyMap.end()) {
+                    // Do not allow same device code to point multiple input keys, it is not a real use-case
+                    if (_keyMap.find(code) == _keyMap.end()) {
+                        _keyMap.insert(std::pair<const uint32_t, const ConversionInfo>(code, conversionInfo));
 
-                            _keyMap.insert(std::pair<const uint32_t, const ConversionInfo>(code, conversionInfo));
+                        std::map<uint16_t, uint16_t>::iterator index = previousKeys.find(conversionInfo.Code);
 
-                            std::map<uint16_t, uint16_t>::iterator index = previousKeys.find(conversionInfo.Code);
-
-                            if (index != previousKeys.end()) {
-                                updatedKeys[index->first]++;
-                            } else {
-                                updatedKeys[conversionInfo.Code]++;
-                            }
+                        if (index != previousKeys.end()) {
+                            updatedKeys[index->first]++;
+                        } else {
+                            updatedKeys[conversionInfo.Code]++;
                         }
                     }
                 }
-
-                std::map<uint16_t, uint16_t>::const_iterator updatedKey(previousKeys.begin());
-
-                while (updatedKey != previousKeys.end()) {
-
-                    // Get differences with the latest key map and create delta list
-                    updatedKeys[updatedKey->first] -= previousKeys[updatedKey->first];
-                    updatedKey++;
-                }
-
-                ChangeIterator updated(updatedKeys);
-                _parent.MapChanges(updated);
             }
+
+            std::map<uint16_t, uint16_t>::const_iterator updatedKey(previousKeys.begin());
+
+            while (updatedKey != previousKeys.end()) {
+                // Get differences with the latest key map and create delta list
+                updatedKeys[updatedKey->first] -= previousKeys[updatedKey->first];
+                updatedKey++;
+            }
+
+            ChangeIterator updated(updatedKeys);
+            _parent.MapChanges(updated);
         }
 
         return (result);
@@ -147,48 +155,53 @@ namespace PluginHost
 
             result = Core::ERROR_NONE;
 
-            std::map<const uint32_t, const ConversionInfo>::const_iterator index(_keyMap.begin());
-
-            while (index != _keyMap.end()) {
-
-                KeyMapEntry element;
-                element.Code = index->first;
-                element.Key = index->second.Code;
-
-                uint16_t flag(1);
-                uint16_t modifiers(index->second.Modifiers);
-
-                while (modifiers != 0) {
-
-                    if ((modifiers & 0x01) != 0) {
-                        switch (flag) {
-                        case KeyMap::modifier::LEFTSHIFT:
-                        case KeyMap::modifier::RIGHTSHIFT:
-                        case KeyMap::modifier::LEFTALT:
-                        case KeyMap::modifier::RIGHTALT:
-                        case KeyMap::modifier::LEFTCTRL:
-                        case KeyMap::modifier::RIGHTCTRL: {
-                            JSONModifier& jsonRef = element.Modifiers.Add();
-                            jsonRef = static_cast<KeyMap::modifier>(flag);
-                            break;
-                        }
-                        default:
-                            ASSERT(false);
-                            break;
-                        }
-                    }
-
-                    flag = flag << 1;
-                    modifiers = modifiers >> 1;
-                }
-
-                mappingTable.Add(element);
-                index++;
-            }
+            Export(mappingTable);
             mappingTable.IElement::ToFile(mappingFile);
         }
 
         return (result);
+    }
+
+    void VirtualInput::KeyMap::Export(Core::JSON::ArrayType<KeyMapEntry>& mappingTable)
+    {
+        std::map<const uint32_t, const ConversionInfo>::const_iterator index(_keyMap.begin());
+
+        while (index != _keyMap.end()) {
+
+            KeyMapEntry element;
+            element.Code = index->first;
+            element.Key = index->second.Code;
+
+            uint16_t flag(1);
+            uint16_t modifiers(index->second.Modifiers);
+
+            while (modifiers != 0) {
+
+                if ((modifiers & 0x01) != 0) {
+                    switch (flag) {
+                    case KeyMap::modifier::LEFTSHIFT:
+                    case KeyMap::modifier::RIGHTSHIFT:
+                    case KeyMap::modifier::LEFTALT:
+                    case KeyMap::modifier::RIGHTALT:
+                    case KeyMap::modifier::LEFTCTRL:
+                    case KeyMap::modifier::RIGHTCTRL: {
+                        JSONModifier& jsonRef = element.Modifiers.Add();
+                        jsonRef = static_cast<KeyMap::modifier>(flag);
+                        break;
+                    }
+                    default:
+                        ASSERT(false);
+                        break;
+                    }
+                }
+
+                flag = flag << 1;
+                modifiers = modifiers >> 1;
+            }
+
+            mappingTable.Add(element);
+            index++;
+        }
     }
 
 #ifdef __WINDOWS__
