@@ -94,7 +94,7 @@ namespace JSONRPC {
             public:
                 static FactoryImpl& Instance()
                 {
-                    static FactoryImpl& _singleton = Core::SingletonType<FactoryImpl>::Instance();
+                    static FactoryImpl _singleton;
     
                     return (_singleton);
                 }
@@ -215,7 +215,7 @@ namespace JSONRPC {
     
                     static Administrator& Instance()
                     {    
-                        static Administrator& _instance = Core::SingletonType<Administrator>::Instance();
+                        static Administrator _instance;
                         return (_instance);
                     }
     
