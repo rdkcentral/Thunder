@@ -246,7 +246,7 @@ namespace ProcessContainers {
     }
 
     AWCContainerAdministrator::AWCContainerAdministrator()
-        : BaseAdministrator()
+        : BaseContainerAdministrator()
     {
         TRACE(ProcessContainers::ProcessContainerization, (_T("AWC library initialization")));
         TRACE_L3("%s Getting AWC client instance", _TRACE_FUNCTION_);

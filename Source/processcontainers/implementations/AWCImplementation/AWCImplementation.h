@@ -19,10 +19,9 @@
 
 #pragma once
 
-#include "../../ProcessContainer.h"
-#include "../../common/BaseAdministrator.h"
-#include "../../common/BaseRefCount.h"
-#include "../../common/Lockable.h"
+#include "processcontainers/ProcessContainer.h"
+#include "processcontainers/common/BaseAdministrator.h"
+#include "processcontainers/common/BaseRefCount.h"
 #include "Module.h"
 #include "Tracing.h"
 #include <cctype>
@@ -83,7 +82,7 @@ namespace ProcessContainers {
         uint32_t _pid;
         int _runId;
         awc::awc_app_state_t _appState;
-        mutable Core::CriticalSection _adminLock;
+        //mutable Core::CriticalSection _adminLock;  /*Unused member*/
         mutable uint32_t _referenceCount;
         awc::AWCClient * _client;
         AWCStateChangeNotifier * _notifier;
@@ -93,7 +92,7 @@ namespace ProcessContainers {
         static std::string const _envVariables[];
     };
 
-    class AWCContainerAdministrator : public BaseAdministrator<AWCContainer, Lockable<IContainerAdministrator>>, public AWCStateChangeNotifier {
+    class AWCContainerAdministrator : public BaseContainerAdministrator<AWCContainer>, public AWCStateChangeNotifier {
         friend class AWCContainer;
         friend class Core::SingletonType<AWCContainerAdministrator>;
 

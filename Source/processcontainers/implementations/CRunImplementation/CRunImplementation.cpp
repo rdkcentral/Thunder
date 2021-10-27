@@ -53,7 +53,7 @@ namespace ProcessContainers {
     }
 
     CRunContainerAdministrator::CRunContainerAdministrator()
-        : BaseAdministrator()
+        : BaseContainerAdministrator()
     {
     }
 
@@ -69,8 +69,7 @@ namespace ProcessContainers {
     // Container
     // ------------------------------------
     CRunContainer::CRunContainer(const string& name, const string& path, const string& logPath)
-        : CGroupContainerInfo(name)
-        , _refCount(1)
+        : _adminLock()
         , _created(false)
         , _name(name)
         , _bundle(path)
@@ -139,6 +138,24 @@ namespace ProcessContainers {
         return status.pid;
     }
 
+    IMemoryInfo* CRunContainer::Memory() const
+    {
+        CGroupMetrics containerMetrics(_name);
+        return containerMetrics.Memory();
+    }
+
+    IProcessorInfo* CRunContainer::ProcessorInfo() const
+    {
+        CGroupMetrics containerMetrics(_name);
+        return containerMetrics.ProcessorInfo();
+    }
+
+    INetworkInterfaceIterator* CRunContainer::NetworkInterfaces() const
+    {
+        NetworkInfoUnimplemented netInfoUnimplemented;
+        return netInfoUnimplemented.NetworkInterfaces();
+    }
+
     bool CRunContainer::IsRunning() const
     {
         bool result = true;
@@ -170,6 +187,7 @@ namespace ProcessContainers {
         int ret = 0;
         bool result = true;
 
+        _adminLock.Lock();
         // Make sure no leftover container instances are present
         if (ClearLeftovers() != Core::ERROR_NONE) {
             result = false;
@@ -203,6 +221,7 @@ namespace ProcessContainers {
                 }
             }
         }
+        _adminLock.Unlock();
 
         return result;
     }
@@ -212,12 +231,14 @@ namespace ProcessContainers {
         bool result = true;
         libcrun_error_t error = nullptr;
 
+        _adminLock.Lock();
         if (libcrun_container_delete(&_context, NULL, _name.c_str(), true, &error) != 0) {
             TRACE_L1("Failed to destroy a container \"%s\". Error: %s", _name.c_str(), error->msg);
             result = false;
         } else {
             _created = false;
         }
+       _adminLock.Unlock();
 
         return result;
     }

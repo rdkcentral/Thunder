@@ -62,7 +62,7 @@ namespace ProcessContainers {
     }
 
     DobbyContainerAdministrator::DobbyContainerAdministrator()
-        : BaseAdministrator()
+        : BaseContainerAdministrator()
     {
         mIpcService = AI_IPC::createIpcService("unix:path=/var/run/dbus/system_bus_socket", "com.sky.dobby.processcontainers");
 
@@ -142,8 +142,7 @@ namespace ProcessContainers {
     // Container
     // ------------------------------------
     DobbyContainer::DobbyContainer(const string& name, const string& path, const string& logPath)
-        : DobbyContainerMixins(name)
-        , _refCount(1)
+        : _adminLock()
         , _name(name)
         , _path(path)
         , _logPath(logPath)
@@ -249,6 +248,24 @@ namespace ProcessContainers {
         return returnedPid;
     }
 
+    IMemoryInfo* DobbyContainer::Memory() const
+    {
+        CGroupMetrics containerMetrics(_name);
+        return containerMetrics.Memory();
+    }
+
+    IProcessorInfo* DobbyContainer::ProcessorInfo() const
+    {
+        CGroupMetrics containerMetrics(_name);
+        return containerMetrics.ProcessorInfo();
+    }
+
+    INetworkInterfaceIterator* DobbyContainer::NetworkInterfaces() const
+    {
+        NetworkInfoUnimplemented netInfoUnimplemented;
+        return netInfoUnimplemented.NetworkInterfaces();
+    }
+
     bool DobbyContainer::IsRunning() const
     {
         bool result = false;
@@ -286,6 +303,8 @@ namespace ProcessContainers {
     bool DobbyContainer::Start(const string& command, IStringIterator& parameters)
     {
         bool result = false;
+
+        _adminLock.Lock();
         auto& admin = static_cast<DobbyContainerAdministrator&>(DobbyContainerAdministrator::Instance());
 
         std::list<int> emptyList;
@@ -308,6 +327,8 @@ namespace ProcessContainers {
             TRACE_L1("started %s container! descriptor: %d", _name.c_str(), _descriptor);
             result = true;
         }
+        _adminLock.UnLock();
+
         return result;
     }
 
@@ -315,6 +336,8 @@ namespace ProcessContainers {
     {
         // TODO: add timeout support
         bool result = false;
+
+        _adminLock.Lock();
         auto& admin = static_cast<DobbyContainerAdministrator&>(DobbyContainerAdministrator::Instance());
 
         bool stoppedSuccessfully = admin.mDobbyProxy->stopContainer(_descriptor, false);
@@ -325,6 +348,7 @@ namespace ProcessContainers {
         }else{
             result = true;
         }
+        _adminLock.Unlock();
 
         return result;
     }

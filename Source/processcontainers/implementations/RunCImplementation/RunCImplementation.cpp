@@ -130,7 +130,7 @@ namespace ProcessContainers {
     }
 
     RunCContainerAdministrator::RunCContainerAdministrator()
-        : BaseAdministrator()
+        : BaseContainerAdministrator()
     {
     }
 
@@ -167,8 +167,7 @@ namespace ProcessContainers {
     // Container
     // ------------------------------------
     RunCContainer::RunCContainer(const string& name, const string& path, const string& logPath)
-        : RunCContainerMixins(name)
-        , _refCount(1)
+        : _adminLock()
         , _name(name)
         , _path(path)
         , _logPath(logPath)
@@ -230,6 +229,24 @@ namespace ProcessContainers {
         return returnedPid;
     }
 
+    IMemoryInfo* RunCContainer::Memory() const
+    {
+        CGroupMetrics containerMetrics(_name);
+        return containerMetrics.Memory();
+    }
+
+    IProcessorInfo* RunCContainer::ProcessorInfo() const
+    {
+        CGroupMetrics containerMetrics(_name);
+        return containerMetrics.ProcessorInfo();
+    }
+
+    INetworkInterfaceIterator* RunCContainer::NetworkInterfaces() const
+    {
+        NetworkInfoUnimplemented netInfoUnimplemented;
+        return netInfoUnimplemented.NetworkInterfaces();
+    }
+
     bool RunCContainer::IsRunning() const
     {
         bool result = false;
@@ -252,6 +269,7 @@ namespace ProcessContainers {
         Core::JSON::String tmp;
         bool result = false;
 
+        _adminLock.Lock();
         tmp = command;
         paramsJSON.Add(tmp);
 
@@ -285,6 +303,7 @@ namespace ProcessContainers {
         } else {
             result = true;
         }
+        _adminLock.Unlock();
 
         return result;
     }
@@ -292,11 +311,14 @@ namespace ProcessContainers {
     bool RunCContainer::Stop(const uint32_t timeout /*ms*/)
     {
         bool result = false;
+
+        _adminLock.Lock();
         if (callRunC(Core::Process::Options("/usr/bin/runc").Add("delete").Add("-f").Add(_name), nullptr, timeout) != Core::ERROR_NONE) {
             TRACE_L1("Failed to destroy RunC container named: %s", _name.c_str());
         } else {
             result = true;
         }
+        _adminLock.Unlock();
 
         return result;
     }

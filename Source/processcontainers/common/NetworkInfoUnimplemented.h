@@ -79,24 +79,15 @@ namespace ProcessContainers {
             return 0;
         };
 
-        void AddRef() const override{
-
-        };
-
-        uint32_t Release() const
-        {
-            uint32_t result = Core::ERROR_NONE;
-            return result;
-        };
 
     private:
         const string _empty;
     };
 
-    template <typename Mixin> // IContainer Mixin
-    class NetworkInfoUnimplemented : public Mixin {
+    //Helper class used for Filling default values for unimplemented network Intefrace
+    class NetworkInfoUnimplemented {
     public:
-        INetworkInterfaceIterator* NetworkInterfaces() const override
+        INetworkInterfaceIterator* NetworkInterfaces() const
         {
             return new UnimplementedNetworkInterfaceIterator;
         }
