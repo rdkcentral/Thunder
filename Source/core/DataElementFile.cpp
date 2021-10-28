@@ -85,6 +85,14 @@ namespace Core {
         , m_Flags(copy.m_Flags) {
     }
 
+    DataElementFile::DataElementFile(DataElementFile&& other)
+        : DataElement(other)
+        , m_File(other.m_File)
+        , m_MemoryMappedFile(other.m_MemoryMappedFile)
+        , m_Flags(other.m_Flags) {
+            other.m_MemoryMappedFile = INVALID_HANDLE_VALUE;
+    }
+    
     bool DataElementFile::Load() {
         bool available = (m_File.IsOpen() == true);
         if (available == false) {
