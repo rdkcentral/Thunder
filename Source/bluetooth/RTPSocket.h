@@ -121,7 +121,7 @@ namespace Bluetooth {
         RTPSocket& operator=(const RTPSocket&) = delete;
 
     private:
-        virtual void Operational() = 0;
+        virtual void Operational(const bool upAndRunning) = 0;
 
         void StateChange() override
         {
@@ -131,7 +131,9 @@ namespace Bluetooth {
                 socklen_t len = sizeof(_connectionInfo);
                 ::getsockopt(Handle(), SOL_L2CAP, L2CAP_CONNINFO, &_connectionInfo, &len);
 
-                Operational();
+                Operational(true);
+            } else {
+                Operational(false);
             }
         }
         uint16_t Deserialize(const uint8_t dataFrame[], const uint16_t availableData) override
