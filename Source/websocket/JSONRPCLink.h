@@ -92,13 +92,7 @@ namespace JSONRPC {
                 }
     
             public:
-                static FactoryImpl& Instance()
-                {
-                    static FactoryImpl& _singleton = Core::SingletonType<FactoryImpl>::Instance();
-    
-                    return (_singleton);
-                }
-    
+                static FactoryImpl& Instance();
     
                 ~FactoryImpl()
                 {
@@ -213,11 +207,7 @@ namespace JSONRPC {
     
                     typedef std::map<const string, CommunicationChannel *> CallsignMap;
     
-                    static Administrator& Instance()
-                    {    
-                        static Administrator& _instance = Core::SingletonType<Administrator>::Instance();
-                        return (_instance);
-                    }
+                    static Administrator& Instance();
     
                 public:
                     Administrator()

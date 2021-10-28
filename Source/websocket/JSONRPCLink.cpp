@@ -28,4 +28,23 @@ ENUM_CONVERSION_BEGIN(WPEFramework::JSONRPC::JSONPluginState)
 
 ENUM_CONVERSION_END(WPEFramework::JSONRPC::JSONPluginState)
 
+namespace JSONRPC {
+
+template<typename INTERFACE>
+typename LinkType<INTERFACE>::CommunicationChannel::FactoryImpl& LinkType<INTERFACE>::CommunicationChannel::FactoryImpl::Instance()
+{
+    static FactoryImpl& _singleton = Core::SingletonType<FactoryImpl>::Instance();
+    return (_singleton);
+}
+template LinkType<Core::JSON::IElement>::CommunicationChannel::FactoryImpl& LinkType<Core::JSON::IElement>::CommunicationChannel::FactoryImpl::Instance();
+
+template<typename INTERFACE>
+typename LinkType<INTERFACE>::CommunicationChannel::ChannelProxy::Administrator& LinkType<INTERFACE>::CommunicationChannel::ChannelProxy::Administrator::Instance()
+{
+    static Administrator& _instance = Core::SingletonType<Administrator>::Instance();
+    return (_instance);
+}
+template LinkType<Core::JSON::IElement>::CommunicationChannel::ChannelProxy::Administrator& LinkType<Core::JSON::IElement>::CommunicationChannel::ChannelProxy::Administrator::Instance();
+
+}
 }
