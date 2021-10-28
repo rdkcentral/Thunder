@@ -132,7 +132,6 @@ namespace Core {
         {
             text = ToRFC1123(localTime);
         }
-        bool FromString(const string& text);
         const TCHAR* WeekDayName() const;
         const TCHAR* MonthName() const;
 
