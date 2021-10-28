@@ -24,11 +24,11 @@ find_package(NEXUS QUIET)
 add_library(${TARGET} SHARED
         HCISocket.cpp
         GATTSocket.cpp
+        GATTProfile.cpp
         SDPSocket.cpp
         SDPProfile.cpp
         AVDTPSocket.cpp
         AVDTPProfile.cpp
-        Profile.cpp
         UUID.cpp
         Definitions.cpp
         BluetoothUtils.cpp
@@ -38,12 +38,12 @@ set(PUBLIC_HEADERS
         IDriver.h
         HCISocket.h
         GATTSocket.h
+        GATTProfile.h
         SDPSocket.h
         SDPProfile.h
         AVDTPSocket.h
         AVDTPProfile.h
         RTPSocket.h
-        Profile.h
         UUID.h
         DataRecord.h
         Module.h
