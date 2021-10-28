@@ -39,12 +39,15 @@ namespace Tests {
 
         void SetUp() override
         {
-            _dispatcher.reset(new Core::MessageDispatcher());
-            ASSERT_EQ(Core::ERROR_NONE, _dispatcher->Create(_identifier, _instanceId, _totalSize, _percentage));
+            _dispatcher.reset(new Core::MessageDispatcher(Core::MessageDispatcher::Create(_identifier, _instanceId, _totalSize, _percentage)));
         }
         void TearDown() override
         {
             _dispatcher.reset(nullptr);
+            //delete buffers from disk
+            string deleteCommand = Core::Format("rm -f %s* ", _identifier.c_str());            
+            system(deleteCommand.c_str());
+
             ++_instanceId;
         }
 
@@ -85,11 +88,9 @@ namespace Tests {
 
     TEST_F(Core_MessageDispatcher, CreateAndOpenOperatesOnSameValidFile)
     {
-        Core::MessageDispatcher writerDispatcher;
-        writerDispatcher.Create(_T("/tmp/md1"), 0, 2048, 50);
+        auto writerDispatcher = Core::MessageDispatcher::Create(_T("/tmp/md1"), 0, 2048, 50);
 
-        Core::MessageDispatcher readerDispatcher;
-        readerDispatcher.Open(_T("/tmp/md1"), 0);
+        auto readerDispatcher = Core::MessageDispatcher::Open(_T("/tmp/md1"), 0);
 
         uint8_t testData[2] = { 13, 37 };
 
@@ -98,7 +99,7 @@ namespace Tests {
         uint8_t readData[2] = { 0, 0 };
 
         auto& writer = writerDispatcher.GetWriter();
-        auto& reader = readerDispatcher.GetReader();
+        auto& reader = writerDispatcher.GetReader();
 
         ASSERT_EQ(writer.Data(0, sizeof(testData), testData), Core::ERROR_NONE);
         ASSERT_EQ(reader.Data(readType, readLength, readData), Core::ERROR_NONE);
@@ -111,18 +112,14 @@ namespace Tests {
 
     TEST_F(Core_MessageDispatcher, MessageDispatcherCanBeOpenedAndClosed)
     {
-        Core::MessageDispatcher writerDispatcher;
-        writerDispatcher.Create(_T("/tmp/md1"), 0, 2048, 50);
-
+        auto writerDispatcher = Core::MessageDispatcher::Create(_T("/tmp/md1"), 0, 2048, 50);
         {
-            Core::MessageDispatcher readerDispatcher;
-            readerDispatcher.Open(_T("/tmp/md1"), 0);
+            auto readerDispatcher = Core::MessageDispatcher::Open(_T("/tmp/md1"), 0);
             //destructor is called
         }
 
         //reopen
-        Core::MessageDispatcher readerDispatcher;
-        readerDispatcher.Open(_T("/tmp/md1"), 0);
+        auto readerDispatcher = Core::MessageDispatcher::Open(_T("/tmp/md1"), 0);
 
         uint8_t testData[2] = { 13, 37 };
 
@@ -174,8 +171,7 @@ namespace Tests {
     TEST_F(Core_MessageDispatcher, WriteAndReadDataAreEqualInDiffrentProcesses)
     {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
-            Core::MessageDispatcher dispatcher;
-            ASSERT_EQ(dispatcher.Open(this->_identifier, this->_instanceId), Core::ERROR_NONE);
+            auto dispatcher = Core::MessageDispatcher::Open(this->_identifier, this->_instanceId);
 
             auto& reader = dispatcher.GetReader();
             uint8_t readType;
@@ -265,8 +261,8 @@ namespace Tests {
     TEST_F(Core_MessageDispatcher, ReaderShouldWaitUntillRingBells)
     {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
-            Core::MessageDispatcher dispatcher;
-            ASSERT_EQ(dispatcher.Open(this->_identifier, this->_instanceId), Core::ERROR_NONE);
+            auto dispatcher = Core::MessageDispatcher::Open(this->_identifier, this->_instanceId);
+
             auto& reader = dispatcher.GetReader();
             uint8_t readType;
             uint16_t readLength;
@@ -306,6 +302,5 @@ namespace Tests {
 
         Core::Singleton::Dispose();
     }
-
 } // Tests
 } // WPEFramework

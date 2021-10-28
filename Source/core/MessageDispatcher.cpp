@@ -3,24 +3,7 @@
 namespace WPEFramework {
 namespace Core {
     //-----------MESSAGE DISPATCHER-----------
-    MessageDispatcher::MessageDispatcher()
-        : _reader(nullptr)
-        , _writer(nullptr)
-        , _dataBuffer(nullptr)
-        , _metaDataBuffer(nullptr)
-    {
-    }
-
-    MessageDispatcher::~MessageDispatcher()
-    {
-        auto metaDataBufferSize = _metaDataBuffer->Size();
-        auto dataBufferSize = _dataBuffer->Size();
-
-        //size reported by buffers is lower by the size of control.
-        _mappedFile->SetNumber<decltype(metaDataBufferSize), ENDIAN_BIG>(0, metaDataBufferSize + sizeof(Core::CyclicBuffer::control));
-        _mappedFile->SetNumber<decltype(metaDataBufferSize), ENDIAN_BIG>(sizeof(metaDataBufferSize), dataBufferSize + sizeof(Core::CyclicBuffer::control));
-    }
-
+    
     /**
      * @brief Creates a message dispatcher
      * 
@@ -28,49 +11,23 @@ namespace Core {
      * @param instanceId number of the instance
      * @param totalSize total size of the buffers (data + metadata)
      * @param percentage how much of totalSize is reserved for metadat (eg. 10 = 10% of totalSize)
-     * @return uint32_t Core::ERROR_NONE if buffers are valid, Core::ERROR_UNAVAILABLE otherwise
+     * @return MessageDispatcher
      */
-    uint32_t MessageDispatcher::Create(const string& identifier, const uint32_t instanceId, uint32_t totalSize, uint8_t percentage)
+    MessageDispatcher MessageDispatcher::Create(const string& identifier, const uint32_t instanceId, uint32_t totalSize, uint8_t percentage)
     {
-        ASSERT(_dataBuffer == nullptr);
-        ASSERT(_metaDataBuffer == nullptr);
-        ASSERT(totalSize > 2 * sizeof(Core::CyclicBuffer::control));
-
-        string doorBellName = Core::Format("%s.doorbell", identifier.c_str());
+        string doorBellFilename = Core::Format("%s.doorbell", identifier.c_str());
         string fileName = Core::Format("%s.%d.buffer", identifier.c_str(), instanceId);
 
-        uint32_t metadataSize = (totalSize * percentage) / 100;
-        uint32_t dataSize = totalSize - metadataSize;
+        uint32_t metaDataSize = (totalSize * percentage) / 100;
+        uint32_t dataSize = totalSize - metaDataSize;
 
         //first bytes in the file are reserved to store information about buffer sizes
-        uint32_t offset = sizeof(metadataSize) + sizeof(dataSize);
+        uint32_t offset = sizeof(metaDataSize) + sizeof(dataSize);
 
-        ASSERT(metadataSize > sizeof(Core::CyclicBuffer::control));
+        ASSERT(metaDataSize > sizeof(Core::CyclicBuffer::control));
         ASSERT(dataSize > sizeof(Core::CyclicBuffer::control));
 
-        // clang-format off
-        _mappedFile.reset(new Core::DataElementFile(fileName, Core::File::USER_READ    | 
-                                                              Core::File::USER_WRITE   | 
-                                                              Core::File::USER_EXECUTE | 
-                                                              Core::File::GROUP_READ   |
-                                                              Core::File::GROUP_WRITE  |
-                                                              Core::File::OTHERS_READ  |
-                                                              Core::File::OTHERS_WRITE | 
-                                                              Core::File::CREATE | 
-                                                              Core::File::SHAREABLE, totalSize + offset));
-        // clang-format on
-        ASSERT(_mappedFile->IsValid());
-        _metaDataBuffer.reset(new MessageBuffer(doorBellName, *_mappedFile, true, offset, metadataSize, false));
-        _dataBuffer.reset(new MessageBuffer(doorBellName, *_mappedFile, true, offset + metadataSize, dataSize, true));
-
-        ASSERT(_dataBuffer->IsValid() && _metaDataBuffer->IsValid());
-        _reader.reset(new Reader(*this, dataSize - sizeof(Core::CyclicBuffer::control)));
-        _writer.reset(new Writer(*this));
-
-        _mappedFile->SetNumber<decltype(metadataSize), ENDIAN_BIG>(0, metadataSize);
-        _mappedFile->SetNumber<decltype(dataSize), ENDIAN_BIG>(sizeof(metadataSize), dataSize);
-
-        return (_dataBuffer->IsValid() && _metaDataBuffer->IsValid() ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
+        return { doorBellFilename, fileName, metaDataSize, dataSize, offset };
     }
 
     /**
@@ -78,55 +35,107 @@ namespace Core {
      * 
      * @param identifier unique name 
      * @param instanceId number of instance
-     * @return uint32_t Core::ERROR_NONE if buffers are valid, Core::ERROR_UNAVAILABLE otherwise
+     * @return MessageDispatcher
      */
-    uint32_t MessageDispatcher::Open(const string& identifier, const uint32_t instanceId)
+    MessageDispatcher MessageDispatcher::Open(const string& identifier, const uint32_t instanceId)
     {
-
-        ASSERT(_dataBuffer == nullptr);
-        ASSERT(_metaDataBuffer == nullptr);
-        string doorBellName = Core::Format("%s.doorbell", identifier.c_str());
+        string doorBellFilename = Core::Format("%s.doorbell", identifier.c_str());
         string fileName = Core::Format("%s.%d.buffer", identifier.c_str(), instanceId);
-
-        uint32_t metadataSize = 0;
-        uint32_t dataSize = 0;
-        uint32_t offset = sizeof(metadataSize) + sizeof(dataSize); //first bytes in the file are reserved to store information about buffer sizes
 
         Core::File file(fileName);
         // clang-format off
-        _mappedFile.reset(new Core::DataElementFile(file, Core::File::USER_READ    | 
-                                                          Core::File::USER_WRITE   | 
-                                                          Core::File::USER_EXECUTE | 
-                                                          Core::File::GROUP_READ   |
-                                                          Core::File::GROUP_WRITE  |
-                                                          Core::File::OTHERS_READ  |
-                                                          Core::File::OTHERS_WRITE | 
-                                                          Core::File::SHAREABLE));
+        Core::DataElementFile mappedFile = Core::DataElementFile(file, Core::File::USER_READ    | 
+                                                                       Core::File::USER_WRITE   | 
+                                                                       Core::File::USER_EXECUTE | 
+                                                                       Core::File::GROUP_READ   |
+                                                                       Core::File::GROUP_WRITE  |
+                                                                       Core::File::OTHERS_READ  |
+                                                                       Core::File::OTHERS_WRITE | 
+                                                                       Core::File::SHAREABLE);
         // clang-format on
-        ASSERT(_mappedFile->IsValid());
+        ASSERT(mappedFile.IsValid());
 
-        metadataSize = _mappedFile->GetNumber<decltype(metadataSize), ENDIAN_BIG>(0);
-        dataSize = _mappedFile->GetNumber<decltype(dataSize), ENDIAN_BIG>(sizeof(metadataSize));
+        uint32_t metaDataSize = mappedFile.GetNumber<decltype(metaDataSize), ENDIAN_BIG>(0);
+        uint32_t dataSize = mappedFile.GetNumber<decltype(dataSize), ENDIAN_BIG>(sizeof(metaDataSize));
+        ASSERT(metaDataSize > sizeof(Core::CyclicBuffer::control));
+        ASSERT(dataSize > sizeof(Core::CyclicBuffer::control));
 
-        _metaDataBuffer.reset(new MessageBuffer(doorBellName, *_mappedFile, true, offset, metadataSize, false));
-        _dataBuffer.reset(new MessageBuffer(doorBellName, *_mappedFile, true, offset + metadataSize, dataSize, true));
+        uint32_t offset = sizeof(metaDataSize) + sizeof(dataSize);
 
-        ASSERT(_dataBuffer->IsValid() && _metaDataBuffer->IsValid());
-        //real size of buffers is lower by sizeof control, so the read buffer should also be smaller
-        _reader.reset(new Reader(*this, dataSize - sizeof(Core::CyclicBuffer::control)));
-        _writer.reset(new Writer(*this));
+        return { doorBellFilename, std::move(mappedFile), metaDataSize, dataSize, offset };
+    }
 
-        return (_dataBuffer->IsValid() && _metaDataBuffer->IsValid() ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
+    MessageDispatcher::MessageDispatcher(const string& doorBellFilename, const string& fileName, uint32_t metaDataSize, uint32_t dataSize, uint32_t offset)
+        // clang-format off
+        :  _mappedFile(fileName, Core::File::CREATE       |
+                                 Core::File::USER_READ    | 
+                                 Core::File::USER_WRITE   | 
+                                 Core::File::USER_EXECUTE | 
+                                 Core::File::GROUP_READ   |
+                                 Core::File::GROUP_WRITE  |
+                                 Core::File::OTHERS_READ  |
+                                 Core::File::OTHERS_WRITE | 
+                                 Core::File::SHAREABLE, offset + metaDataSize + dataSize)
+        // clang-format on
+        , _metaDataBuffer(new MessageBuffer(doorBellFilename, _mappedFile, true, offset, metaDataSize, false))
+        , _dataBuffer(new MessageBuffer(doorBellFilename, _mappedFile, true, offset + metaDataSize, dataSize, true))
+        , _reader(*this, dataSize - sizeof(Core::CyclicBuffer::control))
+        , _writer((*this))
+    {
+
+        ASSERT(metaDataSize > sizeof(Core::CyclicBuffer::control));
+        ASSERT(dataSize > sizeof(Core::CyclicBuffer::control));
+
+        ASSERT(_mappedFile.IsValid());
+
+        ASSERT(_dataBuffer->IsValid());
+        ASSERT(_metaDataBuffer->IsValid());
+
+        _mappedFile.SetNumber<decltype(metaDataSize), ENDIAN_BIG>(0, metaDataSize);
+        _mappedFile.SetNumber<decltype(dataSize), ENDIAN_BIG>(sizeof(metaDataSize), dataSize);
+    }
+
+    MessageDispatcher::MessageDispatcher(const string& doorBellFilename, Core::DataElementFile&& mappedFile, uint32_t metaDataSize, uint32_t dataSize, uint32_t offset)
+        : _mappedFile(std::move(mappedFile))
+        , _metaDataBuffer(new MessageBuffer(doorBellFilename, _mappedFile, false, offset, metaDataSize, false))
+        , _dataBuffer(new MessageBuffer(doorBellFilename, _mappedFile, false, offset + metaDataSize, dataSize, true))
+        , _reader(*this, dataSize - sizeof(Core::CyclicBuffer::control))
+        , _writer(*this)
+    {
+        ASSERT(_dataBuffer != nullptr);
+        ASSERT(_metaDataBuffer != nullptr);
+
+        ASSERT(metaDataSize > sizeof(Core::CyclicBuffer::control));
+        ASSERT(dataSize > sizeof(Core::CyclicBuffer::control));
+
+        ASSERT(_mappedFile.IsValid());
+
+        ASSERT(_dataBuffer->IsValid());
+        ASSERT(_metaDataBuffer->IsValid());
+    }
+
+    /**
+     * @brief On destroy, write sizes of each buffer, so a next Open will know the needed size for each buffer
+     * 
+     */
+    MessageDispatcher::~MessageDispatcher()
+    {
+        auto metaDataBufferSize = _metaDataBuffer->Size();
+        auto dataBufferSize = _dataBuffer->Size();
+
+        //size reported by buffers is lower by the size of control.
+        _mappedFile.SetNumber<decltype(metaDataBufferSize), ENDIAN_BIG>(0, metaDataBufferSize + sizeof(Core::CyclicBuffer::control));
+        _mappedFile.SetNumber<decltype(metaDataBufferSize), ENDIAN_BIG>(sizeof(metaDataBufferSize), dataBufferSize + sizeof(Core::CyclicBuffer::control));
     }
 
     MessageDispatcher::Reader& MessageDispatcher::GetReader()
     {
-        return *_reader;
+        return _reader;
     }
 
     MessageDispatcher::Writer& MessageDispatcher::GetWriter()
     {
-        return *_writer;
+        return _writer;
     }
 
     //----------READER-----------
@@ -136,6 +145,13 @@ namespace Core {
         _dataBuffer.resize(dataBufferSize);
     }
 
+    MessageDispatcher::Reader::Reader(Reader&& other)
+        : _parent(other._parent)
+        , _dataBuffer(other._dataBuffer)
+
+    {
+    }
+
     uint32_t MessageDispatcher::Reader::Metadata(uint8_t& outType, uint16_t& outLength, uint8_t* outValue)
     {
         return Core::ERROR_NONE;
@@ -143,6 +159,9 @@ namespace Core {
 
     uint32_t MessageDispatcher::Reader::Data(uint8_t& outType, uint16_t& outLength, uint8_t* outValue)
     {
+        _parent._lock.Lock();
+
+        ASSERT(_parent._mappedFile.IsValid());
         uint32_t result = Core::ERROR_NONE;
         bool available = _parent._dataBuffer->IsValid();
 
@@ -172,6 +191,9 @@ namespace Core {
             }
         }
 
+
+        _parent._lock.Unlock();
+
         return result;
     }
 
@@ -191,6 +213,12 @@ namespace Core {
     {
     }
 
+    MessageDispatcher::Writer::Writer(Writer&& other)
+        : _parent(other._parent)
+
+    {
+    }
+
     uint32_t MessageDispatcher::Writer::Metadata(const uint8_t type, const uint16_t length, const uint8_t* value)
     {
         //TODO BLOCKING CALL
@@ -199,9 +227,11 @@ namespace Core {
 
     uint32_t MessageDispatcher::Writer::Data(const uint8_t type, const uint16_t length, const uint8_t* value)
     {
+        _parent._lock.Lock();
+
         ASSERT(length > 0);
         uint32_t result = Core::ERROR_NONE;
-        const uint16_t fullLength = sizeof(type) + sizeof(length) + length; // headerLength + informationLength
+        const uint16_t fullLength = sizeof(type) + sizeof(length) +  length; // headerLength + informationLength
 
         // Tell the buffer how much we are going to write.
         const uint16_t reservedLength = _parent._dataBuffer->Reserve(fullLength);
@@ -215,6 +245,8 @@ namespace Core {
             result = Core::ERROR_WRITE_ERROR;
             TRACE_L1("Buffer to small to fit message!\n");
         }
+
+        _parent._lock.Unlock();
 
         return result;
     }

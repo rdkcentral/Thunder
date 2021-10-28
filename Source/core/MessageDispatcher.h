@@ -29,16 +29,16 @@ namespace Core {
     class EXTERNAL MessageDispatcher {
     private:
         //Private classes
-        //flusing buffer
         class EXTERNAL MessageBuffer : public Core::CyclicBuffer {
-        private:
+        public:
+            MessageBuffer(const string& doorBell, Core::DataElementFile& buffer, const bool initiator, const uint32_t offset, const uint32_t bufferSize, const bool overwrite);
+            ~MessageBuffer() override = default;
+            MessageBuffer(MessageBuffer&&) = default;
+
             MessageBuffer() = delete;
             MessageBuffer(const MessageBuffer&) = delete;
             MessageBuffer& operator=(const MessageBuffer&) = delete;
 
-        public:
-            MessageBuffer(const string& doorBell, Core::DataElementFile& buffer, const bool initiator, const uint32_t offset, const uint32_t bufferSize, const bool overwrite);
-            ~MessageBuffer() override = default;
             void Ring();
             uint32_t Wait(const uint32_t waitTime);
             void Relinquish();
@@ -53,6 +53,7 @@ namespace Core {
         public:
             Reader(MessageDispatcher& parent, uint32_t dataBufferSize);
             ~Reader() = default;
+            Reader(Reader&& other);
 
             Reader(const Reader&) = delete;
             Reader& operator=(const Reader&) = delete;
@@ -75,6 +76,8 @@ namespace Core {
         public:
             Writer(MessageDispatcher& parent);
             ~Writer() = default;
+            Writer(Writer&& other);
+
             Writer(const Writer&) = delete;
             Writer& operator=(const Writer&) = delete;
 
@@ -92,26 +95,41 @@ namespace Core {
 
     public:
         //public methods
-        MessageDispatcher();
+        static MessageDispatcher Create(const string& identifier, const uint32_t instanceId, uint32_t totalSize, uint8_t percentage);
+        static MessageDispatcher Open(const string& identifier, const uint32_t instanceId);
+
         ~MessageDispatcher();
+        MessageDispatcher(MessageDispatcher&& other)
+            : _lock()
+            , _mappedFile(std::move(other._mappedFile))
+            , _dataBuffer(std::move(other._dataBuffer))
+            , _metaDataBuffer(std::move(other._metaDataBuffer))
+            , _reader(std::move(other._reader))
+            , _writer(std::move(other._writer))
+        {
+        }
+
         MessageDispatcher(const MessageDispatcher&) = delete;
         MessageDispatcher& operator=(const MessageDispatcher&) = delete;
 
-        uint32_t Open(const string& identifier, const uint32_t instanceId);
-        uint32_t Create(const string& identifier, const uint32_t instanceId, uint32_t totalSize, uint8_t percentage);
         Reader& GetReader();
         Writer& GetWriter();
 
     private:
+        //private constructors
+        MessageDispatcher(const string& doorBellFilename, const string& fileName, uint32_t metaDataSize, uint32_t dataSize, uint32_t offset);
+        MessageDispatcher(const string& doorBellFilename, Core::DataElementFile&& mappedFile, uint32_t metaDataSize, uint32_t dataSize, uint32_t offset);
+
+    private:
         //private variables
         Core::CriticalSection _lock;
-        std::unique_ptr<Core::DataElementFile> _mappedFile;
+        Core::DataElementFile _mappedFile;
+
         std::unique_ptr<MessageBuffer> _dataBuffer;
         std::unique_ptr<MessageBuffer> _metaDataBuffer;
-        bool _directOutput;
 
-        std::unique_ptr<Reader> _reader;
-        std::unique_ptr<Writer> _writer;
+        Reader _reader;
+        Writer _writer;
     };
 }
 }
