@@ -15,8 +15,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# - Try to find Systemd
+# Once done this will define
+
+#  SYSTEMD_FOUND - System has libsystemd
+#  SYSTEMD_INCLUDE_DIRS - The libsystemd include directories
+#  SYSTEMD_LIBRARIES - The libraries needed to use libsystemd
+#  SYSTEMD_DEFINITIONS - The libraries needed to use libsystemd
+
+if(Systemd_FIND_QUIETLY)
+    set(_SYSTEMD_MODE QUIET)
+    message("Systemd_FIND_QUIETLY = " ${Systemd_FIND_QUIETLY})
+elseif(Systemd_FIND_REQUIRED)
+    set(_SYSTEMD_MODE REQUIRED)
+    message("Systemd_FIND_REQUIRED = " ${Systemd_FIND_REQUIRED})
+endif()
+
 find_package(PkgConfig)
-pkg_check_modules(PC_SYSTEMD libsystemd)
+pkg_check_modules(PC_SYSTEMD ${_SYSTEMD_MODE} libsystemd)
 
 if(${PC_SYSTEMD_FOUND})
     find_library(SYSTEMD_LIBRARY systemd
@@ -26,8 +42,14 @@ if(${PC_SYSTEMD_FOUND})
         PATHS ${PC_SYSTEMD_INCLUDE_DIRS}
         )
 
-    set(SYSTEMD_FOUND ${PC_SYSTEMD_FOUND})
-    if(NOT TARGET Systemd::Systemd)
+    set(SYSTEMD_DEFINITIONS ${PC_SYSTEMD_CFLAGS_OTHER})
+
+    include(FindPackageHandleStandardArgs)
+    find_package_handle_standard_args(Systemd DEFAULT_MSG SYSTEMD_INCLUDE_DIRS SYSTEMD_LIBRARIES)
+    mark_as_advanced(Systemd_FOUND SYSTEMD_INCLUDE_DIRS SYSTEMD_LIBRARIES SYSTEMD_DEFINITIONS)
+
+    set(SYSTEMD_FOUND ${Systemd_FOUND})
+    if(Systemd_FOUND AND NOT TARGET Systemd::Systemd)
         add_library(Systemd::Systemd UNKNOWN IMPORTED)
 
         set_target_properties(Systemd::Systemd

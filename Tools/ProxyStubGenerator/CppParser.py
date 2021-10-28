@@ -77,6 +77,7 @@ class Ref(IntEnum):
 
 class Metadata:
     def __init__(self):
+        self.sourcelocation = ""
         self.brief = ""
         self.details = ""
         self.input = False
@@ -298,8 +299,6 @@ class Identifier():
                     skip = 1
                 elif token[1:] == "PROPERTY":
                     self.meta.is_property = True
-                elif token[1:] == "LISTENER":
-                    self.meta.is_listener = True
                 elif token[1:] == "BRIEF":
                     self.meta.brief = string[i + 1]
                     skip = 1
@@ -816,6 +815,7 @@ class Class(Identifier, Block):
         self.is_event = False
         self.is_extended = False
         self.is_iterator = False
+        self.sourcelocation = None
         self.type_name = name
         self.parent.classes.append(self)
 
@@ -1351,8 +1351,6 @@ def __Tokenize(contents,log = None):
                     tagtokens.append("@OUT")
                 if _find("@index", token):
                     tagtokens.append("@INDEX")
-                if _find("@listener", token):
-                    tagtokens.append("@LISTENER")
                 if _find("@property", token):
                     tagtokens.append("@PROPERTY")
                 if _find("@deprecated", token):
@@ -1369,6 +1367,8 @@ def __Tokenize(contents,log = None):
                     tagtokens.append("@EXTENDED")
                 if _find("@iterator", token):
                     tagtokens.append("@ITERATOR")
+                if _find("@sourcelocation", token):
+                    tagtokens.append(__ParseParameterValue(token, "@sourcelocation"))
                 if _find("@text", token):
                     tagtokens.append(__ParseParameterValue(token, "@text"))
                 if _find("@length", token):
@@ -1506,6 +1506,7 @@ def Parse(contents,log = None):
     event_next = False
     extended_next = False
     iterator_next = False
+    sourcelocation_next = False
     in_typedef = False
 
 
@@ -1540,6 +1541,9 @@ def Parse(contents,log = None):
             extended_next = True
             tokens[i] = ";"
             i += 1
+        elif tokens[i] == "@SOURCELOCATION":
+            sourcelocation_next = tokens[i + 1][0]
+            i += 2
         elif tokens[i] == "@ITERATOR":
             iterator_next = True
             tokens[i] = ";"
@@ -1555,6 +1559,7 @@ def Parse(contents,log = None):
             event_next = False
             extended_next = False
             iterator_next = False
+            sourcelocation_next = False
             in_typedef = False
             tokens[i] = ";"
             i += 1
@@ -1676,6 +1681,9 @@ def Parse(contents,log = None):
             if iterator_next:
                 new_class.is_iterator = True
                 event_next = False
+            if sourcelocation_next:
+                new_class.sourcelocation = sourcelocation_next
+                sourcelocation_next = False
 
             if new_class.parent.omit:
                 # Inherit omiting...

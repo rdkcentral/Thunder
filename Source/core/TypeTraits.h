@@ -145,62 +145,97 @@ namespace Core {
             constexpr static bool Signed = std::is_signed<T>::value;
         };
 
-
-// HPL todo this one can be used with overloads, could not get that to work with the HAS_MEMBER
-#define HAS_MEMBER_NAME(func, name)                                 \
-    template <typename T, typename... Args>                                           \
-    struct name {                                                   \
-        typedef char yes[1];                                        \
-        typedef char no[2];                                         \
-         template <typename U,                                      \
-              typename = decltype( std::declval<U>().func(std::declval<Args>()...) )> \
-        static yes& chk(int);                                       \
-        template <typename U>                                       \
-        static no& chk(...);                                        \
-        static bool const value = sizeof(chk<T>(0)) == sizeof(yes); \
+// func: name of function that should be present
+// name: name of the struct that later can be used to override using SFINEA
+// T:    type on which it should be chekced if func is available. If only const versions of func need to be taken into account specify it as const T
+// R:    expected return type for func
+// Args: arguments that func should have, note it will also work if overrides of Func are available on T. Note: passing Args&&... itself is also allowed here to allow for variable parameters
+#define IS_MEMBER_AVAILABLE(func, name)                                                         \
+    template <typename T, typename R, typename... Args>                                         \
+    struct name {                                                                               \
+        typedef char yes[1];                                                                    \
+        typedef char no[2];                                                                     \
+        template <typename U,                                                                   \
+                  typename RR = decltype(std::declval<U>().func(std::declval<Args>()...)),      \
+                  typename Z = typename std::enable_if<std::is_same<R, RR>::value>::type>       \
+        static yes& chk(int);                                                                   \
+        template <typename U>                                                                   \
+        static no& chk(...);                                                                    \
+        static bool const value = sizeof(chk<T>(0)) == sizeof(yes);                             \
     }
 
-#define HAS_MEMBER(func, name)                                      \
-    template <typename T, typename Sign>                            \
-    struct name {                                                   \
-        typedef char yes[1];                                        \
-        typedef char no[2];                                         \
-        template <typename U, U>                                    \
-        struct type_check;                                          \
-        template <typename _1>                                      \
-        static yes& chk(type_check<Sign, &_1::func>*);              \
-        template <typename>                                         \
-        static no& chk(...);                                        \
-        static bool const value = sizeof(chk<T>(0)) == sizeof(yes); \
+// func: name of function that should be present in the inheritance tree and accessable (public or protected)
+// name: name of the struct that later can be used to override using SFINEA
+// T:    type on which it should be chekced if func is available in the Inheritance tree. If only const versions of func need to be taken into account specify it as const T
+// R:    expected return type for func
+// Args: arguments that func should have, note it will also work if overrides of Func are available on T. Note: passing Args&&... itself is also allowed here to allow for variable parameters
+#define IS_MEMBER_AVAILABLE_INHERITANCE_TREE(func, name)                                                                                             \
+    template <bool, typename TT>                                                                                                                     \
+    struct name##_IsMemberAvailableCheck : public TT {                                                                                               \
+      using type = TT;                                                                                                                               \
+      template <typename TTT, typename... Args2>                                                                                                     \
+      auto Verify() -> decltype( (TTT::func(std::declval<Args2>()...)));                                                                             \
+    };                                                                                                                                               \
+    template <typename TT>                                                                                                                           \
+    struct name##_IsMemberAvailableCheck<true, TT> : public TT {                                                                                     \
+      using type = const TT;                                                                                                                         \
+      template <typename TTT, typename... Args2>                                                                                                     \
+      auto Verify() const -> decltype( (TTT::func(std::declval<Args2>()...)));                                                                       \
+    };                                                                                                                                               \
+    template <typename T, typename R, typename... Args>                                                                                              \
+    struct name {                                                                                                                                    \
+        typedef char yes[1];                                                                                                                         \
+        typedef char no[2];                                                                                                                          \
+        template <typename U,                                                                                                                        \
+                  typename RR = decltype(std::declval<name##_IsMemberAvailableCheck<std::is_const<U>::value, U>>().template Verify<U, Args...>()),   \
+                  typename Z = typename std::enable_if<std::is_same<R, RR>::value>::type>                                                            \
+        static yes& chk(int);                                                                                                                        \
+        template <typename U>                                                                                                                        \
+        static no& chk(...);                                                                                                                         \
+        static bool const value = sizeof(chk<T>(0)) == sizeof(yes);                                                                                  \
     }
 
-#define HAS_STATIC_MEMBER(func, name)                               \
-    template <typename T>                                           \
-    struct name {                                                   \
-        typedef char yes[1];                                        \
-        typedef char no[2];                                         \
-        template <typename U, U>                                    \
-        struct type_check;                                          \
-        template <typename _1>                                      \
-        static yes& chk(decltype(&_1::func));                       \
-        template <typename>                                         \
-        static no& chk(...);                                        \
-        static bool const value = sizeof(chk<T>(0)) == sizeof(yes); \
+
+// func: name of static function that should be present
+// name: name of the struct that later can be used to override using SFINEA
+// T:    type on which it should be chekced if func is available
+// R:    expected return type for func
+// Args: arguments that func should have, note it will also work if overrides of Func are available on T. Note: passing Args&&... itself is also allowed here to allow for variable parameters
+// (Note: theoritcally also IS_MEMBER_AVAILABLE could be used for statics (and IS_MEMBER_AVAILABLE will actually find statics a match) but we made the differentiation so it is possibe to have non 
+//        none statics not taken into account when checking if func is available
+#define IS_STATIC_MEMBER_AVAILABLE(func, name)                                       \
+    template <typename T, typename R, typename... Args>                              \
+    struct name {                                                                    \
+        typedef char yes[1];                                                         \
+        typedef char no[2];                                                          \
+        template <typename U,                                                        \
+            typename RR = decltype(U::func(std::declval<Args>()...)),                \
+            typename Z = typename std::enable_if<std::is_same<R, RR>::value>::type>  \
+        static yes& chk(int);                                                        \
+        template <typename U>                                                        \
+        static no& chk(...);                                                         \
+        static bool const value = sizeof(chk<T>(0)) == sizeof(yes);                  \
     }
 
-#define HAS_TEMPLATE_MEMBER(func, parameter, name)                  \
-    template <typename T, typename Sign>                            \
-    struct name {                                                   \
-        typedef char yes[1];                                        \
-        typedef char no[2];                                         \
-        template <typename U, U>                                    \
-        struct type_check;                                          \
-        template <typename _1>                                      \
-        static yes& chk(type_check<Sign, &_1::func<parameter>>*);   \
-        template <typename>                                         \
-        static no& chk(...);                                        \
-        static bool const value = sizeof(chk<T>(0)) == sizeof(yes); \
-    };
+// func: name of static function that should be present
+// name: name of the struct that later can be used to override using SFINEA
+// T:    type on which it should be chekced if func is available. If only const versions of func need to be taken into account specify it as const T
+// P:    desired template type for func 
+// R:    expected return type for func
+// Args: arguments that func should have, note it will also work if overrides of Func are available on T. Note: passing Args&&... itself is also allowed here to allow for variable parameters
+#define IS_TEMPLATE_MEMBER_AVAILABLE(func, name)                                        \
+    template <typename T, typename P, typename R, typename... Args>                     \
+    struct name {                                                                       \
+        typedef char yes[1];                                                            \
+        typedef char no[2];                                                             \
+        template <typename U,                                                           \
+            typename RR = decltype(std::declval<U>().template func<P>(std::declval<Args>()...)), \
+            typename Z = typename std::enable_if<std::is_same<R, RR>::value>::type>     \
+        static yes& chk(int);                                                           \
+        template <typename U>                                                           \
+        static no& chk(...);                                                            \
+        static bool const value = sizeof(chk<T>(0)) == sizeof(yes);                     \
+    }
 
     }
 }
