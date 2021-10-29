@@ -371,6 +371,10 @@ TEST(Core_Time, DayOfWeek_LocalTimeEnabled)
 }
 TEST(Core_Time, FromString)
 {
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
     Time time(Time::Now());
     std::string timeString1, timeString2;
     time.ToString(timeString1);
@@ -378,23 +382,30 @@ TEST(Core_Time, FromString)
     // LocalTime default (true)
     EXPECT_EQ(time.FromString(timeString1), true);
     time.ToString(timeString2);
-    //FIXME: EXPECT_STREQ(timeString1.c_str(), timeString2.c_str());
+    EXPECT_STREQ(timeString1.c_str(), timeString2.c_str());
     // LocalTime true
     EXPECT_EQ(time.FromString(timeString2, true), true);
     time.ToString(timeString1);
-    //FIXME: EXPECT_STREQ(timeString2.c_str(), timeString1.c_str());
-    // LocalTime false
+    EXPECT_STREQ(timeString2.c_str(), timeString1.c_str());
 
+    // LocalTime false
     EXPECT_EQ(time.FromString(timeString1, false), true);
     time.ToString(timeString1);
     EXPECT_EQ(time.FromString(timeString2, false), true);
     time.ToString(timeString2);
-    //FIXME: EXPECT_STREQ(timeString1.c_str(), timeString2.c_str());
+    EXPECT_STREQ(timeString1.c_str(), timeString2.c_str());
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, FromString_ANSI)
 {
     Time time;
     std::string timeString;
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
     // LocalTime true
     EXPECT_EQ(time.FromString("Sun Nov 6 08:49:37 1994", true), true);
     time.ToString(timeString);
@@ -402,12 +413,40 @@ TEST(Core_Time, FromString_ANSI)
     // LocalTime false
     EXPECT_EQ(time.FromString("Sun Nov 6 12:49:37 1994", false), true);
     time.ToString(timeString);
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 12:49:37 ");
+
+    // Check time difference after unset time zone
+    unsetenv("TZ");
+    tzset();
+
+    EXPECT_EQ(time.FromString("Sun Nov 6 12:49:37 1994", false), true);
+    time.ToString(timeString);
     EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 04:49:37 ");
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, FromString_ISO8601)
 {
     Time time;
     std::string timeString;
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
+    // LocalTime true
+    EXPECT_EQ(time.FromString("1994-11-06T08:49:37Z", true), true);
+    time.ToString(timeString);
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
+    // LocalTime false
+    EXPECT_EQ(time.FromString("1994-11-06T08:49:37Z", false), true);
+    time.ToString(timeString);
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
+
+    // Check time difference after unset time zone
+    unsetenv("TZ");
+    tzset();
+
     // LocalTime true
     EXPECT_EQ(time.FromString("1994-11-06T08:49:37Z", true), true);
     time.ToString(timeString);
@@ -416,75 +455,98 @@ TEST(Core_Time, FromString_ISO8601)
     EXPECT_EQ(time.FromString("1994-11-06T08:49:37Z", false), true);
     time.ToString(timeString);
     EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 00:49:37 ");
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, FromString_RFC1036)
 {
     Time time;
     std::string timeString;
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
     // LocalTime true
     EXPECT_EQ(time.FromString("Sunday, 06-Nov-94 08:49:37 GMT", true), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 00:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
     // LocalTime false
     EXPECT_EQ(time.FromString("Sunday, 06-Nov-94 08:49:37 GMT", false), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 00:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, FromString_RFC1123)
 {
     Time time;
     std::string timeString;
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
+    // LocalTime true
+    EXPECT_EQ(time.FromString("Sun, 06 Nov 1994 08:49:37 GMT", true), true);
+    time.ToString(timeString);
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
+    // LocalTime false
+    EXPECT_EQ(time.FromString("Sun, 06 Nov 1994 08:49:37 GMT", false), true);
+    time.ToString(timeString);
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
+
+    // Check after unset time zone
+    unsetenv("TZ");
+    tzset();
     // LocalTime true
     EXPECT_EQ(time.FromString("Sun, 06 Nov 1994 08:49:37 GMT", true), true);
     time.ToString(timeString);
     EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 00:49:37 ");
     // LocalTime false
-    EXPECT_EQ(time.FromString("Sun, 06 Nov 1994 08:49:37 GMT", false), true);
+    EXPECT_EQ(time.FromString("Sun, 06 Nov 1994 12:49:37 GMT", false), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 00:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 04:49:37 ");
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, FromStandard_ANSI_ValidFormat)
 {
     Time time(Time::Now());
-    EXPECT_EQ(time.FromANSI("2021Feb05 23:47:20", true), true);
-    EXPECT_EQ(time.FromANSI("2021Feb05 23:47:20", false), true);
-    EXPECT_EQ(time.FromANSI("1994Jan06 08:49:37.123+06:45", true), true);
-    EXPECT_EQ(time.FromANSI("1994Jan06 08:49:37.123+06:45", false), true);
-    EXPECT_EQ(time.FromANSI("1994Jan608:49:37.123+06:45", true), true);
-    EXPECT_EQ(time.FromANSI("1994Jan6 8:49:37.123+06:45", true), true);
-    EXPECT_EQ(time.FromANSI("1994Jan6 8:9:7.123+06:45", true), true);
-    EXPECT_EQ(time.FromANSI("1994Jan0608:49:37.123+06:45", true), true);
-    EXPECT_EQ(time.FromANSI("1994Mar0608:49:5.123+06:45 GMT", true), true);
-    EXPECT_EQ(time.FromANSI("1994Mar0608:49:5.123+06:45 UTC", true), true);
-    EXPECT_EQ(time.FromANSI("1994March0608:49:5.123+06:45 UTC", true), true);
+    EXPECT_EQ(time.FromANSI("Thu Aug11 23:47:20 2010", true), true);
+    EXPECT_EQ(time.FromANSI("Sun Sep 02 23:47:20 2012", false), true);
+    EXPECT_EQ(time.FromANSI("Sat Jul 13 23:47:20 2012", true), true);
+    EXPECT_EQ(time.FromANSI("Sun Jun3 3:47:20 2012", false), true);
+    EXPECT_EQ(time.FromANSI("Sun Jan01 23:7:20 2012", false), true);
+    EXPECT_EQ(time.FromANSI("Thu Nov22 23:47:0 2012", true), true);
+    EXPECT_EQ(time.FromANSI("Fri May   11   23:47:20 2012", false), true);
+    EXPECT_EQ(time.FromANSI("Fri Apr06 3:7:0 2012", true), true);
+
+    EXPECT_EQ(time.FromANSI("Thu Mar08 23:47:20 2012 GMT", false), true);
+    EXPECT_EQ(time.FromANSI("Thu Mar08 23:47:20 2012 GMT", true), true);
+    EXPECT_EQ(time.FromANSI("Sun Feb05 23:47:20 2012 UTC", false), true);
+    EXPECT_EQ(time.FromANSI("Sun Feb05 23:47:20 2012 UTC", true), true);
 }
 TEST(Core_Time, FromStandard_ANSI_InvalidFormat)
 {
     Time time(Time::Now());
     std::string timeString;
     time.ToString(timeString);
-
     // ToString is in RFC1123 format, hence it should fail
     EXPECT_EQ(time.FromANSI(timeString, true), false);
     EXPECT_EQ(time.FromANSI(timeString, false), false);
 
     EXPECT_EQ(time.FromANSI("1994Jan06T0a:49:37.123+06:45", true), false);
-    EXPECT_EQ(time.FromANSI("1994Jan06T0a:49:37.123+06:45", false), false);
-    EXPECT_EQ(time.FromANSI("1994Feb06T08:4a:37.123+06:45", true), false);
-    EXPECT_EQ(time.FromANSI("1994Mar0aT08:49:5a.123+06:45", true), false);
-    EXPECT_EQ(time.FromANSI("T1994Mar0608:49:5a.123+06:45", true), false);
-    EXPECT_EQ(time.FromANSI("1994TMar0608:49:5a.123+06:45", true), false);
-    EXPECT_EQ(time.FromANSI("1994No1v0608:49:5.123+06:45 UTC", true), false);
-    EXPECT_EQ(time.FromANSI("1994No0608:49:5.123+06:45 UTC", true), false);
-
-    /* FIXME: Cross check the below TCs are valid case or not 
-     * If date/time/zone preceded with any character it get discarded (character used: TEST)
-    EXPECT_EQ(time.FromANSI("1994Jan06TEST08:49:37.123+06:45", true), false);
-    EXPECT_EQ(time.FromANSI("1994Jan0608:49:37.803+06:45", true), false);
-    EXPECT_EQ(time.FromANSI("1994MarTEST0608:49:5a.123+06:45", true), false);
-    EXPECT_EQ(time.FromANSI("1994Mar608:49:5TEST.123+06:45", true), false);
-    EXPECT_EQ(time.FromANSI("1994Mar608:49:5.123+06:45 TEST GMT", true), false);
-    */
+    EXPECT_EQ(time.FromANSI("SAT Jan06T0a:49:37.123+06:45", false), false);
+    EXPECT_EQ(time.FromANSI("Sunday Feb06T08:4a:37.123+06:45", true), false);
+    EXPECT_EQ(time.FromANSI("Tues Mar0aT08:49:5a.123+06:45", true), false);
+    EXPECT_EQ(time.FromANSI("TMar0608:49:5a.123+06:45", true), false);
+    EXPECT_EQ(time.FromANSI("19Mar0608:49:5a.123+06:45", true), false);
+    EXPECT_EQ(time.FromANSI("No1v0608:49:5.123+06:45 UTC", true), false);
+    EXPECT_EQ(time.FromANSI("No0608:49:5.123+06:45 UTC", true), false);
+    EXPECT_EQ(time.FromANSI("  Sun Jan 8 TEST08:49:37.123+06:45", true), false);
+    EXPECT_EQ(time.FromANSI("Sun 0608:49:37.803+06:45", true), false);
+    EXPECT_EQ(time.FromANSI("Mon MarTEST0608:49:5a.123+06:45", true), false);
+    EXPECT_EQ(time.FromANSI("Sun Mar608:49:5TEST.123+06:45", true), false);
+    EXPECT_EQ(time.FromANSI("Sun Mar608:49:5.123+06:45 TEST GMT", true), false);
 }
 TEST(Core_Time, FromStandard_ISO8601_ValidFormat)
 {
@@ -500,31 +562,22 @@ TEST(Core_Time, FromStandard_ISO8601_ValidFormat)
     EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:7+06:45"), true);
     EXPECT_EQ(time.FromISO8601("2094-11-06T08:49:37+06:45"), true);
     EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37+06:45"), true);
-    /*
-     * FIXME: fractions of second/hour/minute are expected to work
-     * currently it is failing with parsing
     EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37.123"), true);
     EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37.123Z"), true);
     EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37.123+01"), true);
-    EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37.123+06:45"), true);
-    */
-    // FIXME: expecting this case should work: minute and second with single digit
-    //EXPECT_EQ(time.FromISO8601("1994-11-06T08:9:7+06:45"), true);
+    EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37.123+06 45"), true);
+    EXPECT_EQ(time.FromISO8601("1994-12-06T08:49:37.123 06:45"), true);
 }
 TEST(Core_Time, FromStandard_ISO8601_InvalidFormat)
 {
     Time time(Time::Now());
     std::string timeString;
-
     // ToString is in RFC1123 format, hence it should fail
     EXPECT_EQ(time.FromISO8601(timeString), false);
-    EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37.123+06:45"), false);
-    EXPECT_EQ(time.FromISO8601("1994-12-06T08:49:37.123+06:45"), false);
     EXPECT_EQ(time.FromISO8601("1994-13-06T08:49:37.123+06:45"), false);
-    EXPECT_EQ(time.FromISO8601("1994-12-06T08:49:37.123 06:45"), false);
-    EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37.123-06:45"), false);
+    EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37.123-06:: 45"), false);
     EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37."), false);
-    EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37.123+06 45"), false);
+    EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37.123+06- 45"), false);
     EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37.123+24:45"), false);
     EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37.123+24:4"), false);
     EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37.123+06:45:"), false);
@@ -548,7 +601,6 @@ TEST(Core_Time, FromStandard_RFC1036_ValidFormat)
     EXPECT_EQ(time.FromRFC1036("Sunday, 06-Nov-1994 08:49:37 GMT"), true);
     EXPECT_EQ(time.FromRFC1036("Sunday, 06-Nov-1994 08:49:37 UTC"), true);
     EXPECT_EQ(time.FromRFC1036("Sunday, 06-Nov-1994 08:49:37"), true);
-    EXPECT_EQ(time.FromRFC1036("Mon, 06-Nov-1994 08:49:37"), true);
     EXPECT_EQ(time.FromRFC1036("Monday, 7-Nov-94 08:49:37"), true);
     EXPECT_EQ(time.FromRFC1036("Monday, 7-Nov-94 8:09:07"), true);
     EXPECT_EQ(time.FromRFC1036("Monday, 7-Nov-94 8:9:07"), true);
@@ -558,14 +610,9 @@ TEST(Core_Time, FromStandard_RFC1036_ValidFormat)
     EXPECT_EQ(time.FromRFC1036("Monday, 7-Nov-94 8:9:7 GMT"), true);
     EXPECT_EQ(time.FromRFC1036("Monday, 7-Nov-94 8:9:7 GMT "), true);
     EXPECT_EQ(time.FromRFC1036("Monday, 7-Nov-94 8:9:7 UTC"), true);
-    EXPECT_EQ(time.FromRFC1036("Monday, 7-Apr-2094 8:9:7 GMT"), true);
-    // FIXME: expect this also to be success: EXPECT_EQ(time.FromRFC1036("Monday, 7-Nov-94 8:9:7"), true);
-
-    // FIXME IRFC1036 working only if we precede the data with 4 characters with a seperator
-    EXPECT_EQ(time.FromRFC1036("XXXX, 06-Nov-08:11:49:37 "), true);
-    EXPECT_EQ(time.FromRFC1036("XXXX,06-Nov-08:11:49:37 "), true);
-    EXPECT_EQ(time.FromRFC1036("XXXX-06-Nov-08:11:49:37 "), true);
-    EXPECT_EQ(time.FromRFC1036("XXXX:06-Nov-08:11:49:37 "), true);
+    EXPECT_EQ(time.FromRFC1036("Monday, 7-Apr-94 8:9:7 GMT"), true);
+    EXPECT_EQ(time.FromRFC1036("Monday, 7-Nov-94 8:9:7"), true);
+    EXPECT_EQ(time.FromRFC1036("Sunday, 06-Nov-1994 08:49:37 PDT"), true);
 }
 TEST(Core_Time, FromStandard_RFC1036_InvalidFormat)
 {
@@ -589,14 +636,13 @@ TEST(Core_Time, FromStandard_RFC1036_InvalidFormat)
     EXPECT_EQ(time.FromRFC1036("1994Jan07T08:49:37.123+06:45"), false);
     EXPECT_EQ(time.FromRFC1036("1994-Jan-09T08:49:37.123+06:45"), false);
     EXPECT_EQ(time.FromRFC1036("Monday, 07-November-2014 08:49:37 GMT"), false);
-
-    /* FIXME: Cross check the below TCs are valid case or not
-     * If date/year/time/zone preceded with any character it get discard
+    EXPECT_EQ(time.FromRFC1036("XXXX,06-Nov-08:11:49:37 "), false);
+    EXPECT_EQ(time.FromRFC1036("XXXX-06-Nov-08:11:49:37 "), false);
+    EXPECT_EQ(time.FromRFC1036("XXXX:06-Nov-08:11:49:37 "), false);
+    EXPECT_EQ(time.FromRFC1036("XXXX, 06-Nov-08:11:49:37 "), false);
     EXPECT_EQ(time.FromRFC1036("Sunday, 06-Nov-TEST1994 08:49:37"), false);
     EXPECT_EQ(time.FromRFC1036("Sunday, TEST06-Nov-1994 08:49:37"), false);
     EXPECT_EQ(time.FromRFC1036("Sunday, 06-Nov-1994 TEST08:49:37"), false);
-    EXPECT_EQ(time.FromRFC1036("Sunday, 06-Nov-1994 08:49:37 TEST GMT"), false);
-    */
 }
 TEST(Core_Time, FromStandard_RFC1123_ValidFormat)
 {
@@ -604,18 +650,16 @@ TEST(Core_Time, FromStandard_RFC1123_ValidFormat)
     EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994 08:49:37 GMT"), true);
     EXPECT_EQ(time.FromRFC1123("Sun,06Nov199408:49:37GMT"), true);
     EXPECT_EQ(time.FromRFC1123("Sun,06Nov199408:49:37"), true);
-    EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994 ff 08:49:37 GMT"), true);
-    EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994ff 08:49:37 GMT"), true);
     EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994 08:59:27"), true);
     EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994 08:59:27 "), true);
     EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994 08:59:27 FF "), true);
     EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994 08:59:27 GMT"), true);
-    EXPECT_EQ(time.FromRFC1123("Sunday, 06 Nov 1994 08:59:27 GMT"), true);
-    EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994:08:49:37 GMT"), true);
 }
 TEST(Core_Time, FromStandard_RFC1123_InvalidFormat)
 {
     Time time;
+    EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994 ff 08:49:37 GMT"), false);
+    EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994ff 08:49:37 GMT"), false);
     EXPECT_EQ(time.FromRFC1123("1994Jan06T08:49:37.123+06:45"), false);
     EXPECT_EQ(time.FromRFC1123("1994Jan0aT08:49:37.123+06:45"), false);
     EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994 0f:49:37 GMT"), false);
@@ -627,17 +671,14 @@ TEST(Core_Time, FromStandard_RFC1123_InvalidFormat)
     EXPECT_EQ(time.FromRFC1123("06Nov1994:::08:49:37"), false);
     EXPECT_EQ(time.FromRFC1123("Sun,Nov1994:::08:49:37"), false);
     EXPECT_EQ(time.FromRFC1123("06 Nov 1994 08:59:27 GMT"), false);
-    /* FIXME: Cross check the below TCs are valid case or not
-     * If date/month/year/time/zone preceded with any character it get discard
+    EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994:08:49:37 GMT"), false);
     EXPECT_EQ(time.FromRFC1123("Sun,06Nov1994TEST8:49:37"), false);
-    EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994 08:49:37 ff GMT"), false);
     EXPECT_EQ(time.FromRFC1123("Sun,06Nov1994TEST8:49:37"), false);
     EXPECT_EQ(time.FromRFC1123("Sund, 06 Nov 1994 08:49:37 GMT"), false);
     EXPECT_EQ(time.FromRFC1123("TEST, 06 Nov 1994 08:49:37 GMT"), false);
     EXPECT_EQ(time.FromRFC1123("Sun, TEST 06 Nov 1994 08:49:37 GMT"), false);
     EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov TEST 1994 08:49:37 GMT"), false);
-    */
-
+    EXPECT_EQ(time.FromRFC1123("Sunday, 06 Nov 1994 08:59:27 GMT"), false);
 }
 TEST(Core_Time, FromStandard_RFC1123_TimeStringCreatedFromTime)
 {
@@ -733,17 +774,38 @@ TEST(Core_Time, FromStandard_RFC1123_LocalTimeDisabled)
 {
     Time time;
     std::string timeString;
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
     EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994 08:59:27 UTC"), true);
     time.ToString(timeString, false);
     EXPECT_STREQ(timeString.c_str(), _T("Sun, 06 Nov 1994 08:59:27 GMT"));
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, FromStandard_RFC1123_LocalTimeEnabled)
 {
     Time time;
     std::string timeString;
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
     EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994 08:59:27 UTC"), true);
     time.ToString(timeString, true);
-    EXPECT_STREQ(timeString.c_str(), _T("Sun, 06 Nov 1994 00:59:27 "));
+    EXPECT_STREQ(timeString.c_str(), _T("Sun, 06 Nov 1994 08:59:27 "));
+
+    unsetenv("TZ");
+    tzset();
+    // Set without timezone
+    EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994 09:59:27 UTC"), true);
+    time.ToString(timeString, true);
+    EXPECT_STREQ(timeString.c_str(), _T("Sun, 06 Nov 1994 01:59:27 "));
+
+    // Set timezone back
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, FromStandard_RFC1123_TimeConversion_WithLocalTimeDisabled)
 {
@@ -758,10 +820,17 @@ TEST(Core_Time, FromStandard_RFC1123_TimeConversion_WithCurrentTime_And_LocalTim
 {
     Time time(Time::Now());
     std::string timeString1, timeString2;
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
     time.ToString(timeString1, false);
     EXPECT_EQ(time.FromRFC1123(timeString1), true);
     time.ToString(timeString2, false);
     EXPECT_STREQ(timeString1.c_str(), timeString2.c_str());
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, FromStandard_RFC1123_TimeConversion_WithLocalTimeEnabled)
 {
@@ -771,37 +840,46 @@ TEST(Core_Time, FromStandard_RFC1123_TimeConversion_WithLocalTimeEnabled)
     EXPECT_EQ(time.FromRFC1123(timeString1), true);
     time.ToString(timeString2, true);
     EXPECT_STREQ(timeString1.c_str(), timeString2.c_str());
-
 }
 TEST(Core_Time, FromStandard_RFC1123_TimeConversion_WithLocalTimeEnabled_And_LocalTimeDisabled)
 {
     Time time(Time::Now());
     std::string timeString1, timeString2;
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
     time.ToString(timeString1, true);
     EXPECT_EQ(time.FromRFC1123(timeString1), true);
     time.ToString(timeString2, true);
-    //FIXME: EXPECT_STREQ(timeString1.c_str(), timeString2.c_str());
+    EXPECT_STREQ(timeString1.c_str(), timeString2.c_str());
     EXPECT_EQ(time.FromRFC1123(timeString2), true);
     time.ToString(timeString1, true);
-    //FIXME: EXPECT_STREQ(timeString2.c_str(), timeString1.c_str());
+    EXPECT_STREQ(timeString2.c_str(), timeString1.c_str());
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, ToStandard_ISO8601)
 {
     Time time(Time::Now());
     string timeString;
     string timeISOString;
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
 
     // localTime argument value as default
     EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37Z"), true);
     EXPECT_STREQ((time.ToISO8601()).c_str(), "1994-11-06T08:49:37Z");
     EXPECT_EQ(time.FromISO8601("1994-11-06T00:49:37"), true);
-    EXPECT_STREQ((time.ToISO8601()).c_str(), "1994-11-06T08:49:37Z");
+    EXPECT_STREQ((time.ToISO8601()).c_str(), "1994-11-06T00:49:37Z");
     EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37"), true);
-    EXPECT_STREQ((time.ToISO8601()).c_str(), "1994-11-06T16:49:37Z");
+    EXPECT_STREQ((time.ToISO8601()).c_str(), "1994-11-06T08:49:37Z");
 
     // localTime argument value as true
     EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37Z"), true);
-    EXPECT_STREQ((time.ToISO8601(true)).c_str(), "1994-11-06T00:49:37");
+    EXPECT_STREQ((time.ToISO8601(true)).c_str(), "1994-11-06T08:49:37");
     EXPECT_EQ(time.FromISO8601("1994-11-06T00:49:37"), true);
     EXPECT_STREQ((time.ToISO8601(true)).c_str(), "1994-11-06T00:49:37");
     EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37"), true);
@@ -811,13 +889,16 @@ TEST(Core_Time, ToStandard_ISO8601)
     EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37Z"), true);
     EXPECT_STREQ((time.ToISO8601(false)).c_str(), "1994-11-06T08:49:37Z");
     EXPECT_EQ(time.FromISO8601("1994-11-06T00:49:37"), true);
-    EXPECT_STREQ((time.ToISO8601(false)).c_str(), "1994-11-06T08:49:37Z");
+    EXPECT_STREQ((time.ToISO8601(false)).c_str(), "1994-11-06T00:49:37Z");
     EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37"), true);
-    EXPECT_STREQ((time.ToISO8601(false)).c_str(), "1994-11-06T16:49:37Z");
+    EXPECT_STREQ((time.ToISO8601(false)).c_str(), "1994-11-06T08:49:37Z");
 
     // Time with empty value return null string
     EXPECT_STREQ((Time().ToISO8601(true)).c_str(), "");
     EXPECT_STREQ((Time().ToISO8601(false)).c_str(), "");
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, ToStandard_RFC1123_WithLocalTimeDisabled)
 {
@@ -849,15 +930,21 @@ TEST(Core_Time, ToStandard_RFC1123_WithLocalTimeEnabled)
 }
 TEST(Core_Time, ToStandard_RFC1123_WithLocalTimeEnabled_And_LocalTimeDisabled)
 {
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
     Time time(Time::Now());
     std::string timeString1, timeString2;
     timeString1 = time.ToRFC1123(true);
     EXPECT_EQ(time.FromRFC1123(timeString1), true);
     timeString2 = time.ToRFC1123(true);
-    //FIXME: EXPECT_STREQ(timeString1.c_str(), timeString2.c_str());
+    EXPECT_STREQ(timeString1.c_str(), timeString2.c_str());
     EXPECT_EQ(time.FromRFC1123(timeString2), true);
     timeString1 = time.ToRFC1123(true);
-    //FIXME: EXPECT_STREQ(timeString2.c_str(), timeString1.c_str());
+    EXPECT_STREQ(timeString2.c_str(), timeString1.c_str());
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, Ticks_withoutInterval)
 {
@@ -869,7 +956,7 @@ TEST(Core_Time, Ticks_withoutInterval)
 }
 TEST(Core_Time, Ticks_withInterval)
 {
-    uint32_t givenIntervalInSeconds = 0;//2;
+    uint32_t givenIntervalInSeconds = 2;
     Core::Time time1 = Core::Time::Now();
     sleep(givenIntervalInSeconds);
     Core::Time time2 = Core::Time::Now();
@@ -894,7 +981,7 @@ TEST(Core_Time, AddTime)
     time.ToString(timeString1);
     EXPECT_STRNE(timeString1.c_str(), timeString2.c_str());
     uint32_t expectedAddedTime = 0;
-    if (currentTime + timeTobeAdded > 60) {
+    if (currentTime + timeTobeAdded >= 60) {
         expectedAddedTime = (currentTime + timeTobeAdded) - 60;
     } else {
         expectedAddedTime = (currentTime + timeTobeAdded);
@@ -920,8 +1007,9 @@ TEST(Core_Time, SubTime)
     time.ToString(timeString1);
     EXPECT_STRNE(timeString1.c_str(), timeString2.c_str());
     uint32_t expectedSubtractedTime = 0;
-    if (currentTime < timeTobeSubtracted) {
-        expectedSubtractedTime = 60 - (currentTime - timeTobeSubtracted);
+    if (currentTime <= timeTobeSubtracted) {
+        expectedSubtractedTime = 60 - (timeTobeSubtracted - currentTime);
+        expectedSubtractedTime = (expectedSubtractedTime == 60) ? 0 : expectedSubtractedTime;
     } else {
         expectedSubtractedTime = (currentTime - timeTobeSubtracted);
     }
@@ -930,9 +1018,9 @@ TEST(Core_Time, SubTime)
 }
 TEST(Core_Time, NTPTime)
 {
-    const uint64_t ntpTime = 9487658348292704567ULL;
+    const uint64_t ntpTime = 9487534653234ULL;
     Time time(1970, 1, 1, 0, 0, 0, 1, true);
-    EXPECT_EQ(time.NTPTime()/MicroSecondsPerSecond, ntpTime/MicroSecondsPerSecond);
+    EXPECT_GE(time.NTPTime()/MicroSecondsPerSecond, ntpTime);
     uint32_t timeTobeAdded = 4;
     time.Add(timeTobeAdded);
 
@@ -940,7 +1028,9 @@ TEST(Core_Time, NTPTime)
 }
 TEST(Core_Time, DifferenceFromGMTSeconds)
 {
-    string currentZone = ((getenv("TZ") != nullptr) ? getenv("TZ") : "");
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+
     setenv("TZ", "America/Los_Angeles", 1);
     tzset();
     Time time(80, 12, 23, 11, 30, 23, 21, false);
@@ -950,15 +1040,16 @@ TEST(Core_Time, DifferenceFromGMTSeconds)
     tzset();
     time = Time(2006, 11, 44, 11, 30, 23, 21, false);
     EXPECT_EQ(time.DifferenceFromGMTSeconds(), 0);
-    setenv("TZ", currentZone.c_str(), 1);
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, DifferenceFromGMTSeconds_LocalTimeEnabled)
 {
-    string currentZone = ((getenv("TZ") != nullptr) ? getenv("TZ") : "");
-    setenv("TZ", "America/Los_Angeles", 1);
-    tzset();
     Time time(80, 12, 23, 11, 30, 23, 21, true);
     EXPECT_EQ(time.DifferenceFromGMTSeconds(), -28800);
+
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
 
     setenv("TZ", "America/New_York", 1);
     tzset();
@@ -974,7 +1065,9 @@ TEST(Core_Time, DifferenceFromGMTSeconds_LocalTimeEnabled)
     tzset();
     time = Time(2006, 11, 44, 11, 30, 23, 21, true);
     EXPECT_EQ(time.DifferenceFromGMTSeconds(), 3600);
-    setenv("TZ", currentZone.c_str(), 1);
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, Format)
 {
@@ -1001,11 +1094,18 @@ TEST(Core_Time, ToTimeOnly)
 }
 TEST(Core_Time, ToTimeOnly_LocalTimeEnabled)
 {
-    string currentZone = ((getenv("TZ") != nullptr) ? getenv("TZ") : "");
-
-    setenv("TZ", "America/Los_Angeles", 1);
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
     tzset();
+
     Time time(2002, 5, 10, 11, 30, 23, 21, false);
+    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "11:30:23");
+    EXPECT_EQ(time.MilliSeconds(), 21);
+
+    unsetenv("TZ");
+    tzset();
+    // Check time after unset time zone
+    time = Time(2002, 5, 10, 11, 30, 23, 21, false);
     EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "04:30:23");
     EXPECT_EQ(time.MilliSeconds(), 21);
 
@@ -1019,16 +1119,18 @@ TEST(Core_Time, ToTimeOnly_LocalTimeEnabled)
     time = Time(1970, 5, 32, 24, 60, 23, 21, false);
     EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "06:30:23");
 
-    setenv("TZ", currentZone.c_str(), 1);
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, ToTimeOnly_And_TimeConstructor_WithLocalTimeEnabled)
 {
-    string currentZone = ((getenv("TZ") != nullptr) ? getenv("TZ") : "");
-
-    setenv("TZ", "America/Los_Angeles", 1);
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
     tzset();
+
     Time time(2002, 5, 10, 11, 30, 23, 21, true);
-    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "12:30:23");
+    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "11:30:23");
     EXPECT_EQ(time.MilliSeconds(), 21);
 
     setenv("TZ", "Africa/Algiers", 1);
@@ -1041,15 +1143,23 @@ TEST(Core_Time, ToTimeOnly_And_TimeConstructor_WithLocalTimeEnabled)
     time = Time(1970, 5, 32, 24, 60, 23, 21, true);
     EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "01:00:23");
 
-    setenv("TZ", currentZone.c_str(), 1);
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, ToTimeOnlyWithLocalTimeDisabled_And_TimeConstructor_WithLocalTimeEnabled)
 {
-    string currentZone = ((getenv("TZ") != nullptr) ? getenv("TZ") : "");
-
-    setenv("TZ", "America/Los_Angeles", 1);
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
     tzset();
+
     Time time(2002, 5, 10, 11, 30, 23, 21, true);
+    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "11:30:23GMT");
+    EXPECT_EQ(time.MilliSeconds(), 21);
+
+    // Check time difference after unset time zone
+    unsetenv("TZ");
+    tzset();
+    time = Time(2002, 5, 10, 11, 30, 23, 21, true);
     EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "19:30:23GMT");
     EXPECT_EQ(time.MilliSeconds(), 21);
 
@@ -1063,37 +1173,426 @@ TEST(Core_Time, ToTimeOnlyWithLocalTimeDisabled_And_TimeConstructor_WithLocalTim
     time = Time(1970, 5, 32, 24, 60, 23, 21, true);
     EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "19:30:23GMT");
 
-    setenv("TZ", currentZone.c_str(), 1);
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, ToLocal)
 {
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "America/Los_Angeles", 1);
+    tzset();
+
     Time time(2002, 5, 10, 11, 30, 23, 21, true);
-    time.ToLocal();
-    //FIXME: it has to be true, but always false, since the value for tm_zone is either UTC or GMT
-    //EXPECT_EQ(time.IsLocalTime(), true);
     std::string timeString;
+    time.ToString(timeString, true);
+    EXPECT_STREQ(timeString.c_str(), "Fri, 10 May 2002 12:30:23 ");
+    EXPECT_EQ(time.IsLocalTime(), true);
+    time.ToLocal();
+    EXPECT_EQ(time.IsLocalTime(), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Fri, 10 May 2002 11:30:23 ");
+    EXPECT_STREQ(timeString.c_str(), "Fri, 10 May 2002 12:30:23 ");
 
     time = Time(1970, 5, 32, 24, 30, 23, 21, true);
     time.ToLocal();
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Tue, 02 Jun 1970 00:30:23 ");
-    //FIXME: it has to be true, but always false, since the value for tm_zone is either UTC or GMT
-    //EXPECT_EQ(time.IsLocalTime(), true);
+    EXPECT_STREQ(timeString.c_str(), "Tue, 02 Jun 1970 01:30:23 ");
+    EXPECT_EQ(time.IsLocalTime(), true);
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, ToUTC)
 {
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "America/Los_Angeles", 1);
+    tzset();
     Time time(2002, 5, 10, 11, 30, 23, 21, true);
-    time.ToUTC();
     std::string timeString;
-    time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Fri, 10 May 2002 11:30:23 ");
+    time.ToUTC();
+    time.ToString(timeString, false);
+    EXPECT_STREQ(timeString.c_str(), "Fri, 10 May 2002 19:30:23 GMT");
+    EXPECT_EQ(time.IsLocalTime(), true);
+
+    // Check time difference after unset time zone
+    setenv("TZ", "UTC", 1);
+    tzset();
+
+    time = Time(2002, 5, 10, 11, 30, 23, 21, true);
+    time.ToUTC();
+    time.ToString(timeString, false);
+    EXPECT_STREQ(timeString.c_str(), "Fri, 10 May 2002 11:30:23 GMT");
     EXPECT_EQ(time.IsLocalTime(), false);
 
-    time = Time(1970, 5, 32, 24, 30, 23, 21, true);
-    time.ToUTC();
-    time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Tue, 02 Jun 1970 00:30:23 ");
-    EXPECT_EQ(time.IsLocalTime(), false);
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
+}
+TEST(Core_Time, JulianDate)
+{
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
+    Time time1(2002, 5, 10, 11, 30, 23, 21, true);
+    Time time2(2002, 5, 10, 11, 30, 24, 22, true);
+    // Doing simple comparison based on time difference
+    EXPECT_GE(time2.JulianDate(), time1.JulianDate());
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
+}
+TEST(Core_Time, OperatorOverloadingEqual)
+{
+    Time time1(2002, 5, 10, 11, 30, 23, 22, true);
+    Time time2(2002, 5, 10, 11, 30, 23, 22, true);
+    EXPECT_EQ(time1 == time2, true);
+    time1 = Time(1971, 5, 10, 11, 4, 24, 21, true);
+    time2 = Time(1971, 5, 10, 11, 4, 24, 21, true);
+    EXPECT_EQ(time1 == time2, true);
+}
+TEST(Core_Time, OperatorOverloadingEqual_CheckNotEqualValues)
+{
+    Time time1(2002, 5, 10, 11, 35, 23, 21, true);
+    Time time2(2002, 5, 10, 11, 30, 23, 22, true);
+    EXPECT_EQ(time1 == time2, false);
+    time1 = Time(1971, 5, 10, 11, 4, 24, 21, true);
+    time2 = Time(1971, 5, 11, 11, 4, 24, 21, true);
+    EXPECT_EQ(time1 == time2, false);
+}
+TEST(Core_Time, OperatorOverloadingNotEqual)
+{
+    Time time1(2001, 5, 10, 11, 30, 23, 20, true);
+    Time time2(2002, 5, 10, 11, 30, 23, 22, true);
+    EXPECT_EQ(time1 != time2, true);
+    time1 = Time(1971, 5, 10, 11, 4, 24, 21, true);
+    time2 = Time(1970, 5, 10, 11, 4, 24, 26, true);
+    EXPECT_EQ(time1 != time2, true);
+}
+TEST(Core_Time, OperatorOverloadingNotEqual_CheckEqualValues)
+{
+    Time time1(2015, 12, 10, 11, 30, 23, 55, true);
+    Time time2(2015, 12, 10, 11, 30, 23, 55, true);
+    EXPECT_EQ(time1 != time2, false);
+    time1 = Time(1971, 8, 11, 11, 4, 24, 21, true);
+    time2 = Time(1971, 8, 11, 11, 4, 24, 21, true);
+    EXPECT_EQ(time1 != time2, false);
+}
+TEST(Core_Time, OperatorOverloadingLessThan)
+{
+    // Difference in milliseconds
+    Time time1(2002, 5, 10, 11, 30, 23, 21, true);
+    Time time2(2002, 5, 10, 11, 30, 23, 22, true);
+    EXPECT_EQ(time1 < time2, true);
+
+    // Difference in Seconds
+    time1 = Time(2002, 5, 10, 11, 30, 23, 21, true);
+    time2 = Time(2002, 5, 10, 11, 30, 24, 21, true);
+    EXPECT_EQ(time1 < time2, true);
+
+    // Difference in minutes
+    time1 = Time(2002, 5, 10, 11, 30, 23, 21, true);
+    time2 = Time(2002, 5, 10, 11, 35, 23, 22, true);
+    EXPECT_EQ(time1 < time2, true);
+
+    // Difference in hours
+    time1 = Time(2002, 5, 10, 11, 30, 23, 21, true);
+    time2 = Time(2002, 5, 10, 13, 30, 23, 21, true);
+    EXPECT_EQ(time1 < time2, true);
+
+    // Difference in days
+    time1 = Time(2002, 5, 10, 11, 30, 23, 21, true);
+    time2 = Time(2002, 5, 12, 11, 30, 23, 21, true);
+    EXPECT_EQ(time1 < time2, true);
+
+    // Difference in months
+    time1 = Time(2002, 5, 10, 11, 30, 23, 21, true);
+    time2 = Time(2002, 6, 10, 11, 30, 23, 21, true);
+    EXPECT_EQ(time1 < time2, true);
+
+    // Difference in years
+    time1 = Time(2002, 5, 10, 11, 30, 23, 21, true);
+    time2 = Time(2004, 5, 10, 11, 30, 23, 21, true);
+    EXPECT_EQ(time1 < time2, true);
+}
+TEST(Core_Time, OperatorOverlessGreaterThan_CheckNotLessThanValues)
+{
+    // Check with equals
+    Time time1(2020, 2, 1, 14, 30, 35, 41, true);
+    Time time2(2020, 2, 1, 14, 30, 35, 41, true);
+    EXPECT_EQ(time1 > time2, false);
+
+    // Check with greater values
+    time1 = Time(2008, 5, 10, 11, 30, 25, 21, true);
+    time2 = Time(2006, 5, 10, 11, 30, 26, 21, true);
+    EXPECT_EQ(time1 < time2, false);
+    time1 = Time(2002, 5, 10, 13, 40, 23, 21, true);
+    time2 = Time(2002, 5, 10, 12, 35, 23, 22, true);
+    EXPECT_EQ(time1 < time2, false);
+    time1 = Time(2002, 5, 10, 11, 30, 23, 26, true);
+    time2 = Time(2002, 5, 10, 11, 30, 23, 24, true);
+    EXPECT_EQ(time1 < time2, false);
+}
+TEST(Core_Time, OperatorOverloadingLessThanEqual)
+{
+    // Difference in milliseconds
+    Time time1(2002, 5, 10, 11, 30, 23, 21, true);
+    Time time2(2002, 5, 10, 11, 30, 23, 22, true);
+    EXPECT_EQ(time1 <= time2, true);
+
+    // Difference in Seconds
+    time1 = Time(2002, 5, 10, 11, 30, 23, 21, true);
+    time2 = Time(2002, 5, 10, 11, 30, 24, 21, true);
+    EXPECT_EQ(time1 <= time2, true);
+
+    // Difference in minutes
+    time1 = Time(2002, 5, 10, 11, 30, 23, 21, true);
+    time2 = Time(2002, 5, 10, 11, 35, 23, 22, true);
+    EXPECT_EQ(time1 <= time2, true);
+
+    // Difference in hours
+    time1 = Time(2002, 5, 10, 11, 30, 23, 21, true);
+    time2 = Time(2002, 5, 10, 13, 30, 23, 21, true);
+    EXPECT_EQ(time1 <= time2, true);
+
+    // Difference in days
+    time1 = Time(2002, 5, 10, 11, 30, 23, 21, true);
+    time2 = Time(2002, 5, 12, 11, 30, 23, 21, true);
+    EXPECT_EQ(time1 <= time2, true);
+
+    // Difference in months
+    time1 = Time(2002, 5, 10, 11, 30, 23, 21, true);
+    time2 = Time(2002, 6, 10, 11, 30, 23, 21, true);
+    EXPECT_EQ(time1 <= time2, true);
+
+    // Difference in years
+    time1 = Time(2002, 5, 10, 11, 30, 23, 21, true);
+    time2 = Time(2004, 5, 10, 11, 30, 23, 21, true);
+    EXPECT_EQ(time1 <= time2, true);
+
+    // Using equal time
+    time1 = Time(2002, 5, 10, 11, 30, 23, 21, true);
+    time2 = Time(2002, 5, 10, 11, 30, 23, 21, true);
+    EXPECT_EQ(time1 <= time2, true);
+}
+TEST(Core_Time, OperatorOverloadingLessThanEqual_CheckNotLessThanEqualValues)
+{
+    // Check with greater values
+    Time time1(2004, 5, 10, 11, 30, 23, 21, true);
+    Time time2(2002, 5, 10, 11, 30, 24, 21, true);
+    EXPECT_EQ(time1 <= time2, false);
+    time1 = Time(2002, 5, 10, 14, 30, 23, 21, true);
+    time2 = Time(2002, 5, 10, 11, 35, 23, 22, true);
+    EXPECT_EQ(time1 <= time2, false);
+    time1 = Time(2004, 5, 10, 11, 30, 23, 22, true);
+    time2 = Time(2004, 5, 10, 11, 30, 23, 21, true);
+    EXPECT_EQ(time1 <= time2, false);
+}
+TEST(Core_Time, OperatorOverloadingGreaterThan)
+{
+    // Difference in milliseconds
+    Time time1(2002, 5, 10, 11, 30, 23, 23, true);
+    Time time2(2002, 5, 10, 11, 30, 23, 21, true);
+    EXPECT_EQ(time1 > time2, true);
+
+    // Difference in Seconds
+    time1 = Time(2002, 5, 10, 11, 30, 25, 21, true);
+    time2 = Time(2002, 5, 10, 11, 30, 24, 21, true);
+    EXPECT_EQ(time1 > time2, true);
+
+    // Difference in minutes
+    time1 = Time(2002, 5, 10, 11, 40, 23, 22, true);
+    time2 = Time(2002, 5, 10, 11, 35, 23, 22, true);
+    EXPECT_EQ(time1 > time2, true);
+
+    // Difference in hours
+    time1 = Time(2002, 5, 10, 14, 30, 23, 21, true);
+    time2 = Time(2002, 5, 10, 13, 30, 23, 21, true);
+    EXPECT_EQ(time1 > time2, true);
+
+    // Difference in days
+    time1 = Time(2002, 5, 24, 11, 30, 23, 21, true);
+    time2 = Time(2002, 5, 12, 11, 30, 23, 21, true);
+    EXPECT_EQ(time1 > time2, true);
+
+    // Difference in months
+    time1 = Time(2002, 7, 10, 11, 30, 23, 21, true);
+    time2 = Time(2002, 6, 10, 11, 30, 23, 21, true);
+    EXPECT_EQ(time1 > time2, true);
+
+    // Difference in years
+    time1 = Time(2010, 5, 10, 11, 30, 23, 21, true);
+    time2 = Time(2004, 5, 10, 11, 30, 23, 21, true);
+    EXPECT_EQ(time1 > time2, true);
+}
+TEST(Core_Time, OperatorOverloadingGreaterThan_CheckNotGreaterThanValues)
+{
+    // Check with equals
+    Time time1(2002, 5, 10, 11, 30, 23, 21, true);
+    Time time2(2002, 5, 10, 11, 30, 23, 21, true);
+    EXPECT_EQ(time1 > time2, false);
+
+    // Check with lesser values
+    time1 = Time(2004, 5, 10, 11, 30, 25, 21, true);
+    time2 = Time(2006, 5, 10, 11, 30, 26, 21, true);
+    EXPECT_EQ(time1 > time2, false);
+    time1 = Time(2002, 5, 10, 11, 30, 23, 21, true);
+    time2 = Time(2002, 5, 10, 12, 35, 23, 22, true);
+    EXPECT_EQ(time1 > time2, false);
+    time1 = Time(2002, 5, 10, 11, 30, 23, 22, true);
+    time2 = Time(2002, 5, 10, 11, 30, 23, 24, true);
+    EXPECT_EQ(time1 > time2, false);
+}
+TEST(Core_Time, OperatorOverloadingGreaterThanEqual)
+{
+    // Difference in milliseconds
+    Time time1(2002, 5, 10, 11, 30, 23, 23, true);
+    Time time2(2002, 5, 10, 11, 30, 23, 21, true);
+    EXPECT_EQ(time1 >= time2, true);
+
+    // Difference in Seconds
+    time1 = Time(2002, 5, 10, 11, 30, 25, 21, true);
+    time2 = Time(2002, 5, 10, 11, 30, 24, 21, true);
+    EXPECT_EQ(time1 >= time2, true);
+
+    // Difference in minutes
+    time1 = Time(2002, 5, 10, 11, 40, 23, 22, true);
+    time2 = Time(2002, 5, 10, 11, 35, 23, 22, true);
+    EXPECT_EQ(time1 >= time2, true);
+
+    // Difference in hours
+    time1 = Time(2002, 5, 10, 14, 30, 23, 21, true);
+    time2 = Time(2002, 5, 10, 13, 30, 23, 21, true);
+    EXPECT_EQ(time1 >= time2, true);
+
+    // Difference in days
+    time1 = Time(2002, 5, 24, 11, 30, 23, 21, true);
+    time2 = Time(2002, 5, 12, 11, 30, 23, 21, true);
+    EXPECT_EQ(time1 >= time2, true);
+
+    // Difference in months
+    time1 = Time(2002, 7, 10, 11, 30, 23, 21, true);
+    time2 = Time(2002, 6, 10, 11, 30, 23, 21, true);
+    EXPECT_EQ(time1 >= time2, true);
+
+    // Difference in years
+    time1 = Time(2010, 5, 10, 11, 30, 23, 21, true);
+    time2 = Time(2004, 5, 10, 11, 30, 23, 21, true);
+    EXPECT_EQ(time1 >= time2, true);
+
+    // Using equal time
+    time1 = Time(2012, 10, 1, 3, 45, 34, 10, true);
+    time2 = Time(2012, 10, 1, 3, 45, 34, 10, true);
+    EXPECT_EQ(time1 >= time2, true);
+}
+TEST(Core_Time, OperatorOverloadingGreaterThan_CheckNotGreaterThanEqualValues)
+{
+    // Check with lesser values
+    Time time1(2004, 5, 10, 11, 30, 25, 21, true);
+    Time time2(2006, 5, 10, 11, 30, 26, 21, true);
+    EXPECT_EQ(time1 >= time2, false);
+    time1 = Time(2000, 5, 9, 11, 30, 2, 21, true);
+    time2 = Time(2002, 5, 10, 12, 35, 23, 22, true);
+    EXPECT_EQ(time1 >= time2, false);
+    time1 = Time(1980, 5, 10, 11, 30, 23, 22, true);
+    time2 = Time(1980, 5, 10, 11, 30, 23, 24, true);
+    EXPECT_EQ(time1 >= time2, false);
+}
+TEST(Core_Time, OperatorOverloadingAssignment)
+{
+    Time time1(2002, 5, 10, 11, 30, 23, 22, true);
+    Time time2 = time1;
+    EXPECT_EQ(time1 == time2, true);
+    time2 = Time(1971, 5, 10, 11, 4, 24, 21, true);
+    time1 = time2;
+    EXPECT_EQ(time1 == time2, true);
+}
+TEST(Core_Time, OperatorOverloadingAddition)
+{
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
+    Time time1(2002, 5, 10, 11, 30, 23, 22, true);
+    Time time2;
+    Time time3 = time1 + time2;
+    EXPECT_EQ(time1 == time3, true);
+
+    Time time4(2000, 5, 10, 11, 30, 23, 22, true);
+    Time time5 = time3 + time4;
+    string timeString;
+    time5.ToString(timeString);
+
+    // Time will be saved/set based on 1st of January 1970, 00:00:00 time base.
+    // So the saved time values will be always the one subtracted with time base.
+    // Hence the '+=' works only on the subtracted values and here the value
+    // will be based on that differences
+    EXPECT_STREQ(timeString.c_str(), "Thu, 16 Sep 2032 23:00:46 ");
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
+}
+TEST(Core_Time, OperatorOverloadingSubtraction)
+{
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
+    Time time1(2002, 8, 8, 11, 30, 23, 22, true);
+    Time time2(2000, 3, 1, 8, 25, 22, 1, true);
+
+    Time time3 = time1 - time2;
+    string timeString;
+    time3.ToString(timeString);
+
+    // Time will be saved/set based on 1st of January 1970, 00:00:00 time base.
+    // So the saved time values will be always the one subtracted with time base.
+    // Hence the '-=' works only on the subtracted values and here the value
+    // will be based on that differences
+    EXPECT_STREQ(timeString.c_str(), "Fri, 09 Jun 1972 03:05:01 ");
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
+}
+TEST(Core_Time, OperatorOverloadingAdditionWithAssignment)
+{
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
+    Time time1(2002, 5, 10, 11, 30, 23, 22, true);
+    Time time2;
+    time2 += time1;
+    EXPECT_EQ(time1 == time2, true);
+
+    Time time3(2000, 5, 10, 11, 30, 23, 22, true);
+    time3 += time2;
+    string timeString;
+    time3.ToString(timeString);
+
+    // Time will be saved/set based on 1st of January 1970, 00:00:00 time base.
+    // So the saved time values will be always the one subtracted with time base.
+    // Hence the '+=' works only on the subtracted values and here the value
+    // will be based on that differences
+    EXPECT_STREQ(timeString.c_str(), "Thu, 16 Sep 2032 23:00:46 ");
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
+}
+TEST(Core_Time, OperatorOverloadingSubtractionWithAssignment)
+{
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
+    Time time1(2002, 8, 8, 11, 30, 23, 22, true);
+    Time time2(2000, 3, 1, 8, 25, 22, 1, true);;
+    time1 -= time2;
+
+    string timeString;
+    time1.ToString(timeString);
+    // Time will be saved/set based on 1st of January 1970, 00:00:00 time base.
+    // So the saved time values will be always the one subtracted with time base.
+    // Hence the '-=' works only on the subtracted values and here the value
+    // will be based on that differences
+    EXPECT_STREQ(timeString.c_str(), "Fri, 09 Jun 1972 03:05:01 ");
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
