@@ -383,7 +383,7 @@ inline void EXTERNAL SleepS(unsigned int a_Time)
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #define BIG_ENDIAN_PLATFORM 1
 #else
-#pragma message "Unknown endianess"
+#error "Unknown endianess: please set __BYTE_ORDER__ to proper endianess"
 #endif
 
 #endif
