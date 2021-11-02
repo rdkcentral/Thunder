@@ -61,8 +61,6 @@ namespace Core {
         }
         inline const string& Name() const
         {
-            static const string emptyString;
-
             return (_refCountedHandle != nullptr ? _refCountedHandle->_name : emptyString);
         }
         void* LoadFunction(const TCHAR functionName[]);
