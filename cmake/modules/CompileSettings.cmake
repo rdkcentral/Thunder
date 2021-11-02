@@ -54,6 +54,10 @@ if(PERFORMANCE_MONITOR)
     target_compile_definitions(CompileSettings INTERFACE -DTHUNDER_PERFORMANCE=1)
 endif()
 
+if(DEADLOCK_DETECTION)
+    target_compile_definitions(CompileSettings INTERFACE CRITICAL_SECTION_LOCK_LOG)
+endif()
+
 if(NOT BUILD_TYPE)
     set(BUILD_TYPE Production)
     message(AUTHOR_WARNING "BUILD_TYPE not set, assuming '${BUILD_TYPE}'")
