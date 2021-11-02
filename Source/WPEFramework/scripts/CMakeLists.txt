@@ -16,7 +16,7 @@
 # limitations under the License.
 
 set(SYSTEMD_SERVICE "false" CACHE STRING "Select systemd service scripts, by default it install initv scripts")
-set(INITD_ROOT_PATH "root" CACHE STRING "system root directory location")
+set(SYSTEM_ROOT_PATH "root" CACHE STRING "System root directory location")
 
 if (SYSTEMD_SERVICE)
     file(READ wpeframework.service.in WPEFRAMEWORK_SYSTEMD_SERVICE)
@@ -30,12 +30,12 @@ if (SYSTEMD_SERVICE)
     install(
             FILES ${CMAKE_CURRENT_BINARY_DIR}/wpeframework.service
             PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
-            DESTINATION ${CMAKE_INSTALL_PREFIX}/../${SYSTEMD_PATH}/system/
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/../${SYSTEMD_INSTALL_PATH}/system/
     )
 else()
     file(READ wpeframework.in WPEFRAMEWORK_INITD)
     string(
-	    REGEX REPLACE "ROOT_PATH" "${INITD_ROOT_PATH}"
+           REGEX REPLACE "ROOT_PATH" "${SYSTEM_ROOT_PATH}"
            MOD_WPEFRAMEWORK_INITD "${WPEFRAMEWORK_INITD}"
     )
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/wpeframework "${MOD_WPEFRAMEWORK_INITD}")
