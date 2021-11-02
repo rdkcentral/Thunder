@@ -18,7 +18,7 @@
 get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 set(THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool")
-set(ENABLE_INITSCRIPT_SUPPORT "true" CACHE STRING "Enable init script(systemd/initd) install support from the thunder source tree")
+set(ENABLE_INITSCRIPT_SUPPORT ON CACHE STRING "Enable init script(systemd/initd) install support from the thunder source tree")
 
 # JsonGenerator(CODE INPUT ${CMAKE_CURRENT_SOURCE_DIR}/json/Controller.json OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/json")
 
