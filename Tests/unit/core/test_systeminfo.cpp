@@ -23,6 +23,7 @@
 
 #include <gtest/gtest.h>
 #include <core/core.h>
+#include <sys/utsname.h>
 
 namespace WPEFramework {
 namespace Tests {
@@ -30,30 +31,69 @@ namespace Tests {
 enum class Purpose {
     MEM,
     SWAP,
-    HOST
+    HOST,
+    CHIPSET
 };
 
 enum class Funcion {
     TOTAL,
     FREE,
-    UNKNOWN
+    NONE
 };
+
+std::string Architecture()
+{
+    std::string architecture;
+    struct utsname buf;
+    if (uname(&buf) == 0) {
+        architecture = buf.machine;
+    }
+    return architecture;
+}
+
+std::string FirmwareVersion()
+{
+    std::string release;
+    struct utsname buf;
+    if (uname(&buf) == 0) {
+        release = buf.release;
+    }
+    return release;
+}
+
+std::string GetChipset(std::string result)
+{
+    std::string chipset;
+    std::stringstream iss(result);
+
+    while (getline(iss, result, '\n'))
+    {
+        if (result.find("model name") != std::string::npos) {
+            std::size_t position = result.find(':');
+            if (position != std::string::npos) {
+                chipset.assign(result.substr(result.find_first_not_of(" ", position + 1)));
+                break;
+           }
+        }
+    }
+    return chipset;
+}
 
 std::string GetMemory(std::string result, Funcion func)
 {
-    std::string word = "";
-    int i = 1;
+    std::string word;
+    int i = 0;
     std::stringstream iss(result);
     while (iss >> result)
     {
-        if(i == 2 && func == Funcion::TOTAL){
+        if(i == 1 && func == Funcion::TOTAL){
             word.assign(result);
             break;
-        }/* //retrieves the free memory
-        if(i == 4 && (func == Funcion::FREE)){
+        }//retrieves the free memory
+        if(i == 3 && (func == Funcion::FREE)) {
             word.assign(result);
             break;
-        }*/
+        }
         i++;
     }
     return word;
@@ -66,8 +106,9 @@ std::string ExecuteCmd(const char* cmd, Purpose purpose, Funcion func) {
     FILE* pipe = popen(cmd, "r");
 
     EXPECT_TRUE(pipe != nullptr);
-
+#ifdef __CORE_EXCEPTION_CATCHING__
     try {
+#endif
         while (fgets(buffer, sizeof buffer, pipe) != NULL) {
             result = buffer;
             if (purpose == Purpose::MEM) {
@@ -81,12 +122,19 @@ std::string ExecuteCmd(const char* cmd, Purpose purpose, Funcion func) {
             } else if (purpose == Purpose::HOST) {
                 word.assign(result);
                 break;
+            } else if (purpose == Purpose::CHIPSET) {
+                if (result.find("model name") != std::string::npos) {
+                    word = GetChipset(result);
+                }
+                break;
             }
         }
+#ifdef __CORE_EXCEPTION_CATCHING__
     } catch (...) {
         pclose(pipe);
         throw;
     }
+#endif
     pclose(pipe);
 
     return word;
@@ -100,42 +148,137 @@ float GetUpTime() {
     return 0;
 }
 
-TEST(DISABLED_Core_SystemInfo, systemInfo)
+TEST(Core_SystemInfo, RawDeviceId)
 {
-//TODO - when include following lines of code time out issue occur in other tests.
-#if 0
-    const uint8_t* rawDeviceId (WPEFramework::Core::SystemInfo::Instance().RawDeviceId());
+    const uint8_t* rawDeviceId = (WPEFramework::Core::SystemInfo::Instance().RawDeviceId());
+    // Simple check added, since the rawId is currently based on MAC address of first active interface
+    EXPECT_EQ((rawDeviceId != nullptr), true);
+}
+TEST(Core_SystemInfo, RawDeviceId_To_ID)
+{
+    const uint8_t* rawDeviceId = (WPEFramework::Core::SystemInfo::Instance().RawDeviceId());
+    string id1 (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, 0xFF));
+    uint8_t readPaddedSize = 0x11;
+    string id2 (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, readPaddedSize));
+    uint8_t readSize = 0xc;
+    string id3 (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, readSize));
 
-    string id (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, 0xFF));
-    string id1 (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, 0x11));
-    string id2 (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, 0x7));
-#endif
+    EXPECT_GE(id1.size(), 0);
+    EXPECT_EQ(id2.size(), readPaddedSize);
+    size_t paddingStartPosition = id2.find_first_of('0', 0);
+    size_t paddingEndPosition = id2.find_first_not_of('0', paddingStartPosition);
+    EXPECT_EQ((id1.size() + (paddingEndPosition - paddingStartPosition)), id2.size());
 
+    EXPECT_EQ((id3.size() == readSize), true);
+}
+TEST(Core_SystemInfo, GetEnvironment_SetUsing_setenv)
+{
+    string env = "TEST_GETENVIRONMENT_WITH_SETENV";
+    string valueSet = "HelloTest";
+    ::setenv(env.c_str(), valueSet.c_str(), 1);
+    string valueGet;
+    Core::SystemInfo::GetEnvironment(env, valueGet);
+    EXPECT_STREQ(valueGet.c_str(), valueSet.c_str());
+    ::unsetenv(env.c_str());
+}
+TEST(Core_SystemInfo, GetEnvironment_SetUsing_SetEnvironment_With_ValueTypeAsString)
+{
+    string env = "TEST_GETENVIRONMENT_WITH_SETENVIRONMENT";
+    string valueSet = "HaiTest";
+    // Call forced with default value
+    Core::SystemInfo::SetEnvironment(env, valueSet);
+    string valueGet;
+    Core::SystemInfo::GetEnvironment(env, valueGet);
+    EXPECT_STREQ(valueGet.c_str(), valueSet.c_str());
+
+    valueSet = "ForcedTest";
+    // Call forced with true
+    Core::SystemInfo::SetEnvironment(env, valueSet, true);
+    Core::SystemInfo::GetEnvironment(env, valueGet);
+    EXPECT_STREQ(valueGet.c_str(), valueSet.c_str());
+
+    valueSet = "NotForcedTest";
+    // Call forced with false
+    Core::SystemInfo::SetEnvironment(env, valueSet, false);
+    Core::SystemInfo::GetEnvironment(env, valueGet);
+    EXPECT_STREQ(valueGet.c_str(), "ForcedTest");
+    ::unsetenv(env.c_str());
+    // Call forced with false after unset/clear environement variable
+    Core::SystemInfo::SetEnvironment(env, valueSet, false);
+    Core::SystemInfo::GetEnvironment(env, valueGet);
+    EXPECT_STREQ(valueGet.c_str(), valueSet.c_str());
+    ::unsetenv(env.c_str());
+}
+TEST(Core_SystemInfo, GetEnvironment_SetUsing_SetEnvironment_WithValueTypeAsTCharPointer)
+{
+    string env = "TEST_GETENVIRONMENT_WITH_SETENVIRONMENT";
+    TCHAR valueSet[25] = "HaiTest";
+    // Call forced with default value
+    Core::SystemInfo::SetEnvironment(env, valueSet);
+    string valueGet;
+    Core::SystemInfo::GetEnvironment(env, valueGet);
+    EXPECT_STREQ(valueGet.c_str(), valueSet);
+
+    strcpy(valueSet, "ForcedTest");
+    // Call forced with true
+    Core::SystemInfo::SetEnvironment(env, valueSet, true);
+    Core::SystemInfo::GetEnvironment(env, valueGet);
+    EXPECT_STREQ(valueGet.c_str(), valueSet);
+
+    strcpy(valueSet, "NotForcedTest");
+    // Call forced with false
+    Core::SystemInfo::SetEnvironment(env, valueSet, false);
+    Core::SystemInfo::GetEnvironment(env, valueGet);
+    EXPECT_STREQ(valueGet.c_str(), "ForcedTest");
+    ::unsetenv(env.c_str());
+
+    // Call forced with false after unset/clear environement variable
+    Core::SystemInfo::SetEnvironment(env, valueSet, false);
+    Core::SystemInfo::GetEnvironment(env, valueGet);
+    EXPECT_STREQ(valueGet.c_str(), valueSet);
+    ::unsetenv(env.c_str());
+}
+TEST(Core_SystemInfo, HostName)
+{
     std::string cmd = "hostname";
-    string hostname = ExecuteCmd(cmd.c_str(), Purpose::HOST, Funcion::UNKNOWN).c_str();
+    string hostname = ExecuteCmd(cmd.c_str(), Purpose::HOST, Funcion::NONE).c_str();
     hostname.erase(std::remove(hostname.begin(), hostname.end(), '\n'), hostname.end());
-    EXPECT_STREQ(WPEFramework::Core::SystemInfo::Instance().GetHostName().c_str(), hostname.c_str());
+    EXPECT_STREQ(Core::SystemInfo::Instance().GetHostName().c_str(), hostname.c_str());
+}
+TEST(Core_SystemInfo, MemoryInfo)
+{
+    std::string cmd = "free -b";
+    uint32_t pageSize = getpagesize();
+    EXPECT_EQ(Core::SystemInfo::Instance().GetPageSize(), getpagesize());
 
-    cmd = "free -b";
-    EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetPageSize(),getpagesize());
-    EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetTotalRam(), stoi(ExecuteCmd(cmd.c_str(), Purpose::MEM, Funcion::TOTAL)));
+    uint64_t totalRam = stol(ExecuteCmd(cmd.c_str(), Purpose::MEM, Funcion::TOTAL));
+    EXPECT_EQ(Core::SystemInfo::Instance().GetTotalRam(), totalRam);
+    EXPECT_EQ(Core::SystemInfo::Instance().GetPhysicalPageCount(), static_cast<uint32_t>(totalRam / pageSize));
 
-    WPEFramework::Core::SystemInfo::Instance().GetFreeRam(); //Returns the instant snapshot of the free memory at that moment, hence can't verify it's value.
+    EXPECT_EQ(Core::SystemInfo::Instance().GetTotalSwap(), stol(ExecuteCmd(cmd.c_str(), Purpose::SWAP, Funcion::TOTAL)));
+    string freeRam = ExecuteCmd(cmd.c_str(), Purpose::SWAP, Funcion::FREE);
+    EXPECT_EQ(Core::SystemInfo::Instance().GetFreeSwap(), stol(ExecuteCmd(cmd.c_str(), Purpose::SWAP, Funcion::FREE)));
 
-    EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetUpTime(),GetUpTime());
-
+    // Returns the instant snapshot of the free memory at that moment, hence can't verify it's value.
+    WPEFramework::Core::SystemInfo::Instance().GetFreeRam();
+}
+TEST(Core_SystemInfo, UPTime)
+{
+    EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetUpTime(), GetUpTime());
+}
+#if 0
+TEST(Core_SystemInfo, CPUInfo)
+{
+    // Check below items
+    // CPULoad
+    // CPULoadAvg
+    // Jiffies
+}
+TEST(Core_SystemInfo, Ticks)
+{
     WPEFramework::Core::SystemInfo::Instance().Ticks();
 
     WPEFramework::Core::SystemInfo::Instance().GetCpuLoad();
-
-    std::string variable = "TEST_VARIABLE";
-    std::string value = "test value";
-    std::string getValue;
-    bool forced = true;
-    WPEFramework::Core::SystemInfo::Instance().SetEnvironment(variable, value, forced);
-    WPEFramework::Core::SystemInfo::Instance().GetEnvironment(variable, getValue);
-
-    EXPECT_STREQ(getValue.c_str(),value.c_str());
 }
 
 TEST(Core_SystemInfo, memorySnapShot)
@@ -152,12 +295,24 @@ TEST(Core_SystemInfo, memorySnapShot)
     snapshot.SwapFree();
     snapshot.SwapCached();
 }
+#endif
+TEST(Core_SystemInfo, HardwareInfo)
+{
+    EXPECT_STREQ(Core::SystemInfo::Instance().Architecture().c_str(), Architecture().c_str());
+    std::string cmd = "cat /proc/cpuinfo | grep model | grep name";
+    EXPECT_STREQ(Core::SystemInfo::Instance().Chipset().c_str(), ExecuteCmd(cmd.c_str(), Purpose::CHIPSET, Funcion::NONE).c_str());
+}
+TEST(Core_SystemInfo, FirmwareInfo)
+{
+    EXPECT_STREQ(Core::SystemInfo::Instance().FirmwareVersion().c_str(), FirmwareVersion().c_str()); 
+}
 } // Tests
 
 ENUM_CONVERSION_BEGIN(Tests::Purpose)
     { WPEFramework::Tests::Purpose::MEM, _TXT("mem") },
     { WPEFramework::Tests::Purpose::SWAP, _TXT("swap") },
     { WPEFramework::Tests::Purpose::HOST, _TXT("host") },
+    { WPEFramework::Tests::Purpose::CHIPSET, _TXT("chipset") },
 ENUM_CONVERSION_END(Tests::Purpose)
 
 ENUM_CONVERSION_BEGIN(Tests::Funcion)
