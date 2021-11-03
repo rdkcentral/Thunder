@@ -366,9 +366,9 @@ namespace Core {
     namespace WPEFramework {                                                                                           \
         namespace Core {                                                                                               \
             namespace System {                                                                                         \
-                const char* MODULE_NAME = SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(MODULE_NAME);              \
-                const char* ModuleName() { return (MODULE_NAME); }                                            \
-                const char* ModuleBuildRef() { return (SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(buildref)); } \
+                EXTERNAL const char* MODULE_NAME = SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(MODULE_NAME);              \
+                EXTERNAL const char* ModuleName() { return (MODULE_NAME); }                                            \
+                EXTERNAL const char* ModuleBuildRef() { return (SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(buildref)); } \
             }                                                                                                          \
         }                                                                                                              \
     }                                                                                                                  \
