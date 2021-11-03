@@ -221,7 +221,7 @@ namespace Bluetooth {
     };
 
     template<typename KEYTYPE>
-    class KeyListType {
+    class EXTERNAL KeyListType {
     public:
         typedef KEYTYPE type;
 
@@ -933,7 +933,7 @@ namespace Bluetooth {
         template<typename COMMAND>
         void Execute(const uint32_t waitTime, const COMMAND& cmd, std::function<void(COMMAND&, const uint32_t error)> handler)
         {
-            class EXTERNAL Handler : public Core::IOutbound::ICallback {
+            class Handler : public Core::IOutbound::ICallback {
             public:
                 Handler() = delete;
                 Handler(const Handler&) = delete;

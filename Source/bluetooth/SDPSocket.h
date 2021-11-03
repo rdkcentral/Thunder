@@ -30,13 +30,13 @@ namespace Bluetooth {
 
 namespace SDP {
 
-    struct use_descriptor_t { explicit use_descriptor_t() = default; };
+    struct EXTERNAL use_descriptor_t { explicit use_descriptor_t() = default; };
     constexpr use_descriptor_t use_descriptor = use_descriptor_t{}; // tag for selecting a proper overload
 
-    struct use_length_t { explicit use_length_t() = default; };
+    struct EXTERNAL use_length_t { explicit use_length_t() = default; };
     constexpr use_length_t use_length = use_length_t{};
 
-    class Payload : public DataRecordBE {
+    class EXTERNAL Payload : public DataRecordBE {
     public:
         enum elementtype : uint8_t {
             NIL = 0x00,
@@ -407,7 +407,7 @@ namespace SDP {
         uint8_t ReadDescriptor(elementtype& type, uint32_t& size) const;
     }; // class Payload
 
-    class ClientSocket : public Core::SynchronousChannelType<Core::SocketPort> {
+    class EXTERNAL ClientSocket : public Core::SynchronousChannelType<Core::SocketPort> {
     public:
         static constexpr uint8_t SDP_PSM = 1;
 
@@ -438,7 +438,7 @@ namespace SDP {
     public:
         static constexpr uint32_t CommunicationTimeout = 2000; /* 2 seconds. */
 
-        class PDU {
+        class EXTERNAL PDU {
         public:
             static constexpr uint8_t HEADER_SIZE = 5;
             static constexpr uint8_t MAX_CONTINUATION_INFO_SIZE = 16;
@@ -588,7 +588,7 @@ namespace SDP {
             uint16_t _payloadSize;
         }; // class PDU
 
-        class Outward {
+        class EXTERNAL Outward {
         public:
             Outward() = delete;
             Outward(const Outward&) = delete;
@@ -641,7 +641,7 @@ namespace SDP {
             mutable uint16_t _offset;
         }; // class Outward
 
-        class Inward {
+        class EXTERNAL Inward {
         private:
             Inward() = delete;
             Inward(const Inward&) = delete;
@@ -697,9 +697,9 @@ namespace SDP {
             Buffer _continuationData;
         }; // class Inward
 
-        class Command : public Core::IOutbound, public Core::IInbound {
+        class EXTERNAL Command : public Core::IOutbound, public Core::IInbound {
         public:
-            class Request : public Outward {
+            class EXTERNAL Request : public Outward {
             public:
                 Request() = delete;
                 Request(const Request&) = delete;
@@ -750,7 +750,7 @@ namespace SDP {
             }; // class Request
 
         public:
-            class Response : public Inward {
+            class EXTERNAL Response : public Inward {
             public:
                 Response(const Response&) = delete;
                 Response& operator=(const Response&) = delete;
@@ -1031,9 +1031,9 @@ namespace SDP {
         struct l2cap_conninfo _connectionInfo;
     }; // class ClientSocket
 
-    class ServerSocket : public ClientSocket {
+    class EXTERNAL ServerSocket : public ClientSocket {
     private:
-        class Request : public Inward {
+        class EXTERNAL Request : public Inward {
         public:
             Request(const Request&) = delete;
             Request& operator=(const Request&) = delete;
@@ -1058,7 +1058,7 @@ namespace SDP {
             ServerSocket& _server;
         }; // class Request
 
-        class Response : public Outward, public Core::IOutbound  {
+        class EXTERNAL Response : public Outward, public Core::IOutbound  {
         public:
             Response(const Request&) = delete;
             Response& operator=(const Response&) = delete;

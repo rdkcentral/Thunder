@@ -26,13 +26,13 @@ namespace WPEFramework {
 
 namespace Bluetooth {
 
-    class GATTProfile {
+    class EXTERNAL GATTProfile {
     private:
         static constexpr uint16_t PRIMARY_SERVICE_UUID = 0x2800;
         static constexpr uint16_t CHARACTERISTICS_UUID = 0x2803;
 
     public:
-        class Service {
+        class EXTERNAL Service {
         public:
             enum type : uint16_t {
                 GenericAccess               = 0x1800,
@@ -79,7 +79,7 @@ namespace Bluetooth {
                 WeightScale                 = 0x181D,
             };
 
-            class Characteristic {
+            class EXTERNAL Characteristic {
             public:
                 enum type : uint16_t {
 
@@ -315,7 +315,7 @@ namespace Bluetooth {
                     WindChill                                 = 0x2A79
                 };
 
-                class Descriptor {
+                class EXTERNAL Descriptor {
                 public:
                     enum type : uint16_t {
                         CharacteristicAggregateFormat         = 0x2905,

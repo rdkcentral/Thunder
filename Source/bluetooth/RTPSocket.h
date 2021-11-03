@@ -25,14 +25,14 @@ namespace WPEFramework {
 
 namespace Bluetooth {
 
-    class RTPSocket : public Core::SynchronousChannelType<Core::SocketPort> {
+    class EXTERNAL RTPSocket : public Core::SynchronousChannelType<Core::SocketPort> {
     public:
         static constexpr uint32_t CommunicationTimeout = 500;
         static constexpr uint32_t MinMTU = 48;
 
     public:
         template<uint16_t SIZE, uint8_t TYPE, typename ENCODER, uint8_t VERSION = 2>
-        class MediaPacketType : public Core::IOutbound {
+        class EXTERNAL MediaPacketType : public Core::IOutbound {
         private:
             struct RTPHeader {
                 uint8_t octet0;

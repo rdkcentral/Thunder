@@ -30,8 +30,8 @@ namespace Bluetooth {
 
     using Buffer = std::basic_string<uint8_t>;
 
-    // Architecture netural version
-    class DataRecord  {
+    // Architecture neutral version
+    class EXTERNAL DataRecord  {
     public:
         DataRecord(const DataRecord& buffer) = delete;
         DataRecord& operator=(const DataRecord&) = delete;
@@ -302,7 +302,7 @@ namespace Bluetooth {
     }; // class DataRecord
 
     // Big-Endian version
-    class DataRecordBE : public DataRecord {
+    class EXTERNAL DataRecordBE : public DataRecord {
     public:
         using DataRecord::DataRecord;
         ~DataRecordBE() = default;
@@ -346,7 +346,7 @@ namespace Bluetooth {
     }; // class DataRecordLE
 
     // Little-Endian version
-    class DataRecordLE : public DataRecord {
+    class EXTERNAL DataRecordLE : public DataRecord {
     public:
         using DataRecord::DataRecord;
         ~DataRecordLE() = default;

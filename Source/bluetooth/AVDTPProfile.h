@@ -26,15 +26,15 @@ namespace WPEFramework {
 
 namespace Bluetooth {
 
-    class AVDTPProfile {
+    class EXTERNAL AVDTPProfile {
     public:
         typedef std::function<void(const uint32_t)> Handler;
 
-        class StreamEndPoint {
+        class EXTERNAL StreamEndPoint {
             friend class AVDTPProfile;
 
         public:
-            class ServiceCapabilities {
+            class EXTERNAL ServiceCapabilities {
             public:
                 enum category : uint8_t {
                     MEDIA_TRANSPORT     = 0x01,

@@ -26,7 +26,7 @@ namespace WPEFramework {
 
 namespace Bluetooth {
 
-    class AVDTPSocket : public Core::SynchronousChannelType<Core::SocketPort> {
+    class EXTERNAL AVDTPSocket : public Core::SynchronousChannelType<Core::SocketPort> {
     private:
         AVDTPSocket(const AVDTPSocket&) = delete;
         AVDTPSocket& operator=(const AVDTPSocket&) = delete;
@@ -61,7 +61,7 @@ namespace Bluetooth {
         using SEPConfiguration = std::map<uint8_t, Buffer>;
 
     public:
-        class Command : public Core::IOutbound, public Core::IInbound {
+        class EXTERNAL Command : public Core::IOutbound, public Core::IInbound {
         public:
             class Signal : public DataRecord  {
             public:
@@ -188,7 +188,7 @@ namespace Bluetooth {
                 }
             }; // class Signal
 
-            class Request {
+            class EXTERNAL Request {
             public:
                 Request(const Request&) = delete;
                 Request& operator=(const Request&) = delete;
@@ -321,7 +321,7 @@ namespace Bluetooth {
             }; // class Request
 
         public:
-            class Response {
+            class EXTERNAL Response {
             private:
                 typedef std::pair<uint16_t, std::pair<uint16_t, uint16_t>> Entry;
 

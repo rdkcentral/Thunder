@@ -33,7 +33,7 @@ namespace Bluetooth {
 
 namespace SDP {
 
-    class ClassID {
+    class EXTERNAL ClassID {
     public:
         enum id : uint16_t {
             Undefined   = 0x0000,
@@ -208,9 +208,9 @@ namespace SDP {
         UUID _id;
     }; // class ClassID
 
-    class Service {
+    class EXTERNAL Service {
     public:
-        class AttributeDescriptor {
+        class EXTERNAL AttributeDescriptor {
         public:
             // universal attributes
             enum id : uint16_t {
@@ -283,7 +283,7 @@ namespace SDP {
 
         struct Data {
             template<typename T>
-            class Element {
+            class EXTERNAL Element {
             public:
                 Element() = delete;
                 Element(const Element&) = default;
@@ -329,7 +329,7 @@ namespace SDP {
 
         struct Protocol {
         public:
-            class L2CAP : public Data::Element<uint16_t> {
+            class EXTERNAL L2CAP : public Data::Element<uint16_t> {
             public:
                 using Element::Element;
                 L2CAP(const L2CAP&) = default;
@@ -343,7 +343,7 @@ namespace SDP {
                 }
             }; // class L2CAP
 
-            class AVDTP : public Data::Element<uint16_t> {
+            class EXTERNAL AVDTP : public Data::Element<uint16_t> {
             public:
                 using Element::Element;
                 AVDTP(const AVDTP&) = default;
@@ -359,7 +359,7 @@ namespace SDP {
         }; // struct Protocol
 
         struct Attribute {
-            class ServiceRecordHandle {
+            class EXTERNAL ServiceRecordHandle {
             public:
                 static constexpr auto type = AttributeDescriptor::ServiceRecordHandle;
 
@@ -407,7 +407,7 @@ namespace SDP {
                 uint32_t _handle;
             }; // class ServiceRecordHandle
 
-            class ServiceClassIDList {
+            class EXTERNAL ServiceClassIDList {
             public:
                 static constexpr auto type = AttributeDescriptor::ServiceClassIDList;
 
@@ -464,7 +464,7 @@ namespace SDP {
                 std::set<ClassID> _classes;
             }; // class ServiceClassIDList
 
-            class ProtocolDescriptorList {
+            class EXTERNAL ProtocolDescriptorList {
             public:
                 static constexpr auto type = AttributeDescriptor::ProtocolDescriptorList;
 
@@ -534,7 +534,7 @@ namespace SDP {
                 std::map<ClassID, Buffer> _protocols;
             }; // class ProtocolDescriptorList
 
-            class BrowseGroupList : public ServiceClassIDList {
+            class EXTERNAL BrowseGroupList : public ServiceClassIDList {
             public:
                 static constexpr auto type = AttributeDescriptor::BrowseGroupList;
 
@@ -697,7 +697,7 @@ namespace SDP {
                 uint16_t _freeBase;
             }; // class LanguageBaseAttributeIDList
 
-            class ProfileDescriptorList {
+            class EXTERNAL ProfileDescriptorList {
             public:
                 static constexpr auto type = AttributeDescriptor::ProfileDescriptorList;
 
@@ -1067,7 +1067,7 @@ namespace SDP {
         std::set<AttributeDescriptor> _attributes;
     }; // class Service
 
-    class Tree {
+    class EXTERNAL Tree {
     public:
         Tree()
             : _lock()
@@ -1110,7 +1110,7 @@ namespace SDP {
         std::list<Service> _services;
     }; // class Tree
 
-    class Profile : public Tree {
+    class EXTERNAL Profile : public Tree {
     public:
         typedef std::function<void(const uint32_t)> Handler;
 
