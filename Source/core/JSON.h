@@ -1351,9 +1351,6 @@ namespace Core {
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                static constexpr char trueBuffer[] = "true";
-                static constexpr char falseBuffer[] = "false";
-
                 uint16_t loaded = 0;
                 if ((_value & NullBit) != 0) {
                     while ((loaded < maxLength) && (offset < 4)) {
@@ -1363,17 +1360,17 @@ namespace Core {
                         offset = 0;
                     }
                 } else if (Value() == true) {
-                    while ((loaded < maxLength) && (offset < (sizeof(trueBuffer) - 1))) {
-                        stream[loaded++] = trueBuffer[offset++];
+                    while ((loaded < maxLength) && (offset < (sizeof(IElement::TrueTag) - 1))) {
+                        stream[loaded++] = IElement::TrueTag[offset++];
                     }
-                    if (offset == (sizeof(trueBuffer) - 1)) {
+                    if (offset == (sizeof(IElement::TrueTag) - 1)) {
                         offset = 0;
                     }
                 } else {
-                    while ((loaded < maxLength) && (offset < (sizeof(falseBuffer) - 1))) {
-                        stream[loaded++] = falseBuffer[offset++];
+                    while ((loaded < maxLength) && (offset < (sizeof(IElement::FalseTag) - 1))) {
+                        stream[loaded++] = IElement::FalseTag[offset++];
                     }
-                    if (offset == (sizeof(falseBuffer) - 1)) {
+                    if (offset == (sizeof(IElement::FalseTag) - 1)) {
                         offset = 0;
                     }
                 }
@@ -1412,8 +1409,8 @@ namespace Core {
                 }
 
                 if (offset > 0) {
-                    uint8_t length = (_value & NullBit ? sizeof(IElement::NullTag) : _value & DeserializeBit ? sizeof(trueBuffer) : sizeof(falseBuffer)) - 1;
-                    const char* buffer = (_value & NullBit ? IElement::NullTag : _value & DeserializeBit ? trueBuffer : falseBuffer);
+                    uint8_t length = (_value & NullBit ? sizeof(IElement::NullTag) : _value & DeserializeBit ? sizeof(IElement::TrueTag) : sizeof(IElement::FalseTag)) - 1;
+                    const char* buffer = (_value & NullBit ? IElement::NullTag : _value & DeserializeBit ? IElement::TrueTag : IElement::FalseTag);
 
                     while ((loaded < maxLength) && (offset < length) && ((_value & ErrorBit) == 0)) {
                         if (stream[loaded] != buffer[offset]) {
