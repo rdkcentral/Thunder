@@ -32,7 +32,8 @@ enum class Purpose {
     MEM,
     SWAP,
     HOST,
-    CHIPSET
+    CHIPSET,
+    CPULOAD
 };
 
 enum class Funcion {
@@ -40,6 +41,17 @@ enum class Funcion {
     FREE,
     NONE
 };
+
+double Round(double value, uint8_t places) {
+    uint32_t placeValue = 1;
+    for (uint8_t i = 0; i < places; ++i) {
+        placeValue *= 10;
+    }
+    value = (value + 0.005) * placeValue;
+    value = (double)((int) value);
+    value = value / placeValue;
+    return value;
+}
 
 std::string Architecture()
 {
@@ -77,6 +89,37 @@ std::string GetChipset(std::string result)
         }
     }
     return chipset;
+}
+
+std::string GetCPULoad(std::string result)
+{
+    int i = 0;
+    std::stringstream iss(result);
+
+    std::vector<float> usageData;
+    size_t* endPtr = nullptr;
+
+    while (iss >> result)
+    {
+        if ((i % 2) == 1) {
+            float value = stof(result, endPtr);
+            if (endPtr == nullptr) {
+                usageData.push_back(value);
+            }
+        }
+        i++;
+    }
+
+    float nonIdle = 0, idle = 0;
+    for (uint8_t index = 0; index < usageData.size(); ++index) {
+        if ((index == 3) || (index == 4)) {
+            idle += usageData[index];
+        } else {
+            nonIdle += usageData[index];
+        }
+    }
+    // Send non decimal part
+    return std::to_string(static_cast<uint8_t>(nonIdle));
 }
 
 std::string GetMemory(std::string result, Funcion func)
@@ -125,6 +168,11 @@ std::string ExecuteCmd(const char* cmd, Purpose purpose, Funcion func) {
             } else if (purpose == Purpose::CHIPSET) {
                 if (result.find("model name") != std::string::npos) {
                     word = GetChipset(result);
+                }
+                break;
+            } else if (purpose == Purpose::CPULOAD) {
+                if (result.find("%Cpu(s):") != std::string::npos) {
+                    word = GetCPULoad(result);
                 }
                 break;
             }
@@ -266,14 +314,36 @@ TEST(Core_SystemInfo, UPTime)
 {
     EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetUpTime(), GetUpTime());
 }
-#if 0
 TEST(Core_SystemInfo, CPUInfo)
 {
-    // Check below items
     // CPULoad
+    string cmd = "top -b -n 1 | grep Cpu";
+    uint8_t cpuLoad = stoi(ExecuteCmd(cmd.c_str(), Purpose::CPULOAD, Funcion::NONE));
+    uint8_t difference = std::abs(cpuLoad - static_cast<uint8_t>(WPEFramework::Core::SystemInfo::Instance().GetCpuLoad()));
+    // Checking nearly equal value, since the cpu load calculation is average in the test app code
+    EXPECT_EQ((difference <= 2), true);
+
     // CPULoadAvg
+    double loadFromSystem[3];
+    // Validate only if we get a valid value for comparison from the system
+    if (getloadavg(loadFromSystem, 3) != -1) {
+        // Round of values to get nearest equals
+        loadFromSystem[0] = Round(loadFromSystem[0], 2);
+        loadFromSystem[1] = Round(loadFromSystem[1], 2);
+        loadFromSystem[2] = Round(loadFromSystem[2], 2);
+
+        uint64_t* cpuLoadAvg = WPEFramework::Core::SystemInfo::Instance().GetCpuLoadAvg();
+	double loadFromThunder[3];
+        loadFromThunder[0] = Round((cpuLoadAvg[0] / 65536.0), 2);
+        loadFromThunder[1] = Round((cpuLoadAvg[1] / 65536.0), 2);
+        loadFromThunder[2] = Round((cpuLoadAvg[2] / 65536.0), 2);
+	EXPECT_EQ(loadFromSystem[0], loadFromThunder[0]);
+	EXPECT_EQ(loadFromSystem[1], loadFromThunder[1]);
+	EXPECT_EQ(loadFromSystem[2], loadFromThunder[2]);
+    }
     // Jiffies
 }
+#if 0
 TEST(Core_SystemInfo, Ticks)
 {
     WPEFramework::Core::SystemInfo::Instance().Ticks();
@@ -313,6 +383,7 @@ ENUM_CONVERSION_BEGIN(Tests::Purpose)
     { WPEFramework::Tests::Purpose::SWAP, _TXT("swap") },
     { WPEFramework::Tests::Purpose::HOST, _TXT("host") },
     { WPEFramework::Tests::Purpose::CHIPSET, _TXT("chipset") },
+    { WPEFramework::Tests::Purpose::CPULOAD, _TXT("cpuload") },
 ENUM_CONVERSION_END(Tests::Purpose)
 
 ENUM_CONVERSION_BEGIN(Tests::Funcion)
