@@ -62,6 +62,7 @@ double Round(double value, uint8_t places) {
     return value;
 }
 
+#ifdef __POSIX__
 std::string Architecture()
 {
     std::string architecture;
@@ -261,7 +262,7 @@ float GetUpTime() {
         return (ceil(stof(uptime)));
     return 0;
 }
-
+#endif
 TEST(Core_SystemInfo, RawDeviceId)
 {
     const uint8_t* rawDeviceId = (Core::SystemInfo::Instance().RawDeviceId());
@@ -285,6 +286,7 @@ TEST(Core_SystemInfo, RawDeviceId_To_ID)
 
     EXPECT_EQ((id3.size() == readSize), true);
 }
+#ifdef __POSIX__
 TEST(Core_SystemInfo, GetEnvironment_SetUsing_setenv)
 {
     string env = "TEST_GETENVIRONMENT_WITH_SETENV";
@@ -295,6 +297,7 @@ TEST(Core_SystemInfo, GetEnvironment_SetUsing_setenv)
     EXPECT_STREQ(valueGet.c_str(), valueSet.c_str());
     ::unsetenv(env.c_str());
 }
+#endif
 TEST(Core_SystemInfo, GetEnvironment_SetUsing_SetEnvironment_With_ValueTypeAsString)
 {
     string env = "TEST_GETENVIRONMENT_WITH_SETENVIRONMENT";
@@ -316,12 +319,15 @@ TEST(Core_SystemInfo, GetEnvironment_SetUsing_SetEnvironment_With_ValueTypeAsStr
     Core::SystemInfo::SetEnvironment(env, valueSet, false);
     Core::SystemInfo::GetEnvironment(env, valueGet);
     EXPECT_STREQ(valueGet.c_str(), "ForcedTest");
+
+#ifdef __POSIX__
     ::unsetenv(env.c_str());
     // Call forced with false after unset/clear environement variable
     Core::SystemInfo::SetEnvironment(env, valueSet, false);
     Core::SystemInfo::GetEnvironment(env, valueGet);
     EXPECT_STREQ(valueGet.c_str(), valueSet.c_str());
     ::unsetenv(env.c_str());
+#endif
 }
 TEST(Core_SystemInfo, GetEnvironment_SetUsing_SetEnvironment_WithValueTypeAsTCharPointer)
 {
@@ -344,6 +350,8 @@ TEST(Core_SystemInfo, GetEnvironment_SetUsing_SetEnvironment_WithValueTypeAsTCha
     Core::SystemInfo::SetEnvironment(env, valueSet, false);
     Core::SystemInfo::GetEnvironment(env, valueGet);
     EXPECT_STREQ(valueGet.c_str(), "ForcedTest");
+
+#ifdef __POSIX__
     ::unsetenv(env.c_str());
 
     // Call forced with false after unset/clear environement variable
@@ -351,7 +359,9 @@ TEST(Core_SystemInfo, GetEnvironment_SetUsing_SetEnvironment_WithValueTypeAsTCha
     Core::SystemInfo::GetEnvironment(env, valueGet);
     EXPECT_STREQ(valueGet.c_str(), valueSet);
     ::unsetenv(env.c_str());
+#endif
 }
+#ifdef __POSIX__
 TEST(Core_SystemInfo, HostName)
 {
     std::string cmd = "hostname";
@@ -369,6 +379,8 @@ TEST(Core_SystemInfo, FirmwareInfo)
 {
     EXPECT_STREQ(Core::SystemInfo::Instance().FirmwareVersion().c_str(), FirmwareVersion().c_str()); 
 }
+static constexpr uint32_t MegaBytesPerBytes = 1024 * 1024;
+static constexpr uint32_t MegaBytesPerKBytes = 1024;
 TEST(Core_SystemInfo, MemoryInfo)
 {
     uint32_t pageSize = getpagesize();
@@ -393,12 +405,13 @@ TEST(Core_SystemInfo, MemoryInfo)
     cmd = "cat /proc/meminfo | grep MemFree:";
     result = ExecuteCmd(cmd.c_str(), Purpose::MEM, Function::FREE);
     if (result.empty() != true) {
-        EXPECT_EQ((Core::SystemInfo::Instance().GetFreeRam() / 1024), stol(result));
+        // Ignore last digit to ignore difference
+        EXPECT_EQ((Core::SystemInfo::Instance().GetFreeRam() / (MegaBytesPerBytes * 10)), (stol(result) / (MegaBytesPerKBytes * 10)));
     }
     cmd = "cat /proc/meminfo | grep SwapFree:";
     result = ExecuteCmd(cmd.c_str(), Purpose::SWAP, Function::FREE);
     if (result.empty() != true) {
-        EXPECT_EQ(Core::SystemInfo::Instance().GetFreeSwap(), stol(result) * 1024);
+        EXPECT_EQ(Core::SystemInfo::Instance().GetFreeSwap() / 10, (stol(result) * 1024) / 10);
     }
 }
 TEST(Core_SystemInfo, memorySnapShot)
@@ -412,27 +425,27 @@ TEST(Core_SystemInfo, memorySnapShot)
     }
     // Returns the instant snapshot of the free/available/cached memory at that moment,
     // hence it can be different values due to any change happens in between the calls.
-    // And use convert to KB to get nearly equal value
+    // And use convert to KB/10 to get nearly equal value
     cmd = "cat /proc/meminfo | grep MemFree:";
     result = ExecuteCmd(cmd.c_str(), Purpose::MEM, Function::FREE);
     if (result.empty() != true) {
-        EXPECT_EQ((snapshot.Free() / 1024), (stol(result) / 1024));
+        EXPECT_EQ((snapshot.Free() / (MegaBytesPerKBytes * 10)), (stol(result) / (MegaBytesPerKBytes * 10)));
     }
     cmd = "cat /proc/meminfo | grep MemAvailable:";
     result = ExecuteCmd(cmd.c_str(), Purpose::MEM, Function::AVAILABLE);
     if (result.empty() != true) {
-        EXPECT_EQ((snapshot.Available() / 1024), (stol(result) / 1024));
+        EXPECT_EQ((snapshot.Available() / (MegaBytesPerKBytes * 10)), (stol(result) / (MegaBytesPerKBytes  * 10)));
     }
     cmd = "cat /proc/meminfo | grep Cached:";
     result = ExecuteCmd(cmd.c_str(), Purpose::MEM, Function::CACHED);
     if (result.empty() != true) {
-        EXPECT_EQ((snapshot.Cached() / 1024), (stol(result) / 1024));
+        EXPECT_EQ((snapshot.Cached() / MegaBytesPerKBytes), (stol(result) / MegaBytesPerKBytes));
     }
 
     cmd = "cat /proc/meminfo | grep SwapTotal:";
     result = ExecuteCmd(cmd.c_str(), Purpose::SWAP, Function::TOTAL);
     if (result.empty() != true) {
-        EXPECT_EQ((snapshot.SwapTotal() / 1024), (stol(result) / 1024));
+        EXPECT_EQ((snapshot.SwapTotal() / MegaBytesPerKBytes), (stol(result) / MegaBytesPerKBytes));
     }
 
     // Returns the instant snapshot of the free/cached swap at that moment,
@@ -441,20 +454,18 @@ TEST(Core_SystemInfo, memorySnapShot)
     cmd = "cat /proc/meminfo | grep SwapFree:";
     result = ExecuteCmd(cmd.c_str(), Purpose::SWAP, Function::FREE);
     if (result.empty() != true) {
-        EXPECT_EQ((snapshot.SwapFree() / 1024), (stol(result) / 1024));
+        EXPECT_EQ((snapshot.SwapFree() / (MegaBytesPerKBytes * 10)), (stol(result) / (MegaBytesPerKBytes * 10)));
     }
     cmd = "cat /proc/meminfo | grep SwapCached:";
     result = ExecuteCmd(cmd.c_str(), Purpose::SWAP, Function::CACHED);
     if (result.empty() != true) {
-        EXPECT_EQ((snapshot.SwapCached() / 1024), (stol(result) / 1024));
+        EXPECT_EQ((snapshot.SwapCached() / (MegaBytesPerKBytes * 10)), (stol(result) / (MegaBytesPerKBytes * 10)));
     }
 }
-
 TEST(Core_SystemInfo, UPTime)
 {
     EXPECT_EQ(Core::SystemInfo::Instance().GetUpTime(), GetUpTime());
 }
-#include <unistd.h>
 TEST(Core_SystemInfo, CPUInfo)
 {
     // CPULoad
@@ -500,21 +511,23 @@ TEST(Core_SystemInfo, CPUInfo)
         }
     }
 }
-#if 0 //FIXME need to understand the difference getting here
+#endif
+static constexpr uint32_t MicroSecondsPerSecond = 1000 * 1000;
 TEST(Core_SystemInfo, Ticks_withoutDelay)
 {
     uint64_t tick1 = Core::SystemInfo::Instance().Ticks();
     uint64_t tick2 = Core::SystemInfo::Instance().Ticks();
-    EXPECT_EQ(tick1, tick2);
+    EXPECT_EQ(tick1 / MicroSecondsPerSecond, tick2 / MicroSecondsPerSecond);
 }
 TEST(Core_SystemInfo, Ticks_withDelay)
 {
+    uint8_t seconds = 1;
     uint64_t tick1 = Core::SystemInfo::Instance().Ticks();
-    sleep(1);
+    sleep(seconds);
     uint64_t tick2 = Core::SystemInfo::Instance().Ticks();
-    EXPECT_EQ(tick1 / (1024 * 1024 * 1024), tick2 / (1024 * 1024 * 1024));
+    EXPECT_EQ((tick1 / MicroSecondsPerSecond) + seconds, tick2 / MicroSecondsPerSecond);
 }
-#endif
+
 } // Tests
 
 ENUM_CONVERSION_BEGIN(Tests::Purpose)

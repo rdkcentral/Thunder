@@ -239,10 +239,7 @@ namespace Core {
 #if defined(__GNUC__) && defined(__x86_64__) && !defined(HAVE_TICK_COUNTER)
         inline uint64_t Ticks() const
         {
-            uint32_t a, d;
-            asm volatile("rdtsc"
-                         : "=a"(a), "=d"(d));
-            return ((uint64_t)a) | (((uint64_t)d) << 32);
+            return (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
         }
 
 #define HAVE_TICK_COUNTER
