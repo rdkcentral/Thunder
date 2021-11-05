@@ -21,12 +21,54 @@
 
 #include <gtest/gtest.h>
 #include <core/core.h>
+#include <ctime>
 
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 static constexpr uint32_t MilliSecondsPerSecond = 1000;
 static constexpr uint32_t MicroSecondsPerMilliSecond = 1000;
 static constexpr uint32_t MicroSecondsPerSecond = MilliSecondsPerSecond * MicroSecondsPerMilliSecond;
+
+
+int32_t GetMachineTimeDifference(string zone)
+{
+    time_t defineTime = 1325376000;
+    setenv("TZ", zone.c_str(), 1);
+    tzset();
+    struct tm *time = localtime(&defineTime);
+    return time->tm_gmtoff;
+}
+
+// NOTE: time TCs executed in UTC time zone and PDT environments
+string GetTimeBasedOnTimeZone(string zone, struct tm time, bool localTime = true)
+{
+    setenv("TZ", zone.c_str(), 1);
+    tzset();
+    time_t rawTime;
+    struct tm convertedTime;
+    char strTime[25];
+    rawTime = mktime(&time);
+    if (localTime) {
+        localtime_r(&rawTime, &convertedTime);
+    } else {
+        gmtime_r(&rawTime, &convertedTime);
+    }
+
+    uint32_t timeRead = convertedTime.tm_hour * 3600 + convertedTime.tm_min * 60 + convertedTime.tm_sec;
+    // NOTE: Currently new Time is calcualting only gmtoff with higher values, since for negative gmtoff case
+    // thunder giving same value, with out subtracting the time difference
+    uint32_t newTime = timeRead + ((convertedTime.tm_gmtoff > 0) ? convertedTime.tm_gmtoff: 0);
+
+    uint8_t seconds = newTime % 60;
+    newTime -= seconds;
+    uint8_t minutes = (newTime / 60) % 60;
+    newTime -= minutes * 60;
+    uint8_t hours = (newTime / 3600);
+
+    sprintf(strTime, "%02d:%02d:%02d%s", hours, minutes, seconds,
+		                         ((localTime == true) ? "": "GMT"));
+    return strTime;
+}
 
 TEST(Core_Time, MilliSeconds)
 {
@@ -135,18 +177,25 @@ TEST(Core_Time, Hours)
 }
 TEST(Core_Time, Hours_LocalTimeEnabled)
 {
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
     Time time(2000, 1, 2, 11, 66, 66, 21, true);
     EXPECT_EQ(time.Hours(), 12);
     time =  Time(1971, 2, 255, 12, 0, 23, 21, true);
-    EXPECT_EQ(time.Hours(), 13);
+    EXPECT_EQ(time.Hours(), 12);
     time =  Time(2000, 1, 21, 15, 70, 23, 21, true);
     EXPECT_EQ(time.Hours(), 16);
     time =  Time(2021, 4, 30, 0, 30, 23, 21, true);
-    EXPECT_EQ(time.Hours(), 1);
+    EXPECT_EQ(time.Hours(), 0);
     time =  Time(2021, 1, 10, 22, 30, 23, 21, true);
     EXPECT_EQ(time.Hours(), 22);
     time =  Time(2021, 2, 31, 24, 30, 23, 21, true);
     EXPECT_EQ(time.Hours(), 0);
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
+
 }
 TEST(Core_Time, Day)
 {
@@ -415,13 +464,12 @@ TEST(Core_Time, FromString_ANSI)
     time.ToString(timeString);
     EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 12:49:37 ");
 
-    // Check time difference after unset time zone
-    unsetenv("TZ");
+    // Check time difference after set time zone to GST
+    setenv("TZ", "GST", 1);
     tzset();
-
     EXPECT_EQ(time.FromString("Sun Nov 6 12:49:37 1994", false), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 04:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 12:49:37 ");
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
@@ -443,18 +491,19 @@ TEST(Core_Time, FromString_ISO8601)
     time.ToString(timeString);
     EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
 
-    // Check time difference after unset time zone
-    unsetenv("TZ");
+    // Check time difference after set time zone to GST
+    setenv("TZ", "GST", 1);
     tzset();
 
     // LocalTime true
     EXPECT_EQ(time.FromString("1994-11-06T08:49:37Z", true), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 00:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
     // LocalTime false
     EXPECT_EQ(time.FromString("1994-11-06T08:49:37Z", false), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 00:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
+
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
 }
@@ -494,17 +543,19 @@ TEST(Core_Time, FromString_RFC1123)
     time.ToString(timeString);
     EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
 
-    // Check after unset time zone
-    unsetenv("TZ");
+    // Check time difference after set time zone to GST
+    setenv("TZ", "GST", 1);
     tzset();
+
     // LocalTime true
     EXPECT_EQ(time.FromString("Sun, 06 Nov 1994 08:49:37 GMT", true), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 00:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
     // LocalTime false
     EXPECT_EQ(time.FromString("Sun, 06 Nov 1994 12:49:37 GMT", false), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 04:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 12:49:37 ");
+
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
 }
@@ -796,12 +847,14 @@ TEST(Core_Time, FromStandard_RFC1123_LocalTimeEnabled)
     time.ToString(timeString, true);
     EXPECT_STREQ(timeString.c_str(), _T("Sun, 06 Nov 1994 08:59:27 "));
 
-    unsetenv("TZ");
+    // Check time difference after set time zone to GST
+    setenv("TZ", "GST", 1);
     tzset();
+
     // Set without timezone
     EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994 09:59:27 UTC"), true);
     time.ToString(timeString, true);
-    EXPECT_STREQ(timeString.c_str(), _T("Sun, 06 Nov 1994 01:59:27 "));
+    EXPECT_STREQ(timeString.c_str(), _T("Sun, 06 Nov 1994 09:59:27 "));
 
     // Set timezone back
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
@@ -1018,9 +1071,9 @@ TEST(Core_Time, SubTime)
 }
 TEST(Core_Time, NTPTime)
 {
-    const uint64_t ntpTime = 9487534653234ULL;
     Time time(1970, 1, 1, 0, 0, 0, 1, true);
-    EXPECT_GE(time.NTPTime()/MicroSecondsPerSecond, ntpTime);
+    const uint64_t ntpTime = time.NTPTime();
+    EXPECT_GE(ntpTime/MicroSecondsPerSecond, 0);
     uint32_t timeTobeAdded = 4;
     time.Add(timeTobeAdded);
 
@@ -1045,26 +1098,30 @@ TEST(Core_Time, DifferenceFromGMTSeconds)
 }
 TEST(Core_Time, DifferenceFromGMTSeconds_LocalTimeEnabled)
 {
-    Time time(80, 12, 23, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.DifferenceFromGMTSeconds(), -28800);
-
     char* currentZone = getenv("TZ");
     setenv("TZ", "", 1);
+    tzset();
 
+    Time time(80, 12, 23, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.DifferenceFromGMTSeconds(), 0);
     setenv("TZ", "America/New_York", 1);
     tzset();
     time = Time(80, 12, 23, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.DifferenceFromGMTSeconds(), -18000);
+    EXPECT_EQ(time.DifferenceFromGMTSeconds(), GetMachineTimeDifference("America/New_York"));
+
+    setenv("TZ", "GST", 1);
+    unsetenv("TZ");
+    tzset();
 
     setenv("TZ", "Asia/Kolkata", 1);
     tzset();
     time = Time(2006, 11, 44, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.DifferenceFromGMTSeconds(), 19800);
+    EXPECT_EQ(time.DifferenceFromGMTSeconds(), GetMachineTimeDifference("Asia/Kolkata"));
 
     setenv("TZ", "Africa/Algiers", 1);
     tzset();
     time = Time(2006, 11, 44, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.DifferenceFromGMTSeconds(), 3600);
+    EXPECT_EQ(time.DifferenceFromGMTSeconds(), GetMachineTimeDifference("Africa/Algiers"));
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
@@ -1102,23 +1159,25 @@ TEST(Core_Time, ToTimeOnly_LocalTimeEnabled)
     EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "11:30:23");
     EXPECT_EQ(time.MilliSeconds(), 21);
 
-    unsetenv("TZ");
+    // Check time difference after set time zone to GST
+    setenv("TZ", "GST", 1);
     tzset();
+
     // Check time after unset time zone
     time = Time(2002, 5, 10, 11, 30, 23, 21, false);
-    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "04:30:23");
+    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("", time.Handle(), true).c_str());
     EXPECT_EQ(time.MilliSeconds(), 21);
 
     setenv("TZ", "Africa/Algiers", 1);
     tzset();
     time = Time(1970, 5, 32, 24, 30, 23, 21, false);
-    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "00:30:23");
+    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("Africa/Algiers", time.Handle(), true).c_str());
 
     setenv("TZ", "Asia/Kolkata", 1);
     tzset();
     time = Time(1970, 5, 32, 24, 60, 23, 21, false);
-    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "06:30:23");
-
+    GetMachineTimeDifference("Asia/Kolkata");
+    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("Asia/Kolkata", time.Handle(), true).c_str());
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
@@ -1153,25 +1212,25 @@ TEST(Core_Time, ToTimeOnlyWithLocalTimeDisabled_And_TimeConstructor_WithLocalTim
     tzset();
 
     Time time(2002, 5, 10, 11, 30, 23, 21, true);
-    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "11:30:23GMT");
+    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), GetTimeBasedOnTimeZone("", time.Handle(), false).c_str());
     EXPECT_EQ(time.MilliSeconds(), 21);
 
-    // Check time difference after unset time zone
-    unsetenv("TZ");
+    // Check time difference after set time zone to GST
+    setenv("TZ", "GST", 1);
     tzset();
     time = Time(2002, 5, 10, 11, 30, 23, 21, true);
-    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "19:30:23GMT");
+    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), GetTimeBasedOnTimeZone("GST", time.Handle(), false).c_str());
     EXPECT_EQ(time.MilliSeconds(), 21);
 
     setenv("TZ", "Africa/Algiers", 1);
     tzset();
     time = Time(1970, 5, 32, 24, 30, 23, 21, true);
-    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "00:30:23GMT");
+    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), GetTimeBasedOnTimeZone("Africa/Algiers", time.Handle(), false).c_str());
 
     setenv("TZ", "Asia/Kolkata", 1);
     tzset();
     time = Time(1970, 5, 32, 24, 60, 23, 21, true);
-    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "19:30:23GMT");
+    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), GetTimeBasedOnTimeZone("Asia/Kolkata", time.Handle(), false).c_str());
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
@@ -1184,19 +1243,20 @@ TEST(Core_Time, ToLocal)
 
     Time time(2002, 5, 10, 11, 30, 23, 21, true);
     std::string timeString;
-    time.ToString(timeString, true);
-    EXPECT_STREQ(timeString.c_str(), "Fri, 10 May 2002 12:30:23 ");
+    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("America/Los_Angeles", time.Handle(), true).c_str());
     EXPECT_EQ(time.IsLocalTime(), true);
+
     time.ToLocal();
     EXPECT_EQ(time.IsLocalTime(), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Fri, 10 May 2002 12:30:23 ");
+    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("America/Los_Angeles", time.Handle(), true).c_str());
 
     time = Time(1970, 5, 32, 24, 30, 23, 21, true);
     time.ToLocal();
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Tue, 02 Jun 1970 01:30:23 ");
+    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("America/Los_Angeles", time.Handle(), true).c_str());
     EXPECT_EQ(time.IsLocalTime(), true);
+
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
 }
@@ -1209,13 +1269,12 @@ TEST(Core_Time, ToUTC)
     std::string timeString;
     time.ToUTC();
     time.ToString(timeString, false);
-    EXPECT_STREQ(timeString.c_str(), "Fri, 10 May 2002 19:30:23 GMT");
+    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), GetTimeBasedOnTimeZone("America/Los_Angeles", time.Handle(), false).c_str());
     EXPECT_EQ(time.IsLocalTime(), true);
 
     // Check time difference after unset time zone
     setenv("TZ", "UTC", 1);
     tzset();
-
     time = Time(2002, 5, 10, 11, 30, 23, 21, true);
     time.ToUTC();
     time.ToString(timeString, false);
