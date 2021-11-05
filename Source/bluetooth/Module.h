@@ -31,7 +31,7 @@
 #include <../include/bluetooth/mgmt.h>
 #include <../include/bluetooth/l2cap.h>
 
-#define BLUETOOTH_CMD_DUMP
+//#define BLUETOOTH_CMD_DUMP
 
 #if defined(BLUETOOTH_CMD_DUMP)
 #define CMD_DUMP(descr, buffer, length) \
