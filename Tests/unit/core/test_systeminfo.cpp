@@ -35,7 +35,6 @@ enum class Purpose {
     HOST,
     CHIPSET,
     CPULOAD,
-    CPUJIFFIES,
 };
 
 enum class Function {
@@ -237,11 +236,6 @@ std::string ExecuteCmd(const char* cmd, Purpose purpose, Function func) {
                     word = GetCPULoad(result);
                 }
                 break;
-            } else if (purpose == Purpose::CPUJIFFIES) {
-                if (result.find("cpu") != std::string::npos) {
-                    word = GetCPUJiffies(result);
-                }
-                break;
             }
         }
 #ifdef __CORE_EXCEPTION_CATCHING__
@@ -286,6 +280,7 @@ TEST(Core_SystemInfo, RawDeviceId_To_ID)
 
     EXPECT_EQ((id3.size() == readSize), true);
 }
+
 #ifdef __POSIX__
 TEST(Core_SystemInfo, GetEnvironment_SetUsing_setenv)
 {
@@ -472,8 +467,8 @@ TEST(Core_SystemInfo, CPUInfo)
     string cmd = "top -b -n 1 | grep Cpu";
     string result = ExecuteCmd(cmd.c_str(), Purpose::CPULOAD, Function::NONE);
     if (result.empty() != true) {
-        /* FIXME:
-         * CPULoad values showing big differences sometimes
+        /* CPULoad values showing big differences sometimes
+	 * Load can be vary in between the time, hence this test will be disabling
         uint8_t cpuLoad = stoi(result);
         uint8_t difference = std::abs(cpuLoad - static_cast<uint8_t>(Core::SystemInfo::Instance().GetCpuLoad()));
         // Checking nearly equal value, since the cpu load calculation is average in the test app code
@@ -498,17 +493,6 @@ TEST(Core_SystemInfo, CPUInfo)
         EXPECT_EQ(loadFromSystem[0], loadFromThunder[0]);
         EXPECT_EQ(loadFromSystem[1], loadFromThunder[1]);
         EXPECT_EQ(loadFromSystem[2], loadFromThunder[2]);
-    }
-
-    // Jiffies
-    cmd = "cat /proc/stat";
-    result = ExecuteCmd(cmd.c_str(), Purpose::CPUJIFFIES, Function::NONE);
-    if (result.empty() != true) {
-        uint64_t jiffies = stoi(result);
-
-        if (jiffies) {
-           //FIXME: check the calculation method EXPECT_EQ(Core::SystemInfo::Instance().GetJiffies(), jiffies);
-        }
     }
 }
 #endif
