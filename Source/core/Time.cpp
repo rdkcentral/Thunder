@@ -110,7 +110,7 @@ namespace Core {
         return (day);
     }
 
-    static uint32_t WeekFromString(string buffer, uint8_t delimeter, bool fromName, uint8_t& wday) {
+    static uint32_t WeekFromString(const string& buffer, const uint8_t delimeter, const bool fromName, uint8_t& wday) {
         uint32_t index = 0;
         SkipLeadingSpaces(buffer.c_str(), buffer.size(), index);
         string weekDayName = buffer.substr(index, buffer.find_first_of(delimeter, index));

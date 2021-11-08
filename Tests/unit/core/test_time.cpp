@@ -30,7 +30,7 @@ static constexpr uint32_t MicroSecondsPerMilliSecond = 1000;
 static constexpr uint32_t MicroSecondsPerSecond = MilliSecondsPerSecond * MicroSecondsPerMilliSecond;
 
 
-int32_t GetMachineTimeDifference(string zone)
+int32_t GetMachineTimeDifference(const string& zone)
 {
     time_t defineTime = 1325376000;
     setenv("TZ", zone.c_str(), 1);
