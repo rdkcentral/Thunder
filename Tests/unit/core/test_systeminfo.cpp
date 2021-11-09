@@ -262,6 +262,9 @@ TEST(Core_SystemInfo, RawDeviceId)
     const uint8_t* rawDeviceId = (Core::SystemInfo::Instance().RawDeviceId());
     // Simple check added, since the rawId is currently based on MAC address of first active interface
     EXPECT_EQ((rawDeviceId != nullptr), true);
+
+    // Call to dispose Network adapter instance created with RawDeviceId sequence
+    Core::Singleton::Dispose();
 }
 TEST(Core_SystemInfo, RawDeviceId_To_ID)
 {
@@ -279,6 +282,9 @@ TEST(Core_SystemInfo, RawDeviceId_To_ID)
     EXPECT_EQ((id1.size() + (paddingEndPosition - paddingStartPosition)), id2.size());
 
     EXPECT_EQ((id3.size() == readSize), true);
+
+    // Call to dispose Network adapter instance created with RawDeviceId sequence
+    Core::Singleton::Dispose();
 }
 
 #ifdef __POSIX__
@@ -394,6 +400,8 @@ TEST(Core_SystemInfo, MemoryInfo)
         EXPECT_EQ(Core::SystemInfo::Instance().GetTotalSwap(), stol(result) * 1024);
     }
 
+#if 0 // Disabling this since this can be varied time to time and endup different value
+      // even the APIs functioning properly
     // Returns the instant snapshot of the free memory/swap at that moment,
     // hence it can be different values due to any change happens in between the calls.
     // And onvert to KB to get nearly equal value
@@ -408,6 +416,7 @@ TEST(Core_SystemInfo, MemoryInfo)
     if (result.empty() != true) {
         EXPECT_EQ(Core::SystemInfo::Instance().GetFreeSwap() / 10, (stol(result) * 1024) / 10);
     }
+#endif
 }
 TEST(Core_SystemInfo, memorySnapShot)
 {
@@ -418,6 +427,9 @@ TEST(Core_SystemInfo, memorySnapShot)
     if (result.empty() != true) {
         EXPECT_EQ(snapshot.Total(), stol(ExecuteCmd(cmd.c_str(), Purpose::MEM, Function::TOTAL)));
     }
+
+#if 0 // Disabling this since this can be varied time to time and endup different value
+      // even the APIs functioning properly
     // Returns the instant snapshot of the free/available/cached memory at that moment,
     // hence it can be different values due to any change happens in between the calls.
     // And use convert to KB/10 to get nearly equal value
@@ -436,13 +448,15 @@ TEST(Core_SystemInfo, memorySnapShot)
     if (result.empty() != true) {
         EXPECT_EQ((snapshot.Cached() / MegaBytesPerKBytes), (stol(result) / MegaBytesPerKBytes));
     }
-
+#endif
     cmd = "cat /proc/meminfo | grep SwapTotal:";
     result = ExecuteCmd(cmd.c_str(), Purpose::SWAP, Function::TOTAL);
     if (result.empty() != true) {
         EXPECT_EQ((snapshot.SwapTotal() / MegaBytesPerKBytes), (stol(result) / MegaBytesPerKBytes));
     }
 
+#if 0 // Disabling this since this can be varied time to time and endup different value
+      // even the APIs functioning properly
     // Returns the instant snapshot of the free/cached swap at that moment,
     // hence it can be different values due to any change happens in between the calls.
     // And use convert to KB to get nearly equal value
@@ -456,6 +470,7 @@ TEST(Core_SystemInfo, memorySnapShot)
     if (result.empty() != true) {
         EXPECT_EQ((snapshot.SwapCached() / (MegaBytesPerKBytes * 10)), (stol(result) / (MegaBytesPerKBytes * 10)));
     }
+#endif
 }
 TEST(Core_SystemInfo, UPTime)
 {
