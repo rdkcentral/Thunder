@@ -23,7 +23,6 @@
 #include "processcontainers/common/BaseAdministrator.h"
 #include "processcontainers/common/BaseRefCount.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
-#include "processcontainers/common/NetworkInfoUnimplemented.h"
 
 namespace WPEFramework {
 namespace ProcessContainers {

@@ -262,8 +262,7 @@ namespace ProcessContainers {
 
     INetworkInterfaceIterator* DobbyContainer::NetworkInterfaces() const
     {
-        NetworkInfoUnimplemented netInfoUnimplemented;
-        return netInfoUnimplemented.NetworkInterfaces();
+        return nullptr;
     }
 
     bool DobbyContainer::IsRunning() const

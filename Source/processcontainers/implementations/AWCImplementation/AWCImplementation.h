@@ -82,7 +82,6 @@ namespace ProcessContainers {
         uint32_t _pid;
         int _runId;
         awc::awc_app_state_t _appState;
-        //mutable Core::CriticalSection _adminLock;  /*Unused member*/
         mutable uint32_t _referenceCount;
         awc::AWCClient * _client;
         AWCStateChangeNotifier * _notifier;

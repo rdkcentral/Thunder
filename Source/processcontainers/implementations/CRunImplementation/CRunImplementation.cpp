@@ -152,8 +152,7 @@ namespace ProcessContainers {
 
     INetworkInterfaceIterator* CRunContainer::NetworkInterfaces() const
     {
-        NetworkInfoUnimplemented netInfoUnimplemented;
-        return netInfoUnimplemented.NetworkInterfaces();
+        return nullptr;
     }
 
     bool CRunContainer::IsRunning() const
