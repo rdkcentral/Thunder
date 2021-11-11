@@ -23,8 +23,6 @@
 #include "processcontainers/common/BaseAdministrator.h"
 #include "processcontainers/common/BaseRefCount.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
-#include "processcontainers/common/Lockable.h"
-#include "processcontainers/common/NetworkInfoUnimplemented.h"
 
 #include <Dobby/Public/Dobby/IDobbyProxy.h>
 #include <Dobby/DobbyProtocol.h>
@@ -34,9 +32,7 @@ namespace ProcessContainers {
 
     const string CONFIG_NAME = "/config.json";
 
-    using DobbyContainerMixins = CGroupContainerInfo<NetworkInfoUnimplemented<BaseRefCount<Lockable<IContainer>>>>;
-
-    class DobbyContainer : public DobbyContainerMixins {
+    class DobbyContainer : public BaseRefCount<IContainer> {
     private:
         friend class DobbyContainerAdministrator;
 
@@ -54,8 +50,12 @@ namespace ProcessContainers {
         bool Start(const string& command, IStringIterator& parameters) override;
         bool Stop(const uint32_t timeout /*ms*/) override;
 
+        IMemoryInfo* Memory() const override;
+        IProcessorInfo* ProcessorInfo() const override;
+        INetworkInterfaceIterator* NetworkInterfaces() const override;
+
     private:
-        mutable uint32_t _refCount;
+        mutable Core::CriticalSection _adminLock;
         string _name;
         string _path;
         string _logPath;
@@ -63,7 +63,7 @@ namespace ProcessContainers {
         mutable Core::OptionalType<uint32_t> _pid;
     };
 
-    class DobbyContainerAdministrator : public BaseAdministrator<DobbyContainer, Lockable<IContainerAdministrator>> {
+    class DobbyContainerAdministrator : public BaseContainerAdministrator<DobbyContainer> {
     private:
         friend class DobbyContainer;
         friend class Core::SingletonType<DobbyContainerAdministrator>;
