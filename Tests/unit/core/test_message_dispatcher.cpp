@@ -22,6 +22,9 @@
 #include <core/core.h>
 #include <gtest/gtest.h>
 
+#include <core/FileObserver.h>
+#include <fstream>
+
 namespace WPEFramework {
 namespace Tests {
 
@@ -29,33 +32,29 @@ namespace Tests {
     protected:
         Core_MessageDispatcher()
             : _dispatcher(nullptr)
-            , _identifier(_T("/tmp/test_message_dispatcher"))
-            , _totalSize(10 * 1024)
-            , _percentage(10)
-            , _metaDataBufferSize((_totalSize * _percentage) / 100)
-            , _dataBufferSize(_totalSize - _metaDataBufferSize)
+            , _identifier(_T("/tmp/test"))
+            , _dataBufferSize(9 * 1024)
         {
         }
 
         void SetUp() override
         {
-            _dispatcher.reset(new Core::MessageDispatcher(Core::MessageDispatcher::Create(_identifier, _instanceId, _totalSize, _percentage)));
+            _dispatcher.reset(new Core::MessageDispatcher(Core::MessageDispatcher::Create(_identifier, _instanceId, _dataBufferSize)));
         }
         void TearDown() override
         {
             _dispatcher.reset(nullptr);
             //delete buffers from disk
-            string deleteCommand = Core::Format("rm -f %s* ", _identifier.c_str());            
+            string deleteCommand = Core::Format("rm -f %s* ", _identifier.c_str());
             system(deleteCommand.c_str());
 
             ++_instanceId;
+
+            Core::Singleton::Dispose();
         }
 
         std::unique_ptr<Core::MessageDispatcher> _dispatcher;
         string _identifier;
-        uint32_t _totalSize;
-        uint32_t _percentage;
-        uint32_t _metaDataBufferSize;
         uint32_t _dataBufferSize;
 
         static int _instanceId;
@@ -88,7 +87,7 @@ namespace Tests {
 
     TEST_F(Core_MessageDispatcher, CreateAndOpenOperatesOnSameValidFile)
     {
-        auto writerDispatcher = Core::MessageDispatcher::Create(_T("/tmp/md1"), 0, 2048, 50);
+        auto writerDispatcher = Core::MessageDispatcher::Create(_T("/tmp/md1"), 0, 2048);
 
         auto readerDispatcher = Core::MessageDispatcher::Open(_T("/tmp/md1"), 0);
 
@@ -112,7 +111,7 @@ namespace Tests {
 
     TEST_F(Core_MessageDispatcher, MessageDispatcherCanBeOpenedAndClosed)
     {
-        auto writerDispatcher = Core::MessageDispatcher::Create(_T("/tmp/md1"), 0, 2048, 50);
+        auto writerDispatcher = Core::MessageDispatcher::Create(_T("/tmp/md1"), 0, 2048);
         {
             auto readerDispatcher = Core::MessageDispatcher::Open(_T("/tmp/md1"), 0);
             //destructor is called
@@ -208,8 +207,6 @@ namespace Tests {
             testAdmin.Sync("reader read");
         }
         testAdmin.Sync("done");
-
-        Core::Singleton::Dispose();
     }
 
     TEST_F(Core_MessageDispatcher, PushDataShouldNotFitWhenExcedingDataBufferSize)
@@ -254,8 +251,6 @@ namespace Tests {
         ASSERT_EQ(readLength, sizeof(testData));
         ASSERT_EQ(readData[0], 12);
         ASSERT_EQ(readData[1], 21);
-
-        Core::Singleton::Dispose();
     }
 
     TEST_F(Core_MessageDispatcher, ReaderShouldWaitUntillRingBells)
@@ -299,8 +294,94 @@ namespace Tests {
             writer.Ring();
         }
         testAdmin.Sync("done");
-
-        Core::Singleton::Dispose();
     }
+    
+
+    TEST_F(Core_MessageDispatcher, WriteAndReadMetaDataAreEqualInSameProcess)
+    {
+        uint8_t testData[2] = { 13, 37 };
+        bool called = false;
+
+        auto& writer = _dispatcher->GetWriter();
+
+        _dispatcher->RegisterDataAvailable([&](const uint8_t type, const uint16_t length, const uint8_t* value) {
+            ASSERT_EQ(type, 0);
+            ASSERT_EQ(length, sizeof(testData));
+            ASSERT_EQ(value[0], 13);
+            ASSERT_EQ(value[1], 37);
+            called = true;
+        });
+
+        ASSERT_EQ(writer.Metadata(0, sizeof(testData), testData), Core::ERROR_NONE);
+        ::SleepMs(50);
+
+        ASSERT_EQ(called, true);
+        _dispatcher->UnregisterDataAvailable();
+    }
+
+    
+    TEST_F(Core_MessageDispatcher, WriteAndReadMetaDataAreEqualInSameProcessTwice)
+    {
+        uint8_t testData1[2] = { 13, 37 };
+        uint8_t testData2[2] = { 12, 34 };
+
+        auto& writer = _dispatcher->GetWriter();
+
+        //first write and read
+        _dispatcher->RegisterDataAvailable([&](const uint8_t type, const uint16_t length, const uint8_t* value) {
+            ASSERT_EQ(type, 0);
+            ASSERT_EQ(length, sizeof(testData1));
+            ASSERT_EQ(value[0], 13);
+            ASSERT_EQ(value[1], 37);
+        });
+        ASSERT_EQ(writer.Metadata(0, sizeof(testData1), testData1), Core::ERROR_NONE);
+        ::SleepMs(50); //need to wait before unregistering, not clean solution though
+        _dispatcher->UnregisterDataAvailable();
+
+        //second write and read
+        _dispatcher->RegisterDataAvailable([&](const uint8_t type, const uint16_t length, const uint8_t* value) {
+            ASSERT_EQ(type, 0);
+            ASSERT_EQ(length, sizeof(testData2));
+            ASSERT_EQ(value[0], 12);
+            ASSERT_EQ(value[1], 34);
+        });
+        ASSERT_EQ(writer.Metadata(0, sizeof(testData2), testData2), Core::ERROR_NONE);
+        ::SleepMs(50);
+        _dispatcher->UnregisterDataAvailable();
+    }
+    
+    TEST_F(Core_MessageDispatcher, WriteAndReadMetaDataAreEqualInDiffrentProcesses)
+    {
+        auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
+            auto dispatcher = Core::MessageDispatcher::Open(this->_identifier, this->_instanceId);
+            uint8_t testData[2] = { 13, 37 };
+            auto& writer = dispatcher.GetWriter();
+            //testAdmin.Sync("setup");
+
+            ASSERT_EQ(writer.Metadata(0, sizeof(testData), testData), Core::ERROR_NONE);
+            ::SleepMs(2000);
+
+        };
+
+        static std::function<void(IPTestAdministrator&)> lambdaVar = lambdaFunc;
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin) { lambdaVar(testAdmin); };
+
+        // This side (tested) acts as reader
+        IPTestAdministrator testAdmin(otherSide);
+        {        
+            _dispatcher->RegisterDataAvailable([&](const uint8_t type, const uint16_t length, const uint8_t* value) {
+                ASSERT_EQ(type, 0);
+                ASSERT_EQ(length, 2);
+                ASSERT_EQ(value[0], 13);
+                ASSERT_EQ(value[1], 37);
+                std::cerr << "CALLED" << std::endl;
+            });
+
+            ::SleepMs(2000);
+
+        }
+        _dispatcher->UnregisterDataAvailable();
+    }
+
 } // Tests
 } // WPEFramework
