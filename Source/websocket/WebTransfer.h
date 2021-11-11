@@ -285,9 +285,11 @@ namespace Web {
                         _request.Verb = Web::Request::HTTP_GET;
                         _request.Path = '/' + source.Path().Value();
                         _request.Host = source.Host().Value();
+                        _ResetHash();
 
                         if (position) {
                             _request.Range = "bytes=" + std::to_string(position) + '-';
+                            _LoadHash();
                         }
 
                         // Prepare the request for processing
@@ -300,10 +302,13 @@ namespace Web {
 
             return (result);
         }
-        inline uint64_t FileSize() const {
+
+        inline uint64_t FileSize() const
+        {
             return (_fileBody.Core::File::Size());
         }
-        inline uint64_t Transferred () const {
+        inline uint64_t Transferred () const
+        {
             return (_fileBody.Position());
         }
         inline void Close()
@@ -377,8 +382,35 @@ namespace Web {
             }
         }
 
-        IS_MEMBER_AVAILABLE(Hash, hasHash);
+        IS_MEMBER_AVAILABLE(LoadHash, hasLoadHash);
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<hasLoadHash<ACTUALFILEBODY, void>::value, void>::type
+        _LoadHash()
+        {
+            _fileBody.LoadHash();
+        }
 
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<!hasLoadHash<ACTUALFILEBODY, void>::value, void>::type
+        _LoadHash()
+        {
+        }
+
+        IS_MEMBER_AVAILABLE(ResetHash, hasResetHash);
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<hasResetHash<ACTUALFILEBODY, void>::value, void>::type
+        _ResetHash()
+        {
+            _fileBody.ResetHash();
+        }
+
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<!hasResetHash<ACTUALFILEBODY, void>::value, void>::type
+        _ResetHash()
+        {
+        }
+
+        IS_MEMBER_AVAILABLE(Hash, hasHash);
         template < typename ACTUALFILEBODY = FILEBODY>
         inline typename Core::TypeTraits::enable_if<hasHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, void>::type
         _CalculateHash(Web::Request& request)

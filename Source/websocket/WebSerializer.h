@@ -123,7 +123,6 @@ namespace Web {
     protected:
         uint32_t Deserialize() override
         {
-            _hash.Reset();
             return (TextBody::Deserialize());
         }
         uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength) override
@@ -271,37 +270,12 @@ namespace Web {
         {
             return (_hash);
         }
-        uint16_t Serialize(uint8_t stream[], const uint16_t maxLength) const override
-        {
-            return Core::File::Read(stream, maxLength);
-        }
-
-    protected:
-        uint32_t Deserialize() override
+        inline void ResetHash()
         {
             _hash.Reset();
-            uint32_t result = FileBody::Deserialize();
-            if (result) {
-                LoadHash();
-            }
-
-            return (result);
         }
-        uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength) override
+        void LoadHash()
         {
-            uint16_t deserialized = FileBody::Deserialize(stream, maxLength);
-
-            // Also pass it through our hashing algorithm.
-            if (deserialized == maxLength) {
-                _hash.Input(stream, maxLength);
-            }
-
-            return deserialized;
-        }
-
-    private:
-        void LoadHash() {
-
             if ((static_cast<int64_t>(Core::File::Size() > 0)) && (Core::File::IsOpen() == true)) {
                 // Set file position to beginning
                 Core::File::Position(false, 0);
@@ -320,6 +294,27 @@ namespace Web {
                 // Set back file position to the end of file to append from there
                 Core::File::Position(false, (static_cast<int64_t>(Core::File::Size()) - 1));
             }
+        }
+        uint16_t Serialize(uint8_t stream[], const uint16_t maxLength) const override
+        {
+            return Core::File::Read(stream, maxLength);
+        }
+
+    protected:
+        uint32_t Deserialize() override
+        {
+            return (FileBody::Deserialize());
+        }
+        uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength) override
+        {
+            uint16_t deserialized = FileBody::Deserialize(stream, maxLength);
+
+            // Also pass it through our hashing algorithm.
+            if (deserialized) {
+                _hash.Input(stream, maxLength);
+            }
+
+            return deserialized;
         }
 
     private:
@@ -440,7 +435,7 @@ namespace Web {
             uint16_t deserialized = JSONBodyType<JSONOBJECT>::Deserialize(stream, maxLength);
 
             // Also pass it through our hashing algorithm.
-            if (deserialized == maxLength) {
+            if (deserialized) {
                 _hash.Input(stream, maxLength);
             }
 
