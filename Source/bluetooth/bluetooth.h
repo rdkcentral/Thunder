@@ -26,8 +26,13 @@
 #include "IDriver.h"
 #include "HCISocket.h"
 #include "GATTSocket.h"
-#include "Profile.h"
-
+#include "GATTProfile.h"
+#include "SDPSocket.h"
+#include "SDPProfile.h"
+#include "AVDTPSocket.h"
+#include "AVDTPProfile.h"
+#include "RTPSocket.h"
+#include "GATTProfile.h"
 #ifdef __WINDOWS__
 #pragma comment(lib, "bluetooth.lib")
 #endif

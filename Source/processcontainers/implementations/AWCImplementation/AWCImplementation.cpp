@@ -19,7 +19,6 @@
 
 #include "AWCImplementation.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
-#include "processcontainers/common/NetworkInfoUnimplemented.h"
 
 #define _TRACE_FUNCTION_ __PRETTY_FUNCTION__
 
@@ -126,7 +125,7 @@ namespace ProcessContainers {
     INetworkInterfaceIterator* AWCContainer::NetworkInterfaces() const
     {
         TRACE_L3("%s", _TRACE_FUNCTION_);
-        return new UnimplementedNetworkInterfaceIterator();
+        return nullptr;
     }
 
     bool AWCContainer::IsRunning() const
@@ -246,7 +245,7 @@ namespace ProcessContainers {
     }
 
     AWCContainerAdministrator::AWCContainerAdministrator()
-        : BaseAdministrator()
+        : BaseContainerAdministrator()
     {
         TRACE(ProcessContainers::ProcessContainerization, (_T("AWC library initialization")));
         TRACE_L3("%s Getting AWC client instance", _TRACE_FUNCTION_);
