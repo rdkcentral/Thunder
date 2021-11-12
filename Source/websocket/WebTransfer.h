@@ -311,6 +311,23 @@ namespace Web {
             _channel.Close();
         }
 
+        template <typename ACTUALLINK = LINK, typename ACTUALFILEBODY = FILEBODY>
+        inline bool LoadHash()
+        {
+            bool loaded = false;
+            if (_fileBody.Exists() == true) {
+                _LoadHash();
+                loaded = true;
+            }
+            return loaded;
+        }
+
+        template <typename ACTUALLINK = LINK, typename ACTUALFILEBODY = FILEBODY>
+        inline const uint8_t* Hash()
+        {
+            return _fileBody.Hash().Result();
+        }
+
         virtual bool Setup(const Core::URL& remote) = 0;
         virtual void InfoCollected(const uint32_t result, const Core::ProxyType<Web::Response>& info) = 0;
         virtual void Transferred(const uint32_t result, const FILEBODY& file) = 0;
@@ -326,6 +343,11 @@ namespace Web {
         }
  
     private:
+        template <typename ACTUALLINK = LINK, typename ACTUALFILEBODY = FILEBODY>
+        inline void TestLoadHash() {
+            typename ACTUALFILEBODY::HashType& hash = _fileBody.Hash();
+        }
+
         HAS_MEMBER(Hash, hasHash);
 
         typedef hasHash<FILEBODY, typename FILEBODY::HashType& (FILEBODY::*)() const> TraitHasHash;
@@ -421,6 +443,21 @@ namespace Web {
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             return (true);
+        }
+
+        HAS_MEMBER(LoadHash, hasLoadHash);
+        typedef hasLoadHash<FILEBODY, void (FILEBODY::*)()> TraitHasLoadHash;
+        template <typename ACTUALLINK = LINK, typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasLoadHash::value, void>::type
+        _LoadHash()
+        {
+            _fileBody.LoadHash();
+        }
+
+        template <typename ACTUALLINK = LINK, typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<!ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasLoadHash::value, void>::type
+        _LoadHash()
+        {
         }
 
     private:
