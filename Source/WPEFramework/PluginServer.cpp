@@ -253,7 +253,7 @@ namespace PluginHost
 
         _adminLock.Unlock();
 
-        TRACE_L1("Pending notifiers are %d ", _notifiers.size());
+        TRACE_L1("Pending notifiers are %lu", _notifiers.size());
         for (auto notifier : _notifiers) {
             TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier).name()).Text().c_str());
         }

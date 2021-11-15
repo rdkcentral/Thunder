@@ -23,8 +23,6 @@
 #include "processcontainers/common/BaseAdministrator.h"
 #include "processcontainers/common/BaseRefCount.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
-#include "processcontainers/common/Lockable.h"
-#include "processcontainers/common/NetworkInfoUnimplemented.h"
 
 extern "C" {
 #include <crun/container.h>
@@ -35,9 +33,8 @@ extern "C" {
 
 namespace WPEFramework {
 namespace ProcessContainers {
-    using CRunContainerMixins = CGroupContainerInfo<NetworkInfoUnimplemented<BaseRefCount<Lockable<IContainer>>>>;
 
-    class CRunContainer : public CRunContainerMixins {
+    class CRunContainer : public BaseRefCount<IContainer> {
     private:
         friend class CRunContainerAdministrator;
 
@@ -55,11 +52,15 @@ namespace ProcessContainers {
         bool Start(const string& command, IStringIterator& parameters) override;
         bool Stop(const uint32_t timeout /*ms*/) override;
 
+        IMemoryInfo* Memory() const override;
+        IProcessorInfo* ProcessorInfo() const override;
+        INetworkInterfaceIterator* NetworkInterfaces() const override;
+
     private:
         uint32_t ClearLeftovers();
         void OverwriteContainerArgs(libcrun_container_t* container, const string& newComand, IStringIterator& newParameters);
 
-        mutable uint32_t _refCount;
+        mutable Core::CriticalSection _adminLock;
         bool _created; // keeps track if container was created and needs deletion
         string _name;
         string _bundle;
@@ -71,7 +72,7 @@ namespace ProcessContainers {
         libcrun_error_t _error;
     };
 
-    class CRunContainerAdministrator : public BaseAdministrator<CRunContainer, Lockable<IContainerAdministrator>> {
+    class CRunContainerAdministrator : public BaseContainerAdministrator<CRunContainer> {
     private:
         friend class Core::SingletonType<CRunContainerAdministrator>;
 
