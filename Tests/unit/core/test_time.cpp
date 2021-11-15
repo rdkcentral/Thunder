@@ -458,18 +458,18 @@ TEST(Core_Time, FromString_ANSI)
     // LocalTime true
     EXPECT_EQ(time.FromString("Sun Nov 6 08:49:37 1994", true), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37");
     // LocalTime false
     EXPECT_EQ(time.FromString("Sun Nov 6 12:49:37 1994", false), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 12:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 12:49:37");
 
     // Check time difference after set time zone to GST
     setenv("TZ", "GST", 1);
     tzset();
     EXPECT_EQ(time.FromString("Sun Nov 6 12:49:37 1994", false), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 12:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 12:49:37");
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
@@ -485,11 +485,11 @@ TEST(Core_Time, FromString_ISO8601)
     // LocalTime true
     EXPECT_EQ(time.FromString("1994-11-06T08:49:37Z", true), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37");
     // LocalTime false
     EXPECT_EQ(time.FromString("1994-11-06T08:49:37Z", false), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37");
 
     // Check time difference after set time zone to GST
     setenv("TZ", "GST", 1);
@@ -498,11 +498,11 @@ TEST(Core_Time, FromString_ISO8601)
     // LocalTime true
     EXPECT_EQ(time.FromString("1994-11-06T08:49:37Z", true), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37");
     // LocalTime false
     EXPECT_EQ(time.FromString("1994-11-06T08:49:37Z", false), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37");
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
@@ -518,11 +518,12 @@ TEST(Core_Time, FromString_RFC1036)
     // LocalTime true
     EXPECT_EQ(time.FromString("Sunday, 06-Nov-94 08:49:37 GMT", true), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37");
+
     // LocalTime false
     EXPECT_EQ(time.FromString("Sunday, 06-Nov-94 08:49:37 GMT", false), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37");
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
 }
@@ -537,11 +538,11 @@ TEST(Core_Time, FromString_RFC1123)
     // LocalTime true
     EXPECT_EQ(time.FromString("Sun, 06 Nov 1994 08:49:37 GMT", true), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37");
     // LocalTime false
     EXPECT_EQ(time.FromString("Sun, 06 Nov 1994 08:49:37 GMT", false), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37");
 
     // Check time difference after set time zone to GST
     setenv("TZ", "GST", 1);
@@ -550,11 +551,11 @@ TEST(Core_Time, FromString_RFC1123)
     // LocalTime true
     EXPECT_EQ(time.FromString("Sun, 06 Nov 1994 08:49:37 GMT", true), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 08:49:37");
     // LocalTime false
     EXPECT_EQ(time.FromString("Sun, 06 Nov 1994 12:49:37 GMT", false), true);
     time.ToString(timeString);
-    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 12:49:37 ");
+    EXPECT_STREQ(timeString.c_str(), "Sun, 06 Nov 1994 12:49:37");
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
@@ -845,7 +846,7 @@ TEST(Core_Time, FromStandard_RFC1123_LocalTimeEnabled)
 
     EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994 08:59:27 UTC"), true);
     time.ToString(timeString, true);
-    EXPECT_STREQ(timeString.c_str(), _T("Sun, 06 Nov 1994 08:59:27 "));
+    EXPECT_STREQ(timeString.c_str(), _T("Sun, 06 Nov 1994 08:59:27"));
 
     // Check time difference after set time zone to GST
     setenv("TZ", "GST", 1);
@@ -854,7 +855,7 @@ TEST(Core_Time, FromStandard_RFC1123_LocalTimeEnabled)
     // Set without timezone
     EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994 09:59:27 UTC"), true);
     time.ToString(timeString, true);
-    EXPECT_STREQ(timeString.c_str(), _T("Sun, 06 Nov 1994 09:59:27 "));
+    EXPECT_STREQ(timeString.c_str(), _T("Sun, 06 Nov 1994 09:59:27"));
 
     // Set timezone back
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
@@ -1583,7 +1584,7 @@ TEST(Core_Time, OperatorOverloadingAddition)
     // So the saved time values will be always the one subtracted with time base.
     // Hence the '+=' works only on the subtracted values and here the value
     // will be based on that differences
-    EXPECT_STREQ(timeString.c_str(), "Thu, 16 Sep 2032 23:00:46 ");
+    EXPECT_STREQ(timeString.c_str(), "Thu, 16 Sep 2032 23:00:46");
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
@@ -1605,7 +1606,7 @@ TEST(Core_Time, OperatorOverloadingSubtraction)
     // So the saved time values will be always the one subtracted with time base.
     // Hence the '-=' works only on the subtracted values and here the value
     // will be based on that differences
-    EXPECT_STREQ(timeString.c_str(), "Fri, 09 Jun 1972 03:05:01 ");
+    EXPECT_STREQ(timeString.c_str(), "Fri, 09 Jun 1972 03:05:01");
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
@@ -1630,7 +1631,7 @@ TEST(Core_Time, OperatorOverloadingAdditionWithAssignment)
     // So the saved time values will be always the one subtracted with time base.
     // Hence the '+=' works only on the subtracted values and here the value
     // will be based on that differences
-    EXPECT_STREQ(timeString.c_str(), "Thu, 16 Sep 2032 23:00:46 ");
+    EXPECT_STREQ(timeString.c_str(), "Thu, 16 Sep 2032 23:00:46");
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
@@ -1651,7 +1652,7 @@ TEST(Core_Time, OperatorOverloadingSubtractionWithAssignment)
     // So the saved time values will be always the one subtracted with time base.
     // Hence the '-=' works only on the subtracted values and here the value
     // will be based on that differences
-    EXPECT_STREQ(timeString.c_str(), "Fri, 09 Jun 1972 03:05:01 ");
+    EXPECT_STREQ(timeString.c_str(), "Fri, 09 Jun 1972 03:05:01");
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
 }
