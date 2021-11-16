@@ -29,6 +29,7 @@ namespace Core {
 
     class EXTERNAL MessageDispatcher {
     private:
+        using MetaDataCallback = std::function<void(const uint8_t, const uint16_t, const uint8_t*)>;
         //Private classes
         class Packet {
         public:
@@ -41,15 +42,23 @@ namespace Core {
 
             Packet(const uint16_t fullLength, const uint8_t* buffer)
             {
-                Deserialize(fullLength, buffer);
+                //create a buffer to store deserialized value (reusing _buffer here)
+                _buffer.resize(fullLength);
+                uint16_t actualLength = 0;
+
+                //fill in type, length and value
+                Deserialize(buffer, _type, actualLength, _buffer.data());
+
+                //after _buffer is filled with value, resize it to the size of actualLength which is the size of deserialized value
+                _buffer.resize(actualLength);
+                _buffer.shrink_to_fit();
             }
 
-            //should be fast enough due to NRVO
             std::vector<uint8_t> Serialize()
             {
                 std::vector<uint8_t> result;
-                uint32_t bufferLength = _buffer.size();
-                uint32_t fullLength = sizeof(bufferLength) + sizeof(_type) + _buffer.size();
+                uint16_t bufferLength = _buffer.size();
+                uint16_t fullLength = sizeof(bufferLength) + sizeof(_type) + _buffer.size();
                 result.resize(fullLength);
 
                 uint32_t offset = 0;
@@ -62,28 +71,23 @@ namespace Core {
                 memcpy(result.data() + offset, _buffer.data(), bufferLength);
                 offset += bufferLength;
 
+                //should be fast enough due to NRVO
                 return result;
             }
 
-            void Deserialize(const uint16_t fullLength, const uint8_t* buffer)
+            static void Deserialize(const uint8_t* buffer, uint8_t& outType, uint16_t& outLength, uint8_t* outValue)
             {
                 uint32_t offset = 0;
-                uint32_t bufferLength = 0;
 
-                ::memcpy(&bufferLength, &(buffer[offset]), sizeof(bufferLength));
-                offset += sizeof(bufferLength);
+                ::memcpy(&outLength, &(buffer[offset]), sizeof(outLength));
+                offset += sizeof(outLength);
 
-                ASSERT(fullLength == bufferLength);
-
-                ::memcpy(&_type, &(buffer[offset]), sizeof(_type));
+                ::memcpy(&outType, &(buffer[offset]), sizeof(_type));
                 offset += sizeof(_type);
 
-                bufferLength -= offset; //fullLength - ( length of type + length of message)
-                _buffer.resize(bufferLength);
-
-                ::memcpy(_buffer.data(), &(buffer[offset]), bufferLength);
+                outLength -= offset; //fullLength - ( length of type + length of message)
+                ::memcpy(outValue, &(buffer[offset]), outLength);
             }
-
 
             uint8_t Type() const
             {
@@ -187,17 +191,17 @@ namespace Core {
             MetaDataBuffer(const MetaDataBuffer&) = delete;
             MetaDataBuffer& operator=(const MetaDataBuffer&) = delete;
 
-            void RegisterDataAvailable(std::function<void(const uint8_t, const uint16_t, const uint8_t*)> notification)
+            void RegisterMetaDataCallback(MetaDataCallback notification)
             {
                 _notification = notification;
             }
-            void UnregisterDataAvailable()
+            void UnregisterMetaDataCallback()
             {
                 _notification = nullptr;
             }
 
         private:
-            std::function<void(const uint8_t, const uint16_t, const uint8_t*)> _notification;
+            MetaDataCallback _notification;
         };
 
         class Reader {
@@ -264,16 +268,28 @@ namespace Core {
         Reader& GetReader();
         Writer& GetWriter();
 
-        void RegisterDataAvailable(std::function<void(const uint8_t, const uint16_t, const uint8_t*)> notification)
+        void RegisterDataAvailable(MetaDataCallback notification)
         {
-            _metaDataBuffer->RegisterDataAvailable(notification);
+            if (_metaDataBuffer->IsOpen()) {
+                _metaDataBuffer->RegisterMetaDataCallback(notification);
+            }
         }
         void UnregisterDataAvailable()
         {
-            _metaDataBuffer->UnregisterDataAvailable();
+            _metaDataBuffer->UnregisterMetaDataCallback();
         }
 
     private:
+        static std::tuple<string, string, string> PrepareFilenames(const string& baseDirectory, const string& identifier, const uint32_t instanceId)
+        {
+
+            string doorBellFilename = Core::Format("%s/%s.doorbell", baseDirectory.c_str(), identifier.c_str());
+            string dataFilename = Core::Format("%s/%s.%d.data", baseDirectory.c_str(), identifier.c_str(), instanceId);
+            string metaDataFilename = Core::Format("%s/%s.%d.metadata", baseDirectory.c_str(), identifier.c_str(), instanceId);
+
+            return std::make_tuple(doorBellFilename, dataFilename, metaDataFilename);
+        }
+
         //private constructors
         MessageDispatcher(const string& doorBellFilename, const string& dataBufferFilename, const string& metaDataFilename, uint32_t dataSize);
         MessageDispatcher(const string& doorBellFilename, Core::DataElementFile&& mappedFile, const string& metaDataFilename, uint32_t dataSize);
