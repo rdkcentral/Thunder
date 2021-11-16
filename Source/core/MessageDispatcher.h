@@ -30,86 +30,26 @@ namespace Core {
     class EXTERNAL MessageDispatcher {
     private:
         using MetaDataCallback = std::function<void(const uint8_t, const uint16_t, const uint8_t*)>;
+
         //Private classes
         class Packet {
         public:
-            Packet(const uint8_t type, const uint16_t length, const uint8_t* value)
-                : _type(type)
-            {
-                _buffer.resize(length);
-                std::copy(value, value + length, _buffer.begin());
-            }
+            Packet(const uint8_t type, const uint16_t length, const uint8_t* value);
+            Packet(const uint16_t fullLength, const uint8_t* buffer);
 
-            Packet(const uint16_t fullLength, const uint8_t* buffer)
-            {
-                //create a buffer to store deserialized value (reusing _buffer here)
-                _buffer.resize(fullLength);
-                uint16_t actualLength = 0;
+            std::vector<uint8_t> Serialize();
+            static void Deserialize(const uint8_t* buffer, uint8_t& outType, uint16_t& outLength, uint8_t* outValue);
 
-                //fill in type, length and value
-                Deserialize(buffer, _type, actualLength, _buffer.data());
-
-                //after _buffer is filled with value, resize it to the size of actualLength which is the size of deserialized value
-                _buffer.resize(actualLength);
-                _buffer.shrink_to_fit();
-            }
-
-            std::vector<uint8_t> Serialize()
-            {
-                std::vector<uint8_t> result;
-                uint16_t bufferLength = _buffer.size();
-                uint16_t fullLength = sizeof(bufferLength) + sizeof(_type) + _buffer.size();
-                result.resize(fullLength);
-
-                uint32_t offset = 0;
-                memcpy(result.data(), &fullLength, sizeof(fullLength));
-                offset += sizeof(fullLength);
-
-                memcpy(result.data() + offset, &_type, sizeof(_type));
-                offset += sizeof(_type);
-
-                memcpy(result.data() + offset, _buffer.data(), bufferLength);
-                offset += bufferLength;
-
-                //should be fast enough due to NRVO
-                return result;
-            }
-
-            static void Deserialize(const uint8_t* buffer, uint8_t& outType, uint16_t& outLength, uint8_t* outValue)
-            {
-                uint32_t offset = 0;
-
-                ::memcpy(&outLength, &(buffer[offset]), sizeof(outLength));
-                offset += sizeof(outLength);
-
-                ::memcpy(&outType, &(buffer[offset]), sizeof(_type));
-                offset += sizeof(_type);
-
-                outLength -= offset; //fullLength - ( length of type + length of message)
-                ::memcpy(outValue, &(buffer[offset]), outLength);
-            }
-
-            uint8_t Type() const
-            {
-                return _type;
-            }
-
-            uint32_t Length() const
-            {
-                return _buffer.size();
-            }
-
-            const uint8_t* Value() const
-            {
-                return _buffer.data();
-            }
+            uint8_t Type() const;
+            uint32_t Length() const;
+            const uint8_t* Value() const;
 
         private:
             uint8_t _type;
             std::vector<uint8_t> _buffer;
         };
 
-        class EXTERNAL DataBuffer : public Core::CyclicBuffer {
+        class DataBuffer : public Core::CyclicBuffer {
         public:
             DataBuffer(const string& doorBell, Core::DataElementFile& buffer, const bool initiator, const uint32_t offset, const uint32_t bufferSize, const bool overwrite);
             ~DataBuffer() override = default;
@@ -129,168 +69,72 @@ namespace Core {
             Core::DoorBell _doorBell;
         };
 
-        class EXTERNAL MetaDataBuffer : public Core::IPCChannelClientType<Core::Void, true, true> {
-        public:
-            static constexpr uint16_t MetaDataBufferSize = 1 * 1024;
-            using MetaDataFrame = Core::IPCMessageType<1, Core::IPC::BufferType<MetaDataBufferSize>, Core::IPC::ScalarType<uint32_t>>;
-
+        class MetaDataBuffer : public Core::IPCChannelClientType<Core::Void, true, true> {
         private:
             using BaseClass = Core::IPCChannelClientType<Core::Void, true, true>;
 
             class MetaDataFrameHandler : public Core::IIPCServer {
             public:
+                MetaDataFrameHandler(MetaDataBuffer* parent);
+                ~MetaDataFrameHandler() override = default;
+
                 MetaDataFrameHandler(const MetaDataFrameHandler&) = delete;
                 MetaDataFrameHandler& operator=(const MetaDataFrameHandler&) = delete;
 
-                MetaDataFrameHandler(MetaDataBuffer* parent)
-                    : _parent(*parent)
-                {
-                }
-                ~MetaDataFrameHandler() override = default;
-
             public:
-                void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data) override
-                {
-                    auto message = Core::ProxyType<MetaDataFrame>(data);
-
-                    auto length = message->Parameters().Length();
-                    auto value = message->Parameters().Value();
-
-                    Packet packet(length, value);
-                    if (_parent._notification != nullptr) {
-                        _parent._notification(packet.Type(), packet.Length(), packet.Value());
-                        message->Response() = Core::ERROR_NONE;
-
-                    } else {
-                        message->Response() = Core::ERROR_UNAVAILABLE;
-                    }
-
-                    source.ReportResponse(data);
-                }
+                void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data) override;
 
             private:
                 MetaDataBuffer& _parent;
             };
 
         public:
-            MetaDataBuffer(const std::string& binding)
-                : BaseClass(Core::NodeId(binding.c_str()), MetaDataBufferSize)
-            {
-                CreateFactory<MetaDataFrame>(1);
-                Register(MetaDataFrame::Id(), Core::ProxyType<Core::IIPCServer>(Core::ProxyType<MetaDataFrameHandler>::Create(this)));
-                Open(Core::infinite);
-            }
+            static constexpr uint16_t MetaDataBufferSize = 1 * 1024;
+            using MetaDataFrame = Core::IPCMessageType<1, Core::IPC::BufferType<MetaDataBufferSize>, Core::IPC::ScalarType<uint32_t>>;
 
-            ~MetaDataBuffer() override
-            {
-                Close(Core::infinite);
-                Unregister(MetaDataFrame::Id());
-                DestroyFactory<MetaDataFrame>();
-            }
-            MetaDataBuffer();
+            MetaDataBuffer() = default;
+            MetaDataBuffer(const std::string& binding);
+            ~MetaDataBuffer() override;
+
             MetaDataBuffer(const MetaDataBuffer&) = delete;
             MetaDataBuffer& operator=(const MetaDataBuffer&) = delete;
 
-            void RegisterMetaDataCallback(MetaDataCallback notification)
-            {
-                _notification = notification;
-            }
-            void UnregisterMetaDataCallback()
-            {
-                _notification = nullptr;
-            }
+            void RegisterMetaDataCallback(MetaDataCallback notification);
+            void UnregisterMetaDataCallback();
 
         private:
             MetaDataCallback _notification;
-        };
-
-        class Reader {
-        public:
-            Reader(MessageDispatcher& parent, uint32_t dataBufferSize);
-            ~Reader() = default;
-            Reader(Reader&& other);
-
-            Reader(const Reader&) = delete;
-            Reader& operator=(const Reader&) = delete;
-
-            //Non-blocking call
-            uint32_t Data(uint8_t& outType, uint16_t& outLength, uint8_t* outValue);
-
-            uint32_t Wait(const uint32_t waitTime);
-
-            bool IsEmpty() const;
-
-        private:
-            MessageDispatcher& _parent;
-            std::vector<uint8_t> _dataBuffer;
-        };
-        class Writer {
-        public:
-            Writer(MessageDispatcher& parent);
-            ~Writer() = default;
-            Writer(Writer&& other);
-
-            Writer(const Writer&) = delete;
-            Writer& operator=(const Writer&) = delete;
-
-            //Blocking call
-            uint32_t Metadata(const uint8_t type, const uint16_t length, const uint8_t* value);
-
-            //Non-blocking call
-            uint32_t Data(const uint8_t type, const uint16_t length, const uint8_t* value);
-
-            void Ring();
-
-        private:
-            MessageDispatcher& _parent;
         };
 
     public:
         //public methods
         static MessageDispatcher Create(const string& identifier, const uint32_t instanceId, const uint32_t dataSize);
         static MessageDispatcher Open(const string& identifier, const uint32_t instanceId);
-
         ~MessageDispatcher();
-        MessageDispatcher(MessageDispatcher&& other)
-            : _dataLock()
-            , _metaDataLock()
-            , _mappedFile(std::move(other._mappedFile))
-            , _dataBuffer(std::move(other._dataBuffer))
-            , _metaDataBuffer(std::move(other._metaDataBuffer))
-            , _reader(std::move(other._reader))
-            , _writer(std::move(other._writer))
-        {
-        }
+        MessageDispatcher(MessageDispatcher&& other);
 
         MessageDispatcher(const MessageDispatcher&) = delete;
         MessageDispatcher& operator=(const MessageDispatcher&) = delete;
 
-        Reader& GetReader();
-        Writer& GetWriter();
+        //data
+        uint32_t PushData(const uint8_t type, const uint16_t length, const uint8_t* value);
+        uint32_t PopData(uint8_t& outType, uint16_t& outLength, uint8_t* outValue);
+        void Ring();
+        uint32_t Wait(const uint32_t waitTime);
 
-        void RegisterDataAvailable(MetaDataCallback notification)
-        {
-            if (_metaDataBuffer->IsOpen()) {
-                _metaDataBuffer->RegisterMetaDataCallback(notification);
-            }
-        }
-        void UnregisterDataAvailable()
-        {
-            _metaDataBuffer->UnregisterMetaDataCallback();
-        }
+        //metadata
+        uint32_t PushMetadata(const uint8_t type, const uint16_t length, const uint8_t* value);
+
+        void RegisterDataAvailable(MetaDataCallback notification);
+        void UnregisterDataAvailable();
+
+        bool IsValid() const;
+        uint32_t DataSize() const;
+        uint32_t MetaDataSize() const;
 
     private:
-        static std::tuple<string, string, string> PrepareFilenames(const string& baseDirectory, const string& identifier, const uint32_t instanceId)
-        {
+        static std::tuple<string, string, string> PrepareFilenames(const string& baseDirectory, const string& identifier, const uint32_t instanceId);
 
-            string doorBellFilename = Core::Format("%s/%s.doorbell", baseDirectory.c_str(), identifier.c_str());
-            string dataFilename = Core::Format("%s/%s.%d.data", baseDirectory.c_str(), identifier.c_str(), instanceId);
-            string metaDataFilename = Core::Format("%s/%s.%d.metadata", baseDirectory.c_str(), identifier.c_str(), instanceId);
-
-            return std::make_tuple(doorBellFilename, dataFilename, metaDataFilename);
-        }
-
-        //private constructors
         MessageDispatcher(const string& doorBellFilename, const string& dataBufferFilename, const string& metaDataFilename, uint32_t dataSize);
         MessageDispatcher(const string& doorBellFilename, Core::DataElementFile&& mappedFile, const string& metaDataFilename, uint32_t dataSize);
 
@@ -305,8 +149,7 @@ namespace Core {
 
         string _metaDataFilename;
 
-        Reader _reader;
-        Writer _writer;
+        std::vector<uint8_t> _dataReadBuffer;
     };
 }
 }
