@@ -99,6 +99,15 @@ namespace Bluetooth {
         {
             return !(operator==(shortUuid));
         }
+        bool operator<(const UUID& rhs) const
+        {
+            for (uint8_t i = 16; i > 0; i--) {
+                if (_uuid[i] != rhs._uuid[i]) {
+                    return(_uuid[i] < rhs._uuid[i]);
+                }
+            }
+            return (false);
+        }
         bool HasShort() const
         {
             return (_uuid[0] == 2);

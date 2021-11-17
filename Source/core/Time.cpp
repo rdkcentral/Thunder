@@ -743,18 +743,18 @@ namespace Core {
         if (!IsValid())
             return string();
 
-        const TCHAR* zone = (localTime == false ? _T("GMT") : _T(""));
+        const TCHAR* zone = (localTime == false ? _T(" GMT") : _T(""));
 
         if (localTime == true) {
             SYSTEMTIME convertedTime;
             SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
            Time converted(convertedTime, localTime);
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d %s"), converted.WeekDayName(),
+            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), converted.WeekDayName(),
                 converted.Day(), converted.MonthName(), converted.Year(),
                 converted.Hours(), converted.Minutes(), converted.Seconds(), zone);
         } else
 #pragma warning(disable : 4996)
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d %s"), WeekDayName(), Day(), MonthName(), Year(),
+            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(), Day(), MonthName(), Year(),
                 Hours(), Minutes(), Seconds(), zone);
 #pragma warning(default : 4996)
 
@@ -970,7 +970,7 @@ namespace Core {
     {
         // Sun, 06 Nov 1994 08:49:37 GMT  ; RFC 822, updated by RFC 1123
         TCHAR buffer[32];
-        const TCHAR* zone = (localTime == false) ? _T("GMT") : _T("");
+        const TCHAR* zone = (localTime == false) ? _T(" GMT") : _T("");
 
         if (!IsValid())
             return string();
@@ -985,11 +985,11 @@ namespace Core {
                 epochTimestamp = mktimegm(&originalTime);
             timespec convertedTime{ epochTimestamp, 0 };
             Time converted(convertedTime, localTime);
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d %s"), converted.WeekDayName(),
+            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), converted.WeekDayName(),
                 converted.Day(), converted.MonthName(), converted.Year(),
                 converted.Hours(), converted.Minutes(), converted.Seconds(), zone);
         } else {
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d %s"), WeekDayName(), Day(), MonthName(), Year(), Hours(),
+            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(), Day(), MonthName(), Year(), Hours(),
                 Minutes(), Seconds(), zone);
         }
 
