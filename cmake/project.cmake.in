@@ -21,6 +21,20 @@
 ##
 cmake_minimum_required(VERSION 2.8.7)
 
+macro(project_version)
+    string(REGEX REPLACE "^([0-9]+)\\.[0-9]+\\.[0-9]+.*" "\\1" _VERSION_MAJOR "${ARGV0}")
+    string(REGEX REPLACE "^[0-9]+\\.([0-9]+)\\.[0-9]+.*" "\\1" _VERSION_MINOR "${ARGV0}")
+    string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" _VERSION_PATCH "${ARGV0}")
+
+    set(PROJECT_VERSION_MAJOR ${_VERSION_MAJOR})
+    set(PROJECT_VERSION_MINOR ${_VERSION_MINOR})
+    set(PROJECT_VERSION_PATCH ${_VERSION_PATCH})
+
+    set(PROJECT_VERSION ${_VERSION_MAJOR}.${_VERSION_MINOR}.${_VERSION_PATCH})
+    set(VERSION ${PROJECT_VERSION})
+endmacro()
+
+
 get_property(is_included GLOBAL PROPERTY INCLUDE_GUARD)
 if(is_included)
   return()
