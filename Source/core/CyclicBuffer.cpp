@@ -23,6 +23,15 @@
 namespace WPEFramework {
 namespace Core {
 
+    namespace {
+        //only if multiple if power of 2
+        int RoundUp(int numToRound, int multiple)
+        {
+            return (numToRound + multiple - 1) & -multiple;
+        }
+
+    }
+
     CyclicBuffer::CyclicBuffer(const string& fileName, const uint32_t mode, const uint32_t bufferSize, const bool overwrite)
         : _buffer(
               fileName,
@@ -83,10 +92,13 @@ namespace Core {
         , _administration(nullptr)
     {
         // Adapt the offset to a system aligned pointer value :-)
-        uint32_t actual_offset = (offset + (sizeof(void*) - 1)) & (~((1 << sizeof(void*)) - 1));
-        uint32_t actual_bufferSize = static_cast<uint32_t>(bufferSize == 0 ?
-            (actual_offset <= _buffer.Size() ? (_buffer.Size() - actual_offset) : 0) :
-            (bufferSize <= _buffer.Size() ? bufferSize : 0) );
+        uint32_t actual_offset = RoundUp(offset, sizeof(void*));
+        uint32_t actual_bufferSize = 0;
+        if (bufferSize == 0) {
+            actual_bufferSize = actual_offset <= _buffer.Size() ? (_buffer.Size() - actual_offset) : 0;
+        } else {
+            actual_bufferSize = bufferSize <= _buffer.Size() ? bufferSize : 0;
+        }
 
         if ((actual_offset + actual_bufferSize) <= _buffer.Size()) {
 #ifdef __WINDOWS__
