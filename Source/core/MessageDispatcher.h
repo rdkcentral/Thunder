@@ -285,8 +285,16 @@ namespace Core {
 
     public:
         //public methods
-        MessageDispatcher(const string& identifier, const uint32_t instanceId, bool initialize)
-            : _filenames(PrepareFilenames(initialize, _T("/tmp/MessageDispatcher"), identifier, instanceId))
+        /**
+         * @brief Construct a new Message Dispatcher object
+         * 
+         * @param identifier name of the instance
+         * @param instanceId number of the instance
+         * @param initialize should dispatcher be initialzied. Should be done only once, on the server side
+         * @param baseDirectory where to place all the related files. If initialize=true everything will be deleted in this directory and directory will be recreated
+         */
+        MessageDispatcher(const string& identifier, const uint32_t instanceId, bool initialize, string baseDirectory = _T("/tmp/MessageDispatcher"))
+            : _filenames(PrepareFilenames(initialize, baseDirectory, identifier, instanceId))
             // clang-format off
             , _dataBuffer(_filenames.doorBell, _filenames.data,  Core::File::USER_READ    | 
                                                                              Core::File::USER_WRITE   | 
