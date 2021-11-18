@@ -119,49 +119,45 @@ namespace Core {
     };
 
     template <typename ACTUALSERVICE>
-    class Service : public ProxyService<ACTUALSERVICE> {
+    class Service : public ACTUALSERVICE {
     private:
-        Service(const Service<ACTUALSERVICE>&) = delete;
-        Service<ACTUALSERVICE> operator=(const Service<ACTUALSERVICE>&) = delete;
-
     protected:
         template<typename... Args>
         Service(Args&&... args)
-            : ProxyService<ACTUALSERVICE>(std::forward<Args>(args)...)
+            : ACTUALSERVICE(std::forward<Args>(args)...)
         {
             ServiceAdministrator::Instance().AddRef();
         }
 
     public:
+        Service(const Service<ACTUALSERVICE>&) = delete;
+        Service<ACTUALSERVICE>& operator=(const Service<ACTUALSERVICE>&) = delete;
+
         template <typename INTERFACE, typename... Args>
         static INTERFACE* Create(Args&&... args)
         {
-            ACTUALSERVICE* object = new (0) Service<ACTUALSERVICE>(std::forward<Args>(args)...);
+            Core::ProxyType< Service<ACTUALSERVICE> > object = Core::ProxyType< Service<ACTUALSERVICE> >::Create(std::forward<Args>(args)...);
 
             return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
         }
-        virtual ~Service()
+        ~Service() override
         {
             ServiceAdministrator::Instance().Release();
         }
 
     private:
         template <typename INTERFACE>
-        inline static INTERFACE* Extract(ACTUALSERVICE* object, const TemplateIntToType<false>&)
+        inline static INTERFACE* Extract(const Core::ProxyType< Service<ACTUALSERVICE > >& object, const TemplateIntToType<false>&)
         {
             INTERFACE* result = reinterpret_cast<INTERFACE*>(object->QueryInterface(INTERFACE::ID));
-
-            if (result == nullptr) {
-                delete object;
-            }
 
             return (result);
         }
         template <typename INTERFACE>
-        inline static INTERFACE* Extract(ACTUALSERVICE* object, const TemplateIntToType<true>&)
+        inline static INTERFACE* Extract(const Core::ProxyType< Service<ACTUALSERVICE> >& object, const TemplateIntToType<true>&)
         {
             object->AddRef();
-            return (object);
+            return (object.operator->());
         }
     };
 
@@ -214,18 +210,17 @@ namespace Core {
 
         template <typename SERVICE>
         class ServiceImplementation : public Service<SERVICE> {
-        private:
+        public:
             ServiceImplementation() = delete;
             ServiceImplementation(const ServiceImplementation<SERVICE>&) = delete;
-            ServiceImplementation<SERVICE> operator=(const ServiceImplementation<SERVICE>&) = delete;
+            ServiceImplementation<SERVICE>& operator=(const ServiceImplementation<SERVICE>&) = delete;
 
-        public:
             explicit ServiceImplementation(const Library& library)
                 : Service<SERVICE>()
                 , _referenceLib(library)
             {
             }
-            ~ServiceImplementation()
+            ~ServiceImplementation() override
             {
                 ServiceAdministrator::Instance().ReleaseLibrary(_referenceLib);
             }
@@ -262,15 +257,11 @@ namespace Core {
         virtual void* Create(const Library& library, const uint32_t interfaceNumber)
         {
             void* result = nullptr;
-            IUnknown* object = new (0) ProxyService< ServiceImplementation<ACTUALSERVICE> >(library);
+            Core::ProxyType< ServiceImplementation<ACTUALSERVICE> > object = Core::ProxyType< ServiceImplementation<ACTUALSERVICE> >::Create(library);
 
-            if (object != nullptr) {
-                // This quety interface will increment the refcount of the Service at least to 1.
+            if (object.IsValid() == true) {
+                // This query interface will increment the refcount of the Service at least to 1.
                 result = object->QueryInterface(interfaceNumber);
-
-                if (result == nullptr) {
-                    delete object;
-                }
             }
             return (result);
         }

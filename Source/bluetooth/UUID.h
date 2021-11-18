@@ -36,16 +36,18 @@ namespace Bluetooth {
         UUID(const uint16_t uuid)
         {
             _uuid[0] = 2;
-            ::memcpy(&(_uuid[1]), BASE, sizeof(_uuid) - 3);
-            _uuid[15] = (uuid & 0xFF);
-            _uuid[16] = (uuid >> 8) & 0xFF;
+            ::memcpy(&(_uuid[1]), BASE, sizeof(_uuid) - 5);
+            _uuid[13] = (uuid & 0xFF);
+            _uuid[14] = (uuid >> 8) & 0xFF;
+            _uuid[15] = 0;
+            _uuid[16] = 0;
         }
         explicit UUID(const uint8_t uuid[16])
         {
             ::memcpy(&(_uuid[1]), uuid, 16);
 
             // See if this contains the Base, cause than it can be a short...
-            if (::memcmp(BASE, uuid, 14) == 0) {
+            if ((::memcmp(BASE, uuid, 12) == 0) && (uuid[14] == 0) && (uuid[15] == 0)) {
                 _uuid[0] = 2;
             }
             else {
@@ -77,12 +79,12 @@ namespace Bluetooth {
         uint16_t Short() const
         {
             ASSERT(_uuid[0] == 2);
-            return ((_uuid[16] << 8) | _uuid[15]);
+            return ((_uuid[14] << 8) | _uuid[13]);
         }
         bool operator==(const UUID& rhs) const
         {
             return ((rhs._uuid[0] == _uuid[0]) &&
-                    ((_uuid[0] == 2) ? ((rhs._uuid[15] == _uuid[15]) && (rhs._uuid[16] == _uuid[16])) :
+                    ((_uuid[0] == 2) ? ((rhs._uuid[13] == _uuid[13]) && (rhs._uuid[14] == _uuid[14])) :
                                        (::memcmp(_uuid, rhs._uuid, _uuid[0] + 1) == 0)));
         }
         bool operator!=(const UUID& rhs) const
@@ -97,6 +99,15 @@ namespace Bluetooth {
         {
             return !(operator==(shortUuid));
         }
+        bool operator<(const UUID& rhs) const
+        {
+            for (uint8_t i = 16; i > 0; i--) {
+                if (_uuid[i] != rhs._uuid[i]) {
+                    return(_uuid[i] < rhs._uuid[i]);
+                }
+            }
+            return (false);
+        }
         bool HasShort() const
         {
             return (_uuid[0] == 2);
@@ -107,7 +118,7 @@ namespace Bluetooth {
         }
         const uint8_t* Data() const
         {
-             return (_uuid[0] == 2 ? &(_uuid[15]) :  &(_uuid[1]));
+             return (_uuid[0] == 2 ? &(_uuid[13]) :  &(_uuid[1]));
         }
         string ToString(const bool full = false) const
         {
@@ -146,7 +157,7 @@ namespace Bluetooth {
             else {
                 result.resize(4);
 
-                for (uint8_t byte = 14 + 2; byte > 14; byte--) {
+                for (uint8_t byte = 12 + 2; byte > 12; byte--) {
                     result[index++] = hexArray[_uuid[byte] >> 4];
                     result[index++] = hexArray[_uuid[byte] & 0xF];
                 }
@@ -157,12 +168,14 @@ namespace Bluetooth {
         {
             if ((uuidStr.length() == 4) || (uuidStr.length() == ((16 * 2) + 4))) {
                 uint8_t buf[16];
-                if (uuidStr.length() == 4) {
-                    memcpy(buf, BASE, sizeof(buf));
-                }
+                const uint16_t size = uuidStr.length();
                 uint8_t* p = (buf + sizeof(buf));
                 int16_t idx = 0;
-                uint16_t size = uuidStr.length();
+
+                if (size == 4) {
+                    memcpy(buf, BASE, sizeof(buf));
+                    p -= 2;
+                }
 
                 while (idx < size) {
                     if ((idx == 8) || (idx == 13) || (idx == 18) || (idx == 23)) {

@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -18,37 +18,58 @@
  */
 
 #include "WarningReportingControl.h"
-#include "Sync.h"
+#include "JSON.h"
 #include "Singleton.h"
+#include "Sync.h"
 #include "Thread.h"
-#include "JSON.h" 
 
 namespace {
-    WPEFramework::Core::CriticalSection adminlock; // we cannot have this as a member as Sync.h might also need WarningReporting. but as WarningReportingUnitProxy that is not a problem
+WPEFramework::Core::CriticalSection adminlock; // we cannot have this as a member as Sync.h might also need WarningReporting. but as WarningReportingUnitProxy that is not a problem
 
-    class WarningReportingBoundsCategoryConfig : public WPEFramework::Core::JSON::Container {
-    public:
-        WarningReportingBoundsCategoryConfig(const WarningReportingBoundsCategoryConfig&) = delete;
-        WarningReportingBoundsCategoryConfig& operator=(const WarningReportingBoundsCategoryConfig&) = delete;
+class WarningReportingBoundsCategoryConfig : public WPEFramework::Core::JSON::Container {
+public:
+    WarningReportingBoundsCategoryConfig(const WarningReportingBoundsCategoryConfig&) = delete;
+    WarningReportingBoundsCategoryConfig& operator=(const WarningReportingBoundsCategoryConfig&) = delete;
 
-        WarningReportingBoundsCategoryConfig()
-            : WPEFramework::Core::JSON::Container()
-            , ReportBound()
-            , WarningBound()
-            , CategoryConfig(false)
-        {
-            Add(_T("reportbound"), &ReportBound);
-            Add(_T("warningbound"), &WarningBound);
-            Add(_T("config"), &CategoryConfig);
-        }
+    WarningReportingBoundsCategoryConfig()
+        : WPEFramework::Core::JSON::Container()
+        , ReportBound()
+        , WarningBound()
+        , CategoryConfig(false)
+    {
+        Add(_T("reportbound"), &ReportBound);
+        Add(_T("warningbound"), &WarningBound);
+        Add(_T("config"), &CategoryConfig);
+    }
 
-        ~WarningReportingBoundsCategoryConfig() override = default;
+    ~WarningReportingBoundsCategoryConfig() override = default;
 
-    public:
-        WPEFramework::Core::JSON::DecUInt64 ReportBound; // HPL: this used to be a template but we must put it in a cpp file...
-        WPEFramework::Core::JSON::DecUInt64 WarningBound;
-        WPEFramework::Core::JSON::String CategoryConfig;
-    };
+public:
+    WPEFramework::Core::JSON::DecUInt64 ReportBound;
+    WPEFramework::Core::JSON::DecUInt64 WarningBound;
+    WPEFramework::Core::JSON::String CategoryConfig;
+};
+
+class ExcludedCategoriesValuesConfig : public WPEFramework::Core::JSON::Container {
+public:
+    ExcludedCategoriesValuesConfig(const WarningReportingBoundsCategoryConfig&) = delete;
+    ExcludedCategoriesValuesConfig& operator=(const WarningReportingBoundsCategoryConfig&) = delete;
+
+    ExcludedCategoriesValuesConfig()
+        : WPEFramework::Core::JSON::Container()
+        , ExcludedCallsigns()
+        , ExcludedModules()
+    {
+        Add(_T("callsigns"), &ExcludedCallsigns);
+        Add(_T("modules"), &ExcludedModules);
+    }
+
+    ~ExcludedCategoriesValuesConfig() override = default;
+
+public:
+    WPEFramework::Core::JSON::ArrayType<WPEFramework::Core::JSON::String> ExcludedCallsigns;
+    WPEFramework::Core::JSON::ArrayType<WPEFramework::Core::JSON::String> ExcludedModules;
+};
 }
 
 namespace WPEFramework {
@@ -59,83 +80,108 @@ namespace WarningReporting {
         return (Core::SingletonType<WarningReportingUnitProxy>::Instance());
     }
 
-    void WarningReportingUnitProxy::ReportWarningEvent(const char module[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information) {
-        Core::SafeSyncType<Core::CriticalSection> guard(adminlock);
-        if( _handler != nullptr ) {
+    void WarningReportingUnitProxy::ReportWarningEvent(const char module[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information)
+    {
+        adminlock.Lock();
+        if (_handler != nullptr) {
             _handler->ReportWarningEvent(module, fileName, lineNumber, className, information);
         }
+        adminlock.Unlock();
     }
 
-    bool WarningReportingUnitProxy::IsDefaultCategory(const string& category, bool& enabled, string& specific) const {
-        bool retval = false; 
+    void WarningReportingUnitProxy::FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const
+    {
         adminlock.Lock();
-        if( _handler != nullptr ) {
-            retval = _handler->IsDefaultCategory(category, enabled, specific);
+        if (_handler != nullptr) {
+            _handler->FetchCategoryInformation(category, outIsDefaultCategory, outIsEnabled, outExcluded, outConfiguration);
         }
         adminlock.Unlock();
-        return retval;
     }
 
-    void WarningReportingUnitProxy::Announce(IWarningReportingUnit::IWarningReportingControl& Category) {
-        Core::SafeSyncType<Core::CriticalSection> guard(adminlock);
-
-        if( _handler != nullptr ) {
+    void WarningReportingUnitProxy::Announce(IWarningReportingUnit::IWarningReportingControl& Category)
+    {
+        adminlock.Lock();
+        if (_handler != nullptr) {
             _handler->Announce(Category);
+        } else {
+            _waitingAnnounces.emplace_back(&Category);
         }
-        else {
-            _waitingannounces.emplace_back(&Category);
-        }
+        adminlock.Unlock();
+
     }
 
-    void WarningReportingUnitProxy::Revoke(IWarningReportingUnit::IWarningReportingControl& Category) {
-        Core::SafeSyncType<Core::CriticalSection> guard(adminlock);
-        if( _handler != nullptr ) {
-             ASSERT(_waitingannounces.size() == 0);
+    void WarningReportingUnitProxy::Revoke(IWarningReportingUnit::IWarningReportingControl& Category)
+    {
+        adminlock.Lock();
+        if (_handler != nullptr) {
+            ASSERT(_waitingAnnounces.size() == 0);
             _handler->Revoke(Category);
         } else {
-            WaitingAnnounceContainer::iterator it = std::find(std::begin(_waitingannounces), std::end(_waitingannounces), &Category);
-            if( it != std::end(_waitingannounces) ) {
-                _waitingannounces.erase(it);
+            WaitingAnnounceContainer::iterator it = std::find(std::begin(_waitingAnnounces), std::end(_waitingAnnounces), &Category);
+            if (it != std::end(_waitingAnnounces)) {
+                _waitingAnnounces.erase(it);
             }
         }
+        adminlock.Unlock();
     }
 
-    void WarningReportingUnitProxy::Handler(IWarningReportingUnit* handler) {
-        ASSERT( ( _handler == nullptr && handler != nullptr ) || ( _handler != nullptr && handler == nullptr ) );
-        Core::SafeSyncType<Core::CriticalSection> guard(adminlock);
+    void WarningReportingUnitProxy::Handler(IWarningReportingUnit* handler)
+    {
+        ASSERT((_handler == nullptr && handler != nullptr) || (_handler != nullptr && handler == nullptr));
+        adminlock.Lock();
         _handler = handler;
-        if( _handler != nullptr) {
+        if (_handler != nullptr) {
 
-            for (IWarningReportingUnit::IWarningReportingControl* category : _waitingannounces) {
+            for (IWarningReportingUnit::IWarningReportingControl* category : _waitingAnnounces) {
                 ASSERT(category != nullptr);
                 _handler->Announce(*category);
             }
-            _waitingannounces.clear();
+            _waitingAnnounces.clear();
+        }
+        adminlock.Unlock();
+    }
+
+    void WarningReportingUnitProxy::FillBoundsConfig(const string& boundsConfig, uint32_t& outReportingBound, uint32_t& outWarningBound, string& outSpecificConfig) const
+    {
+        WarningReportingBoundsCategoryConfig boundsconfig;
+
+        boundsconfig.FromString(boundsConfig);
+
+        if (boundsconfig.ReportBound.IsSet()) {
+            outReportingBound = static_cast<uint32_t>(boundsconfig.ReportBound.Value());
+        }
+
+        if (boundsconfig.WarningBound.IsSet()) {
+            outWarningBound = static_cast<uint32_t>(boundsconfig.WarningBound.Value());
+        }
+
+        if (boundsconfig.CategoryConfig.IsSet()) {
+            outSpecificConfig = boundsconfig.CategoryConfig.Value();
+        }
+
+        if (outReportingBound > outWarningBound) {
+            TRACE_L1("WarningReporting report bound [%d] is greater than waning bound [%d]!", outReportingBound, outWarningBound);
+        }
+        ASSERT(outReportingBound <= outWarningBound);
+    }
+
+    void WarningReportingUnitProxy::FillExcludedWarnings(const string& excludedJsonList, ExcludedWarnings& outExcludedWarnings) const
+    {
+        ExcludedCategoriesValuesConfig config;
+        config.FromString(excludedJsonList);
+
+        if (config.ExcludedCallsigns.IsSet()) {
+            auto iterator(config.ExcludedCallsigns.Elements());
+            while (iterator.Next()) {
+                outExcludedWarnings.InsertCallsign(iterator.Current().Value());
+            }
+        }
+        if (config.ExcludedModules.IsSet()) {
+            auto iterator(config.ExcludedModules.Elements());
+            while (iterator.Next()) {
+                outExcludedWarnings.InsertModule(iterator.Current().Value());
+            }
         }
     }
-
-    WarningReportingUnitProxy::BoundsConfigValues::BoundsConfigValues(const string& settings)
-        : reportbound()
-        , warningbound()
-        , config() {
-            WarningReportingBoundsCategoryConfig boundsconfig;
-
-            boundsconfig.FromString(settings);
-
-            // HPL todo: add check for correct settings? (reportbound <= warningbound)
-
-            if( boundsconfig.ReportBound.IsSet() ) {
-                reportbound  = boundsconfig.ReportBound.Value();
-            }
-
-            if( boundsconfig.WarningBound.IsSet() ) {
-                warningbound  = boundsconfig.WarningBound.Value();
-            }
-
-            if( boundsconfig.CategoryConfig.IsSet() ) {
-                config = boundsconfig.CategoryConfig.Value();
-            }
-    }
-
 }
-} 
+}

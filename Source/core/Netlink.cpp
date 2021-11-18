@@ -63,7 +63,7 @@ namespace Core {
             message->nlmsg_type = Type();
             message->nlmsg_flags = Flags();
             message->nlmsg_seq = _mySequence;
-            message->nlmsg_pid = 0; /* send to the kernel */
+            message->nlmsg_pid = 0; /* sender ID, we don't make use of it */
 
             result = nlmsg_len;
         }
@@ -76,21 +76,18 @@ namespace Core {
         const nlmsghdr* header = reinterpret_cast<const nlmsghdr*>(stream);
         uint16_t dataLeft = streamLength;
         bool completed = true;
-        
+
         while (NLMSG_OK(header, dataLeft)) {
             if (header->nlmsg_type != NLMSG_NOOP) {
                 _type = header->nlmsg_type;
                 _flags = header->nlmsg_flags;
                 _mySequence = header->nlmsg_seq;
 
+                if ((header->nlmsg_len - sizeof(header)) > 0) {
+                    completed = (Read(reinterpret_cast<const uint8_t *>(NLMSG_DATA(header)), header->nlmsg_len - sizeof(header)) > 0);
+                }
 
-                if (Read (reinterpret_cast<const uint8_t *>(NLMSG_DATA(header)), 
-                         header->nlmsg_len - sizeof(header)) == 0) {
-		    completed = false;
-                }
-                else {
-                    completed = (header->nlmsg_type == NLMSG_DONE) || ((header->nlmsg_flags & NLM_F_MULTI) == 0);
-                }
+                completed = completed && ((header->nlmsg_type == NLMSG_DONE) || ((header->nlmsg_flags & NLM_F_MULTI) == 0));
             }
 
             header = NLMSG_NEXT(header, dataLeft);

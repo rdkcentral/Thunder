@@ -43,6 +43,7 @@ namespace Core {
 
     public:
         Library();
+        Library(const void* functionInLibrary);
         Library(const TCHAR fileName[]);
         Library(const Library& copy);
         ~Library();
@@ -60,8 +61,6 @@ namespace Core {
         }
         inline const string& Name() const
         {
-            static const string emptyString;
-
             return (_refCountedHandle != nullptr ? _refCountedHandle->_name : emptyString);
         }
         void* LoadFunction(const TCHAR functionName[]);

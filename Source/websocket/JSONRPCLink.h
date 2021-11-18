@@ -143,7 +143,7 @@ namespace JSONRPC {
             public:
                 virtual void Received(Core::ProxyType<INTERFACE>& jsonObject) override
                 {
-                    Core::ProxyType<Core::JSONRPC::Message> inbound(Core::proxy_cast<Core::JSONRPC::Message>(jsonObject));
+                    Core::ProxyType<Core::JSONRPC::Message> inbound(jsonObject);
     
                     ASSERT(inbound.IsValid() == true);
     
@@ -171,7 +171,7 @@ namespace JSONRPC {
             private:
                 void ToMessage(const Core::ProxyType<Core::JSON::IElement>& jsonObject, string& message) const
                 {
-                    Core::ProxyType<Core::JSONRPC::Message> inbound(Core::proxy_cast<Core::JSONRPC::Message>(jsonObject));
+                    Core::ProxyType<Core::JSONRPC::Message> inbound(jsonObject);
 
                     ASSERT(inbound.IsValid() == true);
                     if (inbound.IsValid() == true) {
@@ -180,7 +180,7 @@ namespace JSONRPC {
                 }
                 void ToMessage(const Core::ProxyType<Core::JSON::IMessagePack>& jsonObject, string& message) const
                 {
-                    Core::ProxyType<Core::JSONRPC::Message> inbound(Core::proxy_cast<Core::JSONRPC::Message>(jsonObject));
+                    Core::ProxyType<Core::JSONRPC::Message> inbound(jsonObject);
 
                     ASSERT(inbound.IsValid() == true);
                     if (inbound.IsValid() == true) {
@@ -194,139 +194,7 @@ namespace JSONRPC {
 
             private:
                 CommunicationChannel& _parent;
-            };
-            class ChannelProxy : public Core::ProxyObject<CommunicationChannel> {
-            private:
-                ChannelProxy(const ChannelProxy&) = delete;
-                ChannelProxy& operator=(const ChannelProxy&) = delete;
-                ChannelProxy() = delete;
-    
-                ChannelProxy(const Core::NodeId& remoteNode, const string& callsign, const string& query)
-                    : Core::ProxyObject<CommunicationChannel>(remoteNode, callsign, query)
-                {
-                }
-    
-                class Administrator {
-                private:
-                    Administrator(const Administrator&) = delete;
-                    Administrator& operator=(const Administrator&) = delete;
-    
-                    typedef std::map<const string, CommunicationChannel *> CallsignMap;
-    
-                    static Administrator& Instance()
-                    {    
-                        static Administrator& _instance = Core::SingletonType<Administrator>::Instance();
-                        return (_instance);
-                    }
-    
-                public:
-                    Administrator()
-                        : _adminLock()
-                        , _callsignMap()
-                    {
-                    }
-                    ~Administrator()
-                    {
-                    }
-    
-                public:
-                    static Core::ProxyType<CommunicationChannel> Instance(const Core::NodeId& remoteNode, const string& callsign, const string& query)
-                    {
-                        return (Instance().InstanceImpl(remoteNode, callsign, query));
-                    }
-                    static uint32_t Release(ChannelProxy* object)
-                    {
-                        return (Instance().ReleaseImpl(object));
-                    }
-    
-                private:
-                    Core::ProxyType<CommunicationChannel> InstanceImpl(const Core::NodeId& remoteNode, const string& callsign,  const string& query)
-                    {
-                        Core::ProxyType<CommunicationChannel> result;
-    
-                        _adminLock.Lock();
-    
-                        string searchLine = remoteNode.HostAddress() + '@' + callsign;
-    
-                        typename CallsignMap::iterator index(_callsignMap.find(searchLine));
-                        if (index != _callsignMap.end()) {
-                            result = Core::ProxyType<CommunicationChannel>(*(index->second));
-                        } else {
-                            ChannelProxy* entry = new (0) ChannelProxy(remoteNode, callsign, query);
-                            _callsignMap[searchLine] = entry;
-                            result = Core::ProxyType<CommunicationChannel>(*entry);
-                        }
-                        _adminLock.Unlock();
-    
-                        ASSERT(result.IsValid() == true);
-    
-                        if (result.IsValid() == true) {
-                            static_cast<ChannelProxy&>(*result).Open(100);
-                        }
-    
-                        return (result);
-                    }
-                    uint32_t ReleaseImpl(ChannelProxy* object)
-                    {
-                        _adminLock.Lock();
-    
-                        uint32_t result = object->ActualRelease();
-    
-                        if (result == Core::ERROR_DESTRUCTION_SUCCEEDED) {
-                            // Oke remove the entry from the MAP.
-    
-                            typename CallsignMap::iterator index(_callsignMap.begin());
-    
-                            while ((index != _callsignMap.end()) && (&(*object) != index->second)) {
-                                index++;
-                            }
-    
-                            if (index != _callsignMap.end()) {
-                                _callsignMap.erase(index);
-                            }
-                        }
-    
-                        _adminLock.Unlock();
-    
-                        return (Core::ERROR_DESTRUCTION_SUCCEEDED);
-                    }
-    
-                private:
-                    Core::CriticalSection _adminLock;
-                    CallsignMap _callsignMap;
-                };
-    
-            public:
-                ~ChannelProxy()
-                {
-                    // Guess we need to close
-                    CommunicationChannel::Close();
-                }
-    
-                static Core::ProxyType< CommunicationChannel > Instance(const Core::NodeId& remoteNode, const string& callsign, const string& query)
-                {
-                    return (Administrator::Instance(remoteNode, callsign, query));
-                }
-    
-            public:
-                virtual uint32_t Release() const override
-                {
-                    return (Administrator::Release(const_cast<ChannelProxy*>(this)));
-                }
-    
-            private:
-                uint32_t ActualRelease() const
-                {
-                    return (Core::ProxyObject<CommunicationChannel >::Release());
-                }
-                bool Open(const uint32_t waitTime)
-                {
-                    return (CommunicationChannel::Open(waitTime));
-                }
-    
-            private:
-                Core::CriticalSection _adminLock;
-            };
+            };    
     
         protected:
             CommunicationChannel(const Core::NodeId& remoteNode, const string& callsign, const string& query)
@@ -341,7 +209,11 @@ namespace JSONRPC {
             }
             static Core::ProxyType<CommunicationChannel> Instance(const Core::NodeId& remoteNode, const string& callsign, const string& query)
             {
-                return (ChannelProxy::Instance(remoteNode, callsign, query));
+                static Core::ProxyMapType<string, CommunicationChannel> channelMap;
+
+                string searchLine = remoteNode.HostAddress() + '@' + callsign;
+
+                return (channelMap.template Instance<CommunicationChannel>(searchLine, remoteNode, callsign, query));
             }
     
         public:
@@ -352,10 +224,6 @@ namespace JSONRPC {
             static Core::ProxyType<Core::JSONRPC::Message> Message()
             {
                 return (FactoryImpl::Instance().Element(string()));
-            }
-            bool IsOperational() const
-            {
-                return (const_cast< CommunicationChannel&>(*this).Open(0));
             }
             uint32_t Sequence() const
             {
@@ -385,7 +253,15 @@ namespace JSONRPC {
             {
                 _channel.Submit(message);
             }
-    
+            bool IsSuspended() const
+            {
+                return (_channel.IsSuspended());
+            }
+            uint32_t Initialize()
+            {
+                return (Open(0));
+            }
+
         protected:
             void StateChange()
             {
@@ -1041,7 +917,9 @@ namespace JSONRPC {
         {
             uint32_t result = Core::ERROR_UNAVAILABLE;
 
-            if (_channel.IsValid() == true) {
+            if ((_channel.IsValid() == true) && (_channel->IsSuspended() == true)) {
+                result = Core::ERROR_ASYNC_FAILED;
+            } else if (_channel.IsValid() == true) {
 
                 result = Core::ERROR_ASYNC_FAILED;
 
@@ -1080,6 +958,8 @@ namespace JSONRPC {
                         if (response.IsValid() == true) {
                             result = Core::ERROR_NONE;
                         }
+                    } else {
+                      result = Core::ERROR_TIMEDOUT;
                     }
 
                     _adminLock.Lock();
@@ -1098,8 +978,9 @@ namespace JSONRPC {
         {
             uint32_t result = Core::ERROR_UNAVAILABLE;
 
-            if (_channel.IsValid() == false) {
-            } else {
+            if ((_channel.IsValid() == true) && (_channel->IsSuspended() == true)) {
+                result = Core::ERROR_ASYNC_FAILED;
+            } else if (_channel.IsValid() == true) {
 
                 result = Core::ERROR_ASYNC_FAILED;
 

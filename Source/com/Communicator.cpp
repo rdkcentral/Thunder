@@ -44,7 +44,7 @@ namespace RPC {
             virtual ~IClosingInfo() = default;
 
             // Should return 0 if no more iterations are needed.
-            virtual uint32_t AttemptClose(const uint8_t iteration) = 0; 
+            virtual uint32_t AttemptClose(const uint8_t iteration) = 0;
         };
 
     public:
@@ -169,7 +169,10 @@ namespace RPC {
                     if (_process.Id() != 0) {
                         _process.Kill(false);
                     } else {
-                        _container->Stop(0);
+                        if(_container->Stop(0)) {
+                            nextinterval = 0;
+                            break;
+                        }
                     }
                 }
                     nextinterval = 10000;
@@ -276,7 +279,11 @@ namespace RPC {
 
         // Time to shoot the application, it will trigger a close by definition of the channel, if it is still standing..
         if (_id != 0) {
-            ProcessShutdown::Start<LocalClosingInfo>(_id);
+            if (!_stopInvokedFlag.test_and_set()) {
+                ProcessShutdown::Start<LocalClosingInfo>(_id);
+            } else {
+                TRACE_L1("Process terminate already started");
+            }
         }
     }
 
@@ -299,8 +306,10 @@ namespace RPC {
     void Communicator::ContainerProcess::Terminate() /* override */
     {
         ASSERT(_container != nullptr);
-        if (_container != nullptr) {
+        if (!_stopInvokedFlag.test_and_set()) {
             ProcessShutdown::Start<ContainerClosingInfo>(_container);
+        } else {
+            TRACE_L1("Containter terminate already started");
         }
     }
 
@@ -496,12 +505,19 @@ namespace RPC {
         if (announceMessage->Response().IsSet() == true) {
             // Is result of an announce message, contains default trace categories in JSON format.
             string jsonDefaultCategories(announceMessage->Response().TraceCategories());
+#if defined(WARNING_REPORTING_ENABLED)
+            string jsonDefaultWarningCategories(announceMessage->Response().WarningCategories());
+#endif
             // HPL todo: we need to extend sending this info here, or just pass the complete config and have it parsed here (nothing would need to be dynamicaly changed, we will not suport that)
 
             if (jsonDefaultCategories.empty() == false) {
                 Trace::TraceUnit::Instance().Defaults(jsonDefaultCategories);
             }
-
+#if defined(WARNING_REPORTING_ENABLED)
+            if(jsonDefaultWarningCategories.empty() == false){
+                WarningReporting::WarningReportingUnit::Instance().Defaults(jsonDefaultWarningCategories);
+            }
+#endif
             _connectionId = announceMessage->Response().SequenceNumber();
 
             string proxyStubPath(announceMessage->Response().ProxyStubPath());

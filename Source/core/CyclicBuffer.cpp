@@ -28,7 +28,7 @@ namespace Core {
               fileName,
               (bufferSize == 0 ? (mode & (~File::CREATE)) : (mode | File::CREATE)),
               (bufferSize == 0 ? 0 : (bufferSize + sizeof(const control))))
-        , _realBuffer(&(_buffer.Buffer()[sizeof(struct control)]))
+        , _realBuffer(nullptr)
         , _alert(false)
         , _administration(nullptr)
     {
@@ -42,39 +42,96 @@ namespace Core {
         if (_buffer.IsValid() == true) {
             _administration = reinterpret_cast<struct control*>(_buffer.Buffer());
             _realBuffer = (&(_buffer.Buffer()[sizeof(struct control)]));
+
+            if (bufferSize != 0) {
+
+                #ifndef __WINDOWS__
+                _administration->_signal = PTHREAD_COND_INITIALIZER;
+                _administration->_mutex = PTHREAD_MUTEX_INITIALIZER;
+                #endif
+
+                std::atomic_init(&(_administration->_head), static_cast<uint32_t>(0));
+                std::atomic_init(&(_administration->_tail), static_cast<uint32_t>(0));
+                std::atomic_init(&(_administration->_agents), static_cast<uint32_t>(0));
+                std::atomic_init(&(_administration->_state), static_cast<uint16_t>(state::UNLOCKED /* state::EMPTY */ | (overwrite ? state::OVERWRITE : 0)));
+                _administration->_lockPID = 0;
+                _administration->_size = static_cast<uint32_t>(_buffer.Size() - sizeof(struct control));
+
+                _administration->_reserved = 0;
+                _administration->_reservedWritten = 0;
+
+                #ifndef __WINDOWS__
+                std::atomic_init(&(_administration->_reservedPID), static_cast<pid_t>(0));
+                #else
+                std::atomic_init(&(_administration->_reservedPID), static_cast<DWORD>(0));
+                #endif
+
+                _administration->_tailIndexMask = 1;
+                _administration->_roundCountModulo = 1L << 31;
+                while (_administration->_tailIndexMask < _administration->_size) {
+                    _administration->_tailIndexMask = (_administration->_tailIndexMask << 1) + 1;
+                    _administration->_roundCountModulo = _administration->_roundCountModulo >> 1;
+                }
+            }
         }
+    }
 
-        if (bufferSize != 0) {
+    CyclicBuffer::CyclicBuffer(Core::DataElementFile& buffer, const bool initiator, const uint32_t offset, const uint32_t bufferSize, const bool overwrite)
+        : _buffer(buffer)
+        , _realBuffer(nullptr)
+        , _alert(false)
+        , _administration(nullptr)
+    {
+        // Adapt the offset to a system aligned pointer value :-)
+        uint32_t actual_offset = (offset + (sizeof(void*) - 1)) & (~((1 << sizeof(void*)) - 1));
+        uint32_t actual_bufferSize = static_cast<uint32_t>(bufferSize == 0 ?
+            (actual_offset <= _buffer.Size() ? (_buffer.Size() - actual_offset) : 0) :
+            (bufferSize <= _buffer.Size() ? bufferSize : 0) );
 
-            ASSERT (_buffer.IsValid() == true);
-
-#ifndef __WINDOWS__
-            _administration->_signal = PTHREAD_COND_INITIALIZER;
-            _administration->_mutex = PTHREAD_MUTEX_INITIALIZER;
+        if ((actual_offset + actual_bufferSize) <= _buffer.Size()) {
+#ifdef __WINDOWS__
+            string strippedName(Core::File::PathName(_buffer.Name()) + Core::File::FileName(_buffer.Name()));
+            if (actual_offset != 0) {
+                strippedName = strippedName + '_' + Core::NumberType<uint32_t>(actual_offset).Text();
+            }
+            _mutex = CreateSemaphore(nullptr, 1, 1, (strippedName + ".mutex").c_str());
+            _signal = CreateSemaphore(nullptr, 0, 0x7FFFFFFF, (strippedName + ".signal").c_str());
+            _event = CreateEvent(nullptr, FALSE, FALSE, (strippedName + ".event").c_str());
 #endif
 
-            std::atomic_init(&(_administration->_head), static_cast<uint32_t>(0));
-            std::atomic_init(&(_administration->_tail), static_cast<uint32_t>(0));
-            std::atomic_init(&(_administration->_agents), static_cast<uint32_t>(0));
-            std::atomic_init(&(_administration->_state), static_cast<uint16_t>(state::UNLOCKED /* state::EMPTY */ | (overwrite ? state::OVERWRITE : 0)));
-            _administration->_lockPID = 0;
-            _administration->_size = static_cast<uint32_t>(_buffer.Size() - sizeof(struct control));
+            if (_buffer.IsValid() == true) {
+                _realBuffer = &(_buffer.Buffer()[sizeof(struct control) + actual_offset]);
+                _administration = reinterpret_cast<struct control*>(&(_buffer.Buffer()[actual_offset]));
+            }
 
-            _administration->_reserved = 0;
-            _administration->_reservedWritten = 0;
+            if (initiator == true) {
+
 #ifndef __WINDOWS__
-            std::atomic_init(&(_administration->_reservedPID), static_cast<pid_t>(0));
+                _administration->_signal = PTHREAD_COND_INITIALIZER;
+                _administration->_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
+                std::atomic_init(&(_administration->_head), static_cast<uint32_t>(0));
+                std::atomic_init(&(_administration->_tail), static_cast<uint32_t>(0));
+                std::atomic_init(&(_administration->_agents), static_cast<uint32_t>(0));
+                std::atomic_init(&(_administration->_state), static_cast<uint16_t>(state::UNLOCKED /* state::EMPTY */ | (overwrite ? state::OVERWRITE : 0)));
+                _administration->_lockPID = 0;
+                _administration->_size = static_cast<uint32_t>(actual_bufferSize - sizeof(struct control));
+
+                _administration->_reserved = 0;
+                _administration->_reservedWritten = 0;
+#ifndef __WINDOWS__
+                std::atomic_init(&(_administration->_reservedPID), static_cast<pid_t>(0));
 #else
-            std::atomic_init(&(_administration->_reservedPID), static_cast<DWORD>(0));
+                std::atomic_init(&(_administration->_reservedPID), static_cast<DWORD>(0));
 #endif
 
-
-
-            _administration->_tailIndexMask = 1;
-            _administration->_roundCountModulo = 1L << 31;
-            while (_administration->_tailIndexMask < _administration->_size) {
-                _administration->_tailIndexMask = (_administration->_tailIndexMask << 1) + 1;
-                _administration->_roundCountModulo = _administration->_roundCountModulo >> 1;
+                _administration->_tailIndexMask = 1;
+                _administration->_roundCountModulo = 1L << 31;
+                while (_administration->_tailIndexMask < _administration->_size) {
+                    _administration->_tailIndexMask = (_administration->_tailIndexMask << 1) + 1;
+                    _administration->_roundCountModulo = _administration->_roundCountModulo >> 1;
+                }
             }
         }
     }

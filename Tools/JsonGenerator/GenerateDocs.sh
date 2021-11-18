@@ -40,6 +40,6 @@ fi
 
 echo "Generating Plugin markdown documentation..."
 
-./JsonGenerator.py --docs -i ../../Source/interfaces/json -j ../../Source/interfaces -I ../../Source -o doc --verbose $files
+./JsonGenerator.py --docs -i ../../../ThunderInterfaces/jsonrpc -j ../../../ThunderInterfaces/interfaces -I ../../Source -o doc --verbose $files
 
 echo "Complete."

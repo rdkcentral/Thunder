@@ -177,6 +177,21 @@ namespace Core {
         }
 
     public:
+
+        #ifdef __CORE_EXCEPTION_CATCHING__
+        struct IExceptionCallback
+        {
+            virtual ~IExceptionCallback() = default;
+            virtual void Exception(const string& message) = 0;
+        };
+
+        static void ExceptionCallback(IExceptionCallback* callback)
+        {
+            ASSERT(( callback != nullptr ) ^ ( _exceptionHandler != nullptr ));
+            _exceptionHandler = callback;
+        }
+        #endif
+                
         Thread(const uint32_t stackSize = Thread::DefaultStackSize(), const TCHAR* threadName = nullptr);
         virtual ~Thread();
 
@@ -270,6 +285,11 @@ namespace Core {
         DWORD m_ThreadId;
 #endif
         static uint32_t _defaultStackSize;
+
+#ifdef __CORE_EXCEPTION_CATCHING__
+        static IExceptionCallback* _exceptionHandler;
+#endif
+
     };
 
 }

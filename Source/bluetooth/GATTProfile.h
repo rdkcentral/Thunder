@@ -26,13 +26,13 @@ namespace WPEFramework {
 
 namespace Bluetooth {
 
-    class Profile {
+    class EXTERNAL GATTProfile {
     private:
         static constexpr uint16_t PRIMARY_SERVICE_UUID = 0x2800;
         static constexpr uint16_t CHARACTERISTICS_UUID = 0x2803;
 
     public:
-        class Service {
+        class EXTERNAL Service {
         public:
             enum type : uint16_t {
                 GenericAccess               = 0x1800,
@@ -79,7 +79,7 @@ namespace Bluetooth {
                 WeightScale                 = 0x181D,
             };
 
-            class Characteristic {
+            class EXTERNAL Characteristic {
             public:
                 enum type : uint16_t {
 
@@ -315,7 +315,7 @@ namespace Bluetooth {
                     WindChill                                 = 0x2A79
                 };
 
-                class Descriptor {
+                class EXTERNAL Descriptor {
                 public:
                     enum type : uint16_t {
                         CharacteristicAggregateFormat         = 0x2905,
@@ -453,7 +453,7 @@ namespace Bluetooth {
                 }
                
             private:
-                friend class Profile;
+                friend class GATTProfile;
                 void Descriptors (GATTSocket::Command::Response& response) {
                     while (response.Next() == true) {
                         UUID descriptor(response.Attribute());
@@ -536,7 +536,7 @@ namespace Bluetooth {
             }
  
         private:
-            friend class Profile;
+            friend class GATTProfile;
             void AddCharacteristics (GATTSocket::Command::Response& response) {
                 if (response.Next() == true) {
                     do  {
@@ -567,10 +567,10 @@ namespace Bluetooth {
         typedef std::function<void(const uint32_t)> Handler;
         typedef Core::IteratorType< const std::list<Service>, const Service&, std::list<Service>::const_iterator> Iterator;
 
-        Profile (const Profile&) = delete;
-        Profile& operator= (const Profile&) = delete;
+        GATTProfile (const GATTProfile&) = delete;
+        GATTProfile& operator= (const GATTProfile&) = delete;
 
-        Profile(const bool includeVendorCharacteristics)
+        GATTProfile(const bool includeVendorCharacteristics)
             : _adminLock()
             , _services()
             , _index()
@@ -580,7 +580,7 @@ namespace Bluetooth {
             , _handler()
             , _expired(0) {
         }
-        ~Profile() {
+        ~GATTProfile() {
         }
 
     public:
@@ -617,8 +617,55 @@ namespace Bluetooth {
 
             return (index != _services.end() ? &(*index) : nullptr);
         }
+        void Find(const UUID& serviceUuid, const UUID& charUuid, std::list<const Service::Characteristic*>& characteristics) const
+        {
+            const Service* service = (*this)[serviceUuid];
+            if (service != nullptr) {
+                auto it = service->Characteristics();
+                while (it.Next() == true) {
+                    if (it.Current() == charUuid) {
+                        characteristics.push_back(&it.Current());
+                    }
+                }
+            }
+        }
+        uint16_t FindHandle(const Service::Characteristic& characteristic, const UUID& descUuid) const
+        {
+            uint16_t handle = 0;
+            const Service::Characteristic::Descriptor* descriptor = characteristic[descUuid];
+            if (descriptor != nullptr) {
+                handle = descriptor->Handle();
+            }
+            return (handle);
+        }
+        uint16_t FindHandle(const UUID& serviceUuid, const UUID& charUuid) const
+        {
+            const Service::Characteristic* characteristic = FindCharacteristic(serviceUuid, charUuid);
+            return (characteristic == nullptr ? 0 : characteristic->Handle());
+        }
+        uint16_t FindHandle(const UUID& serviceUuid, const UUID& charUuid, const UUID& descUuid) const
+        {
+            uint16_t handle = 0;
+            const Service::Characteristic* characteristic = FindCharacteristic(serviceUuid, charUuid);
+            if (characteristic != nullptr) {
+                const Service::Characteristic::Descriptor* descriptor = (*characteristic)[descUuid];
+                if (descriptor != nullptr) {
+                    handle = descriptor->Handle();
+                }
+            }
+            return (handle);
+        }
 
     private:
+        const Service::Characteristic* FindCharacteristic(const UUID& serviceUuid, const UUID& charUuid) const
+        {
+            const Service::Characteristic* result = nullptr;
+            const Service* service = (*this)[serviceUuid];
+            if (service != nullptr) {
+                result = (*service)[charUuid];
+            }
+            return (result);
+        }
         std::list<Service>::iterator ValidService(const std::list<Service>::iterator& input) {
             std::list<Service>::iterator index (input);
             while ( (index != _services.end()) && 

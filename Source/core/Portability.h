@@ -383,7 +383,7 @@ inline void EXTERNAL SleepS(unsigned int a_Time)
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #define BIG_ENDIAN_PLATFORM 1
 #else
-#pragma message "Unknown endianess"
+#error "Unknown endianess: please set __BYTE_ORDER__ to proper endianess"
 #endif
 
 #endif
@@ -554,11 +554,7 @@ namespace Core {
     inline void* Alignment(size_t alignment, void* incoming)
     {
         const auto basePtr = reinterpret_cast<uintptr_t>(incoming);
-#ifdef __WINDOWS__
-        return reinterpret_cast<void*>((basePtr - 1u + alignment) & ~alignment);
-#else
-        return reinterpret_cast<void*>((basePtr - 1u + alignment) & -alignment);
-#endif
+        return reinterpret_cast<void*>((basePtr - 1u + alignment) & ~(alignment - 1));
     }
 
     inline uint8_t* PointerAlign(uint8_t* pointer)
@@ -619,13 +615,11 @@ namespace Core {
     public:
         template <typename... Args>
         inline Void(Args&&...) {}
-        inline Void(const Void&) {}
-        inline ~Void() {}
+        inline Void(const Void&) = default;
+        inline Void(Void&&) = default;
+        inline ~Void() = default;
 
-        inline Void& operator=(const Void&)
-        {
-            return (*this);
-        }
+        inline Void& operator=(const Void&) = default;
     };
 
     struct EXTERNAL IReferenceCounted {
@@ -634,12 +628,12 @@ namespace Core {
         virtual uint32_t Release() const = 0;
     };
 
-    struct EXTERNAL IUnknown : virtual public IReferenceCounted  {
+    struct EXTERNAL IUnknown : public IReferenceCounted  {
         enum { ID = 0x00000000 };
 
         ~IUnknown() override = default;
 
-        virtual void* QueryInterface(const uint32_t interfaceNummer) = 0;
+        virtual void* QueryInterface(const uint32_t interfaceNumber) = 0;
 
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* QueryInterface()
@@ -654,7 +648,7 @@ namespace Core {
         }
 
         template <typename REQUESTEDINTERFACE>
-        const REQUESTEDINTERFACE* QueryInterface() const
+        REQUESTEDINTERFACE* QueryInterface() const
         {
             const void* baseInterface(const_cast<IUnknown*>(this)->QueryInterface(REQUESTEDINTERFACE::ID));
 
