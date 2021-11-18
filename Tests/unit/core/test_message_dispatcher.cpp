@@ -30,16 +30,18 @@ namespace Tests {
 
     class Core_MessageDispatcher : public testing::Test {
     protected:
+        static constexpr uint16_t METADATA_SIZE = 1 * 1024;
+        static constexpr uint16_t DATA_SIZE = 9 * 1024;
+
         Core_MessageDispatcher()
             : _dispatcher(nullptr)
             , _identifier(_T("md"))
-            , _dataBufferSize(9 * 1024)
         {
         }
 
         void SetUp() override
         {
-            _dispatcher.reset(new Core::MessageDispatcher(Core::MessageDispatcher::Create(_identifier, _instanceId, _dataBufferSize)));
+            _dispatcher.reset(new Core::MessageDispatcher<METADATA_SIZE, DATA_SIZE>(_identifier, _instanceId, true));
         }
         void TearDown() override
         {
@@ -53,7 +55,7 @@ namespace Tests {
             Core::Singleton::Dispose();
         }
 
-        std::unique_ptr<Core::MessageDispatcher> _dispatcher;
+        std::unique_ptr<Core::MessageDispatcher<METADATA_SIZE, DATA_SIZE>> _dispatcher;
         string _identifier;
         uint32_t _dataBufferSize;
 
@@ -84,9 +86,8 @@ namespace Tests {
 
     TEST_F(Core_MessageDispatcher, CreateAndOpenOperatesOnSameValidFile)
     {
-        auto writerDispatcher = Core::MessageDispatcher::Create(_T("test_md"), 0, 2048);
-
-        auto readerDispatcher = Core::MessageDispatcher::Open(_T("test_md"), 0);
+        Core::MessageDispatcher<METADATA_SIZE, DATA_SIZE> writerDispatcher(_T("test_md"), 0, true);
+        Core::MessageDispatcher<METADATA_SIZE, DATA_SIZE> readerDispatcher(_T("test_md"), 0, false);
 
         uint8_t testData[2] = { 13, 37 };
 
@@ -105,14 +106,16 @@ namespace Tests {
 
     TEST_F(Core_MessageDispatcher, MessageDispatcherCanBeOpenedAndClosed)
     {
-        auto writerDispatcher = Core::MessageDispatcher::Create(_T("test_md"), 0, 2048);
+        Core::MessageDispatcher<METADATA_SIZE, DATA_SIZE> writerDispatcher(_T("test_md"), 0, true);
+
         {
-            auto readerDispatcher = Core::MessageDispatcher::Open(_T("test_md"), 0);
+            Core::MessageDispatcher<METADATA_SIZE, DATA_SIZE> readerDispatcher(_T("test_md"), 0, false);
+
             //destructor is called
         }
 
         //reopen
-        auto readerDispatcher = Core::MessageDispatcher::Open(_T("test_md"), 0);
+        Core::MessageDispatcher<METADATA_SIZE, DATA_SIZE> readerDispatcher(_T("test_md"), 0, true);
 
         uint8_t testData[2] = { 13, 37 };
 
@@ -157,7 +160,7 @@ namespace Tests {
     TEST_F(Core_MessageDispatcher, WriteAndReadDataAreEqualInDiffrentProcesses)
     {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
-            auto dispatcher = Core::MessageDispatcher::Open(this->_identifier, this->_instanceId);
+            Core::MessageDispatcher<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false);
 
             uint8_t readType;
             uint16_t readLength;
@@ -196,19 +199,17 @@ namespace Tests {
 
     TEST_F(Core_MessageDispatcher, PushDataShouldNotFitWhenExcedingDataBufferSize)
     {
-        std::vector<uint8_t> fullBufferSimulation;
-        fullBufferSimulation.resize(_dispatcher->DataSize() + 1);
+        uint8_t fullBufferSimulation[DATA_SIZE + 1
+            + sizeof(Core::CyclicBuffer::control)];
 
-        ASSERT_EQ(_dispatcher->PushData(0, fullBufferSimulation.size(), fullBufferSimulation.data()), Core::ERROR_WRITE_ERROR);
+        ASSERT_EQ(_dispatcher->PushData(0, sizeof(fullBufferSimulation), fullBufferSimulation), Core::ERROR_WRITE_ERROR);
     }
 
     TEST_F(Core_MessageDispatcher, PushDataShouldFlushOldDatIfDoesNotFit)
     {
-        std::vector<uint8_t> fullBufferSimulation;
-        fullBufferSimulation.resize(_dispatcher->DataSize() //raw size
+        uint8_t fullBufferSimulation[DATA_SIZE - 1 + sizeof(Core::CyclicBuffer::control) //almost full buffer
             - sizeof(uint8_t) //size of type (part of message header)
-            - sizeof(uint16_t) //size of length (part of message header)
-        );
+            - sizeof(uint16_t)]; //size of length (part of message header)
 
         uint8_t testData[] = { 12, 21 };
 
@@ -216,7 +217,7 @@ namespace Tests {
         uint16_t readLength;
         uint8_t readData[2] = { 0, 0 };
 
-        ASSERT_EQ(_dispatcher->PushData(0, fullBufferSimulation.size(), fullBufferSimulation.data()), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushData(0, sizeof(fullBufferSimulation), fullBufferSimulation), Core::ERROR_NONE);
         //buffer is full, but trying to write new data
 
         ASSERT_EQ(_dispatcher->PushData(0, sizeof(testData), testData), Core::ERROR_NONE);
@@ -234,7 +235,7 @@ namespace Tests {
     TEST_F(Core_MessageDispatcher, DISABLED_ReaderShouldWaitUntillRingBells)
     {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
-            auto dispatcher = Core::MessageDispatcher::Open(this->_identifier, this->_instanceId);
+            Core::MessageDispatcher<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false);
 
             uint8_t readType;
             uint16_t readLength;
@@ -324,7 +325,7 @@ namespace Tests {
     TEST_F(Core_MessageDispatcher, DISABLED_WriteAndReadMetaDataAreEqualInDiffrentProcesses)
     {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
-            auto dispatcher = Core::MessageDispatcher::Open(this->_identifier, this->_instanceId);
+            Core::MessageDispatcher<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false);
             uint8_t testData[2] = { 13, 37 };
             //testAdmin.Sync("setup");
 

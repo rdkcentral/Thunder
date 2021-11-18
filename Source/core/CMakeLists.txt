@@ -55,7 +55,6 @@ add_library(${TARGET} SHARED
         WorkerPool.cpp
         XGetopt.cpp
         ResourceMonitor.cpp
-        MessageDispatcher.cpp
         )
 
 
