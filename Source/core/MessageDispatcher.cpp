@@ -2,6 +2,14 @@
 
 namespace WPEFramework {
 namespace Core {
+    namespace {
+        //only if multiple if power of 2
+        int RoundUp(int numToRound, int multiple)
+        {
+            return (numToRound + multiple - 1) & -multiple;
+        }
+    }
+
     //-----------PACKET-----------
 
     /**
@@ -228,16 +236,14 @@ namespace Core {
         source.ReportResponse(data);
     }
 
-    //-----------MESSAGE DISPATCHER-----------
-
+    //-----------MESSAGE DISPATCHER-----------    
     /**
      * @brief Creates a message dispatcher
      * 
      * @param identifier name of the dispatcher
      * @param instanceId number of the instance
-     * @param totalSize total size of the buffers (data + metadata)
-     * @param percentage how much of totalSize is reserved for metadat (eg. 10 = 10% of totalSize)
-     * @return MessageDispatcher
+     * @param dataSize size of data buffer
+     * @return MessageDispatcher 
      */
     MessageDispatcher MessageDispatcher::Create(const string& identifier, const uint32_t instanceId, const uint32_t dataSize)
     {
@@ -317,7 +323,7 @@ namespace Core {
                                      Core::File::OTHERS_READ  |
                                      Core::File::OTHERS_WRITE | 
                                      Core::File::SHAREABLE, sizeof(dataSize) + dataSize )
-        , _dataBuffer(new DataBuffer(doorBellFilename, _mappedFile, true, sizeof(dataSize), dataSize, true))
+        , _dataBuffer(new DataBuffer(doorBellFilename, _mappedFile, true, sizeof(dataSize), 0, true))
         , _metaDataBuffer(new MetaDataBuffer(metaDataFilename))
         // clang-format on
         , _metaDataFilename(metaDataFilename)
@@ -329,12 +335,15 @@ namespace Core {
 
         if (!IsValid()) {
             TRACE_L1("MessageDispatcher is not valid!");
+        } else {
+            _dataReadBuffer.resize(dataSize - RoundUp(sizeof(dataSize), sizeof(void*)) - sizeof(Core::CyclicBuffer::control));
+            _mappedFile.SetNumber<decltype(dataSize), ENDIAN_BIG>(0, dataSize);
         }
     }
 
     MessageDispatcher::MessageDispatcher(const string& doorBellFilename, Core::DataElementFile&& mappedFile, const string& metaDataFilename, uint32_t dataSize)
         : _mappedFile(std::move(mappedFile))
-        , _dataBuffer(new DataBuffer(doorBellFilename, _mappedFile, false, sizeof(dataSize), dataSize, true))
+        , _dataBuffer(new DataBuffer(doorBellFilename, _mappedFile, false, sizeof(dataSize), 0, true))
         , _metaDataBuffer(nullptr) //do not need a server on a wrting side
         , _metaDataFilename(metaDataFilename)
     {
@@ -345,6 +354,9 @@ namespace Core {
 
         if (!IsValid()) {
             TRACE_L1("MessageDispatcher is not valid!");
+        } else {
+            //actual read buffer is: data - aligned offset - sizeof administration
+            _dataReadBuffer.resize(dataSize - RoundUp(sizeof(dataSize), sizeof(void*)) - sizeof(Core::CyclicBuffer::control));
         }
     }
 
@@ -371,8 +383,11 @@ namespace Core {
 
     uint32_t MessageDispatcher::PopData(uint8_t& outType, uint16_t& outLength, uint8_t* outValue)
     {
+        _dataLock.Lock();
+
         ASSERT(_mappedFile.IsValid());
         uint32_t result = Core::ERROR_READ_ERROR;
+
         bool available = _dataBuffer->IsValid();
 
         if (available == false) {
@@ -393,6 +408,8 @@ namespace Core {
             }
         }
 
+        _dataLock.Unlock();
+
         return result;
     }
 
@@ -411,6 +428,8 @@ namespace Core {
      */
     uint32_t MessageDispatcher::PushMetadata(const uint8_t type, const uint16_t length, const uint8_t* value)
     {
+        _metaDataLock.Lock();
+
         ASSERT(length > 0);
 
         uint32_t result = Core::ERROR_GENERAL;
@@ -432,6 +451,8 @@ namespace Core {
             channel.Close(Core::infinite);
         }
 
+        _metaDataLock.Unlock();
+
         return result;
     }
 
@@ -448,6 +469,8 @@ namespace Core {
      */
     uint32_t MessageDispatcher::PushData(const uint8_t type, const uint16_t length, const uint8_t* value)
     {
+        _dataLock.Lock();
+
         ASSERT(length > 0);
         uint32_t result = Core::ERROR_WRITE_ERROR;
         const uint16_t fullLength = sizeof(type) + sizeof(length) + length; // headerLength + informationLength
@@ -464,6 +487,8 @@ namespace Core {
         } else {
             TRACE_L1("Buffer to small to fit message!\n");
         }
+
+        _dataLock.Unlock();
 
         return result;
     }
@@ -514,7 +539,7 @@ namespace Core {
 
     uint32_t MessageDispatcher::DataSize() const
     {
-        return _dataBuffer->Size();
+        return _dataReadBuffer.size();
     }
 
     uint32_t MessageDispatcher::MetaDataSize() const

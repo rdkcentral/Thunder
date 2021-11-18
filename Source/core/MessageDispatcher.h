@@ -142,6 +142,7 @@ namespace Core {
         //private variables
         Core::CriticalSection _dataLock;
         Core::CriticalSection _metaDataLock;
+
         Core::DataElementFile _mappedFile;
 
         std::unique_ptr<DataBuffer> _dataBuffer;
