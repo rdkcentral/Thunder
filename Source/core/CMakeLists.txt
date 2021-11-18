@@ -160,7 +160,7 @@ if(WARNING_REPORTING)
     message(STATUS "Warning reporting enabled")
 endif()
 
-if (EXCEPTION_CATCHING)
+if(EXCEPTION_CATCHING)
     target_compile_definitions(${TARGET} PUBLIC __CORE_EXCEPTION_CATCHING__)
     set_source_files_properties( Thread.cpp PROPERTIES COMPILE_FLAGS "-fexceptions" )
     message(STATUS "Unhandled Exception catching enabled")
@@ -180,7 +180,7 @@ if(NOT WCHAR_SUPPORT)
     message(STATUS "Disabled WCHAR support.")
 endif()
 
-if (BLUETOOTH)
+if(BLUETOOTH_SUPPORT)
     target_compile_definitions(${TARGET} PUBLIC __CORE_BLUETOOTH_SUPPORT__)
     message(STATUS "Enable bluetooth support.")
 endif()
@@ -232,7 +232,7 @@ if(ExecInfo_FOUND)
 endif()
 
 find_package(Systemd)
-if (SYSTEMD_FOUND)
+if(SYSTEMD_FOUND)
     target_link_libraries( ${TARGET}
         PRIVATE
         Systemd::Systemd
