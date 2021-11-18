@@ -178,6 +178,10 @@ void CreateTraceBuffer(string tracePath)
 
 TEST(Core_tracing, simpleTracing)
 {
+    // Call dispose to ensure there is no any resource handler registered to
+    // avoid hang on the poll
+    Core::Singleton::Dispose();
+
     std::string tracePath = "/tmp/tracebuffer01";
     auto lambdaFunc = [tracePath](IPTestAdministrator & testAdmin) {
         std::string db = (tracePath + "/tracebuffer.doorbell");
@@ -187,6 +191,12 @@ TEST(Core_tracing, simpleTracing)
         DoorBell doorBell(db.c_str());
         constexpr uint32_t bufferSize = ((8 * 1024) - (sizeof(struct CyclicBuffer::control))); /* 8Kb */
         ServerCyclicBuffer01 cycBuffer(cycBufferName, bufferSize);
+
+        // Note: this test case is forking a child process with parent process space.
+        // In such case, signalfd:poll of parent will not get signal from pthread_kill(SIGUSR2) from child
+        // process. Hence please ensure parent process cleared all resource registration
+        // using Singleton::Dispose() call from parent context.
+        // https://lore.kernel.org/linux-man/20190923222413.5c79b179@kappa.digital-domain.net/T/
 
         // TODO: maximum running time?
         if (doorBell.Wait(infinite) == ERROR_NONE) {
@@ -251,8 +261,10 @@ TEST(Core_tracing, simpleTracing)
         TRACE(Trace::Information,(Trace::Format(text.c_str(), _T("Checking the Format() with 2 parameter"))));
         Trace::TraceUnit::Instance().Close();
         Trace::TraceUnit::Instance().Open(1);
-   }
-   Singleton::Dispose();
+    }
+
+    testAdmin. WaitForChildCompletion();
+    Singleton::Dispose();
 }
 
 TEST(Core_tracing, simpleTracingReversed)
@@ -333,5 +345,7 @@ TEST(Core_tracing, simpleTracingReversed)
         }
         doorBell.Relinquish();
     }
+
+    testAdmin.WaitForChildCompletion();
     Singleton::Dispose();
 }

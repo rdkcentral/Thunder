@@ -303,8 +303,6 @@ namespace Core {
             else
                 SystemInfo::m_cpuload = ((DeltaTickCount - DeltaIdleTime) * 100) / DeltaTickCount;
 
-            SystemInfo::m_jiffies = CurrentTickCount;
-
             // Store current tick statistics for next cycle
             previousTickCount = CurrentTickCount;
             previousIdleTime = CurrentIdleTime;
