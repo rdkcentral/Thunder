@@ -264,7 +264,7 @@ namespace Core {
         using CompoundClass = IPCMessageType<IDENTIFIER, PARAMETERS, RESPONSE>;
 
         template <typename PACKAGE, const uint32_t REALIDENTIFIER>
-        class RawSerializedType : public Core::IMessage {
+        class RawSerializedType : public Core::IMessage, public Core::IReferenceCounted {
         public:
             using ThisClass = RawSerializedType<PACKAGE, REALIDENTIFIER>;
 
@@ -285,6 +285,12 @@ namespace Core {
             ~RawSerializedType() override = default;
 
         public:
+            void AddRef() const override {
+                _parent.AddRef();
+            }
+            uint32_t Release() const override {
+                return(_parent.Release());
+            }
             inline void Clear()
             {
                 __Clear();
@@ -308,12 +314,6 @@ namespace Core {
             uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset) override
             {
                 return _Deserialize(stream, maxLength, offset);
-            }
-            void Acquire(Core::ProxyType<ThisClass>&) {
-                _parent.AddRef();
-            }
-            void Relinquish(Core::ProxyType<ThisClass>&) {
-                _parent.Release();
             }
 
         private:
@@ -418,23 +418,17 @@ namespace Core {
             : _parameters(*this)
             , _response(*this)
         {
-            _parameters.AddRef();
-            _response.AddRef();
         }
         IPCMessageType(const PARAMETERS& info)
             : _parameters(*this, info)
             , _response(*this)
         {
-            _parameters.AddRef();
-            _response.AddRef();
         }
 #ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 
         ~IPCMessageType() override {
-            _parameters.CompositRelease();
-            _response.CompositRelease();
         }
 
     public:
@@ -461,16 +455,16 @@ namespace Core {
         }
         virtual ProxyType<IMessage> IParameters()
         {
-            return (ProxyType<IMessage>(Core::ProxyType<ParameterType>(_parameters)));
+            return (ProxyType<IMessage>(_parameters, _parameters));
         }
         virtual ProxyType<IMessage> IResponse()
         {
-            return (ProxyType<IMessage>(Core::ProxyType<ResponseType>(_response)));
+            return (ProxyType<IMessage>(_response, _response));
         }
 
     private:
-        ProxyObject< ParameterType > _parameters;
-        ProxyObject< ResponseType > _response;
+        ParameterType _parameters;
+        ResponseType _response;
     };
 
     class EXTERNAL IPCChannel {
