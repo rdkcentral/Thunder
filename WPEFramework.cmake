@@ -1,0 +1,306 @@
+# If not stated otherwise in this file or this component's license file the
+# following copyright and licenses apply:
+#
+# Copyright 2020 Metrological
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+## This is an stripped version of cmakepp
+##
+## https://github.com/toeb/cmakepp
+##
+
+macro(project_version)
+    string(REGEX REPLACE "^([0-9]+)\\.[0-9]+\\.[0-9]+.*" "\\1" _VERSION_MAJOR "${ARGV0}")
+    string(REGEX REPLACE "^[0-9]+\\.([0-9]+)\\.[0-9]+.*" "\\1" _VERSION_MINOR "${ARGV0}")
+    string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" _VERSION_PATCH "${ARGV0}")
+
+    set(PROJECT_VERSION_MAJOR ${_VERSION_MAJOR})
+    set(PROJECT_VERSION_MINOR ${_VERSION_MINOR})
+    set(PROJECT_VERSION_PATCH ${_VERSION_PATCH})
+
+    set(PROJECT_VERSION ${_VERSION_MAJOR}.${_VERSION_MINOR}.${_VERSION_PATCH})
+    set(VERSION ${PROJECT_VERSION})
+endmacro()
+
+get_property(is_included GLOBAL PROPERTY INCLUDE_GUARD)
+if(is_included)
+  return()
+endif()
+set_property(GLOBAL PROPERTY INCLUDE_GUARD true)
+
+if(POLICY CMP0007)
+    cmake_policy(SET CMP0007 NEW)
+endif()
+
+if(POLICY CMP0012)
+    cmake_policy(SET CMP0012 NEW)
+endif()
+
+if(POLICY CMP0066)
+    cmake_policy(SET CMP0066 NEW)
+endif()
+
+if(POLICY CMP0054)
+  cmake_policy(SET CMP0054 NEW)
+endif()
+
+set(NAMESPACE "WPEFramework" CACHE INTERNAL "" FORCE)
+set("${NAMESPACE}_FOUND" TRUE CACHE INTERNAL "" FORCE)
+
+add_definitions("-DTHUNDER_PLATFORM_PC_UNIX=1")
+
+string(TOLOWER ${NAMESPACE} _STORAGE_DIRECTORY)
+set(STORAGE_DIRECTORY ${_STORAGE_DIRECTORY} CACHE INTERNAL "" FORCE)
+
+if (NOT HIDE_NON_EXTERNAL_SYMBOLS)
+    set(HIDE_NON_EXTERNAL_SYMBOLS OFF)
+endif()
+
+if (HIDE_NON_EXTERNAL_SYMBOLS)
+    set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+    set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+endif()
+
+set(MODULE_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}" CACHE INTERNAL "" FORCE)
+
+list(APPEND CMAKE_MODULE_PATH "${MODULE_BASE_DIR}/common")
+
+list(REMOVE_DUPLICATES CMAKE_MODULE_PATH)
+list(SORT CMAKE_MODULE_PATH)
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} CACHE INTERNAL "" FORCE)
+
+get_directory_property(hasParent PARENT_DIRECTORY)
+if(hasParent)
+    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} PARENT_SCOPE)
+endif()
+
+if(NOT COMMAND InstallCMakeConfig)
+    include(CmakeHelperFunctions)
+endif()
+
+# get temp dir which is needed by a couple of functions in cmakepp
+# first uses env variable TMP if it does not exists TMPDIR is used
+# if both do not exists current_list_dir/tmp is used
+if(UNIX)
+  set(TMP_DIR $ENV{TMPDIR} /var/tmp)
+else()
+  set(TMP_DIR $ENV{TMP}  ${CMAKE_CURRENT_LIST_DIR}/tmp)
+endif()
+list(GET TMP_DIR 0 TMP_DIR)
+file(TO_CMAKE_PATH "${TMP_DIR}" TMP_DIR)
+
+# dummy function which is overwritten and in this form just returns the temp_dir
+function(config_dir key)
+	return("${TMP_DIR}")
+endfunction()
+
+macro(IncludeConfig)
+    if(NOT COMMAND map)
+        ## includes all cmake files of cmakepp to write json files
+        include("${MODULE_BASE_DIR}/config/core/require.cmake")
+        require("${MODULE_BASE_DIR}/config/*.cmake")
+    endif()
+endmacro()
+
+# ----------------------------------------------------------------------------------------
+# write_config
+# ----------------------------------------------------------------------------------------
+# Writes and installs a json configs for a plugin.
+#
+#    optional:
+#    PLUGINS     List of the config files to write without extention defaults to
+#                PROJECT_NAME only
+#                e.g. "UX" will generate and install UX.json for the WebkitBrowser plugin.
+#    CLASSNAME   Name of the package, defaults to PROJECT_NAME of
+#                the latest cmake project call.
+#    LOCATOR     Version of the package, defaults to lib + MODULE_NAME + CMAKE_SHARED_LIBRARY_SUFFIX
+#                of the latest cmake project call.
+#    COMPONENT   The cmake component group defaults to PROJECT_NAME
+# ----------------------------------------------------------------------------------------
+macro(write_config)
+    set(optionsArgs )
+    set(oneValueArgs CLASSNAME LOCATOR COMPONENT)
+    set(multiValueArgs PLUGINS)
+
+    cmake_parse_arguments(ARG "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+
+    if(ARG_UNPARSED_ARGUMENTS)
+        if(ARG_PLUGINS)
+            message(FATAL_ERROR "Unknown keywords given to write_config: \"${ARG_UNPARSED_ARGUMENTS}\"")
+        else()
+            if ("${ARG_UNPARSED_ARGUMENTS}" STREQUAL "${PROJECT_NAME}")
+                set(_fix "write_config\(\)")
+            else()
+                set(_fix "write_config\(PLUGINS ${ARG_UNPARSED_ARGUMENTS}\)")
+            endif()
+            message(DEPRECATION "======DEPRECATION=DETECTED==================================================\nPROPOSED FIX:\n${CMAKE_CURRENT_LIST_FILE}\n\"write_config(${ARGN})\" --> \"${_fix}\"\n\============================================================================")
+            set(_plugins ${ARG_UNPARSED_ARGUMENTS})
+            set(_classname ${PLUGIN_NAME})
+            set(_component ${ARG_UNPARSED_ARGUMENTS})
+            message(STATUS "Assuming:")
+            message(STATUS "Plugin: ${_plugins}")
+            message(STATUS "Classname: ${_classname}")
+            message(STATUS "Component: ${_component}")
+        endif()
+    endif()
+
+    if(NOT _component AND NOT _plugins AND NOT _classname)
+    if(ARG_CLASSNAME)
+        set(_classname ${ARG_CLASSNAME})
+    else()
+        set(_classname ${PROJECT_NAME})
+    endif()
+
+    if(ARG_PLUGINS)
+        set(_plugins ${ARG_PLUGINS})
+    else()
+        set(_plugins ${PROJECT_NAME})
+    endif()
+
+    if(ARG_COMPONENT)
+        set(_component ${ARG_COMPONENT})
+    else()
+        set(_component ${PROJECT_NAME})
+    endif()
+    endif()
+
+    if(ARG_LOCATOR)
+        set(_locator ${ARG_LOCATOR})
+    else()
+        set(_locator lib${MODULE_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
+    endif()
+
+    IncludeConfig()
+
+    foreach(plugin ${_plugins})
+        message(STATUS "Writing configuration for ${plugin}")
+
+        map()
+        kv(locator ${_locator})
+        kv(classname ${_classname})
+        end()
+        ans(plugin_config) # default configuration
+
+        if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/${plugin}.config")
+            include(${CMAKE_CURRENT_LIST_DIR}/${plugin}.config)
+
+            list(LENGTH preconditions number_preconditions)
+            if (number_preconditions GREATER 0)
+                map_append(${plugin_config} precondition ___array___)
+                foreach(entry ${preconditions})
+                    map_append(${plugin_config} precondition ${entry})
+                endforeach()
+            endif()
+
+            list(LENGTH terminations number_terminations)
+            if (number_terminations GREATER 0)
+                map_append(${plugin_config} termination ___array___)
+                foreach(entry ${terminations})
+                    map_append(${plugin_config} termination ${entry})
+                endforeach()
+            endif()
+
+            if (NOT ${callsign} STREQUAL "")
+                map_append(${plugin_config} callsign ${callsign})
+            endif()
+
+            if (NOT ${autostart} STREQUAL "")
+                map_append(${plugin_config} autostart ${autostart})
+            endif()
+
+            if (NOT ${resumed} STREQUAL "")
+                map_append(${plugin_config} resumed ${resumed})
+            endif()
+
+            if (NOT ${persistentpathpostfix} STREQUAL "")
+                map_append(${plugin_config} persistentpathpostfix ${persistentpathpostfix})
+                unset(persistentpathpostfix)
+            endif()
+
+            if (NOT ${configuration} STREQUAL "")
+                map_append(${plugin_config} configuration ${configuration})
+            endif()
+        endif()
+
+        json_write("${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}.json" ${plugin_config})
+
+        install(
+                FILES ${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}.json DESTINATION
+                "${CMAKE_INSTALL_PREFIX}/../etc/${NAMESPACE}/plugins/"
+                COMPONENT ${_component})
+    endforeach()
+
+    unset(_plugins)
+    unset(_classname)
+    unset(_component)
+
+endmacro()
+
+function(add_compiler_flags modulename options)
+    set(cleanLine ${options})
+    foreach(VAL ${cleanLine})
+        target_compile_options (${modulename} PRIVATE ${VAL})
+    endforeach()
+endfunction()
+
+function(add_linker_flags modulename options)
+    get_target_property(original ${modulename} LINK_FLAGS)
+    if (original)
+        set(cleanLine ${options} ${original})
+    else(original)
+        set(cleanLine ${options})
+    endif(original)
+    set (linkoptions "")
+
+    foreach(VAL ${options})
+        string(APPEND linkoptions "${VAL} ")
+    endforeach()
+
+    if (NOT "${linkoptions}" STREQUAL "")
+        set_target_properties(${modulename} PROPERTIES LINK_FLAGS "${linkoptions}")
+    endif()
+endfunction()# Get all propreties that cmake supports
+
+# for debugging cmake targets
+execute_process(COMMAND cmake --help-property-list OUTPUT_VARIABLE CMAKE_PROPERTY_LIST)
+
+# Convert command output into a CMake list
+STRING(REGEX REPLACE ";" "\\\\;" CMAKE_PROPERTY_LIST "${CMAKE_PROPERTY_LIST}")
+STRING(REGEX REPLACE "\n" ";" CMAKE_PROPERTY_LIST "${CMAKE_PROPERTY_LIST}")
+
+function(print_properties)
+    message ("CMAKE_PROPERTY_LIST = ${CMAKE_PROPERTY_LIST}")
+endfunction(print_properties)
+
+function(print_target_properties tgt)
+    if(NOT TARGET ${tgt})
+      message("There is no target named '${tgt}'")
+      return()
+    endif()
+
+    foreach (prop ${CMAKE_PROPERTY_LIST})
+        string(REPLACE "<CONFIG>" "${CMAKE_BUILD_TYPE}" prop ${prop})
+    # Fix https://stackoverflow.com/questions/32197663/how-can-i-remove-the-the-location-property-may-not-be-read-from-target-error-i
+    if(prop STREQUAL "LOCATION" OR prop MATCHES "^LOCATION_" OR prop MATCHES "_LOCATION$")
+        continue()
+    endif()
+        # message ("Checking ${prop}")
+        get_property(propval TARGET ${tgt} PROPERTY ${prop} SET)
+        if (propval)
+            get_target_property(propval ${tgt} ${prop})
+            message ("${tgt} ${prop} = ${propval}")
+        endif()
+    endforeach(prop)
+endfunction(print_target_properties)
