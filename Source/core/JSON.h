@@ -140,7 +140,7 @@ namespace Core {
 
                     if (loaded == 0) {
                         TRACE_L1("Failed to parse json. \n%s\n", text.c_str());
-		        break;
+                        break;
                     }
                     handled += loaded;
                 }
