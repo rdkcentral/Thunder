@@ -1134,7 +1134,7 @@ namespace Core {
         inline typename Core::TypeTraits::enable_if<ProxyContainerType<A, B, C>::TraitIsInitialized::value, bool>::type
             __IsInitialized() const
         {
-            reurn (ELEMENT::IsInitialized());
+            return (ELEMENT::IsInitialized());
         }
 
         template <typename A, typename B, typename C>
