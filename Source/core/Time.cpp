@@ -690,20 +690,20 @@ namespace Core {
         }
     }
 
-    Time Time::ToLocal() const {
+    TimeAsLocal Time::ToLocal() const {
         FILETIME fileTime, localFileTime;
         SYSTEMTIME local;
         SystemTimeToFileTime(&_time, &fileTime);
         FileTimeToLocalFileTime(&fileTime, &localFileTime);
         FileTimeToSystemTime(&localFileTime, &local);
-        return (Time(
+        return (TimeAsLocal(Time(
             static_cast<uint16_t>(local.wYear), 
             static_cast<uint8_t>(local.wMonth),
             static_cast<uint8_t>(local.wDay),
             static_cast<uint8_t>(local.wHour),
             static_cast<uint8_t>(local.wMinute),
             static_cast<uint8_t>(local.wSecond),
-            static_cast<uint16_t>(local.wMilliseconds), false));
+            static_cast<uint16_t>(local.wMilliseconds), false)));
     }
 
     Time Time::ToUTC() const {
@@ -892,7 +892,7 @@ namespace Core {
         _ticks = (static_cast<uint64_t>(time.tv_sec) * MicroSecondsPerSecond) + (time.tv_nsec / NanoSecondsPerMicroSecond) + OffsetTicksForEpoch;
     }
 
-    Time::TimeAsLocal Time::ToLocal() const {
+    TimeAsLocal Time::ToLocal() const {
         struct tm local = _time;
         time_t flatTime;
         flatTime = mktime(&local);
@@ -905,7 +905,7 @@ namespace Core {
             static_cast<uint8_t>(local.tm_hour),
             static_cast<uint8_t>(local.tm_min),
             static_cast<uint8_t>(local.tm_sec),
-            0, true)));
+            0, false)));
     }
 
     Time Time::ToUTC() const {
@@ -916,7 +916,7 @@ namespace Core {
             static_cast<uint8_t>(_time.tm_hour),
             static_cast<uint8_t>(_time.tm_min),
             static_cast<uint8_t>(_time.tm_sec),
-            0, false));
+            0, true));
     }
 
     // Copyright (c) 2001-2006, NLnet Labs. All rights reserved.

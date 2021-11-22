@@ -1224,18 +1224,18 @@ TEST(Core_Time, ToLocal)
 
     Time time(2002, 5, 10, 11, 30, 23, 21, false);
     EXPECT_EQ(time.IsLocalTime(), false);
-    Time::TimeAsLocal localTime(time.ToLocal());
-    EXPECT_EQ(localTime.LocalTime().IsLocalTime(), true);
+    TimeAsLocal localTime(time.ToLocal());
+    EXPECT_EQ(localTime.LocalTime().IsLocalTime(), false);
 
     time = Time(1970, 5, 32, 24, 30, 23, 21, false);
     EXPECT_EQ(time.IsLocalTime(), false);
     localTime = time.ToLocal();
-    EXPECT_EQ(localTime.LocalTime().IsLocalTime(), true);
+    EXPECT_EQ(localTime.LocalTime().IsLocalTime(), false);
 
     time = Time(1970, 5, 32, 24, 30, 23, 21, true);
     EXPECT_EQ(time.IsLocalTime(), true);
     localTime = time.ToLocal();
-    EXPECT_EQ(localTime.LocalTime().IsLocalTime(), true);
+    EXPECT_EQ(localTime.LocalTime().IsLocalTime(), false);
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
