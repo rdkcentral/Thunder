@@ -69,19 +69,34 @@ namespace Tests {
         //arrange
         uint8_t testData[2] = { 13, 37 };
 
-        uint8_t readType;
-        uint16_t readLength;
-        uint8_t readData[2] = { 0, 0 };
+        uint8_t readData[4];
+        uint16_t readLength = sizeof(readData);
 
         //act
-        ASSERT_EQ(_dispatcher->PushData(0, sizeof(testData), testData), Core::ERROR_NONE);
-        ASSERT_EQ(_dispatcher->PopData(readType, readLength, readData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
 
         //assert
-        ASSERT_EQ(readType, 0);
         ASSERT_EQ(readLength, sizeof(testData));
         ASSERT_EQ(readData[0], 13);
         ASSERT_EQ(readData[1], 37);
+    }
+
+    TEST_F(Core_MessageDispatcher, ReadDataIsCutIfCannotFitIntoBuffer)
+    {
+        //arrange
+        uint8_t testData[2] = { 13, 37 };
+
+        uint8_t readData[3];
+        uint16_t readLength = sizeof(readData);
+
+        //act
+        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_GENERAL);
+
+        //assert
+        ASSERT_EQ(readLength, 4);
+        ASSERT_EQ(readData[0], 13);
     }
 
     TEST_F(Core_MessageDispatcher, CreateAndOpenOperatesOnSameValidFile)
@@ -91,14 +106,12 @@ namespace Tests {
 
         uint8_t testData[2] = { 13, 37 };
 
-        uint8_t readType;
-        uint16_t readLength;
-        uint8_t readData[2] = { 0, 0 };
+        uint8_t readData[4];
+        uint16_t readLength = sizeof(readData);
 
-        ASSERT_EQ(_dispatcher->PushData(0, sizeof(testData), testData), Core::ERROR_NONE);
-        ASSERT_EQ(_dispatcher->PopData(readType, readLength, readData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
 
-        ASSERT_EQ(readType, 0);
         ASSERT_EQ(readLength, sizeof(testData));
         ASSERT_EQ(readData[0], 13);
         ASSERT_EQ(readData[1], 37);
@@ -119,14 +132,12 @@ namespace Tests {
 
         uint8_t testData[2] = { 13, 37 };
 
-        uint8_t readType;
-        uint16_t readLength;
-        uint8_t readData[2] = { 0, 0 };
+        uint8_t readData[4];
+        uint16_t readLength = sizeof(readData);
 
-        ASSERT_EQ(_dispatcher->PushData(0, sizeof(testData), testData), Core::ERROR_NONE);
-        ASSERT_EQ(_dispatcher->PopData(readType, readLength, readData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
 
-        ASSERT_EQ(readType, 0);
         ASSERT_EQ(readLength, sizeof(testData));
         ASSERT_EQ(readData[0], 13);
         ASSERT_EQ(readData[1], 37);
@@ -136,23 +147,22 @@ namespace Tests {
     {
         uint8_t testData[2] = { 13, 37 };
 
-        uint8_t readType;
-        uint16_t readLength;
-        uint8_t readData[2] = { 0, 0 };
+        uint8_t readData[4];
+        uint16_t readLength = sizeof(readData);
 
         //first read, write, assert
-        ASSERT_EQ(_dispatcher->PushData(0, sizeof(testData), testData), Core::ERROR_NONE);
-        ASSERT_EQ(_dispatcher->PopData(readType, readLength, readData), Core::ERROR_NONE);
-        ASSERT_EQ(readType, 0);
-        ASSERT_EQ(readLength, 2);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
+
+        ASSERT_EQ(readLength, sizeof(testData));
         ASSERT_EQ(readData[0], 13);
         ASSERT_EQ(readData[1], 37);
 
         //second read, write, assert
         testData[0] = 40;
-        ASSERT_EQ(_dispatcher->PushData(1, 1, testData), Core::ERROR_NONE);
-        ASSERT_EQ(_dispatcher->PopData(readType, readLength, readData), Core::ERROR_NONE);
-        ASSERT_EQ(readType, 1);
+        readLength = sizeof(readData);
+        ASSERT_EQ(_dispatcher->PushData(1, testData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
         ASSERT_EQ(readLength, 1);
         ASSERT_EQ(readData[0], 40);
     }
@@ -162,16 +172,14 @@ namespace Tests {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
             Core::MessageDispatcher<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false);
 
-            uint8_t readType;
-            uint16_t readLength;
-            uint8_t readData[2] = { 0, 0 };
+            uint8_t readData[4];
+            uint16_t readLength = sizeof(readData);
 
             testAdmin.Sync("setup reader");
             testAdmin.Sync("writer wrote");
 
-            ASSERT_EQ(dispatcher.PopData(readType, readLength, readData), Core::ERROR_NONE);
+            ASSERT_EQ(dispatcher.PopData(readLength, readData), Core::ERROR_NONE);
 
-            ASSERT_EQ(readType, 0);
             ASSERT_EQ(readLength, 2);
             ASSERT_EQ(readData[0], 13);
             ASSERT_EQ(readData[1], 37);
@@ -189,7 +197,7 @@ namespace Tests {
             testAdmin.Sync("setup reader");
 
             uint8_t testData[2] = { 13, 37 };
-            ASSERT_EQ(_dispatcher->PushData(0, sizeof(testData), testData), Core::ERROR_NONE);
+            ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
 
             testAdmin.Sync("writer wrote");
             testAdmin.Sync("reader read");
@@ -202,10 +210,10 @@ namespace Tests {
         uint8_t fullBufferSimulation[DATA_SIZE + 1
             + sizeof(Core::CyclicBuffer::control)];
 
-        ASSERT_EQ(_dispatcher->PushData(0, sizeof(fullBufferSimulation), fullBufferSimulation), Core::ERROR_WRITE_ERROR);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(fullBufferSimulation), fullBufferSimulation), Core::ERROR_WRITE_ERROR);
     }
 
-    TEST_F(Core_MessageDispatcher, PushDataShouldFlushOldDatIfDoesNotFit)
+    TEST_F(Core_MessageDispatcher, PushDataShouldFlushOldDataIfDoesNotFit)
     {
         uint8_t fullBufferSimulation[DATA_SIZE - 1 + sizeof(Core::CyclicBuffer::control) //almost full buffer
             - sizeof(uint8_t) //size of type (part of message header)
@@ -213,19 +221,17 @@ namespace Tests {
 
         uint8_t testData[] = { 12, 21 };
 
-        uint8_t readType;
-        uint16_t readLength;
-        uint8_t readData[2] = { 0, 0 };
+        uint8_t readData[4];
+        uint16_t readLength = sizeof(readData);
 
-        ASSERT_EQ(_dispatcher->PushData(0, sizeof(fullBufferSimulation), fullBufferSimulation), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(fullBufferSimulation), fullBufferSimulation), Core::ERROR_NONE);
         //buffer is full, but trying to write new data
 
-        ASSERT_EQ(_dispatcher->PushData(0, sizeof(testData), testData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
         //new data written, so the oldest data should be replaced
         //this is first entry and should be first popped (FIFO)
 
-        ASSERT_EQ(_dispatcher->PopData(readType, readLength, readData), Core::ERROR_NONE);
-        ASSERT_EQ(readType, 0);
+        ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
         ASSERT_EQ(readLength, sizeof(testData));
         ASSERT_EQ(readData[0], 12);
         ASSERT_EQ(readData[1], 21);
@@ -237,16 +243,15 @@ namespace Tests {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
             Core::MessageDispatcher<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false);
 
-            uint8_t readType;
-            uint16_t readLength;
-            uint8_t readData[2] = { 0, 0 };
+            uint8_t readData[4];
+            uint16_t readLength = sizeof(readData);
+
             bool called = false;
             testAdmin.Sync("init");
 
             if (dispatcher.Wait(Core::infinite) == Core::ERROR_NONE) {
-                ASSERT_EQ(dispatcher.PopData(readType, readLength, readData), Core::ERROR_NONE);
+                ASSERT_EQ(dispatcher.PopData(readLength, readData), Core::ERROR_NONE);
 
-                ASSERT_EQ(readType, 0);
                 ASSERT_EQ(readLength, 2);
                 ASSERT_EQ(readData[0], 13);
                 ASSERT_EQ(readData[1], 37);
@@ -266,7 +271,7 @@ namespace Tests {
             uint8_t testData[2] = { 13, 37 };
             testAdmin.Sync("init");
 
-            ASSERT_EQ(_dispatcher->PushData(0, sizeof(testData), testData), Core::ERROR_NONE);
+            ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
             ::SleepMs(10); //not a nice way, but now Wait will be called before ringing
             _dispatcher->Ring();
         }
@@ -278,15 +283,14 @@ namespace Tests {
         uint8_t testData[2] = { 13, 37 };
         bool called = false;
 
-        _dispatcher->RegisterDataAvailable([&](const uint8_t type, const uint16_t length, const uint8_t* value) {
-            ASSERT_EQ(type, 0);
+        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value) {
             ASSERT_EQ(length, sizeof(testData));
             ASSERT_EQ(value[0], 13);
             ASSERT_EQ(value[1], 37);
             called = true;
         });
 
-        ASSERT_EQ(_dispatcher->PushMetadata(0, sizeof(testData), testData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushMetadata(sizeof(testData), testData), Core::ERROR_NONE);
         ::SleepMs(50); //wait for callback complete before closing
 
         ASSERT_EQ(called, true);
@@ -299,24 +303,22 @@ namespace Tests {
         uint8_t testData2[2] = { 12, 34 };
 
         //first write and read
-        _dispatcher->RegisterDataAvailable([&](const uint8_t type, const uint16_t length, const uint8_t* value) {
-            ASSERT_EQ(type, 0);
+        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value) {
             ASSERT_EQ(length, sizeof(testData1));
             ASSERT_EQ(value[0], 13);
             ASSERT_EQ(value[1], 37);
         });
-        ASSERT_EQ(_dispatcher->PushMetadata(0, sizeof(testData1), testData1), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushMetadata(sizeof(testData1), testData1), Core::ERROR_NONE);
         ::SleepMs(50); //need to wait before unregistering, not clean solution though
         _dispatcher->UnregisterDataAvailable();
 
         //second write and read
-        _dispatcher->RegisterDataAvailable([&](const uint8_t type, const uint16_t length, const uint8_t* value) {
-            ASSERT_EQ(type, 0);
+        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value) {
             ASSERT_EQ(length, sizeof(testData2));
             ASSERT_EQ(value[0], 12);
             ASSERT_EQ(value[1], 34);
         });
-        ASSERT_EQ(_dispatcher->PushMetadata(0, sizeof(testData2), testData2), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushMetadata(sizeof(testData2), testData2), Core::ERROR_NONE);
         ::SleepMs(50);
         _dispatcher->UnregisterDataAvailable();
     }
@@ -329,7 +331,7 @@ namespace Tests {
             uint8_t testData[2] = { 13, 37 };
             //testAdmin.Sync("setup");
 
-            ASSERT_EQ(dispatcher.PushMetadata(0, sizeof(testData), testData), Core::ERROR_NONE);
+            ASSERT_EQ(dispatcher.PushMetadata(sizeof(testData), testData), Core::ERROR_NONE);
             ::SleepMs(2000);
         };
 
@@ -339,8 +341,7 @@ namespace Tests {
         // This side (tested) acts as reader
         IPTestAdministrator testAdmin(otherSide);
         {
-            _dispatcher->RegisterDataAvailable([&](const uint8_t type, const uint16_t length, const uint8_t* value) {
-                ASSERT_EQ(type, 0);
+            _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value) {
                 ASSERT_EQ(length, 2);
                 ASSERT_EQ(value[0], 13);
                 ASSERT_EQ(value[1], 37);
@@ -356,7 +357,7 @@ namespace Tests {
     {
         uint8_t testData[2] = { 13, 37 };
 
-        ASSERT_EQ(_dispatcher->PushMetadata(0, sizeof(testData), testData), Core::ERROR_UNAVAILABLE);
+        ASSERT_EQ(_dispatcher->PushMetadata(sizeof(testData), testData), Core::ERROR_UNAVAILABLE);
     }
 
 } // Tests

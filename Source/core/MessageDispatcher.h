@@ -30,117 +30,8 @@ namespace Core {
     template <uint16_t METADATA_SIZE, uint16_t DATA_SIZE>
     class EXTERNAL MessageDispatcher {
     private:
-        using MetaDataCallback = std::function<void(const uint8_t, const uint16_t, const uint8_t*)>;
-
-        //Private classes
-        class Packet {
-        public:
-            /**
-            * @brief Construct a new Message Dispatcher:: Packet:: Packet object
-            * 
-            * @param type type of message
-            * @param length length of value buffer
-            * @param value buffer
-            */
-            Packet(const uint8_t type, const uint16_t length, const uint8_t* value)
-                : _type(type)
-            {
-                _buffer.resize(length);
-                std::copy(value, value + length, _buffer.begin());
-            }
-
-            /**
-            * @brief Construct a new Message Dispatcher:: Packet:: Packet object.
-            *        Passed buffer  will be deserialized and written to member variables.
-            *        Serialized buffer should be following pattern as specified in @ref Serialize.
-            * 
-            * @param fullLength buffer length
-            * @param buffer buffer (serialized)
-            */
-            Packet(const uint16_t fullLength, const uint8_t* buffer)
-            {
-                //create a buffer to store deserialized value (reusing _buffer here)
-                _buffer.resize(fullLength);
-                uint16_t actualLength = 0;
-
-                //fill in type, length and value
-                Deserialize(buffer, _type, actualLength, _buffer.data());
-
-                //after _buffer is filled with value, resize it to the size of actualLength which is the size of deserialized value
-                _buffer.resize(actualLength);
-                _buffer.shrink_to_fit();
-            }
-            /**
-            * @brief Write member variables into buffer. Pattern is:
-            *       - uint16_t - full length of message
-            *       - uint8_t - type of message
-            *       - uint8_t* - buffer
-            * 
-            * @return std::vector<uint8_t> serialized buffer
-            */
-            std::vector<uint8_t> Serialize()
-            {
-                std::vector<uint8_t> result;
-                uint16_t bufferLength = _buffer.size();
-                uint16_t fullLength = sizeof(bufferLength) + sizeof(_type) + _buffer.size();
-                result.resize(fullLength);
-
-                uint32_t offset = 0;
-                memcpy(result.data(), &fullLength, sizeof(fullLength));
-                offset += sizeof(fullLength);
-
-                memcpy(result.data() + offset, &_type, sizeof(_type));
-                offset += sizeof(_type);
-
-                memcpy(result.data() + offset, _buffer.data(), bufferLength);
-                offset += bufferLength;
-
-                //should be fast enough due to NRVO
-                return result;
-            }
-
-            /**
-            * @brief Deserialize buffer and get its contents. Serialized buffer should be following pattern as specified in @ref Serialize.
-            * 
-            * @param buffer serialized buffer
-            * @param outType type of message
-            * @param outLength length of message
-            * @param outValue message buffer
-            */
-            static void Deserialize(const uint8_t* buffer, uint8_t& outType, uint16_t& outLength, uint8_t* outValue)
-            {
-                uint32_t offset = 0;
-
-                ::memcpy(&outLength, &(buffer[offset]), sizeof(outLength));
-                offset += sizeof(outLength);
-
-                ::memcpy(&outType, &(buffer[offset]), sizeof(_type));
-                offset += sizeof(_type);
-
-                outLength -= offset; //fullLength - ( length of type + length of message)
-                ::memcpy(outValue, &(buffer[offset]), outLength);
-            }
-
-            uint8_t Type() const
-            {
-                return _type;
-            }
-
-            uint32_t Length() const
-            {
-                return _buffer.size();
-            }
-
-            const uint8_t* Value() const
-            {
-                return _buffer.data();
-            }
-
-        private:
-            uint8_t _type;
-            std::vector<uint8_t> _buffer;
-        };
-
+        using MetaDataCallback = std::function<void(const uint16_t, const uint8_t*)>;
+        
         class DataBuffer : public Core::CyclicBuffer {
         public:
             DataBuffer(const string& doorBell, const string& fileName, const uint32_t mode, const uint32_t bufferSize, const bool overwrite)
@@ -233,9 +124,8 @@ namespace Core {
                     auto length = message->Parameters().Length();
                     auto value = message->Parameters().Value();
 
-                    Packet packet(length, value);
                     if (_parent._notification != nullptr) {
-                        _parent._notification(packet.Type(), packet.Length(), packet.Value());
+                        _parent._notification(length, value);
                         message->Response() = Core::ERROR_NONE;
 
                     } else {
@@ -325,28 +215,26 @@ namespace Core {
         /**
         * @brief Writes data into cyclic buffer. If it does not fit the data already in the cyclic buffer will be flushed.
         *        After writing everything, this side should call Ring() to notify other side.
-        *        To receive this data other side needs to wait for the doorbel ring and then use Reader::Data
+        *        To receive this data other side needs to wait for the doorbel ring and then use PopData
         *
-        * @param type type of message
         * @param length length of message
         * @param value buffer 
         * @return uint32_t ERROR_WRITE_ERROR: failed to reserve enough space - eg, value size is exceeding max cyclic buffer size
         *                  ERROR_NONE: OK
         */
-        uint32_t PushData(const uint8_t type, const uint16_t length, const uint8_t* value)
+        uint32_t PushData(const uint16_t length, const uint8_t* value)
         {
             _dataLock.Lock();
 
             ASSERT(length > 0);
             uint32_t result = Core::ERROR_WRITE_ERROR;
-            const uint16_t fullLength = sizeof(type) + sizeof(length) + length; // headerLength + informationLength
+            const uint16_t fullLength = sizeof(length) + length; // headerLength + informationLength
 
             const uint16_t reservedLength = _dataBuffer.Reserve(fullLength);
 
             if (reservedLength >= fullLength) {
                 //no need to serialize because we can write to CyclicBuffer step by step
                 _dataBuffer.Write(reinterpret_cast<const uint8_t*>(&fullLength), sizeof(fullLength)); //fullLength
-                _dataBuffer.Write(reinterpret_cast<const uint8_t*>(&type), sizeof(type)); //type
                 _dataBuffer.Write(value, length); //value
                 result = Core::ERROR_NONE;
 
@@ -360,37 +248,45 @@ namespace Core {
         }
 
         /**
-         * @brief Read data after doorbell ringed.
+         * @brief Read data after doorbell ringed. The buffer size should be at least of size of message + sizeof(uint16_t). 
+         *        If buffer is too small to fit whole message it will be partially filled. 
+         *        When reading, one should then skip last two bytes of passed buffer
          * 
-         * @param type type of message
-         * @param length length of message
-         * @param value buffer
+         * @param outLength ERROR_NONE - read bytes. 
+         *                  ERROR_GENERAL - mimimal required bytes to fit whole message.
+         *                  ERROR_READ_ERROR - the same value as passed in                       
+         * @param outValue buffer - in case of ERROR_GENERAL: last two bytes should be skipped                
          * @return uint32_t ERROR_READ_ERROR - unable to read or data is corrupted
          *                  ERROR_NONE - OK
+         *                  ERROR_GENERAL - buffer too small to fit whole message at once
          */
-        uint32_t PopData(uint8_t& outType, uint16_t& outLength, uint8_t* outValue)
+        uint32_t PopData(uint16_t& outLength, uint8_t* outValue)
         {
-            _dataLock.Lock();
+            ASSERT(_dataBuffer.IsValid());
 
+            _dataLock.Lock();
             uint32_t result = Core::ERROR_READ_ERROR;
 
-            bool available = _dataBuffer.IsValid();
+            if (_dataBuffer.Validate()) {
 
-            if (available == false) {
-                available = _dataBuffer.Validate();
-            }
+                uint32_t length = _dataBuffer.Read(outValue, outLength, true);
 
-            if (available) {
-                uint32_t length = _dataBuffer.Read(_dataReadBuffer, DATA_SIZE);
-                if (length < 3) {
-                    //did not receive type and length, this is not valid message
+                //did not even receive length of the full message
+                if (length < 2) {
                     TRACE_L1("Inconsistent message\n");
                     _dataBuffer.Flush();
+                } else if (length > outLength) {
+                    TRACE_L1("Lost part of the message\n");
+                    result = Core::ERROR_GENERAL;
 
+                    //first two bytes are sizeof full messsage.
+                    std::copy_n(outValue + sizeof(outLength), outLength - sizeof(outLength), outValue);
+                    outLength = length;
                 } else {
-                    Packet::Deserialize(_dataReadBuffer, outType, outLength, outValue);
-
                     result = Core::ERROR_NONE;
+
+                    outLength = length - sizeof(outLength);
+                    std::copy_n(outValue + sizeof(outLength), outLength, outValue);
                 }
             }
 
@@ -410,7 +306,6 @@ namespace Core {
         /**
          * @brief Writes metadata. Reader needs to register for notifications to recevie this message
          * 
-         * @param type type of message
          * @param length length of message
          * @param value vbuffer
          * @return uint32_t ERROR_GENERAL: unable to open communication channel
@@ -419,7 +314,7 @@ namespace Core {
          *                                     caller should send this message again
          *                  ERROR_NONE: OK
          */
-        uint32_t PushMetadata(const uint8_t type, const uint16_t length, const uint8_t* value)
+        uint32_t PushMetadata(const uint16_t length, const uint8_t* value)
         {
             _metaDataLock.Lock();
 
@@ -432,9 +327,7 @@ namespace Core {
             auto metaDataFrame = Core::ProxyType<typename MetaDataBuffer<METADATA_SIZE>::MetaDataFrame>::Create();
 
             if (channel.Open(Core::infinite) == Core::ERROR_NONE) {
-                Packet packet(type, length, value);
-                auto serialized = packet.Serialize();
-                metaDataFrame->Parameters().Set(serialized.size(), serialized.data());
+                metaDataFrame->Parameters().Set(length, value);
 
                 if (channel.Invoke(metaDataFrame, Core::infinite) == Core::ERROR_NONE) {
                     result = metaDataFrame->Response();
@@ -461,13 +354,13 @@ namespace Core {
             _metaDataBuffer->UnregisterMetaDataCallback();
         }
 
-        bool IsValid() const
+        bool IsValid()
         {
 
             bool result = true;
 
             if (!_dataBuffer.IsValid()) {
-                result = false;
+                result = _dataBuffer.Validate();
             }
             if (_metaDataBuffer != nullptr) {
                 if (!_metaDataBuffer->IsOpen()) {
