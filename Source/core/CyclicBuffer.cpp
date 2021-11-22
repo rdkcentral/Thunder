@@ -277,7 +277,7 @@ namespace Core {
         AdminUnlock();
     }
 
-    uint32_t CyclicBuffer::Read(uint8_t buffer[], const uint32_t length)
+    uint32_t CyclicBuffer::Read(uint8_t buffer[], const uint32_t length, bool partialRead = false)
     {
         ASSERT(length <= _administration->_size);
         ASSERT(IsValid() == true);
@@ -299,16 +299,18 @@ namespace Core {
             Cursor cursor(*this, oldTail, length);
             result = GetReadSize(cursor);
 
-            if ((result == 0) || (result > length)) {
+            if ((result == 0) || ((result > length) && (partialRead == false))) {
                 // No data, or too much, return 0.
                 return 0;
             }
+            
+            uint32_t bufferLength = std::min(length, result);
 
             foundData = true;
 
             uint32_t roundCount = oldTail / (1 + _administration->_tailIndexMask);
             if ((offset + result) < _administration->_size) {
-                memcpy(buffer, _realBuffer + offset, result);
+                memcpy(buffer, _realBuffer + offset, bufferLength);
 
                 uint32_t newTail = offset + result + roundCount * (1 + _administration->_tailIndexMask);
                 if (!_administration->_tail.compare_exchange_weak(oldTail, newTail)) {
@@ -318,8 +320,11 @@ namespace Core {
                 uint32_t part1(_administration->_size - offset);
                 uint32_t part2(result - part1);
 
-                memcpy(buffer, _realBuffer + offset, part1);
-                memcpy(buffer + part1, _realBuffer, part2);
+                memcpy(buffer, _realBuffer + offset, std::min(part1, bufferLength));
+
+                if(part1 < bufferLength){
+                    memcpy(buffer + part1, _realBuffer, bufferLength - part1);
+                }
 
                 // Add one round, but prevent overflow.
                 roundCount = (roundCount + 1) % _administration->_roundCountModulo;
