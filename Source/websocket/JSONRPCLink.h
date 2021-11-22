@@ -236,7 +236,7 @@ namespace JSONRPC {
                 _observers.push_back(&client);
                 if (_channel.IsOpen() == true) {
                     client.Opened();
-				}
+                }
                 _adminLock.Unlock();
             }
             void Unregister(LinkType<INTERFACE>& client)
@@ -260,6 +260,10 @@ namespace JSONRPC {
             uint32_t Initialize()
             {
                 return (Open(0));
+            }
+            void Deinitialize()
+            {
+                Close();
             }
 
         protected:
@@ -289,7 +293,7 @@ namespace JSONRPC {
             {
                 _channel.Close(Core::infinite);
             }
-    
+
         private:
             uint32_t Inbound(const Core::ProxyType<Core::JSONRPC::Message>& inbound)
             {
@@ -448,7 +452,7 @@ namespace JSONRPC {
         typedef std::map<uint32_t, Entry> PendingMap;
         typedef std::function<uint32_t(const string&, const string& parameters, string& result)> InvokeFunction;
 
-	protected:
+        protected:
     
         static constexpr uint32_t DefaultWaitTime = 10000;
 
@@ -464,7 +468,7 @@ namespace JSONRPC {
             , _versionstring()
         {
             if (localCallsign == nullptr) {
-	        static uint32_t sequence;
+                static uint32_t sequence;
                 _localSpace = string("temporary") + Core::NumberType<uint32_t>(Core::InterlockedIncrement(sequence)).Text();
             } else {
                 _localSpace = localCallsign;
@@ -1042,7 +1046,7 @@ namespace JSONRPC {
 
                     if (index->second.Signal(inbound) == true) {
                         _pendingQueue.erase(index);
-					}
+                    }
 
                     result = Core::ERROR_NONE;
                 }
