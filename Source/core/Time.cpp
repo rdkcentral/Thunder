@@ -703,7 +703,7 @@ namespace Core {
             static_cast<uint8_t>(local.wHour),
             static_cast<uint8_t>(local.wMinute),
             static_cast<uint8_t>(local.wSecond),
-            static_cast<uint16_t>(local.wMilliseconds), true));
+            static_cast<uint16_t>(local.wMilliseconds), false));
     }
 
     Time Time::ToUTC() const {
@@ -714,7 +714,7 @@ namespace Core {
             static_cast<uint8_t>(_time.wHour),
             static_cast<uint8_t>(_time.wMinute),
             static_cast<uint8_t>(_time.wSecond),
-            static_cast<uint16_t>(_time.wMilliseconds), false));
+            static_cast<uint16_t>(_time.wMilliseconds), true));
     }
 
     // Return the time in MicroSeconds, since since January 1, 1970 00:00:00 (UTC)...
@@ -892,20 +892,20 @@ namespace Core {
         _ticks = (static_cast<uint64_t>(time.tv_sec) * MicroSecondsPerSecond) + (time.tv_nsec / NanoSecondsPerMicroSecond) + OffsetTicksForEpoch;
     }
 
-    Time Time::ToLocal() const {
+    Time::TimeAsLocal Time::ToLocal() const {
         struct tm local = _time;
         time_t flatTime;
         flatTime = mktime(&local);
         localtime_r(&flatTime, &local);
 
-        return (Time(
+        return (TimeAsLocal(Time(
             static_cast<uint16_t>(local.tm_year + 1900),
             static_cast<uint8_t>(local.tm_mon + 1),
             static_cast<uint8_t>(local.tm_mday),
             static_cast<uint8_t>(local.tm_hour),
             static_cast<uint8_t>(local.tm_min),
             static_cast<uint8_t>(local.tm_sec),
-            0, true));
+            0, true)));
     }
 
     Time Time::ToUTC() const {

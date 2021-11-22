@@ -55,9 +55,7 @@ string GetTimeBasedOnTimeZone(string zone, struct tm time, bool localTime = true
     }
 
     uint32_t timeRead = convertedTime.tm_hour * 3600 + convertedTime.tm_min * 60 + convertedTime.tm_sec;
-    // NOTE: Currently new Time is calcualting only gmtoff with higher values, since for negative gmtoff case
-    // thunder giving same value, with out subtracting the time difference
-    uint32_t newTime = timeRead + ((convertedTime.tm_gmtoff > 0) ? convertedTime.tm_gmtoff: 0);
+    uint32_t newTime = timeRead + convertedTime.tm_gmtoff;
 
     uint8_t seconds = newTime % 60;
     newTime -= seconds;
@@ -66,10 +64,9 @@ string GetTimeBasedOnTimeZone(string zone, struct tm time, bool localTime = true
     uint8_t hours = (newTime / 3600);
 
     sprintf(strTime, "%02d:%02d:%02d%s", hours, minutes, seconds,
-		                         ((localTime == true) ? "": "GMT"));
+                                         ((localTime == true) ? "": "GMT"));
     return strTime;
 }
-
 TEST(Core_Time, MilliSeconds)
 {
     Time time(2000, 1, 2, 11, 30, 23, 21, false);
@@ -1085,7 +1082,7 @@ TEST(Core_Time, DifferenceFromGMTSeconds)
     char* currentZone = getenv("TZ");
     setenv("TZ", "", 1);
 
-    setenv("TZ", "America/Los_Angeles", 1);
+    setenv("TZ", "Africa/Brazzaville", 1);
     tzset();
     Time time(80, 12, 23, 11, 30, 23, 21, false);
     EXPECT_EQ(time.DifferenceFromGMTSeconds(), 0);
@@ -1105,24 +1102,21 @@ TEST(Core_Time, DifferenceFromGMTSeconds_LocalTimeEnabled)
 
     Time time(80, 12, 23, 11, 30, 23, 21, true);
     EXPECT_EQ(time.DifferenceFromGMTSeconds(), 0);
-    setenv("TZ", "America/New_York", 1);
+
+    setenv("TZ", "UTC", 1);
     tzset();
     time = Time(80, 12, 23, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.DifferenceFromGMTSeconds(), GetMachineTimeDifference("America/New_York"));
+    EXPECT_EQ(time.DifferenceFromGMTSeconds(), GetMachineTimeDifference("UTC"));
 
-    setenv("TZ", "GST", 1);
-    unsetenv("TZ");
+    setenv("TZ", "Asia/Tokyo", 1);
     tzset();
+    time = Time(80, 12, 23, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.DifferenceFromGMTSeconds(), GetMachineTimeDifference("Asia/Tokyo"));
 
-    setenv("TZ", "Asia/Kolkata", 1);
+    setenv("TZ", "America/Los_Angeles", 1);
     tzset();
-    time = Time(2006, 11, 44, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.DifferenceFromGMTSeconds(), GetMachineTimeDifference("Asia/Kolkata"));
-
-    setenv("TZ", "Africa/Algiers", 1);
-    tzset();
-    time = Time(2006, 11, 44, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.DifferenceFromGMTSeconds(), GetMachineTimeDifference("Africa/Algiers"));
+    time = Time(80, 12, 23, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.DifferenceFromGMTSeconds(), GetMachineTimeDifference("America/Los_Angeles"));
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
@@ -1142,6 +1136,10 @@ TEST(Core_Time, Format)
 }
 TEST(Core_Time, ToTimeOnly)
 {
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
     Time time(2002, 5, 10, 11, 30, 23, 21, false);
     EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "11:30:23GMT");
     EXPECT_EQ(time.MilliSeconds(), 21);
@@ -1149,6 +1147,9 @@ TEST(Core_Time, ToTimeOnly)
     EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "00:30:23GMT");
     time = Time(1970, 5, 32, 24, 60, 23, 21, false);
     EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "01:00:23GMT");
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, ToTimeOnly_LocalTimeEnabled)
 {
@@ -1177,61 +1178,40 @@ TEST(Core_Time, ToTimeOnly_LocalTimeEnabled)
     setenv("TZ", "Asia/Kolkata", 1);
     tzset();
     time = Time(1970, 5, 32, 24, 60, 23, 21, false);
-    GetMachineTimeDifference("Asia/Kolkata");
     EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("Asia/Kolkata", time.Handle(), true).c_str());
 
+    setenv("TZ", "America/Los_Angeles", 1);
+    tzset();
+    time = Time(80, 12, 23, 11, 30, 23, 21, false);
+    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("America/Los_Angeles", time.Handle(), true).c_str());
+
+    setenv("TZ", "Europe/Amsterdam", 1);
+    tzset();
+    time = Time(80, 12, 23, 11, 30, 23, 21, false);
+    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("Europe/Amsterdam", time.Handle(), true).c_str());
+
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
 }
-TEST(Core_Time, ToTimeOnly_And_TimeConstructor_WithLocalTimeEnabled)
+TEST(Core_Time, ToTimeOnly_LocalTimeDisabled)
 {
     char* currentZone = getenv("TZ");
     setenv("TZ", "", 1);
     tzset();
 
-    Time time(2002, 5, 10, 11, 30, 23, 21, true);
-    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "11:30:23");
+    Time time(2002, 5, 10, 11, 30, 23, 21, false);
+    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "11:30:23GMT");
     EXPECT_EQ(time.MilliSeconds(), 21);
 
     setenv("TZ", "Africa/Algiers", 1);
     tzset();
-    time = Time(1970, 5, 32, 24, 30, 23, 21, true);
-    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "00:30:23");
+    time = Time(1970, 5, 32, 24, 30, 23, 21, false);
+    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "00:30:23GMT");
 
     setenv("TZ", "Asia/Kolkata", 1);
     tzset();
-    time = Time(1970, 5, 32, 24, 60, 23, 21, true);
-    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "01:00:23");
-
-    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
-    tzset();
-}
-TEST(Core_Time, ToTimeOnlyWithLocalTimeDisabled_And_TimeConstructor_WithLocalTimeEnabled)
-{
-    char* currentZone = getenv("TZ");
-    setenv("TZ", "", 1);
-    tzset();
-
-    Time time(2002, 5, 10, 11, 30, 23, 21, true);
-    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), GetTimeBasedOnTimeZone("", time.Handle(), false).c_str());
-    EXPECT_EQ(time.MilliSeconds(), 21);
-
-    // Check time difference after set time zone to GST
-    setenv("TZ", "GST", 1);
-    tzset();
-    time = Time(2002, 5, 10, 11, 30, 23, 21, true);
-    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), GetTimeBasedOnTimeZone("GST", time.Handle(), false).c_str());
-    EXPECT_EQ(time.MilliSeconds(), 21);
-
-    setenv("TZ", "Africa/Algiers", 1);
-    tzset();
-    time = Time(1970, 5, 32, 24, 30, 23, 21, true);
-    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), GetTimeBasedOnTimeZone("Africa/Algiers", time.Handle(), false).c_str());
-
-    setenv("TZ", "Asia/Kolkata", 1);
-    tzset();
-    time = Time(1970, 5, 32, 24, 60, 23, 21, true);
-    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), GetTimeBasedOnTimeZone("Asia/Kolkata", time.Handle(), false).c_str());
+    time = Time(1970, 5, 32, 24, 60, 23, 21, false);
+    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "01:00:23GMT");
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
@@ -1239,23 +1219,21 @@ TEST(Core_Time, ToTimeOnlyWithLocalTimeDisabled_And_TimeConstructor_WithLocalTim
 TEST(Core_Time, ToLocal)
 {
     char* currentZone = getenv("TZ");
-    setenv("TZ", "America/Los_Angeles", 1);
+    setenv("TZ", "Asia/Kolkata", 1);
     tzset();
 
-    Time time(2002, 5, 10, 11, 30, 23, 21, true);
-    std::string timeString;
-    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("America/Los_Angeles", time.Handle(), true).c_str());
-    EXPECT_EQ(time.IsLocalTime(), true);
+    Time time(2002, 5, 10, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsLocalTime(), false);
+    Time::TimeAsLocal localTime(time.ToLocal());
+    EXPECT_EQ(time.IsLocalTime(), false);
 
-    time.ToLocal();
-    EXPECT_EQ(time.IsLocalTime(), true);
-    time.ToString(timeString);
-    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("America/Los_Angeles", time.Handle(), true).c_str());
+    time = Time(1970, 5, 32, 24, 30, 23, 21, false);
+    localTime = time.ToLocal();
+    EXPECT_EQ(time.IsLocalTime(), false);
 
     time = Time(1970, 5, 32, 24, 30, 23, 21, true);
-    time.ToLocal();
-    time.ToString(timeString);
-    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("America/Los_Angeles", time.Handle(), true).c_str());
+    EXPECT_EQ(time.IsLocalTime(), true);
+    localTime = time.ToLocal();
     EXPECT_EQ(time.IsLocalTime(), true);
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
@@ -1264,22 +1242,24 @@ TEST(Core_Time, ToLocal)
 TEST(Core_Time, ToUTC)
 {
     char* currentZone = getenv("TZ");
-    setenv("TZ", "America/Los_Angeles", 1);
+    setenv("TZ", "Africa/Brazzaville", 1);
     tzset();
     Time time(2002, 5, 10, 11, 30, 23, 21, true);
-    std::string timeString;
+    EXPECT_EQ(time.IsLocalTime(), true);
     time.ToUTC();
-    time.ToString(timeString, false);
-    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), GetTimeBasedOnTimeZone("America/Los_Angeles", time.Handle(), false).c_str());
     EXPECT_EQ(time.IsLocalTime(), true);
 
+    time = Time(1970, 5, 32, 24, 30, 23, 21, false);
+    EXPECT_EQ(time.IsLocalTime(), false);
+    time.ToUTC();
+    EXPECT_EQ(time.IsLocalTime(), false);
+    
     // Check time difference after unset time zone
     setenv("TZ", "UTC", 1);
     tzset();
     time = Time(2002, 5, 10, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsLocalTime(), false);
     time.ToUTC();
-    time.ToString(timeString, false);
-    EXPECT_STREQ(timeString.c_str(), "Fri, 10 May 2002 11:30:23 GMT");
     EXPECT_EQ(time.IsLocalTime(), false);
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);

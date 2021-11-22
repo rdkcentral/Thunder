@@ -26,7 +26,44 @@
 namespace WPEFramework {
 namespace Core {
     class EXTERNAL Time {
-    private:
+
+    public:
+        class TimeAsLocal {
+        private:
+            friend class Time;
+
+            TimeAsLocal(Time time)
+                : _time(time)
+            {
+            }
+
+        public:
+            TimeAsLocal(const TimeAsLocal& copy)
+                : _time(copy._time)
+            {
+            }
+	    inline TimeAsLocal& operator=(const TimeAsLocal& RHS)
+            {
+                _time = RHS._time;
+
+                return (*this);
+            }
+            TimeAsLocal() = delete;
+            ~TimeAsLocal() = default;
+
+            const Time& LocalTime() const
+            {
+                return _time;
+            }
+            Time& LocalTime()
+            {
+                return _time;
+            }
+
+        private:
+            Time& _time;
+        };
+
     public:
         static constexpr uint32_t TicksPerMillisecond = 1000;
 
@@ -219,7 +256,7 @@ namespace Core {
         string ToISO8601() const;
         string ToISO8601(const bool localTime) const;
         string ToTimeOnly(const bool localTime) const;
-        Time ToLocal() const;
+        TimeAsLocal ToLocal() const;
         Time ToUTC() const;
 
         static Time Now();
