@@ -70,26 +70,26 @@ string GetTimeBasedOnTimeZone(string zone, struct tm time, bool localTime = true
 TEST(Core_Time, MilliSeconds)
 {
     Time time(2000, 1, 2, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.MilliSeconds(), 21);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
     time = Time(2000, 1, 2, 11, 30, 23, 100, false);
-    EXPECT_EQ(time.MilliSeconds(), 100);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(100));
     time = Time(2000, 1, 2, 11, 30, 23, 1023, false);
-    EXPECT_EQ(time.MilliSeconds(), 23);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(23));
     time = Time(2000, 1, 2, 11, 30, 23, 4999, false);
-    EXPECT_EQ(time.Seconds(), 27);
-    EXPECT_EQ(time.MilliSeconds(), 999);
+    EXPECT_EQ(time.Seconds(), static_cast<uint8_t>(27));
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(999));
 }
 TEST(Core_Time, MilliSeconds_LocalTimeEnabled)
 {
     Time time(2000, 1, 2, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.MilliSeconds(), 21);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
     time = Time(2000, 1, 2, 11, 30, 23, 100, true);
-    EXPECT_EQ(time.MilliSeconds(), 100);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(100));
     time = Time(2000, 1, 2, 11, 30, 23, 1023, true);
-    EXPECT_EQ(time.MilliSeconds(), 23);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(23));
     time = Time(2000, 1, 2, 11, 30, 23, 10999, true);
-    EXPECT_EQ(time.Seconds(), 33);
-    EXPECT_EQ(time.MilliSeconds(), 999);
+    EXPECT_EQ(time.Seconds(), static_cast<uint8_t>(33));
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(999));
 }
 TEST(Core_Time, Seconds)
 {
@@ -316,32 +316,32 @@ TEST(Core_Time, MonthName_LocalTimeEnabled)
 TEST(Core_Time, Year)
 {
     Time time(2000, 1, 1, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.Year(), 2000);
+    EXPECT_EQ(time.Year(), static_cast<uint32_t>(2000));
     time =  Time(1971, 1, 255, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.Year(), 1971);
+    EXPECT_EQ(time.Year(), static_cast<uint32_t>(1971));
     time =  Time(2000, 1, 10, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.Year(), 2000);
+    EXPECT_EQ(time.Year(), static_cast<uint32_t>(2000));
     time =  Time(2021, 1, 30, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.Year(), 2021);
+    EXPECT_EQ(time.Year(), static_cast<uint32_t>(2021));
     time =  Time(2021, 12, 33, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.Year(), 2022);
+    EXPECT_EQ(time.Year(), static_cast<uint32_t>(2022));
     time =  Time(1981, 9, 140, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.Year(), 1982);
+    EXPECT_EQ(time.Year(), static_cast<uint32_t>(1982));
 }
 TEST(Core_Time, Year_LocalTimeEnabled)
 {
     Time time(2000, 1, 1, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.Year(), 2000);
+    EXPECT_EQ(time.Year(), static_cast<uint32_t>(2000));
     time =  Time(1971, 1, 255, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.Year(), 1971);
+    EXPECT_EQ(time.Year(), static_cast<uint32_t>(1971));
     time =  Time(2000, 1, 200, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.Year(), 2000);
+    EXPECT_EQ(time.Year(), static_cast<uint32_t>(2000));
     time =  Time(2021, 1, 30, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.Year(), 2021);
+    EXPECT_EQ(time.Year(), static_cast<uint32_t>(2021));
     time =  Time(2021, 12, 32, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.Year(), 2022);
+    EXPECT_EQ(time.Year(), static_cast<uint32_t>(2022));
     time =  Time(1981, 10, 100, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.Year(), 1982);
+    EXPECT_EQ(time.Year(), static_cast<uint32_t>(1982));
 }
 TEST(Core_Time, DayOfYear)
 {
@@ -1003,7 +1003,7 @@ TEST(Core_Time, Ticks_withoutInterval)
     Core::Time time2 = Core::Time::Now();
     uint64_t diff = time2.Ticks() - time1.Ticks();
     uint32_t intervalInSeconds = diff / MicroSecondsPerSecond;
-    EXPECT_EQ(intervalInSeconds, 0);
+    EXPECT_EQ(intervalInSeconds, static_cast<uint32_t>(0));
 }
 TEST(Core_Time, Ticks_withInterval)
 {
@@ -1071,7 +1071,7 @@ TEST(Core_Time, NTPTime)
 {
     Time time(1970, 1, 1, 0, 0, 0, 1, true);
     const uint64_t ntpTime = time.NTPTime();
-    EXPECT_GE(ntpTime/MicroSecondsPerSecond, 0);
+    EXPECT_GE(ntpTime/MicroSecondsPerSecond, static_cast<uint32_t>(0));
     uint32_t timeTobeAdded = 4;
     time.Add(timeTobeAdded);
 
@@ -1142,7 +1142,7 @@ TEST(Core_Time, ToTimeOnly)
 
     Time time(2002, 5, 10, 11, 30, 23, 21, false);
     EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "11:30:23GMT");
-    EXPECT_EQ(time.MilliSeconds(), 21);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
     time = Time(1970, 5, 32, 24, 30, 23, 21, false);
     EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "00:30:23GMT");
     time = Time(1970, 5, 32, 24, 60, 23, 21, false);
@@ -1159,7 +1159,7 @@ TEST(Core_Time, ToTimeOnly_LocalTimeEnabled)
 
     Time time(2002, 5, 10, 11, 30, 23, 21, false);
     EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "11:30:23");
-    EXPECT_EQ(time.MilliSeconds(), 21);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
 
     // Check time difference after set time zone to GST
     setenv("TZ", "GST", 1);
@@ -1168,7 +1168,7 @@ TEST(Core_Time, ToTimeOnly_LocalTimeEnabled)
     // Check time after unset time zone
     time = Time(2002, 5, 10, 11, 30, 23, 21, false);
     EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("", time.Handle(), true).c_str());
-    EXPECT_EQ(time.MilliSeconds(), 21);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
 
     setenv("TZ", "Africa/Algiers", 1);
     tzset();
@@ -1201,7 +1201,7 @@ TEST(Core_Time, ToTimeOnly_LocalTimeDisabled)
 
     Time time(2002, 5, 10, 11, 30, 23, 21, false);
     EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "11:30:23GMT");
-    EXPECT_EQ(time.MilliSeconds(), 21);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
 
     setenv("TZ", "Africa/Algiers", 1);
     tzset();
@@ -1225,16 +1225,17 @@ TEST(Core_Time, ToLocal)
     Time time(2002, 5, 10, 11, 30, 23, 21, false);
     EXPECT_EQ(time.IsLocalTime(), false);
     Time::TimeAsLocal localTime(time.ToLocal());
-    EXPECT_EQ(time.IsLocalTime(), false);
+    EXPECT_EQ(localTime.LocalTime().IsLocalTime(), true);
 
     time = Time(1970, 5, 32, 24, 30, 23, 21, false);
-    localTime = time.ToLocal();
     EXPECT_EQ(time.IsLocalTime(), false);
+    localTime = time.ToLocal();
+    EXPECT_EQ(localTime.LocalTime().IsLocalTime(), true);
 
     time = Time(1970, 5, 32, 24, 30, 23, 21, true);
     EXPECT_EQ(time.IsLocalTime(), true);
     localTime = time.ToLocal();
-    EXPECT_EQ(time.IsLocalTime(), true);
+    EXPECT_EQ(localTime.LocalTime().IsLocalTime(), true);
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
