@@ -275,7 +275,7 @@ TEST(Core_SystemInfo, RawDeviceId_To_ID)
     uint8_t readSize = 0xc;
     string id3 (Core::SystemInfo::Instance().Id(rawDeviceId, readSize));
 
-    EXPECT_GE(id1.size(), 0);
+    EXPECT_GE(id1.size(), static_cast<size_t>(0));
     EXPECT_EQ(id2.size(), readPaddedSize);
     size_t paddingStartPosition = id2.find_first_of('0', 0);
     size_t paddingEndPosition = id2.find_first_not_of('0', paddingStartPosition);
@@ -385,7 +385,7 @@ static constexpr uint32_t MegaBytesPerKBytes = 1024;
 TEST(Core_SystemInfo, MemoryInfo)
 {
     uint32_t pageSize = getpagesize();
-    EXPECT_EQ(Core::SystemInfo::Instance().GetPageSize(), getpagesize());
+    EXPECT_EQ(Core::SystemInfo::Instance().GetPageSize(), static_cast<uint32_t>(getpagesize()));
 
     std::string cmd = "cat /proc/meminfo | grep MemTotal";
     string result = ExecuteCmd(cmd.c_str(), Purpose::MEM, Function::TOTAL);
@@ -397,7 +397,7 @@ TEST(Core_SystemInfo, MemoryInfo)
     cmd = "cat /proc/meminfo | grep SwapTotal:";
     result = ExecuteCmd(cmd.c_str(), Purpose::SWAP, Function::TOTAL);
     if (result.empty() != true) {
-        EXPECT_EQ(Core::SystemInfo::Instance().GetTotalSwap(), stol(result) * 1024);
+        EXPECT_EQ(Core::SystemInfo::Instance().GetTotalSwap(), static_cast<uint32_t>(stol(result) * 1024));
     }
 
 #if 0 // Disabling this since this can be varied time to time and endup different value
@@ -425,7 +425,7 @@ TEST(Core_SystemInfo, memorySnapShot)
     std::string cmd = "cat /proc/meminfo | grep MemTotal:";
     string result = ExecuteCmd(cmd.c_str(), Purpose::MEM, Function::TOTAL);
     if (result.empty() != true) {
-        EXPECT_EQ(snapshot.Total(), stol(ExecuteCmd(cmd.c_str(), Purpose::MEM, Function::TOTAL)));
+        EXPECT_EQ(snapshot.Total(), static_cast<uint32_t>(stol(ExecuteCmd(cmd.c_str(), Purpose::MEM, Function::TOTAL))));
     }
 
 #if 0 // Disabling this since this can be varied time to time and endup different value
@@ -452,7 +452,7 @@ TEST(Core_SystemInfo, memorySnapShot)
     cmd = "cat /proc/meminfo | grep SwapTotal:";
     result = ExecuteCmd(cmd.c_str(), Purpose::SWAP, Function::TOTAL);
     if (result.empty() != true) {
-        EXPECT_EQ((snapshot.SwapTotal() / MegaBytesPerKBytes), (stol(result) / MegaBytesPerKBytes));
+        EXPECT_EQ((snapshot.SwapTotal() / MegaBytesPerKBytes), static_cast<uint32_t>(stol(result) / MegaBytesPerKBytes));
     }
 
 #if 0 // Disabling this since this can be varied time to time and endup different value
