@@ -35,13 +35,13 @@ add_executable(${TEST_RUNNER_NAME}
    #test_ipcclient.cpp
    test_iso639.cpp
    test_iterator.cpp
-   test_json.cpp
    test_jsonparser.cpp
    test_keyvalue.cpp
    test_library.cpp
    test_lockablecontainer.cpp
    test_logging.cpp
    test_measurementtype.cpp
+   test_memberavailability.cpp
    #test_messageException.cpp
    #test_networkinfo.cpp
    test_nodeid.cpp
@@ -64,7 +64,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_stopwatch.cpp
    test_synchronize.cpp
    test_synchronous.cpp
-   #test_systeminfo.cpp
+   test_systeminfo.cpp
    test_textfragment.cpp
    test_textreader.cpp
    test_thread.cpp
@@ -97,6 +97,7 @@ target_link_libraries(${TEST_RUNNER_NAME}
     ${CMAKE_THREAD_LIBS_INIT}
     WPEFrameworkCore
     WPEFrameworkTracing
+    WPEFrameworkCOM
     WPEFrameworkWebSocket
 )
 

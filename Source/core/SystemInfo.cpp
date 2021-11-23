@@ -303,8 +303,6 @@ namespace Core {
             else
                 SystemInfo::m_cpuload = ((DeltaTickCount - DeltaIdleTime) * 100) / DeltaTickCount;
 
-            SystemInfo::m_jiffies = CurrentTickCount;
-
             // Store current tick statistics for next cycle
             previousTickCount = CurrentTickCount;
             previousIdleTime = CurrentIdleTime;
@@ -521,7 +519,8 @@ namespace Core {
                     if (line.find("Hardware") != std::string::npos) {
                         std::size_t position = line.find(':');
                         if (position != std::string::npos) {
-                            result.assign(line.substr(position + 1, string::npos));
+                            result.assign(line.substr(line.find_first_not_of(" ", position + 1)));
+                            break;
                         }
                     }
                 }
@@ -536,7 +535,8 @@ namespace Core {
                         if (line.find("model name") != std::string::npos) {
                             std::size_t position = line.find(':');
                             if (position != std::string::npos) {
-                                result.assign(line.substr(position + 1, string::npos));
+                                result.assign(line.substr(line.find_first_not_of(" ", position + 1)));
+                                break;
                             }
                         }
                     }

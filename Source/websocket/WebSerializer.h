@@ -271,6 +271,10 @@ namespace Web {
         {
             return (_hash);
         }
+        uint16_t Serialize(uint8_t stream[], const uint16_t maxLength) const override
+        {
+            return Core::File::Read(stream, maxLength);
+        }
 
     protected:
         uint32_t Deserialize() override
@@ -333,6 +337,7 @@ namespace Web {
 
         JSONBodyType()
             : JSONOBJECT()
+            , _lastPosition(0)
             , _offset(0)
         {
         }

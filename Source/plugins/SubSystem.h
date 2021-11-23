@@ -19,32 +19,11 @@
 
 #pragma once
 
-#include "processcontainers/ProcessContainer.h"
+#include "Module.h"
+#include "ISubSystem.h"
 
 namespace WPEFramework {
-namespace ProcessContainers {
 
-    template <typename Mixin> // IContainer Mixin
-    class Lockable : public Mixin {
-    protected:
-        Lockable()
-            : _adminLock()
-        {
-        }
+ENUM_CONVERSION_HANDLER(PluginHost::ISubSystem::subsystem);
 
-        void InternalLock() const
-        {
-            _adminLock.Lock();
-        }
-
-        void InternalUnlock() const
-        {
-            _adminLock.Unlock();
-        }
-
-    private:
-        mutable Core::CriticalSection _adminLock;
-    };
-
-} // ProcessContainers
-} // WPEFramework
+}

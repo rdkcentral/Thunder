@@ -66,7 +66,7 @@ namespace PluginHost
     /* static */ const TCHAR* Server::ConfigFile = _T("/etc/" EXPAND_AND_QUOTE(NAMESPACE) "/config.json");
 #endif
 
-    /* static */ const TCHAR* Server::PluginOverrideFile = _T("PluginHost/override.json");
+    /* static */ const TCHAR* Server::PluginOverrideFile = _T("PluginHost/override_V2.json");
     /* static */ const TCHAR* Server::PluginConfigDirectory = _T("plugins/");
     /* static */ const TCHAR* Server::CommunicatorConnector = _T("COMMUNICATOR_CONNECTOR");
 
@@ -253,7 +253,10 @@ namespace PluginHost
 
         _adminLock.Unlock();
 
-        ASSERT(_notifiers.size() == 0);
+        TRACE_L1("Pending notifiers are %lu", _notifiers.size());
+        for (auto notifier : _notifiers) {
+            TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier).name()).Text().c_str());
+        }
 
         _processAdministrator.Close(Core::infinite);
 
@@ -770,7 +773,7 @@ namespace PluginHost
         }
 
         // Get the configuration from the persistent location.
-        _services.Load();
+        Load();
 
         // Create input handle
         _inputHandler.Initialize(

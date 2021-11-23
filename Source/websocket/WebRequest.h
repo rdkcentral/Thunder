@@ -24,6 +24,8 @@
 
 namespace WPEFramework {
 namespace Web {
+    using ProtocolsArray = Core::TokenizedStringList<',', true>;
+
     static const uint8_t MajorVersion = 1;
     static const uint8_t MinorVersion = 1;
 
@@ -630,7 +632,7 @@ namespace Web {
         Core::OptionalType<string> AccessControlHeaders;
         Core::OptionalType<uint16_t> AccessControlMethod;
         Core::OptionalType<string> WebSocketKey;
-        Core::OptionalType<string> WebSocketProtocol;
+        Core::OptionalType<ProtocolsArray> WebSocketProtocol;
         Core::OptionalType<uint32_t> WebSocketVersion;
         Core::OptionalType<string> WebSocketExtensions;
         Core::OptionalType<string> Man;
@@ -645,21 +647,21 @@ namespace Web {
         template <typename BODYTYPE>
         inline void Body(const Core::ProxyType<BODYTYPE>& body)
         {
-            _body = Core::proxy_cast<IBody>(body);
+            _body = Core::ProxyType<IBody>(body);
         }
         template <typename BODYTYPE>
         inline Core::ProxyType<BODYTYPE> Body()
         {
             ASSERT(HasBody() == true);
 
-            return (Core::proxy_cast<BODYTYPE>(_body));
+            return (Core::ProxyType<BODYTYPE>(_body));
         }
         template <typename BODYTYPE>
         inline Core::ProxyType<const BODYTYPE> Body() const
         {
             ASSERT(HasBody() == true);
 
-            return (Core::proxy_cast<const BODYTYPE>(_body));
+            return (Core::ProxyType<const BODYTYPE>(_body));
         }
         inline void Mode(const MarshalType mode)
         {
