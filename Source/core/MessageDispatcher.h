@@ -28,7 +28,7 @@ namespace WPEFramework {
 namespace Core {
 
     template <uint16_t METADATA_SIZE, uint16_t DATA_SIZE>
-    class EXTERNAL MessageDispatcher {
+    class EXTERNAL MessageDispatcherType {
     private:
         using MetaDataCallback = std::function<void(const uint16_t, const uint8_t*)>;
         
@@ -40,7 +40,6 @@ namespace Core {
             {
             }
             ~DataBuffer() override = default;
-            DataBuffer(DataBuffer&&) = default;
 
             DataBuffer() = delete;
             DataBuffer(const DataBuffer&) = delete;
@@ -183,7 +182,7 @@ namespace Core {
          * @param initialize should dispatcher be initialzied. Should be done only once, on the server side
          * @param baseDirectory where to place all the related files. If initialize=true everything will be deleted in this directory and directory will be recreated
          */
-        MessageDispatcher(const string& identifier, const uint32_t instanceId, bool initialize, string baseDirectory = _T("/tmp/MessageDispatcher"))
+        MessageDispatcherType(const string& identifier, const uint32_t instanceId, bool initialize, string baseDirectory = _T("/tmp/MessageDispatcher"))
             : _filenames(PrepareFilenames(initialize, baseDirectory, identifier, instanceId))
             // clang-format off
             , _dataBuffer(_filenames.doorBell, _filenames.data,  Core::File::USER_READ    | 
@@ -204,13 +203,13 @@ namespace Core {
             }
         }
 
-        ~MessageDispatcher()
+        ~MessageDispatcherType()
         {
             _dataBuffer.Relinquish();
         }
 
-        MessageDispatcher(const MessageDispatcher&) = delete;
-        MessageDispatcher& operator=(const MessageDispatcher&) = delete;
+        MessageDispatcherType(const MessageDispatcherType&) = delete;
+        MessageDispatcherType& operator=(const MessageDispatcherType&) = delete;
 
         /**
         * @brief Writes data into cyclic buffer. If it does not fit the data already in the cyclic buffer will be flushed.
@@ -406,7 +405,7 @@ namespace Core {
             string dataFilename = Core::Format("%s/%s.%d.data", baseDirectory.c_str(), identifier.c_str(), instanceId);
             string metaDataFilename = Core::Format("%s/%s.%d.metadata", baseDirectory.c_str(), identifier.c_str(), instanceId);
 
-            return { doorBellFilename, dataFilename, metaDataFilename };
+            return { doorBellFilename, metaDataFilename, dataFilename };
         }
 
         //private variables
