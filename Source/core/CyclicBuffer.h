@@ -219,7 +219,7 @@ namespace Core {
         uint32_t Peek(uint8_t buffer[], const uint32_t length) const;
         // Extract data from the cyclic buffer. Read, is destructive. The cyclic tail
         // pointer is progressed by the amount of data being inserted.
-        uint32_t Read(uint8_t buffer[], const uint32_t length, bool partialRead);
+        uint32_t Read(uint8_t buffer[], const uint32_t length, bool partialRead = false);
 
         // Insert data into the cyclic buffer. By definition the head pointer is
         // progressed after the write.

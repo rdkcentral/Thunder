@@ -277,7 +277,7 @@ namespace Core {
         AdminUnlock();
     }
 
-    uint32_t CyclicBuffer::Read(uint8_t buffer[], const uint32_t length, bool partialRead = false)
+    uint32_t CyclicBuffer::Read(uint8_t buffer[], const uint32_t length, bool partialRead)
     {
         ASSERT(length <= _administration->_size);
         ASSERT(IsValid() == true);
