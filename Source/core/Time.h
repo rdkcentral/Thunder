@@ -25,6 +25,7 @@
 
 namespace WPEFramework {
 namespace Core {
+
     class TimeAsLocal;
     class EXTERNAL Time {
 
@@ -312,7 +313,7 @@ namespace Core {
 #endif
     };
 
-    class TimeAsLocal {
+    class EXTERNAL TimeAsLocal {
     public:
         inline TimeAsLocal(const Time& time)
             : _time(time)
