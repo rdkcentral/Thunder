@@ -25,11 +25,11 @@ namespace WPEFramework {
 
 namespace Bluetooth {
 
-int BtUtilsHciDevba(int dev_id, bdaddr_t *bdaddr);
-int BtUtilsHciGetRoute(bdaddr_t *bdaddr);
-int BtUtilsBa2Str(const bdaddr_t *ba, char *str);
-int BtUtilsStr2Ba(const char *str, bdaddr_t *ba);
-int BtUtilsBa2Oui(const bdaddr_t *ba, char *str);
+EXTERNAL int BtUtilsHciDevba(int dev_id, bdaddr_t *bdaddr);
+EXTERNAL int BtUtilsHciGetRoute(bdaddr_t *bdaddr);
+EXTERNAL int BtUtilsBa2Str(const bdaddr_t *ba, char *str);
+EXTERNAL int BtUtilsStr2Ba(const char *str, bdaddr_t *ba);
+EXTERNAL int BtUtilsBa2Oui(const bdaddr_t *ba, char *str);
 
 inline void BtUtilsHciFilterClear(struct hci_filter *f)
 {

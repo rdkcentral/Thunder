@@ -23,13 +23,6 @@
 #include "UUID.h"
 #include "BluetoothUtils.h"
 
-#if defined(BLUETOOTH_CMD_DUMP)
-#define CMD_DUMP(descr, buffer, length) \
-    do { fprintf(stderr,"%s [%i]: ", descr, length); for (int i = 0; i < length; i++) { printf("%02x:", buffer[i]); } printf("\n"); } while(0)
-#else
-#define CMD_DUMP(descr, buffer, length)
-#endif
-
 namespace WPEFramework {
 
 namespace Bluetooth {
@@ -228,7 +221,7 @@ namespace Bluetooth {
     };
 
     template<typename KEYTYPE>
-    class KeyListType {
+    class EXTERNAL KeyListType {
     public:
         typedef KEYTYPE type;
 
@@ -313,15 +306,9 @@ namespace Bluetooth {
             ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
             _key.addr.type = address_type;
 
-            ASSERT(address_type == BDADDR_BREDR);
-
-            // The first two charaters are for the pin and the type, extract those...
-            _key.pin_len = keyString[0] - 'A';
-            _key.type    = keyString[1] - 'A';
-
-            uint16_t  length = sizeof(_key.val);
-            Core::FromString(string(&(keyString.c_str()[2]), keyString.length() - 2), reinterpret_cast<uint8_t*>(_key.val), length, nullptr);
-            if (length != sizeof(_key.val)) {
+            uint16_t length = sizeof(_key) - sizeof(_key.addr);
+            Core::FromString(keyString, &(reinterpret_cast<uint8_t*>(&_key)[sizeof(_key.addr)]), length, nullptr);
+            if (length != (sizeof(_key) - sizeof(_key.addr))) {
                 // Seems the value is not properly restored, invalidate the object!!
                 _key.pin_len = 0xFF;
             }
@@ -334,7 +321,7 @@ namespace Bluetooth {
 
     public:
         bool IsValid() const {
-            return ((Pin() <= 16) && (Type() <= 8) && (LocatorType() == Bluetooth::Address::BREDR_ADDRESS));
+            return ((PinLength() <= 16) && (Type() <= 8) && (LocatorType() == Bluetooth::Address::BREDR_ADDRESS));
         }
         Address Locator() const {
             return (_key.addr.bdaddr);
@@ -342,7 +329,7 @@ namespace Bluetooth {
         uint8_t LocatorType() const {
             return (_key.addr.type);
         }
-        uint8_t Pin() const {
+        uint8_t PinLength() const {
             return(_key.pin_len);
         }
         uint8_t Type() const {
@@ -360,8 +347,6 @@ namespace Bluetooth {
         string ToString() const {
             string baseKey;
             Core::ToString(&(reinterpret_cast<const uint8_t*>(&_key)[sizeof(_key.addr)]), sizeof(_key) - sizeof(_key.addr), false, baseKey);
-            baseKey = static_cast<const char>(_key.type + 'A') + baseKey;
-            baseKey = static_cast<const char>(_key.pin_len + 'A') + baseKey;
             return (baseKey);
         }
 
@@ -498,7 +483,7 @@ namespace Bluetooth {
         Address Locator() const {
             return (_key.addr.bdaddr);
         }
-        Address LocatorType() const {
+        uint8_t LocatorType() const {
             return (_key.addr.type);
         }
         const uint8_t* Value() const {
@@ -832,7 +817,7 @@ namespace Bluetooth {
             typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_INQUIRY_CANCEL), Void, uint8_t>
                 InquiryCancel;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_CREATE_CONN), create_conn_cp, evt_conn_complete>
+            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_CREATE_CONN), create_conn_cp, evt_conn_complete, EVT_CONN_COMPLETE>
                 Connect;
 
             typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_AUTH_REQUESTED), auth_requested_cp, evt_auth_complete>
@@ -948,7 +933,7 @@ namespace Bluetooth {
         template<typename COMMAND>
         void Execute(const uint32_t waitTime, const COMMAND& cmd, std::function<void(COMMAND&, const uint32_t error)> handler)
         {
-            class EXTERNAL Handler : public Core::IOutbound::ICallback {
+            class Handler : public Core::IOutbound::ICallback {
             public:
                 Handler() = delete;
                 Handler(const Handler&) = delete;

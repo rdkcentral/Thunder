@@ -535,7 +535,7 @@ namespace Core {
                 Handle fd = DuplicateHandle();
 #pragma warning(disable : 4311)
 #pragma warning(disable : 4302)
-                return ((fd > 0) ? ::_fdopen(reinterpret_cast<int>(fd), (IsReadOnly() ? "r" : "r+")) : nullptr);
+                return ((fd != 0) ? ::_fdopen(reinterpret_cast<int>(fd), (IsReadOnly() ? "r" : "r+")) : nullptr);
 #pragma warning(default : 4311)
 #pragma warning(default : 4302)
 #endif

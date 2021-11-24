@@ -78,11 +78,11 @@ TEST (test_file, file_functions)
     EXPECT_EQ(fileObj1.Size(), size);
     //EXPECT_EQ(fileObj1.DuplicateHandle(), 11); TODO
     EXPECT_TRUE(fileObj1.Move("newFile.txt"));
+    fileObj1.Destroy();
 }
 
 TEST (test_file, directory)
 {
-    Directory dir;
     string path = "home/file";
     Directory dirOne(path.c_str());
     Directory dirTwo(path.c_str(), _T("*"));
@@ -113,4 +113,5 @@ TEST (test_file, directory)
     EXPECT_TRUE(dirOne.IsDirectory());
     dirOne.Reset();
     EXPECT_TRUE(dirOne.Next());
+    system("rm -rf home");
 }
