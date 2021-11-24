@@ -29,12 +29,13 @@ namespace Tests {
     {
         // TODO: shouldn't this be done producer-side?
         char systemCmd[1024];
-        string command = "rm -f ";
-        snprintf(systemCmd, command.size()+bufferName.size()+1, "%s%s", command.c_str(),bufferName.c_str());
+        string command = "rm -rf ";
+        snprintf(systemCmd, command.size() + bufferName.size() + 1, "%s%s", command.c_str(), bufferName.c_str());
         system(systemCmd);
+
         string ext = ".admin";
-        snprintf(systemCmd, command.size()+bufferName.size()+ext.size()+1, "%s%s%s", command.c_str(),bufferName.c_str(),ext.c_str());
-        system(systemCmd);
+        snprintf(systemCmd, command.size() + bufferName.size() + ext.size() + 1, "%s%s%s", command.c_str(), bufferName.c_str(), ext.c_str());
+        system(const_cast<char*>(systemCmd));
     }
 
     TEST(DISABLED_Core_SharedBuffer, simpleSet)
@@ -109,7 +110,7 @@ namespace Tests {
 
         testAdmin.Sync("consumer done");
 
-//      Core::Singleton::Dispose(); TODO
+        Core::Singleton::Dispose();
     }
 
     TEST(Core_SharedBuffer, simpleSetReversed)
@@ -185,7 +186,8 @@ namespace Tests {
 
         testAdmin.Sync("producer done");
 
-//      Core::Singleton::Dispose(); TODO
+        CleanUpBuffer(bufferName);
+        Core::Singleton::Dispose();
     }
 } // Tests
 } // WPEFramework

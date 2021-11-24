@@ -119,18 +119,21 @@ namespace WPEFramework {
         public:
             void AddRef() const override
             {
-                const_cast<ProxyObject<CONTEXT>*>(this)->__Acquire();
+                if (_refCount == 1) {
+                    const_cast<ProxyObject<CONTEXT>*>(this)->__Acquire();
+                }
                 _refCount++;
             }
             uint32_t Release() const override
             {
                 uint32_t result = Core::ERROR_NONE;
+                uint32_t lastRef = --_refCount;
 
-                if (--_refCount == 0) {
+                if (lastRef == 0) {
                     delete this;
                     result = Core::ERROR_DESTRUCTION_SUCCEEDED;
                 }
-                else {
+                else if (lastRef == 1) {
                     const_cast<ProxyObject<CONTEXT>*>(this)->__Relinquish();
                 }
 
@@ -168,10 +171,6 @@ namespace WPEFramework {
                 void* data = const_cast<void*>(reinterpret_cast<const void*>(&(reinterpret_cast<const uint8_t*>(this)[alignedSize + sizeof(void*)])));
                 const void* result = Alignment(alignof(TYPE), data);
                 return (reinterpret_cast<const TYPE*>(result));
-            }
-            inline bool LastRef() const
-            {
-                return (_refCount == 1);
             }
             inline void Clear()
             {
@@ -274,12 +273,10 @@ namespace WPEFramework {
             inline typename Core::TypeTraits::enable_if<hasAcquire<TYPE, void, Core::ProxyType<TYPE>&>::value, void>::type
                 __Acquire()
             {
-                if (LastRef() == true) {
-                    Core::ProxyType<TYPE> source;
-                    Myself(source);
-                    TYPE::Acquire(source);
-                    source.Reset();
-                }
+                Core::ProxyType<TYPE> source;
+                Myself(source);
+                TYPE::Acquire(source);
+                source.Reset();
             }
             template <typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<!hasAcquire<TYPE, void, Core::ProxyType<TYPE>&>::value, void>::type
@@ -296,12 +293,10 @@ namespace WPEFramework {
             inline typename Core::TypeTraits::enable_if<hasRelinquish<TYPE, void, Core::ProxyType<TYPE>&>::value, void>::type
                 __Relinquish()
             {
-                if (LastRef() == true) {
-                    Core::ProxyType<TYPE> source;
-                    Myself(source);
-                    TYPE::Relinquish(source);
-                    source.Reset();
-                }
+                Core::ProxyType<TYPE> source;
+                Myself(source);
+                TYPE::Relinquish(source);
+                source.Reset();
             }
             template < typename TYPE = CONTEXT>
             inline typename Core::TypeTraits::enable_if<!hasRelinquish<TYPE, void, Core::ProxyType<TYPE>&>::value, void>::type
@@ -365,6 +360,12 @@ namespace WPEFramework {
                 : _refCount(nullptr)
                 , _realObject(nullptr)
             {
+            }
+            ProxyType(IReferenceCounted& lifetime, CONTEXT& contex)
+                : _refCount(&lifetime)
+                , _realObject(&contex)
+            {
+                _refCount->AddRef();
             }
             explicit ProxyType(ProxyObject<CONTEXT>& theObject)
                 : _refCount(&theObject)
@@ -1468,9 +1469,9 @@ namespace WPEFramework {
 
                 ASSERT(element.IsValid());
 
-                // As it is removed from the queue, wewill keep a "flying reference", this 
-                // way if the user of ths object releases it, it will trigger the last 
-                // refernce notification (Relinquish) prior to the user dropping the 
+                // As it is removed from the queue, we will keep a "flying reference", this
+                // way if the user of ths object releases it, it will trigger the last
+                // refernce notification (Relinquish) prior to the user dropping the
                 // objects last reference (cuase we hold it here), we will get a notificaion
                 // and move this "AddRef" into the queue again (move)
                 result.AddRef();
@@ -1497,6 +1498,9 @@ namespace WPEFramework {
                 _lock.Lock();
 
                 source->Clear();
+
+                // Lets see if the source is already in there :-)
+                ASSERT(std::find(_queue.begin(), _queue.end(), source) == _queue.end());
 
                 // TRACE_L1("Returned an element for: %s [%p]\n", typeid(PROXYPOOLELEMENT).name(), &static_cast<PROXYPOOLELEMENT&>(*element));
                 _queue.emplace_back(std::move(source));
