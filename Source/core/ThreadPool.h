@@ -151,7 +151,7 @@ namespace Core {
                 : _dispatcher(dispatcher)
                 , _queue(queue)
                 , _adminLock()
-                , _signal(false, false)
+                , _signal(false, true)
                 , _interestCount(0)
                 , _currentRequest()
                 , _runs(0)
