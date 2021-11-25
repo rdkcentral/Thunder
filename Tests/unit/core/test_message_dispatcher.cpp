@@ -87,7 +87,7 @@ namespace Tests {
         //arrange
         uint8_t testData[2] = { 13, 37 };
 
-        uint8_t readData[3];
+        uint8_t readData[1];
         uint16_t readLength = sizeof(readData);
 
         //act
@@ -95,7 +95,7 @@ namespace Tests {
         ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_GENERAL);
 
         //assert
-        ASSERT_EQ(readLength, 4);
+        ASSERT_EQ(readLength, 2);
         ASSERT_EQ(readData[0], 13);
     }
 

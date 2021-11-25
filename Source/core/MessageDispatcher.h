@@ -92,7 +92,8 @@ namespace Core {
                 // Just read one entry.
                 uint16_t entrySize = 0;
                 cursor.Peek(entrySize);
-                return entrySize;
+                cursor.Forward(sizeof(entrySize));
+                return entrySize - sizeof(entrySize);
             }
 
         private:
@@ -247,14 +248,12 @@ namespace Core {
         }
 
         /**
-         * @brief Read data after doorbell ringed. The buffer size should be at least of size of message + sizeof(uint16_t). 
-         *        If buffer is too small to fit whole message it will be partially filled. 
-         *        When reading, one should then skip last two bytes of passed buffer
+         * @brief Read data after doorbell ringed. If buffer is too small to fit whole message it will be partially filled. 
          * 
          * @param outLength ERROR_NONE - read bytes. 
          *                  ERROR_GENERAL - mimimal required bytes to fit whole message.
          *                  ERROR_READ_ERROR - the same value as passed in                       
-         * @param outValue buffer - in case of ERROR_GENERAL: last two bytes should be skipped                
+         * @param outValue buffer
          * @return uint32_t ERROR_READ_ERROR - unable to read or data is corrupted
          *                  ERROR_NONE - OK
          *                  ERROR_GENERAL - buffer too small to fit whole message at once
@@ -271,21 +270,16 @@ namespace Core {
                 uint32_t length = _dataBuffer.Read(outValue, outLength, true);
 
                 //did not even receive length of the full message
-                if (length < 2) {
+                if (length == 0) {
                     TRACE_L1("Inconsistent message\n");
                     _dataBuffer.Flush();
                 } else if (length > outLength) {
                     TRACE_L1("Lost part of the message\n");
                     result = Core::ERROR_GENERAL;
-
-                    //first two bytes are sizeof full messsage.
-                    std::copy_n(outValue + sizeof(outLength), outLength - sizeof(outLength), outValue);
                     outLength = length;
                 } else {
                     result = Core::ERROR_NONE;
-
-                    outLength = length - sizeof(outLength);
-                    std::copy_n(outValue + sizeof(outLength), outLength, outValue);
+                    outLength = length;
                 }
             }
 
