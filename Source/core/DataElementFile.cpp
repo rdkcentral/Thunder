@@ -44,9 +44,7 @@ namespace Core {
         ASSERT(m_Flags != 0);
 
         // The file needs to be prepared in the same way as we request the Memorymapped file...
-        ASSERT(m_File.IsOpen() == false);
-
-        m_File.Open((type & File::USER_WRITE) == 0);
+        ASSERT(m_File.IsOpen() == true);
 
         if (IsValid()) {
             OpenMemoryMappedFile(static_cast<uint32_t>(m_File.Size()));
