@@ -31,7 +31,7 @@ THUNDER_REPO_URL = "https://github.com/rdkcentral/Thunder"
 THUNDER_INTERFACE_REPO_URL = "https://github.com/rdkcentral/ThunderInterfaces"
 THUNDER_PLUGINS_REPO_URL = "https://github.com/rdkcentral/ThunderNanoServices.git"
 RDK_PLUGINS_REPO_URL = "https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK.git"
-DOCS_REPO_URL = ""
+DOCS_REPO_URL = "https://github.com/WebPlatformForEmbedded/ServicesInterfaceDocumentation.git"
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
 import JsonGenerator.JsonGenerator as JsonGenerator
 import ProxyStubGenerator.Log as Log
@@ -44,36 +44,64 @@ DOC_ISSUES = False
 log = Log.Log(NAME, VERBOSE, SHOW_WARNINGS, DOC_ISSUES)
 
 class MkdocsYamlFileGenerator():
-    _fd = None
     def __init__(self, docs_path, site_name, site_url):
-        self._fd = open(docs_path + "mkdocs.yml", "w")
-        self.create_site_details(site_name, site_url)
-        self.add_theme_info()
-        self.add_nav_tag()
+        self._yamlfile_path = docs_path + "mkdocs.yml"
+        self._site_name = site_name
+        self._site_url = site_url
+        self._current_topic = ""
+        self._topic_dict = {}
+        self._fd = None
         return
 
     def create_site_details(self, site_name, site_url):
+        assert self._fd != None
         self._fd.write("site_name : " + site_name +"\n")
         self._fd.write("site_url : " + site_url +"\n")
         return
 
     def add_nav_tag(self):
+        assert self._fd != None
         self._fd.write("nav:\n    - 'Documentation': 'index.md'\n")
         return
 
-    def create_topics(self, topic_name):
+
+    def add_topic(self, topic_name):
+        assert self._fd != None
         self._fd.write("    - '" + topic_name + "':\n")
         return
 
-    def create_subtopics(self, sub_topic_name, markdown_filename):
+    def add_subtopic(self, sub_topic_name, markdown_filename):
+        assert self._fd != None
         self._fd.write("        - '" + sub_topic_name + "' : '" + markdown_filename +"'\n")
         return
+
+    def create_topics(self, topic_name):
+        if topic_name not in self._topic_dict.keys():
+            self._topic_dict[topic_name] = []
+        self._current_topic = topic_name
+        return
+
+    def create_subtopics(self, sub_topic_name, markdown_filename):
+        if self._topic_dict[self._current_topic] != None and isinstance(self._topic_dict[self._current_topic], list):
+            self._topic_dict[self._current_topic].append((sub_topic_name, markdown_filename))
+        return
     
-    def close_file(self):
+    def create_file(self):
+        self._fd = open(self._yamlfile_path, "w")
+        self.create_site_details(self._site_name, self._site_url)
+        self.add_theme_info()
+        self.add_nav_tag()
+        for topic in self._topic_dict:
+            self.add_topic(topic)
+            self._topic_dict[topic].sort()
+            for subtopic in self._topic_dict[topic]:
+                self.add_subtopic(subtopic[0], subtopic[1])
         self._fd.close()
+        self._fd = None
         return
 
     def add_theme_info(self):
+        assert self._fd != None
         theme_info = '''theme:
     name: material
     highlightjs: true
@@ -189,19 +217,18 @@ This section contains the documentation created from plugins\n\n
         return
     
     def complete_yaml_creation(self):
-        self._yaml_generator.close_file()
+        self._yaml_generator.create_file()
 
-    def __del__(self):
-        self.clean_all_repos_dir()
+    #def __del__(self):
+    #    self.clean_all_repos_dir()
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(
         description='Generate API and plugin documentation.',
         formatter_class=argparse.RawTextHelpFormatter)
-    DOCS_REPO_URL = os.environ.get("DOCS_REPO_URL")
-    if DOCS_REPO_URL == None:
-        log.Error("Please set the DOCS_REPO_URL environment variable")
-        exit(-1)
+    docs_repo_url = os.environ.get("DOCS_REPO_URL")
+    if docs_repo_url != None:
+        DOCS_REPO_URL = docs_repo_url
     argparser.add_argument("--deploy",
                             dest="github_deploy",
                             action="store_true",
@@ -243,6 +270,7 @@ if __name__ == "__main__":
     document_generator.json_to_markdown(rdk_plugins_path + "/*/*Plugin.json")
     document_generator.complete_yaml_creation()
     if deploy_docs:
+        # unless DOCS_REPO_URL is changed the documentation will be deployed in this location https://webplatformforembedded.github.io/ServicesInterfaceDocumentation/
         os.chdir(docs_path)
         try:
 
