@@ -307,7 +307,7 @@ namespace Core {
             uint32_t bufferLength = std::min(length, result);
 
             foundData = true;
-
+            offset += cursor.Offset();
             uint32_t roundCount = oldTail / (1 + _administration->_tailIndexMask);
             if ((offset + result) < _administration->_size) {
                 memcpy(buffer, _realBuffer + offset, bufferLength);
@@ -317,8 +317,16 @@ namespace Core {
                     foundData = false;
                 }
             } else {
-                uint32_t part1(_administration->_size - offset);
-                uint32_t part2(result - part1);
+                uint32_t part1 = 0;
+                uint32_t part2 = 0;
+                
+                if(_administration->_size < offset){
+                    part2 = result - (offset - _administration->_size);
+                }
+                else {
+                    part1 = _administration->_size - offset;
+                    part2 = result - part1;
+                }
 
                 memcpy(buffer, _realBuffer + offset, std::min(part1, bufferLength));
 
