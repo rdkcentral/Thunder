@@ -1113,13 +1113,7 @@ namespace Core {
             const_cast<ThisClass*>(this)->__Unlink<CONTAINER, ELEMENT, EXPOSED>();
 
 
-            // By incrementing this refcount the last reference count is definitily not reached, so safe to remove the parent as we are sure
-            // that it will not be used while we clear it... 
-            ProxyService<ELEMENT>::AddRef();
             _parent = nullptr;
-            ProxyService<ELEMENT>::Release();
-            ProxyService<ELEMENT>::Release();
-
         }
  
     private:
@@ -1255,6 +1249,7 @@ namespace Core {
                     _lock.Lock();
 
                     _queue.front().first->Unlink();
+                    _queue.front().first->Release();
                     _queue.pop_front();
                     _createdElements--;
 
@@ -1419,6 +1414,7 @@ namespace Core {
             _lock.Lock();
             for (const std::pair< PROXYKEY, std::pair<IProxyContainerElement*, PROXYELEMENT*> >& entry : _map) {
                 entry.second.first->Unlink();
+                entry.second.first->Release();
             }
             _map.clear();
             _lock.Unlock();
@@ -1438,6 +1434,7 @@ namespace Core {
 
             if (index != _map.end()) {
                 refCount->Unlink();
+                refCount->Release();
                 _map.erase(index);
             }
 
@@ -1501,6 +1498,7 @@ namespace Core {
             _lock.Lock();
             for (const std::pair< IProxyContainerElement*, PROXYELEMENT*>& entry : _list) {
                 entry.first->Unlink();
+                entry.first->Release();
             }
             _list.clear();
             _lock.Unlock();
@@ -1519,6 +1517,7 @@ namespace Core {
 
             if (index != _list.end()) {
                 refCount->Unlink();
+                refCount->Release();
                 _list.erase(index);
             }
 
