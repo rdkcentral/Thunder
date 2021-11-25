@@ -1,52 +1,52 @@
 /*
-	* This is an OpenSSL-compatible implementation of the RSA Data Security, Inc.
-	* MD5 Message-Digest Algorithm (RFC 1321).
-	*
-	* Homepage:
-	* http://openwall.info/wiki/people/solar/software/public-domain-source-code/md5
-	*
-	* Author:
-	* Alexander Peslyak, better known as Solar Designer <solar at openwall.com>
-	*
-	* This software was written by Alexander Peslyak in 2001.  No copyright is
-	* claimed, and the software is hereby placed in the public domain.
-	* In case this attempt to disclaim copyright and place the software in the
-	* public domain is deemed null and void, then the software is
-	* Copyright (c) 2001 Alexander Peslyak and it is hereby released to the
-	* general public under the following terms:
-	*
-	* Redistribution and use in source and binary forms, with or without
-	* modification, are permitted.
-	*
-	* There's ABSOLUTELY NO WARRANTY, express or implied.
-	*
-	* (This is a heavily cut-down "BSD license".)
-	*
-	* This differs from Colin Plumb's older public domain implementation in that
-	* no exactly 32-bit integer data type is required (any 32-bit or wider
-	* unsigned integer data type will do), there's no compile-time endianness
-	* configuration, and the function prototypes match OpenSSL's.  No code from
-	* Colin Plumb's implementation has been reused; this comment merely compares
-	* the properties of the two independent implementations.
-	*
-	* The primary goals of this implementation are portability and ease of use.
-	* It is meant to be fast, but not as fast as possible.  Some known
-	* optimizations are not included to reduce source code size and avoid
-	* compile-time configuration.
-	*/
+        * This is an OpenSSL-compatible implementation of the RSA Data Security, Inc.
+        * MD5 Message-Digest Algorithm (RFC 1321).
+        *
+        * Homepage:
+        * http://openwall.info/wiki/people/solar/software/public-domain-source-code/md5
+        *
+        * Author:
+        * Alexander Peslyak, better known as Solar Designer <solar at openwall.com>
+        *
+        * This software was written by Alexander Peslyak in 2001.  No copyright is
+        * claimed, and the software is hereby placed in the public domain.
+        * In case this attempt to disclaim copyright and place the software in the
+        * public domain is deemed null and void, then the software is
+        * Copyright (c) 2001 Alexander Peslyak and it is hereby released to the
+        * general public under the following terms:
+        *
+        * Redistribution and use in source and binary forms, with or without
+        * modification, are permitted.
+        *
+        * There's ABSOLUTELY NO WARRANTY, express or implied.
+        *
+        * (This is a heavily cut-down "BSD license".)
+        *
+        * This differs from Colin Plumb's older public domain implementation in that
+        * no exactly 32-bit integer data type is required (any 32-bit or wider
+        * unsigned integer data type will do), there's no compile-time endianness
+        * configuration, and the function prototypes match OpenSSL's.  No code from
+        * Colin Plumb's implementation has been reused; this comment merely compares
+        * the properties of the two independent implementations.
+        *
+        * The primary goals of this implementation are portability and ease of use.
+        * It is meant to be fast, but not as fast as possible.  Some known
+        * optimizations are not included to reduce source code size and avoid
+        * compile-time configuration.
+        */
 
 /*
-	* The SHA-256 algorith is updated to handle upto 32 bit size data
-	* Reference: https://github.com/B-Con/crypto-algorithms
-	*
-	* Author:
-	* Brad Conte (brad AT bradconte.com)
-	*
-	* This code is released into the public domain free of any restrictions.
-	* The author requests acknowledgement if the code is used, but does not require it.
-	* This code is provided free of any liability and without any quality claims by the author.
-	*
-	*/
+        * The SHA-256 algorith is updated to handle upto 32 bit size data
+        * Reference: https://github.com/B-Con/crypto-algorithms
+        *
+        * Author:
+        * Brad Conte (brad AT bradconte.com)
+        *
+        * This code is released into the public domain free of any restrictions.
+        * The author requests acknowledgement if the code is used, but does not require it.
+        * This code is provided free of any liability and without any quality claims by the author.
+        *
+        */
 
 #include "Hash.h"
 
@@ -238,20 +238,20 @@ namespace Crypto {
         ASSERT((_computed == false) || (_corrupted == false));
 
         while (counter-- && !_corrupted) {
-            _messageBlock[_messageIndex++] = *current;
+            _context.messageBlock[_context.messageIndex++] = *current;
 
-            _lengthLow++;
-            if (_lengthLow == 0x20000000) {
-                _lengthLow = 0;
-                _lengthHigh++;
-                if (_lengthHigh == 0) {
+            _context.lengthLow++;
+            if (_context.lengthLow == 0x20000000) {
+                _context.lengthLow = 0;
+                _context.lengthHigh++;
+                if (_context.lengthHigh == 0) {
                     _corrupted = true; // Message is too long
                 }
             }
 
-            if (_messageIndex == 64) {
+            if (_context.messageIndex == 64) {
                 ProcessMessageBlock();
-                _messageIndex = 0;
+                _context.messageIndex = 0;
             }
 
             current++;
@@ -348,21 +348,21 @@ namespace Crypto {
      *  Initialize the first 16 words in the array W
      */
         for (t = 0; t < 16; t++) {
-            W[t] = ((unsigned)_messageBlock[t * 4]) << 24;
-            W[t] |= ((unsigned)_messageBlock[t * 4 + 1]) << 16;
-            W[t] |= ((unsigned)_messageBlock[t * 4 + 2]) << 8;
-            W[t] |= ((unsigned)_messageBlock[t * 4 + 3]);
+            W[t] = ((unsigned)_context.messageBlock[t * 4]) << 24;
+            W[t] |= ((unsigned)_context.messageBlock[t * 4 + 1]) << 16;
+            W[t] |= ((unsigned)_context.messageBlock[t * 4 + 2]) << 8;
+            W[t] |= ((unsigned)_context.messageBlock[t * 4 + 3]);
         }
 
         for (t = 16; t < 80; t++) {
             W[t] = CircularShift(1, W[t - 3] ^ W[t - 8] ^ W[t - 14] ^ W[t - 16]);
         }
 
-        A = H[0];
-        B = H[1];
-        C = H[2];
-        D = H[3];
-        E = H[4];
+        A = _context.H[0];
+        B = _context.H[1];
+        C = _context.H[2];
+        D = _context.H[3];
+        E = _context.H[4];
 
         for (t = 0; t < 20; t++) {
             temp = CircularShift(5, A) + ((B & C) | ((~B) & D)) + E + W[t] + K[0];
@@ -404,11 +404,11 @@ namespace Crypto {
             A = temp;
         }
 
-        H[0] = (H[0] + A) & 0xFFFFFFFF;
-        H[1] = (H[1] + B) & 0xFFFFFFFF;
-        H[2] = (H[2] + C) & 0xFFFFFFFF;
-        H[3] = (H[3] + D) & 0xFFFFFFFF;
-        H[4] = (H[4] + E) & 0xFFFFFFFF;
+        _context.H[0] = (_context.H[0] + A) & 0xFFFFFFFF;
+        _context.H[1] = (_context.H[1] + B) & 0xFFFFFFFF;
+        _context.H[2] = (_context.H[2] + C) & 0xFFFFFFFF;
+        _context.H[3] = (_context.H[3] + D) & 0xFFFFFFFF;
+        _context.H[4] = (_context.H[4] + E) & 0xFFFFFFFF;
     }
 
     /*
@@ -439,37 +439,37 @@ namespace Crypto {
      *  the initial padding bits and length.  If so, we will pad the
      *  block, process it, and then continue padding into a second block.
      */
-        if (_messageIndex > 55) {
-            _messageBlock[_messageIndex++] = 0x80;
+        if (_context.messageIndex > 55) {
+            _context.messageBlock[_context.messageIndex++] = 0x80;
 
-            ::memset(&(_messageBlock[_messageIndex]), 0, (64 - _messageIndex));
+            ::memset(&(_context.messageBlock[_context.messageIndex]), 0, (64 - _context.messageIndex));
 
             ProcessMessageBlock();
 
-            _messageIndex = 0;
+            _context.messageIndex = 0;
         } else {
-            _messageBlock[_messageIndex++] = 0x80;
+            _context.messageBlock[_context.messageIndex++] = 0x80;
         }
 
-        ::memset(&(_messageBlock[_messageIndex]), 0, (56 - _messageIndex));
+        ::memset(&(_context.messageBlock[_context.messageIndex]), 0, (56 - _context.messageIndex));
         /*
-     *  Store the message length as the last 8 octets
-     */
-        _messageBlock[56] = (_lengthHigh >> 24) & 0xFF;
-        _messageBlock[57] = (_lengthHigh >> 16) & 0xFF;
-        _messageBlock[58] = (_lengthHigh >> 8) & 0xFF;
-        _messageBlock[59] = (_lengthHigh)&0xFF;
-        _messageBlock[60] = (_lengthLow >> 21) & 0xFF;
-        _messageBlock[61] = (_lengthLow >> 13) & 0xFF;
-        _messageBlock[62] = (_lengthLow >> 5) & 0xFF;
-        _messageBlock[63] = (_lengthLow << 3) & 0xFF;
+         *  Store the message length as the last 8 octets
+         */
+        _context.messageBlock[56] = (_context.lengthHigh >> 24) & 0xFF;
+        _context.messageBlock[57] = (_context.lengthHigh >> 16) & 0xFF;
+        _context.messageBlock[58] = (_context.lengthHigh >> 8) & 0xFF;
+        _context.messageBlock[59] = (_context.lengthHigh)&0xFF;
+        _context.messageBlock[60] = (_context.lengthLow >> 21) & 0xFF;
+        _context.messageBlock[61] = (_context.lengthLow >> 13) & 0xFF;
+        _context.messageBlock[62] = (_context.lengthLow >> 5) & 0xFF;
+        _context.messageBlock[63] = (_context.lengthLow << 3) & 0xFF;
 
         ProcessMessageBlock();
 
-        uint32_t* writer = reinterpret_cast<uint32_t*>(&_messageBlock[0]);
+        uint32_t* writer = reinterpret_cast<uint32_t*>(&_context.messageBlock[0]);
 
         for (uint8_t teller = 0; teller < 5; teller++) {
-            *writer++ = htonl(H[teller]);
+            *writer++ = htonl(_context.H[teller]);
         }
 
         _computed = true;
@@ -479,9 +479,9 @@ namespace Crypto {
     // MD5 functionality
     // --------------------------------------------------------------------------------------------
     /*
- * This processes one or more 64-byte data blocks, but does NOT update
- * the bit counters.  There are no alignment requirements.
- */
+     * This processes one or more 64-byte data blocks, but does NOT update
+     * the bit counters.  There are no alignment requirements.
+     */
     static const void* body(MD5::Context* ctx, const void* data, unsigned long size)
     {
         const unsigned char* ptr;
@@ -691,23 +691,23 @@ namespace Crypto {
     }
 
     /*
- *  operator<<
- *
- *  Description:
- *      This operator makes it convenient to provide character strings to
- *      the SHA1 object for processing.
- *
- *  Parameters:
- *      message_array: [in]
- *          The character array to take as input.
- *
- *  Returns:
- *      A reference to the SHA1 object.
- *
- *  Comments:
- *      Each character is assumed to hold 8 bits of information.
- *
- */
+     *  operator<<
+     *
+     *  Description:
+     *      This operator makes it convenient to provide character strings to
+     *      the SHA1 object for processing.
+     *
+     *  Parameters:
+     *      message_array: [in]
+     *          The character array to take as input.
+     *
+     *  Returns:
+     *      A reference to the SHA1 object.
+     *
+     *  Comments:
+     *      Each character is assumed to hold 8 bits of information.
+     *
+     */
     MD5& MD5::operator<<(const uint8_t message_array[])
     {
         uint16_t length = 0;
@@ -722,22 +722,22 @@ namespace Crypto {
     }
 
     /*
- *  operator<<
- *
- *  Description:
- *      This function provides the next octet in the message.
- *
- *  Parameters:
- *      message_element: [in]
- *          The next octet in the message
- *
- *  Returns:
- *      A reference to the SHA1 object.
- *
- *  Comments:
- *      The character is assumed to hold 8 bits of information.
- *
- */
+     *  operator<<
+     *
+     *  Description:
+     *      This function provides the next octet in the message.
+     *
+     *  Parameters:
+     *      message_element: [in]
+     *          The next octet in the message
+     *
+     *  Returns:
+     *      A reference to the SHA1 object.
+     *
+     *  Comments:
+     *      The character is assumed to hold 8 bits of information.
+     *
+     */
     MD5& MD5::operator<<(const uint8_t message_element)
     {
         Input(&message_element, 1);
@@ -1176,24 +1176,24 @@ namespace Crypto {
         }
     }
 
-/*
- *  operator<<
- *
- *  Description:
- *      This operator makes it convenient to provide character strings to
- *      the SHA1 object for processing.
- *
- *  Parameters:
- *      message_array: [in]
- *          The character array to take as input.
- *
- *  Returns:
- *      A reference to the SHA1 object.
- *
- *  Comments:
- *      Each character is assumed to hold 8 bits of information.
- *
- */
+    /*
+     *  operator<<
+     *
+     *  Description:
+     *      This operator makes it convenient to provide character strings to
+     *      the SHA1 object for processing.
+     *
+     *  Parameters:
+     *      message_array: [in]
+     *          The character array to take as input.
+     *
+     *  Returns:
+     *      A reference to the SHA1 object.
+     *
+     *  Comments:
+     *      Each character is assumed to hold 8 bits of information.
+     *
+     */
     SHA256& SHA256::operator<<(const uint8_t message_array[])
     {
         uint16_t length = 0;
@@ -1208,22 +1208,22 @@ namespace Crypto {
     }
 
     /*
- *  operator<<
- *
- *  Description:
- *      This function provides the next octet in the message.
- *
- *  Parameters:
- *      message_element: [in]
- *          The next octet in the message
- *
- *  Returns:
- *      A reference to the SHA1 object.
- *
- *  Comments:
- *      The character is assumed to hold 8 bits of information.
- *
- */
+     *  operator<<
+     *
+     *  Description:
+     *      This function provides the next octet in the message.
+     *
+     *  Parameters:
+     *      message_element: [in]
+     *          The next octet in the message
+     *
+     *  Returns:
+     *      A reference to the SHA1 object.
+     *
+     *  Comments:
+     *      The character is assumed to hold 8 bits of information.
+     *
+     */
     SHA256& SHA256::operator<<(const uint8_t message_element)
     {
         Input(&message_element, 1);
@@ -1344,23 +1344,23 @@ namespace Crypto {
     }
 
     /*
- *  operator<<
- *
- *  Description:
- *      This operator makes it convenient to provide character strings to
- *      the SHA1 object for processing.
- *
- *  Parameters:
- *      message_array: [in]
- *          The character array to take as input.
- *
- *  Returns:
- *      A reference to the SHA1 object.
- *
- *  Comments:
- *      Each character is assumed to hold 8 bits of information.
- *
- */
+     *  operator<<
+     *
+     *  Description:
+     *      This operator makes it convenient to provide character strings to
+     *      the SHA1 object for processing.
+     *
+     *  Parameters:
+     *      message_array: [in]
+     *          The character array to take as input.
+     *
+     *  Returns:
+     *      A reference to the SHA1 object.
+     *
+     *  Comments:
+     *      Each character is assumed to hold 8 bits of information.
+     *
+     */
     SHA224& SHA224::operator<<(const uint8_t message_array[])
     {
         uint16_t length = 0;
@@ -1375,22 +1375,22 @@ namespace Crypto {
     }
 
     /*
- *  operator<<
- *
- *  Description:
- *      This function provides the next octet in the message.
- *
- *  Parameters:
- *      message_element: [in]
- *          The next octet in the message
- *
- *  Returns:
- *      A reference to the SHA1 object.
- *
- *  Comments:
- *      The character is assumed to hold 8 bits of information.
- *
- */
+     *  operator<<
+     *
+     *  Description:
+     *      This function provides the next octet in the message.
+     *
+     *  Parameters:
+     *      message_element: [in]
+     *          The next octet in the message
+     *
+     *  Returns:
+     *      A reference to the SHA1 object.
+     *
+     *  Comments:
+     *      The character is assumed to hold 8 bits of information.
+     *
+     */
     SHA224& SHA224::operator<<(const uint8_t message_element)
     {
         Input(&message_element, 1);
@@ -1679,23 +1679,23 @@ namespace Crypto {
     }
 
     /*
- *  operator<<
- *
- *  Description:
- *      This operator makes it convenient to provide character strings to
- *      the SHA1 object for processing.
- *
- *  Parameters:
- *      message_array: [in]
- *          The character array to take as input.
- *
- *  Returns:
- *      A reference to the SHA1 object.
- *
- *  Comments:
- *      Each character is assumed to hold 8 bits of information.
- *
- */
+     *  operator<<
+     *
+     *  Description:
+     *      This operator makes it convenient to provide character strings to
+     *      the SHA1 object for processing.
+     *
+     *  Parameters:
+     *      message_array: [in]
+     *          The character array to take as input.
+     *
+     *  Returns:
+     *      A reference to the SHA1 object.
+     *
+     *  Comments:
+     *      Each character is assumed to hold 8 bits of information.
+     *
+     */
     SHA512& SHA512::operator<<(const uint8_t message_array[])
     {
         uint16_t length = 0;
@@ -1710,22 +1710,22 @@ namespace Crypto {
     }
 
     /*
- *  operator<<
- *
- *  Description:
- *      This function provides the next octet in the message.
- *
- *  Parameters:
- *      message_element: [in]
- *          The next octet in the message
- *
- *  Returns:
- *      A reference to the SHA1 object.
- *
- *  Comments:
- *      The character is assumed to hold 8 bits of information.
- *
- */
+     *  operator<<
+     *
+     *  Description:
+     *      This function provides the next octet in the message.
+     *
+     *  Parameters:
+     *      message_element: [in]
+     *          The next octet in the message
+     *
+     *  Returns:
+     *      A reference to the SHA1 object.
+     *
+     *  Comments:
+     *      The character is assumed to hold 8 bits of information.
+     *
+     */
     SHA512& SHA512::operator<<(const uint8_t message_element)
     {
         Input(&message_element, 1);
@@ -1846,23 +1846,23 @@ namespace Crypto {
     }
 
     /*
- *  operator<<
- *
- *  Description:
- *      This operator makes it convenient to provide character strings to
- *      the SHA1 object for processing.
- *
- *  Parameters:
- *      message_array: [in]
- *          The character array to take as input.
- *
- *  Returns:
- *      A reference to the SHA1 object.
- *
- *  Comments:
- *      Each character is assumed to hold 8 bits of information.
- *
- */
+     *  operator<<
+     *
+     *  Description:
+     *      This operator makes it convenient to provide character strings to
+     *      the SHA1 object for processing.
+     *
+     *  Parameters:
+     *      message_array: [in]
+     *          The character array to take as input.
+     *
+     *  Returns:
+     *      A reference to the SHA1 object.
+     *
+     *  Comments:
+     *      Each character is assumed to hold 8 bits of information.
+     *
+     */
     SHA384& SHA384::operator<<(const uint8_t message_array[])
     {
         uint16_t length = 0;
@@ -1877,22 +1877,22 @@ namespace Crypto {
     }
 
     /*
- *  operator<<
- *
- *  Description:
- *      This function provides the next octet in the message.
- *
- *  Parameters:
- *      message_element: [in]
- *          The next octet in the message
- *
- *  Returns:
- *      A reference to the SHA1 object.
- *
- *  Comments:
- *      The character is assumed to hold 8 bits of information.
- *
- */
+     *  operator<<
+     *
+     *  Description:
+     *      This function provides the next octet in the message.
+     *
+     *  Parameters:
+     *      message_element: [in]
+     *          The next octet in the message
+     *
+     *  Returns:
+     *      A reference to the SHA1 object.
+     *
+     *  Comments:
+     *      The character is assumed to hold 8 bits of information.
+     *
+     */
     SHA384& SHA384::operator<<(const uint8_t message_element)
     {
         Input(&message_element, 1);
