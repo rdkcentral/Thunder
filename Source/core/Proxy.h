@@ -119,15 +119,18 @@ namespace Core {
 
         virtual uint32_t Release() const
         {
-            uint32_t Result;
-
-            if ((Result = Core::InterlockedDecrement(m_RefCount)) == 0) {
+            if (InternalRelease() == 0) {
                 delete this;
 
                 return (Core::ERROR_DESTRUCTION_SUCCEEDED);
             }
 
             return (Core::ERROR_NONE);
+        }
+
+        uint32_t InternalRelease() const
+        {
+            return (Core::InterlockedDecrement(m_RefCount));
         }
 
         inline operator CONTEXT&()
@@ -1083,15 +1086,18 @@ namespace Core {
         }
         uint32_t Release() const override
         {
-            if (ProxyService<ELEMENT>::LastRef() == true) {
+            uint32_t result = Core::ERROR_NONE;
+            uint32_t newCount = ProxyService<ELEMENT>::InternalRelease();
+
+            if (newCount == 0) {
                 // This can only happen of the parent has unlinked us, other wise 
                 // the last release is always in the Unlink..
                 ASSERT(_parent == nullptr);
                 const_cast<ThisClass*>(this)->__Relinquish<CONTAINER, ELEMENT, EXPOSED>();
-            }
-            uint32_t result = ProxyService<ELEMENT>::Release();
+                delete this;
 
-            if ((result != Core::ERROR_DESTRUCTION_SUCCEEDED) && (ProxyService<ELEMENT>::LastRef() == true)) {
+                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
+            } else if (newCount == 1) {
                 const_cast<ThisClass*>(this)->Notify();
 
                 result = Core::ERROR_DESTRUCTION_SUCCEEDED;
@@ -1103,10 +1109,9 @@ namespace Core {
         {
             ASSERT(_parent != nullptr);
 
-            if (ProxyService<ELEMENT>::LastRef() == false) {
-                // This can only happen if the parent has unlinked us, while we are still being used somewhere..
-                const_cast<ThisClass*>(this)->__Unlink<CONTAINER, ELEMENT, EXPOSED>();
-            }
+            // This can only happen if the parent has unlinked us, while we are still being used somewhere..
+            const_cast<ThisClass*>(this)->__Unlink<CONTAINER, ELEMENT, EXPOSED>();
+
 
             // By incrementing this refcount the last reference count is definitily not reached, so safe to remove the parent as we are sure
             // that it will not be used while we clear it... 
@@ -1114,6 +1119,7 @@ namespace Core {
             _parent = nullptr;
             ProxyService<ELEMENT>::Release();
             ProxyService<ELEMENT>::Release();
+
         }
  
     private:
