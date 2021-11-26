@@ -722,6 +722,7 @@ namespace WPEFramework {
             {
                 ASSERT(a_Index < m_Current);
                 ASSERT(m_List != nullptr);
+                ASSERT(m_List[a_Index] != nullptr);
 
                 // Remember the item on the location, It should be a relaes and an add for
                 // the new one, To optimize for speed, just copy the count.
@@ -729,6 +730,7 @@ namespace WPEFramework {
 
                 // If it is taken out, release the reference that we took during the add
                 m_List[a_Index]->Release();
+                m_List[a_Index] = nullptr;
 
                 // Delete one element.
                 Core::InterlockedDecrement(m_Current);
@@ -748,9 +750,11 @@ namespace WPEFramework {
             {
                 ASSERT(a_Index < m_Current);
                 ASSERT(m_List != nullptr);
+                ASSERT(m_List[a_Index] != nullptr);
 
                 // If it is taken out, release the reference that we took during the add
                 m_List[a_Index]->Release();
+                m_List[a_Index] = nullptr;
 
                 // Delete one element.
                 Core::InterlockedDecrement(m_Current);
