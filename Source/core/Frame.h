@@ -343,9 +343,11 @@ namespace Core {
         ~FrameType() = default;
 
         FrameType<BLOCKSIZE, BIG_ENDIAN_ORDERING, SIZE_CONTEXT>& operator=(const FrameType<BLOCKSIZE, BIG_ENDIAN_ORDERING, SIZE_CONTEXT>& rhs) {
-            Size(rhs.Size());
-            if (Size() > 0) {
-                ::memcpy(&(_data[0]), rhs.Data(), Size());
+            if (this != &rhs) {
+                Size(rhs.Size());
+                if (Size() > 0) {
+                    ::memcpy(&(_data[0]), rhs.Data(), Size());
+                }
             }
             return(*this);
         }
@@ -549,6 +551,49 @@ namespace Core {
         }
 
         template <typename TYPENAME>
+        void SetNumberLittleEndianPlatform(const SIZE_CONTEXT offset, const TYPENAME number) {
+            const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
+            uint8_t* destination = &(_data[offset + sizeof(TYPENAME) - 1]);
+
+            *destination-- = *source++;
+            *destination-- = *source++;
+
+            if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
+                *destination-- = *source++;
+                *destination-- = *source++;
+
+                if (sizeof(TYPENAME) == 8) {
+                    *destination-- = *source++;
+                    *destination-- = *source++;
+                    *destination-- = *source++;
+                    *destination-- = *source++;
+                }
+            }
+        }
+
+        template <typename TYPENAME>
+        void SetNumberBigEndianPlatform(const SIZE_CONTEXT offset, const TYPENAME number) {
+            const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
+            uint8_t* destination = &(_data[offset]);
+
+            *destination++ = *source++;
+            *destination++ = *source++;
+
+            if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
+                *destination++ = *source++;
+                *destination++ = *source++;
+
+                if (sizeof(TYPENAME) == 8) {
+                    *destination++ = *source++;
+                    *destination++ = *source++;
+                    *destination++ = *source++;
+                    *destination++ = *source++;
+                }
+            }
+        }
+
+
+        template <typename TYPENAME>
         SIZE_CONTEXT SetNumber(const SIZE_CONTEXT offset, const TYPENAME number, const TemplateIntToType<false>&)
         {
             if ((offset + sizeof(TYPENAME)) >= _size) {
@@ -557,88 +602,16 @@ namespace Core {
 
             if (BIG_ENDIAN_ORDERING == true) {
 #ifdef LITTLE_ENDIAN_PLATFORM
-                {
-                    const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
-                    uint8_t* destination = &(_data[offset + sizeof(TYPENAME) - 1]);
-
-                    *destination-- = *source++;
-                    *destination-- = *source++;
-
-                    if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
-                        *destination-- = *source++;
-                        *destination-- = *source++;
-
-                        if (sizeof(TYPENAME) == 8) {
-                            *destination-- = *source++;
-                            *destination-- = *source++;
-                            *destination-- = *source++;
-                            *destination-- = *source++;
-                        }
-                    }
-                }
+                SetNumberLittleEndianPlatform(offset, number);
 #else
-                {
-                    const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
-                    uint8_t* destination = &(_data[offset]);
-
-                    *destination++ = *source++;
-                    *destination++ = *source++;
-
-                    if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
-                        *destination++ = *source++;
-                        *destination++ = *source++;
-
-                        if (sizeof(TYPENAME) == 8) {
-                            *destination++ = *source++;
-                            *destination++ = *source++;
-                            *destination++ = *source++;
-                            *destination++ = *source++;
-                        }
-                    }
-                }
+                SetNumberBigEndianPlatform(offset, number);
 #endif
             }
             else {
 #ifndef LITTLE_ENDIAN_PLATFORM
-                {
-                    const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
-                    uint8_t* destination = &(_data[offset + sizeof(TYPENAME) - 1]);
-
-                    *destination-- = *source++;
-                    *destination-- = *source++;
-
-                    if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
-                        *destination-- = *source++;
-                        *destination-- = *source++;
-
-                        if (sizeof(TYPENAME) == 8) {
-                            *destination-- = *source++;
-                            *destination-- = *source++;
-                            *destination-- = *source++;
-                            *destination-- = *source++;
-                        }
-                    }
-                }
+                SetNumberLittleEndianPlatform(offset, number);
 #else
-                {
-                    const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
-                    uint8_t* destination = &(_data[offset]);
-
-                    *destination++ = *source++;
-                    *destination++ = *source++;
-
-                    if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
-                        *destination++ = *source++;
-                        *destination++ = *source++;
-
-                        if (sizeof(TYPENAME) == 8) {
-                            *destination++ = *source++;
-                            *destination++ = *source++;
-                            *destination++ = *source++;
-                            *destination++ = *source++;
-                        }
-                    }
-                }
+                SetNumberLittleEndianPlatform(offset, number);
 #endif
             }
 
@@ -657,95 +630,77 @@ namespace Core {
         }
 
         template <typename TYPENAME>
+        inline TYPENAME GetNumberLittleEndianPlatform(const SIZE_CONTEXT offset) const
+        {
+            TYPENAME result = static_cast<TYPENAME>(0);
+            const uint8_t* source = &(_data[offset]);
+            uint8_t* destination = &(reinterpret_cast<uint8_t*>(&result)[sizeof(TYPENAME) - 1]);
+
+            *destination-- = *source++;
+            *destination-- = *source++;
+
+            if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
+                *destination-- = *source++;
+                *destination-- = *source++;
+
+                if (sizeof(TYPENAME) == 8) {
+                    *destination-- = *source++;
+                    *destination-- = *source++;
+                    *destination-- = *source++;
+                    *destination-- = *source++;
+                }
+            }
+
+            return (result);
+        }
+
+        template <typename TYPENAME>
+        inline TYPENAME GetNumberBigEndianPlatform(const SIZE_CONTEXT offset) const
+        {
+            TYPENAME result = 0;
+
+            // If the sizeof > 1, the alignment could be wrong. Assume the worst, always copy !!!
+            const uint8_t* source = &(_data[offset]);
+            uint8_t* destination = reinterpret_cast<uint8_t*>(&result);
+
+            *destination++ = *source++;
+            *destination++ = *source++;
+
+            if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
+                *destination++ = *source++;
+                *destination++ = *source++;
+
+                if (sizeof(TYPENAME) == 8) {
+                    *destination++ = *source++;
+                    *destination++ = *source++;
+                    *destination++ = *source++;
+                    *destination++ = *source++;
+                }
+            }
+
+            return (result);
+        }
+
+        template <typename TYPENAME>
         inline SIZE_CONTEXT GetNumber(const SIZE_CONTEXT offset, TYPENAME& value, const TemplateIntToType<false>&) const
         {
-            TYPENAME result;
-
             if ((offset + sizeof(TYPENAME)) > _size) {
-                ::memset(&result, 0, sizeof(result));
+                value = static_cast<TYPENAME>(0);
             }
             else if (BIG_ENDIAN_ORDERING == true) {
 #ifdef LITTLE_ENDIAN_PLATFORM
-                const uint8_t* source = &(_data[offset]);
-                uint8_t* destination = &(reinterpret_cast<uint8_t*>(&result)[sizeof(TYPENAME) - 1]);
-
-                *destination-- = *source++;
-                *destination-- = *source++;
-
-                if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
-                    *destination-- = *source++;
-                    *destination-- = *source++;
-
-                    if (sizeof(TYPENAME) == 8) {
-                        *destination-- = *source++;
-                        *destination-- = *source++;
-                        *destination-- = *source++;
-                        *destination-- = *source++;
-                    }
-                }
+                value = GetNumberLittleEndianPlatform<TYPENAME>(offset);
 #else
-                // If the sizeof > 1, the alignment could be wrong. Assume the worst, always copy !!!
-                const uint8_t* source = &(_data[offset]);
-                uint8_t* destination = reinterpret_cast<uint8_t*>(&result);
-
-                *destination++ = *source++;
-                *destination++ = *source++;
-
-                if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
-                    *destination++ = *source++;
-                    *destination++ = *source++;
-
-                    if (sizeof(TYPENAME) == 8) {
-                        *destination++ = *source++;
-                        *destination++ = *source++;
-                        *destination++ = *source++;
-                        *destination++ = *source++;
-                    }
-                }
+                value = GetNumberBigEndianPlatform<TYPENAME>(offset);
 #endif
             }
             else {
 #ifndef LITTLE_ENDIAN_PLATFORM
-                const uint8_t* source = &(_data[offset]);
-                uint8_t* destination = &(reinterpret_cast<uint8_t*>(&result)[sizeof(TYPENAME) - 1]);
-
-                *destination-- = *source++;
-                *destination-- = *source++;
-
-                if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
-                    *destination-- = *source++;
-                    *destination-- = *source++;
-
-                    if (sizeof(TYPENAME) == 8) {
-                        *destination-- = *source++;
-                        *destination-- = *source++;
-                        *destination-- = *source++;
-                        *destination-- = *source++;
-                    }
-                }
+                value = GetNumberBigEndianPlatform<TYPENAME>(offset);
 #else
-                // If the sizeof > 1, the alignment could be wrong. Assume the worst, always copy !!!
-                const uint8_t* source = &(_data[offset]);
-                uint8_t* destination = reinterpret_cast<uint8_t*>(&result);
-
-                *destination++ = *source++;
-                *destination++ = *source++;
-
-                if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
-                    *destination++ = *source++;
-                    *destination++ = *source++;
-
-                    if (sizeof(TYPENAME) == 8) {
-                        *destination++ = *source++;
-                        *destination++ = *source++;
-                        *destination++ = *source++;
-                        *destination++ = *source++;
-                    }
-                }
+                value = GetNumberLittleEndianPlatform<TYPENAME>(offset);
 #endif
             }
-
-            value = result;
 
             return (sizeof(TYPENAME));
         }
