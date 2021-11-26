@@ -17,39 +17,44 @@
  * limitations under the License.
  */
 
-#ifndef __GENERICS_FRAME_H
-#define __GENERICS_FRAME_H
+#pragma once
 
 #include "Module.h"
 
 namespace WPEFramework {
 namespace Core {
 
-    template <const uint16_t BLOCKSIZE>
+    template <const uint32_t BLOCKSIZE, const bool BIG_ENDIAN_ORDERING = true, typename SIZE_CONTEXT = uint16_t>
     class FrameType {
     private:
-        template <const uint16_t STARTSIZE>
+        template <const uint32_t STARTSIZE, typename SIZETYPE>
         class AllocatorType {
-        private:
-            AllocatorType<STARTSIZE> operator=(const AllocatorType<STARTSIZE>&) = delete;
-
         public:
+            AllocatorType<STARTSIZE, SIZETYPE> operator=(const AllocatorType<STARTSIZE, SIZETYPE>&) = delete;
+
             AllocatorType()
                 : _bufferSize(STARTSIZE)
                 , _data(reinterpret_cast<uint8_t*>(::malloc(_bufferSize)))
             {
+                // It looks like there is a bug in the windows compiler. It prepares a default/copy constructor
+                // if if the template being instantiated is not really utilizing it!
+                #ifndef __WINDOWS__
                 static_assert(STARTSIZE != 0, "This method can only be called if you specify an initial blocksize");
+                #endif  
             }
-            AllocatorType(const AllocatorType<STARTSIZE>& copy)
+            AllocatorType(const AllocatorType<STARTSIZE, SIZETYPE>& copy)
                 : _bufferSize(copy._bufferSize)
-                , _data(STARTSIZE == 0 ? copy._data : reinterpret_cast<uint8_t*>(::malloc(_bufferSize)))
+                , _data(reinterpret_cast<uint8_t*>(::malloc(_bufferSize)))
             {
+                // It looks like there is a bug in the windows compiler. It prepares a default/copy constructor
+                // if if the template being instantiated is not really utilizing it!
+                #ifndef __WINDOWS__
+                static_assert(STARTSIZE != 0, "This method can only be called if you specify an initial blocksize");
+                #endif
 
-                if (STARTSIZE != 0) {
-                    ::memcpy(_data, copy._data, _bufferSize);
-                }
+                ::memcpy(_data, copy._data, _bufferSize);
             }
-            AllocatorType(uint8_t buffer[], const uint32_t length)
+            AllocatorType(uint8_t buffer[], const SIZETYPE length)
                 : _bufferSize(length)
                 , _data(buffer)
             {
@@ -63,30 +68,30 @@ namespace Core {
             }
 
         public:
-            inline uint8_t& operator[](const uint16_t index)
+            inline uint8_t& operator[](const SIZETYPE index)
             {
                 ASSERT(_data != nullptr);
                 ASSERT(index < _bufferSize);
                 return (_data[index]);
             }
-            inline const uint8_t& operator[](const uint16_t index) const
+            inline const uint8_t& operator[](const SIZETYPE index) const
             {
                 ASSERT(_data != nullptr);
                 ASSERT(index < _bufferSize);
                 return (_data[index]);
             }
-            inline void Allocate(uint32_t requiredSize)
+            inline void Allocate(SIZETYPE requiredSize)
             {
                 RealAllocate<STARTSIZE>(requiredSize, TemplateIntToType<STARTSIZE>());
             }
 
         private:
-            template <const uint16_t NONZEROSIZE>
-            inline void RealAllocate(const uint32_t requiredSize, const TemplateIntToType<NONZEROSIZE>& /* For compile time diffrentiation */)
+            template <const uint32_t NONZEROSIZE>
+            inline void RealAllocate(const SIZETYPE requiredSize, const TemplateIntToType<NONZEROSIZE>& /* For compile time diffrentiation */)
             {
                 if (requiredSize > _bufferSize) {
 
-                    uint16_t bufferSize = static_cast<uint16_t>(((requiredSize / (STARTSIZE ? STARTSIZE : 1)) + 1) * STARTSIZE);
+                    SIZETYPE bufferSize = static_cast<uint32_t>(((requiredSize / (STARTSIZE ? STARTSIZE : 1)) + 1) * STARTSIZE);
 
                     // oops we need to "reallocate".
                     uint8_t* data = reinterpret_cast<uint8_t*>(::realloc(_data, bufferSize));
@@ -97,31 +102,27 @@ namespace Core {
                     }
                 }
             }
-            inline void RealAllocate(const uint32_t requiredSize, const TemplateIntToType<0>& /* For compile time diffrentiation */)
+            inline void RealAllocate(const SIZETYPE requiredSize, const TemplateIntToType<0>& /* For compile time diffrentiation */)
             {
                 ASSERT(requiredSize <= _bufferSize);
             }
 
         private:
-            uint16_t _bufferSize;
+            SIZETYPE _bufferSize;
             uint8_t* _data;
         };
 
-    private:
-        FrameType& operator=(const FrameType&);
-
     public:
         class Reader {
-        private:
-            Reader& operator=(const Reader&);
-
         public:
+            Reader& operator=(const Reader&) = delete;
+
             Reader()
                 : _offset(0)
                 , _container(nullptr)
             {
             }
-            Reader(const FrameType& data, const uint16_t offset)
+            Reader(const FrameType& data, const SIZE_CONTEXT offset)
                 : _offset(offset)
                 , _container(&data)
             {
@@ -131,16 +132,14 @@ namespace Core {
                 , _container(copy._container)
             {
             }
-            ~Reader()
-            {
-            }
+            ~Reader() = default;
 
         public:
             inline bool HasData() const
             {
                 return ((_container != nullptr) && (_offset < _container->Size()));
             }
-            inline uint16_t Length() const
+            inline uint32_t Length() const
             {
                 return (_container == nullptr ? 0 : _container->Size() - _offset);
             }
@@ -166,7 +165,7 @@ namespace Core {
             template <typename TYPENAME>
             TYPENAME Buffer(const TYPENAME maxLength, uint8_t buffer[]) const
             {
-                uint16_t result;
+                uint32_t result;
 
                 ASSERT(_container != nullptr);
 
@@ -175,7 +174,7 @@ namespace Core {
 
                 return (static_cast<TYPENAME>(result - sizeof(TYPENAME)));
             }
-            void Copy(const uint16_t length, uint8_t buffer[]) const
+            void Copy(const SIZE_CONTEXT length, uint8_t buffer[]) const
             {
                 ASSERT(_container != nullptr);
 
@@ -222,6 +221,17 @@ namespace Core {
 
                 return (result);
             }
+            const uint8_t* Data() const {
+
+                ASSERT(_container != nullptr);
+
+                return (&(_container->Data()[_offset]));
+            }
+            void Forward (const SIZE_CONTEXT skip) {
+                ASSERT(skip <= Length());
+                _offset += skip;
+            }
+
 #ifdef __DEBUG__
             void Dump() const
             {
@@ -230,21 +240,20 @@ namespace Core {
 #endif
 
         private:
-            mutable uint16_t _offset;
+            mutable SIZE_CONTEXT _offset;
             const FrameType* _container;
         };
         class Writer {
-        private:
-            Writer& operator=(const Writer&);
-
         public:
+            Writer& operator=(const Writer&) = delete;
+
             Writer()
                 : _offset(0)
                 , _container(nullptr)
             {
             }
             // TODO: should we make offset 0 by default?
-            Writer(FrameType& data, const uint16_t offset)
+            Writer(FrameType& data, const uint32_t offset)
                 : _offset(offset)
                 , _container(&data)
             {
@@ -254,12 +263,10 @@ namespace Core {
                 , _container(copy._container)
             {
             }
-            ~Writer()
-            {
-            }
+            ~Writer() = default;
 
         public:
-            inline uint16_t Offset() const
+            inline SIZE_CONTEXT Offset() const
             {
                 return (_offset);
             }
@@ -270,7 +277,7 @@ namespace Core {
 
                 _offset += _container->SetBuffer<TYPENAME>(_offset, length, buffer);
             }
-            void Copy(const uint16_t length, const uint8_t buffer[])
+            void Copy(const SIZE_CONTEXT length, const uint8_t buffer[])
             {
                 ASSERT(_container != nullptr);
 
@@ -303,30 +310,44 @@ namespace Core {
             }
 
         private:
-            uint16_t _offset;
+            SIZE_CONTEXT _offset;
             FrameType* _container;
         };
 
-    public:
+    public:       
         FrameType()
             : _size(0)
-            , _data()
-        {
+            , _data() {
+            // It looks like there is a bug in the windows compiler. It prepares a default/copy constructor
+            // if if the template being instantiated is not really utilizing it!
+            #ifndef __WINDOWS__
             static_assert(BLOCKSIZE != 0, "This method can only be called if you specify an initial blocksize");
+            #endif
         }
-        FrameType(const FrameType<BLOCKSIZE>& copy)
+        FrameType(const FrameType<BLOCKSIZE, BIG_ENDIAN_ORDERING, SIZE_CONTEXT>& copy) 
             : _size(copy._size)
             , _data(copy._data)
         {
+            // It looks like there is a bug in the windows compiler. It prepares a default/copy constructor
+            // if if the template being instantiated is not really utilizing it!
+            #ifndef __WINDOWS__
+            static_assert(BLOCKSIZE != 0, "This method can only be called if you allocate a new buffer");
+            #endif
         }
-        FrameType(uint8_t buffer[], const uint32_t length, const uint32_t loadedSize = 0)
+        FrameType(uint8_t* buffer, const SIZE_CONTEXT length, const SIZE_CONTEXT loadedSize = 0)
             : _size(loadedSize)
             , _data(buffer, length)
         {
             static_assert(BLOCKSIZE == 0, "This method can only be called if you pass a buffer that can not be extended");
         }
-        ~FrameType()
-        {
+        ~FrameType() = default;
+
+        FrameType<BLOCKSIZE, BIG_ENDIAN_ORDERING, SIZE_CONTEXT>& operator=(const FrameType<BLOCKSIZE, BIG_ENDIAN_ORDERING, SIZE_CONTEXT>& rhs) {
+            Size(rhs.Size());
+            if (Size() > 0) {
+                ::memcpy(&(_data[0]), rhs.Data(), Size());
+            }
+            return(*this);
         }
 
     public:
@@ -334,28 +355,33 @@ namespace Core {
         {
             _size = 0;
         }
-        inline uint32_t Size() const
+        inline SIZE_CONTEXT Size() const
         {
             return (_size);
         }
-        inline uint8_t& operator[](const uint16_t index)
+        inline const uint8_t* Data() const {
+            return (&_data[0]);
+        }
+        inline uint8_t& operator[](const SIZE_CONTEXT index)
         {
             return _data[index];
         }
-        inline const uint8_t& operator[](const uint16_t index) const
+        inline const uint8_t& operator[](const SIZE_CONTEXT index) const
         {
             return _data[index];
         }
-        void Size(uint16_t size)
+        void Size(SIZE_CONTEXT size)
         {
             _data.Allocate(size);
 
             _size = size;
         }
         template <typename TYPENAME>
-        uint16_t SetBuffer(const uint16_t offset, const TYPENAME& length, const uint8_t buffer[])
+        uint32_t SetBuffer(const SIZE_CONTEXT offset, const TYPENAME& length, const uint8_t buffer[])
         {
-            uint16_t requiredLength(static_cast<uint16_t>(sizeof(TYPENAME) + length));
+            SIZE_CONTEXT requiredLength(static_cast<SIZE_CONTEXT>(sizeof(TYPENAME) + length));
+
+            static_assert(sizeof(TYPENAME) <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
 
             if ((offset + requiredLength) >= _size) {
                 Size(offset + requiredLength);
@@ -371,7 +397,7 @@ namespace Core {
             return (requiredLength);
         }
 
-        uint16_t Copy(const uint16_t offset, const uint16_t length, uint8_t buffer[]) const
+        SIZE_CONTEXT Copy(const SIZE_CONTEXT offset, const SIZE_CONTEXT length, uint8_t buffer[]) const
         {
             ASSERT(offset + length <= _size);
 
@@ -379,7 +405,7 @@ namespace Core {
 
             return (length);
         }
-        uint16_t Copy(const uint16_t offset, const uint16_t length, const uint8_t buffer[])
+        SIZE_CONTEXT Copy(const SIZE_CONTEXT offset, const SIZE_CONTEXT length, const uint8_t buffer[])
         {
             Size(offset + length);
 
@@ -387,16 +413,17 @@ namespace Core {
 
             return (length);
         }
-        uint16_t SetText(const uint16_t offset, const string& value)
+        template <typename TYPENAME = uint16_t>
+        SIZE_CONTEXT SetText(const SIZE_CONTEXT offset, const string& value)
         {
             std::string convertedText(Core::ToString(value));
-            return (SetBuffer<uint16_t>(offset, static_cast<uint16_t>(convertedText.length()), reinterpret_cast<const uint8_t*>(convertedText.c_str())));
+            return (SetBuffer<TYPENAME>(offset, static_cast<TYPENAME>(convertedText.length()), reinterpret_cast<const uint8_t*>(convertedText.c_str())));
         }
 
-        uint16_t SetNullTerminatedText(const uint16_t offset, const string& value)
+        SIZE_CONTEXT SetNullTerminatedText(const SIZE_CONTEXT offset, const string& value)
         {
             std::string convertedText(Core::ToString(value));
-            uint16_t requiredLength(convertedText.length() + 1);
+            SIZE_CONTEXT requiredLength(static_cast< SIZE_CONTEXT>(convertedText.length() + 1));
 
             if ((offset + requiredLength) >= _size) {
                 Size(offset + requiredLength);
@@ -408,53 +435,56 @@ namespace Core {
         }
 
         template <typename TYPENAME>
-        uint16_t GetBuffer(const uint16_t offset, const TYPENAME length, uint8_t buffer[]) const
+        SIZE_CONTEXT GetBuffer(const SIZE_CONTEXT offset, const TYPENAME length, uint8_t buffer[]) const
         {
             TYPENAME textLength;
 
             ASSERT((offset + sizeof(TYPENAME)) <= _size);
+            static_assert(sizeof(TYPENAME) <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
 
             GetNumber<TYPENAME>(offset, textLength);
 
             ASSERT((textLength + offset + sizeof(TYPENAME)) <= _size);
 
             if ((textLength + offset + sizeof(TYPENAME)) > _size) {
-                textLength = (_size - (offset + static_cast<uint16_t>(sizeof(TYPENAME))));
+                textLength = (_size - (offset + static_cast<uint32_t>(sizeof(TYPENAME))));
             }
 
             memcpy(buffer, &(_data[offset + sizeof(TYPENAME)]), (textLength > length ? length : textLength));
 
-            return (static_cast<uint16_t>(sizeof(TYPENAME) + textLength));
+            return (static_cast<SIZE_CONTEXT>(sizeof(TYPENAME) + textLength));
         }
 
-        uint16_t GetText(const uint16_t offset, string& result) const
+        template <typename TYPENAME = uint16_t>
+        SIZE_CONTEXT GetText(const SIZE_CONTEXT offset, string& result) const
         {
-            uint16_t textLength;
-            ASSERT((offset + sizeof(uint16_t)) <= _size);
+            TYPENAME textLength;
+            ASSERT((offset + sizeof(TYPENAME)) <= _size);
+            static_assert(sizeof(TYPENAME) <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
 
-            GetNumber<uint16_t>(offset, textLength);
+            GetNumber<TYPENAME>(offset, textLength);
 
-            ASSERT((textLength + offset + sizeof(uint16_t)) <= _size);
+            ASSERT((textLength + offset + sizeof(TYPENAME)) <= _size);
 
-            if (textLength + offset + sizeof(uint16_t) > _size) {
-                textLength = (_size - (offset + sizeof(uint16_t)));
+            if (textLength + offset + sizeof(TYPENAME) > _size) {
+                textLength = (_size - (offset + sizeof(TYPENAME)));
             }
 
-            std::string convertedText(reinterpret_cast<const char*>(&(_data[offset + sizeof(uint16_t)])), textLength);
+            std::string convertedText(reinterpret_cast<const char*>(&(_data[offset + sizeof(TYPENAME)])), textLength);
 
             result = Core::ToString(convertedText);
 
-            return (sizeof(uint16_t) + textLength);
+            return (static_cast<SIZE_CONTEXT>(sizeof(TYPENAME) + textLength));
         }
 
-        uint16_t GetNullTerminatedText(const uint16_t offset, string& result) const
+        SIZE_CONTEXT GetNullTerminatedText(const SIZE_CONTEXT offset, string& result) const
         {
             const char* text = reinterpret_cast<const char*>(&(_data[offset]));
             result = text;
-            return (result.length() + 1);
+            return (static_cast<SIZE_CONTEXT>(result.length() + 1));
         }
 
-        uint16_t SetBoolean(const uint16_t offset, const bool value)
+        SIZE_CONTEXT SetBoolean(const SIZE_CONTEXT offset, const bool value)
         {
             if ((offset + 1) >= _size) {
                 Size(offset + 1);
@@ -465,7 +495,7 @@ namespace Core {
             return (1);
         }
 
-        uint16_t GetBoolean(const uint16_t offset, bool& value) const
+        SIZE_CONTEXT GetBoolean(const SIZE_CONTEXT offset, bool& value) const
         {
             ASSERT(offset < _size);
 
@@ -475,23 +505,23 @@ namespace Core {
         }
 
         template <typename TYPENAME>
-        inline uint16_t SetNumber(const uint16_t offset, const TYPENAME number)
+        inline SIZE_CONTEXT SetNumber(const SIZE_CONTEXT offset, const TYPENAME number)
         {
             return (SetNumber(offset, number, TemplateIntToType<sizeof(TYPENAME) == 1>()));
         }
 
         template <typename TYPENAME>
-        inline uint16_t GetNumber(const uint16_t offset, TYPENAME& number) const
+        inline SIZE_CONTEXT GetNumber(const SIZE_CONTEXT offset, TYPENAME& number) const
         {
             return (GetNumber(offset, number, TemplateIntToType<sizeof(TYPENAME) == 1>()));
         }
 
 #ifdef __DEBUG__
-        void Dump(const unsigned int offset) const
+        void Dump(const SIZE_CONTEXT offset) const
         {
             static const TCHAR character[] = "0123456789ABCDEF";
             string info;
-            uint16_t index = offset;
+            SIZE_CONTEXT index = offset;
 
             while (index < _size) {
                 if (info.empty() == false) {
@@ -507,7 +537,7 @@ namespace Core {
 
     private:
         template <typename TYPENAME>
-        uint16_t SetNumber(const uint16_t offset, const TYPENAME number, const TemplateIntToType<true>&)
+        SIZE_CONTEXT SetNumber(const SIZE_CONTEXT offset, const TYPENAME number, const TemplateIntToType<true>&)
         {
             if ((offset + 1) >= _size) {
                 Size(offset + 1);
@@ -519,59 +549,104 @@ namespace Core {
         }
 
         template <typename TYPENAME>
-        uint16_t SetNumber(const uint16_t offset, const TYPENAME number, const TemplateIntToType<false>&)
+        SIZE_CONTEXT SetNumber(const SIZE_CONTEXT offset, const TYPENAME number, const TemplateIntToType<false>&)
         {
             if ((offset + sizeof(TYPENAME)) >= _size) {
                 Size(offset + sizeof(TYPENAME));
             }
 
+            if (BIG_ENDIAN_ORDERING == true) {
 #ifdef LITTLE_ENDIAN_PLATFORM
-            {
-                const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
-                uint8_t* destination = &(_data[offset + sizeof(TYPENAME) - 1]);
+                {
+                    const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
+                    uint8_t* destination = &(_data[offset + sizeof(TYPENAME) - 1]);
 
-                *destination-- = *source++;
-                *destination-- = *source++;
-
-                if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
                     *destination-- = *source++;
                     *destination-- = *source++;
 
-                    if (sizeof(TYPENAME) == 8) {
+                    if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
                         *destination-- = *source++;
                         *destination-- = *source++;
-                        *destination-- = *source++;
-                        *destination-- = *source++;
+
+                        if (sizeof(TYPENAME) == 8) {
+                            *destination-- = *source++;
+                            *destination-- = *source++;
+                            *destination-- = *source++;
+                            *destination-- = *source++;
+                        }
                     }
                 }
-            }
 #else
-            {
-                const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
-                uint8_t* destination = &(_data[offset]);
+                {
+                    const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
+                    uint8_t* destination = &(_data[offset]);
 
-                *destination++ = *source++;
-                *destination++ = *source++;
-
-                if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
                     *destination++ = *source++;
                     *destination++ = *source++;
 
-                    if (sizeof(TYPENAME) == 8) {
+                    if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
                         *destination++ = *source++;
                         *destination++ = *source++;
-                        *destination++ = *source++;
-                        *destination++ = *source++;
+
+                        if (sizeof(TYPENAME) == 8) {
+                            *destination++ = *source++;
+                            *destination++ = *source++;
+                            *destination++ = *source++;
+                            *destination++ = *source++;
+                        }
                     }
                 }
-            }
 #endif
+            }
+            else {
+#ifndef LITTLE_ENDIAN_PLATFORM
+                {
+                    const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
+                    uint8_t* destination = &(_data[offset + sizeof(TYPENAME) - 1]);
+
+                    *destination-- = *source++;
+                    *destination-- = *source++;
+
+                    if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
+                        *destination-- = *source++;
+                        *destination-- = *source++;
+
+                        if (sizeof(TYPENAME) == 8) {
+                            *destination-- = *source++;
+                            *destination-- = *source++;
+                            *destination-- = *source++;
+                            *destination-- = *source++;
+                        }
+                    }
+                }
+#else
+                {
+                    const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
+                    uint8_t* destination = &(_data[offset]);
+
+                    *destination++ = *source++;
+                    *destination++ = *source++;
+
+                    if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
+                        *destination++ = *source++;
+                        *destination++ = *source++;
+
+                        if (sizeof(TYPENAME) == 8) {
+                            *destination++ = *source++;
+                            *destination++ = *source++;
+                            *destination++ = *source++;
+                            *destination++ = *source++;
+                        }
+                    }
+                }
+#endif
+            }
 
             return (sizeof(TYPENAME));
         }
 
         template <typename TYPENAME>
-        uint16_t GetNumber(const uint16_t offset, TYPENAME& number, const TemplateIntToType<true>&) const
+        SIZE_CONTEXT GetNumber(const SIZE_CONTEXT offset, TYPENAME& number, const TemplateIntToType<true>&) const
         {
             // Only on package level allowed to pass the boundaries!!!
             ASSERT((offset + sizeof(TYPENAME)) <= _size);
@@ -582,15 +657,15 @@ namespace Core {
         }
 
         template <typename TYPENAME>
-        inline uint16_t GetNumber(const uint16_t offset, TYPENAME& value, const TemplateIntToType<false>&) const
+        inline SIZE_CONTEXT GetNumber(const SIZE_CONTEXT offset, TYPENAME& value, const TemplateIntToType<false>&) const
         {
             TYPENAME result;
 
             if ((offset + sizeof(TYPENAME)) > _size) {
                 ::memset(&result, 0, sizeof(result));
-            } else
+            }
+            else if (BIG_ENDIAN_ORDERING == true) {
 #ifdef LITTLE_ENDIAN_PLATFORM
-            {
                 const uint8_t* source = &(_data[offset]);
                 uint8_t* destination = &(reinterpret_cast<uint8_t*>(&result)[sizeof(TYPENAME) - 1]);
 
@@ -608,9 +683,7 @@ namespace Core {
                         *destination-- = *source++;
                     }
                 }
-            }
 #else
-            {
                 // If the sizeof > 1, the alignment could be wrong. Assume the worst, always copy !!!
                 const uint8_t* source = &(_data[offset]);
                 uint8_t* destination = reinterpret_cast<uint8_t*>(&result);
@@ -629,8 +702,48 @@ namespace Core {
                         *destination++ = *source++;
                     }
                 }
-            }
 #endif
+            }
+            else {
+#ifndef LITTLE_ENDIAN_PLATFORM
+                const uint8_t* source = &(_data[offset]);
+                uint8_t* destination = &(reinterpret_cast<uint8_t*>(&result)[sizeof(TYPENAME) - 1]);
+
+                *destination-- = *source++;
+                *destination-- = *source++;
+
+                if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
+                    *destination-- = *source++;
+                    *destination-- = *source++;
+
+                    if (sizeof(TYPENAME) == 8) {
+                        *destination-- = *source++;
+                        *destination-- = *source++;
+                        *destination-- = *source++;
+                        *destination-- = *source++;
+                    }
+                }
+#else
+                // If the sizeof > 1, the alignment could be wrong. Assume the worst, always copy !!!
+                const uint8_t* source = &(_data[offset]);
+                uint8_t* destination = reinterpret_cast<uint8_t*>(&result);
+
+                *destination++ = *source++;
+                *destination++ = *source++;
+
+                if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
+                    *destination++ = *source++;
+                    *destination++ = *source++;
+
+                    if (sizeof(TYPENAME) == 8) {
+                        *destination++ = *source++;
+                        *destination++ = *source++;
+                        *destination++ = *source++;
+                        *destination++ = *source++;
+                    }
+                }
+#endif
+            }
 
             value = result;
 
@@ -638,10 +751,8 @@ namespace Core {
         }
 
     private:
-        mutable uint16_t _size;
-        AllocatorType<BLOCKSIZE> _data;
+        mutable SIZE_CONTEXT _size;
+        AllocatorType<BLOCKSIZE,SIZE_CONTEXT> _data;
     };
 }
 }
-
-#endif //__GENERICS_FRAME_H
