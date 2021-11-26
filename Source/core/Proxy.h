@@ -1591,6 +1591,22 @@ namespace WPEFramework {
 
                 return (result);
             }
+            Core::ProxyType<const PROXYELEMENT> Find(const PROXYKEY& key) const
+            {
+                Core::ProxyType<const PROXYELEMENT> result;
+
+                _lock.Lock();
+
+                typename ContainerMap::const_iterator index(_map.find(key));
+
+                if (index != _map.end()) {
+                    result = Core::ProxyType<const PROXYELEMENT>(index->second.first);
+                }
+
+                _lock.Unlock();
+
+                return (result);
+            }
             // void action<const PROXYKEY& key, const Core::ProxyType<PROXYELEMENT>& element>
             template<typename ACTION>
             void Visit(ACTION&& action) const {
@@ -1678,11 +1694,11 @@ namespace WPEFramework {
 
         public:
             template <typename ACTUALOBJECT, typename... Args>
-            Core::ProxyType<PROXYELEMENT> Instance(Args&&... args)
+            Core::ProxyType<ACTUALOBJECT> Instance(Args&&... args)
             {
                 using ActualElement = ProxyContainerType < ProxyListType<PROXYELEMENT>, ACTUALOBJECT, PROXYELEMENT>;
 
-                Core::ProxyType<PROXYELEMENT> result;
+                Core::ProxyType<ACTUALOBJECT> result;
 
                 Core::ProxyType<ActualElement> newItem;
                 Core::ProxyType<ActualElement>::template CreateMove(newItem, 0, *this, std::forward<Args>(args)...);
@@ -1693,7 +1709,7 @@ namespace WPEFramework {
 
                     // Make sure the return value is already "accounted" for otherwise the copy of the
                     // element into the map will trigger the "last" on list reference.
-                    result = Core::ProxyType<PROXYELEMENT>(std::move(newItem));
+                    result = Core::ProxyType<ACTUALOBJECT>(std::move(newItem));
 
                     _lock.Lock();
 
