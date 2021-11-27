@@ -112,11 +112,11 @@ namespace Core {
 
     static uint32_t WeekFromString(const string& buffer, const uint8_t delimeter, const bool fromName, uint8_t& wday) {
         uint32_t index = 0;
-        SkipLeadingSpaces(buffer.c_str(), buffer.size(), index);
+        SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
         string weekDayName = buffer.substr(index, buffer.find_first_of(delimeter, index));
         if (weekDayName.size() > 0) {
             wday = (fromName ? WeekFromName(weekDayName.c_str()) : (weekDayName.size() == 3) ? WeekFromAbbrevation(weekDayName.c_str()) : static_cast<uint8_t>(~0));
-            index += weekDayName.length() + 1;
+            index += static_cast<uint32_t>(weekDayName.length()) + 1;
         }
         return index;
     }
@@ -299,9 +299,9 @@ namespace Core {
                 index += MonthFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index), month);
 
                 if (month != static_cast<uint8_t>(~0)) {
-                    SkipLeadingSpaces(buffer.c_str(), buffer.size(), index);
+                    SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
 
-                    if (((index + 7) < buffer.size()) && ::isdigit(buffer[index]) == true) {
+                    if (((index + 7) < buffer.size()) && (::isdigit(buffer[index]) != 0)) {
                         // Now we should be on the day
                         day = static_cast<uint8_t>(buffer[index] - '0');
                         if (::isdigit(buffer[index + 1]) != 0) {
@@ -342,7 +342,7 @@ namespace Core {
         index += WeekFromString(buffer, ',', false, wday);
 
         if (wday != static_cast<uint8_t>(~0)) {
-           SkipLeadingSpaces(buffer.c_str(), buffer.size(), index);
+           SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
 
             if ((index + 14) < static_cast<uint32_t>(buffer.size())) {
                 // Now we should be on the day
@@ -374,7 +374,7 @@ namespace Core {
 
 
                                 // Seems like we have a valid time, let see if we need to change the timezone..
-                                SkipLeadingSpaces(buffer.c_str(), buffer.size(), index);
+                                SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
 
                                 if ((index + 2) < static_cast<uint32_t>(buffer.size())) {
                                     uint32_t value = (static_cast<uint8_t>(buffer[index + 0]) << 16) | (static_cast<uint8_t>(buffer[index + 1]) << 8) | (static_cast<uint8_t>(buffer[index + 2]) << 0);
@@ -409,7 +409,7 @@ namespace Core {
 
         if (wday != static_cast<uint8_t>(~0)) {
 
-            SkipLeadingSpaces(buffer.c_str(), buffer.size(), index);
+            SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
             if ((index + 14) <= static_cast<uint32_t>(buffer.size())) {
                 // Now we should be on the day
                 day = static_cast<uint8_t>(buffer[index] - '0');
@@ -439,7 +439,7 @@ namespace Core {
                                 (year != static_cast<uint8_t>(~0))) {
                                 bool localTime = true;
 
-                                SkipLeadingSpaces(buffer.c_str(), buffer.size(), index);
+                                SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
 
                                 if ((index + 2) < static_cast<uint32_t>(buffer.size())) {
                                     uint32_t value = (static_cast<uint8_t>(buffer[index + 0]) << 16) |
@@ -511,7 +511,7 @@ namespace Core {
                                             uint32_t length = (static_cast<uint32_t>(buffer.length() -
                                                               static_cast<size_t>((endptr - cbuffer) + 1)));
                                             miliseconds = NumberType<uint32_t>(TextFragment(&(endptr[1]), length)).Value();
-                                            length = NumberType<uint32_t>(TextFragment(&(endptr[1]), length)).Text().length();
+                                            length = static_cast<uint32_t>(NumberType<uint32_t>(TextFragment(&(endptr[1]), length)).Text().length());
                                             endptr += length + 1;
                                         } else {
                                             result = false;
