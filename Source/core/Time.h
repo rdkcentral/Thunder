@@ -26,10 +26,31 @@
 namespace WPEFramework {
 namespace Core {
 
-    class TimeAsLocal;
     class EXTERNAL Time {
 
+        friend class TimeAsLocal;
+
     public:
+        static constexpr uint32_t MilliSecondsPerSecond = 1000;
+        static constexpr uint32_t MicroSecondsPerMilliSecond = 1000;
+        static constexpr uint32_t NanoSecondsPerMicroSecond = 1000;
+        static constexpr uint32_t MicroSecondsPerSecond = MilliSecondsPerSecond * MicroSecondsPerMilliSecond;
+
+        // Start day of NTP time as days past the imaginary date 12/1/1 BC.
+        // (This is the beginning of the Christian Era, or BCE.)
+        static constexpr uint32_t DayNTPStarts = 693596;
+
+        // Start day of the UNIX epoch (1970-01-01), also counting from BCE
+        static constexpr uint32_t DayUNIXEpochStarts = 719163;
+
+        // Difference in Seconds between UNIX and NTP epoch (25567).
+        static constexpr uint32_t SecondsPerMinute = 60;
+        static constexpr uint32_t MinutesPerHour = 60;
+        static constexpr uint32_t HoursPerDay = 24;
+        static constexpr uint32_t SecondsPerHour = SecondsPerMinute * MinutesPerHour;
+        static constexpr uint32_t SecondsPerDay = SecondsPerHour * HoursPerDay;
+
+        static constexpr uint32_t NTPToUNIXSeconds = (DayUNIXEpochStarts - DayNTPStarts) * SecondsPerDay;
         static constexpr uint32_t TicksPerMillisecond = 1000;
 
 #ifdef __POSIX__
@@ -221,8 +242,6 @@ namespace Core {
         string ToISO8601() const;
         string ToISO8601(const bool localTime) const;
         string ToTimeOnly(const bool localTime) const;
-        TimeAsLocal ToLocal() const;
-        Time ToUTC() const;
 
         static Time Now();
         inline static bool FromString(const string& buffer, const bool localTime, Time& element)
@@ -305,6 +324,10 @@ namespace Core {
 #endif
 
     private:
+        Time ToLocal() const;
+        Time ToUTC() const;
+
+    private:
 #ifdef __WINDOWS__
         mutable SYSTEMTIME _time;
 #else
@@ -315,30 +338,170 @@ namespace Core {
 
     class EXTERNAL TimeAsLocal {
     public:
-        inline TimeAsLocal(const Time& time)
-            : _time(time)
-        {
-        }
-        inline TimeAsLocal(const TimeAsLocal& source)
-            : _time(source._time)
-        {
-        }
-        inline TimeAsLocal& operator=(const TimeAsLocal& RHS)
-        {
-            _time = RHS._time;
 
-            return (*this);
+        // creates a TimeAsLocal object with time stored in local time internally in stead of UTC as with the Time class
+        TimeAsLocal(const Time& time) : _time(time.ToLocal())
+        {
         }
+        TimeAsLocal& operator=(const Time& time)
+        {
+            _time = time.ToLocal();
+            return *this;
+        }
+
         TimeAsLocal() = default;
+        TimeAsLocal(const TimeAsLocal&) = default;
+        TimeAsLocal& operator=(const TimeAsLocal&) = default;
+
         ~TimeAsLocal() = default;
 
-        const Time& LocalTime() const
+        // returns a Time object that holds the UTC time again internally converted from the Local time in the TimeAsLocal
+        // instance this method is called upon
+        Time ToUTC() const 
+        {
+            return _time.ToUTC();
+        }
+
+        // operations
+        void ToString(string& text) const
+        {
+            _time.ToString(text, true);
+        }
+        const TCHAR* WeekDayName() const 
+        {
+            return _time.WeekDayName();
+        }
+        const TCHAR* MonthName() const
+        {
+            return _time.MonthName();
+        }
+        uint32_t MilliSeconds() const
+        {
+            return _time.MilliSeconds();
+        }
+        uint8_t Seconds() const
+        {
+            return _time.Seconds();
+        }
+        uint8_t Minutes() const
+        {
+            return _time.Minutes();
+        }
+        uint8_t Hours() const
+        {
+            return _time.Hours();
+        }
+        uint8_t Day() const
+        {
+            return _time.Day();
+        }
+        uint8_t Month() const
+        {
+            return _time.Month();
+        }
+        inline uint32_t Year() const
+        {
+            return _time.Year();
+        }
+        uint8_t DayOfWeek() const
+        {
+            return _time.DayOfWeek();
+        }
+        uint16_t DayOfYear() const
+        {
+            return _time.DayOfYear();
+        }
+        uint64_t NTPTime() const
+        {
+            return _time.NTPTime();
+        }
+        double JulianDate() const
+        {
+            return _time.JulianDate();
+        }
+        TimeAsLocal& Add(const uint32_t timeInMilliseconds)
+        {
+            uint64_t newTime = Ticks() + static_cast<uint64_t>(timeInMilliseconds) * Time::MilliSecondsPerSecond;
+            return (operator=(TimeAsLocal(newTime)));
+        }
+        TimeAsLocal& Sub(const uint32_t timeInMilliseconds)
+        {
+            uint64_t newTime = Ticks() - static_cast<uint64_t>(timeInMilliseconds) * Time::MilliSecondsPerSecond;
+            return (operator=(TimeAsLocal(newTime)));
+        }
+        // Time in microseconds!
+        uint64_t Ticks() const
+        {
+            return _time.Ticks();
+        }
+        string ToRFC1123() const
+        {
+            return _time.ToRFC1123(true);
+        }
+        string ToISO8601() const
+        {
+            return _time.ToISO8601(true);
+        }
+        string ToTimeOnly() const
+        {
+            return _time.ToTimeOnly(true);
+        }
+
+        // operators
+        bool operator<(const TimeAsLocal& rhs) const
+        {
+            return (_time < rhs._time);
+        }
+        bool operator<=(const TimeAsLocal& rhs) const
+        {
+            return (_time <= rhs._time);
+        }
+        bool operator>(const TimeAsLocal& rhs) const
+        {
+            return (_time > rhs._time);
+        }
+        bool operator>=(const TimeAsLocal& rhs) const
+        {
+            return (_time >= rhs._time);
+        }
+        inline bool operator==(const TimeAsLocal& rhs) const
+        {
+            return (_time == rhs._time);
+        }
+        inline bool operator!=(const TimeAsLocal& rhs) const
+        {
+            return (!(operator==(rhs)));
+        }
+        inline TimeAsLocal operator-(const TimeAsLocal& rhs) const
+        {
+            return TimeAsLocal(Ticks() - rhs.Ticks());
+        }
+        inline TimeAsLocal operator+(const Time& rhs) const
+        {
+            return TimeAsLocal(Ticks() + rhs.Ticks());
+        }
+        inline TimeAsLocal& operator-=(const TimeAsLocal& rhs)
+        {
+            return (operator=(TimeAsLocal(Ticks() - rhs.Ticks())));
+        }
+        inline TimeAsLocal& operator+=(const TimeAsLocal& rhs)
+        {
+            return (operator=(TimeAsLocal(Ticks() + rhs.Ticks())));
+        }
+
+        // just in case this is needed as a Time object but be carefull as it returns a Time with the Internal time in LOcalTime not UTC!
+        explicit operator Time&()
         {
             return _time;
         }
-        Time& LocalTime()
+        explicit operator const Time&() const 
         {
             return _time;
+        }
+
+    private:
+        TimeAsLocal(const uint64_t time) : _time(time)
+        {
         }
 
     private:

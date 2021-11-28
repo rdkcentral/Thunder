@@ -23,26 +23,6 @@
 
 namespace WPEFramework {
 namespace Core {
-    static constexpr uint32_t MilliSecondsPerSecond = 1000;
-    static constexpr uint32_t MicroSecondsPerMilliSecond = 1000;
-    static constexpr uint32_t NanoSecondsPerMicroSecond = 1000;
-    static constexpr uint32_t MicroSecondsPerSecond = MilliSecondsPerSecond * MicroSecondsPerMilliSecond;
-
-    // Start day of NTP time as days past the imaginary date 12/1/1 BC.
-    // (This is the beginning of the Christian Era, or BCE.)
-    static constexpr uint32_t DayNTPStarts = 693596;
-
-    // Start day of the UNIX epoch (1970-01-01), also counting from BCE
-    static constexpr uint32_t DayUNIXEpochStarts = 719163;
-
-    // Difference in Seconds between UNIX and NTP epoch (25567).
-    static constexpr uint32_t SecondsPerMinute = 60;
-    static constexpr uint32_t MinutesPerHour = 60;
-    static constexpr uint32_t HoursPerDay = 24;
-    static constexpr uint32_t SecondsPerHour = SecondsPerMinute * MinutesPerHour;
-    static constexpr uint32_t SecondsPerDay = SecondsPerHour * HoursPerDay;
-
-    static constexpr uint32_t NTPToUNIXSeconds = (DayUNIXEpochStarts - DayNTPStarts) * SecondsPerDay;
 
     static void SkipLeadingSpaces(const TCHAR buffer[], const uint8_t maxLength, uint32_t& index) {
         while ((index < maxLength) && (::isspace(buffer[index]) != 0)) {
@@ -690,20 +670,20 @@ namespace Core {
         }
     }
 
-    TimeAsLocal Time::ToLocal() const {
+    Time Time::ToLocal() const {
         FILETIME fileTime, localFileTime;
         SYSTEMTIME local;
         SystemTimeToFileTime(&_time, &fileTime);
         FileTimeToLocalFileTime(&fileTime, &localFileTime);
         FileTimeToSystemTime(&localFileTime, &local);
-        return (TimeAsLocal(Time(
+        return (Time(
             static_cast<uint16_t>(local.wYear), 
             static_cast<uint8_t>(local.wMonth),
             static_cast<uint8_t>(local.wDay),
             static_cast<uint8_t>(local.wHour),
             static_cast<uint8_t>(local.wMinute),
             static_cast<uint8_t>(local.wSecond),
-            static_cast<uint16_t>(local.wMilliseconds), false)));
+            static_cast<uint16_t>(local.wMilliseconds), false));
     }
 
     Time Time::ToUTC() const {
@@ -892,20 +872,20 @@ namespace Core {
         _ticks = (static_cast<uint64_t>(time.tv_sec) * MicroSecondsPerSecond) + (time.tv_nsec / NanoSecondsPerMicroSecond) + OffsetTicksForEpoch;
     }
 
-    TimeAsLocal Time::ToLocal() const {
+    Time Time::ToLocal() const {
         struct tm local = _time;
         time_t flatTime;
         flatTime = mktime(&local);
         localtime_r(&flatTime, &local);
 
-        return (TimeAsLocal(Time(
+        return (Time(
             static_cast<uint16_t>(local.tm_year + 1900),
             static_cast<uint8_t>(local.tm_mon + 1),
             static_cast<uint8_t>(local.tm_mday),
             static_cast<uint8_t>(local.tm_hour),
             static_cast<uint8_t>(local.tm_min),
             static_cast<uint8_t>(local.tm_sec),
-            0, false)));
+            0, false));
     }
 
     Time Time::ToUTC() const {

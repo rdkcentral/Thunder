@@ -25,10 +25,6 @@
 
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
-static constexpr uint32_t MilliSecondsPerSecond = 1000;
-static constexpr uint32_t MicroSecondsPerMilliSecond = 1000;
-static constexpr uint32_t MicroSecondsPerSecond = MilliSecondsPerSecond * MicroSecondsPerMilliSecond;
-
 
 int32_t GetMachineTimeDifference(const string& zone)
 {
@@ -1002,7 +998,7 @@ TEST(Core_Time, Ticks_withoutInterval)
     Core::Time time1 = Core::Time::Now();
     Core::Time time2 = Core::Time::Now();
     uint64_t diff = time2.Ticks() - time1.Ticks();
-    uint32_t intervalInSeconds = diff / MicroSecondsPerSecond;
+    uint32_t intervalInSeconds = diff / Time::MicroSecondsPerSecond;
     EXPECT_EQ(intervalInSeconds, static_cast<uint32_t>(0));
 }
 TEST(Core_Time, Ticks_withInterval)
@@ -1012,7 +1008,7 @@ TEST(Core_Time, Ticks_withInterval)
     sleep(givenIntervalInSeconds);
     Core::Time time2 = Core::Time::Now();
     uint64_t diff = time2.Ticks() - time1.Ticks();
-    uint32_t intervalInSeconds = diff / MicroSecondsPerSecond;
+    uint32_t intervalInSeconds = diff / Time::MicroSecondsPerSecond;
     EXPECT_EQ(intervalInSeconds, givenIntervalInSeconds);
 }
 TEST(Core_Time, AddTime)
@@ -1071,11 +1067,11 @@ TEST(Core_Time, NTPTime)
 {
     Time time(1970, 1, 1, 0, 0, 0, 1, true);
     const uint64_t ntpTime = time.NTPTime();
-    EXPECT_GE(ntpTime/MicroSecondsPerSecond, static_cast<uint32_t>(0));
+    EXPECT_GE(ntpTime/Time::MicroSecondsPerSecond, static_cast<uint32_t>(0));
     uint32_t timeTobeAdded = 4;
     time.Add(timeTobeAdded);
 
-    EXPECT_GE(time.NTPTime()/MicroSecondsPerSecond, ntpTime/MicroSecondsPerSecond + (timeTobeAdded * 4));
+    EXPECT_GE(time.NTPTime()/Time::MicroSecondsPerSecond, ntpTime/Time::MicroSecondsPerSecond + (timeTobeAdded * 4));
 }
 TEST(Core_Time, DifferenceFromGMTSeconds)
 {
@@ -1224,18 +1220,12 @@ TEST(Core_Time, ToLocal)
 
     Time time(2002, 5, 10, 11, 30, 23, 21, false);
     EXPECT_EQ(time.IsLocalTime(), false);
-    TimeAsLocal localTime(time.ToLocal());
-    EXPECT_EQ(localTime.LocalTime().IsLocalTime(), false);
 
     time = Time(1970, 5, 32, 24, 30, 23, 21, false);
     EXPECT_EQ(time.IsLocalTime(), false);
-    localTime = time.ToLocal();
-    EXPECT_EQ(localTime.LocalTime().IsLocalTime(), false);
 
     time = Time(1970, 5, 32, 24, 30, 23, 21, true);
     EXPECT_EQ(time.IsLocalTime(), true);
-    localTime = time.ToLocal();
-    EXPECT_EQ(localTime.LocalTime().IsLocalTime(), false);
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
@@ -1247,20 +1237,14 @@ TEST(Core_Time, ToUTC)
     tzset();
     Time time(2002, 5, 10, 11, 30, 23, 21, true);
     EXPECT_EQ(time.IsLocalTime(), true);
-    time.ToUTC();
-    EXPECT_EQ(time.IsLocalTime(), true);
 
     time = Time(1970, 5, 32, 24, 30, 23, 21, false);
-    EXPECT_EQ(time.IsLocalTime(), false);
-    time.ToUTC();
     EXPECT_EQ(time.IsLocalTime(), false);
     
     // Check time difference after unset time zone
     setenv("TZ", "UTC", 1);
     tzset();
     time = Time(2002, 5, 10, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.IsLocalTime(), false);
-    time.ToUTC();
     EXPECT_EQ(time.IsLocalTime(), false);
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
