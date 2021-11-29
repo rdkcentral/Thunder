@@ -1337,7 +1337,7 @@ def __Tokenize(contents,log = None):
                     else:
                         raise ParserError("invalid @stubgen tag")
                 if _find("@stop", token):
-                    skipMode = True
+                    skipmode = True
                 if _find("@omit", token):
                     tagtokens.append("@OMIT")
                 if _find("@stub", token):

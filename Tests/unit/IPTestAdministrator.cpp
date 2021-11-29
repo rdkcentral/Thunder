@@ -83,6 +83,11 @@ IPTestAdministrator::~IPTestAdministrator()
    waitpid(m_childPid, 0, 0);
 }
 
+void IPTestAdministrator::WaitForChildCompletion()
+{
+   waitpid(m_childPid, 0, 0);
+}
+
 bool IPTestAdministrator::Sync(const std::string & str)
 {
    bool result = false;
