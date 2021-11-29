@@ -305,12 +305,11 @@ namespace Tests {
         signedFile.CreateFileData('B', 25);
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
-        uint8_t context[Crypto::MD5::ContextLength()];
-        memset(context, 0, Crypto::MD5::ContextLength());
-        memcpy(context, md5.CurrentContext(), Crypto::MD5::ContextLength());
+        // Read current context from MD5 handle
+        Crypto::MD5::Context context = md5.CurrentContext();
 
         md5.Reset();
-        md5.LoadContext(context);
+        md5.Load(context);
 
         uint8_t thunderHMAC[Crypto::HASH_MD5];
         memcpy(thunderHMAC, md5.Result(), Crypto::HASH_MD5);
@@ -328,13 +327,11 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from MD5 handle
-        uint8_t context[Crypto::MD5::ContextLength()];
-        memset(context, 0, Crypto::MD5::ContextLength());
-        memcpy(context, md5.CurrentContext(), Crypto::MD5::ContextLength());
+        Crypto::MD5::Context context = md5.CurrentContext();
 
         // Load context back to MD5 handle
         md5.Reset();
-        md5.LoadContext(context);
+        md5.Load(context);
 
         // Append some more data to file
         int64_t start = signedFile.FileSize();
@@ -357,23 +354,20 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from MD5 handle
-        uint8_t context[Crypto::MD5::ContextLength()];
-        memset(context, 0, Crypto::MD5::ContextLength());
-        memcpy(context, md5.CurrentContext(), Crypto::MD5::ContextLength());
+        Crypto::MD5::Context context = md5.CurrentContext();
 
         // Save current context to file
-        uint32_t contextLength = Crypto::MD5::ContextLength();
-        signedFile.CreateHashFile("hashFile", context, contextLength);
+        uint32_t contextLength = sizeof(Crypto::MD5::Context);
+        signedFile.CreateHashFile("hashFile", reinterpret_cast<uint8_t*>(&context), contextLength);
         signedFile.CloseHashFile();
 
         // Read back current context to memory
-        memset(context, 0, Crypto::MD5::ContextLength());
-        signedFile.ReadHashFile(context, contextLength);
+        signedFile.ReadHashFile(reinterpret_cast<uint8_t*>(&context), contextLength);
         signedFile.DestroyHashFile();
 
         // Load context back to MD5 handle
         md5.Reset();
-        md5.LoadContext(context);
+        md5.Load(context);
 
         // Append some more data to file
         uint8_t data[100];
@@ -431,12 +425,11 @@ namespace Tests {
         signedFile.CreateFileData('B', 25);
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
-        uint8_t context[Crypto::SHA1::ContextLength()];
-        memset(context, 0, Crypto::SHA1::ContextLength());
-        memcpy(context, sha1.CurrentContext(), Crypto::SHA1::ContextLength());
+        // Read current context from SHA1 handle
+        Crypto::SHA1::Context context = sha1.CurrentContext();
 
         sha1.Reset();
-        sha1.LoadContext(context);
+        sha1.Load(context);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA1];
         memcpy(thunderHMAC, sha1.Result(), Crypto::HASH_SHA1);
@@ -454,13 +447,11 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from SHA1 handle
-        uint8_t context[Crypto::SHA1::ContextLength()];
-        memset(context, 0, Crypto::SHA1::ContextLength());
-        memcpy(context, sha1.CurrentContext(), Crypto::SHA1::ContextLength());
+        Crypto::SHA1::Context context = sha1.CurrentContext();
 
         // Load context back to SHA1 handle
         sha1.Reset();
-        sha1.LoadContext(context);
+        sha1.Load(context);
 
         // Append some more data to file
         int64_t start = signedFile.FileSize();
@@ -483,23 +474,20 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from SHA1 handle
-        uint8_t context[Crypto::SHA1::ContextLength()];
-        memset(context, 0, Crypto::SHA1::ContextLength());
-        memcpy(context, sha1.CurrentContext(), Crypto::SHA1::ContextLength());
+        Crypto::SHA1::Context context = sha1.CurrentContext();
 
         // Save current context to file
-        uint32_t contextLength = Crypto::SHA1::ContextLength();
-        signedFile.CreateHashFile("hashFile", context, contextLength);
+        uint32_t contextLength = sizeof(Crypto::SHA1::Context);
+        signedFile.CreateHashFile("hashFile", reinterpret_cast<uint8_t*>(&context), contextLength);
         signedFile.CloseHashFile();
 
         // Read back current context to memory
-        memset(context, 0, Crypto::SHA1::ContextLength());
-        signedFile.ReadHashFile(context, contextLength);
+        signedFile.ReadHashFile(reinterpret_cast<uint8_t*>(&context), contextLength);
         signedFile.DestroyHashFile();
 
         // Load context back to SHA1 handle
         sha1.Reset();
-        sha1.LoadContext(context);
+        sha1.Load(context);
 
         // Append some more data to file
         uint8_t data[100];
@@ -557,12 +545,11 @@ namespace Tests {
         signedFile.CreateFileData('B', 25);
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
-        uint8_t context[Crypto::SHA224::ContextLength()];
-        memset(context, 0, Crypto::SHA224::ContextLength());
-        memcpy(context, sha224.CurrentContext(), Crypto::SHA224::ContextLength());
+        // Read current context from SHA224 handle
+        Crypto::SHA256::Context context = sha224.CurrentContext();
 
         sha224.Reset();
-        sha224.LoadContext(context);
+        sha224.Load(context);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA224];
         memcpy(thunderHMAC, sha224.Result(), Crypto::HASH_SHA224);
@@ -580,13 +567,11 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from SHA224 handle
-        uint8_t context[Crypto::SHA224::ContextLength()];
-        memset(context, 0, Crypto::SHA224::ContextLength());
-        memcpy(context, sha224.CurrentContext(), Crypto::SHA224::ContextLength());
+        Crypto::SHA256::Context context = sha224.CurrentContext();
 
         // Load context back to SHA224 handle
         sha224.Reset();
-        sha224.LoadContext(context);
+        sha224.Load(context);
 
         // Append some more data to file
         int64_t start = signedFile.FileSize();
@@ -609,23 +594,20 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from SHA224 handle
-        uint8_t context[Crypto::SHA224::ContextLength()];
-        memset(context, 0, Crypto::SHA224::ContextLength());
-        memcpy(context, sha224.CurrentContext(), Crypto::SHA224::ContextLength());
+        Crypto::SHA256::Context context = sha224.CurrentContext();
 
         // Save current context to file
-        uint32_t contextLength = Crypto::SHA224::ContextLength();
-        signedFile.CreateHashFile("hashFile", context, contextLength);
+        uint32_t contextLength = sizeof(Crypto::SHA256::Context);
+        signedFile.CreateHashFile("hashFile", reinterpret_cast<uint8_t*>(&context), contextLength);
         signedFile.CloseHashFile();
 
         // Read back current context to memory
-        memset(context, 0, Crypto::SHA224::ContextLength());
-        signedFile.ReadHashFile(context, contextLength);
+        signedFile.ReadHashFile(reinterpret_cast<uint8_t*>(&context), contextLength);
         signedFile.DestroyHashFile();
 
         // Load context back to SHA224 handle
         sha224.Reset();
-        sha224.LoadContext(context);
+        sha224.Load(context);
 
         // Append some more data to file
         uint8_t data[100];
@@ -682,12 +664,11 @@ namespace Tests {
         signedFile.CreateFileData('B', 25);
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
-        uint8_t context[Crypto::SHA256::ContextLength()];
-        memset(context, 0, Crypto::SHA256::ContextLength());
-        memcpy(context, sha256.CurrentContext(), Crypto::SHA256::ContextLength());
+        // Read current context from SHA256 handle
+        Crypto::SHA256::Context context = sha256.CurrentContext();
 
         sha256.Reset();
-        sha256.LoadContext(context);
+        sha256.Load(context);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA256];
         memcpy(thunderHMAC, sha256.Result(), Crypto::HASH_SHA256);
@@ -705,13 +686,11 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from SHA256 handle
-        uint8_t context[Crypto::SHA256::ContextLength()];
-        memset(context, 0, Crypto::SHA256::ContextLength());
-        memcpy(context, sha256.CurrentContext(), Crypto::SHA256::ContextLength());
+        Crypto::SHA256::Context context = sha256.CurrentContext();
 
         // Load context back to SHA256 handle
         sha256.Reset();
-        sha256.LoadContext(context);
+        sha256.Load(context);
 
         // Append some more data to file
         int64_t start = signedFile.FileSize();
@@ -735,23 +714,20 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from SHA256 handle
-        uint8_t context[Crypto::SHA256::ContextLength()];
-        memset(context, 0, Crypto::SHA256::ContextLength());
-        memcpy(context, sha256.CurrentContext(), Crypto::SHA256::ContextLength());
+        Crypto::SHA256::Context context = sha256.CurrentContext();
 
         // Save current context to file
-        uint32_t contextLength = Crypto::SHA256::ContextLength();
-        signedFile.CreateHashFile("hashFile", context, contextLength);
+        uint32_t contextLength = sizeof(Crypto::SHA256::Context);
+        signedFile.CreateHashFile("hashFile", reinterpret_cast<uint8_t*>(&context), contextLength);
         signedFile.CloseHashFile();
 
         // Read back current context to memory
-        memset(context, 0, Crypto::SHA256::ContextLength());
-        signedFile.ReadHashFile(context, contextLength);
+        signedFile.ReadHashFile(reinterpret_cast<uint8_t*>(&context), contextLength);
         signedFile.DestroyHashFile();
 
         // Load context back to SHA256 handle
         sha256.Reset();
-        sha256.LoadContext(context);
+        sha256.Load(context);
 
         // Append some more data to file
         uint8_t data[100];
@@ -809,12 +785,11 @@ namespace Tests {
         signedFile.CreateFileData('B', 25);
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
-        uint8_t context[Crypto::SHA384::ContextLength()];
-        memset(context, 0, Crypto::SHA384::ContextLength());
-        memcpy(context, sha384.CurrentContext(), Crypto::SHA384::ContextLength());
+        // Read current context from SHA384 handle
+        Crypto::SHA512::Context context = sha384.CurrentContext();
 
         sha384.Reset();
-        sha384.LoadContext(context);
+        sha384.Load(context);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA384];
         memcpy(thunderHMAC, sha384.Result(), Crypto::HASH_SHA384);
@@ -832,13 +807,11 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from SHA384 handle
-        uint8_t context[Crypto::SHA384::ContextLength()];
-        memset(context, 0, Crypto::SHA384::ContextLength());
-        memcpy(context, sha384.CurrentContext(), Crypto::SHA384::ContextLength());
+        Crypto::SHA512::Context context = sha384.CurrentContext();
 
         // Load context back to SHA384 handle
         sha384.Reset();
-        sha384.LoadContext(context);
+        sha384.Load(context);
 
         // Append some more data to file
         int64_t start = signedFile.FileSize();
@@ -861,23 +834,20 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from SHA384 handle
-        uint8_t context[Crypto::SHA384::ContextLength()];
-        memset(context, 0, Crypto::SHA384::ContextLength());
-        memcpy(context, sha384.CurrentContext(), Crypto::SHA384::ContextLength());
+        Crypto::SHA512::Context context = sha384.CurrentContext();
 
         // Save current context to file
-        uint32_t contextLength = Crypto::SHA384::ContextLength();
-        signedFile.CreateHashFile("hashFile", context, contextLength);
+        uint32_t contextLength = sizeof(Crypto::SHA512::Context);
+        signedFile.CreateHashFile("hashFile", reinterpret_cast<uint8_t*>(&context), contextLength);
         signedFile.CloseHashFile();
 
         // Read back current context to memory
-        memset(context, 0, Crypto::SHA384::ContextLength());
-        signedFile.ReadHashFile(context, contextLength);
+        signedFile.ReadHashFile(reinterpret_cast<uint8_t*>(&context), contextLength);
         signedFile.DestroyHashFile();
 
         // Load context back to SHA384 handle
         sha384.Reset();
-        sha384.LoadContext(context);
+        sha384.Load(context);
 
         // Append some more data to file
         uint8_t data[100];
@@ -935,12 +905,10 @@ namespace Tests {
         signedFile.CreateFileData('B', 25);
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
-        uint8_t context[Crypto::SHA512::ContextLength()];
-        memset(context, 0, Crypto::SHA512::ContextLength());
-        memcpy(context, sha512.CurrentContext(), Crypto::SHA512::ContextLength());
+        Crypto::SHA512::Context context = sha512.CurrentContext();
 
         sha512.Reset();
-        sha512.LoadContext(context);
+        sha512.Load(context);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA512];
         memcpy(thunderHMAC, sha512.Result(), Crypto::HASH_SHA512);
@@ -958,13 +926,11 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from SHA512 handle
-        uint8_t context[Crypto::SHA512::ContextLength()];
-        memset(context, 0, Crypto::SHA512::ContextLength());
-        memcpy(context, sha512.CurrentContext(), Crypto::SHA512::ContextLength());
+        Crypto::SHA512::Context context = sha512.CurrentContext();
 
         // Load context back to SHA512 handle
         sha512.Reset();
-        sha512.LoadContext(context);
+        sha512.Load(context);
 
         // Append some more data to file
         int64_t start = signedFile.FileSize();
@@ -987,23 +953,20 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from SHA512 handle
-        uint8_t context[Crypto::SHA512::ContextLength()];
-        memset(context, 0, Crypto::SHA512::ContextLength());
-        memcpy(context, sha512.CurrentContext(), Crypto::SHA512::ContextLength());
+        Crypto::SHA512::Context context = sha512.CurrentContext();
 
         // Save current context to file
-        uint32_t contextLength = Crypto::SHA512::ContextLength();
-        signedFile.CreateHashFile("hashFile", context, contextLength);
+        uint32_t contextLength = sizeof(Crypto::SHA512::Context);
+        signedFile.CreateHashFile("hashFile", reinterpret_cast<uint8_t*>(&context), contextLength);
         signedFile.CloseHashFile();
 
         // Read back current context to memory
-        memset(context, 0, Crypto::SHA512::ContextLength());
-        signedFile.ReadHashFile(context, contextLength);
+        signedFile.ReadHashFile(reinterpret_cast<uint8_t*>(&context), contextLength);
         signedFile.DestroyHashFile();
 
         // Load context back to SHA512 handle
         sha512.Reset();
-        sha512.LoadContext(context);
+        sha512.Load(context);
 
         // Append some more data to file
         uint8_t data[100];

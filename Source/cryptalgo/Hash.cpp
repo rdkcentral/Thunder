@@ -1148,14 +1148,14 @@ namespace Crypto {
         // Since this implementation uses little endian byte ordering and SHA uses big endian,
         // reverse all the bytes when copying the final h to the output hash.
         for (i = 0; i < 4; ++i) {
-            _context.hash[i]      = (_context.h[0] >> (24 - i * 8)) & 0x000000ff;
-            _context.hash[i + 4]  = (_context.h[1] >> (24 - i * 8)) & 0x000000ff;
-            _context.hash[i + 8]  = (_context.h[2] >> (24 - i * 8)) & 0x000000ff;
-            _context.hash[i + 12] = (_context.h[3] >> (24 - i * 8)) & 0x000000ff;
-            _context.hash[i + 16] = (_context.h[4] >> (24 - i * 8)) & 0x000000ff;
-            _context.hash[i + 20] = (_context.h[5] >> (24 - i * 8)) & 0x000000ff;
-            _context.hash[i + 24] = (_context.h[6] >> (24 - i * 8)) & 0x000000ff;
-            _context.hash[i + 28] = (_context.h[7] >> (24 - i * 8)) & 0x000000ff;
+            _context.block[i]      = (_context.h[0] >> (24 - i * 8)) & 0x000000ff;
+            _context.block[i + 4]  = (_context.h[1] >> (24 - i * 8)) & 0x000000ff;
+            _context.block[i + 8]  = (_context.h[2] >> (24 - i * 8)) & 0x000000ff;
+            _context.block[i + 12] = (_context.h[3] >> (24 - i * 8)) & 0x000000ff;
+            _context.block[i + 16] = (_context.h[4] >> (24 - i * 8)) & 0x000000ff;
+            _context.block[i + 20] = (_context.h[5] >> (24 - i * 8)) & 0x000000ff;
+            _context.block[i + 24] = (_context.h[6] >> (24 - i * 8)) & 0x000000ff;
+            _context.block[i + 28] = (_context.h[7] >> (24 - i * 8)) & 0x000000ff;
         }
     }
 

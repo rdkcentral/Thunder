@@ -112,11 +112,6 @@ namespace Crypto {
         {
             Reset();
         }
-        inline SHA1(const uint8_t context[])
-        {
-            Reset();
-            LoadContext(context);
-        }
         inline SHA1(const uint8_t message_array[], const uint16_t length)
         {
             Reset();
@@ -131,19 +126,14 @@ namespace Crypto {
         static const EnumHashType Type = HASH_SHA1;
         static const uint8_t Length = 20;
 
-        static uint32_t ContextLength()
+        inline const Context& CurrentContext() const
         {
-            return static_cast<uint32_t>(sizeof(_context));
+            return _context;
         }
 
-        inline const uint8_t* CurrentContext() const
+        inline void Load(const Context& context)
         {
-            return reinterpret_cast<const uint8_t*>(&_context);
-        }
-
-        inline void LoadContext(const uint8_t context[])
-        {
-            memcpy(&_context, context, sizeof(_context));
+            _context = context;
             ASSERT(_context.messageIndex <= sizeof(_context.messageBlock));
         }
 
@@ -162,6 +152,7 @@ namespace Crypto {
             _computed = false;
             _corrupted = false;
         }
+
         const uint8_t* Result()
         {
             const uint8_t* result = nullptr;
@@ -243,11 +234,6 @@ namespace Crypto {
         {
             Reset();
         }
-        inline MD5(const uint8_t context[])
-        {
-            Reset();
-            LoadContext(context);
-        }
         inline MD5(const uint8_t message_array[], const uint16_t length)
         {
             Reset();
@@ -262,19 +248,14 @@ namespace Crypto {
         static const EnumHashType Type = HASH_MD5;
         static const uint8_t Length = 16;
 
-        static uint32_t ContextLength()
+        inline const Context& CurrentContext() const
         {
-            return static_cast<uint32_t>(sizeof(_context));
+            return _context;
         }
 
-        inline const uint8_t* CurrentContext() const
+        inline void Load(const Context& context)
         {
-            return reinterpret_cast<const uint8_t*>(&_context);
-        }
-
-        inline void LoadContext(const uint8_t context[])
-        {
-            memcpy(&_context, context, sizeof(_context));
+            _context = context;
         }
 
         void Reset()
@@ -330,7 +311,6 @@ namespace Crypto {
             uint32_t len;
             uint32_t h[8];
             uint8_t block[2 * (512 / 8)];
-            uint8_t hash[HASH_SHA256];
         } Context;
 
     private:
@@ -342,12 +322,6 @@ namespace Crypto {
         {
             Reset();
         }
-        inline SHA256(const uint8_t context[])
-        {
-            Reset();
-            LoadContext(context);
-        }
-
         inline SHA256(const uint8_t message_array[], const uint16_t length)
         {
             Reset();
@@ -363,19 +337,14 @@ namespace Crypto {
         static const EnumHashType Type = HASH_SHA256;
         static const uint8_t Length = 32;
 
-        static uint32_t ContextLength()
+        inline const Context& CurrentContext() const
         {
-            return static_cast<uint32_t>(sizeof(_context));
+            return _context;
         }
 
-        inline const uint8_t* CurrentContext() const
+        inline void Load(const Context& context)
         {
-            return reinterpret_cast<const uint8_t*>(&_context);
-        }
-
-        inline void LoadContext(const uint8_t context[])
-        {
-            memcpy(&_context, context, sizeof(_context));
+            _context = context;
             ASSERT(_context.len <= sizeof(_context.block));
         }
 
@@ -386,7 +355,7 @@ namespace Crypto {
                 CloseContext();
             }
 
-            return &_context.hash[0];
+            return &_context.block[0];
         }
 
         /*
@@ -415,12 +384,6 @@ namespace Crypto {
         {
             Reset();
         }
-        inline SHA224(const uint8_t context[])
-        {
-            Reset();
-            LoadContext(context);
-        }
-
         inline SHA224(const uint8_t message_array[], const uint16_t length)
         {
             Reset();
@@ -436,19 +399,14 @@ namespace Crypto {
         static const EnumHashType Type = HASH_SHA224;
         static const uint8_t Length = 28;
 
-        static uint32_t ContextLength()
+        inline const SHA256::Context& CurrentContext() const
         {
-            return static_cast<uint32_t>(sizeof(_context));
+            return _context;
         }
 
-        inline const uint8_t* CurrentContext() const
+        inline void Load(SHA256::Context& context)
         {
-            return reinterpret_cast<const uint8_t*>(&_context);
-        }
-
-        inline void LoadContext(const uint8_t context[])
-        {
-            memcpy(&_context, context, sizeof(_context));
+            _context = context;
             ASSERT(_context.len <= sizeof(_context.block));
         }
 
@@ -483,8 +441,8 @@ namespace Crypto {
         typedef struct {
             uint32_t tot_len;
             uint32_t len;
-            uint8_t block[2 * (1024 / 8)];
             uint64_t h[8];
+            uint8_t block[2 * (1024 / 8)];
         } Context;
 
     private:
@@ -496,12 +454,6 @@ namespace Crypto {
         {
             Reset();
         }
-        inline SHA512(const uint8_t context[])
-        {
-            Reset();
-            LoadContext(context);
-        }
-
         inline SHA512(const uint8_t message_array[], const uint16_t length)
         {
             Reset();
@@ -517,19 +469,14 @@ namespace Crypto {
         static const EnumHashType Type = HASH_SHA512;
         static const uint8_t Length = 64;
 
-        static uint32_t ContextLength()
+        inline const Context& CurrentContext() const
         {
-            return static_cast<uint32_t>(sizeof(_context));
+            return _context;
         }
 
-        inline const uint8_t* CurrentContext() const
+        inline void Load(const Context& context)
         {
-            return reinterpret_cast<const uint8_t*>(&_context);
-        }
-
-        inline void LoadContext(const uint8_t context[])
-        {
-            memcpy(&_context, context, sizeof(_context));
+            _context = context;
             ASSERT(_context.len <= sizeof(_context.block));
         }
 
@@ -569,11 +516,6 @@ namespace Crypto {
         {
             Reset();
         }
-        inline SHA384(const uint8_t context[])
-        {
-            Reset();
-            LoadContext(context);
-        }
         inline SHA384(const uint8_t message_array[], const uint16_t length)
         {
             Reset();
@@ -589,19 +531,14 @@ namespace Crypto {
         static const EnumHashType Type = HASH_SHA384;
         static const uint8_t Length = 48;
 
-        static uint32_t ContextLength()
+        inline const SHA512::Context& CurrentContext() const
         {
-            return static_cast<uint32_t>(sizeof(_context));
+            return _context;
         }
 
-        inline const uint8_t* CurrentContext() const
+        inline void Load(const SHA512::Context& context)
         {
-            return reinterpret_cast<const uint8_t*>(&_context);
-        }
-
-        inline void LoadContext(const uint8_t context[])
-        {
-            memcpy(&_context, context, sizeof(_context));
+            _context = context;
             ASSERT(_context.len <= sizeof(_context.block));
         }
 
