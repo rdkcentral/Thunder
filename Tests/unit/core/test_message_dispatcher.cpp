@@ -36,19 +36,32 @@ namespace Tests {
         Core_MessageDispatcher()
             : _dispatcher(nullptr)
             , _identifier(_T("md"))
+            , _basePath(_T("/tmp/TestMessageDispatcher"))
         {
+            //if directory exists remove it to clear data (eg. sockets) that can remain after previous run
+            if (Core::File(_basePath).IsDirectory()) {
+                Core::Directory(_basePath.c_str()).Destroy(false);
+            }
+            //create directory
+            if (!Core::Directory(_basePath.c_str()).CreatePath()) {
+                std::cerr << "Unable to create MessageDispatcher directory" << std::endl;
+            }
+        }
+
+        ~Core_MessageDispatcher()
+        {
+            if (Core::File(_basePath).IsDirectory()) {
+                Core::Directory(_basePath.c_str()).Destroy(false);
+            }
         }
 
         void SetUp() override
         {
-            _dispatcher.reset(new Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE>(_identifier, _instanceId, true));
+            _dispatcher.reset(new Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE>(_identifier, _instanceId, true, _basePath));
         }
         void TearDown() override
         {
             _dispatcher.reset(nullptr);
-            //delete buffers from disk
-            string deleteCommand = Core::Format("rm -f %s* ", _identifier.c_str());
-            system(deleteCommand.c_str());
 
             ++_instanceId;
 
@@ -57,7 +70,7 @@ namespace Tests {
 
         std::unique_ptr<Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE>> _dispatcher;
         string _identifier;
-        uint32_t _dataBufferSize;
+        string _basePath;
 
         static int _instanceId;
     };
@@ -170,7 +183,7 @@ namespace Tests {
     TEST_F(Core_MessageDispatcher, WriteAndReadDataAreEqualInDiffrentProcesses)
     {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
-            Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false);
+            Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false, this->_basePath);
 
             uint8_t readData[4];
             uint16_t readLength = sizeof(readData);
@@ -241,7 +254,7 @@ namespace Tests {
     TEST_F(Core_MessageDispatcher, DISABLED_ReaderShouldWaitUntillRingBells)
     {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
-            Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false);
+            Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false, this->_basePath);
 
             uint8_t readData[4];
             uint16_t readLength = sizeof(readData);
@@ -327,7 +340,7 @@ namespace Tests {
     TEST_F(Core_MessageDispatcher, DISABLED_WriteAndReadMetaDataAreEqualInDiffrentProcesses)
     {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
-            Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false);
+            Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false, this->_basePath);
             uint8_t testData[2] = { 13, 37 };
             //testAdmin.Sync("setup");
 
