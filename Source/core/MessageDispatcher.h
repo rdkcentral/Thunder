@@ -181,19 +181,20 @@ namespace Core {
          * @param identifier name of the instance
          * @param instanceId number of the instance
          * @param initialize should dispatcher be initialzied. Should be done only once, on the server side
-         * @param baseDirectory where to place all the related files. If initialize=true everything will be deleted in this directory and directory will be recreated
+         * @param baseDirectory where to place all the necessary files. This directory should exist before creating this class.
          */
         MessageDispatcherType(const string& identifier, const uint32_t instanceId, bool initialize, string baseDirectory = _T("/tmp/MessageDispatcher"))
-            : _filenames(PrepareFilenames(initialize, baseDirectory, identifier, instanceId))
+            : _filenames(PrepareFilenames(baseDirectory, identifier, instanceId))
             // clang-format off
             , _dataBuffer(_filenames.doorBell, _filenames.data,  Core::File::USER_READ    | 
-                                                                             Core::File::USER_WRITE   | 
-                                                                             Core::File::USER_EXECUTE | 
-                                                                             Core::File::GROUP_READ   |
-                                                                             Core::File::GROUP_WRITE  |
-                                                                             Core::File::OTHERS_READ  |
-                                                                             Core::File::OTHERS_WRITE | 
-                                                                             Core::File::SHAREABLE, DATA_SIZE + sizeof(Core::CyclicBuffer::control), true)
+                                                                 Core::File::USER_WRITE   | 
+                                                                 Core::File::USER_EXECUTE | 
+                                                                 Core::File::GROUP_READ   |
+                                                                 Core::File::GROUP_WRITE  |
+                                                                 Core::File::OTHERS_READ  |
+                                                                 Core::File::OTHERS_WRITE | 
+                                                                 Core::File::SHAREABLE, 
+                                                                 initialize ? DATA_SIZE + sizeof(Core::CyclicBuffer::control) : 0, true)
             // clang-format on
             , _metaDataBuffer(initialize ? new MetaDataBuffer<METADATA_SIZE>(_filenames.metaData) : nullptr)
         {
@@ -373,8 +374,7 @@ namespace Core {
         /**
         * @brief Prepare filenames for MessageDispatcher
         * 
-        * @param initialize should the base directory be created (if it exists everythiing inside will be deleted)
-        * @param baseDirectory where are those filed stored
+        * @param baseDirectory where are those filed stored. This directory should already exist.
         * @param identifier identifer of the instance
         * @param instanceId number of instance
         * @return std::tuple<string, string, string> 
@@ -382,18 +382,9 @@ namespace Core {
         *         1 - dataFileName
         *         2 - metaDataFilename
         */
-        static Filenames PrepareFilenames(const bool initialize, const string& baseDirectory, const string& identifier, const uint32_t instanceId)
+        static Filenames PrepareFilenames(const string& baseDirectory, const string& identifier, const uint32_t instanceId)
         {
-            if (initialize) {
-                if (Core::File(baseDirectory).IsDirectory()) {
-                    //if directory exists remove it to clear data (eg. sockets) that can remain after previous creation
-                    Core::Directory(baseDirectory.c_str()).Destroy(false);
-                }
-
-                if (!Core::Directory(baseDirectory.c_str()).CreatePath()) {
-                    TRACE_L1(_T("Unable to create MessageDispatcher directory"));
-                }
-            }
+            ASSERT(Core::File(baseDirectory).IsDirectory() && "Directory for message files does not exist");
 
             string doorBellFilename = Core::Format("%s/%s.doorbell", baseDirectory.c_str(), identifier.c_str());
             string dataFilename = Core::Format("%s/%s.%d.data", baseDirectory.c_str(), identifier.c_str(), instanceId);
