@@ -588,7 +588,6 @@ namespace Core {
         {
             ASSERT(a_Index < m_Current);
             ASSERT(m_List != nullptr);
-            ASSERT(a_Entry.IsValid() != false);
             ASSERT(m_List[a_Index] != nullptr);
 
             // Remember the item on the location, It should be a relaes and an add for
@@ -607,10 +606,6 @@ namespace Core {
                 // Kill the entry, (again dirty but quick).
                 memmove(&(m_List[a_Index]), &(m_List[a_Index + 1]), (m_Current - a_Index) * sizeof(IReferenceCounted*));
             }
-	    else if (a_Index == m_Current)
-            {
-                m_List[m_Current] = nullptr;
-            }
 
 #ifdef __DEBUG__
             m_List[m_Current] = nullptr;
@@ -621,7 +616,6 @@ namespace Core {
         {
             ASSERT(a_Index < m_Current);
             ASSERT(m_List != nullptr);
-            ASSERT(a_Entry.IsValid() != false);
             ASSERT(m_List[a_Index] != nullptr);
 
             // If it is taken out, release the reference that we took during the add
@@ -635,10 +629,6 @@ namespace Core {
             if (a_Index < m_Current) {
                 // Kill the entry, (again dirty but quick).
                 memmove(&(m_List[a_Index]), &(m_List[a_Index + 1]), (m_Current - a_Index) * sizeof(IReferenceCounted*));
-            }
-	    else if (a_Index == m_Current)
-            {
-                m_List[m_Current] = nullptr;
             }
 
 #ifdef __DEBUG__
