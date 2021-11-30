@@ -21,6 +21,19 @@
 #include "Number.h"
 #include <time.h>
 
+namespace {
+    // Start day of NTP time as days past the imaginary date 12/1/1 BC.
+    // (This is the beginning of the Christian Era, or BCE.)
+    constexpr uint32_t DayNTPStarts = 693596;
+
+    // Start day of the UNIX epoch (1970-01-01), also counting from BCE
+    constexpr uint32_t DayUNIXEpochStarts = 719163;
+
+    constexpr uint32_t NTPToUNIXSeconds = (DayUNIXEpochStarts - DayNTPStarts) * WPEFramework::Core::Time::SecondsPerDay;
+
+}
+
+
 namespace WPEFramework {
 namespace Core {
 
@@ -785,7 +798,7 @@ namespace Core {
             _stprintf(buffer, _T("%02d:%02d:%02d"), converted.Hours(), converted.Minutes(), converted.Seconds());
         } else
 #pragma warning(disable : 4996)
-            _stprintf(buffer, _T("]%02d:%02d:%02d"), Hours(), Minutes(), Seconds());
+            _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(), Minutes(), Seconds());
 #pragma warning(default : 4996)
 
         string value(buffer);

@@ -36,13 +36,6 @@ namespace Core {
         static constexpr uint32_t NanoSecondsPerMicroSecond = 1000;
         static constexpr uint32_t MicroSecondsPerSecond = MilliSecondsPerSecond * MicroSecondsPerMilliSecond;
 
-        // Start day of NTP time as days past the imaginary date 12/1/1 BC.
-        // (This is the beginning of the Christian Era, or BCE.)
-        static constexpr uint32_t DayNTPStarts = 693596;
-
-        // Start day of the UNIX epoch (1970-01-01), also counting from BCE
-        static constexpr uint32_t DayUNIXEpochStarts = 719163;
-
         // Difference in Seconds between UNIX and NTP epoch (25567).
         static constexpr uint32_t SecondsPerMinute = 60;
         static constexpr uint32_t MinutesPerHour = 60;
@@ -50,7 +43,6 @@ namespace Core {
         static constexpr uint32_t SecondsPerHour = SecondsPerMinute * MinutesPerHour;
         static constexpr uint32_t SecondsPerDay = SecondsPerHour * HoursPerDay;
 
-        static constexpr uint32_t NTPToUNIXSeconds = (DayUNIXEpochStarts - DayNTPStarts) * SecondsPerDay;
         static constexpr uint32_t TicksPerMillisecond = 1000;
 
 #ifdef __POSIX__
@@ -365,7 +357,7 @@ namespace Core {
         // operations
         void ToString(string& text) const
         {
-            _time.ToString(text, true);
+            _time.ToString(text, false);
         }
         const TCHAR* WeekDayName() const 
         {
@@ -436,15 +428,15 @@ namespace Core {
         }
         string ToRFC1123() const
         {
-            return _time.ToRFC1123(true);
+            return _time.ToRFC1123(false);
         }
         string ToISO8601() const
         {
-            return _time.ToISO8601(true);
+            return _time.ToISO8601(false);
         }
         string ToTimeOnly() const
         {
-            return _time.ToTimeOnly(true);
+            return _time.ToTimeOnly(false);
         }
 
         // operators
