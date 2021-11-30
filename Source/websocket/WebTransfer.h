@@ -300,11 +300,17 @@ namespace Web {
 
             return (result);
         }
-        inline uint64_t FileSize() const {
+        inline uint64_t FileSize() const
+        {
             return (_fileBody.Core::File::Size());
         }
-        inline uint64_t Transferred () const {
+        inline uint64_t Transferred() const
+        {
             return (_fileBody.Position());
+        }
+        inline void LoadHash(const Crypto::Context& context)
+        {
+            _LoadHash(context);
         }
         inline void Close()
         {
@@ -425,6 +431,23 @@ namespace Web {
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             return (true);
+        }
+
+        IS_MEMBER_AVAILABLE(Hash, hasLoadHash);
+
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<hasLoadHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, void>::type
+        _LoadHash(const Crypto::Context& context)
+        {
+            typename ACTUALFILEBODY::HashType& hash = const_cast<typename ACTUALFILEBODY::HashType&>(_fileBody.Hash());
+            hash.Reset();
+            hash.Load(context);
+        }
+
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<!hasLoadHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, void>::type
+        _LoadHash(const Crypto::Context& context)
+        {
         }
 
     private:

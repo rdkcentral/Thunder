@@ -90,8 +90,99 @@ namespace Crypto {
         HASH_SHA384 = 48,
         HASH_SHA512 = 64
     };
+    typedef struct EXTERNAL Context {
+        uint64_t length;
+        uint64_t h[8];
+        uint32_t index;
+        uint8_t block[2 * (1024 / 8)];
+    } Context;
+
+    class EXTERNAL MD5 {
+    public:
+        typedef Crypto::Context Context;
+
+    private:
+        MD5(const MD5&);
+        MD5& operator=(const MD5&);
+
+    public:
+        inline MD5()
+        {
+            Reset();
+        }
+        inline MD5(const uint8_t message_array[], const uint16_t length)
+        {
+            Reset();
+
+            Input(message_array, length);
+        }
+        inline ~MD5()
+        {
+        }
+
+    public:
+        static const EnumHashType Type = HASH_MD5;
+        static const uint8_t Length = 16;
+
+        inline const Context& CurrentContext() const
+        {
+            return _context;
+        }
+
+        inline void Load(const Context& context)
+        {
+            _context = context;
+        }
+
+        void Reset()
+        {
+            ::memset(&_context, 0, sizeof(Context));
+
+            _context.h[0] = 0x67452301;
+            _context.h[1] = 0xefcdab89;
+            _context.h[2] = 0x98badcfe;
+            _context.h[3] = 0x10325476;
+
+            _context.length = 0;
+
+            _computed = false;
+            _corrupted = false;
+        }
+        const uint8_t* Result()
+        {
+            const uint8_t* result = nullptr;
+
+            if (_corrupted == false) {
+                if (_computed == false) {
+                    CloseContext();
+                }
+                result = &(_context.block[0]);
+            }
+
+            return result;
+        }
+
+        /*
+         *  Provide input to MD5
+         */
+        void Input(const uint8_t message_array[], const uint16_t length);
+
+        MD5& operator<<(const uint8_t message_array[]);
+        MD5& operator<<(const uint8_t message_element);
+
+    private:
+        void CloseContext();
+
+    private:
+        Context _context;
+        bool _corrupted;
+        bool _computed;
+    };
 
     class EXTERNAL SHA1 {
+    public:
+        typedef Crypto::Context Context;
+
     private:
         SHA1(const SHA1&);
         SHA1& operator=(const SHA1&);
@@ -115,21 +206,32 @@ namespace Crypto {
         static const EnumHashType Type = HASH_SHA1;
         static const uint8_t Length = 20;
 
+        inline const Context& CurrentContext() const
+        {
+            return _context;
+        }
+
+        inline void Load(const Context& context)
+        {
+            _context = context;
+            ASSERT(_context.index <= sizeof(_context.block));
+        }
+
         void Reset()
         {
-            _lengthLow = 0;
-            _lengthHigh = 0;
-            _messageIndex = 0;
+            _context.length = 0;
+            _context.index = 0;
 
-            H[0] = 0x67452301;
-            H[1] = 0xEFCDAB89;
-            H[2] = 0x98BADCFE;
-            H[3] = 0x10325476;
-            H[4] = 0xC3D2E1F0;
+            _context.h[0] = 0x67452301;
+            _context.h[1] = 0xEFCDAB89;
+            _context.h[2] = 0x98BADCFE;
+            _context.h[3] = 0x10325476;
+            _context.h[4] = 0xC3D2E1F0;
 
             _computed = false;
             _corrupted = false;
         }
+
         const uint8_t* Result()
         {
             const uint8_t* result = nullptr;
@@ -139,7 +241,7 @@ namespace Crypto {
                     PadMessage();
                 }
 
-                result = &_messageBlock[0];
+                result = &_context.block[0];
             }
 
             return result;
@@ -187,105 +289,16 @@ namespace Crypto {
             return ((word << bits) & 0xFFFFFFFF) | ((word & 0xFFFFFFFF) >> (32 - bits));
         }
 
-        uint32_t H[5]; // Message digest buffers
-
-        uint32_t _lengthLow; // Message length in bits
-        uint32_t _lengthHigh; // Message length in bits
-
-        uint8_t _messageBlock[64]; // 512-bit message blocks
-        uint32_t _messageIndex; // Index into message block array
-
         mutable bool _computed; // Is the digest computed?
         bool _corrupted; // Is the message digest corruped?
-    };
 
-    class EXTERNAL MD5 {
-    private:
-        MD5(const MD5&);
-        MD5& operator=(const MD5&);
-
-    public:
-        typedef struct {
-            uint32_t lo, hi;
-            uint32_t a, b, c, d;
-            uint8_t buffer[64];
-            uint32_t block[16];
-        } Context;
-
-    public:
-        inline MD5()
-        {
-            Reset();
-        }
-        inline MD5(const uint8_t message_array[], const uint16_t length)
-        {
-            Reset();
-
-            Input(message_array, length);
-        }
-        inline ~MD5()
-        {
-        }
-
-    public:
-        static const EnumHashType Type = HASH_MD5;
-        static const uint8_t Length = 16;
-
-        void Reset()
-        {
-            ::memset(&_context, 0, sizeof(MD5::Context));
-
-            _context.a = 0x67452301;
-            _context.b = 0xefcdab89;
-            _context.c = 0x98badcfe;
-            _context.d = 0x10325476;
-
-            _context.lo = 0;
-            _context.hi = 0;
-
-            _computed = false;
-            _corrupted = false;
-        }
-        const uint8_t* Result()
-        {
-            const uint8_t* result = nullptr;
-
-            if (_corrupted == false) {
-                if (_computed == false) {
-                    CloseContext();
-                }
-                result = &(_context.buffer[0]);
-            }
-
-            return result;
-        }
-
-        /*
-         *  Provide input to MD5
-         */
-        void Input(const uint8_t message_array[], const uint16_t length);
-
-        MD5& operator<<(const uint8_t message_array[]);
-        MD5& operator<<(const uint8_t message_element);
-
-    private:
-        void CloseContext();
-
-    private:
         Context _context;
-        bool _corrupted;
-        bool _computed;
     };
+
 
     class EXTERNAL SHA256 {
     public:
-        typedef struct {
-            uint64_t tot_len;
-            uint32_t len;
-            uint32_t h[8];
-            uint8_t block[2 * (512 / 8)];
-            uint8_t hash[HASH_SHA256];
-        } Context;
+        typedef Crypto::Context Context;
 
     private:
         SHA256(const SHA256&);
@@ -310,6 +323,18 @@ namespace Crypto {
         void Reset();
         static const EnumHashType Type = HASH_SHA256;
         static const uint8_t Length = 32;
+
+        inline const Context& CurrentContext() const
+        {
+            return _context;
+        }
+
+        inline void Load(const Context& context)
+        {
+            _context = context;
+            ASSERT(_context.index <= sizeof(_context.block));
+        }
+
         inline const uint8_t* Result()
         {
             if (_computed == false) {
@@ -317,7 +342,7 @@ namespace Crypto {
                 CloseContext();
             }
 
-            return &_context.hash[0];
+            return &_context.block[0];
         }
 
         /*
@@ -337,6 +362,9 @@ namespace Crypto {
     };
 
     class EXTERNAL SHA224 {
+    public:
+        typedef Crypto::Context Context;
+
     private:
         SHA224(const SHA224&);
         SHA224& operator=(const SHA224&);
@@ -360,6 +388,18 @@ namespace Crypto {
         void Reset();
         static const EnumHashType Type = HASH_SHA224;
         static const uint8_t Length = 28;
+
+        inline const Context& CurrentContext() const
+        {
+            return _context;
+        }
+
+        inline void Load(const Context& context)
+        {
+            _context = context;
+            ASSERT(_context.index <= sizeof(_context.block));
+        }
+
         inline const uint8_t* Result()
         {
             if (_computed == false) {
@@ -382,18 +422,13 @@ namespace Crypto {
         void CloseContext();
 
     private:
-        SHA256::Context _context;
+        Context _context;
         mutable bool _computed; // Is the digest computed?
     };
 
     class EXTERNAL SHA512 {
     public:
-        typedef struct {
-            uint32_t tot_len;
-            uint32_t len;
-            uint8_t block[2 * (1024 / 8)];
-            uint64_t h[8];
-        } Context;
+        typedef Crypto::Context Context;
 
     private:
         SHA512(const SHA512&);
@@ -418,6 +453,18 @@ namespace Crypto {
         void Reset();
         static const EnumHashType Type = HASH_SHA512;
         static const uint8_t Length = 64;
+
+        inline const Context& CurrentContext() const
+        {
+            return _context;
+        }
+
+        inline void Load(const Context& context)
+        {
+            _context = context;
+            ASSERT(_context.index <= sizeof(_context.block));
+        }
+
         inline const uint8_t* Result()
         {
             if (_computed == false) {
@@ -445,6 +492,9 @@ namespace Crypto {
     };
 
     class EXTERNAL SHA384 {
+    public:
+        typedef Crypto::Context Context;
+
     private:
         SHA384(const SHA384&);
         SHA384& operator=(const SHA384&);
@@ -468,6 +518,18 @@ namespace Crypto {
         void Reset();
         static const EnumHashType Type = HASH_SHA384;
         static const uint8_t Length = 48;
+
+        inline const Context& CurrentContext() const
+        {
+            return _context;
+        }
+
+        inline void Load(const Context& context)
+        {
+            _context = context;
+            ASSERT(_context.index <= sizeof(_context.block));
+        }
+
         inline const uint8_t* Result()
         {
             if (_computed == false) {
@@ -490,7 +552,7 @@ namespace Crypto {
         void CloseContext();
 
     private:
-        SHA512::Context _context;
+        Context _context;
         mutable bool _computed; // Is the digest computed?
     };
 }
