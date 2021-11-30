@@ -394,7 +394,7 @@ namespace Crypto {
             return _context;
         }
 
-        inline void Load(Context& context)
+        inline void Load(const Context& context)
         {
             _context = context;
             ASSERT(_context.index <= sizeof(_context.block));
