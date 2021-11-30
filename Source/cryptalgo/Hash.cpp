@@ -224,10 +224,10 @@ namespace Crypto {
 
         ptr = (const unsigned char*)data;
 
-        a = ctx->a;
-        b = ctx->b;
-        c = ctx->c;
-        d = ctx->d;
+        a = static_cast<uint32_t>(ctx->h[0]);
+        b = static_cast<uint32_t>(ctx->h[1]);
+        c = static_cast<uint32_t>(ctx->h[2]);
+        d = static_cast<uint32_t>(ctx->h[3]);
 
         do {
             saved_a = a;
@@ -315,10 +315,10 @@ namespace Crypto {
             ptr += 64;
         } while (size -= 64);
 
-        ctx->a = a;
-        ctx->b = b;
-        ctx->c = c;
-        ctx->d = d;
+        ctx->h[0] = a;
+        ctx->h[1] = b;
+        ctx->h[2] = c;
+        ctx->h[3] = d;
 
         return ptr;
     }
@@ -404,22 +404,22 @@ namespace Crypto {
 
         body(&_context, _context.block, 64);
 
-        _context.block[0] = _context.a;
-        _context.block[1] = _context.a >> 8;
-        _context.block[2] = _context.a >> 16;
-        _context.block[3] = _context.a >> 24;
-        _context.block[4] = _context.b;
-        _context.block[5] = _context.b >> 8;
-        _context.block[6] = _context.b >> 16;
-        _context.block[7] = _context.b >> 24;
-        _context.block[8] = _context.c;
-        _context.block[9] = _context.c >> 8;
-        _context.block[10] = _context.c >> 16;
-        _context.block[11] = _context.c >> 24;
-        _context.block[12] = _context.d;
-        _context.block[13] = _context.d >> 8;
-        _context.block[14] = _context.d >> 16;
-        _context.block[15] = _context.d >> 24;
+        _context.block[0] = static_cast<uint32_t>(_context.h[0]);
+        _context.block[1] = static_cast<uint32_t>(_context.h[0]) >> 8;
+        _context.block[2] = static_cast<uint32_t>(_context.h[0]) >> 16;
+        _context.block[3] = static_cast<uint32_t>(_context.h[0]) >> 24;
+        _context.block[4] = static_cast<uint32_t>(_context.h[1]);
+        _context.block[5] = static_cast<uint32_t>(_context.h[1]) >> 8;
+        _context.block[6] = static_cast<uint32_t>(_context.h[1]) >> 16;
+        _context.block[7] = static_cast<uint32_t>(_context.h[1]) >> 24;
+        _context.block[8] = static_cast<uint32_t>(_context.h[2]);
+        _context.block[9] = static_cast<uint32_t>(_context.h[2]) >> 8;
+        _context.block[10] = static_cast<uint32_t>(_context.h[2]) >> 16;
+        _context.block[11] = static_cast<uint32_t>(_context.h[2]) >> 24;
+        _context.block[12] = static_cast<uint32_t>(_context.h[3]);
+        _context.block[13] = static_cast<uint32_t>(_context.h[3]) >> 8;
+        _context.block[14] = static_cast<uint32_t>(_context.h[3]) >> 16;
+        _context.block[15] = static_cast<uint32_t>(_context.h[3]) >> 24;
 
         /*
          * Combine lower and higher portion of length to single field

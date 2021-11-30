@@ -94,7 +94,6 @@ namespace Crypto {
         uint64_t length;
         uint64_t h[8];
         uint32_t index;
-        uint32_t a, b, c, d;
         uint8_t block[2 * (1024 / 8)];
     } Context;
 
@@ -139,10 +138,10 @@ namespace Crypto {
         {
             ::memset(&_context, 0, sizeof(Context));
 
-            _context.a = 0x67452301;
-            _context.b = 0xefcdab89;
-            _context.c = 0x98badcfe;
-            _context.d = 0x10325476;
+            _context.h[0] = 0x67452301;
+            _context.h[1] = 0xefcdab89;
+            _context.h[2] = 0x98badcfe;
+            _context.h[3] = 0x10325476;
 
             _context.length = 0;
 
