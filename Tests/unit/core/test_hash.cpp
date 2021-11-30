@@ -546,7 +546,7 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from SHA224 handle
-        Crypto::SHA256::Context context = sha224.CurrentContext();
+        Crypto::SHA1::Context context = sha224.CurrentContext();
 
         sha224.Reset();
         sha224.Load(context);
@@ -567,7 +567,7 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from SHA224 handle
-        Crypto::SHA256::Context context = sha224.CurrentContext();
+        Crypto::SHA224::Context context = sha224.CurrentContext();
 
         // Load context back to SHA224 handle
         sha224.Reset();
@@ -594,10 +594,10 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from SHA224 handle
-        Crypto::SHA256::Context context = sha224.CurrentContext();
+        Crypto::SHA224::Context context = sha224.CurrentContext();
 
         // Save current context to file
-        uint32_t contextLength = sizeof(Crypto::SHA256::Context);
+        uint32_t contextLength = sizeof(Crypto::SHA224::Context);
         signedFile.CreateHashFile("hashFile", reinterpret_cast<uint8_t*>(&context), contextLength);
         signedFile.CloseHashFile();
 
@@ -786,7 +786,7 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from SHA384 handle
-        Crypto::SHA512::Context context = sha384.CurrentContext();
+        Crypto::SHA384::Context context = sha384.CurrentContext();
 
         sha384.Reset();
         sha384.Load(context);
@@ -807,7 +807,7 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from SHA384 handle
-        Crypto::SHA512::Context context = sha384.CurrentContext();
+        Crypto::SHA384::Context context = sha384.CurrentContext();
 
         // Load context back to SHA384 handle
         sha384.Reset();
@@ -834,10 +834,10 @@ namespace Tests {
         EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Core::ERROR_NONE);
 
         // Read current context from SHA384 handle
-        Crypto::SHA512::Context context = sha384.CurrentContext();
+        Crypto::SHA384::Context context = sha384.CurrentContext();
 
         // Save current context to file
-        uint32_t contextLength = sizeof(Crypto::SHA512::Context);
+        uint32_t contextLength = sizeof(Crypto::SHA384::Context);
         signedFile.CreateHashFile("hashFile", reinterpret_cast<uint8_t*>(&context), contextLength);
         signedFile.CloseHashFile();
 

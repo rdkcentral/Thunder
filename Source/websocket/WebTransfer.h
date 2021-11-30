@@ -308,9 +308,9 @@ namespace Web {
         {
             return (_fileBody.Position());
         }
-        inline void LoadHashContext(const uint8_t context[])
+        inline void LoadHash(Crypto::Context& context)
         {
-            _LoadHashContext(context);
+            _LoadHash(context);
         }
         inline void Close()
         {
@@ -437,16 +437,16 @@ namespace Web {
 
         template < typename ACTUALFILEBODY = FILEBODY>
         inline typename Core::TypeTraits::enable_if<hasLoadHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, void>::type
-        _LoadHashContext(const uint8_t context[])
+        _LoadHash(Crypto::Context& context)
         {
             typename ACTUALFILEBODY::HashType& hash = const_cast<typename ACTUALFILEBODY::HashType&>(_fileBody.Hash());
             hash.Reset();
-            hash.LoadContext(context);
+            hash.Load(context);
         }
 
         template < typename ACTUALFILEBODY = FILEBODY>
         inline typename Core::TypeTraits::enable_if<!hasLoadHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, void>::type
-        _LoadHashHash(const uint8_t context[])
+        _LoadHash(Crypto::Context& context)
         {
         }
 
