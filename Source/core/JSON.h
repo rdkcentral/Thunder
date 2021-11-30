@@ -1981,7 +1981,7 @@ namespace Core {
 
                     if ((_flagsAndCounters & QuoteFoundBit) == 0) {
                         // Right-trim the non-string value, it's always left-trimmed already
-                        _value.erase(std::find_if(_value.rbegin(), _value.rend(), [](const unsigned char c) { return (!std::isspace(c)); }).base(), _value.end());
+                        _value.erase(std::find_if(_value.rbegin(), _value.rend(), [](const unsigned char ch) { return (!std::isspace(ch)); }).base(), _value.end());
                     }
                 }
 
