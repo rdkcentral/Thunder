@@ -611,8 +611,8 @@ namespace Core {
 #endif
             }
             else {
-#ifndef LITTLE_ENDIAN_PLATFORM
-                SetNumberLittleEndianPlatform(offset, number);
+#ifdef LITTLE_ENDIAN_PLATFORM
+                SetNumberBigEndianPlatform(offset, number);
 #else
                 SetNumberLittleEndianPlatform(offset, number);
 #endif
@@ -660,7 +660,7 @@ namespace Core {
         template <typename TYPENAME>
         inline TYPENAME GetNumberBigEndianPlatform(const SIZE_CONTEXT offset) const
         {
-            TYPENAME result = 0;
+            TYPENAME result =static_cast<TYPENAME>(0);
 
             // If the sizeof > 1, the alignment could be wrong. Assume the worst, always copy !!!
             const uint8_t* source = &(_data[offset]);
@@ -698,7 +698,7 @@ namespace Core {
 #endif
             }
             else {
-#ifndef LITTLE_ENDIAN_PLATFORM
+#ifdef LITTLE_ENDIAN_PLATFORM
                 value = GetNumberBigEndianPlatform<TYPENAME>(offset);
 #else
                 value = GetNumberLittleEndianPlatform<TYPENAME>(offset);
