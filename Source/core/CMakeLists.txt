@@ -143,6 +143,7 @@ set(PUBLIC_HEADERS
         Module.h
         CallsignTLS.h
         TokenizedStringList.h
+        MessageDispatcher.h
         )
 
 # non-buildable interface target to carry the definitions
