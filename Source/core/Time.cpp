@@ -44,40 +44,136 @@ namespace Core {
 
     static constexpr uint32_t NTPToUNIXSeconds = (DayUNIXEpochStarts - DayNTPStarts) * SecondsPerDay;
 
-    static uint8_t MonthFromString(const TCHAR entry[])
+    static void SkipLeadingSpaces(const TCHAR buffer[], const uint8_t maxLength, uint32_t& index) {
+        while ((index < maxLength) && (::isspace(buffer[index]) != 0)) {
+            index++;
+        }
+        return;
+    }
+
+    static uint8_t WeekFromName(const TCHAR entry[])
     {
         assert(nullptr != entry);
+        uint8_t day = static_cast<uint8_t>(~0);
         // Case sensitive quick compare :-)
-        uint32_t value = (static_cast<uint8_t>(entry[0]) << 16) | (static_cast<uint8_t>(entry[1]) << 8) | (static_cast<uint8_t>(entry[2]) << 0);
 
-        switch (value) {
-        case 'J' << 16 | 'a' << 8 | 'n':
-            return (1);
-        case 'F' << 16 | 'e' << 8 | 'b':
-            return (2);
-        case 'M' << 16 | 'a' << 8 | 'r':
-            return (3);
-        case 'A' << 16 | 'p' << 8 | 'r':
-            return (4);
-        case 'M' << 16 | 'a' << 8 | 'y':
-            return (5);
-        case 'J' << 16 | 'u' << 8 | 'n':
-            return (6);
-        case 'J' << 16 | 'u' << 8 | 'l':
-            return (7);
-        case 'A' << 16 | 'u' << 8 | 'g':
-            return (8);
-        case 'S' << 16 | 'e' << 8 | 'p':
-            return (9);
-        case 'O' << 16 | 'c' << 8 | 't':
-            return (10);
-        case 'N' << 16 | 'o' << 8 | 'v':
-            return (11);
-        case 'D' << 16 | 'e' << 8 | 'c':
-            return (12);
-        default:
-            return (static_cast<uint8_t>(~0));
+        if (strcmp(entry, "Sunday") == 0) {
+            day = (0);
+        } else if (strcmp(entry, "Monday") == 0) {
+            day = (1);
+        } else if (strcmp(entry, "Tuesday") == 0) {
+            day = (2);
+        } else if (strcmp(entry, "Wednesday") == 0) {
+            day = (3);
+        } else if (strcmp(entry, "Thursday") == 0) {
+            day = (4);
+        } else if (strcmp(entry, "Friday") == 0) {
+            day = (5);
+        } else if (strcmp(entry, "Saturday") == 0) {
+           day = (6);
         }
+        return (day);
+    }
+
+    static uint8_t WeekFromAbbrevation(const TCHAR entry[])
+    {
+        assert(nullptr != entry);
+        uint8_t day = static_cast<uint8_t>(~0);
+        // Case sensitive quick compare :-)
+
+        uint32_t value = (static_cast<uint8_t>(entry[0]) << 16) | (static_cast<uint8_t>(entry[1]) << 8) | (static_cast<uint8_t>(entry[2]) << 0);
+        switch (value) {
+        case 'S' << 16 | 'u' << 8 | 'n':
+            day = (0);
+            break;
+        case 'M' << 16 | 'o' << 8 | 'n':
+            day = (1);
+            break;
+        case 'T' << 16 | 'u' << 8 | 'e':
+            day = (2);
+            break;
+        case 'W' << 16 | 'e' << 8 | 'd':
+            day = (3);
+            break;
+        case 'T' << 16 | 'h' << 8 | 'u':
+            day = (4);
+            break;
+        case 'F' << 16 | 'r' << 8 | 'i':
+            day = (5);
+            break;
+        case 'S' << 16 | 'a' << 8 | 't':
+            day = (6);
+            break;
+        default:
+            break;
+        }
+        return (day);
+    }
+
+    static uint32_t WeekFromString(const string& buffer, const uint8_t delimeter, const bool fromName, uint8_t& wday) {
+        uint32_t index = 0;
+        SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
+        string weekDayName = buffer.substr(index, buffer.find_first_of(delimeter, index));
+        if (weekDayName.size() > 0) {
+            wday = (fromName ? WeekFromName(weekDayName.c_str()) : (weekDayName.size() == 3) ? WeekFromAbbrevation(weekDayName.c_str()) : static_cast<uint8_t>(~0));
+            index += static_cast<uint32_t>(weekDayName.length()) + 1;
+        }
+        return index;
+    }
+
+    static uint32_t MonthFromString(const TCHAR entry[], const uint8_t maxLength, uint8_t& month)
+    {
+        assert(nullptr != entry);
+        uint32_t index = 0;
+        SkipLeadingSpaces(entry, maxLength, index);
+        // Case sensitive quick compare :-)
+        if ((index + 3) < maxLength) {
+            uint32_t value = (static_cast<uint8_t>(entry[index]) << 16) | (static_cast<uint8_t>(entry[index + 1]) << 8) | (static_cast<uint8_t>(entry[index + 2]) << 0);
+            index += 3;
+
+            switch (value) {
+            case 'J' << 16 | 'a' << 8 | 'n':
+                month = (1);
+                break;
+            case 'F' << 16 | 'e' << 8 | 'b':
+                month = (2);
+                break;
+            case 'M' << 16 | 'a' << 8 | 'r':
+                month = (3);
+                break;
+            case 'A' << 16 | 'p' << 8 | 'r':
+                month = (4);
+                break;
+            case 'M' << 16 | 'a' << 8 | 'y':
+                month = (5);
+                break;
+            case 'J' << 16 | 'u' << 8 | 'n':
+                month = (6);
+                break;
+            case 'J' << 16 | 'u' << 8 | 'l':
+                month = (7);
+                break;
+            case 'A' << 16 | 'u' << 8 | 'g':
+                month = (8);
+                break;
+            case 'S' << 16 | 'e' << 8 | 'p':
+                month = (9);
+                break;
+            case 'O' << 16 | 'c' << 8 | 't':
+                month = (10);
+                break;
+            case 'N' << 16 | 'o' << 8 | 'v':
+                month = (11);
+                break;
+            case 'D' << 16 | 'e' << 8 | 'c':
+                month = (12);
+                break;
+            default:
+                month = (static_cast<uint8_t>(~0));
+                break;
+            }
+        }
+        return index;
     }
 
     static uint32_t YearFromString(const TCHAR entry[], const uint8_t maxLength, uint16_t& year)
@@ -86,11 +182,7 @@ namespace Core {
 
         uint32_t index = 0;
 
-        // Last but not least, lets get the year..
-        // Find first digit
-        while ((index < maxLength) && (::isdigit(entry[index]) == 0)) {
-            index++;
-        }
+        SkipLeadingSpaces(entry, maxLength, index);
 
         // If we have at least two digits
         if (((index + 1) < maxLength) && (::isdigit(entry[index]) != 0) && (::isdigit(entry[index + 1]) != 0)) {
@@ -117,15 +209,12 @@ namespace Core {
     {
         assert(nullptr != entry);
 
-        uint8_t index = 0;
+        uint32_t index = 0;
 
-        // Find first digit
-        while ((index < maxLength) && (::isdigit(entry[index]) == 0)) {
-            index++;
-        }
+        SkipLeadingSpaces(entry, maxLength, index);
 
         // Do we have hh:mm:ss or h:mm:ss
-        if ((index + 5) < maxLength) {
+        if (((index + 5) <= maxLength) && (::isdigit(entry[index]) != 0)) {
             hours = static_cast<uint8_t>(entry[index] - '0');
             if (::isdigit(entry[index + 1]) != 0) {
                 // hh:mm:ss
@@ -193,50 +282,44 @@ namespace Core {
     bool Time::FromANSI(const string& buffer, const bool localTime)
     {
         // Sun Nov  6 08:49:37 1994       ; ANSI C's asctime() format [18]
-        uint32_t index = 4;
+        uint32_t index = 0;
         uint16_t year = static_cast<uint16_t>(~0);
         uint8_t month = static_cast<uint8_t>(~0);
         uint8_t day = static_cast<uint8_t>(~0);
         uint8_t hours = static_cast<uint8_t>(~0);
         uint8_t minutes = static_cast<uint8_t>(~0);
         uint8_t seconds = static_cast<uint8_t>(~0);
+        uint8_t wday = static_cast<uint8_t>(~0);
+        index += WeekFromString(buffer, ' ', false, wday);
 
-        // Skip space
-        while ((index < buffer.size()) && (::isspace(buffer[index]) != 0)) {
-            index++;
-        }
+        if (wday != static_cast<uint8_t>(~0)) {
 
-        // Now we should be on the Month
-        if ((index + 3) < static_cast<uint32_t>(buffer.size())) {
-            month = MonthFromString(&(buffer.c_str()[index]));
+            // Now we should be on the Month
+            if ((index + 3) < static_cast<uint32_t>(buffer.size())) {
+                index += MonthFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index), month);
 
-            if (month != static_cast<uint8_t>(~0)) {
-                index += 3;
+                if (month != static_cast<uint8_t>(~0)) {
+                    SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
 
-                // Skip Space
-                while ((index < static_cast<uint32_t>(buffer.size())) && (::isdigit(buffer[index]) == 0)) {
-                    index++;
-                }
+                    if (((index + 7) < buffer.size()) && (::isdigit(buffer[index]) != 0)) {
+                        // Now we should be on the day
+                        day = static_cast<uint8_t>(buffer[index] - '0');
+                        if (::isdigit(buffer[index + 1]) != 0) {
+                            day = static_cast<uint8_t>((day * 10) + (buffer[index + 1] - '0'));
+                            index += 2;
+                        } else {
+                            index++;
+                        }
 
-                if ((index + 7) < buffer.size()) {
-                    // Now we should be on the day
-                    day = static_cast<uint8_t>(buffer[index] - '0');
-                    if (::isdigit(buffer[index + 1]) != 0) {
-                        day = static_cast<uint8_t>((day * 10) + (buffer[index + 1] - '0'));
-                        index += 2;
-                    } else {
-                        index++;
-                    }
+                        index += TimeFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index), hours,
+                            minutes, seconds);
 
-                    index += TimeFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index), hours,
-                        minutes, seconds);
+                         index += YearFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index), year);
 
-                    index += YearFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index), year);
-
-                    if ((day != 0) && (seconds != static_cast<uint8_t>(~0)) && (year != static_cast<uint8_t>(~0))) {
-                        *this = Time(year, month, day, hours, minutes, seconds, 0, localTime);
-
-                        return (true);
+                        if ((day != 0) && (seconds != static_cast<uint8_t>(~0)) && (year != static_cast<uint16_t>(~0))) {
+                            *this = Time(year, month, day, hours, minutes, seconds, 0, localTime);
+                            return (true);
+                        }
                     }
                 }
             }
@@ -248,71 +331,60 @@ namespace Core {
     bool Time::FromRFC1123(const string& buffer)
     {
         // Sun, 06 Nov 1994 08:49:37 GMT  ; RFC 822, updated by RFC 1123
-        uint32_t index = 5;
+        uint32_t index = 0;
         uint16_t year = static_cast<uint16_t>(~0);
         uint8_t month = static_cast<uint8_t>(~0);
         uint8_t day = static_cast<uint8_t>(~0);
         uint8_t hours = static_cast<uint8_t>(~0);
         uint8_t minutes = static_cast<uint8_t>(~0);
         uint8_t seconds = static_cast<uint8_t>(~0);
+        uint8_t wday = static_cast<uint8_t>(~0);
+        index += WeekFromString(buffer, ',', false, wday);
 
-        // Find first digit
-        while ((index < buffer.size()) && (::isdigit(buffer[index]) == 0)) {
-            index++;
-        }
+        if (wday != static_cast<uint8_t>(~0)) {
+           SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
 
-        if ((index + 14) < static_cast<uint32_t>(buffer.size())) {
-            // Now we should be on the day
-            day = static_cast<uint8_t>(buffer[index] - '0');
-            if (::isdigit(buffer[index + 1]) != 0) {
-                // dd
-                day = static_cast<uint8_t>((day * 10) + (buffer[index + 1] - '0'));
-                index += 2;
-            } else {
-                // d
-                index++;
-            }
+            if ((index + 14) < static_cast<uint32_t>(buffer.size())) {
+                // Now we should be on the day
+                day = static_cast<uint8_t>(buffer[index] - '0');
+                if (::isdigit(buffer[index + 1]) != 0) {
+                    // dd
+                    day = static_cast<uint8_t>((day * 10) + (buffer[index + 1] - '0'));
+                    index += 2;
+                } else {
+                    // d
+                    index++;
+                }
 
-            // Skip spaces
-            while ((index < buffer.size()) && (::isspace(buffer[index]) != 0)) {
-                index++;
-            }
+                // Now we should be on the month
+                if ((index + 11) < buffer.size()) {
+                    index += MonthFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index), month);
 
-            // Now we should be on the month
-            if ((index + 11) < buffer.size()) {
-                month = MonthFromString(&(buffer.c_str()[index]));
+                    if (month != static_cast<uint8_t>(~0)) {
 
-                if (month != static_cast<uint8_t>(~0)) {
-                    index += 3;
+                        if ((index + 7) < buffer.size()) {
+                            index += YearFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index),
+                                year);
 
-                    // Find next digit
-                    while ((index < static_cast<uint32_t>(buffer.size())) && (::isdigit(buffer[index]) == 0)) {
-                        index++;
-                    }
+                            index += TimeFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index),
+                                hours, minutes, seconds);
 
-                    if ((index + 7) < buffer.size()) {
-                        index += YearFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index),
-                            year);
+                            if ((day != 0) && (seconds != static_cast<uint8_t>(~0)) && (year != static_cast<uint8_t>(~0))) {
+                                bool localTime = true;
 
-                        index += TimeFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index),
-                            hours, minutes, seconds);
 
-                        if ((day != 0) && (seconds != static_cast<uint8_t>(~0)) && (year != static_cast<uint8_t>(~0))) {
-                            bool localTime = true;
+                                // Seems like we have a valid time, let see if we need to change the timezone..
+                                SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
 
-                            // Seems like we have a valid time, let see if we need to change the timezone..
-                            while ((index < static_cast<uint32_t>(buffer.size())) && (::isspace(buffer[index]) != 0)) {
-                                index++;
+                                if ((index + 2) < static_cast<uint32_t>(buffer.size())) {
+                                    uint32_t value = (static_cast<uint8_t>(buffer[index + 0]) << 16) | (static_cast<uint8_t>(buffer[index + 1]) << 8) | (static_cast<uint8_t>(buffer[index + 2]) << 0);
+                                    localTime = (value != (('G' << 16) | ('M' << 8) | ('T'))) && (value != (('U' << 16) | ('T' << 8) | ('C')));
+                                }
+
+                                *this = Time(year, month, day, hours, minutes, seconds, 0, localTime);
+
+                                return (true);
                             }
-
-                            if ((index + 2) < static_cast<uint32_t>(buffer.size())) {
-                                uint32_t value = (static_cast<uint8_t>(buffer[index + 0]) << 16) | (static_cast<uint8_t>(buffer[index + 1]) << 8) | (static_cast<uint8_t>(buffer[index + 2]) << 0);
-                                localTime = (value != (('G' << 16) | ('M' << 8) | ('T'))) && (value != (('U' << 16) | ('T' << 8) | ('C')));
-                            }
-
-                            *this = Time(year, month, day, hours, minutes, seconds, 0, localTime);
-
-                            return (true);
                         }
                     }
                 }
@@ -325,59 +397,62 @@ namespace Core {
     bool Time::FromRFC1036(const string& buffer)
     {
         // Sunday, 06-Nov-94 08:49:37 GMT ; RFC 850, obsoleted by RFC 1036
-        uint32_t index = 6;
+        uint32_t index = 0;
         uint16_t year = static_cast<uint16_t>(~0);
         uint8_t month = static_cast<uint8_t>(~0);
         uint8_t day = static_cast<uint8_t>(~0);
         uint8_t hours = static_cast<uint8_t>(~0);
         uint8_t minutes = static_cast<uint8_t>(~0);
         uint8_t seconds = static_cast<uint8_t>(~0);
+        uint8_t wday = static_cast<uint8_t>(~0);
+        index += WeekFromString(buffer, ',', true, wday);
 
-        while ((index < buffer.size()) && (::isdigit(buffer[index]) == 0)) {
-            index++;
-        }
+        if (wday != static_cast<uint8_t>(~0)) {
 
-        // Now we should be on the Month
-        if ((index + 14) < static_cast<uint32_t>(buffer.size())) {
-            // Now we should be on the day
-            day = static_cast<uint8_t>(buffer[index] - '0');
-            if (::isdigit(buffer[index + 1]) != 0) {
-                day = static_cast<uint8_t>((day * 10) + (buffer[index + 1] - '0'));
-                index += 2;
-            } else {
-                index++;
-            }
+            SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
+            if ((index + 14) <= static_cast<uint32_t>(buffer.size())) {
+                // Now we should be on the day
+                day = static_cast<uint8_t>(buffer[index] - '0');
+                if (::isdigit(buffer[index + 1]) != 0) {
+                    day = static_cast<uint8_t>((day * 10) + (buffer[index + 1] - '0'));
+                    index += 2;
+                } else {
+                    index++;
+                }
 
-            if ((buffer[index]) == '-') {
-                ++index;
-                month = MonthFromString(&(buffer.c_str()[index]));
+                // Now we should be on the Month
+                if ((buffer[index]) == '-') {
+                    ++index;
+                    index += MonthFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index), month);
 
-                if ((month != static_cast<uint8_t>(~0)) && ((buffer[index + 3]) == '-')) {
-                    index += 4;
+                    if ((month != static_cast<uint8_t>(~0)) && ((buffer[index]) == '-')) {
+                        index += 1;
 
-                    if ((index + 7) < buffer.size()) {
-                        index += YearFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index),
-                            year);
+                        if ((index + 7) < buffer.size()) {
+                            index += YearFromString(&(buffer.c_str()[index]),
+                                     static_cast<uint8_t>(buffer.size() - index), year);
 
-                        index += TimeFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index),
-                            hours, minutes, seconds);
+                            index += TimeFromString(&(buffer.c_str()[index]),
+                                     static_cast<uint8_t>(buffer.size() - index), hours, minutes, seconds);
 
-                        if ((day != 0) && (seconds != static_cast<uint8_t>(~0)) && (year != static_cast<uint8_t>(~0))) {
-                            bool localTime = true;
+                            if ((day != 0) && (seconds != static_cast<uint8_t>(~0)) &&
+                                (year != static_cast<uint8_t>(~0))) {
+                                bool localTime = true;
 
-                            // Seems like we have a valid time, let see if we need to change the timezone..
-                            while ((index < static_cast<uint32_t>(buffer.size())) && (::isspace(buffer[index]) != 0)) {
-                                index++;
+                                SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
+
+                                if ((index + 2) < static_cast<uint32_t>(buffer.size())) {
+                                    uint32_t value = (static_cast<uint8_t>(buffer[index + 0]) << 16) |
+                                            (static_cast<uint8_t>(buffer[index + 1]) << 8) |
+                                            (static_cast<uint8_t>(buffer[index + 2]) << 0);
+                                    localTime = (value != (('G' << 16) | ('M' << 8) | ('T'))) &&
+                                                (value != (('U' << 16) | ('T' << 8) | ('C')));
+                                }
+
+                                *this = Time(year, month, day, hours, minutes, seconds, 0, localTime);
+
+                                return (true);
                             }
-
-                            if ((index + 2) < static_cast<uint32_t>(buffer.size())) {
-                                uint32_t value = (static_cast<uint8_t>(buffer[index + 0]) << 16) | (static_cast<uint8_t>(buffer[index + 1]) << 8) | (static_cast<uint8_t>(buffer[index + 2]) << 0);
-                                localTime = (value != (('G' << 16) | ('M' << 8) | ('T'))) && (value != (('U' << 16) | ('T' << 8) | ('C')));
-                            }
-
-                            *this = Time(year, month, day, hours, minutes, seconds, 0, localTime);
-
-                            return (true);
                         }
                     }
                 }
@@ -429,12 +504,15 @@ namespace Core {
                                 seconds = std::strtol(cbuffer + 17, &endptr, 10);
                                 if ((seconds >= 0) && (seconds <= 59)) {
                                     result = true; // date and time was OK
-
+ 
                                     // Handle fractions of seconds
                                     if (*endptr == '.') {
-                                        if (buffer.length() >= static_cast<size_t>((endptr - cbuffer) + 2)) {
-                                            uint32_t length = static_cast<uint32_t>(buffer.length() -  static_cast<size_t>((endptr - cbuffer) + 2));
+                                        if (buffer.length() >= static_cast<size_t>((endptr - cbuffer) + 1)) {
+                                            uint32_t length = (static_cast<uint32_t>(buffer.length() -
+                                                              static_cast<size_t>((endptr - cbuffer) + 1)));
                                             miliseconds = NumberType<uint32_t>(TextFragment(&(endptr[1]), length)).Value();
+                                            length = static_cast<uint32_t>(NumberType<uint32_t>(TextFragment(&(endptr[1]), length)).Text().length());
+                                            endptr += length + 1;
                                         } else {
                                             result = false;
                                         }
@@ -464,7 +542,9 @@ namespace Core {
                                                         // Nothing more expected after timezone offset
                                                         result = false;
                                                     } else {
-                                                        if ((timezoneHr >= -23) && (timezoneHr <= 23) && (timezoneMin >= 0) && (timezoneMin <= 59)){
+                                                        if ((timezoneHr >= -23) && (timezoneHr <= 23) &&
+                                                                 (timezoneMin >= 0) && (timezoneMin <= 59)) {
+
                                                             offset = (timezoneHr * 60) + timezoneMin;
                                                         } else {
                                                             result = false;
@@ -477,7 +557,8 @@ namespace Core {
                                             }
                                         }
                                         else if (*endptr != 'Z') {
-                                            // Nothing else except time offset or 'Z' is allowed at the end of the string
+                                            // Nothing else except time offset or 'Z' is allowed
+                                            // at the end of the string
                                             result = false;
                                         }
                                     }
@@ -609,20 +690,20 @@ namespace Core {
         }
     }
 
-    Time Time::ToLocal() const {
+    TimeAsLocal Time::ToLocal() const {
         FILETIME fileTime, localFileTime;
         SYSTEMTIME local;
         SystemTimeToFileTime(&_time, &fileTime);
         FileTimeToLocalFileTime(&fileTime, &localFileTime);
         FileTimeToSystemTime(&localFileTime, &local);
-        return (Time(
+        return (TimeAsLocal(Time(
             static_cast<uint16_t>(local.wYear), 
             static_cast<uint8_t>(local.wMonth),
             static_cast<uint8_t>(local.wDay),
             static_cast<uint8_t>(local.wHour),
             static_cast<uint8_t>(local.wMinute),
             static_cast<uint8_t>(local.wSecond),
-            static_cast<uint16_t>(local.wMilliseconds), false));
+            static_cast<uint16_t>(local.wMilliseconds), false)));
     }
 
     Time Time::ToUTC() const {
@@ -811,20 +892,20 @@ namespace Core {
         _ticks = (static_cast<uint64_t>(time.tv_sec) * MicroSecondsPerSecond) + (time.tv_nsec / NanoSecondsPerMicroSecond) + OffsetTicksForEpoch;
     }
 
-    Time Time::ToLocal() const {
+    TimeAsLocal Time::ToLocal() const {
         struct tm local = _time;
         time_t flatTime;
         flatTime = mktime(&local);
         localtime_r(&flatTime, &local);
 
-        return (Time(
+        return (TimeAsLocal(Time(
             static_cast<uint16_t>(local.tm_year + 1900),
             static_cast<uint8_t>(local.tm_mon + 1),
             static_cast<uint8_t>(local.tm_mday),
             static_cast<uint8_t>(local.tm_hour),
             static_cast<uint8_t>(local.tm_min),
             static_cast<uint8_t>(local.tm_sec),
-            0, false));
+            0, false)));
     }
 
     Time Time::ToUTC() const {
@@ -912,6 +993,9 @@ namespace Core {
 
         // Calculate ticks..
         _ticks = (static_cast<uint64_t>(flatTime) * static_cast<uint64_t>(MicroSecondsPerSecond)) + (static_cast<uint64_t>(millisecond) * static_cast<uint64_t>(MicroSecondsPerMilliSecond)) + OffsetTicksForEpoch;
+
+        // Update time with new ticks to get milliseconds also in the final value
+        (operator=(Time(_ticks, localTime)));
     }
 
     /**
@@ -1008,6 +1092,7 @@ namespace Core {
             // We need to convert from local to GMT or vv
             time_t epochTimestamp;
             struct tm originalTime = _time;
+
             if (IsLocalTime())
                 epochTimestamp = mktime(&originalTime);
             else

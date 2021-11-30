@@ -240,11 +240,13 @@ namespace Web {
             : FileBody()
             , _hash()
         {
+            _hash.Reset();
         }
         SignedFileBodyType(const string& HMACKey)
             : FileBody()
             , _hash(HMACKey)
         {
+            _hash.Reset();
         }
         ~SignedFileBodyType() override = default;
 
@@ -279,13 +281,7 @@ namespace Web {
     protected:
         uint32_t Deserialize() override
         {
-            _hash.Reset();
-            uint32_t result = FileBody::Deserialize();
-            if (result) {
-                LoadHash();
-            }
-
-            return (result);
+            return (FileBody::Deserialize());
         }
         uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength) override
         {
@@ -297,29 +293,6 @@ namespace Web {
             }
 
             return deserialized;
-        }
-
-    private:
-        void LoadHash() {
-
-            if ((static_cast<int64_t>(Core::File::Size() > 0)) && (Core::File::IsOpen() == true)) {
-                // Set file position to beginning
-                Core::File::Position(false, 0);
-                uint8_t buffer[BlockSize];
-                uint64_t dataToRead = (static_cast<int64_t>(Core::File::Size()) - 1);
-
-                while (dataToRead > 0) {
-                    uint16_t realReadData = Core::File::Read(buffer, BlockSize);
-
-                    // Adjust Read Data to avoid end of file
-                    realReadData = ((realReadData != BlockSize) && (realReadData != 0))? (realReadData - 1): realReadData;
-                    _hash.Input(buffer, realReadData);
-
-                    dataToRead -= (realReadData == 0) ? dataToRead: realReadData;
-                }
-                // Set back file position to the end of file to append from there
-                Core::File::Position(false, (static_cast<int64_t>(Core::File::Size()) - 1));
-            }
         }
 
     private:
