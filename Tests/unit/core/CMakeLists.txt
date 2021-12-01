@@ -31,6 +31,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_hex2strserialization.cpp
    test_filesystem.cpp
    test_frametype.cpp
+   test_hash.cpp
    #test_ipc.cpp
    #test_ipcclient.cpp
    test_iso639.cpp
@@ -79,6 +80,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_websockettext.cpp
    test_workerpool.cpp
    test_xgetopt.cpp
+   test_message_dispatcher.cpp
 )
 
 set_source_files_properties(test_systeminfo.cpp PROPERTIES COMPILE_OPTIONS "-fexceptions")

@@ -344,7 +344,7 @@ namespace ProxyStub {
                 // We completed the first cycle. Clear Pending, if it was active..
                 _mode ^= CACHING_ADDREF;
 
-                if (_refCount == 1) {
+                if (_refCount >= 1) {
                     response.AddImplementation(_implementation, _interfaceId);
                 }
             }

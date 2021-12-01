@@ -849,16 +849,12 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                             else:
                                 emit.Line("writer.%s(%s);" % (retval.RpcType(), retval.name))
                             if retval.is_interface:
-                                emit.Line("if (%s != %s) {" % (retval.name, NULLPTR))
-                                emit.IndentInc()
                                 if isinstance(retval.type.Type(), CppParser.Void):
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s, %s);" %
                                               (retval.name, retval.interface_ref.length_name))
                                 else:
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s);" %
                                               retval.name)
-                                emit.IndentDec()
-                                emit.Line("}")
 
                     if output_params:
                         for p in params:
@@ -893,11 +889,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                     else:
                                         emit.Line("writer.%s(%s);" % (p.RpcType(), p.name))
                                 if p.is_interface and not p.type.IsConst():
-                                    emit.Line("if (%s != %s) {" % (p.name, NULLPTR))
-                                    emit.IndentInc()
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s);" % p.name)
-                                    emit.IndentDec()
-                                    emit.Line("}")
 
                     if proxy_count:
                         # emit release proxy call if applicable
