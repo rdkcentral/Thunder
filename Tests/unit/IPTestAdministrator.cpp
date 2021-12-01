@@ -36,9 +36,22 @@ extern "C" void __gcov_flush();
 
 const uint32_t g_maxTimeOut = 2; // In seconds.
 
+IPTestAdministrator::IPTestAdministrator(OtherSideMain otherSideMain, void* data)
+   : m_sharedData(nullptr)
+   , m_childPid(0)
+   , m_data(data)	
+{
+    ForkChildProcess(otherSideMain);
+}
 IPTestAdministrator::IPTestAdministrator(OtherSideMain otherSideMain)
    : m_sharedData(nullptr)
    , m_childPid(0)
+   , m_data(nullptr)
+{
+    ForkChildProcess(otherSideMain);
+}
+
+void IPTestAdministrator::ForkChildProcess(OtherSideMain otherSideMain)
 {
    m_sharedData = static_cast<SharedData *>(mmap(NULL, sizeof(int), PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0));
 

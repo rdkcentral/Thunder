@@ -32,12 +32,15 @@ public:
    typedef void (*OtherSideMain)(IPTestAdministrator & testAdmin);
 
    IPTestAdministrator(OtherSideMain otherSideMain);
+   IPTestAdministrator(OtherSideMain otherSideMain, void* data);
    ~IPTestAdministrator();
 
+   void ForkChildProcess(OtherSideMain otherSideMain);
    // Method to sync the two test processes.
    bool Sync(const std::string & str);
    void WaitForChildCompletion();
 
+   void* Data() { return m_data; }
 private:
    static const uint32_t m_messageBufferSize = 1024;
 
@@ -56,6 +59,7 @@ private:
 
    SharedData * m_sharedData;
    pid_t m_childPid; // Set if we are parent processs.
+   void* m_data;
 
    const char * GetProcessName() const;
    void TimedLock(pthread_mutex_t * mutex, const std::string & str);
