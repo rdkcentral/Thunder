@@ -303,7 +303,7 @@ namespace Core {
                 // No data, or too much, return 0.
                 return 0;
             }
-            
+
             uint32_t bufferLength = std::min(length, result);
 
             foundData = true;
@@ -430,22 +430,27 @@ namespace Core {
         uint32_t tail = oldTail & _administration->_tailIndexMask;
         uint32_t free = Free(_administration->_head, tail);
 
-        while (free <= required) {
-            uint32_t remaining = required - free;
-            Cursor cursor(*this, oldTail, remaining);
-            uint32_t offset = GetOverwriteSize(cursor);
-            ASSERT((offset + free) >= required);
+        if (free <= required) {
+            while (free <= required) {
+                uint32_t remaining = (required + 1) - free;
+                Cursor cursor(*this, oldTail, remaining);
+                uint32_t offset = GetOverwriteSize(cursor);
+                ASSERT((offset + free) >= required);
 
-            uint32_t newTail = cursor.GetCompleteTail(offset);
+                uint32_t newTail = cursor.GetCompleteTail(offset);
 
-            if (std::atomic_compare_exchange_weak(&(_administration->_tail), &oldTail, newTail) == false) {
-                oldTail = _administration->_tail;
-                tail = oldTail & _administration->_tailIndexMask;
-                free = Free(_administration->_head, tail);
-            } else {
-                free = Free(_administration->_head, newTail & _administration->_tailIndexMask);
-                ASSERT(Free() >= required);
+                if (std::atomic_compare_exchange_weak(&(_administration->_tail), &oldTail, newTail) == false) {
+                    oldTail = _administration->_tail;
+                    tail = oldTail & _administration->_tailIndexMask;
+                    free = Free(_administration->_head, tail);
+                } else {
+                    free = Free(_administration->_head, newTail & _administration->_tailIndexMask);
+                    ASSERT(Free() >= required);
+                }
             }
+            std::atomic_fetch_or(&(_administration->_state), static_cast<uint16_t>(state::OVERWRITTEN));
+        } else {
+            std::atomic_fetch_and(&(_administration->_state), static_cast<uint16_t>(~state::OVERWRITTEN));
         }
     }
 
@@ -459,7 +464,7 @@ namespace Core {
         pid_t expectedProcessId = static_cast<pid_t>(0);
 #endif
 
-        if (((_administration->_state.load() & state::OVERWRITE) == 0) && (length > Free()))
+        if (((_administration->_state.load() & state::OVERWRITE) == 0) && (length >= Free()))
             return Core::ERROR_INVALID_INPUT_LENGTH;
 
         bool noOtherReservation = atomic_compare_exchange_strong(&(_administration->_reservedPID), &expectedProcessId, processId);
