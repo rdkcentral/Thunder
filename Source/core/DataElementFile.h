@@ -43,12 +43,12 @@ namespace Core {
     class EXTERNAL DataElementFile : public DataElement {
     public:
         DataElementFile() = delete;
-        DataElementFile(const DataElementFile&) = delete;
         DataElementFile& operator=(const DataElementFile&) = delete;
 
         DataElementFile(File& fileName, const uint32_t type);
         DataElementFile(const string& fileName, const uint32_t mode, const uint32_t requiredSize = 0);
-        virtual ~DataElementFile();
+        DataElementFile(const DataElementFile&);
+        ~DataElementFile() override;
 
     public:
         inline const string& Name() const

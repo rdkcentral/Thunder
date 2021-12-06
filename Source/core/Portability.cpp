@@ -95,6 +95,9 @@ static void* GetPCFromUContext(void* secret)
 #if defined(__arm__)
     ucontext_t* ucp = reinterpret_cast<ucontext_t*>(secret);
     pnt = reinterpret_cast<void*>(ucp->uc_mcontext.arm_pc);
+#elif defined(__aarch64__)
+    ucontext_t* ucp = reinterpret_cast<ucontext_t*>(secret);
+    pnt = reinterpret_cast<void*>(ucp->uc_mcontext.pc);
 #elif defined(__APPLE__)
     ucontext_t* uc = (ucontext_t*)secret;
     pnt = reinterpret_cast<void*>(uc->uc_mcontext->__ss.__rip);
@@ -227,7 +230,7 @@ void DumpCallStack(const ThreadId threadId, std::list<string>& stackList)
             if (info.dli_sname[0] == '_') {
                 demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
             }
-            snprintf(buffer, sizeof(buffer), "%-3d %*p %s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i],
+            snprintf(buffer, sizeof(buffer), "%-3d %*p %s + %zd", i, int(2 + sizeof(void*) * 2), callstack[i],
                 status == 0 ? demangled : info.dli_sname == 0 ? symbols[i] : info.dli_sname,
                 (char*)callstack[i] - (char*)info.dli_saddr);
 
@@ -260,7 +263,7 @@ void SleepMs(const unsigned int time) {
         elapse.tv_sec = time / 1000;
         elapse.tv_nsec = (time % 1000) * 1000000;
     }
- 
+
     while ( ((result = ::nanosleep(&elapse, &elapse)) != 0) && (errno == EINTR) ) /* Intentionally left empty */;
 }
 
@@ -329,21 +332,6 @@ uint64_t ntohll(const uint64_t& value)
 
 namespace WPEFramework {
 namespace Core {
-
-    /* virtual */ IIPC::~IIPC() {}
-    /* virtual */ IIPCServer::~IIPCServer() {}
-    /* virtual */ IPCChannel::~IPCChannel() {}
-
-
-
-    // In windows you need the newest compiler for this...
-    //template <typename First, typename... Rest> const string Format(const First* first, const Rest&... rest) {
-    //	TCHAR buffer[2057];
-
-    //	::vsnprintf_s (buffer, sizeof(buffer),sizeof(buffer), first, rest...);
-
-    //	return (string(buffer));
-    //}
 
 #ifndef va_copy
 #ifdef _MSC_VER

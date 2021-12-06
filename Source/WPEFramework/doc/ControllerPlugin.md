@@ -6,13 +6,14 @@
 
 **Status: :black_circle::black_circle::black_circle:**
 
-Controller plugin for Thunder framework.
+A Controller plugin for Thunder framework.
 
 ### Table of Contents
 
 - [Introduction](#head.Introduction)
 - [Description](#head.Description)
 - [Configuration](#head.Configuration)
+- [Interfaces](#head.Interfaces)
 - [Methods](#head.Methods)
 - [Properties](#head.Properties)
 - [Notifications](#head.Notifications)
@@ -85,6 +86,13 @@ The table below lists configuration options of the plugin.
 | configuration?.subsystems | array | <sup>*(optional)*</sup> List of subsystems configured for the system |
 | configuration?.subsystems[#] | string | <sup>*(optional)*</sup> Subsystem name |
 
+<a name="head.Interfaces"></a>
+# Interfaces
+
+This plugin implements the following interfaces:
+
+- [Controller.json](https://github.com/rdkcentral/Thunder/blob/master/Source/WPEFramework/json/Controller.json)
+
 <a name="head.Methods"></a>
 # Methods
 
@@ -96,8 +104,7 @@ Controller interface methods:
 | :-------- | :-------- |
 | [activate](#method.activate) | Activates a plugin |
 | [deactivate](#method.deactivate) | Deactivates a plugin |
-| [resume](#method.resume) | Resumes a plugin |
-| [suspend](#method.suspend) | Suspends a plugin |
+| [unavailable](#method.unavailable) | Set a plugin unavailable for interaction |
 | [startdiscovery](#method.startdiscovery) | Starts the network discovery |
 | [storeconfig](#method.storeconfig) | Stores the configuration |
 | [delete](#method.delete) | Removes contents of a directory from the persistent storage |
@@ -105,7 +112,7 @@ Controller interface methods:
 
 
 <a name="method.activate"></a>
-## *activate <sup>method</sup>*
+## *activate [<sup>method</sup>](#head.Methods)*
 
 Activates a plugin.
 
@@ -146,7 +153,7 @@ Also see: [statechange](#event.statechange)
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "method": "Controller.1.activate",
     "params": {
         "callsign": "DeviceInfo"
@@ -159,13 +166,13 @@ Also see: [statechange](#event.statechange)
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "result": null
 }
 ```
 
 <a name="method.deactivate"></a>
-## *deactivate <sup>method</sup>*
+## *deactivate [<sup>method</sup>](#head.Methods)*
 
 Deactivates a plugin.
 
@@ -205,7 +212,7 @@ Also see: [statechange](#event.statechange)
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "method": "Controller.1.deactivate",
     "params": {
         "callsign": "DeviceInfo"
@@ -218,79 +225,19 @@ Also see: [statechange](#event.statechange)
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "result": null
 }
 ```
 
-<a name="method.resume"></a>
-## *resume <sup>method</sup>*
+<a name="method.unavailable"></a>
+## *unavailable [<sup>method</sup>](#head.Methods)*
 
-Resumes a plugin.
-
-### Description
-
-This is a more intelligent method, compared to the Activate, on the controller to move a plugin to a *resumed* state depending on its current state. If required, it will activate and move to the resumed state, regardless of the flags in the config (AutoStart/Resumed)
-
-Also see: [statechange](#event.statechange)
-
-### Parameters
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| params | object |  |
-| params.callsign | string | Plugin callsign |
-
-### Result
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| result | null | Always null |
-
-### Errors
-
-| Code | Message | Description |
-| :-------- | :-------- | :-------- |
-| 31 | ```ERROR_PENDING_CONDITIONS``` | The plugin will be activated once its activation preconditions are met |
-| 12 | ```ERROR_INPROGRESS``` | The plugin is currently being activated |
-| 22 | ```ERROR_UNKNOWN_KEY``` | The plugin does not exist |
-| 6 | ```ERROR_OPENING_FAILED``` | Failed to activate the plugin |
-| 5 | ```ERROR_ILLEGAL_STATE``` | Current state of the plugin does not allow activation |
-| 24 | ```ERROR_PRIVILEGED_REQUEST``` | Activation of the plugin is not allowed (e.g. Controller) |
-
-### Example
-
-#### Request
-
-```json
-{
-    "jsonrpc": "2.0",
-    "id": 1234567890,
-    "method": "Controller.1.resume",
-    "params": {
-        "callsign": "Netflix"
-    }
-}
-```
-
-#### Response
-
-```json
-{
-    "jsonrpc": "2.0",
-    "id": 1234567890,
-    "result": null
-}
-```
-
-<a name="method.suspend"></a>
-## *suspend <sup>method</sup>*
-
-Suspends a plugin.
+Set a plugin unavailable for interaction.
 
 ### Description
 
-This is a more intelligent method, compared to the Deactivate, on the controller to move a plugin to a *suspended* state depending on its current state. Depending on the AutoStart flag, this method will Deactivate the plugin [AutoStart == false] or only Suspend the plugin [AutoStart == true]
+Use this method to mark a plugin as unavailable, i.e. move from Deactivated to Unavailable state. If a plugin is Unavailable, the actual plugin (.so) is no longer loaded into the memory of the process. The plugin will not respond to any JSON-RPC requests and it can not be startedunless it is first deactivated (which triggers a state transition.
 
 Also see: [statechange](#event.statechange)
 
@@ -311,11 +258,10 @@ Also see: [statechange](#event.statechange)
 
 | Code | Message | Description |
 | :-------- | :-------- | :-------- |
-| 12 | ```ERROR_INPROGRESS``` | The plugin is currently being deactivated |
 | 22 | ```ERROR_UNKNOWN_KEY``` | The plugin does not exist |
-| 5 | ```ERROR_ILLEGAL_STATE``` | Current state of the plugin does not allow deactivation |
+| 5 | ```ERROR_ILLEGAL_STATE``` | Current state of the plugin does not allow setting to Unavailable |
 | 19 | ```ERROR_CLOSING_FAILED``` | Failed to activate the plugin |
-| 24 | ```ERROR_PRIVILEGED_REQUEST``` | Deactivation of the plugin is not allowed (e.g. Controller) |
+| 24 | ```ERROR_PRIVILEGED_REQUEST``` | Marking the plugin as unavailable is not allowed (e.g. Controller) |
 
 ### Example
 
@@ -324,10 +270,10 @@ Also see: [statechange](#event.statechange)
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
-    "method": "Controller.1.suspend",
+    "id": 42,
+    "method": "Controller.1.unavailable",
     "params": {
-        "callsign": "Amazon"
+        "callsign": "DeviceInfo"
     }
 }
 ```
@@ -337,13 +283,13 @@ Also see: [statechange](#event.statechange)
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "result": null
 }
 ```
 
 <a name="method.startdiscovery"></a>
-## *startdiscovery <sup>method</sup>*
+## *startdiscovery [<sup>method</sup>](#head.Methods)*
 
 Starts the network discovery.
 
@@ -371,7 +317,7 @@ Use this method to initiate SSDP network discovery process.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "method": "Controller.1.startdiscovery",
     "params": {
         "ttl": 1
@@ -384,13 +330,13 @@ Use this method to initiate SSDP network discovery process.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "result": null
 }
 ```
 
 <a name="method.storeconfig"></a>
-## *storeconfig <sup>method</sup>*
+## *storeconfig [<sup>method</sup>](#head.Methods)*
 
 Stores the configuration.
 
@@ -421,7 +367,7 @@ This method takes no parameters.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "method": "Controller.1.storeconfig"
 }
 ```
@@ -431,13 +377,13 @@ This method takes no parameters.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "result": null
 }
 ```
 
 <a name="method.delete"></a>
-## *delete <sup>method</sup>*
+## *delete [<sup>method</sup>](#head.Methods)*
 
 Removes contents of a directory from the persistent storage.
 
@@ -472,7 +418,7 @@ Use this method to recursively delete contents of a directory
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "method": "Controller.1.delete",
     "params": {
         "path": "test/test.txt"
@@ -485,13 +431,13 @@ Use this method to recursively delete contents of a directory
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "result": null
 }
 ```
 
 <a name="method.harakiri"></a>
-## *harakiri <sup>method</sup>*
+## *harakiri [<sup>method</sup>](#head.Methods)*
 
 Reboots the device.
 
@@ -524,7 +470,7 @@ This method takes no parameters.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "method": "Controller.1.harakiri"
 }
 ```
@@ -534,7 +480,7 @@ This method takes no parameters.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "result": null
 }
 ```
@@ -555,10 +501,15 @@ Controller interface properties:
 | [discoveryresults](#property.discoveryresults) <sup>RO</sup> | SSDP network discovery results |
 | [environment](#property.environment) <sup>RO</sup> | Value of an environment variable |
 | [configuration](#property.configuration) | Configuration object of a service |
+| [version](#property.version) | version of the controller |
+| [prefix](#property.prefix) | prefix |
+| [idletime](#property.idletime) | idle time |
+| [latitude](#property.latitude) | latitude |
+| [longitude](#property.longitude) | longitude |
 
 
 <a name="property.status"></a>
-## *status <sup>property</sup>*
+## *status [<sup>property</sup>](#head.Properties)*
 
 Provides access to the information about plugins, including their configurations.
 
@@ -584,7 +535,7 @@ Provides access to the information about plugins, including their configurations
 | (property)[#]?.module | string | <sup>*(optional)*</sup> Name of the plugin from a module perspective (used e.g. in tracing) |
 | (property)[#]?.hash | string | <sup>*(optional)*</sup> SHA256 hash identifying the sources from which this plugin was build |
 
-> The *callsign* shall be passed as the index to the property, e.g. *Controller.1.status@DeviceInfo*. If the *callsign* is omitted, then status of all plugins is returned.
+> The *callsign* argument shall be passed as the index to the property, e.g. *Controller.1.status@DeviceInfo*. If the *callsign* is omitted, then status of all plugins is returned.
 
 ### Errors
 
@@ -599,7 +550,7 @@ Provides access to the information about plugins, including their configurations
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "method": "Controller.1.status@DeviceInfo"
 }
 ```
@@ -609,7 +560,7 @@ Provides access to the information about plugins, including their configurations
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "result": [
         {
             "callsign": "DeviceInfo",
@@ -619,7 +570,7 @@ Provides access to the information about plugins, including their configurations
             "precondition": [
                 "Platform"
             ],
-            "configuration": "",
+            "configuration": "...",
             "state": "Activated",
             "processedrequests": 2,
             "processedobjects": 0,
@@ -632,7 +583,7 @@ Provides access to the information about plugins, including their configurations
 ```
 
 <a name="property.links"></a>
-## *links <sup>property</sup>*
+## *links [<sup>property</sup>](#head.Properties)*
 
 Provides access to the information about active connections.
 
@@ -657,7 +608,7 @@ Provides access to the information about active connections.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "method": "Controller.1.links"
 }
 ```
@@ -667,7 +618,7 @@ Provides access to the information about active connections.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "result": [
         {
             "remote": "localhost:52116",
@@ -681,7 +632,7 @@ Provides access to the information about active connections.
 ```
 
 <a name="property.processinfo"></a>
-## *processinfo <sup>property</sup>*
+## *processinfo [<sup>property</sup>](#head.Properties)*
 
 Provides access to the information about the framework process.
 
@@ -704,7 +655,7 @@ Provides access to the information about the framework process.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "method": "Controller.1.processinfo"
 }
 ```
@@ -714,7 +665,7 @@ Provides access to the information about the framework process.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "result": {
         "threads": [
             0
@@ -726,7 +677,7 @@ Provides access to the information about the framework process.
 ```
 
 <a name="property.subsystems"></a>
-## *subsystems <sup>property</sup>*
+## *subsystems [<sup>property</sup>](#head.Properties)*
 
 Provides access to the status of the subsystems.
 
@@ -748,7 +699,7 @@ Provides access to the status of the subsystems.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "method": "Controller.1.subsystems"
 }
 ```
@@ -758,7 +709,7 @@ Provides access to the status of the subsystems.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "result": [
         {
             "subsystem": "Platform",
@@ -769,7 +720,7 @@ Provides access to the status of the subsystems.
 ```
 
 <a name="property.discoveryresults"></a>
-## *discoveryresults <sup>property</sup>*
+## *discoveryresults [<sup>property</sup>](#head.Properties)*
 
 Provides access to the SSDP network discovery results.
 
@@ -793,7 +744,7 @@ Provides access to the SSDP network discovery results.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "method": "Controller.1.discoveryresults"
 }
 ```
@@ -803,12 +754,12 @@ Provides access to the SSDP network discovery results.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "result": [
         {
-            "locator": "",
+            "locator": "...",
             "latency": 0,
-            "model": "",
+            "model": "...",
             "secure": true
         }
     ]
@@ -816,7 +767,7 @@ Provides access to the SSDP network discovery results.
 ```
 
 <a name="property.environment"></a>
-## *environment <sup>property</sup>*
+## *environment [<sup>property</sup>](#head.Properties)*
 
 Provides access to the value of an environment variable.
 
@@ -828,7 +779,7 @@ Provides access to the value of an environment variable.
 | :-------- | :-------- | :-------- |
 | (property) | string | Value of an environment variable |
 
-> The *variable* shall be passed as the index to the property, e.g. *Controller.1.environment@SHELL*.
+> The *variable* argument shall be passed as the index to the property, e.g. *Controller.1.environment@SHELL*.
 
 ### Errors
 
@@ -843,7 +794,7 @@ Provides access to the value of an environment variable.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "method": "Controller.1.environment@SHELL"
 }
 ```
@@ -853,13 +804,13 @@ Provides access to the value of an environment variable.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "result": "/bin/sh"
 }
 ```
 
 <a name="property.configuration"></a>
-## *configuration <sup>property</sup>*
+## *configuration [<sup>property</sup>](#head.Properties)*
 
 Provides access to the configuration object of a service.
 
@@ -869,7 +820,7 @@ Provides access to the configuration object of a service.
 | :-------- | :-------- | :-------- |
 | (property) | object | The configuration JSON object |
 
-> The *callsign* shall be passed as the index to the property, e.g. *Controller.1.configuration@WebKitBrowser*.
+> The *callsign* argument shall be passed as the index to the property, e.g. *Controller.1.configuration@WebKitBrowser*.
 
 ### Errors
 
@@ -885,7 +836,7 @@ Provides access to the configuration object of a service.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "method": "Controller.1.configuration@WebKitBrowser"
 }
 ```
@@ -895,7 +846,7 @@ Provides access to the configuration object of a service.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "result": {}
 }
 ```
@@ -905,7 +856,7 @@ Provides access to the configuration object of a service.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
     "method": "Controller.1.configuration@WebKitBrowser",
     "params": {}
 }
@@ -916,7 +867,307 @@ Provides access to the configuration object of a service.
 ```json
 {
     "jsonrpc": "2.0",
-    "id": 1234567890,
+    "id": 42,
+    "result": "null"
+}
+```
+
+<a name="property.version"></a>
+## *version [<sup>property</sup>](#head.Properties)*
+
+Provides access to the version of the controller.
+
+### Value
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| (property) | string | version of the controller |
+
+### Errors
+
+| Code | Message | Description |
+| :-------- | :-------- | :-------- |
+| 1 | ```ERROR_GENERAL``` | Failed to get/update the version |
+
+### Example
+
+#### Get Request
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "method": "Controller.1.version"
+}
+```
+
+#### Get Response
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "result": "1.0"
+}
+```
+
+#### Set Request
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "method": "Controller.1.version",
+    "params": "1.0"
+}
+```
+
+#### Set Response
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "result": "null"
+}
+```
+
+<a name="property.prefix"></a>
+## *prefix [<sup>property</sup>](#head.Properties)*
+
+Provides access to the prefix.
+
+### Value
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| (property) | string | prefix |
+
+### Errors
+
+| Code | Message | Description |
+| :-------- | :-------- | :-------- |
+| 1 | ```ERROR_GENERAL``` | Failed to update the prefix |
+
+### Example
+
+#### Get Request
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "method": "Controller.1.prefix"
+}
+```
+
+#### Get Response
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "result": "prefix"
+}
+```
+
+#### Set Request
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "method": "Controller.1.prefix",
+    "params": "prefix"
+}
+```
+
+#### Set Response
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "result": "null"
+}
+```
+
+<a name="property.idletime"></a>
+## *idletime [<sup>property</sup>](#head.Properties)*
+
+Provides access to the idle time.
+
+### Value
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| (property) | number | idle time |
+
+### Errors
+
+| Code | Message | Description |
+| :-------- | :-------- | :-------- |
+| 1 | ```ERROR_GENERAL``` | Failed to update the idletime |
+
+### Example
+
+#### Get Request
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "method": "Controller.1.idletime"
+}
+```
+
+#### Get Response
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "result": 1
+}
+```
+
+#### Set Request
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "method": "Controller.1.idletime",
+    "params": 1
+}
+```
+
+#### Set Response
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "result": "null"
+}
+```
+
+<a name="property.latitude"></a>
+## *latitude [<sup>property</sup>](#head.Properties)*
+
+Provides access to the latitude.
+
+### Value
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| (property) | number | latitude |
+
+### Errors
+
+| Code | Message | Description |
+| :-------- | :-------- | :-------- |
+| 1 | ```ERROR_GENERAL``` | Failed to update the latitude |
+
+### Example
+
+#### Get Request
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "method": "Controller.1.latitude"
+}
+```
+
+#### Get Response
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "result": 100
+}
+```
+
+#### Set Request
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "method": "Controller.1.latitude",
+    "params": 100
+}
+```
+
+#### Set Response
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "result": "null"
+}
+```
+
+<a name="property.longitude"></a>
+## *longitude [<sup>property</sup>](#head.Properties)*
+
+Provides access to the longitude.
+
+### Value
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| (property) | number | longitude |
+
+### Errors
+
+| Code | Message | Description |
+| :-------- | :-------- | :-------- |
+| 1 | ```ERROR_GENERAL``` | Failed to update the longitude |
+
+### Example
+
+#### Get Request
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "method": "Controller.1.longitude"
+}
+```
+
+#### Get Response
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "result": 200
+}
+```
+
+#### Set Request
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "method": "Controller.1.longitude",
+    "params": 200
+}
+```
+
+#### Set Response
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
     "result": "null"
 }
 ```
@@ -938,7 +1189,7 @@ Controller interface events:
 
 
 <a name="event.all"></a>
-## *all <sup>event</sup>*
+## *all [<sup>event</sup>](#head.Notifications)*
 
 Signals each and every event in the system. The Controller plugin is an aggregator of all the events triggered by a specific plugin. All notifications send by any plugin are forwarded over the Controller socket as an event.
 
@@ -964,7 +1215,7 @@ Signals each and every event in the system. The Controller plugin is an aggregat
 ```
 
 <a name="event.statechange"></a>
-## *statechange <sup>event</sup>*
+## *statechange [<sup>event</sup>](#head.Notifications)*
 
 Signals a plugin state change.
 
@@ -992,7 +1243,7 @@ Signals a plugin state change.
 ```
 
 <a name="event.subsystemchange"></a>
-## *subsystemchange <sup>event</sup>*
+## *subsystemchange [<sup>event</sup>](#head.Notifications)*
 
 Signals a subsystem state change.
 

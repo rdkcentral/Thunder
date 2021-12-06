@@ -727,7 +727,7 @@ namespace Web
                         } else if ((_keyIndex <= 10) && (_current->WebSocketProtocol.IsSet() == true)) {
                             _keyIndex = 11;
                             _buffer = (_current->Mode() == MARSHAL_UPPERCASE ? __WEBSOCKET_PROTOCOL : _T("Sec-WebSocket-Protocol:"));
-                            _value = _current->WebSocketProtocol.Value();
+                            _value = _current->WebSocketProtocol.Value().All();
                             _offset = 0;
                         } else if ((_keyIndex <= 11) && (_current->WebSocketVersion.IsSet() == true)) {
                             _keyIndex = 12;
@@ -1474,7 +1474,7 @@ namespace Web
                 _current->Origin = buffer;
                 break;
             case Request::WEBSOCKET_PROTOCOL:
-                _current->WebSocketProtocol = buffer;
+                _current->WebSocketProtocol = ProtocolsArray(buffer);
                 break;
             case Request::WEBSOCKET_KEY:
                 _current->WebSocketKey = buffer;

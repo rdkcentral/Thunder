@@ -33,17 +33,17 @@ namespace ProcessContainers {
         {
         }
 
-        uint64_t Allocated() const
+        uint64_t Allocated() const override
         {
             return _allocated;
         }
 
-        uint64_t Resident() const
+        uint64_t Resident() const override
         {
             return _resident;
         }
 
-        uint64_t Shared() const
+        uint64_t Shared() const override
         {
             return _shared;
         }
@@ -67,13 +67,11 @@ namespace ProcessContainers {
         uint64_t _allocated;
         uint64_t _resident;
         uint64_t _shared;
-        mutable uint32_t _refCount;
     };
 
     struct CGroupProcessorInfo : public BaseRefCount<ProcessContainers::IProcessorInfo> {
         CGroupProcessorInfo(std::vector<uint64_t>&& cores)
             : _coresUsage(std::move(cores))
-            , _refCount(1)
         {
             _totalUsage = 0;
             for (auto& usage : _coresUsage) {
@@ -107,18 +105,17 @@ namespace ProcessContainers {
     private:
         std::vector<uint64_t> _coresUsage;
         uint64_t _totalUsage;
-        mutable uint32_t _refCount;
     };
 
-    template <typename Mixin> // IContainer Mixin
-    class CGroupContainerInfo : public Mixin {
+    // Helper Class to collect CGroup related metrics.
+    class CGroupMetrics {
     public:
-        CGroupContainerInfo(const string& name)
+        CGroupMetrics(const string& name)
             : _name(name)
         {
         }
 
-        IMemoryInfo* Memory() const override
+        IMemoryInfo* Memory() const
         {
             CGroupMemoryInfo* result = new CGroupMemoryInfo;
 
@@ -128,7 +125,7 @@ namespace ProcessContainers {
             char buffer[2048];
             auto fd = open(_memoryInfoPath.c_str(), O_RDONLY);
 
-            if (fd != 0) {
+            if (fd >= 0) {
                 size_t bytesRead = read(fd, buffer, sizeof(buffer));
 
                 if (bytesRead > 0) {
@@ -144,7 +141,7 @@ namespace ProcessContainers {
             string memoryFullInfoPath = "/sys/fs/cgroup/memory/" + _name + "/memory.stat";
 
             fd = open(memoryFullInfoPath.c_str(), O_RDONLY);
-            if (fd != 0) {
+            if (fd >= 0) {
                 size_t bytesRead = read(fd, buffer, sizeof(buffer));
 
                 if (bytesRead > 0) {
@@ -180,7 +177,7 @@ namespace ProcessContainers {
             return result;
         }
 
-        IProcessorInfo* ProcessorInfo() const override
+        IProcessorInfo* ProcessorInfo() const
         {
             std::vector<uint64_t> coresUsage;
 
@@ -189,7 +186,7 @@ namespace ProcessContainers {
             auto fd = open(cpuPerCoreUsagePath.c_str(), O_RDONLY);
             char buffer[2048];
 
-            if (fd != 0) {
+            if (fd >= 0) {
                 uint32_t bytesRead = read(fd, buffer, sizeof(buffer));
 
                 // In about 30% of cases we got additional number information after new line

@@ -58,6 +58,27 @@ namespace Core {
 // SerialPort::SerialMonitor
 //////////////////////////////////////////////////////////////////////
 #ifdef __WINDOWS__
+        // Retrieve the system error message for the last-error code
+    string LastError(const uint32_t errorCode) {
+        LPVOID lpMsgBuf;
+        DWORD dw = errorCode;
+
+        FormatMessage(
+            FORMAT_MESSAGE_ALLOCATE_BUFFER |
+            FORMAT_MESSAGE_FROM_SYSTEM |
+            FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL,
+            dw,
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+            (LPTSTR)&lpMsgBuf,
+            0, NULL);
+
+        // Display the error message and exit the process
+        string result(reinterpret_cast<const TCHAR*>(lpMsgBuf));
+        LocalFree(lpMsgBuf);
+        return (result);
+    }
+
     class SerialMonitor {
     private:
         class MonitorWorker : public Core::Thread {
@@ -229,8 +250,6 @@ namespace Core {
                             ::ResetEvent(port->m_ReadInfo.hEvent);
 
                             if (::GetOverlappedResult(port->Descriptor(), &(port->m_ReadInfo), &info, FALSE)) {
-
-                                ASSERT((info == 0) || (info == 1));
 
                                 port->Read(static_cast<uint16_t>(info));
                             }
@@ -838,10 +857,18 @@ void SerialPort::Read(const uint16_t readBytes)
 {
     m_syncAdmin.Lock();
 
-    ASSERT((readBytes == 1) || (readBytes == 0));
+    if (readBytes > 0) {
+        uint16_t handledBytes = ReceiveData(m_ReceiveBuffer, m_ReadBytes + readBytes);
 
-    if (readBytes == 1) {
-        m_ReceiveBuffer[m_ReadBytes++] = m_CharBuffer;
+        ASSERT((m_ReadBytes + readBytes) >= handledBytes);
+
+        m_ReadBytes += readBytes;
+        m_ReadBytes -= handledBytes;
+
+        if ((m_ReadBytes != 0) && (handledBytes != 0)) {
+            // Oops not all data was consumed, Lets remove the read data
+            ::memmove(m_ReceiveBuffer, &m_ReceiveBuffer[handledBytes], m_ReadBytes);
+        }
     }
 
     m_State &= (~SerialPort::READ);
@@ -857,7 +884,7 @@ void SerialPort::Read(const uint16_t readBytes)
         }
 
         // Read the actual data from the port.
-        if (ReadFile(m_Descriptor, &m_CharBuffer, 1, &readBytes, &m_ReadInfo) == 0) {
+        if (ReadFile(m_Descriptor, &m_ReceiveBuffer[m_ReadBytes], 1, &readBytes, &m_ReadInfo) == 0) {
             uint32_t reason = ERRORRESULT;
 
             m_State |= SerialPort::READ;
@@ -870,9 +897,7 @@ void SerialPort::Read(const uint16_t readBytes)
             // nothing to read wait on the next trigger..
             m_State |= SerialPort::READ;
         } else {
-            ASSERT(readBytes == 1);
-            m_ReceiveBuffer[m_ReadBytes] = m_CharBuffer;
-            m_ReadBytes++;
+            m_ReadBytes += static_cast<uint16_t>(readBytes);
         }
 
         if (m_ReadBytes != 0) {

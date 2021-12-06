@@ -128,6 +128,14 @@ namespace RPC {
         {
             _adminLock.Lock();
 
+#ifdef __DEBUG__
+            if (_stubs.find(ACTUALINTERFACE::ID) != _stubs.end()) {
+                TRACE_L1("Interface (stub) %d, gets registered multiple times !!!", ACTUALINTERFACE::ID);
+            }
+            else if (_proxy.find(ACTUALINTERFACE::ID) != _proxy.end()) {
+                TRACE_L1("Interface (proxy) %d, gets registered multiple times !!!", ACTUALINTERFACE::ID);
+            }
+#endif
             _stubs.insert(std::pair<uint32_t, ProxyStub::UnknownStub*>(ACTUALINTERFACE::ID, new STUB()));
             _proxy.insert(std::pair<uint32_t, IMetadata*>(ACTUALINTERFACE::ID, new ProxyType<PROXY>()));
 

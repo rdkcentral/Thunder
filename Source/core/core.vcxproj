@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ASN1.h" />
+    <ClInclude Include="CallsignTLS.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="core.h" />
     <ClInclude Include="CyclicBuffer.h" />
@@ -38,6 +39,7 @@
     <ClInclude Include="IPCConnector.h" />
     <ClInclude Include="IPFrame.h" />
     <ClInclude Include="ISO639.h" />
+    <ClInclude Include="IWarningReportingControl.h" />
     <ClInclude Include="JSON.h" />
     <ClInclude Include="JSONRPC.h" />
     <ClInclude Include="KeyValue.h" />
@@ -89,6 +91,8 @@
     <ClInclude Include="TriState.h" />
     <ClInclude Include="TypeTraits.h" />
     <ClInclude Include="ValueRecorder.h" />
+    <ClInclude Include="WarningReportingCategories.h" />
+    <ClInclude Include="WarningReportingControl.h" />
     <ClInclude Include="WorkerPool.h" />
     <ClInclude Include="XGetopt.h" />
   </ItemGroup>

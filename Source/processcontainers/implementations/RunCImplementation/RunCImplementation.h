@@ -23,14 +23,11 @@
 #include "processcontainers/common/BaseAdministrator.h"
 #include "processcontainers/common/BaseRefCount.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
-#include "processcontainers/common/Lockable.h"
-#include "processcontainers/common/NetworkInfoUnimplemented.h"
 
 namespace WPEFramework {
 namespace ProcessContainers {
-    using RunCContainerMixins = CGroupContainerInfo<NetworkInfoUnimplemented<BaseRefCount<Lockable<IContainer>>>>;
 
-    class RunCContainer : public RunCContainerMixins {
+    class RunCContainer : public BaseRefCount<IContainer> {
     private:
         friend class RunCContainerAdministrator;
 
@@ -48,15 +45,19 @@ namespace ProcessContainers {
         bool Start(const string& command, IStringIterator& parameters) override;
         bool Stop(const uint32_t timeout /*ms*/) override;
 
+        IMemoryInfo* Memory() const override;
+        IProcessorInfo* ProcessorInfo() const override;
+        INetworkInterfaceIterator* NetworkInterfaces() const override;
+
     private:
-        mutable uint32_t _refCount;
+        mutable Core::CriticalSection _adminLock;
         string _name;
         string _path;
         string _logPath;
         mutable Core::OptionalType<uint32_t> _pid;
     };
 
-    class RunCContainerAdministrator : public BaseAdministrator<RunCContainer, Lockable<IContainerAdministrator>> {
+    class RunCContainerAdministrator : public BaseContainerAdministrator<RunCContainer> {
     private:
         friend class RunCContainer;
         friend class Core::SingletonType<RunCContainerAdministrator>;

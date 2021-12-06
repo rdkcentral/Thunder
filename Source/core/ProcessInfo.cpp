@@ -713,10 +713,12 @@ namespace Core {
         _rss = 0;
         _vss = 0;
         _shared = 0;
-        std::ostringstream pathToSmaps;
-        pathToSmaps << "/proc/" << _pid << "/smaps";
-
-        std::ifstream smaps(pathToSmaps.str());
+        
+        string path = "/proc/";
+        path += std::to_string(_pid);
+        path += "/smaps";
+        
+        std::ifstream smaps(path);
         if (!smaps.is_open()) {
             TRACE_L1(_T("Could not open /proc/%d/smaps. Memory monitoring of this process is unavailable!"), _pid);
         }
@@ -724,10 +726,11 @@ namespace Core {
         std::string line;
         std::string key;
         uint64_t value;
+        std::istringstream iss("");
 
         while (std::getline(smaps, line)) {
 
-            std::istringstream iss(line);
+            iss.str(line);
             iss >> key;
 
             if (key == _T("Size:")) {
@@ -752,6 +755,8 @@ namespace Core {
                 iss >> value;
                 _shared += value;
             }
+
+            iss.clear();
         }
     }
 }

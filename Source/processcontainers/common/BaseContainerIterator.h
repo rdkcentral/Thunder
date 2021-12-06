@@ -57,6 +57,7 @@ namespace ProcessContainers {
 
         void Reset(const uint32_t position) override
         {
+            (void) position;
             _current = UINT32_MAX;
         }
 
