@@ -43,8 +43,8 @@ namespace Core {
         // What is the use of a file that is not readable nor writable ?
         ASSERT(m_Flags != 0);
 
-        // The file needs to be prepared in the same way as we request the Memoerymapped file...
-        ASSERT(m_File.IsOpen() == false);
+        // The file needs to be prepared in the same way as we request the Memorymapped file...
+        ASSERT(m_File.IsOpen() == true);
 
         if (IsValid()) {
             OpenMemoryMappedFile(static_cast<uint32_t>(m_File.Size()));
@@ -74,6 +74,13 @@ namespace Core {
                 OpenMemoryMappedFile(static_cast<uint32_t>(m_File.Size()));
             }
         }
+    }
+
+    DataElementFile::DataElementFile(const DataElementFile& copy)
+        : DataElement(copy)
+        , m_File(copy.m_File)
+        , m_MemoryMappedFile(copy.m_MemoryMappedFile)
+        , m_Flags(copy.m_Flags) {
     }
 
     bool DataElementFile::Load() {

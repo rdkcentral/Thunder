@@ -89,7 +89,8 @@ namespace PluginHost
         };
 
         Object()
-            : Locator()
+            : Core::JSON::Container()
+            , Locator()
             , User()
             , Group()
             , Threads(1)
@@ -112,7 +113,8 @@ namespace PluginHost
             Add(_T("configuration"), &Configuration);
         }
         Object(const IShell* info)
-            : Locator()
+            : Core::JSON::Container()
+            , Locator()
             , User()
             , Group()
             , Threads()
@@ -157,7 +159,8 @@ namespace PluginHost
             }
         }
         Object(const Object& copy)
-            : Locator(copy.Locator)
+            : Core::JSON::Container()
+            , Locator(copy.Locator)
             , User(copy.User)
             , Group(copy.Group)
             , Threads(copy.Threads)
@@ -179,13 +182,10 @@ namespace PluginHost
             Add(_T("remoteaddress"), &RemoteAddress);
             Add(_T("configuration"), &Configuration);
         }
-        virtual ~Object()
-        {
-        }
+        ~Object() override = default;
 
         Object& operator=(const Object& RHS)
         {
-
             Locator = RHS.Locator;
             User = RHS.User;
             Group = RHS.Group;

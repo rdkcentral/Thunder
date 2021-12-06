@@ -25,7 +25,7 @@ namespace WPEFramework {
 namespace WarningReporting {
     struct EXTERNAL IWarningReportingMedia {
         virtual ~IWarningReportingMedia() = default;
-        virtual void Output(const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information) = 0; 
+        virtual void Output(const char fileName[], const uint32_t lineNumber, const char identifer[], const IWarningEvent* information) = 0; 
     };
 }
 } 

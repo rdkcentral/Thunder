@@ -18,48 +18,24 @@
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ITraceControl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ITraceMedia.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Logging.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Module.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TraceCategories.h">
+    <ClInclude Include="IWarningReportingMedia.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TraceControl.h">
+    <ClInclude Include="warningreporting.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TraceMedia.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TraceUnit.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="tracing.h">
+    <ClInclude Include="WarningReportingUnit.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Logging.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Module.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TraceCategories.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TraceMedia.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TraceUnit.cpp">
+    <ClCompile Include="WarningReportingUnit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

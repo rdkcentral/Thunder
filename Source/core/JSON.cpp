@@ -38,7 +38,9 @@ namespace Core {
 
         /* static */ constexpr size_t Error::kContextMaxLength;
 
-        /* static */ char IElement::NullTag[] = "null";
+        /* static */ char IElement::NullTag[5] = { 'n', 'u', 'l', 'l', '\0' };
+        /* static */ char IElement::TrueTag[5] = { 't', 'r', 'u', 'e', '\0' };
+        /* static */ char IElement::FalseTag[6] = { 'f', 'a', 'l', 's', 'e', '\0' };
 
         string Variant::GetDebugString(const TCHAR name[], int indent, int arrayIndex) const
         {

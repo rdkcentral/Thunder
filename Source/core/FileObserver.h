@@ -170,12 +170,22 @@ public:
                 _observers.erase(loop);
                 if (_files.size() == 0) {
                     // This is the first entry, lets start monitoring
+                    _adminLock.Unlock();
                     Core::ResourceMonitor::Instance().Unregister(*this);
                 }
+                else {
+                    _adminLock.Unlock();
+                }
+            }
+            else {
+                _adminLock.Unlock();
             }
         }
+        else
+        {
+            _adminLock.Unlock();
+        }
 
-        _adminLock.Unlock();
     }
 
 private:

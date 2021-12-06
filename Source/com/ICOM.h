@@ -20,9 +20,9 @@
 #pragma once
 
 #include "Ids.h"
-#include "IRPCIterator.h"
+#include "IIteratorType.h"
 
-// @stubgen:include "IRPCIterator.h"
+// @stubgen:include "IIteratorType.h"
 
 namespace WPEFramework {
     namespace RPC {

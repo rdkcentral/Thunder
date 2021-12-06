@@ -231,6 +231,18 @@
     <ClInclude Include="IPFrame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="WarningReportingCategories.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WarningReportingControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IWarningReportingControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CallsignTLS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CyclicBuffer.cpp">

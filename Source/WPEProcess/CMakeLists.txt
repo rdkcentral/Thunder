@@ -43,6 +43,7 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
+          ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
           ${NAMESPACE}COM::${NAMESPACE}COM
         )
         

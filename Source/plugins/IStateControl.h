@@ -28,8 +28,7 @@ namespace WPEFramework {
 namespace PluginHost {
 
     // This interface gives direct access to change occuring on the remote object
-    struct EXTERNAL IStateControl
-        : virtual public Core::IUnknown {
+    struct EXTERNAL IStateControl : virtual public Core::IUnknown {
 
         enum {
             ID = RPC::ID_STATECONTROL
@@ -47,25 +46,16 @@ namespace PluginHost {
             EXITED = 0x0003
         };
 
-        struct INotification
-            : virtual public Core::IUnknown {
+        struct INotification : virtual public Core::IUnknown {
             enum {
                 ID = RPC::ID_STATECONTROL_NOTIFICATION
             };
-
-            virtual ~INotification()
-            {
-            }
 
             virtual void StateChange(const IStateControl::state state) = 0;
         };
 
         static const TCHAR* ToString(const state value);
         static const TCHAR* ToString(const command value);
-
-        virtual ~IStateControl()
-        {
-        }
 
         virtual uint32_t Configure(PluginHost::IShell* framework) = 0;
         virtual state State() const = 0;
@@ -74,19 +64,8 @@ namespace PluginHost {
         virtual void Register(IStateControl::INotification* notification) = 0;
         virtual void Unregister(IStateControl::INotification* notification) = 0;
     };
-}
-
-namespace Core {
-
-    template <>
-    EXTERNAL /* static */ const EnumerateConversion<PluginHost::IStateControl::command>*
-    EnumerateType<PluginHost::IStateControl::command>::Table(const uint16_t);
-
-    template <>
-    EXTERNAL /* static */ const EnumerateConversion<PluginHost::IStateControl::state>*
-    EnumerateType<PluginHost::IStateControl::state>::Table(const uint16_t);
 
 } // namespace PluginHost
-} // namespace WPEFramework
+}
 
 #endif // __ISTATECONTROL_H
