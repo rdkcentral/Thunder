@@ -359,8 +359,17 @@ namespace Web
         return (Core::EnumerateType<type>(value).Data());
     }
 
+    bool endsWithCaseInsensitive(const string& mainStr, const string& toMatch)
+    {
+        auto it = toMatch.begin();
+        return mainStr.size() >= toMatch.size() &&
+                std::all_of(std::next(mainStr.begin(),mainStr.size() - toMatch.size()), mainStr.end(), [&it](const char & c) {
+                    return ::tolower(c) == (*(it++));
+                });
+    }
+
     // Find the correct file to serve
-    bool MIMETypeForFile(const string path, string& fileToService, MIMETypes& mimeType)
+    bool MIMETypeAndEncodingForFile(const string path, string& fileToService, MIMETypes& mimeType, EncodingTypes& encoding)
     {
         mimeType = Web::MIME_UNKNOWN;
         bool filePresent = false;
@@ -380,26 +389,21 @@ namespace Web
         }
 
         if (filePresent == true) {
-            int position = static_cast<int>(fileToService.rfind('.', -1));
-
+            string fileName = fileToService;
+            int position = static_cast<int>(fileName.rfind('.', -1));
+            if (endsWithCaseInsensitive(fileName, ".gz")) {
+                encoding = EncodingTypes::ENCODING_GZIP;
+                fileName.resize(fileName.size() - 3);
+                position = static_cast<int>(fileName.rfind('.', -1));
+            }
             // See if we have an extension to go on..
             if (position != -1) {
                 uint16_t index = 0;
-                uint16_t length = static_cast<uint16_t>(fileToService.length()) - (++position);
 
                 // Seems we have an extension, what is it
                 while ((mimeType == Web::MIME_UNKNOWN) && (index < (sizeof(extensionLookupTable) / sizeof(FileExtensionTable)))) {
-                    // Miimum should be the same length...
-                    if (extensionLookupTable[index].length == length) {
-                        uint16_t item = 0;
-
-                        while ((item < length) && (tolower(fileToService[position + item]) == extensionLookupTable[index].fileExtension[item])) {
-                            item++;
-                        }
-
-                        if (item == length) {
-                            mimeType = extensionLookupTable[index].type;
-                        }
+                    if (endsWithCaseInsensitive(fileName, extensionLookupTable[index].fileExtension)) {
+                        mimeType = extensionLookupTable[index].type;
                     }
 
                     index++;
