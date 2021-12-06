@@ -359,7 +359,7 @@ namespace Web
         return (Core::EnumerateType<type>(value).Data());
     }
 
-    bool endsWithCaseInsensitive(const string& mainStr, const string& toMatch)
+    bool EndsWithCaseInsensitive(const string& mainStr, const string& toMatch)
     {
         auto it = toMatch.begin();
         return mainStr.size() >= toMatch.size() &&
@@ -391,7 +391,7 @@ namespace Web
         if (filePresent == true) {
             string fileName = fileToService;
             int position = static_cast<int>(fileName.rfind('.', -1));
-            if (endsWithCaseInsensitive(fileName, ".gz")) {
+            if (EndsWithCaseInsensitive(fileName, ".gz")) {
                 encoding = EncodingTypes::ENCODING_GZIP;
                 fileName.resize(fileName.size() - 3);
                 position = static_cast<int>(fileName.rfind('.', -1));
@@ -402,7 +402,7 @@ namespace Web
 
                 // Seems we have an extension, what is it
                 while ((mimeType == Web::MIME_UNKNOWN) && (index < (sizeof(extensionLookupTable) / sizeof(FileExtensionTable)))) {
-                    if (endsWithCaseInsensitive(fileName, extensionLookupTable[index].fileExtension)) {
+                    if (EndsWithCaseInsensitive(fileName, extensionLookupTable[index].fileExtension)) {
                         mimeType = extensionLookupTable[index].type;
                     }
 
