@@ -30,9 +30,10 @@ namespace Core {
 namespace Tests {
 
     struct Data {
-        string bufferName;
         bool shareable;
-        bool readOnly;
+        bool usingDataElementFile;
+        uint32_t mode;
+        string bufferName;
     };
 
     inline uint32_t ResetFileMask()
@@ -150,6 +151,10 @@ namespace Tests {
             : CyclicBuffer(fileName, mode, bufferSize, overwrite)
         {
         }
+        CyclicBufferTest(DataElementFile& dataElementFile, const bool initiator, const uint32_t offset, const uint32_t bufferSize, const bool overwrite)
+            : CyclicBuffer(dataElementFile, initiator, offset, bufferSize, overwrite)
+        {
+        }
 
         ~CyclicBufferTest() = default;
 
@@ -165,7 +170,6 @@ namespace Tests {
             return cursor.Offset();
         }
     };
-
     TEST(Core_CyclicBuffer, Create)
     {
         const uint32_t mode =
@@ -515,6 +519,38 @@ namespace Tests {
         // Remove after usage before destruction
         const_cast<File&>(buffer.Storage()).Destroy();
     }
+    TEST(Core_CyclicBuffer, Using_DataElementFile)
+    {
+        const uint32_t mode =
+            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
+            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
+            Core::File::CREATE | Core::File::SHAREABLE;
+
+        {
+            std::string fileName {"cyclicbuffer01"};
+            uint8_t cyclicBufferSize = 50;
+            uint8_t cyclicBufferWithControlDataSize = cyclicBufferSize + sizeof(CyclicBuffer::control);
+            DataElementFile dataElementFile(fileName, mode, cyclicBufferWithControlDataSize);
+            // Create CyclicBuffer with Size 50
+            CyclicBuffer buffer(dataElementFile, true, 0, cyclicBufferWithControlDataSize, false);
+
+            EXPECT_STREQ(buffer.Name().c_str(), fileName.c_str());
+            EXPECT_EQ(buffer.Size(), cyclicBufferSize);
+            EXPECT_EQ(buffer.IsValid(), true);
+            EXPECT_EQ(buffer.Validate(), true);
+
+            // Check File Size
+            EXPECT_EQ(FileSize(fileName.c_str()), cyclicBufferWithControlDataSize);
+
+            // Remove after usage before destruction
+            const_cast<File&>(buffer.Storage()).Destroy();
+
+            // Check File Exist / Valid
+            EXPECT_EQ(buffer.IsValid(), false);
+            EXPECT_EQ(IsFileExist(fileName.c_str()), false);
+        }
+    }
     TEST(Core_CyclicBuffer, Write_Overflow_WithoutOverWrite)
     {
         std::string bufferName {"cyclicbuffer01"};
@@ -584,7 +620,7 @@ namespace Tests {
         }
         EXPECT_EQ(buffer.Overwritten(), false);
         EXPECT_EQ(buffer.Used(), size);
-        EXPECT_EQ(buffer.Free(), cyclicBufferSize - size);
+        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         uint8_t data2[80];
         memset(&data2, 'B', sizeof(data2));
@@ -597,7 +633,7 @@ namespace Tests {
 
         EXPECT_EQ(buffer.Overwritten(), true);
         EXPECT_EQ(buffer.Used(), size);
-        EXPECT_EQ(buffer.Free(), cyclicBufferSize - size);
+        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         char testData[] = "123456789012345678901234567890";
         size = sizeof(testData) + 2;
@@ -607,7 +643,7 @@ namespace Tests {
         EXPECT_EQ(buffer.Overwritten(), true);
 
         EXPECT_EQ(buffer.Used(), size);
-        EXPECT_EQ(buffer.Free(), cyclicBufferSize - size);
+        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         // Try overwrite with size of Free()
         uint8_t data3[buffer.Free()];
@@ -620,7 +656,7 @@ namespace Tests {
         }
         EXPECT_EQ(buffer.Overwritten(), true);
         EXPECT_EQ(buffer.Used(), size);
-        EXPECT_EQ(buffer.Free(), cyclicBufferSize - size);
+        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         // Flush to start from beginning
         buffer.Flush();
@@ -631,7 +667,7 @@ namespace Tests {
         EXPECT_EQ(buffer.Overwritten(), false);
 
         EXPECT_EQ(buffer.Used(), size);
-        EXPECT_EQ(buffer.Free(), cyclicBufferSize - size);
+        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         uint8_t read = 0;
         // Verify data is overwritted
@@ -651,7 +687,7 @@ namespace Tests {
         }
         EXPECT_EQ(buffer.Overwritten(), false);
         EXPECT_EQ(buffer.Used(), size);
-        EXPECT_EQ(buffer.Free(), cyclicBufferSize - size);
+        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         // Verify Overwrite without reservation
         size = sizeof(data2) + 2;
@@ -660,12 +696,11 @@ namespace Tests {
 
         EXPECT_EQ(buffer.Overwritten(), true);
         EXPECT_EQ(buffer.Used(), size);
-        EXPECT_EQ(buffer.Free(), cyclicBufferSize - size);
+        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         // Remove after usage before destruction
         const_cast<File&>(buffer.Storage()).Destroy();
     }
-
     static int ClonedProcessFunc(void* arg) {
         Data* data = static_cast<Data*>(arg);
         uint32_t cyclicBufferSize = 10;
@@ -678,7 +713,6 @@ namespace Tests {
             cyclicBufferSize, false);
 
         buffer.Write(reinterpret_cast<const uint8_t*>(SampleData), sizeof(SampleData));
-
         sleep(2);
         return 0;
     }
@@ -707,7 +741,7 @@ namespace Tests {
         waitpid(pid, &status, 0);
         free(stack);
     }
-    void TestSharePermissionsFromDifferentProcess(bool shareable, bool readOnly)
+    void TestSharePermissionsFromDifferentProcess(bool shareable)
     {
         std::string bufferName {"cyclicbuffer01"};
         SetSharePermissionsFromClonedProcess(bufferName, shareable);
@@ -717,11 +751,10 @@ namespace Tests {
 
         CyclicBuffer buffer(bufferName.c_str(),
             Core::File::USER_READ | Core::File::USER_WRITE |
-            //TODO: Check why this part endup with crash on readonly case
-            ((readOnly == true) ? Core::File::USER_READ : (Core::File::USER_READ | Core::File::USER_WRITE)) |
-            ((readOnly == true) ? Core::File::GROUP_READ: (Core::File::GROUP_READ | Core::File::GROUP_WRITE))  |
-            ((readOnly == true) ? Core::File::OTHERS_READ : (Core::File::OTHERS_READ | Core::File::OTHERS_WRITE))
-            | shareableFlag, cyclicBufferSize, false);
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
+            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
+            shareableFlag, cyclicBufferSize, false);
+
         EXPECT_EQ(buffer.Used(), ((shareable == true) ? sizeof(SampleData) : 0));
         EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
 
@@ -729,11 +762,9 @@ namespace Tests {
             EXPECT_NE(buffer.Size(), 0u);
             uint8_t writeData = 'T';
             uint8_t readData = 0;
-            EXPECT_EQ(buffer.Read(&readData, 1), 1u);
-                EXPECT_EQ(readData, 't');
-            if (readOnly == false) {
-                EXPECT_EQ(buffer.Write(&writeData, 1), 1u);
-            }
+            EXPECT_EQ(buffer.Read(&readData, 1, true), 1u);
+            EXPECT_EQ(readData, 't');
+            EXPECT_EQ(buffer.Write(&writeData, 1), 1u);
         } else {
             EXPECT_EQ(buffer.Size(), 0u);
         }
@@ -742,69 +773,87 @@ namespace Tests {
     }
     TEST(Core_CyclicBuffer, Create_CheckSharePermissions_WithDifferentProcess)
     {
-        // With Buffer Permission as SHAREABLE and ReadWrite
-        TestSharePermissionsFromDifferentProcess(true, false);
-
-        // With Buffer Permission as SHAREABLE and ReadOnly
-        TestSharePermissionsFromDifferentProcess(true, true);
+        // With Buffer Permission as SHAREABLE
+        TestSharePermissionsFromDifferentProcess(true);
 
         // With Buffer Permission as PRIVATE
-        TestSharePermissionsFromDifferentProcess(false, true);
+        TestSharePermissionsFromDifferentProcess(false);
     }
-    void SetSharePermissionsFromForkedProcessAndVerify(bool shareable, bool readOnly)
+    void SetSharePermissionsFromForkedProcessAndVerify(bool shareable, bool usingDataElementFile = false)
     {
         std::string bufferName {"cyclicbuffer01"};
+        const uint32_t CyclicBufferSize = 10;
+
+        uint32_t shareableFlag = (shareable == true) ? Core::File::SHAREABLE : 0;
+        const uint32_t mode =
+            (Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE |
+            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
+            shareableFlag);
+
         struct Data data;
+        data.mode = mode;
         data.bufferName = bufferName.c_str();
         data.shareable = shareable;
-        data.readOnly = readOnly;
-        const uint32_t CyclicBufferSize = 10;
+        data.usingDataElementFile = usingDataElementFile;
+
         auto lambdaFunc = [bufferName](IPTestAdministrator & testAdmin) {
             struct Data* data = (reinterpret_cast<struct Data*>(testAdmin.Data()));
             uint32_t result;
             uint32_t cyclicBufferSize = CyclicBufferSize;
             uint8_t loadBuffer[cyclicBufferSize + 1];
-            uint32_t shareableFlag = (data->shareable == true) ? Core::File::SHAREABLE : 0;
-            CyclicBuffer buffer(data->bufferName.c_str(),
-                Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-                Core::File::GROUP_READ | Core::File::GROUP_WRITE |
-                Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
-                shareableFlag, cyclicBufferSize, false);
 
+            CyclicBufferTest* buffer = nullptr;
+            DataElementFile* dataElementFile = nullptr;
+            if (data->usingDataElementFile == true) {
+                uint8_t cyclicBufferWithControlDataSize = cyclicBufferSize + sizeof(CyclicBuffer::control);
+                dataElementFile = new DataElementFile(bufferName, data->mode | Core::File::CREATE, cyclicBufferWithControlDataSize);
+                buffer = new CyclicBufferTest(*dataElementFile, true, 0, cyclicBufferWithControlDataSize, false);
+            } else {
+                buffer = new CyclicBufferTest(bufferName, data->mode, cyclicBufferSize, false);
+            }
+
+            EXPECT_EQ(buffer->Size(), CyclicBufferSize);
             testAdmin.Sync("setup server");
-
+            EXPECT_EQ(buffer->Read(loadBuffer, buffer->Used()), 0u);
             testAdmin.Sync("setup client");
 
-            EXPECT_EQ(buffer.Read(loadBuffer, buffer.Used()), 0u);
-
             if (data->shareable == true) {
-                string dataStr = "abcdefghi";
-                result = buffer.Write(reinterpret_cast<const uint8_t*>(dataStr.c_str()), dataStr.size());
+                testAdmin.Sync("client read empty data");
+                string dataStr = "abcd";
+
+                result = buffer->Write(reinterpret_cast<const uint8_t*>(dataStr.c_str()), dataStr.size());
+                EXPECT_EQ(result, dataStr.size());
+
+                dataStr = "efgh";
+                result = buffer->Write(reinterpret_cast<const uint8_t*>(dataStr.c_str()), dataStr.size());
                 EXPECT_EQ(result, dataStr.size());
 
                 testAdmin.Sync("server wrote");
 
                 testAdmin.Sync("client read");
-                if (data->readOnly == false) {
 
-                    testAdmin.Sync("client wrote");
+                testAdmin.Sync("client wrote");
 
-                    result = buffer.Peek(loadBuffer, buffer.Used());
-                    loadBuffer[result] = '\0';
-                    EXPECT_EQ(result, 7u);
-                    EXPECT_STREQ((char*)loadBuffer, "efghikl");
-                    EXPECT_EQ(buffer.Used(), 7u);
+                result = buffer->Peek(loadBuffer, buffer->Used());
+                loadBuffer[result] = '\0';
+                EXPECT_EQ(result, 9u);
+                EXPECT_STREQ((char*)loadBuffer, "bcdefghkl");
+                EXPECT_EQ(buffer->Used(), 9u);
 
-                    testAdmin.Sync("server peek");
+                testAdmin.Sync("server peek");
 
-                    testAdmin.Sync("server start read");
-                    result = buffer.Read(loadBuffer, buffer.Used());
-                    loadBuffer[result] = '\0';
-                    EXPECT_EQ(result, 7u);
-                    EXPECT_STREQ((char*)loadBuffer, "efghikl");
+                testAdmin.Sync("server start read");
+                result = buffer->Read(loadBuffer, buffer->Used());
+                loadBuffer[result] = '\0';
+                EXPECT_EQ(result, 9u);
+                EXPECT_STREQ((char*)loadBuffer, "bcdefghkl");
 
-                    EXPECT_EQ(buffer.Used(), 0u);
-                    testAdmin.Sync("server read");
+                EXPECT_EQ(buffer->Used(), 0u);
+                testAdmin.Sync("server read");
+                delete buffer;
+                if (dataElementFile) {
+                    delete dataElementFile;
                 }
             }
         };
@@ -820,50 +869,65 @@ namespace Tests {
 
             uint32_t result;
             uint32_t cyclicBufferSize = CyclicBufferSize;
-            uint8_t loadBuffer[cyclicBufferSize + 1];
+            uint8_t loadBuffer[cyclicBufferSize];
 
-            uint32_t shareableFlag = (shareable == true) ? Core::File::SHAREABLE : 0;
-            CyclicBuffer buffer(bufferName.c_str(),
-                ((readOnly == true) ? Core::File::USER_READ : (Core::File::USER_READ | Core::File::USER_WRITE)) |
-                ((readOnly == true) ? Core::File::GROUP_READ: (Core::File::GROUP_READ | Core::File::GROUP_WRITE))  |
-                ((readOnly == true) ? Core::File::OTHERS_READ : (Core::File::OTHERS_READ | Core::File::OTHERS_WRITE))
-                | shareableFlag, 0, false);
+            CyclicBufferTest* buffer;
+            DataElementFile* dataElementFile = nullptr;
+            if (usingDataElementFile == true) {
+                dataElementFile = new DataElementFile(bufferName, mode, 0);
+                buffer = new CyclicBufferTest(*dataElementFile, false, 0, 0, false);
+            } else {
+                buffer = new CyclicBufferTest(bufferName, mode, 0, false);
+                sleep(1);
+            }
 
-            EXPECT_EQ(buffer.Size(), static_cast<uint32_t>(((shareable == true) ? CyclicBufferSize : 0)));
+            EXPECT_EQ(buffer->Size(), static_cast<uint32_t>(((shareable == true) ? CyclicBufferSize : 0)));
             testAdmin.Sync("setup client");
 
             if (shareable == true) {
+                memset(loadBuffer, 0, cyclicBufferSize);
+                result = buffer->Read(loadBuffer, 1, false);
+                EXPECT_EQ(result, static_cast<uint32_t>(0));
+
+                testAdmin.Sync("client read empty data");
                 testAdmin.Sync("server wrote");
-                result = buffer.Read(loadBuffer, 4);
-                EXPECT_EQ(result, static_cast<uint32_t>(4));
+                result = buffer->Read(loadBuffer, 1, false);
+                EXPECT_EQ(result, static_cast<uint32_t>(1));
                 loadBuffer[result] = '\0';
-                EXPECT_STREQ((char*)loadBuffer, "abcd");
-
+                EXPECT_STREQ((char*)loadBuffer, "a");
                 testAdmin.Sync("client read");
-                if (readOnly == false) {
-                    string data = "kl";
-                    result = buffer.Reserve(data.size());
-                    EXPECT_EQ(result, 2u);
-                    result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
-                    EXPECT_EQ(result, 2u);
-                    testAdmin.Sync("client wrote");
 
-                    testAdmin.Sync("server peek");
-                    EXPECT_EQ(buffer.Used(), 7u);
-                    testAdmin.Sync("server start read");
+                string data = "kl";
+                result = buffer->Reserve(data.size());
+                EXPECT_EQ(result, 2u);
+                result = buffer->Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
+                EXPECT_EQ(result, 2u);
+                testAdmin.Sync("client wrote");
 
-                    testAdmin.Sync("server read");
-                    EXPECT_EQ(buffer.Used(), 0u);
-                }
+                testAdmin.Sync("server peek");
+                EXPECT_EQ(buffer->Used(), 9u);
+                testAdmin.Sync("server start read");
+
+                testAdmin.Sync("server read");
+                EXPECT_EQ(buffer->Used(), 0u);
             }
-            const_cast<File&>(buffer.Storage()).Destroy();
+            const_cast<File&>(buffer->Storage()).Destroy();
+            delete buffer;
+            if (dataElementFile) {
+                delete dataElementFile;
+            }
+
         }
         Singleton::Dispose();
     }
     TEST(Core_CyclicBuffer, WithoutOverwriteUsingForks)
     {
-        //SetSharePermissionsFromForkedProcessAndVerify(true, true);
-        SetSharePermissionsFromForkedProcessAndVerify(true, false);
+        SetSharePermissionsFromForkedProcessAndVerify(true);
+        SetSharePermissionsFromForkedProcessAndVerify(false);
+    }
+    TEST(Core_CyclicBuffer, WithoutOverwriteUsingForks_UsingDataElementFile)
+    {
+        SetSharePermissionsFromForkedProcessAndVerify(true, true);
         SetSharePermissionsFromForkedProcessAndVerify(false, true);
     }
     TEST(Core_CyclicBuffer, WithoutOverwriteUsingForksReversed)
@@ -973,17 +1037,19 @@ namespace Tests {
                 Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
                 Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | Core::File::SHAREABLE;
 
-            CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
+            CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
  
             testAdmin.Sync("setup server");
             testAdmin.Sync("setup client");
 
-            string data = "abcdefghi";
-            uint32_t result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
+            string data = "abcdef";
+            uint16_t size = data.size() + 2;
+            uint32_t result = buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2u);
+            EXPECT_EQ(result, 2u);
+            result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
             EXPECT_EQ(result, data.size());
 
             testAdmin.Sync("server wrote");
-            testAdmin.Sync("client read");
             testAdmin.Sync("client wrote");
 
             uint8_t loadBuffer[cyclicBufferSize + 1];
@@ -1016,28 +1082,23 @@ namespace Tests {
                 Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
                 Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | Core::File::SHAREABLE;
 
-            CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
+            CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
 
             testAdmin.Sync("setup client");
             testAdmin.Sync("server wrote");
 
-            uint8_t loadBuffer[cyclicBufferSize + 1];
-            uint32_t result = buffer.Read(loadBuffer, 4);
-            loadBuffer[result] = '\0';
-            EXPECT_STREQ((char*)loadBuffer, "abcd");
-
-            testAdmin.Sync("client read");
-
             string data = "j";
-#if 0 //TODO: check overwrite issue here
-            //result = buffer.Reserve(8);
-            //result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
-            //EXPECT_EQ(result, data.size());
+            uint16_t size = 9;
+            uint32_t result = buffer.Reserve(9);
+            EXPECT_EQ(result, 9u);
+            result = buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2u);
+            EXPECT_EQ(result, 2u);
+            result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), 1u);
+            EXPECT_EQ(result, data.size());
 
-            data = "klmnopq";
-            //result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
-            //EXPECT_EQ(result, data.size());
-#endif
+            data = "klmnop";
+            result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), 6u);
+            EXPECT_EQ(result, data.size());
             testAdmin.Sync("client wrote");
 
             testAdmin.Sync("server peek");
@@ -1047,7 +1108,6 @@ namespace Tests {
         }
         Singleton::Dispose();
     }
-
     TEST(Core_CyclicBuffer, WithOverwriteUsingForksReversed)
     {
         std::string bufferName {"cyclicbuffer03"};
@@ -1082,7 +1142,7 @@ namespace Tests {
             result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), 1);
             data = "lmnopq";
             result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), 6);
-            EXPECT_EQ(buffer.Used(), 8u);
+            EXPECT_EQ(buffer.Used(), 9u);
             EXPECT_EQ(buffer.Overwritten(), false);
 
             size = 7;
@@ -1136,7 +1196,6 @@ namespace Tests {
 
             buffer.Peek(reinterpret_cast<uint8_t*>(&size), 2);
             EXPECT_EQ(size, buffer.Used());
-            loadBuffer[cyclicBufferSize + 1];
             result = buffer.Peek(loadBuffer, size);
             loadBuffer[result] = '\0';
             EXPECT_EQ(result, 7u);
@@ -1145,8 +1204,7 @@ namespace Tests {
             testAdmin.Sync("server peek");
             EXPECT_EQ(buffer.Free(), 3u);
             buffer.Read(reinterpret_cast<uint8_t*>(&size), 2);
-            loadBuffer[cyclicBufferSize + 1];
-            EXPECT_EQ(size - 2, buffer.Used());
+            EXPECT_EQ(buffer.Used(), static_cast<uint32_t>(size - 2));
             result = buffer.Read(loadBuffer, size - 2);
             loadBuffer[result] = '\0';
             EXPECT_EQ(result, 5u);

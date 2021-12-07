@@ -41,6 +41,7 @@ namespace Core {
         , _alert(false)
         , _administration(nullptr)
     {
+        ASSERT((mode & Core::File::USER_WRITE) != 0);
 #ifdef __WINDOWS__
         string strippedName(Core::File::PathName(_buffer.Name()) + Core::File::FileName(_buffer.Name()));
         _mutex = CreateSemaphore(nullptr, 1, 1, (strippedName + ".mutex").c_str());
