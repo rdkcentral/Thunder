@@ -96,8 +96,40 @@ namespace Tests {
         }
         return size;
     }
+    struct timespec GetCurrentTime()
+    {
+        struct timespec now;
+        clock_gettime(CLOCK_REALTIME, &now);
+        return now;
+    }
+    void CreateTimeOut(struct timespec& timeOutTime, const uint32_t waitTime)
+    {
+        timeOutTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000);
+        timeOutTime.tv_sec += (waitTime / 1000) + (timeOutTime.tv_nsec / 1000000000);
+        timeOutTime.tv_nsec = timeOutTime.tv_nsec % 1000000000;
+    }
+    bool CheckTimeOutIsExpired(struct timespec timeOutTime, const uint32_t waitTime)
+    {
+        struct timespec now;
+        clock_gettime(CLOCK_REALTIME, &now);
+
+        uint32_t remainingTime = 0;
+        CreateTimeOut(timeOutTime, waitTime);
+
+        if (now.tv_nsec > timeOutTime.tv_nsec) {
+
+            remainingTime = (now.tv_sec - timeOutTime.tv_sec) * 1000 +
+                   ((now.tv_nsec - timeOutTime.tv_nsec) / 1000000);
+        } else {
+
+            remainingTime = (timeOutTime.tv_sec - now.tv_sec - 1) * 1000 +
+                    ((1000000000 - (timeOutTime.tv_nsec - now.tv_nsec)) / 1000000);
+        }
+        return (remainingTime < waitTime);
+    }
 
     const char SampleData[] = "test";
+    const uint32_t MaxSignalWaitTime = 1000; // In milliseconds
     static void* ThreadToCheckBufferIsSharable(void* data)
     {
         CyclicBuffer* buffer = static_cast<CyclicBuffer*>(data);
@@ -120,10 +152,11 @@ namespace Tests {
         ThreadLock(const ThreadLock&) = delete;
         ThreadLock& operator=(const ThreadLock&) = delete;
 
-        ThreadLock(CyclicBuffer& cyclicBuffer, uint32_t waitTime)
+        ThreadLock(CyclicBuffer& cyclicBuffer, uint32_t waitTime, Event& event)
             : Thread(Thread::DefaultStackSize(), _T("Test2"))
-            , _cyclicBuffer(cyclicBuffer)
+            , _event(event)
             , _waitTime(waitTime)
+            , _cyclicBuffer(cyclicBuffer)
         {
         }
 
@@ -132,15 +165,20 @@ namespace Tests {
         virtual uint32_t Worker() override
         {
             if (IsRunning()) {
+
+                _event.SetEvent();
                 _cyclicBuffer.Lock(true, _waitTime);
+                _event.SetEvent();
+                Block();
             }
             return (infinite);
         }
-
     private:
-        CyclicBuffer& _cyclicBuffer;
+        Event& _event;
         uint32_t _waitTime;
+        CyclicBuffer& _cyclicBuffer;
     };
+
     class CyclicBufferTest : public CyclicBuffer {
     public:
         CyclicBufferTest() = delete;
@@ -863,7 +901,7 @@ namespace Tests {
         IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
 
         // This side (tested) acts as client
-        IPTestAdministrator testAdmin(otherSide, reinterpret_cast<void *>(&data));
+        IPTestAdministrator testAdmin(otherSide, reinterpret_cast<void *>(&data), 10);
         {
             testAdmin.Sync("setup server");
 
@@ -878,7 +916,6 @@ namespace Tests {
                 buffer = new CyclicBufferTest(*dataElementFile, false, 0, 0, false);
             } else {
                 buffer = new CyclicBufferTest(bufferName, mode, 0, false);
-                sleep(1);
             }
 
             EXPECT_EQ(buffer->Size(), static_cast<uint32_t>(((shareable == true) ? CyclicBufferSize : 0)));
@@ -1239,6 +1276,7 @@ namespace Tests {
         EXPECT_EQ(buffer.IsLocked(), true);
         buffer.Unlock();
         EXPECT_EQ(buffer.IsLocked(), false);
+        const_cast<File&>(buffer.Storage()).Destroy();
     }
     TEST(Core_CyclicBuffer, LockAlert_WithoutDataPresent)
     {
@@ -1257,6 +1295,7 @@ namespace Tests {
         EXPECT_EQ(buffer.IsLocked(), true);
         buffer.Unlock();
         EXPECT_EQ(buffer.IsLocked(), false);
+        const_cast<File&>(buffer.Storage()).Destroy();
     }
     TEST(Core_CyclicBuffer, LockUnlock_UsingCoreThread)
     {
@@ -1269,17 +1308,27 @@ namespace Tests {
             Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
             Core::File::SHAREABLE, cyclicBufferSize, false);
 
-#if 0
-        std::mutex mutex;
-        std::condition_variable cv;
-        ThreadLock threadLock(buffer, Core::infinite);
+        Event event(false, false);
+        ThreadLock threadLock(buffer, Core::infinite, event);
         threadLock.Run();
-        sleep(1);
-        EXPECT_EQ(buffer.IsLocked(), true);
+
+        // Lock before requesting cyclic buffer lock
+        if (event.Lock(MaxSignalWaitTime * 2) == Core::ERROR_NONE) {
+            // Seems thread is not active so re-request lock
+            event.ResetEvent();
+            event.Lock(MaxSignalWaitTime);
+        }
+        event.ResetEvent();
+
+        EXPECT_EQ(buffer.IsLocked(), false);
+
         buffer.Alert();
+
+        event.Lock(MaxSignalWaitTime);
+        event.ResetEvent();
         EXPECT_EQ(buffer.IsLocked(), false);
         threadLock.Stop();
-#endif
+        const_cast<File&>(buffer.Storage()).Destroy();
     }
     TEST(Core_CyclicBuffer, LockUnLock_FromParentAndForks)
     {
@@ -1335,7 +1384,7 @@ namespace Tests {
         IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
 
         // This side (tested) acts as client
-        IPTestAdministrator testAdmin(otherSide);
+        IPTestAdministrator testAdmin(otherSide, 10);
         {
             testAdmin.Sync("setup server");
 
@@ -1347,20 +1396,21 @@ namespace Tests {
 
             CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
 
-            testAdmin.Sync("setup client");
             EXPECT_EQ(buffer.LockPid(), 0u);
+            testAdmin.Sync("setup client");
             testAdmin.Sync("server locked");
             EXPECT_NE(buffer.LockPid(), 0u);
+            EXPECT_NE(buffer.LockPid(), static_cast<uint32_t>(getpid()));
 
             // TODO: What is the purpose of lock ?? since we are able to write from client process
             // even it is locked from server process
             string data = "jklmnopqr";
             uint32_t result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
             EXPECT_EQ(result, data.size());
-            testAdmin.Sync("client wrote");
 
             EXPECT_NE(buffer.LockPid(), 0u);
             EXPECT_NE(buffer.LockPid(), static_cast<uint32_t>(getpid()));
+            testAdmin.Sync("client wrote");
             testAdmin.Sync("server unlocked");
             EXPECT_EQ(buffer.LockPid(), 0u);
             buffer.Lock(false);
@@ -1387,7 +1437,7 @@ namespace Tests {
     }
     TEST(Core_CyclicBuffer, LockUnlock_FromParentAndForks_WithDataPresent)
     {
-        std::string bufferName {"cyclicbuffer04"};
+        std::string bufferName {"cyclicbuffer05"};
 
         auto lambdaFunc = [bufferName](IPTestAdministrator & testAdmin) {
             uint32_t cyclicBufferSize = 20;
@@ -1403,27 +1453,69 @@ namespace Tests {
             testAdmin.Sync("setup client");
 
             EXPECT_EQ(buffer.LockPid(), 0u);
-#if 0 //TODO: timed lock is exiting??
             buffer.Lock(true, 100);
-            EXPECT_EQ(buffer.LockPid(), static_cast<uint32_t>(getpid()));
+            EXPECT_EQ(buffer.LockPid(), 0u);
             testAdmin.Sync("server timedLock");
             EXPECT_EQ(buffer.IsLocked(), false);
-#endif
-#if 0 //TODO: infinite lock also not working with write, here write getting locked :-(
-            ThreadLock threadLock(buffer, Core::infinite);
+
+            {
+                uint8_t data = 1;
+                uint32_t result = buffer.Write(reinterpret_cast<const uint8_t*>(&data), 1);
+                EXPECT_EQ(result, 1u);
+                EXPECT_EQ(buffer.IsLocked(), false);
+                EXPECT_NE(buffer.Used(), 0u);
+
+                Event event(false, false);
+                ThreadLock threadLock(buffer, Core::infinite, event);
+                threadLock.Run();
+
+                // Lock before requesting cyclic buffer lock
+                if (event.Lock(MaxSignalWaitTime * 2) == Core::ERROR_NONE) {
+                    // Seems thread is not active so re-request lock
+                    event.ResetEvent();
+                    event.Lock(MaxSignalWaitTime);
+                }
+
+                // Lock after requesting cyclic buffer lock
+                event.Lock(MaxSignalWaitTime);
+                event.ResetEvent();
+                threadLock.Stop();
+                EXPECT_EQ(buffer.IsLocked(), true);
+                buffer.Unlock();
+            }
+            testAdmin.Sync("server locked & unlocked");
+
+            buffer.Flush();
+            EXPECT_EQ(buffer.Used(), 0u);
+
+            Event event(false, false);
+            ThreadLock threadLock(buffer, Core::infinite, event);
             threadLock.Run();
-            EXPECT_EQ(buffer.LockPid(), static_cast<uint32_t>(getpid()));
-            EXPECT_EQ(buffer.IsLocked(), true);
+
+            // Lock before requesting cyclic buffer lock
+            if (event.Lock(MaxSignalWaitTime * 2) == Core::ERROR_NONE) {
+                // Seems thread is not active so re-request lock
+                event.ResetEvent();
+                event.Lock(MaxSignalWaitTime);
+            }
+
+            testAdmin.Sync("server locked");
+            EXPECT_EQ(buffer.LockPid(), 0u);
 
             string data = "abcdefghi";
             uint32_t result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
             EXPECT_EQ(result, data.size());
             EXPECT_EQ(buffer.IsLocked(), false);
+            EXPECT_EQ(buffer.LockPid(), 0u);
+
+            // Lock after requesting cyclic buffer lock
+            event.Lock(MaxSignalWaitTime);
+            event.ResetEvent();
+            threadLock.Stop();
+
             testAdmin.Sync("server locked & wrote");
 
-            EXPECT_EQ(buffer.LockPid(), 0u);
             testAdmin.Sync("server unlocked");
-#endif
             testAdmin.Sync("client wrote & unlocked");
             EXPECT_EQ(buffer.LockPid(), 0u);
 
@@ -1435,7 +1527,7 @@ namespace Tests {
         IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
 
         // This side (tested) acts as client
-        IPTestAdministrator testAdmin(otherSide);
+        IPTestAdministrator testAdmin(otherSide, 15);
         {
             testAdmin.Sync("setup server");
 
@@ -1446,37 +1538,52 @@ namespace Tests {
                 Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | Core::File::SHAREABLE;
 
             CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
-
             testAdmin.Sync("setup client");
-#if 0 //TODO: timed lock is exiting??
+
             testAdmin.Sync("server timedLock");
 
+            testAdmin.Sync("server locked & unlocked");
+            EXPECT_EQ(buffer.LockPid(), 0u);
+            testAdmin.Sync("server locked");
             EXPECT_EQ(buffer.LockPid(), 0u);
             testAdmin.Sync("server locked & wrote");
-            EXPECT_NE(buffer.LockPid(), 0u);
-            EXPECT_NE(buffer.LockPid(), static_cast<uint32_t>(getpid()));
+            EXPECT_EQ(buffer.LockPid(), 0u);
             testAdmin.Sync("server unlocked");
             EXPECT_EQ(buffer.LockPid(), 0u);
-            buffer.Lock(true, 500);
-            EXPECT_EQ(buffer.IsLocked(), true);
+
+            // Check Lock Timed Out after wait Time
+            buffer.Flush();
+            const uint32_t waitTime = 1500;
+            struct timespec timeOutTime = GetCurrentTime();
+            buffer.Lock(true, waitTime);
+            EXPECT_EQ(CheckTimeOutIsExpired(timeOutTime, waitTime), true);
             EXPECT_EQ(buffer.IsLocked(), false);
-#endif
-#if 0 //TODO: infinite lock also not working with write, here write getting locked :-(
-            ThreadLock threadLock(buffer, Core::infinite);
+
+            Event event(false, false);
+            ThreadLock threadLock(buffer, Core::infinite, event);
             threadLock.Run();
 
-            EXPECT_EQ(buffer.LockPid(), static_cast<uint32_t>(getpid()));
-            EXPECT_EQ(buffer.IsLocked(), true);
+            // Lock before requesting cyclic buffer lock
+            if (event.Lock(MaxSignalWaitTime * 2) == Core::ERROR_NONE) {
+                // Seems thread is not active so re-request lock
+                event.ResetEvent();
+                event.Lock(MaxSignalWaitTime);
+            }
+            EXPECT_EQ(buffer.LockPid(), 0u);
 
-#endif
             string data = "jklmnopqr";
             uint32_t result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
             EXPECT_EQ(result, data.size());
             EXPECT_EQ(buffer.IsLocked(), false);
+            // Lock after requesting cyclic buffer lock
+            event.Lock(MaxSignalWaitTime * 2);
+            event.ResetEvent();
+            threadLock.Stop();
+
+            EXPECT_EQ(buffer.LockPid(), 0u);
             testAdmin.Sync("client wrote & unlocked");
 
             EXPECT_EQ(buffer.LockPid(), 0u);
-
             testAdmin.Sync("client exit");
             const_cast<File&>(buffer.Storage()).Destroy();
         }
@@ -1484,7 +1591,7 @@ namespace Tests {
     }
     TEST(Core_CyclicBuffer, LockUnlock_FromParentAndForks_UsingAlert)
     {
-        std::string bufferName {"cyclicbuffer04"};
+        std::string bufferName {"cyclicbuffer05"};
 
         auto lambdaFunc = [bufferName](IPTestAdministrator & testAdmin) {
             uint32_t cyclicBufferSize = 20;
@@ -1500,23 +1607,31 @@ namespace Tests {
             testAdmin.Sync("setup client");
 
             EXPECT_EQ(buffer.LockPid(), 0u);
-#if 0 //TODO: infinite lock or timed lock not working with Alert :-(
-            ThreadLock threadLock(buffer, Core::infinite);
+            Event event(false, false);
+            ThreadLock threadLock(buffer, Core::infinite, event);
             threadLock.Run();
             EXPECT_EQ(buffer.LockPid(), 0u);
-            EXPECT_EQ(buffer.IsLocked(), true);
             testAdmin.Sync("server locked");
+
+            // Lock before requesting cyclic buffer lock
+            if (event.Lock(MaxSignalWaitTime * 2) == Core::ERROR_NONE) {
+                // Seems thread is not active so re-request lock
+                event.ResetEvent();
+                event.Lock(MaxSignalWaitTime);
+            }
+            event.ResetEvent();
+
             buffer.Alert();
+
+            event.Lock(MaxSignalWaitTime * 2);
+            event.ResetEvent();
+            threadLock.Stop();
+
             testAdmin.Sync("server alerted");
-            EXPECT_EQ(buffer.IsLocked(), false);
-#endif
-#if 0
             testAdmin.Sync("client locked");
             EXPECT_EQ(buffer.LockPid(), 0u);
-            EXPECT_EQ(buffer.IsLocked(), true);
             testAdmin.Sync("client alerted");
-            EXPECT_EQ(buffer.IsLocked(), false);
-#endif
+            EXPECT_EQ(buffer.LockPid(), 0u);
         };
 
         static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
@@ -1524,7 +1639,7 @@ namespace Tests {
         IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
 
         // This side (tested) acts as client
-        IPTestAdministrator testAdmin(otherSide);
+        IPTestAdministrator testAdmin(otherSide, 10);
         {
             testAdmin.Sync("setup server");
 
@@ -1537,26 +1652,35 @@ namespace Tests {
             CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
 
             testAdmin.Sync("setup client");
-#if 0
             testAdmin.Sync("server locked");
 
-            EXPECT_EQ(buffer.IsLocked(), true);
             EXPECT_EQ(buffer.LockPid(), 0u);
 
             testAdmin.Sync("server alerted");
-            EXPECT_EQ(buffer.IsLocked(), false);
             EXPECT_EQ(buffer.LockPid(), 0u);
-#endif
-#if 0 //TODO: infinite/timed lock also not working with alert, here write getting locked :-(
-            ThreadLock threadLock(buffer, Core::infinite);
+
+            Event event(false, false);
+            ThreadLock threadLock(buffer, Core::infinite, event);
             threadLock.Run();
             EXPECT_EQ(buffer.LockPid(), 0u);
             testAdmin.Sync("client locked");
+
+            // Lock before requesting cyclic buffer lock
+            if (event.Lock(MaxSignalWaitTime * 2) == Core::ERROR_NONE) {
+                // Seems thread is not active so re-request lock
+                event.ResetEvent();
+                event.Lock(MaxSignalWaitTime);
+            }
+            event.ResetEvent();
+
             buffer.Alert();
-            EXPECT_EQ(buffer.IsLocked(), false);
+
+            event.Lock(MaxSignalWaitTime * 2);
+            event.ResetEvent();
+            threadLock.Stop();
+
             EXPECT_EQ(buffer.LockPid(), 0u);
             testAdmin.Sync("client alerted");
-#endif
 
             const_cast<File&>(buffer.Storage()).Destroy();
         }

@@ -184,10 +184,11 @@ namespace Core {
     }
 
     // This is in MS...
-    uint32_t CyclicBuffer::SignalLock(const uint32_t waitTime)
+    uint32_t CyclicBuffer::SignalLock(uint32_t& waitTime)
     {
 
-        uint32_t result = waitTime;
+        uint32_t result = Core::ERROR_NONE;
+        uint32_t pendingWaitTime = waitTime;
 
         if (waitTime != Core::infinite) {
 #ifdef __POSIX__
@@ -196,7 +197,7 @@ namespace Core {
             clock_gettime(CLOCK_REALTIME, &structTime);
 
             structTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
-            structTime.tv_sec += (waitTime / 1000); // + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
+            structTime.tv_sec += (waitTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
             structTime.tv_nsec = structTime.tv_nsec % 1000000000;
 
             if (pthread_cond_timedwait(&(_administration->_signal), &(_administration->_mutex), &structTime) != 0) {
@@ -205,18 +206,20 @@ namespace Core {
                 clock_gettime(CLOCK_REALTIME, &nowTime);
                 if (nowTime.tv_nsec > structTime.tv_nsec) {
 
-                    result = (nowTime.tv_sec - structTime.tv_sec) * 1000 + ((nowTime.tv_nsec - structTime.tv_nsec) / 1000000);
+                    pendingWaitTime = (nowTime.tv_sec - structTime.tv_sec) * 1000 + ((nowTime.tv_nsec - structTime.tv_nsec) / 1000000);
                 } else {
 
-                    result = (nowTime.tv_sec - structTime.tv_sec - 1) * 1000 + ((1000000000 - (structTime.tv_nsec - nowTime.tv_nsec)) / 1000000);
+                    pendingWaitTime = (nowTime.tv_sec - structTime.tv_sec - 1) * 1000 + ((1000000000 - (structTime.tv_nsec - nowTime.tv_nsec)) / 1000000);
                 }
                 TRACE_L1("End wait. %d\n", result);
+                result = Core::ERROR_TIMEDOUT;
             }
 #else
             if (::WaitForSingleObjectEx(_signal, waitTime, FALSE) == WAIT_OBJECT_0) {
 
                 // Calculate the time we used, and subtract it from the waitTime.
-                result = 100;
+                pendingWaitTime = 100;
+                result = Core::ERROR_TIMEDOUT;
             }
 #endif
 
@@ -228,7 +231,10 @@ namespace Core {
 #else
             ::WaitForSingleObjectEx(_signal, INFINITE, FALSE);
 #endif
+            pendingWaitTime = 0;
         }
+
+        waitTime = pendingWaitTime;
         return (result);
     }
 
@@ -247,21 +253,26 @@ namespace Core {
     void CyclicBuffer::Reevaluate()
     {
 
+        AdminLock();
         // See if we need to have some interested actor reevaluate its state..
         if (_administration->_agents.load() > 0) {
 
 #ifdef __POSIX__
+
             for (int index = _administration->_agents.load(); index != 0; index--) {
                 pthread_cond_signal(&(_administration->_signal));
             }
 #else
             ReleaseSemaphore(_signal, _administration->_agents.load(), nullptr);
 #endif
+            AdminUnlock();
 
             // Wait till all waiters have seen the trigger..
             while (_administration->_agents.load() > 0) {
                 std::this_thread::yield();
             }
+        } else {
+            AdminUnlock();
         }
     }
 
@@ -272,10 +283,10 @@ namespace Core {
         AdminLock();
 
         _alert = true;
+        AdminUnlock();
 
         Reevaluate();
 
-        AdminUnlock();
     }
 
     uint32_t CyclicBuffer::Read(uint8_t buffer[], const uint32_t length, bool partialRead)
@@ -413,12 +424,8 @@ namespace Core {
 
             if (startingEmpty) {
                 // Was empty before, tell observers about new data.
-                AdminLock();
-
                 Reevaluate();
                 DataAvailable();
-
-                AdminUnlock();
             }
         }
 
@@ -512,13 +519,11 @@ namespace Core {
 
                 _administration->_agents++;
 
-                AdminUnlock();
 
-                timeLeft = SignalLock(timeLeft);
+                result = SignalLock(timeLeft);
 
                 _administration->_agents--;
 
-                AdminLock();
 
                 if (_alert == true) {
                     _alert = false;
@@ -550,13 +555,14 @@ namespace Core {
 
             _administration->_lockPID = 0;
             std::atomic_fetch_and(&(_administration->_state), static_cast<uint16_t>(~state::LOCKED));
+            AdminUnlock();
 
             Reevaluate();
 
             result = Core::ERROR_NONE;
+        } else {
+            AdminUnlock();
         }
-
-        AdminUnlock();
 
         return (result);
     }
