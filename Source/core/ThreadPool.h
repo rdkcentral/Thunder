@@ -188,10 +188,6 @@ namespace Core {
 
         protected:
              Core::ProxyType<Core::IDispatch> Forced() {
-
-                state expected = IDLE;
-                _state.compare_exchange_strong(expected, SUBMITTED);
-
                 return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<Worker>(_job)));
             }
             
@@ -256,7 +252,7 @@ namespace Core {
             }
             void Process()
             {
-		_dispatcher->Initialize();
+		        _dispatcher->Initialize();
 
                 while (_queue.Extract(_currentRequest, Core::infinite) == true) {
 
@@ -437,9 +433,13 @@ namespace Core {
             std::list<Executor>::iterator index = _units.begin();
 
             while (index != _units.end()) {
-                uint32_t outcome = index->Me().Completed(job, waitTime);
-                if (outcome != Core::ERROR_NONE) {
-                    result = outcome;
+                // If we are the running job, no need to revoke ourselves, I guess we know what we are doing :-)
+                // and we would cause a deadlock if we are waiting for our selves to complete :-)
+                if (index->Id() != Core::Thread::ThreadId()) {
+                    uint32_t outcome = index->Me().Completed(job, waitTime);
+                    if (outcome != Core::ERROR_NONE) {
+                        result = outcome;
+                    }
                 }
                 index++;
             }

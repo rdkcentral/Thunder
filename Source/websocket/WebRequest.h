@@ -64,12 +64,12 @@ namespace Web {
         MIME_UNKNOWN
     };
 
-    bool EXTERNAL MIMETypeForFile(const string path, string& fileToService, MIMETypes& mimeType);
-
     enum EncodingTypes {
         ENCODING_GZIP,
         ENCODING_UNKNOWN
     };
+
+    bool EXTERNAL MIMETypeAndEncodingForFile(const string path, string& fileToService, MIMETypes& mimeType, EncodingTypes& encoding);
 
     enum TransferTypes {
         TRANSFER_CHUNKED,
