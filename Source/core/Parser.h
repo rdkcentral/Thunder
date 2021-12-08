@@ -66,9 +66,7 @@ namespace WPEFramework {
 				, _terminator()
 			{
 			}
-			~ParserType()
-			{
-			}
+			~ParserType() = default;
 
 		public:
 			inline void Reset()
@@ -267,17 +265,17 @@ namespace WPEFramework {
 			// -----------------------------------------------------
 			// Check for Clear method on Object
 			// -----------------------------------------------------
-			HAS_MEMBER(Complete, hasComplete);
+            IS_MEMBER_AVAILABLE(Complete, hasComplete);
 
 			template < typename T=HANDLER>
-			inline typename Core::TypeTraits::enable_if<hasComplete<T, bool (T::*)(const string&, const TCHAR)>::value, bool>::type
+			inline typename Core::TypeTraits::enable_if<hasComplete<T, bool, const string&, const TCHAR>::value, bool>::type
 				__Complete(const string& buffer, const TCHAR character)
 			{
 				return (_parent.Complete(buffer, character));
 			}
 
 			template < typename T=HANDLER>
-			inline typename Core::TypeTraits::enable_if<!hasComplete<T, bool (T::*)(const string&, const TCHAR)>::value, bool>::type
+			inline typename Core::TypeTraits::enable_if<!hasComplete<T, bool, const string&, const TCHAR>::value, bool>::type
 				__Complete(const string& /* buffer */, const TCHAR character)
 			{
 				return (((_state & SPLITCHAR) == SPLITCHAR) && (character == _splitChar));
@@ -293,19 +291,16 @@ namespace WPEFramework {
 		};
 
 		class EXTERNAL TextParser : public TextFragment {
-		private:
-			TextParser();
-			TextParser(const TextParser&);
-			TextParser& operator=(const TextParser&);
-
 		public:
+			TextParser() = delete;
+			TextParser(const TextParser&) = delete;
+			TextParser& operator=(const TextParser&) = delete;
+
 			TextParser(const TextFragment& input)
 				: TextFragment(input)
 			{
 			}
-			~TextParser()
-			{
-			}
+			~TextParser() = default;
 
 		public:
 			void ReadText(OptionalType<TextFragment>& result, const TCHAR delimiters[]);
@@ -479,19 +474,16 @@ namespace WPEFramework {
 		};
 
 		class EXTERNAL PathParser {
-		private:
-			PathParser();
-			PathParser(const PathParser&);
-			PathParser& operator=(const PathParser&);
-
 		public:
+			PathParser() = delete;
+			PathParser(const PathParser&) = delete;
+			PathParser& operator=(const PathParser&) = delete;
+
 			inline PathParser(const TextFragment& input)
 			{
 				Parse(input);
 			}
-			~PathParser()
-			{
-			}
+			~PathParser() = default;
 
 		public:
 			inline const OptionalType<TCHAR>& Drive() const

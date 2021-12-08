@@ -23,6 +23,9 @@
 namespace WPEFramework {
 namespace ProcessContainers {
     LXCNetworkInterfaceIterator::LXCNetworkInterfaceIterator(LxcContainerType* lxcContainer)
+            : _current(UINT32_MAX)
+            , _interfaces()
+
     {
         char buf[256];
 
@@ -36,7 +39,7 @@ namespace ProcessContainers {
                 break;
 
             if (strcmp(type, "veth") == 0) {
-                sprintf(buf, "lxc.net.%d.veth.pair", netnr);
+                sprintf(buf, "lxc.net.%d.name", netnr);
             } else {
                 sprintf(buf, "lxc.net.%d.link", netnr);
             }
@@ -86,6 +89,7 @@ namespace ProcessContainers {
 
     void LXCNetworkInterfaceIterator::Reset(const uint32_t position)
     {
+        (void) position;
         _current = UINT32_MAX;
     }
 
@@ -168,6 +172,7 @@ namespace ProcessContainers {
         , _pid(0)
         , _lxcPath(lxcPath)
         , _containerLogDir(containerLogDir)
+        , _adminLock()
         , _referenceCount(1)
         , _lxcContainer(lxcContainer)
     {
@@ -228,7 +233,7 @@ namespace ProcessContainers {
         CGroupMemoryInfo* result = new CGroupMemoryInfo;
 
         char buffer[2048];
-        int32_t read = _lxcContainer->get_cgroup_item(_lxcContainer, "memory.usage_in_bytes", buffer, sizeof(buffer));
+        uint32_t read = _lxcContainer->get_cgroup_item(_lxcContainer, "memory.usage_in_bytes", buffer, sizeof(buffer));
 
         // Not sure if "read < sizeof(buffer)" is really needed, but it is checked in official lxc tools sources
         if ((read > 0) && (read < sizeof(buffer))) {
@@ -324,6 +329,7 @@ namespace ProcessContainers {
         params.reserve(parameters.Count() + 2);
         parameters.Reset(0);
 
+        _adminLock.Lock();
         params.push_back(command.c_str());
 
         while (parameters.Next() == true) {
@@ -359,6 +365,7 @@ namespace ProcessContainers {
         } else {
             TRACE(ProcessContainers::ProcessContainerization, (_T("Container [%s] could not be started!"), _name.c_str()));
         }
+        _adminLock.Unlock();
 
         return result;
     }
@@ -366,9 +373,12 @@ namespace ProcessContainers {
     bool LXCContainer::Stop(const uint32_t timeout /*ms*/)
     {
         bool result = true;
+
+        _adminLock.Lock();
         if (_lxcContainer->is_running(_lxcContainer) == true) {
             TRACE(ProcessContainers::ProcessContainerization, (_T("Container name [%s] Stop activated"), _name.c_str()));
-            int internaltimeout = timeout / 1000;
+            int internaltimeout = defaultTimeOutInMSec / 1000;
+#if 0
             if (timeout == Core::infinite) {
                 internaltimeout = -1;
             }
@@ -380,7 +390,15 @@ namespace ProcessContainers {
             if (internaltimeout == -1 || result == false) {
                 result = _lxcContainer->stop(_lxcContainer);
             }
+#endif
+            result = _lxcContainer->shutdown(_lxcContainer, internaltimeout);
+            if (!result){
+                result = _lxcContainer->stop(_lxcContainer);
+            }
         }
+
+        _adminLock.Unlock();
+
         return result;
     }
 
@@ -438,7 +456,7 @@ namespace ProcessContainers {
     }
 
     LXCContainerAdministrator::LXCContainerAdministrator()
-        : BaseAdministrator()
+        : BaseContainerAdministrator()
         , _globalLogDir()
     {
         TRACE(ProcessContainers::ProcessContainerization, (_T("LXC library initialization, version: %s"), lxc_get_version()));

@@ -25,8 +25,10 @@
 
 namespace WPEFramework {
 namespace Core {
+
+    class TimeAsLocal;
     class EXTERNAL Time {
-    private:
+
     public:
         static constexpr uint32_t TicksPerMillisecond = 1000;
 
@@ -132,7 +134,6 @@ namespace Core {
         {
             text = ToRFC1123(localTime);
         }
-        bool FromString(const string& text);
         const TCHAR* WeekDayName() const;
         const TCHAR* MonthName() const;
 
@@ -220,7 +221,7 @@ namespace Core {
         string ToISO8601() const;
         string ToISO8601(const bool localTime) const;
         string ToTimeOnly(const bool localTime) const;
-        Time ToLocal() const;
+        TimeAsLocal ToLocal() const;
         Time ToUTC() const;
 
         static Time Now();
@@ -310,6 +311,38 @@ namespace Core {
         struct tm _time;
         uint64_t _ticks;
 #endif
+    };
+
+    class EXTERNAL TimeAsLocal {
+    public:
+        inline TimeAsLocal(const Time& time)
+            : _time(time)
+        {
+        }
+        inline TimeAsLocal(const TimeAsLocal& source)
+            : _time(source._time)
+        {
+        }
+        inline TimeAsLocal& operator=(const TimeAsLocal& RHS)
+        {
+            _time = RHS._time;
+
+            return (*this);
+        }
+        TimeAsLocal() = default;
+        ~TimeAsLocal() = default;
+
+        const Time& LocalTime() const
+        {
+            return _time;
+        }
+        Time& LocalTime()
+        {
+            return _time;
+        }
+
+    private:
+        Time _time;
     };
 }
 } // namespace Core

@@ -64,7 +64,7 @@ namespace PluginHost {
 
     /* static */ Core::ProxyType<Core::IDispatch> IShell::Job::Create(IShell* shell, IShell::state toState, IShell::reason why)
     {
-        return (Core::proxy_cast<Core::IDispatch>(Core::ProxyType<IShell::Job>::Create(shell, toState, why)));
+        return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<IShell::Job>::Create(shell, toState, why)));
     }
 
 #if THUNDER_RESTFULL_API
@@ -89,10 +89,10 @@ namespace PluginHost {
     void Service::FileToServe(const string& webServiceRequest, Web::Response& response)
     {
         Web::MIMETypes result;
+        Web::EncodingTypes encoding = Web::ENCODING_UNKNOWN;
         uint16_t offset = static_cast<uint16_t>(_config.WebPrefix().length()) + (_webURLPath.empty() ? 1 : static_cast<uint16_t>(_webURLPath.length()) + 2);
         string fileToService = _webServerFilePath;
-
-        if ((webServiceRequest.length() <= offset) || (Web::MIMETypeForFile(webServiceRequest.substr(offset, -1), fileToService, result) == false)) {
+        if ((webServiceRequest.length() <= offset) || (Web::MIMETypeAndEncodingForFile(webServiceRequest.substr(offset, -1), fileToService, result, encoding) == false)) {
             Core::ProxyType<Web::FileBody> fileBody(IFactories::Instance().FileBody());
 
             // No filename gives, be default, we go for the index.html page..
@@ -103,6 +103,9 @@ namespace PluginHost {
             Core::ProxyType<Web::FileBody> fileBody(IFactories::Instance().FileBody());
             *fileBody = fileToService;
             response.ContentType = result;
+            if (encoding != Web::ENCODING_UNKNOWN) {
+                response.ContentEncoding = encoding;
+            }
             response.Body<Web::FileBody>(fileBody);
         }
     }

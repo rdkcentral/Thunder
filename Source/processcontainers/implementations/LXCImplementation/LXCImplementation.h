@@ -18,11 +18,9 @@
  */
 
 #pragma once
-
-#include "../../ProcessContainer.h"
-#include "../../common/BaseAdministrator.h"
-#include "../../common/BaseRefCount.h"
-#include "../../common/Lockable.h"
+#include "processcontainers/ProcessContainer.h"
+#include "processcontainers/common/BaseAdministrator.h"
+#include "processcontainers/common/BaseRefCount.h"
 #include "Module.h"
 #include "Tracing.h"
 #include <cctype>
@@ -94,10 +92,10 @@ namespace ProcessContainers {
         };
 
     private:
+        static constexpr uint32_t defaultTimeOutInMSec = 2000;
+
         friend class LXCContainerAdministrator;
-
         LXCContainer(const string& name, LxcContainerType* lxcContainer, const string& containerLogDir, const string& configuration, const string& lxcPath);
-
     public:
         LXCContainer(const LXCContainer&) = delete;
         ~LXCContainer() override;
@@ -133,7 +131,7 @@ namespace ProcessContainers {
 #endif
     };
 
-    class LXCContainerAdministrator : public BaseAdministrator<LXCContainer, Lockable<IContainerAdministrator>> {
+    class LXCContainerAdministrator : public BaseContainerAdministrator<LXCContainer> {
         friend class LXCContainer;
         friend class Core::SingletonType<LXCContainerAdministrator>;
 

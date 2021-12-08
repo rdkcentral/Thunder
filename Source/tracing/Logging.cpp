@@ -114,6 +114,27 @@ namespace Logging {
         }
     }
 
+    #ifdef __CORE_EXCEPTION_CATCHING__
+    namespace {
+    class ExceptionCatcher : Core::Thread::IExceptionCallback {
+        public:
+        ExceptionCatcher()
+        {
+            Core::Thread::ExceptionCallback(this);
+        }
+        ~ExceptionCatcher() override {
+            Core::Thread::ExceptionCallback(nullptr);
+        }
 
+        void Exception(const string& message) override
+        {
+            DumpException(message);
+        }
+    };
+    
+    static ExceptionCatcher exceptionCatcher;
+    
+    }
+    #endif 
 }
 } // namespace PluginHost

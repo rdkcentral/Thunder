@@ -194,10 +194,10 @@ namespace Web {
                 receivedSize = 0;
             } else {
                 // This seems to be a new frame, check it out !!!
-                uint32_t bytesToMove = (dataFrame[1] & 0x7F);
+                uint64_t bytesToMove = (dataFrame[1] & 0x7F);
 
                 // check if the full header is present..
-                actualHeader = 2 + (bytesToMove == 127 ? 4 : (bytesToMove == 126 ? 2 : 0)) + ((dataFrame[1] & MASKING_FRAME) ? 4 : 0);
+                actualHeader = 2 + (bytesToMove == 127 ? 8 : (bytesToMove == 126 ? 2 : 0)) + ((dataFrame[1] & MASKING_FRAME) ? 4 : 0);
 
                 if (actualHeader > receivedSize) {
                     // Frame too small to identify the content yet !!
@@ -236,17 +236,18 @@ namespace Web {
                         if (bytesToMove == 126) {
                             bytesToMove = ((dataFrame[2] << 8) + dataFrame[3]);
                         } else if (bytesToMove == 127) {
-                            bytesToMove = ((dataFrame[2] << 24) + (dataFrame[3] << 16) + (dataFrame[4] << 8) + dataFrame[5]);
+                            bytesToMove = dataFrame[9];
+                            for (int i=8; i>=2; i--) bytesToMove = (bytesToMove << 8) + dataFrame[i];
                         }
 
                         // We might not have the full body yet...
                         if ((actualHeader + bytesToMove) > receivedSize) {
-                            _pendingReceiveBytes = (actualHeader + bytesToMove - receivedSize);
+                            _pendingReceiveBytes = static_cast<uint32_t>(actualHeader + bytesToMove - receivedSize);
                             bytesToMove = receivedSize - actualHeader;
                             _progressInfo &= (~0x20);
                         }
 
-                        receivedSize = bytesToMove;
+                        receivedSize = static_cast<uint32_t>(bytesToMove);
 
                         // If it is masked, we need to onvert..
                         if ((dataFrame[1] & MASKING_FRAME) != 0) {

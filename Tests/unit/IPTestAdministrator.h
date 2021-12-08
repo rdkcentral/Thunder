@@ -19,6 +19,8 @@
 
 #pragma once
 
+#define MODULE_NAME ThunderUnitTests
+
 #include <string>
 #include <time.h>
 
@@ -34,6 +36,7 @@ public:
 
    // Method to sync the two test processes.
    bool Sync(const std::string & str);
+   void WaitForChildCompletion();
 
 private:
    static const uint32_t m_messageBufferSize = 1024;

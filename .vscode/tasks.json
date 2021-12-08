@@ -17,8 +17,8 @@
             "args": [
                 "-avzz",
                 "-e",
-                "ssh -i ${config:thunder.projectRoot}/${config:thunder.remoteTargetPublicKey}",
-                "${config:thunder.installPath}",
+                "ssh -i ${config:thunder.remoteTargetID}",
+                "${config:thunder.installPath}/",
                 "${config:thunder.remoteTargetUser}@${config:thunder.remoteTargetHost}:/"
             ],
             "presentation": {
@@ -34,8 +34,7 @@
             "type": "process",
             "command": "ssh",
             "args": [
-                "-i",
-                "${config:thunder.remoteTargetPublicKey}",
+                "-i", "${config:thunder.remoteTargetID}",
                 "${config:thunder.remoteTargetUser}@${config:thunder.remoteTargetHost}",
                 "sync"
             ],
@@ -52,8 +51,7 @@
             "type": "process",
             "command": "ssh",
             "args": [
-                "-i",
-                "${config:thunder.remoteTargetPublicKey}",
+                "-i", "${config:thunder.remoteTargetID}",
                 "${config:thunder.remoteTargetUser}@${config:thunder.remoteTargetHost}",
                 "killall -9 gdbserver WPEFramework WPEProcess || echo 'allowedtofail'"
             ],
@@ -70,13 +68,12 @@
             "type": "process",
             "command": "ssh",
             "args": [
-                "-i",
-                "${config:thunder.remoteTargetPublicKey}",
+                "-i", "${config:thunder.remoteTargetID}",
                 "${config:thunder.remoteTargetUser}@${config:thunder.remoteTargetHost}",
-                "gdbserver 0.0.0.0:${config:thunder.remoteDebugPort} WPEFramework"
+                "gdbserver 0.0.0.0:${config:thunder.remoteTargetDebugPort} WPEFramework"
             ],
             "isBackground": true,
-            "problemMatcher": {    
+            "problemMatcher": {
                 "pattern": {
                   "regexp": ".*",
                   "file": 1,

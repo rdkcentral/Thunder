@@ -22,10 +22,6 @@ option(CORE
         "Include the core library." ON)
 option(CRYPTALGO
         "Include the encyption algorithm library." ON)
-option(BLUETOOTH
-        "Include the bluetooth library." OFF)
-option(BROADCAST
-        "Include the broadcasting library." OFF)
 option(WEBSOCKET
         "Include the websocket library." ON)
 option(TRACING
@@ -50,14 +46,12 @@ option(TEST_APPS
         "Include test applications." OFF)
 option(STUB_HARDWARE
         "Use hardware stubs for unittests)." OFF)
-option(BUILD_TYPE
-        "How do you want to build it, Production, Release or Debug" Production)
 option(WCHAR_SUPPORT
         "Enable support for WCHAR." OFF)
 option(DISABLE_TRACING
         "Disable tracing in debug" OFF)
-option(HIDE_NON_EXTERNAL_SYMBOLS 
-        "Hide all non EXTERNAL tagged symbols" OFF)
+option(HIDE_NON_EXTERNAL_SYMBOLS
+        "Hide all non EXTERNAL tagged symbols" ON)
 
 option(EXCEPTION_CATCHING
         "Enable unhandled exception handling catching." OFF)
@@ -65,6 +59,9 @@ option(DEADLOCK_DETECTION
         "Enable deadlock detection tooling." OFF)
 option(WARNING_REPORTING
         "Include warning reporting in the build." OFF)
+
+set(BUILD_TYPE "Production" CACHE STRING "How do you want to build it, Production, Release/ReleaseSymbols or Debug/DebugOptimized")
+
 #
 # Build type specific options
 #
@@ -108,10 +105,6 @@ if(PROCESSCONTAINERS)
     add_subdirectory(processcontainers)
 endif()
 
-if(BROADCAST)
-    add_subdirectory(broadcast)
-endif()
-
 if(WEBSOCKET)
     add_subdirectory(websocket)
 endif()
@@ -122,10 +115,6 @@ endif()
 
 if(WARNING_REPORTING)
     add_subdirectory(warningreporting)
-endif()
-
-if(BLUETOOTH)
-    add_subdirectory(bluetooth)
 endif()
 
 if(PROFILER)
