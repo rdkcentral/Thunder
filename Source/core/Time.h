@@ -23,9 +23,12 @@
 #include "Portability.h"
 #include "TextFragment.h"
 
+#include <iostream>
+#include <iomanip>
+
 namespace WPEFramework {
 namespace Core {
-
+ 
     class EXTERNAL Time {
 
         friend class TimeAsLocal;
@@ -34,6 +37,7 @@ namespace Core {
         static constexpr uint32_t MilliSecondsPerSecond = 1000;
         static constexpr uint32_t MicroSecondsPerMilliSecond = 1000;
         static constexpr uint32_t NanoSecondsPerMicroSecond = 1000;
+        static constexpr uint32_t NanoSecondsPerMilliSecond = MicroSecondsPerMilliSecond * MicroSecondsPerMilliSecond;
         static constexpr uint32_t MicroSecondsPerSecond = MilliSecondsPerSecond * MicroSecondsPerMilliSecond;
 
         // Difference in Seconds between UNIX and NTP epoch (25567).
@@ -46,25 +50,34 @@ namespace Core {
         static constexpr uint32_t TicksPerMillisecond = 1000;
 
 #ifdef __POSIX__
-        Time(const struct timeval& info);
+
+        static void Marcel();
+private:
+//        Time(const struct timeval& info, const bool localtime = true);
+
+
+public:
+        // relative to 1st of January 1970, 00:00:00 in microseconds
+        using microsecondsfromepoch = uint64_t;
+
+        //time always in UTC
+        Time(const struct timespec& time);
+
 #endif
         Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t seconds, const uint16_t milliseconds, const bool localTime);
 
-#ifdef __POSIX__
-        Time(const struct timespec& time, const bool localTime = false);
-#endif
 #ifdef __WINDOWS__
         Time(const FILETIME& time, bool localTime = false);
-        inline Time(const SYSTEMTIME& time, bool localTime = false)
+        Time(const SYSTEMTIME& time, bool localTime = false)
             : _time(time)
         {
         }
 #endif
 
-        Time(const uint64_t time, const bool localTime = false);
+        Time(const microsecondsfromepoch time, const bool localTime = false);
 
 #ifdef __WINDOWS__
-        inline Time()
+        Time()
         {
             _time.wYear = 0;
             _time.wMonth = 0;
@@ -75,49 +88,35 @@ namespace Core {
             _time.wMilliseconds = 0;
             _time.wDayOfWeek = 0;
         }
-        inline bool IsValid() const
+        bool IsValid() const
         {
             return ((_time.wYear != 0) && (_time.wMonth != 0) && (_time.wDay != 0));
         }
 #endif
 
 #ifdef __POSIX__
-        inline Time()
-            : _time()
-            , _ticks(0)
+        Time()
+            : _time{}
         {
         }
-        inline bool IsValid() const
+
+        bool IsValid() const
         {
-            return (_ticks != 0);
-        }
-        inline bool IsLocalTime() const
-        {
-            if (_time.tm_zone == nullptr)
-                return false;
-            uint32_t value = (static_cast<uint8_t>(_time.tm_zone[0]) << 16) | (static_cast<uint8_t>(_time.tm_zone[1]) << 8) | (static_cast<uint8_t>(_time.tm_zone[2]) << 0);
-            return (value != (('G' << 16) | ('M' << 8) | ('T'))) && (value != (('U' << 16) | ('T' << 8) | ('C')));
+            return (_time.tv_sec != 0);
         }
 #endif
 
-        inline Time(const Time& copy)
+        Time(const Time& copy)
             : _time(copy._time)
-#ifndef __WINDOWS__
-            , _ticks(copy._ticks)
-#endif
-        {
-        }
-        inline ~Time()
         {
         }
 
-        inline Time& operator=(const Time& RHS)
+        ~Time() = default;
+
+        Time& operator=(const Time& RHS)
         {
             _time = RHS._time;
 
-#ifndef __WINDOWS__
-            _ticks = RHS._ticks;
-#endif
             return (*this);
         }
 
@@ -150,60 +149,60 @@ namespace Core {
         const TCHAR* WeekDayName() const;
         const TCHAR* MonthName() const;
 
-        inline uint32_t MilliSeconds() const
+        uint32_t MilliSeconds() const
         {
 #ifdef __WINDOWS__
             return (_time.wMilliseconds);
 #else
-            return ((_ticks / 1000) % 1000);
+            return ((_time.tv_nsec / NanoSecondsPerMilliSecond) % 1000);  //todo checken of er mee dan 999 milliseconcen in kunnen zitten
 #endif
         }
-        inline uint8_t Seconds() const
+        uint8_t Seconds() const
         {
 #ifdef __WINDOWS__
             return (static_cast<uint8_t>(_time.wSecond));
 #else
-            return (static_cast<uint8_t>(_time.tm_sec));
+            return Seconds(TMHandle());
 #endif
         }
-        inline uint8_t Minutes() const
+        uint8_t Minutes() const
         {
 #ifdef __WINDOWS__
             return (static_cast<uint8_t>(_time.wMinute));
 #else
-            return (static_cast<uint8_t>(_time.tm_min));
+            return Minutes(TMHandle());
 #endif
         }
-        inline uint8_t Hours() const
+        uint8_t Hours() const
         {
 #ifdef __WINDOWS__
             return (static_cast<uint8_t>(_time.wHour));
 #else
-            return (static_cast<uint8_t>(_time.tm_hour));
+            return Hours(TMHandle());
 #endif
         }
-        inline uint8_t Day() const
+        uint8_t Day() const
         {
 #ifdef __WINDOWS__
             return (static_cast<uint8_t>(_time.wDay));
 #else
-            return (static_cast<uint8_t>(_time.tm_mday));
+            return Day(TMHandle());
 #endif
         }
-        inline uint8_t Month() const
+        uint8_t Month() const
         {
 #ifdef __WINDOWS__
             return (static_cast<uint8_t>(_time.wMonth));
 #else
-            return (static_cast<uint8_t>(_time.tm_mon + 1));
+            return Month(TMHandle());
 #endif
         }
-        inline uint32_t Year() const
+        uint32_t Year() const
         {
 #ifdef __WINDOWS__
             return (static_cast<uint32_t>(_time.wYear));
 #else
-            return (static_cast<uint32_t>(_time.tm_year + 1900));
+            return Year(TMHandle());
 #endif
         }
 
@@ -212,7 +211,7 @@ namespace Core {
         uint64_t NTPTime() const;
 
         double JulianDate() const;
-        inline double JulianJDConverter(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minutes, const uint8_t seconds) const {
+        double JulianJDConverter(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minutes, const uint8_t seconds) const {
             // julian day number algorithm
             uint32_t JDN = (1461 * (year + 4800 + (month - 14) / 12)) / 4 + (367 * (month - 2 - 12 * ((month - 14) / 12))) / 12 - (3 * ((year + 4900 + (month - 14) / 12) / 100)) / 4 + day - 32075;
             double time = (((hour - 12) * 60 * 60) + (minutes * 60) + seconds) / (static_cast<float>(24 * 60 * 60));
@@ -223,8 +222,9 @@ namespace Core {
 
         int32_t DifferenceFromGMTSeconds() const;
 
-        // Time in microseconds!
-        uint64_t Ticks() const;
+        // UTC time
+        microsecondsfromepoch Ticks() const;
+
         bool FromRFC1123(const string& buffer);
         bool FromRFC1036(const string& buffer);
         bool FromANSI(const string& buffer, const bool localTime);
@@ -236,11 +236,11 @@ namespace Core {
         string ToTimeOnly(const bool localTime) const;
 
         static Time Now();
-        inline static bool FromString(const string& buffer, const bool localTime, Time& element)
+        static bool FromString(const string& buffer, const bool localTime, Time& element)
         {
             return (element.FromString(buffer, localTime));
         }
-        inline static bool ANSI(const string& buffer, const bool localTime, Time& element)
+        static bool ANSI(const string& buffer, const bool localTime, Time& element)
         {
             return (element.FromANSI(buffer, localTime));
         }
@@ -262,60 +262,102 @@ namespace Core {
 
         string Format(const TCHAR* formatter) const;
 
-        inline bool operator<(const Time& rhs) const
+        bool operator<(const Time& rhs) const
         {
             return (Ticks() < rhs.Ticks());
         }
-        inline bool operator<=(const Time& rhs) const
+        bool operator<=(const Time& rhs) const
         {
             return (Ticks() <= rhs.Ticks());
         }
-        inline bool operator>(const Time& rhs) const
+        bool operator>(const Time& rhs) const
         {
             return (Ticks() > rhs.Ticks());
         }
-        inline bool operator>=(const Time& rhs) const
+        bool operator>=(const Time& rhs) const
         {
             return (Ticks() >= rhs.Ticks());
         }
-        inline bool operator==(const Time& rhs) const
+        bool operator==(const Time& rhs) const
         {
             return (Ticks() == rhs.Ticks());
         }
-        inline bool operator!=(const Time& rhs) const
+        bool operator!=(const Time& rhs) const
         {
             return (!(operator==(rhs)));
         }
-        inline Time operator-(const Time& rhs) const
+        Time operator-(const Time& rhs) const
         {
             return (Time(Ticks() - rhs.Ticks()));
         }
-        inline Time operator+(const Time& rhs) const
+        Time operator+(const Time& rhs) const
         {
             return (Time(Ticks() + rhs.Ticks()));
         }
-        inline Time& operator-=(const Time& rhs)
+        Time& operator-=(const Time& rhs)
         {
             return (operator=(Time(Ticks() - rhs.Ticks())));
         }
-        inline Time& operator+=(const Time& rhs)
+        Time& operator+=(const Time& rhs)
         {
             return (operator=(Time(Ticks() + rhs.Ticks())));
         }
 
 #ifdef __WINDOWS__
-        inline const SYSTEMTIME& Handle() const
+        const SYSTEMTIME& Handle() const
         {
             return (_time);
         }
 #else
-        inline const struct tm& Handle() const
+        const struct timespec& Handle() const
         {
             return (_time);
         }
 #endif
 
     private:
+
+#ifdef __POSIX__
+
+        static const TCHAR* WeekDayName(const struct tm& time);
+        static const TCHAR* MonthName(const struct tm& time);
+        static uint8_t Seconds(const struct tm& time)
+        {
+            return (static_cast<uint8_t>(time.tm_sec));
+        }
+        static uint8_t Minutes(const struct tm& time)
+        {
+            return (static_cast<uint8_t>(time.tm_min));
+        }
+        static uint8_t Hours(const struct tm& time)
+        {
+            return (static_cast<uint8_t>(time.tm_hour));
+        }
+        static uint8_t Day(const struct tm& time)
+        {
+            return (static_cast<uint8_t>(time.tm_mday));
+        }
+        static uint8_t Month(const struct tm& time)
+        {
+            return (static_cast<uint8_t>(time.tm_mon + 1));
+        }
+        static uint32_t Year(const struct tm& time)
+        {
+            return (static_cast<uint32_t>(time.tm_year + 1900));
+        }
+        static uint8_t DayOfWeek(const struct tm& time)
+        {
+            return (static_cast<uint8_t>(time.tm_wday));
+        }
+        static uint16_t DayOfYear(const struct tm& time)
+        {
+            return (static_cast<uint16_t>(time.tm_yday));
+        }
+
+        struct tm TMHandle() const;
+
+#endif
+
         Time ToLocal() const;
         Time ToUTC() const;
 
@@ -323,8 +365,7 @@ namespace Core {
 #ifdef __WINDOWS__
         mutable SYSTEMTIME _time;
 #else
-        struct tm _time;
-        uint64_t _ticks;
+    struct timespec _time;
 #endif
     };
 
@@ -391,7 +432,7 @@ namespace Core {
         {
             return _time.Month();
         }
-        inline uint32_t Year() const
+        uint32_t Year() const
         {
             return _time.Year();
         }
@@ -421,8 +462,7 @@ namespace Core {
             uint64_t newTime = Ticks() - static_cast<uint64_t>(timeInMilliseconds) * Time::MilliSecondsPerSecond;
             return (operator=(TimeAsLocal(newTime)));
         }
-        // Time in microseconds!
-        uint64_t Ticks() const
+        Time::microsecondsfromepoch Ticks() const
         {
             return _time.Ticks();
         }
@@ -456,27 +496,27 @@ namespace Core {
         {
             return (_time >= rhs._time);
         }
-        inline bool operator==(const TimeAsLocal& rhs) const
+        bool operator==(const TimeAsLocal& rhs) const
         {
             return (_time == rhs._time);
         }
-        inline bool operator!=(const TimeAsLocal& rhs) const
+        bool operator!=(const TimeAsLocal& rhs) const
         {
             return (!(operator==(rhs)));
         }
-        inline TimeAsLocal operator-(const TimeAsLocal& rhs) const
+        TimeAsLocal operator-(const TimeAsLocal& rhs) const
         {
             return TimeAsLocal(Ticks() - rhs.Ticks());
         }
-        inline TimeAsLocal operator+(const Time& rhs) const
+        TimeAsLocal operator+(const Time& rhs) const
         {
             return TimeAsLocal(Ticks() + rhs.Ticks());
         }
-        inline TimeAsLocal& operator-=(const TimeAsLocal& rhs)
+        TimeAsLocal& operator-=(const TimeAsLocal& rhs)
         {
             return (operator=(TimeAsLocal(Ticks() - rhs.Ticks())));
         }
-        inline TimeAsLocal& operator+=(const TimeAsLocal& rhs)
+        TimeAsLocal& operator+=(const TimeAsLocal& rhs)
         {
             return (operator=(TimeAsLocal(Ticks() + rhs.Ticks())));
         }
@@ -492,7 +532,7 @@ namespace Core {
         }
 
     private:
-        TimeAsLocal(const uint64_t time) : _time(time)
+        TimeAsLocal(const Time::microsecondsfromepoch time) : _time(time)
         {
         }
 

@@ -416,11 +416,9 @@ namespace Core {
         ASSERT("Time not set");
 #else
 
-        struct tm setTime;
+//MacelTODO ook testen
 
-        ::memcpy(&setTime, &(time.Handle()), sizeof(setTime));
-
-        time_t value = mktimegm(&setTime);
+        time_t value = time.Handle().tv_sec;
 
 #if defined(__GNU_LIBRARY__)
   #if (__GLIBC__ >= 2) && (__GLIBC_MINOR__ > 30)
