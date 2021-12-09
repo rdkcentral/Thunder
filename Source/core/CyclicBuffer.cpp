@@ -224,7 +224,7 @@ namespace Core {
 #endif
 
             // We can not wait longer than the set time.
-            ASSERT(result <= waitTime);
+            ASSERT(pendingWaitTime <= waitTime);
         } else {
 #ifdef __POSIX__
             pthread_cond_wait(&(_administration->_signal), &(_administration->_mutex));
@@ -265,15 +265,15 @@ namespace Core {
 #else
             ReleaseSemaphore(_signal, _administration->_agents.load(), nullptr);
 #endif
-            AdminUnlock();
 
             // Wait till all waiters have seen the trigger..
             while (_administration->_agents.load() > 0) {
+                AdminUnlock();
                 std::this_thread::yield();
+                AdminLock();
             }
-        } else {
-            AdminUnlock();
         }
+        AdminUnlock();
     }
 
     void CyclicBuffer::Alert()
@@ -519,11 +519,9 @@ namespace Core {
 
                 _administration->_agents++;
 
-
                 result = SignalLock(timeLeft);
 
                 _administration->_agents--;
-
 
                 if (_alert == true) {
                     _alert = false;
