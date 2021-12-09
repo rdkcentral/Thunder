@@ -623,6 +623,38 @@ namespace Tests {
             EXPECT_EQ(IsFileExist(fileName.c_str()), false);
         }
     }
+    TEST(Core_CyclicBuffer, Using_DataElementFile_WithInvalidOffset)
+    {
+        const uint32_t mode =
+            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
+            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
+            Core::File::CREATE | Core::File::SHAREABLE;
+
+        {
+            std::string fileName {"cyclicbuffer01"};
+            uint8_t cyclicBufferSize = 50;
+            uint32_t offset = 50;
+            uint8_t cyclicBufferWithControlDataSize = cyclicBufferSize + sizeof(CyclicBuffer::control);
+            DataElementFile dataElementFile(fileName, mode, cyclicBufferWithControlDataSize + offset);
+            // Create CyclicBuffer with Size 50
+            CyclicBuffer buffer(dataElementFile, true, offset, cyclicBufferWithControlDataSize, false);
+
+            EXPECT_STREQ(buffer.Name().c_str(), fileName.c_str());
+            EXPECT_EQ(buffer.IsValid(), false);
+
+            // Check File Size
+            EXPECT_EQ(FileSize(fileName.c_str()), cyclicBufferWithControlDataSize + offset);
+
+            // Remove after usage before destruction
+            const_cast<File&>(buffer.Storage()).Destroy();
+
+            // Check File Exist / Valid
+            EXPECT_EQ(buffer.IsValid(), false);
+            EXPECT_EQ(IsFileExist(fileName.c_str()), false);
+        }
+    }
+
     TEST(Core_CyclicBuffer, Write_Overflow_WithoutOverWrite)
     {
         std::string bufferName {"cyclicbuffer01"};
