@@ -36,6 +36,9 @@ namespace Core {
 
         extern "C" const char* MODULE_NAME;
         extern "C" EXTERNAL uint32_t Reboot();
+
+        extern "C" EXTERNAL_EXPORT const char* ModuleName();                                              \
+        extern "C" EXTERNAL_EXPORT const char* ModuleBuildRef();
     }
 
     class EXTERNAL SystemInfo {
@@ -234,17 +237,17 @@ namespace Core {
 
 #define MODULE_BUILDREF MODULE_NAME##Version
 
-#define MODULE_NAME_DECLARATION(buildref)                                                                              \
-    extern "C" {                                                                                                       \
-    namespace WPEFramework {                                                                                           \
-        namespace Core {                                                                                               \
-            namespace System {                                                                                         \
-                EXTERNAL const char* MODULE_NAME = SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(MODULE_NAME);              \
-                EXTERNAL const char* ModuleName() { return (MODULE_NAME); }                                            \
-                EXTERNAL const char* ModuleBuildRef() { return (SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(buildref)); } \
-            }                                                                                                          \
-        }                                                                                                              \
-    }                                                                                                                  \
+#define MODULE_NAME_DECLARATION(buildref)                                                                                       \
+    extern "C" {                                                                                                                \
+    namespace WPEFramework {                                                                                                    \
+        namespace Core {                                                                                                        \
+            namespace System {                                                                                                  \
+                const char* MODULE_NAME = SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(MODULE_NAME);                \
+                const char* ModuleName() { return (MODULE_NAME); }                                              \
+                const char* ModuleBuildRef() { return (SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(buildref)); }   \
+            }                                                                                                                   \
+        }                                                                                                                       \
+    }                                                                                                                           \
     } // extern "C" Core::System
 
 #define MODULE_NAME_ARCHIVE_DECLARATION                                                          \
