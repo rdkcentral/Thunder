@@ -33,6 +33,7 @@ namespace Tests {
         bool shareable;
         bool usingDataElementFile;
         uint32_t mode;
+        uint32_t offset;
         string bufferName;
     };
 
@@ -128,7 +129,7 @@ namespace Tests {
         return (remainingTime < waitTime);
     }
 
-    const char SampleData[] = "test";
+    const char SampleData[] = "Best";
     const uint32_t MaxSignalWaitTime = 1000; // In milliseconds
     static void* ThreadToCheckBufferIsSharable(void* data)
     {
@@ -589,6 +590,39 @@ namespace Tests {
             EXPECT_EQ(IsFileExist(fileName.c_str()), false);
         }
     }
+    TEST(Core_CyclicBuffer, Using_DataElementFile_WithOffset)
+    {
+        const uint32_t mode =
+            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
+            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
+            Core::File::CREATE | Core::File::SHAREABLE;
+
+        {
+            std::string fileName {"cyclicbuffer01"};
+            uint8_t cyclicBufferSize = 50;
+            uint32_t offset = 56;
+            uint8_t cyclicBufferWithControlDataSize = cyclicBufferSize + sizeof(CyclicBuffer::control);
+            DataElementFile dataElementFile(fileName, mode, cyclicBufferWithControlDataSize + offset);
+            // Create CyclicBuffer with Size 50
+            CyclicBuffer buffer(dataElementFile, true, offset, cyclicBufferWithControlDataSize, false);
+
+            EXPECT_STREQ(buffer.Name().c_str(), fileName.c_str());
+            EXPECT_EQ(buffer.Size(), cyclicBufferSize);
+            EXPECT_EQ(buffer.IsValid(), true);
+            EXPECT_EQ(buffer.Validate(), true);
+
+            // Check File Size
+            EXPECT_EQ(FileSize(fileName.c_str()), cyclicBufferWithControlDataSize + offset);
+
+            // Remove after usage before destruction
+            const_cast<File&>(buffer.Storage()).Destroy();
+
+            // Check File Exist / Valid
+            EXPECT_EQ(buffer.IsValid(), false);
+            EXPECT_EQ(IsFileExist(fileName.c_str()), false);
+        }
+    }
     TEST(Core_CyclicBuffer, Write_Overflow_WithoutOverWrite)
     {
         std::string bufferName {"cyclicbuffer01"};
@@ -801,7 +835,7 @@ namespace Tests {
             uint8_t writeData = 'T';
             uint8_t readData = 0;
             EXPECT_EQ(buffer.Read(&readData, 1, true), 1u);
-            EXPECT_EQ(readData, 't');
+            EXPECT_EQ(readData, 'B');
             EXPECT_EQ(buffer.Write(&writeData, 1), 1u);
         } else {
             EXPECT_EQ(buffer.Size(), 0u);
@@ -809,7 +843,7 @@ namespace Tests {
 
         const_cast<File&>(buffer.Storage()).Destroy();
     }
-    TEST(Core_CyclicBuffer, Create_CheckSharePermissions_WithDifferentProcess)
+    TEST(Core_CyclicBuffer, CheckSharePermissionsFromClonedProcess)
     {
         // With Buffer Permission as SHAREABLE
         TestSharePermissionsFromDifferentProcess(true);
@@ -817,7 +851,7 @@ namespace Tests {
         // With Buffer Permission as PRIVATE
         TestSharePermissionsFromDifferentProcess(false);
     }
-    void SetSharePermissionsFromForkedProcessAndVerify(bool shareable, bool usingDataElementFile = false)
+    void SetSharePermissionsFromForkedProcessAndVerify(bool shareable, bool usingDataElementFile = false, uint32_t offset = 0)
     {
         std::string bufferName {"cyclicbuffer01"};
         const uint32_t CyclicBufferSize = 10;
@@ -834,6 +868,7 @@ namespace Tests {
         data.bufferName = bufferName.c_str();
         data.shareable = shareable;
         data.usingDataElementFile = usingDataElementFile;
+        data.offset = offset;
 
         auto lambdaFunc = [bufferName](IPTestAdministrator & testAdmin) {
             struct Data* data = (reinterpret_cast<struct Data*>(testAdmin.Data()));
@@ -845,8 +880,8 @@ namespace Tests {
             DataElementFile* dataElementFile = nullptr;
             if (data->usingDataElementFile == true) {
                 uint8_t cyclicBufferWithControlDataSize = cyclicBufferSize + sizeof(CyclicBuffer::control);
-                dataElementFile = new DataElementFile(bufferName, data->mode | Core::File::CREATE, cyclicBufferWithControlDataSize);
-                buffer = new CyclicBufferTest(*dataElementFile, true, 0, cyclicBufferWithControlDataSize, false);
+                dataElementFile = new DataElementFile(bufferName, data->mode | Core::File::CREATE, cyclicBufferWithControlDataSize + data->offset);
+                buffer = new CyclicBufferTest(*dataElementFile, true, data->offset, cyclicBufferWithControlDataSize, false);
             } else {
                 buffer = new CyclicBufferTest(bufferName, data->mode, cyclicBufferSize, false);
             }
@@ -913,7 +948,7 @@ namespace Tests {
             DataElementFile* dataElementFile = nullptr;
             if (usingDataElementFile == true) {
                 dataElementFile = new DataElementFile(bufferName, mode, 0);
-                buffer = new CyclicBufferTest(*dataElementFile, false, 0, 0, false);
+                buffer = new CyclicBufferTest(*dataElementFile, false, offset, 0, false);
             } else {
                 buffer = new CyclicBufferTest(bufferName, mode, 0, false);
             }
@@ -957,15 +992,20 @@ namespace Tests {
         }
         Singleton::Dispose();
     }
-    TEST(Core_CyclicBuffer, WithoutOverwriteUsingForks)
+    TEST(Core_CyclicBuffer, CheckSharePermissionsFromForkedProcessWithoutOverwrite)
     {
         SetSharePermissionsFromForkedProcessAndVerify(true);
         SetSharePermissionsFromForkedProcessAndVerify(false);
     }
-    TEST(Core_CyclicBuffer, WithoutOverwriteUsingForks_UsingDataElementFile)
+    TEST(Core_CyclicBuffer, CheckSharePermissionsFromForkedProcessWithoutOverwrite_UsingDataElementFile)
     {
         SetSharePermissionsFromForkedProcessAndVerify(true, true);
         SetSharePermissionsFromForkedProcessAndVerify(false, true);
+    }
+    TEST(Core_CyclicBuffer, CheckSharePermissionsFromForkedProcessWithoutOverwrite_UsingDataElementFile_WithOffset)
+    {
+        SetSharePermissionsFromForkedProcessAndVerify(true, true, 56);
+        SetSharePermissionsFromForkedProcessAndVerify(false, true, 56);
     }
     TEST(Core_CyclicBuffer, WithoutOverwriteUsingForksReversed)
     {
