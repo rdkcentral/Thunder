@@ -1073,50 +1073,6 @@ TEST(Core_Time, NTPTime)
 
     EXPECT_GE(time.NTPTime()/Time::MicroSecondsPerSecond, ntpTime/Time::MicroSecondsPerSecond + (timeTobeAdded * 4));
 }
-TEST(Core_Time, DifferenceFromGMTSeconds)
-{
-    char* currentZone = getenv("TZ");
-    setenv("TZ", "", 1);
-
-    setenv("TZ", "Africa/Brazzaville", 1);
-    tzset();
-    Time time(80, 12, 23, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.DifferenceFromGMTSeconds(), 0);
-
-    setenv("TZ", "Asia/Kolkata", 1);
-    tzset();
-    time = Time(2006, 11, 44, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.DifferenceFromGMTSeconds(), 0);
-    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
-    tzset();
-}
-TEST(Core_Time, DifferenceFromGMTSeconds_LocalTimeEnabled)
-{
-    char* currentZone = getenv("TZ");
-    setenv("TZ", "", 1);
-    tzset();
-
-    Time time(80, 12, 23, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.DifferenceFromGMTSeconds(), 0);
-
-    setenv("TZ", "UTC", 1);
-    tzset();
-    time = Time(80, 12, 23, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.DifferenceFromGMTSeconds(), GetMachineTimeDifference("UTC"));
-
-    setenv("TZ", "Asia/Tokyo", 1);
-    tzset();
-    time = Time(80, 12, 23, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.DifferenceFromGMTSeconds(), GetMachineTimeDifference("Asia/Tokyo"));
-
-    setenv("TZ", "America/Los_Angeles", 1);
-    tzset();
-    time = Time(80, 12, 23, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.DifferenceFromGMTSeconds(), GetMachineTimeDifference("America/Los_Angeles"));
-
-    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
-    tzset();
-}
 TEST(Core_Time, Format)
 {
     Time time(2002, 5, 10, 11, 30, 23, 21, false);

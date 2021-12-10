@@ -220,8 +220,6 @@ public:
             return (JDN + time);
         }
 
-        int32_t DifferenceFromGMTSeconds() const;
-
         // UTC time
         microsecondsfromepoch Ticks() const;
 
@@ -539,6 +537,8 @@ public:
     private:
         Time _time;
     };
+
+    EXTERNAL void TestTime();
 }
 } // namespace Core
 

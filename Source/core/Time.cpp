@@ -1261,7 +1261,7 @@ void Time::Marcel() {
 
     Time::microsecondsfromepoch Time::Ticks() const
     {
-        return (_time.tv_sec + (_time.tv_nsec/NanoSecondsPerMicroSecond));
+        return ((_time.tv_sec * MicroSecondsPerSecond ) + (_time.tv_nsec/NanoSecondsPerMicroSecond));
     }
 
     uint8_t Time::DayOfWeek() const
@@ -1410,16 +1410,156 @@ void Time::Marcel() {
         return (seconds);
     }
 
-    int32_t Time::DifferenceFromGMTSeconds() const
+    void TestTime() 
     {
-#ifdef __WINDOWS__
-        TIME_ZONE_INFORMATION timeZoneInfo;
-        GetTimeZoneInformation(&timeZoneInfo);
 
-        return static_cast<int32_t>(-timeZoneInfo.Bias * 60);
-#else
-        return static_cast<int32_t>(TMHandle().tm_gmtoff);
+#ifdef __POSIX__
+
+        std::cout << "\n============== Timespec ctor ===============\n" << std::endl;
+
+        {
+            struct timespec ts;
+            timespec_get(&ts, TIME_UTC);
+            Time t(ts);
+
+            string s;
+            t.ToString(s, true);
+            std::cout << "Localtime now : " << s << " ms: " << t.MilliSeconds() << std::endl;
+            t.ToString(s, false);
+            std::cout << "UTC now : " << s << " ms: " << t.MilliSeconds() << std::endl;
+
+        }
 #endif
+        std::cout << "\n============== ymdhms ctor ===============\n" << std::endl;
+
+        {
+            Time t(2021, 07, 05, 22, 10, 5, 999, true);
+            string s;
+            t.ToString(s, true);
+            std::cout << "Localtime 2021-07-05 22:10:05.999 : " << s << " ms: " << t.MilliSeconds() << std::endl;
+            t.ToString(s, false);
+            std::cout << "Localtime 2021-07-05 22:10:05.999 UTC is : " << s << " ms: " << t.MilliSeconds() << std::endl;
+        }
+
+        std::cout << std::endl;
+
+        {
+            Time t(2021,12, 26, 23, 59, 59, 1, true);
+            string s;
+            t.ToString(s, true);
+            std::cout << "Localtime 2021-12-26 23:59:59.001 : " << s << " ms: " << t.MilliSeconds() << std::endl;
+            t.ToString(s, false);
+            std::cout << "Localtime 2021-12-26 23:59:59.001 UTC is : " << s << " ms: " << t.MilliSeconds() << std::endl;
+        }
+
+        std::cout << std::endl;
+        
+        {
+            Time t(2021, 07, 05, 22, 10, 5, 999, false);
+            string s;
+            t.ToString(s, true);
+            std::cout << "UTC 2021-07-05 22:10:05.999 localtime: " << s << " ms: " << t.MilliSeconds() << std::endl;
+            t.ToString(s, false);
+            std::cout << "UTC 2021-07-05 22:10:05.999 UTC is : " << s << " ms: " << t.MilliSeconds() << std::endl;
+        }
+
+        std::cout << std::endl;
+
+        {
+            Time t(2021,12, 26, 23, 59, 59, 1, false);
+            string s;
+            t.ToString(s, true);
+            std::cout << "UTC 2021-12-26 23:59:59.001 Localtime: " << s << " ms: " << t.MilliSeconds() << std::endl;
+            t.ToString(s, false);
+            std::cout << "UTC 2021-12-26 23:59:59.001 UTC is : " << s << " ms: " << t.MilliSeconds() << std::endl;
+        }
+
+        std::cout << "\n============== copy ctor ===============\n" << std::endl;
+
+        {
+            Time t;
+            Time orig(1969,11, 1, 9, 10, 11, 500, true);
+            t = orig;
+            Time t2(orig);
+
+            string s;
+            orig.ToString(s, true);
+            std::cout << "Localtime 1969-11-01 09:10:11.500 : " << s << " ms: " << orig.MilliSeconds() << std::endl;
+            orig.ToString(s, false);
+            std::cout << "Localtime 1969-11-01 09:10:11.500 UTC is : " << s << " ms: " << orig.MilliSeconds() << std::endl;
+            t.ToString(s, true);
+            std::cout << "Localtime 1969-11-01 09:10:11.500 : " << s << " ms: " << t.MilliSeconds() << std::endl;
+            t.ToString(s, false);
+            std::cout << "Localtime 1969-11-01 09:10:11.500 UTC is : " << s << " ms: " << t.MilliSeconds() << std::endl;
+            t2.ToString(s, true);
+            std::cout << "Localtime 1969-11-01 09:10:11.500 : " << s << " ms: " << t2.MilliSeconds() << std::endl;
+            t2.ToString(s, false);
+            std::cout << "Localtime 1969-11-01 09:10:11.500 UTC is : " << s << " ms: " << t2.MilliSeconds() << std::endl;
+        }
+
+            std::cout << "\n============== FromString ===============\n" << std::endl;
+        {
+            Time orig(1969,10, 3, 10, 11, 12, 666, true);
+            string s;
+            orig.ToString(s, true);
+            Time t;
+            t.FromString(s, true);
+            orig.ToString(s, false);
+            Time t2;
+            t2.FromString(s, false);
+
+            orig.ToString(s, true);
+            std::cout << "Localtime 1969-10-03 10:11:12 666 : " << s << " ms: " << orig.MilliSeconds() << std::endl;
+            orig.ToString(s, false);
+            std::cout << "Localtime 1969-10-03 10:11:12 666 UTC is : " << s << " ms: " << orig.MilliSeconds() << std::endl;
+            t.ToString(s, true);
+            std::cout << "Localtime 1969-10-03 10:11:12 666 : " << s << " ms: " << t.MilliSeconds() << std::endl;
+            t.ToString(s, false);
+            std::cout << "Localtime 1969-10-03 10:11:12 666 UTC is : " << s << " ms: " << t.MilliSeconds() << std::endl;
+            t2.ToString(s, true);
+            std::cout << "UTC 1969-10-03 10:11:12 666 as Localtime: " << s << " ms: " << t2.MilliSeconds() << std::endl;
+            t2.ToString(s, false);
+            std::cout << "UTC 1969-10-03 10:11:12 666 UTC is : " << s << " ms: " << t2.MilliSeconds() << std::endl;
+        }
+
+        std::cout << "\n============== Now and small getters ===============\n" << std::endl;
+
+        {
+            Time t = Time::Now();
+            string s;
+            t.ToString(s, true);
+            std::cout << "Localtime now : " << s << " ms: " << t.MilliSeconds() << std::endl;
+            t.ToString(s, false);
+            std::cout << "UTC now : " << s << " ms: " << t.MilliSeconds() << std::endl;
+
+            std::cout << "Weerkdayname:" << t.WeekDayName() << " MonthName:" << t.MonthName() << " DayOfYear:" << t.DayOfYear() << " DayOfWeek:" << static_cast<uint32_t>(t.DayOfWeek()) << std::endl;
+            std::cout << "Year:" << static_cast<uint32_t>(t.Year()) << " Month:" << static_cast<uint32_t>(t.Month()) << " Day:" << static_cast<uint32_t>(t.Day()) << " Hours:" << static_cast<uint32_t>(t.Hours()) << " Minutes:" << static_cast<uint32_t>(t.Minutes()) << " Seconds:" << static_cast<uint32_t>(t.Seconds()) << " MilliSeconds:" << t.MilliSeconds() << std::endl;
+        }
+
+        std::cout << "\n============== Ticks ===============\n" << std::endl;
+
+        {
+            Time orig(2016,10, 3, 10, 11, 12, 666, true);
+            Time::microsecondsfromepoch flattime = orig.Ticks();
+
+            std::cout << orig.Handle().tv_sec << std::endl;
+
+            std::cout << " Ticks for local 2016-10-03 10:11:12 666 (so UTC ticks) : " << flattime << std::endl;
+            Time copyutc(flattime, false);
+            string s;
+            copyutc.ToString(s, true);
+            std::cout << "Localtime 2016-10-03 10:11:12 666 : " << s << " ms: " << copyutc.MilliSeconds() << std::endl;
+            copyutc.ToString(s, false);
+            std::cout << "Localtime 2016-10-03 10:11:12 666 UTC is : " << s << " ms: " << copyutc.MilliSeconds() << std::endl;
+            Time copyloc(flattime, true);
+            copyloc.ToString(s, true);
+            std::cout << "Localtime 2016-10-03 10:11:12 666 converted to UTC as local time : " << s << " ms: " << copyloc.MilliSeconds() << std::endl;
+            copyloc.ToString(s, false);
+            std::cout << "Localtime 2016-10-03 10:11:12 666 converted to UTC as UTC time : " << s << " ms: " << copyloc.MilliSeconds() << std::endl;
+
+        }
+
     }
+
 }
 } // namespace Core
