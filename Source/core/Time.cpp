@@ -1248,7 +1248,7 @@ void Time::Marcel() {
 
         if( localTime == true) {
             struct tm utcaslocaltm{}; 
-            gmtime_r(&epochTimestamp, &utcaslocaltm);
+            localtime_r(&epochTimestamp, &utcaslocaltm);
             //now convert back to epoch time again 
             _time.tv_sec = mktimegm(&utcaslocaltm);
 
@@ -1542,8 +1542,6 @@ void Time::Marcel() {
             Time orig(2016,10, 3, 10, 11, 12, 666, true);
             Time::microsecondsfromepoch flattime = orig.Ticks();
 
-            std::cout << orig.Handle().tv_sec << std::endl;
-
             std::cout << " Ticks for local 2016-10-03 10:11:12 666 (so UTC ticks) : " << flattime << std::endl;
             Time copyutc(flattime, false);
             string s;
@@ -1556,6 +1554,104 @@ void Time::Marcel() {
             std::cout << "Localtime 2016-10-03 10:11:12 666 converted to UTC as local time : " << s << " ms: " << copyloc.MilliSeconds() << std::endl;
             copyloc.ToString(s, false);
             std::cout << "Localtime 2016-10-03 10:11:12 666 converted to UTC as UTC time : " << s << " ms: " << copyloc.MilliSeconds() << std::endl;
+
+        }
+
+        std::cout << "\n============== ToString ===============\n" << std::endl;
+
+        {
+
+            Time orig(2016,10, 3, 10, 11, 12, 666, true);
+
+            string s = orig.ToRFC1123();
+            std::cout << " RFC1123 for local 2016-10-03 10:11:12 666 : " << s << std::endl;
+            s = orig.ToRFC1123(true);
+            std::cout << " RFC1123  local for local 2016-10-03 10:11:12 666 : " << s << std::endl;
+            s = orig.ToRFC1123(false);
+            std::cout << " RFC1123  UTC for local 2016-10-03 10:11:12 666 : " << s << std::endl;
+            s = orig.ToISO8601();
+            std::cout << " ToISO8601 for local 2016-10-03 10:11:12 666 : " << s << std::endl;
+            s = orig.ToISO8601(true);
+            std::cout << " ToISO8601  local for local 2016-10-03 10:11:12 666 : " << s << std::endl;
+            s = orig.ToISO8601(false);
+            std::cout << " ToISO8601  UTC for local 2016-10-03 10:11:12 666 : " << s << std::endl;
+            s = orig.ToTimeOnly(true);
+            std::cout << " ToTimeOnly  local for local 2016-10-03 10:11:12 666 : " << s << std::endl;
+            s = orig.ToTimeOnly(false);
+            std::cout << " ToTimeOnly  UTC for local 2016-10-03 10:11:12 666 : " << s << std::endl;
+        }
+
+        std::cout << "\n============== Add Sub ===============\n" << std::endl;
+
+        {
+
+            Time orig(2021,1, 1, 12, 00, 00, 0, true);
+
+            string s;
+            orig.ToString(s, true);
+            std::cout << "Start local 2021-1-1 12:00:00 000 : " << s << " ms: " << orig.MilliSeconds() << std::endl;
+            orig.Add((3600*3*1000) + 500); // add 3 hours and 500 ms
+            orig.ToString(s, true);
+            std::cout << "local 2021-1-1 12:00:00 000 + 3 hr and 500ms  : " << s << " ms: " << orig.MilliSeconds() << std::endl;
+            orig.Sub((3600*3*1000) + 500); // add 3 hours and 500 ms
+            orig.ToString(s, true);
+            std::cout << "local 2021-1-1 12:00:00 000 : " << s << " ms: " << orig.MilliSeconds() << std::endl;
+
+        }
+
+#ifdef __POSIX__
+
+        std::cout << "\n============== TMHandle ===============\n" << std::endl;
+
+        {
+
+            Time orig(2021,1, 1, 12, 00, 00, 333, true);
+
+            string s;
+            orig.ToString(s, true);
+            std::cout << "Reference local 2021-1-1 12:00:00 333 : " << s << " ms: " << orig.MilliSeconds() << std::endl;
+
+            std::cout << " DayOfYear:" << static_cast<uint32_t>(orig.TMHandle().tm_yday) << " DayOfWeek:" << static_cast<uint32_t>(orig.TMHandle().tm_wday) << std::endl;
+            std::cout << "Year:" << static_cast<uint32_t>(orig.TMHandle().tm_year) << " Month:" << static_cast<uint32_t>(orig.TMHandle().tm_mon) << " Day:" << static_cast<uint32_t>(orig.TMHandle().tm_mday) << " Hours:" << static_cast<uint32_t>(orig.TMHandle().tm_hour) << " Minutes:" << static_cast<uint32_t>(orig.TMHandle().tm_min) << " Seconds:" << static_cast<uint32_t>(orig.TMHandle().tm_sec) << std::endl;
+        }
+
+#endif
+        std::cout << "\n============== TimeAsLocal ===============\n" << std::endl;
+
+        {
+
+            Time orig(2004,12, 26, 8, 30, 45, 737, true);
+
+            string s;
+            orig.ToString(s, true);
+            std::cout << "Reference local 2004-12-26 08:30:45 737 : " << s << " ms: " << orig.MilliSeconds() << std::endl;
+            TimeAsLocal l1(orig);
+            TimeAsLocal l2;
+            l2 = orig;
+
+            l1.ToString(s);
+            std::cout << "AsLocal 1 tostring : " << s << " ms: " << l1.MilliSeconds() << std::endl;
+            std::cout << "Weerkdayname:" << l1.WeekDayName() << " MonthName:" << l1.MonthName() << " DayOfYear:" << l1.DayOfYear() << " DayOfWeek:" << static_cast<uint32_t>(l1.DayOfWeek()) << std::endl;
+            std::cout << "Year:" << static_cast<uint32_t>(l1.Year()) << " Month:" << static_cast<uint32_t>(l1.Month()) << " Day:" << static_cast<uint32_t>(l1.Day()) << " Hours:" << static_cast<uint32_t>(l1.Hours()) << " Minutes:" << static_cast<uint32_t>(l1.Minutes()) << " Seconds:" << static_cast<uint32_t>(l1.Seconds()) << " MilliSeconds:" << l1.MilliSeconds() << std::endl;
+            l2.ToString(s);
+            std::cout << "AsLocal 2 tostring : " << s << " ms: " << l2.MilliSeconds() << std::endl;
+            std::cout << "Weerkdayname:" << l2.WeekDayName() << " MonthName:" << l2.MonthName() << " DayOfYear:" << l2.DayOfYear() << " DayOfWeek:" << static_cast<uint32_t>(l2.DayOfWeek()) << std::endl;
+            std::cout << "Year:" << static_cast<uint32_t>(l2.Year()) << " Month:" << static_cast<uint32_t>(l2.Month()) << " Day:" << static_cast<uint32_t>(l2.Day()) << " Hours:" << static_cast<uint32_t>(l2.Hours()) << " Minutes:" << static_cast<uint32_t>(l2.Minutes()) << " Seconds:" << static_cast<uint32_t>(l2.Seconds()) << " MilliSeconds:" << l2.MilliSeconds() << std::endl;
+
+            l1.Add((3600*3*1000) + 500); // add 3 hours and 500 ms
+            l1.ToString(s);
+            std::cout << "AsLocal + 3 hr and 500 ms  : " << s << " ms: " << l1.MilliSeconds() << std::endl;
+            l1.Sub((3600*3*1000) + 500); // add 3 hours and 500 ms
+            l1.ToString(s);
+            std::cout << "AsLocal - 3 hr and 500 ms  : " << s << " ms: " << l1.MilliSeconds() << std::endl;
+
+
+            Time t1 = l1.ToUTC();
+            orig.ToString(s, true);
+            std::cout << "Back to UTC local 2004-12-26 08:30:45 737 local: " << s << " ms: " << t1.MilliSeconds() << std::endl;
+            orig.ToString(s, false);
+            std::cout << "Back to UTC local 2004-12-26 08:30:45 737 as UTC : " << s << " ms: " << t1.MilliSeconds() << std::endl;
+
 
         }
 

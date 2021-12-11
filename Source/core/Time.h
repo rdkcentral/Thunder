@@ -154,7 +154,7 @@ public:
 #ifdef __WINDOWS__
             return (_time.wMilliseconds);
 #else
-            return ((_time.tv_nsec / NanoSecondsPerMilliSecond) % 1000);  //todo checken of er mee dan 999 milliseconcen in kunnen zitten
+            return ((_time.tv_nsec / NanoSecondsPerMilliSecond) % 1000);  
 #endif
         }
         uint8_t Seconds() const
@@ -365,6 +365,10 @@ public:
 #else
     struct timespec _time;
 #endif
+
+    // todo remove
+    friend void TestTime();
+
     };
 
     class EXTERNAL TimeAsLocal {

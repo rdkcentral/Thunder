@@ -754,8 +754,77 @@ namespace PluginHost {
                         break;
                     }
                     case 'T': {
-                        printf("Triggering the Resource Monitor to do an evaluation.\n");
-                        Core::ResourceMonitor::Instance().Break();
+
+
+            #if 0
+                        printf("Huppels test executie\n");
+                        Core::Time time = Core::Time::Now();
+
+                        printf("on orignal Local/UTC ToTimeOnly\n");
+                        string result =time.ToTimeOnly(true);
+                        printf("result = %s\n", result.c_str());
+                        result =time.ToTimeOnly(false);
+                        printf("result = %s\n\n", result.c_str());
+
+                        printf("on local version ToTimeOnly ToString\n");
+                        Core::TimeAsLocal l(time);
+                        result = l.ToTimeOnly();
+                        printf("result = %s\n", result.c_str());
+                        l.ToString(result);
+                        printf("result = %s\n\n", result.c_str());
+
+                        printf("on local details\n");
+                        printf("%u:%u:%u\n\n", l.Hours(), l.Minutes(), l.Seconds());
+
+                        printf("Back to UTC version\n");
+                        time = l.ToUTC();
+                        printf("   Local/UTC ToTimeOnly\n");
+                        result =time.ToTimeOnly(true);
+                        printf("result = %s\n", result.c_str());
+                        result =time.ToTimeOnly(false);
+                        printf("result = %s\n\n", result.c_str());
+
+
+                        printf("Assignment operator\n");
+                        Core::Time t2 = Core::Time::Now();
+                        printf("   Local/UTC on orig\n");
+                        result = t2.ToTimeOnly(true);
+                        printf("result = %s\n", result.c_str());
+                        result = t2.ToTimeOnly(false);
+                        printf("result = %s\n\n", result.c_str());
+
+                        Core::TimeAsLocal l2;
+                        l2 = t2;
+                        Core::Time t3(l2.ToUTC());
+
+                        printf("   Local/UTC on converted back\n");
+                        result = t3.ToTimeOnly(true);
+                        printf("result = %s\n", result.c_str());
+                        result = t3.ToTimeOnly(false);
+                        printf("result = %s\n\n", result.c_str());
+
+
+                        printf("Changing TimeAsLocal:\n");
+                        Core::TimeAsLocal l3(Core::Time::Now());
+                        printf("   TimeOnly\n");
+                        result = l3.ToTimeOnly();
+                        printf("result = %s\n", result.c_str());
+                        printf("   Add 2 hours\n");
+                        l3.Add(Core::Time::MilliSecondsPerSecond * Core::Time::SecondsPerHour * 2);
+                        result = l3.ToTimeOnly();
+                        printf("result = %s\n", result.c_str());
+                        printf("   Substract 1 hour\n");
+                        l3.Sub(Core::Time::MilliSecondsPerSecond * Core::Time::SecondsPerHour * 1);
+                        result = l3.ToTimeOnly();
+                        printf("result = %s\n", result.c_str());
+#endif
+//                        Core::Time::Marcel();
+
+                            Core::TestTime();
+                        break;
+                    }
+                    case 'D': {
+                        Core::SystemInfo::Instance().SetTime(Core::Time(2021,12,11,8,15,0,0, true));
                         break;
                     }
                     case 'M': {
