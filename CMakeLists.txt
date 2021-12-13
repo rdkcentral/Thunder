@@ -47,6 +47,33 @@ set(NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")
 find_package(ProxyStubGenerator REQUIRED)
 find_package(JsonGenerator REQUIRED)
 
+set(BUILD_TYPE "Production" CACHE STRING "How do you want to build it, Production, Release/ReleaseSymbols or Debug/DebugOptimized")
+
+#
+# Build type specific options
+#
+if(NOT BUILD_TYPE)
+    set(BUILD_TYPE Production)
+    message(AUTHOR_WARNING "BUILD_TYPE not set, assuming '${BUILD_TYPE}'")
+endif()
+if("${BUILD_TYPE}" STREQUAL "Debug")
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
+elseif("${BUILD_TYPE}" STREQUAL "DebugOptimized")
+    set(CMAKE_BUILD_TYPE "DebugOptimized" CACHE STRING "Choose the type of build." FORCE)
+elseif("${BUILD_TYPE}" STREQUAL "ReleaseSymbols")
+    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build." FORCE)
+elseif("${BUILD_TYPE}" STREQUAL "Release")
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)
+elseif("${BUILD_TYPE}" STREQUAL "Production")
+    set(CMAKE_BUILD_TYPE "MinSizeRel" CACHE STRING "Choose the type of build." FORCE)
+else()
+    message(FATAL_ERROR "Invalid BUILD_TYPE: '${BUILD_TYPE}'")
+endif()
+
+# Remove optimization flags added by the build system
+string(REGEX REPLACE "(\-O[011123456789])" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+string(REGEX REPLACE "(\-O[011123456789])" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+
 # make sure others can make use of the JSON creation tools as well!!!
 configure_file( "${CMAKE_SOURCE_DIR}/cmake/project.cmake.in"
                 "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
