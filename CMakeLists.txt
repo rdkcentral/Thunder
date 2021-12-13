@@ -47,27 +47,25 @@ set(NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")
 find_package(ProxyStubGenerator REQUIRED)
 find_package(JsonGenerator REQUIRED)
 
-set(BUILD_TYPE "Production" CACHE STRING "How do you want to build it, Production, Release/ReleaseSymbols or Debug/DebugOptimized")
+set(CMAKE_BUILD_TYPE "MinSizeRel" CACHE STRING "How do you want to build it, MinSizeRel, Release/RelWithDebInfo or Debug/DebugOptimized")
 
 #
 # Build type specific options
 #
-if(NOT BUILD_TYPE)
-    set(BUILD_TYPE Production)
-    message(AUTHOR_WARNING "BUILD_TYPE not set, assuming '${BUILD_TYPE}'")
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE MinSizeRel)
+    message(AUTHOR_WARNING "CMAKE_BUILD_TYPE not set, assuming '${CMAKE_BUILD_TYPE}'")
 endif()
-if("${BUILD_TYPE}" STREQUAL "Debug")
-    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
-elseif("${BUILD_TYPE}" STREQUAL "DebugOptimized")
-    set(CMAKE_BUILD_TYPE "DebugOptimized" CACHE STRING "Choose the type of build." FORCE)
-elseif("${BUILD_TYPE}" STREQUAL "ReleaseSymbols")
-    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build." FORCE)
-elseif("${BUILD_TYPE}" STREQUAL "Release")
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)
-elseif("${BUILD_TYPE}" STREQUAL "Production")
-    set(CMAKE_BUILD_TYPE "MinSizeRel" CACHE STRING "Choose the type of build." FORCE)
+
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR
+   "${CMAKE_BUILD_TYPE}" STREQUAL "DebugOptimized" OR
+   "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo" OR
+   "${CMAKE_BUILD_TYPE}" STREQUAL "Release" OR
+   "${CMAKE_BUILD_TYPE}" STREQUAL "MinSizeRel")
+
+    message(STATUS "CMAKE_BUILD_TYPE: '${CMAKE_BUILD_TYPE}'")
 else()
-    message(FATAL_ERROR "Invalid BUILD_TYPE: '${BUILD_TYPE}'")
+    message(FATAL_ERROR "Invalid CMAKE_BUILD_TYPE: '${CMAKE_BUILD_TYPE}'")
 endif()
 
 # Remove optimization flags added by the build system

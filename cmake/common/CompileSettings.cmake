@@ -54,9 +54,9 @@ if(PERFORMANCE_MONITOR)
     target_compile_definitions(CompileSettings INTERFACE "THUNDER_PERFORMANCE=1")
 endif()
 
-if(NOT BUILD_TYPE)
-    set(BUILD_TYPE Production)
-    message(AUTHOR_WARNING "BUILD_TYPE not set, assuming '${BUILD_TYPE}'")
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE MinSizeRel)
+    message(AUTHOR_WARNING "CMAKE_BUILD_TYPE not set, assuming '${CMAKE_BUILD_TYPE}'")
 endif()
 
 # target_compile_definitions(CompileSettings INTERFACE "THUNDER_PLATFORM=${THUNDER_PLATFORM}")
@@ -67,32 +67,32 @@ target_compile_options(CompileSettings INTERFACE -std=c++11 -Wno-psabi)
 #
 # Build type specific options
 #
-if("${BUILD_TYPE}" STREQUAL "Debug")
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_DEBUG)
     target_compile_options(CompileSettings INTERFACE -funwind-tables)
     set(CONFIG_DIR "Debug" CACHE STRING "Build config directory" FORCE)
 
-elseif("${BUILD_TYPE}" STREQUAL "DebugOptimized")
+elseif("${CMAKE_BUILD_TYPE}" STREQUAL "DebugOptimized")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_DEBUG)
     target_compile_options(CompileSettings INTERFACE -funwind-tables)
     set(CONFIG_DIR "DebugOptimized" CACHE STRING "Build config directory" FORCE)
 
-elseif("${BUILD_TYPE}" STREQUAL "ReleaseSymbols")
+elseif("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_NDEBUG)
     target_compile_options(CompileSettings INTERFACE -funwind-tables)
-    set(CONFIG_DIR "ReleaseSymbols" CACHE STRING "Build config directory" FORCE)
+    set(CONFIG_DIR "RelWithDebInfo" CACHE STRING "Build config directory" FORCE)
 
-elseif("${BUILD_TYPE}" STREQUAL "Release")
+elseif("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_NDEBUG)
     target_compile_options(CompileSettings INTERFACE -funwind-tables)
     set(CONFIG_DIR "Release" CACHE STRING "Build config directory" FORCE)
 
-elseif("${BUILD_TYPE}" STREQUAL "Production")
+elseif("${CMAKE_BUILD_TYPE}" STREQUAL "MinSizeRel")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_NDEBUG _THUNDER_PRODUCTION)
-    set(CONFIG_DIR "Production" CACHE STRING "Build config directory" FORCE)
+    set(CONFIG_DIR "MinSizeRel" CACHE STRING "Build config directory" FORCE)
 
 else()
-    message(FATAL_ERROR "Invalid BUILD_TYPE: '${BUILD_TYPE}'")
+    message(FATAL_ERROR "Invalid CMAKE_BUILD_TYPE: '${CMAKE_BUILD_TYPE}'")
 endif()
 
 
