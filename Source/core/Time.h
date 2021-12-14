@@ -23,9 +23,6 @@
 #include "Portability.h"
 #include "TextFragment.h"
 
-#include <iostream>
-#include <iomanip>
-
 namespace WPEFramework {
 namespace Core {
  
@@ -533,7 +530,7 @@ public:
     private:
         Time _time;
     };
-    
+
 }
 } // namespace Core
 
