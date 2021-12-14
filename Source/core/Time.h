@@ -49,17 +49,12 @@ namespace Core {
 
         static constexpr uint32_t TicksPerMillisecond = 1000;
 
-#ifdef __POSIX__
-
-        static void Marcel();
-private:
-//        Time(const struct timeval& info, const bool localtime = true);
-
-
-public:
         // relative to 1st of January 1970, 00:00:00 in microseconds
         using microsecondsfromepoch = uint64_t;
 
+#ifdef __POSIX__
+
+public:
         //time always in UTC
         Time(const struct timespec& time);
 
@@ -74,7 +69,7 @@ public:
         }
 #endif
 
-        Time(const microsecondsfromepoch time, const bool localTime = false);
+        Time(const microsecondsfromepoch time);
 
 #ifdef __WINDOWS__
         Time()
@@ -366,9 +361,6 @@ public:
     struct timespec _time;
 #endif
 
-    // todo remove
-    friend void TestTime();
-
     };
 
     class EXTERNAL TimeAsLocal {
@@ -541,8 +533,7 @@ public:
     private:
         Time _time;
     };
-
-    EXTERNAL void TestTime();
+    
 }
 } // namespace Core
 

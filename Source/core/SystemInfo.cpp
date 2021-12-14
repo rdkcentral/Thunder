@@ -365,10 +365,6 @@ namespace Core {
 #else
 
         time_t value = time.Handle().tv_sec;
-        
-//Macel TODO weer weghalen:
-
-        std::cout << "\nGonna set time with: " << value << "\n\n";
 
 #if defined(__GNU_LIBRARY__)
   #if (__GLIBC__ >= 2) && (__GLIBC_MINOR__ > 30)

@@ -671,7 +671,7 @@ namespace Core {
     }
 
     // Uint64 is the time in MicroSeconds !!!
-    Time::Time(const microsecondsfromepoch time, bool localTime)
+    Time::Time(const microsecondsfromepoch time)
         : _time()
     {
         FILETIME fileTime;
@@ -683,11 +683,6 @@ namespace Core {
         fileTime.dwHighDateTime = result.HighPart;
 
         ::FileTimeToSystemTime(&fileTime, &_time);
-        if (localTime) {
-            SYSTEMTIME convertedTime;
-            TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
-            _time = convertedTime;
-        }
     }
 
     Time::Time(const FILETIME& time, bool localTime /*= false*/)
@@ -967,206 +962,7 @@ namespace Core {
 
         return (Time(asutc));
     }
-
-void Time::Marcel() {
-
-// okay this start with local time
-
-    std::cout << "=== Local test start ===" << std::endl;
-
-    std::tm tm{};  // zero initialise
-    tm.tm_year = 2020-1900; // 2020
-    tm.tm_mon = 2-1; // February
-    tm.tm_mday = 15; // 15th
-    tm.tm_hour = 10;
-    tm.tm_min = 15;
-    tm.tm_isdst = -1; 
-
-    std::cout << (tm.tm_zone == nullptr ? "<empty>" : tm.tm_zone) << std::endl;
-
-    std::time_t t = std::mktime(&tm); 
-
- 
-    std::cout << "UTC 15 feb 2020 10:15:   " << std::put_time(std::gmtime(&t), "%c %Z") << '\n';
-    std::cout << (std::gmtime(&t)->tm_zone  == nullptr ? "<empty>" : std::gmtime(&t)->tm_zone ) << std::endl;
-    std::cout << "local 15 feb 2020 10:15: " << std::put_time(std::localtime(&t), "%c %Z") << '\n';
-    std::cout << (std::localtime(&t)->tm_zone  == nullptr ? "<empty>" : std::localtime(&t)->tm_zone ) << std::endl;
-
-
-    //        struct timeval currentTime;
-//        gettimeofday(&currentTime, nullptr);
-
-        struct timespec currentTime{};
-        clock_gettime(CLOCK_REALTIME, &currentTime);
-
-    std::cout << "UTC now:   " << std::put_time(std::gmtime(&currentTime.tv_sec), "%c %Z") << '\n';
-    std::cout << (std::gmtime(&currentTime.tv_sec)->tm_zone  == nullptr ? "<empty>" : std::gmtime(&currentTime.tv_sec)->tm_zone ) << std::endl;
-    std::cout << "local now: " << std::put_time(std::localtime(&currentTime.tv_sec), "%c %Z") << '\n';
-    std::cout << (std::localtime(&currentTime.tv_sec)->tm_zone  == nullptr ? "<empty>" : std::localtime(&currentTime.tv_sec)->tm_zone ) << std::endl;
-
-    tm.tm_year = 2021-1900; // 2020
-    tm.tm_mon = 8-1; // Aug
-    tm.tm_mday = 15; // 15th
-    tm.tm_hour = 22;
-    tm.tm_min = 19;
-    tm.tm_isdst = -1;
-    t = std::mktime(&tm); 
- 
-    std::cout << "UTC 15 aug 2021 22:19:   " << std::put_time(std::gmtime(&t), "%c %Z") << '\n';
-    std::cout << "local 15 aug 2021 22:19: " << std::put_time(std::localtime(&t), "%c %Z") << '\n';
-
-    // now we start with UTC time
-
-    std::cout << "=== UTC test start ===" << std::endl;
-
-    tm.tm_year = 2021-1900; // 2020
-    tm.tm_mon = 8-1; // Aug
-    tm.tm_mday = 15; // 15th
-    tm.tm_hour = 22;
-    tm.tm_min = 19;
-    tm.tm_isdst = -1; //0 gives strange results here, yes now works correclty!!!!!!
-    tm.tm_zone = "UTC";
-    t = std::mktime(&tm); 
-
-
- 
-    std::cout << "UTC 15 aug 2021 22:19:   " << std::put_time(std::gmtime(&t), "%c %Z") << '\n';
-    std::cout << "local 15 aug 2021 22:19: " << std::put_time(std::localtime(&t), "%c %Z") << '\n';
-
-    {
-    std::tm tm2{};  // zero initialise
-
-    tm2.tm_year = 2021-1900; // 2020
-    tm2.tm_mon = 8-1; // Aug
-    tm2.tm_mday = 15; // 15th
-    tm2.tm_hour = 22;
-    tm2.tm_min = 19;
-    tm2.tm_isdst = -1; //0 gives strange results here, yes now works correclty!!!!!!
-    tm2.tm_zone = "UTC";
-    std::time_t t2 = std::mktime(&tm2); 
-
-    std::cout << "\n\nraw UTC -1:   " << t2 << '\n';
-
-    }
-
-    {
-    std::tm tm2{};  // zero initialise
-
-    tm2.tm_year = 2021-1900; // 2020
-    tm2.tm_mon = 8-1; // Aug
-    tm2.tm_mday = 15; // 15th
-    tm2.tm_hour = 22;
-    tm2.tm_min = 19;
-    tm2.tm_isdst = 0; //0 gives strange results here, yes now works correclty!!!!!!
-    tm2.tm_zone = "UTC";
-    std::time_t t2 = std::mktime(&tm2); 
-
-    std::cout << "raw UTC 0:   " << t2 << '\n';
-
-    }
-    {
-    std::tm tm2{};  // zero initialise
-
-    tm2.tm_year = 2021-1900; // 2020
-    tm2.tm_mon = 8-1; // Aug
-    tm2.tm_mday = 15; // 15th
-    tm2.tm_hour = 22;
-    tm2.tm_min = 19;
-    tm2.tm_isdst = -1; //0 gives strange results here, yes now works correclty!!!!!!
-    tm2.tm_zone = nullptr;
-    std::time_t t2 = std::mktime(&tm2); 
-
-    std::cout << "raw nullptr -1:   " << t2 << '\n';
-
-    }
-    {
-    std::tm tm2{};  // zero initialise
-
-    tm2.tm_year = 2021-1900; // 2020
-    tm2.tm_mon = 8-1; // Aug
-    tm2.tm_mday = 15; // 15th
-    tm2.tm_hour = 22;
-    tm2.tm_min = 19;
-    tm2.tm_isdst = -1; //0 gives strange results here, yes now works correclty!!!!!!
-    tm2.tm_zone = "CET";
-    std::time_t t2 = std::mktime(&tm2); 
-
-    std::cout << "raw CET -1:   " << t2 << '\n';
-
-    }
-    {
-    std::tm tm2{};  // zero initialise
-
-    tm2.tm_year = 2021-1900; // 2020
-    tm2.tm_mon = 8-1; // Aug
-    tm2.tm_mday = 15; // 15th
-    tm2.tm_hour = 22;
-    tm2.tm_min = 19;
-    tm2.tm_isdst = -1; //0 gives strange results here, yes now works correclty!!!!!!
-    tm2.tm_zone = "GMT";
-    std::time_t t2 = std::mktime(&tm2); 
-
-    std::cout << "raw GMT -1:   " << t2 << '\n';
-
-    }
-
-    {
-    std::tm tm2{};  // zero initialise
-    tm2.tm_year = 2021-1900; // 2020
-    tm2.tm_mon = 8-1; // Aug
-    tm2.tm_mday = 15; // 15th
-    tm2.tm_hour = 22;
-    tm2.tm_min = 19;
-    tm2.tm_isdst = -1; //0 gives strange results here, yes now works correclty!!!!!!
-    tm2.tm_zone = "UTC";
     
-    std::time_t t2 = std::mktime(&tm2); 
-    std::cout << "raw: " << t2 << '\n';
-
-    std::tm tm3 = *std::gmtime(&t2);
-    std::tm tm4 = *std::localtime(&t2);
-
-    std::cout << "UTC 15 aug 2021 22:19:   " << std::put_time(&tm3, "%c %Z") << '\n';
-    std::cout << (tm3.tm_zone  == nullptr ? "<empty>" : tm3.tm_zone ) << std::endl;
-    std::cout << tm3.tm_hour << ':' << tm3.tm_min << std::endl;
-    std::cout << "local 15 aug 2021 22:19: " << std::put_time(&tm4, "%c %Z") << '\n';
-    std::cout << (tm4.tm_zone  == nullptr ? "<empty>" : tm4.tm_zone ) << std::endl;
-    std::cout << tm4.tm_hour << ':' << tm4.tm_min << std::endl;
-
-
-    }
-    {
-
-    std::cout << "mktimegm version"  << std::endl;
-
-    std::tm tm2{};  // zero initialise
-    tm2.tm_year = 2021-1900; // 2020
-    tm2.tm_mon = 8-1; // Aug
-    tm2.tm_mday = 15; // 15th
-    tm2.tm_hour = 22;
-    tm2.tm_min = 19;
-    tm2.tm_isdst = -1; //0 gives strange results here, yes now works correclty!!!!!!
-    tm2.tm_zone = "UTC";
-    
-    std::time_t t2 = mktimegm(&tm2); 
-    std::cout << "raw: " << t2 << '\n';
-
-    std::tm tm3 = *std::gmtime(&t2);
-    std::tm tm4 = *std::localtime(&t2);
-
-    std::cout << "UTC 15 aug 2021 22:19:   " << std::put_time(&tm3, "%c %Z") << '\n';
-    std::cout << (tm3.tm_zone  == nullptr ? "<empty>" : tm3.tm_zone ) << std::endl;
-    std::cout << tm3.tm_hour << ':' << tm3.tm_min << std::endl;
-    std::cout << "local 15 aug 2021 22:19: " << std::put_time(&tm4, "%c %Z") << '\n';
-    std::cout << (tm4.tm_zone  == nullptr ? "<empty>" : tm4.tm_zone ) << std::endl;
-    std::cout << tm4.tm_hour << ':' << tm4.tm_min << std::endl;
-
-
-    }
-
-}
-
-
     Time::Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
     : _time{}
     {
@@ -1207,54 +1003,13 @@ void Time::Marcel() {
         return JulianJDConverter(year, month, day, hour, minutes, seconds);
     }
 
-#if 0
-
-    Time::Time(const struct timeval& info, const bool localtime)
-    {
-        _ticks = (static_cast<uint64_t>(info.tv_sec) * static_cast<uint64_t>(MicroSecondsPerSecond)) + static_cast<uint64_t>(info.tv_usec) + OffsetTicksForEpoch;
-
-        gmtime_r(&info.tv_sec, &_time);
-
-        if (localtime) {
-//            _time.tm_isdst = -1;
-            time_t flatTime{};
-            flatTime = mktime(&_time);
-            _ticks = (static_cast<uint64_t>(flatTime) * static_cast<uint64_t>(MicroSecondsPerSecond)) + OffsetTicksForEpoch;
-
-            time_t epochTimestamp = static_cast<time_t>((_ticks - OffsetTicksForEpoch) / MicroSecondsPerSecond);
-
-            gmtime_r(&epochTimestamp, &_time);
-        }
-
-
-
-/*
-        // This is the seconds since 1970...
-        if( localtime )
-            localtime_r(&info.tv_sec, &_time);
-        else
-            gmtime_r(&info.tv_sec, &_time);
-            */
-    }
-    
-
-#endif
-
-    Time::Time(const microsecondsfromepoch time, const bool localTime /*= false*/)
+    Time::Time(const microsecondsfromepoch time)
         : _time{}
     {
         // This is the seconds since 1970...
         time_t epochTimestamp = static_cast<time_t>((time - OffsetTicksForEpoch) / MicroSecondsPerSecond);
 
-        if( localTime == true) {
-            struct tm utcaslocaltm{}; 
-            localtime_r(&epochTimestamp, &utcaslocaltm);
-            //now convert back to epoch time again 
-            _time.tv_sec = mktimegm(&utcaslocaltm);
-
-        } else {
-            _time.tv_sec = epochTimestamp; 
-        }
+        _time.tv_sec = epochTimestamp; 
 
         _time.tv_nsec = (time % MicroSecondsPerSecond) * NanoSecondsPerMicroSecond;
     }
@@ -1387,14 +1142,14 @@ void Time::Marcel() {
     {
         // Calculate the new time !!
         uint64_t newTime = Ticks() + static_cast<uint64_t>(timeInMilliseconds) * MilliSecondsPerSecond;
-        return (operator=(Time(newTime, false)));
+        return (operator=(Time(newTime)));
     }
 
     Time& Time::Sub(const uint32_t timeInMilliseconds)
     {
         // Calculate the new time !!
         uint64_t newTime = Ticks() - static_cast<uint64_t>(timeInMilliseconds) * MilliSecondsPerSecond;
-        return (operator=(Time(newTime, false)));
+        return (operator=(Time(newTime)));
     }
 
     uint64_t Time::NTPTime() const
@@ -1408,253 +1163,6 @@ void Time::Marcel() {
         seconds += static_cast<uint32_t>(MilliSeconds() * 4294967.296); // 2^32/10^3
 
         return (seconds);
-    }
-
-    void TestTime() 
-    {
-
-#ifdef __POSIX__
-
-        std::cout << "\n============== Timespec ctor ===============\n" << std::endl;
-
-        {
-            struct timespec ts;
-            timespec_get(&ts, TIME_UTC);
-            Time t(ts);
-
-            string s;
-            t.ToString(s, true);
-            std::cout << "Localtime now : " << s << " ms: " << t.MilliSeconds() << std::endl;
-            t.ToString(s, false);
-            std::cout << "UTC now : " << s << " ms: " << t.MilliSeconds() << std::endl;
-
-        }
-#endif
-        std::cout << "\n============== ymdhms ctor ===============\n" << std::endl;
-
-        {
-            Time t(2021, 07, 05, 22, 10, 5, 999, true);
-            string s;
-            t.ToString(s, true);
-            std::cout << "Localtime 2021-07-05 22:10:05.999 : " << s << " ms: " << t.MilliSeconds() << std::endl;
-            t.ToString(s, false);
-            std::cout << "Localtime 2021-07-05 22:10:05.999 UTC is : " << s << " ms: " << t.MilliSeconds() << std::endl;
-        }
-
-        std::cout << std::endl;
-
-        {
-            Time t(2021,12, 26, 23, 59, 59, 1, true);
-            string s;
-            t.ToString(s, true);
-            std::cout << "Localtime 2021-12-26 23:59:59.001 : " << s << " ms: " << t.MilliSeconds() << std::endl;
-            t.ToString(s, false);
-            std::cout << "Localtime 2021-12-26 23:59:59.001 UTC is : " << s << " ms: " << t.MilliSeconds() << std::endl;
-        }
-
-        std::cout << std::endl;
-        
-        {
-            Time t(2021, 07, 05, 22, 10, 5, 999, false);
-            string s;
-            t.ToString(s, true);
-            std::cout << "UTC 2021-07-05 22:10:05.999 localtime: " << s << " ms: " << t.MilliSeconds() << std::endl;
-            t.ToString(s, false);
-            std::cout << "UTC 2021-07-05 22:10:05.999 UTC is : " << s << " ms: " << t.MilliSeconds() << std::endl;
-        }
-
-        std::cout << std::endl;
-
-        {
-            Time t(2021,12, 26, 23, 59, 59, 1, false);
-            string s;
-            t.ToString(s, true);
-            std::cout << "UTC 2021-12-26 23:59:59.001 Localtime: " << s << " ms: " << t.MilliSeconds() << std::endl;
-            t.ToString(s, false);
-            std::cout << "UTC 2021-12-26 23:59:59.001 UTC is : " << s << " ms: " << t.MilliSeconds() << std::endl;
-        }
-
-        std::cout << "\n============== copy ctor ===============\n" << std::endl;
-
-        {
-            Time t;
-            Time orig(1969,11, 1, 9, 10, 11, 500, true);
-            t = orig;
-            Time t2(orig);
-
-            string s;
-            orig.ToString(s, true);
-            std::cout << "Localtime 1969-11-01 09:10:11.500 : " << s << " ms: " << orig.MilliSeconds() << std::endl;
-            orig.ToString(s, false);
-            std::cout << "Localtime 1969-11-01 09:10:11.500 UTC is : " << s << " ms: " << orig.MilliSeconds() << std::endl;
-            t.ToString(s, true);
-            std::cout << "Localtime 1969-11-01 09:10:11.500 : " << s << " ms: " << t.MilliSeconds() << std::endl;
-            t.ToString(s, false);
-            std::cout << "Localtime 1969-11-01 09:10:11.500 UTC is : " << s << " ms: " << t.MilliSeconds() << std::endl;
-            t2.ToString(s, true);
-            std::cout << "Localtime 1969-11-01 09:10:11.500 : " << s << " ms: " << t2.MilliSeconds() << std::endl;
-            t2.ToString(s, false);
-            std::cout << "Localtime 1969-11-01 09:10:11.500 UTC is : " << s << " ms: " << t2.MilliSeconds() << std::endl;
-        }
-
-            std::cout << "\n============== FromString ===============\n" << std::endl;
-        {
-            Time orig(1969,10, 3, 10, 11, 12, 666, true);
-            string s;
-            orig.ToString(s, true);
-            Time t;
-            t.FromString(s, true);
-            orig.ToString(s, false);
-            Time t2;
-            t2.FromString(s, false);
-
-            orig.ToString(s, true);
-            std::cout << "Localtime 1969-10-03 10:11:12 666 : " << s << " ms: " << orig.MilliSeconds() << std::endl;
-            orig.ToString(s, false);
-            std::cout << "Localtime 1969-10-03 10:11:12 666 UTC is : " << s << " ms: " << orig.MilliSeconds() << std::endl;
-            t.ToString(s, true);
-            std::cout << "Localtime 1969-10-03 10:11:12 666 : " << s << " ms: " << t.MilliSeconds() << std::endl;
-            t.ToString(s, false);
-            std::cout << "Localtime 1969-10-03 10:11:12 666 UTC is : " << s << " ms: " << t.MilliSeconds() << std::endl;
-            t2.ToString(s, true);
-            std::cout << "UTC 1969-10-03 10:11:12 666 as Localtime: " << s << " ms: " << t2.MilliSeconds() << std::endl;
-            t2.ToString(s, false);
-            std::cout << "UTC 1969-10-03 10:11:12 666 UTC is : " << s << " ms: " << t2.MilliSeconds() << std::endl;
-        }
-
-        std::cout << "\n============== Now and small getters ===============\n" << std::endl;
-
-        {
-            Time t = Time::Now();
-            string s;
-            t.ToString(s, true);
-            std::cout << "Localtime now : " << s << " ms: " << t.MilliSeconds() << std::endl;
-            t.ToString(s, false);
-            std::cout << "UTC now : " << s << " ms: " << t.MilliSeconds() << std::endl;
-
-            std::cout << "Weerkdayname:" << t.WeekDayName() << " MonthName:" << t.MonthName() << " DayOfYear:" << t.DayOfYear() << " DayOfWeek:" << static_cast<uint32_t>(t.DayOfWeek()) << std::endl;
-            std::cout << "Year:" << static_cast<uint32_t>(t.Year()) << " Month:" << static_cast<uint32_t>(t.Month()) << " Day:" << static_cast<uint32_t>(t.Day()) << " Hours:" << static_cast<uint32_t>(t.Hours()) << " Minutes:" << static_cast<uint32_t>(t.Minutes()) << " Seconds:" << static_cast<uint32_t>(t.Seconds()) << " MilliSeconds:" << t.MilliSeconds() << std::endl;
-        }
-
-        std::cout << "\n============== Ticks ===============\n" << std::endl;
-
-        {
-            Time orig(2016,10, 3, 10, 11, 12, 666, true);
-            Time::microsecondsfromepoch flattime = orig.Ticks();
-
-            std::cout << " Ticks for local 2016-10-03 10:11:12 666 (so UTC ticks) : " << flattime << std::endl;
-            Time copyutc(flattime, false);
-            string s;
-            copyutc.ToString(s, true);
-            std::cout << "Localtime 2016-10-03 10:11:12 666 : " << s << " ms: " << copyutc.MilliSeconds() << std::endl;
-            copyutc.ToString(s, false);
-            std::cout << "Localtime 2016-10-03 10:11:12 666 UTC is : " << s << " ms: " << copyutc.MilliSeconds() << std::endl;
-            Time copyloc(flattime, true);
-            copyloc.ToString(s, true);
-            std::cout << "Localtime 2016-10-03 10:11:12 666 converted to UTC as local time : " << s << " ms: " << copyloc.MilliSeconds() << std::endl;
-            copyloc.ToString(s, false);
-            std::cout << "Localtime 2016-10-03 10:11:12 666 converted to UTC as UTC time : " << s << " ms: " << copyloc.MilliSeconds() << std::endl;
-
-        }
-
-        std::cout << "\n============== ToString ===============\n" << std::endl;
-
-        {
-
-            Time orig(2016,10, 3, 10, 11, 12, 666, true);
-
-            string s = orig.ToRFC1123();
-            std::cout << " RFC1123 for local 2016-10-03 10:11:12 666 : " << s << std::endl;
-            s = orig.ToRFC1123(true);
-            std::cout << " RFC1123  local for local 2016-10-03 10:11:12 666 : " << s << std::endl;
-            s = orig.ToRFC1123(false);
-            std::cout << " RFC1123  UTC for local 2016-10-03 10:11:12 666 : " << s << std::endl;
-            s = orig.ToISO8601();
-            std::cout << " ToISO8601 for local 2016-10-03 10:11:12 666 : " << s << std::endl;
-            s = orig.ToISO8601(true);
-            std::cout << " ToISO8601  local for local 2016-10-03 10:11:12 666 : " << s << std::endl;
-            s = orig.ToISO8601(false);
-            std::cout << " ToISO8601  UTC for local 2016-10-03 10:11:12 666 : " << s << std::endl;
-            s = orig.ToTimeOnly(true);
-            std::cout << " ToTimeOnly  local for local 2016-10-03 10:11:12 666 : " << s << std::endl;
-            s = orig.ToTimeOnly(false);
-            std::cout << " ToTimeOnly  UTC for local 2016-10-03 10:11:12 666 : " << s << std::endl;
-        }
-
-        std::cout << "\n============== Add Sub ===============\n" << std::endl;
-
-        {
-
-            Time orig(2021,1, 1, 12, 00, 00, 0, true);
-
-            string s;
-            orig.ToString(s, true);
-            std::cout << "Start local 2021-1-1 12:00:00 000 : " << s << " ms: " << orig.MilliSeconds() << std::endl;
-            orig.Add((3600*3*1000) + 500); // add 3 hours and 500 ms
-            orig.ToString(s, true);
-            std::cout << "local 2021-1-1 12:00:00 000 + 3 hr and 500ms  : " << s << " ms: " << orig.MilliSeconds() << std::endl;
-            orig.Sub((3600*3*1000) + 500); // add 3 hours and 500 ms
-            orig.ToString(s, true);
-            std::cout << "local 2021-1-1 12:00:00 000 : " << s << " ms: " << orig.MilliSeconds() << std::endl;
-
-        }
-
-#ifdef __POSIX__
-
-        std::cout << "\n============== TMHandle ===============\n" << std::endl;
-
-        {
-
-            Time orig(2021,1, 1, 12, 00, 00, 333, true);
-
-            string s;
-            orig.ToString(s, true);
-            std::cout << "Reference local 2021-1-1 12:00:00 333 : " << s << " ms: " << orig.MilliSeconds() << std::endl;
-
-            std::cout << " DayOfYear:" << static_cast<uint32_t>(orig.TMHandle().tm_yday) << " DayOfWeek:" << static_cast<uint32_t>(orig.TMHandle().tm_wday) << std::endl;
-            std::cout << "Year:" << static_cast<uint32_t>(orig.TMHandle().tm_year) << " Month:" << static_cast<uint32_t>(orig.TMHandle().tm_mon) << " Day:" << static_cast<uint32_t>(orig.TMHandle().tm_mday) << " Hours:" << static_cast<uint32_t>(orig.TMHandle().tm_hour) << " Minutes:" << static_cast<uint32_t>(orig.TMHandle().tm_min) << " Seconds:" << static_cast<uint32_t>(orig.TMHandle().tm_sec) << std::endl;
-        }
-
-#endif
-        std::cout << "\n============== TimeAsLocal ===============\n" << std::endl;
-
-        {
-
-            Time orig(2004,12, 26, 8, 30, 45, 737, true);
-
-            string s;
-            orig.ToString(s, true);
-            std::cout << "Reference local 2004-12-26 08:30:45 737 : " << s << " ms: " << orig.MilliSeconds() << std::endl;
-            TimeAsLocal l1(orig);
-            TimeAsLocal l2;
-            l2 = orig;
-
-            l1.ToString(s);
-            std::cout << "AsLocal 1 tostring : " << s << " ms: " << l1.MilliSeconds() << std::endl;
-            std::cout << "Weerkdayname:" << l1.WeekDayName() << " MonthName:" << l1.MonthName() << " DayOfYear:" << l1.DayOfYear() << " DayOfWeek:" << static_cast<uint32_t>(l1.DayOfWeek()) << std::endl;
-            std::cout << "Year:" << static_cast<uint32_t>(l1.Year()) << " Month:" << static_cast<uint32_t>(l1.Month()) << " Day:" << static_cast<uint32_t>(l1.Day()) << " Hours:" << static_cast<uint32_t>(l1.Hours()) << " Minutes:" << static_cast<uint32_t>(l1.Minutes()) << " Seconds:" << static_cast<uint32_t>(l1.Seconds()) << " MilliSeconds:" << l1.MilliSeconds() << std::endl;
-            l2.ToString(s);
-            std::cout << "AsLocal 2 tostring : " << s << " ms: " << l2.MilliSeconds() << std::endl;
-            std::cout << "Weerkdayname:" << l2.WeekDayName() << " MonthName:" << l2.MonthName() << " DayOfYear:" << l2.DayOfYear() << " DayOfWeek:" << static_cast<uint32_t>(l2.DayOfWeek()) << std::endl;
-            std::cout << "Year:" << static_cast<uint32_t>(l2.Year()) << " Month:" << static_cast<uint32_t>(l2.Month()) << " Day:" << static_cast<uint32_t>(l2.Day()) << " Hours:" << static_cast<uint32_t>(l2.Hours()) << " Minutes:" << static_cast<uint32_t>(l2.Minutes()) << " Seconds:" << static_cast<uint32_t>(l2.Seconds()) << " MilliSeconds:" << l2.MilliSeconds() << std::endl;
-
-            l1.Add((3600*3*1000) + 500); // add 3 hours and 500 ms
-            l1.ToString(s);
-            std::cout << "AsLocal + 3 hr and 500 ms  : " << s << " ms: " << l1.MilliSeconds() << std::endl;
-            l1.Sub((3600*3*1000) + 500); // add 3 hours and 500 ms
-            l1.ToString(s);
-            std::cout << "AsLocal - 3 hr and 500 ms  : " << s << " ms: " << l1.MilliSeconds() << std::endl;
-
-
-            Time t1 = l1.ToUTC();
-            orig.ToString(s, true);
-            std::cout << "Back to UTC local 2004-12-26 08:30:45 737 local: " << s << " ms: " << t1.MilliSeconds() << std::endl;
-            orig.ToString(s, false);
-            std::cout << "Back to UTC local 2004-12-26 08:30:45 737 as UTC : " << s << " ms: " << t1.MilliSeconds() << std::endl;
-
-
-        }
-
     }
 
 }
