@@ -89,8 +89,6 @@ namespace Core {
 
     uint32_t MessageUnit::Open(const uint32_t instanceId)
     {
-        std::cerr << "Open2: " << std::this_thread::get_id() << std::endl;
-
         string basePath;
         string identifier;
 
@@ -103,8 +101,6 @@ namespace Core {
     }
     uint32_t MessageUnit::Open(const string& pathName)
     {
-        std::cerr << "Open: " << std::this_thread::get_id() << std::endl;
-
         string basePath = Core::Format("%s/%s", pathName.c_str(), _T("MessageDispatcher"));
         string identifier = _T("md");
 
@@ -137,20 +133,28 @@ namespace Core {
 
     uint32_t MessageUnit::Close()
     {
+        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
         _dispatcher.reset(nullptr);
         return Core::ERROR_NONE;
     }
 
     void MessageUnit::Enable(const bool enable, Core::MessageInformation::MessageType type, const string& category, const string& module)
     {
+        _adminLock.Lock();
+
         auto entry = _controls.find({ type, category });
         if (entry->second->Module() == module) {
             entry->second->Enable(enable);
         }
+
+        _adminLock.Unlock();
+
     };
 
     bool MessageUnit::IsEnabled(Core::MessageInformation::MessageType type, const string& category, const string& module) const
     {
+        _adminLock.Lock();
+
         bool result = false;
 
         auto entry = _controls.find({ type, category });
@@ -158,12 +162,14 @@ namespace Core {
             result = entry->second->Enable();
         }
 
+        _adminLock.Unlock();
+
         return result;
     }
 
     void MessageUnit::Defaults(const string& setting)
     {
-        std::cerr << "Message UNIT DEFAULTS" << std::endl;
+        _adminLock.Lock();
 
         _defaultSettings = setting;
 
@@ -189,6 +195,8 @@ namespace Core {
                 }
             }
         }
+
+        _adminLock.Unlock();
     }
 
     string MessageUnit::Defaults() const
@@ -198,6 +206,8 @@ namespace Core {
 
     void MessageUnit::FetchDefaultSettingsForCategory(const IControl* control, bool& outIsEnabled, bool& outIsDefault)
     {
+        _adminLock.Lock();
+
         if (control->Type() == Core::MessageInformation::TRACING) {
             auto it = _defaultTraceSettings.find(control->Category());
             if (it != _defaultTraceSettings.end()) {
@@ -210,11 +220,12 @@ namespace Core {
                 }
             }
         }
+
+        _adminLock.Unlock();
     }
 
     void MessageUnit::Push(const MessageInformation& info, const IMessageEvent* message)
     {
-        std::cerr << "PUSH: " << std::this_thread::get_id() << std::endl;
         uint8_t buffer[DataSize];
         uint16_t length = 0;
 
@@ -227,6 +238,8 @@ namespace Core {
 
     std::pair<MessageInformation, Core::ProxyType<IMessageEvent>> MessageUnit::Pop(MessageDispatcher& dispatcher)
     {
+        _adminLock.Lock();
+
         uint8_t buffer[DataSize];
         uint16_t size = sizeof(buffer);
 
@@ -245,26 +258,31 @@ namespace Core {
             }
         }
 
+        _adminLock.Unlock();
+
         return { information, message };
     }
 
     void MessageUnit::Announce(Core::MessageInformation::MessageType type, const string& category, IControl* control)
     {
-        std::cerr << "MessageUnit Announce" << std::endl;
+        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
         _controls.emplace(std::make_pair(type, category), control);
     }
     void MessageUnit::Revoke(Core::MessageInformation::MessageType type, const string& category)
     {
+        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
         auto entry = _controls.find({ type, category });
         _controls.erase(entry);
     }
 
     void MessageUnit::Announce(MessageInformation::MessageType type, Core::IMessageEventFactory* factory)
     {
+        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
         _factories[type] = factory;
     }
     void MessageUnit::Revoke(MessageInformation::MessageType type)
     {
+        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
         _factories.erase(type);
     }
 }

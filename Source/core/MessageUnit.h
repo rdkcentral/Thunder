@@ -202,7 +202,7 @@ namespace Core {
         MessageUnit() = default;
 
     private:
-        Core::CriticalSection _adminLock;
+        mutable Core::CriticalSection _adminLock;
         std::unique_ptr<MessageDispatcher> _dispatcher;
         string _defaultSettings;
         Factories _factories;
