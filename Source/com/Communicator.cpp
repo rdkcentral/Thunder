@@ -518,6 +518,9 @@ namespace RPC {
                 WarningReporting::WarningReportingUnit::Instance().Defaults(jsonDefaultWarningCategories);
             }
 #endif
+            string jsonMessagingCategories(announceMessage->Response().MessagingCategories());
+            Core::MessageUnit::Instance().Defaults(jsonMessagingCategories);
+
             _connectionId = announceMessage->Response().SequenceNumber();
 
             string proxyStubPath(announceMessage->Response().ProxyStubPath());

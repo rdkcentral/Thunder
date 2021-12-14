@@ -626,6 +626,8 @@ int main(int argc, char** argv)
 
         // Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID.
         Trace::TraceUnit::Instance().Open(options.Exchange);
+        
+        Core::MessageUnit::Instance().Open(options.Exchange);
 
         // Time to open up the LOG tracings as specified by the caller.
         Logging::LoggingType<Logging::Startup>::Enable((options.EnabledLoggings & 0x00000001) != 0);

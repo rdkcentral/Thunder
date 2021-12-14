@@ -348,6 +348,7 @@ namespace PluginHost {
                 Add(_T("ipv6"), &IPV6);
                 Add(_T("tracing"), &DefaultTraceCategories); 
                 Add(_T("warningreporting"), &DefaultWarningReportingCategories); 
+                Add(_T("messaging"), &DefaultMessagingCategories); 
                 Add(_T("redirect"), &Redirect);
                 Add(_T("process"), &Process);
                 Add(_T("input"), &Input);
@@ -385,6 +386,7 @@ namespace PluginHost {
             Core::JSON::Boolean IPV6;
             Core::JSON::String DefaultTraceCategories;
             Core::JSON::String DefaultWarningReportingCategories; 
+            Core::JSON::String DefaultMessagingCategories; 
             ProcessSet Process;
             InputConfig Input;
             Core::JSON::String Configs;
@@ -558,6 +560,7 @@ namespace PluginHost {
                 _traceCategories = config.DefaultTraceCategories.Value();
 
                 _warningReportingCategories = config.DefaultWarningReportingCategories.Value();
+                _messagingCategories = config.DefaultMessagingCategories.Value();
 
                 if (config.Model.IsSet()) {
                     _model = config.Model.Value();
@@ -643,6 +646,10 @@ namespace PluginHost {
         inline const string& WarningReportingCategories() const
         {
             return (_warningReportingCategories);
+        }
+        inline const string& MessagingCategories() const
+        {
+            return (_messagingCategories);
         }
         inline const string& Redirect() const
         {
@@ -913,6 +920,7 @@ namespace PluginHost {
         string _traceCategories;
         bool _traceCategoriesFile;
         string _warningReportingCategories;
+        string _messagingCategories;
         string _binding;
         string _interface;
         string _URL;

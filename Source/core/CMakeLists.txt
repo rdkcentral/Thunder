@@ -55,6 +55,7 @@ add_library(${TARGET} SHARED
         WorkerPool.cpp
         XGetopt.cpp
         ResourceMonitor.cpp
+        MessageUnit.cpp
         )
 
 
@@ -144,6 +145,7 @@ set(PUBLIC_HEADERS
         CallsignTLS.h
         TokenizedStringList.h
         MessageDispatcher.h
+        MessageUnit.h
         )
 
 # non-buildable interface target to carry the definitions

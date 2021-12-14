@@ -500,6 +500,9 @@ namespace PluginHost {
                 postMortemPath.CreatePath();
             }
 
+            Core::MessageUnit::Instance().Open(_config->VolatilePath());
+            Core::MessageUnit::Instance().Defaults(_config->MessagingCategories());
+
             // Time to open up, the trace buffer for this process and define it for the out-of-proccess systems
             // Define the environment variable for Tracing files, if it is not already set.
             if ( Trace::TraceUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE){

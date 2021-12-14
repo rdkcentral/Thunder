@@ -1168,9 +1168,10 @@ namespace RPC {
 #if defined(WARNING_REPORTING_ENABLED)
                     jsonDefaultWarningCategories = WarningReporting::WarningReportingUnit::Instance().Defaults();
 #endif
+                    string jsonDefaultMessagingSettings = Core::MessageUnit::Instance().Defaults();
                     void* result = _parent.Announce(proxyChannel, message->Parameters());
 
-                    message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultCategories, jsonDefaultWarningCategories);
+                    message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultCategories, jsonDefaultWarningCategories, jsonDefaultMessagingSettings);
 
                     // We are done, report completion
                     channel.ReportResponse(data);
