@@ -23,6 +23,15 @@
 namespace WPEFramework {
 namespace Core {
 
+    namespace {
+        //only if multiple if power of 2
+        int RoundUp(int numToRound, int multiple)
+        {
+            return (numToRound + multiple - 1) & -multiple;
+        }
+
+    }
+
     CyclicBuffer::CyclicBuffer(const string& fileName, const uint32_t mode, const uint32_t bufferSize, const bool overwrite)
         : _buffer(
               fileName,
@@ -83,10 +92,13 @@ namespace Core {
         , _administration(nullptr)
     {
         // Adapt the offset to a system aligned pointer value :-)
-        uint32_t actual_offset = (offset + (sizeof(void*) - 1)) & (~((1 << sizeof(void*)) - 1));
-        uint32_t actual_bufferSize = static_cast<uint32_t>(bufferSize == 0 ?
-            (actual_offset <= _buffer.Size() ? (_buffer.Size() - actual_offset) : 0) :
-            (bufferSize <= _buffer.Size() ? bufferSize : 0) );
+        uint32_t actual_offset = RoundUp(offset, sizeof(void*));
+        uint32_t actual_bufferSize = 0;
+        if (bufferSize == 0) {
+            actual_bufferSize = actual_offset <= _buffer.Size() ? (_buffer.Size() - actual_offset) : 0;
+        } else {
+            actual_bufferSize = bufferSize <= _buffer.Size() ? bufferSize : 0;
+        }
 
         if ((actual_offset + actual_bufferSize) <= _buffer.Size()) {
 #ifdef __WINDOWS__
@@ -265,7 +277,7 @@ namespace Core {
         AdminUnlock();
     }
 
-    uint32_t CyclicBuffer::Read(uint8_t buffer[], const uint32_t length)
+    uint32_t CyclicBuffer::Read(uint8_t buffer[], const uint32_t length, bool partialRead)
     {
         ASSERT(length <= _administration->_size);
         ASSERT(IsValid() == true);
@@ -287,27 +299,40 @@ namespace Core {
             Cursor cursor(*this, oldTail, length);
             result = GetReadSize(cursor);
 
-            if ((result == 0) || (result > length)) {
+            if ((result == 0) || ((result > length) && (partialRead == false))) {
                 // No data, or too much, return 0.
                 return 0;
             }
+            
+            uint32_t bufferLength = std::min(length, result);
 
             foundData = true;
-
+            offset += cursor.Offset();
             uint32_t roundCount = oldTail / (1 + _administration->_tailIndexMask);
             if ((offset + result) < _administration->_size) {
-                memcpy(buffer, _realBuffer + offset, result);
+                memcpy(buffer, _realBuffer + offset, bufferLength);
 
                 uint32_t newTail = offset + result + roundCount * (1 + _administration->_tailIndexMask);
                 if (!_administration->_tail.compare_exchange_weak(oldTail, newTail)) {
                     foundData = false;
                 }
             } else {
-                uint32_t part1(_administration->_size - offset);
-                uint32_t part2(result - part1);
+                uint32_t part1 = 0;
+                uint32_t part2 = 0;
+                
+                if(_administration->_size < offset){
+                    part2 = result - (offset - _administration->_size);
+                }
+                else {
+                    part1 = _administration->_size - offset;
+                    part2 = result - part1;
+                }
 
-                memcpy(buffer, _realBuffer + offset, part1);
-                memcpy(buffer + part1, _realBuffer, part2);
+                memcpy(buffer, _realBuffer + offset, std::min(part1, bufferLength));
+
+                if(part1 < bufferLength){
+                    memcpy(buffer + part1, _realBuffer, bufferLength - part1);
+                }
 
                 // Add one round, but prevent overflow.
                 roundCount = (roundCount + 1) % _administration->_roundCountModulo;

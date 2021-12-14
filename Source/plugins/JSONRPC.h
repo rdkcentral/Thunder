@@ -308,7 +308,11 @@ namespace PluginHost {
                         if (code == static_cast<uint32_t>(~0)) {
                             response.Release();
                         } else if (code == Core::ERROR_NONE) {
-                            response->Result = result;
+                            if (result.empty() == true) {
+                                response->Result.Null(true);
+                            } else {
+                                response->Result = result;
+                            }
                         } else {
                             response->Error.Code = code;
                             response->Error.Text = Core::ErrorToString(code);

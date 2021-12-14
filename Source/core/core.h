@@ -113,6 +113,7 @@
 #include "WarningReportingCategories.h"
 #include "CallsignTLS.h"
 #include "TokenizedStringList.h"
+#include "MessageDispatcher.h"
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "core.lib")
