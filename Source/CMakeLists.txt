@@ -22,10 +22,6 @@ option(CORE
         "Include the core library." ON)
 option(CRYPTALGO
         "Include the encyption algorithm library." ON)
-option(BLUETOOTH
-        "Include the bluetooth library." OFF)
-option(BROADCAST
-        "Include the broadcasting library." OFF)
 option(WEBSOCKET
         "Include the websocket library." ON)
 option(TRACING
@@ -109,10 +105,6 @@ if(PROCESSCONTAINERS)
     add_subdirectory(processcontainers)
 endif()
 
-if(BROADCAST)
-    add_subdirectory(broadcast)
-endif()
-
 if(WEBSOCKET)
     add_subdirectory(websocket)
 endif()
@@ -123,10 +115,6 @@ endif()
 
 if(WARNING_REPORTING)
     add_subdirectory(warningreporting)
-endif()
-
-if(BLUETOOTH)
-    add_subdirectory(bluetooth)
 endif()
 
 if(PROFILER)
