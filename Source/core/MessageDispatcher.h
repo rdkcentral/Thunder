@@ -31,7 +31,7 @@ namespace Core {
     class EXTERNAL MessageDispatcherType {
     private:
         using MetaDataCallback = std::function<void(const uint16_t, const uint8_t*)>;
-        
+
         class DataBuffer : public Core::CyclicBuffer {
         public:
             DataBuffer(const string& doorBell, const string& fileName, const uint32_t mode, const uint32_t bufferSize, const bool overwrite)
@@ -270,11 +270,7 @@ namespace Core {
 
                 uint32_t length = _dataBuffer.Read(outValue, outLength, true);
 
-                //did not even receive length of the full message
-                if (length == 0) {
-                    TRACE_L1("Inconsistent message\n");
-                    _dataBuffer.Flush();
-                } else if (length > outLength) {
+                if (length > outLength) {
                     TRACE_L1("Lost part of the message\n");
                     result = Core::ERROR_GENERAL;
                     outLength = length;
@@ -295,6 +291,11 @@ namespace Core {
         uint32_t Wait(const uint32_t waitTime)
         {
             return _dataBuffer.Wait(waitTime);
+        }
+
+        void FlushDataBuffer()
+        {
+            _dataBuffer.Flush();
         }
 
         /**
