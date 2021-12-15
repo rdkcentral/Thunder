@@ -25,11 +25,6 @@
 
 namespace WPEFramework {
 namespace Core {
-    constexpr uint32_t MetaDataSize = 1 * 1024;
-    constexpr uint32_t DataSize = 9 * 1024;
-    constexpr const char* MESSAGE_DISPATCHER_PATH_ENV = _T("MESSAGE_DISPATCHER_PATH");
-    constexpr const char* MESSAGE_DISPACTHER_IDENTIFIER_ENV = _T("MESSAGE_DISPACTHER_IDENTIFIER");
-
     class EXTERNAL MessageInformation {
     public:
         enum MessageType : uint8_t {
@@ -122,6 +117,7 @@ namespace Core {
     };
 
     class EXTERNAL MessageUnit {
+
         struct pair_hash {
             template <class T1, class T2>
             std::size_t operator()(const std::pair<T1, T2>& pair) const
@@ -134,6 +130,10 @@ namespace Core {
         using Factories = std::unordered_map<MessageInformation::MessageType, Core::IMessageEventFactory*>;
 
     public:
+        static constexpr uint32_t MetaDataSize = 1 * 1024;
+        static constexpr uint32_t DataSize = 9 * 1024;
+        static constexpr const char* MESSAGE_DISPATCHER_PATH_ENV = _T("MESSAGE_DISPATCHER_PATH");
+        static constexpr const char* MESSAGE_DISPACTHER_IDENTIFIER_ENV = _T("MESSAGE_DISPACTHER_IDENTIFIER");
         using MessageDispatcher = Core::MessageDispatcherType<MetaDataSize, DataSize>;
 
         class Settings : public Core::JSON::Container {

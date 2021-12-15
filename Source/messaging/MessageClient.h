@@ -6,8 +6,7 @@ namespace Messaging {
 
     class EXTERNAL MessageClient {
         using Factories = std::unordered_map<Core::MessageInformation::MessageType, Core::IMessageEventFactory*>;
-        using MessageDispatcher = Core::MessageDispatcherType<Core::MetaDataSize, Core::DataSize>;
-
+        
     public:
         ~MessageClient() = default;
         MessageClient(const MessageClient&) = delete;
@@ -36,8 +35,9 @@ namespace Messaging {
         mutable Core::CriticalSection _adminLock;
         string _identifier;
         string _basePath;
+        uint8_t _readBuffer[Core::MessageUnit::DataSize];
 
-        std::unordered_map<uint32_t, MessageDispatcher> _clients;
+        std::unordered_map<uint32_t, Core::MessageUnit::MessageDispatcher> _clients;
         std::list<uint32_t> _listId;
         Factories _factories;
     };

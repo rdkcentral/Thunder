@@ -82,8 +82,7 @@ namespace Messaging {
     {
         _adminLock.Lock();
 
-        uint8_t buffer[Core::DataSize];
-        uint16_t size = sizeof(buffer);
+        uint16_t size = sizeof(_readBuffer);
 
         Core::MessageInformation information;
         Core::ProxyType<Core::IMessageEvent> message;
@@ -92,15 +91,15 @@ namespace Messaging {
 
         if (client != _clients.end()) {
 
-            if (client->second.PopData(size, buffer) != Core::ERROR_NONE) {
+            if (client->second.PopData(size, _readBuffer) != Core::ERROR_NONE) {
                 //warning trace here
             } else {
-                auto length = information.Deserialize(buffer, size);
+                auto length = information.Deserialize(_readBuffer, size);
 
                 auto factory = _factories.find(information.Type());
                 if (factory != _factories.end()) {
                     message = factory->second->Create();
-                    message->Deserialize(buffer + length, size - length);
+                    message->Deserialize(_readBuffer + length, size - length);
                 }
             }
         }
