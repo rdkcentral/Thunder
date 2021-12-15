@@ -180,23 +180,15 @@ namespace Core {
         uint32_t Close();
 
         void Ring();
-        void WaitForUpdates(const uint32_t waitTime);
-
-        void Enable(const bool enable, Core::MessageInformation::MessageType type, const string& category, const string& module = "MODULE_UNKNOWN");
-        bool IsEnabled(Core::MessageInformation::MessageType type, const string& category, const string& module = "MODULE_UNKNOWN") const;
 
         void Defaults(const string& setting);
         string Defaults() const;
         void FetchDefaultSettingsForCategory(const IControl* control, bool& outIsEnabled, bool& outIsDefault);
 
         void Push(const MessageInformation& info, const IMessageEvent* message);
-        std::pair<MessageInformation, Core::ProxyType<IMessageEvent>> Pop(MessageDispatcher& dispatcher);
 
         void Announce(Core::MessageInformation::MessageType type, const string& category, IControl* control);
         void Revoke(Core::MessageInformation::MessageType type, const string& category);
-
-        void Announce(MessageInformation::MessageType type, Core::IMessageEventFactory* factory);
-        void Revoke(MessageInformation::MessageType type);
 
     protected:
         MessageUnit() = default;
@@ -205,10 +197,48 @@ namespace Core {
         mutable Core::CriticalSection _adminLock;
         std::unique_ptr<MessageDispatcher> _dispatcher;
         string _defaultSettings;
-        Factories _factories;
 
         Controls _controls;
         std::unordered_map<string, TraceSetting> _defaultTraceSettings;
     };
+
+    class EXTERNAL MessageClient {
+        using Factories = std::unordered_map<MessageInformation::MessageType, Core::IMessageEventFactory*>;
+        using MessageDispatcher = Core::MessageDispatcherType<MetaDataSize, DataSize>;
+
+    public:
+        ~MessageClient() = default;
+        MessageClient(const MessageUnit&) = delete;
+        MessageClient& operator=(const MessageUnit&) = delete;
+
+    public:
+        MessageClient(const string& identifer, const string& basePath);
+
+        void AddInstance(uint32_t id);
+        void RemoveInstance(uint32_t id);
+        const std::list<uint32_t>& InstanceIds() const;
+
+        void WaitForUpdates(const uint32_t waitTime);
+
+        void CancelWaiting();
+
+        void Enable(const bool enable, Core::MessageInformation::MessageType type, const string& category, const string& module = "MODULE_UNKNOWN");
+        bool IsEnabled(Core::MessageInformation::MessageType type, const string& category, const string& module = "MODULE_UNKNOWN") const;
+
+        std::pair<MessageInformation, Core::ProxyType<IMessageEvent>> Pop(uint32_t id);
+
+        void AddFactory(MessageInformation::MessageType type, Core::IMessageEventFactory* factory);
+        void RemoveFactory(MessageInformation::MessageType type);
+
+    private:
+        mutable Core::CriticalSection _adminLock;
+        string _identifier;
+        string _basePath;
+
+        std::unordered_map<uint32_t, MessageDispatcher> _clients;
+        std::list<uint32_t> _listId;
+        Factories _factories;
+    };
+
 }
 }
