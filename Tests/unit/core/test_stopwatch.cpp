@@ -24,28 +24,26 @@
 
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
-static constexpr uint32_t MilliSecondsPerSecond = 1000;
-static constexpr uint32_t MicroSecondsPerSecond = 1000 * 1000;
 
 TEST(test_stopWatch, Elapsed_WithoutDelay)
 {
     StopWatch stopWatch1, stopWatch2;
     uint64_t elapsed1 = stopWatch1.Elapsed();
     uint64_t elapsed2 = stopWatch2.Elapsed();
-    EXPECT_EQ(elapsed1 /MilliSecondsPerSecond, elapsed2 / MilliSecondsPerSecond);
+    EXPECT_EQ(elapsed1 /Time::MilliSecondsPerSecond, elapsed2 / Time::MilliSecondsPerSecond);
 }
 TEST(test_stopWatch, Elapsed_WithDelay)
 {
     int8_t wait = 1;
     StopWatch stopWatch1, stopWatch2;
     uint64_t elapsed1 = stopWatch1.Elapsed();
-    EXPECT_EQ(stopWatch1.Elapsed() / MicroSecondsPerSecond, (stopWatch1.Elapsed() / MicroSecondsPerSecond));
+    EXPECT_EQ(stopWatch1.Elapsed() / Time::MicroSecondsPerSecond, (stopWatch1.Elapsed() / Time::MicroSecondsPerSecond));
     sleep(wait);
     uint64_t elapsed2 = stopWatch2.Elapsed();
     uint64_t elapsed3 = stopWatch1.Elapsed();
-    EXPECT_EQ(elapsed2 / MicroSecondsPerSecond, (elapsed1 / MicroSecondsPerSecond) + wait);
-    EXPECT_EQ(elapsed3 / MicroSecondsPerSecond, (elapsed1 / MicroSecondsPerSecond) + wait);
-    EXPECT_EQ(elapsed3 / MicroSecondsPerSecond, (elapsed2 / MicroSecondsPerSecond));
+    EXPECT_EQ(elapsed2 / Time::MicroSecondsPerSecond, (elapsed1 / Time::MicroSecondsPerSecond) + wait);
+    EXPECT_EQ(elapsed3 / Time::MicroSecondsPerSecond, (elapsed1 / Time::MicroSecondsPerSecond) + wait);
+    EXPECT_EQ(elapsed3 / Time::MicroSecondsPerSecond, (elapsed2 / Time::MicroSecondsPerSecond));
 }
 TEST(test_stopWatch, Reset_WithoutDelay)
 {
@@ -65,8 +63,8 @@ TEST(test_stopWatch, Reset_WithoutDelay)
 
     // Microsecond comparison is not doing
     // instead simply checking converting to millisecond
-    EXPECT_EQ(elapsed1 / MilliSecondsPerSecond, reset1 / MilliSecondsPerSecond);
-    EXPECT_EQ(elapsed2 / MilliSecondsPerSecond, reset2 / MilliSecondsPerSecond);
+    EXPECT_EQ(elapsed1 / Time::MilliSecondsPerSecond, reset1 / Time::MilliSecondsPerSecond);
+    EXPECT_EQ(elapsed2 / Time::MilliSecondsPerSecond, reset2 / Time::MilliSecondsPerSecond);
 }
 TEST(test_stopWatch, Reset_WithDelay)
 {
@@ -78,14 +76,14 @@ TEST(test_stopWatch, Reset_WithDelay)
     uint64_t reset1 = stopWatch1.Reset();
     uint64_t reset2 = stopWatch2.Reset();
 
-    EXPECT_EQ(reset1 / MicroSecondsPerSecond, (elapsed1 / MicroSecondsPerSecond) + wait);
-    EXPECT_EQ(reset2 / MicroSecondsPerSecond, (elapsed2 / MicroSecondsPerSecond) + wait);
+    EXPECT_EQ(reset1 / Time::MicroSecondsPerSecond, (elapsed1 / Time::MicroSecondsPerSecond) + wait);
+    EXPECT_EQ(reset2 / Time::MicroSecondsPerSecond, (elapsed2 / Time::MicroSecondsPerSecond) + wait);
 
     sleep(wait);
     elapsed1 = stopWatch1.Elapsed();
     sleep(wait);
     elapsed2 = stopWatch2.Elapsed();
 
-    EXPECT_EQ(elapsed1 / MicroSecondsPerSecond, (reset1 / MicroSecondsPerSecond));
-    EXPECT_EQ(elapsed2 / MicroSecondsPerSecond, (reset2 / MicroSecondsPerSecond) + wait);
+    EXPECT_EQ(elapsed1 / Time::MicroSecondsPerSecond, (reset1 / Time::MicroSecondsPerSecond));
+    EXPECT_EQ(elapsed2 / Time::MicroSecondsPerSecond, (reset2 / Time::MicroSecondsPerSecond) + wait);
 }

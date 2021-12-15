@@ -511,12 +511,11 @@ TEST(Core_SystemInfo, CPUInfo)
     }
 }
 #endif
-static constexpr uint32_t MicroSecondsPerSecond = 1000 * 1000;
 TEST(Core_SystemInfo, Ticks_withoutDelay)
 {
     uint64_t tick1 = Core::SystemInfo::Instance().Ticks();
     uint64_t tick2 = Core::SystemInfo::Instance().Ticks();
-    EXPECT_EQ(tick1 / MicroSecondsPerSecond, tick2 / MicroSecondsPerSecond);
+    EXPECT_EQ(tick1 / Core::Time::MicroSecondsPerSecond, tick2 / Core::Time::MicroSecondsPerSecond);
 }
 TEST(Core_SystemInfo, Ticks_withDelay)
 {
@@ -524,7 +523,7 @@ TEST(Core_SystemInfo, Ticks_withDelay)
     uint64_t tick1 = Core::SystemInfo::Instance().Ticks();
     sleep(seconds);
     uint64_t tick2 = Core::SystemInfo::Instance().Ticks();
-    EXPECT_EQ((tick1 / MicroSecondsPerSecond) + seconds, tick2 / MicroSecondsPerSecond);
+    EXPECT_EQ((tick1 / Core::Time::MicroSecondsPerSecond) + seconds, tick2 / Core::Time::MicroSecondsPerSecond);
 }
 
 } // Tests
