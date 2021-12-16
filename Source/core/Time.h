@@ -469,6 +469,10 @@ public:
         {
             return _time.ToTimeOnly(false);
         }
+        bool IsValid() const
+        {
+            return _time.IsValid();
+        }
 
         // operators
         bool operator<(const TimeAsLocal& rhs) const
