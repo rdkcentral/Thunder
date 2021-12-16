@@ -21,28 +21,21 @@
 #include "Number.h"
 #include <time.h>
 
-namespace WPEFramework {
-namespace Core {
-    static constexpr uint32_t MilliSecondsPerSecond = 1000;
-    static constexpr uint32_t MicroSecondsPerMilliSecond = 1000;
-    static constexpr uint32_t NanoSecondsPerMicroSecond = 1000;
-    static constexpr uint32_t MicroSecondsPerSecond = MilliSecondsPerSecond * MicroSecondsPerMilliSecond;
-
+namespace {
     // Start day of NTP time as days past the imaginary date 12/1/1 BC.
     // (This is the beginning of the Christian Era, or BCE.)
-    static constexpr uint32_t DayNTPStarts = 693596;
+    constexpr uint32_t DayNTPStarts = 693596;
 
     // Start day of the UNIX epoch (1970-01-01), also counting from BCE
-    static constexpr uint32_t DayUNIXEpochStarts = 719163;
+    constexpr uint32_t DayUNIXEpochStarts = 719163;
 
-    // Difference in Seconds between UNIX and NTP epoch (25567).
-    static constexpr uint32_t SecondsPerMinute = 60;
-    static constexpr uint32_t MinutesPerHour = 60;
-    static constexpr uint32_t HoursPerDay = 24;
-    static constexpr uint32_t SecondsPerHour = SecondsPerMinute * MinutesPerHour;
-    static constexpr uint32_t SecondsPerDay = SecondsPerHour * HoursPerDay;
+    constexpr uint32_t NTPToUNIXSeconds = (DayUNIXEpochStarts - DayNTPStarts) * WPEFramework::Core::Time::SecondsPerDay;
 
-    static constexpr uint32_t NTPToUNIXSeconds = (DayUNIXEpochStarts - DayNTPStarts) * SecondsPerDay;
+}
+
+
+namespace WPEFramework {
+namespace Core {
 
     static void SkipLeadingSpaces(const TCHAR buffer[], const uint8_t maxLength, uint32_t& index) {
         while ((index < maxLength) && (::isspace(buffer[index]) != 0)) {
@@ -258,10 +251,20 @@ namespace Core {
     }
 
     const TCHAR* Time::WeekDayName() const
+#ifdef __POSIX__
+    {
+        return WeekDayName(TMHandle());
+    }
+    const TCHAR* Time::WeekDayName(const struct tm& time)
+#endif
     {
         static const TCHAR _weekDayNames[] = _T("Sun\0Mon\0Tue\0Wed\0Thu\0Fri\0Sat\0???\0");
 
+#ifdef __WINDOWS__
         uint8_t weekDay = DayOfWeek();
+#else
+        uint8_t weekDay = DayOfWeek(time);
+#endif
 
         ASSERT(weekDay <= 6);
 
@@ -269,10 +272,20 @@ namespace Core {
     }
 
     const TCHAR* Time::MonthName() const
+#ifdef __POSIX__
+    {
+        return MonthName(TMHandle());
+    }
+    const TCHAR* Time::MonthName(const struct tm& time)
+#endif
     {
         static const TCHAR _monthNames[] = _T("???\0Jan\0Feb\0Mar\0Apr\0May\0Jun\0Jul\0Aug\0Sep\0Oct\0Nov\0Dec\0");
 
+#ifdef __WINDOWS__
         uint8_t month = Month();
+#else
+        uint8_t month = Month(time);
+#endif
 
         ASSERT(month >= 1 && month <= 12);
 
@@ -622,8 +635,6 @@ namespace Core {
 
 #endif
 
-    // Invariant for both Linux and Windows: internal time stored is always according to local time specification, so GMT / UTC if local time  is false, local time otherwise.
-
 #ifdef __WINDOWS__
 
     Time::Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
@@ -660,7 +671,7 @@ namespace Core {
     }
 
     // Uint64 is the time in MicroSeconds !!!
-    Time::Time(const uint64_t time, bool localTime)
+    Time::Time(const microsecondsfromepoch time)
         : _time()
     {
         FILETIME fileTime;
@@ -672,11 +683,6 @@ namespace Core {
         fileTime.dwHighDateTime = result.HighPart;
 
         ::FileTimeToSystemTime(&fileTime, &_time);
-        if (localTime) {
-            SYSTEMTIME convertedTime;
-            TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
-            _time = convertedTime;
-        }
     }
 
     Time::Time(const FILETIME& time, bool localTime /*= false*/)
@@ -690,20 +696,20 @@ namespace Core {
         }
     }
 
-    TimeAsLocal Time::ToLocal() const {
+    Time Time::ToLocal() const {
         FILETIME fileTime, localFileTime;
         SYSTEMTIME local;
         SystemTimeToFileTime(&_time, &fileTime);
         FileTimeToLocalFileTime(&fileTime, &localFileTime);
         FileTimeToSystemTime(&localFileTime, &local);
-        return (TimeAsLocal(Time(
+        return (Time(
             static_cast<uint16_t>(local.wYear), 
             static_cast<uint8_t>(local.wMonth),
             static_cast<uint8_t>(local.wDay),
             static_cast<uint8_t>(local.wHour),
             static_cast<uint8_t>(local.wMinute),
             static_cast<uint8_t>(local.wSecond),
-            static_cast<uint16_t>(local.wMilliseconds), false)));
+            static_cast<uint16_t>(local.wMilliseconds), false));
     }
 
     Time Time::ToUTC() const {
@@ -717,8 +723,7 @@ namespace Core {
             static_cast<uint16_t>(_time.wMilliseconds), true));
     }
 
-    // Return the time in MicroSeconds, since since January 1, 1970 00:00:00 (UTC)...
-    uint64_t Time::Ticks() const
+    Time::microsecondsfromepoch Time::Ticks() const
     {
         // Contains a 64-bit value representing the number of 100-nanosecond intervals since January 1, 1601 (UTC).
         FILETIME fileTime{};
@@ -805,7 +810,7 @@ namespace Core {
             _stprintf(buffer, _T("%02d:%02d:%02d"), converted.Hours(), converted.Minutes(), converted.Seconds());
         } else
 #pragma warning(disable : 4996)
-            _stprintf(buffer, _T("]%02d:%02d:%02d"), Hours(), Minutes(), Seconds());
+            _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(), Minutes(), Seconds());
 #pragma warning(default : 4996)
 
         string value(buffer);
@@ -880,44 +885,6 @@ namespace Core {
 #endif
 
 #ifdef __POSIX__
-    Time::Time(const struct timespec& time, bool localTime)
-    {
-        if (localTime) {
-            localtime_r(&time.tv_sec, &_time);
-        } else {
-            gmtime_r(&time.tv_sec, &_time);
-        }
-
-        // Calculate ticks..
-        _ticks = (static_cast<uint64_t>(time.tv_sec) * MicroSecondsPerSecond) + (time.tv_nsec / NanoSecondsPerMicroSecond) + OffsetTicksForEpoch;
-    }
-
-    TimeAsLocal Time::ToLocal() const {
-        struct tm local = _time;
-        time_t flatTime;
-        flatTime = mktime(&local);
-        localtime_r(&flatTime, &local);
-
-        return (TimeAsLocal(Time(
-            static_cast<uint16_t>(local.tm_year + 1900),
-            static_cast<uint8_t>(local.tm_mon + 1),
-            static_cast<uint8_t>(local.tm_mday),
-            static_cast<uint8_t>(local.tm_hour),
-            static_cast<uint8_t>(local.tm_min),
-            static_cast<uint8_t>(local.tm_sec),
-            0, false)));
-    }
-
-    Time Time::ToUTC() const {
-        return (Time(
-            static_cast<uint16_t>(_time.tm_year + 1900),
-            static_cast<uint8_t>(_time.tm_mon + 1),
-            static_cast<uint8_t>(_time.tm_mday),
-            static_cast<uint8_t>(_time.tm_hour),
-            static_cast<uint8_t>(_time.tm_min),
-            static_cast<uint8_t>(_time.tm_sec),
-            0, true));
-    }
 
     // Copyright (c) 2001-2006, NLnet Labs. All rights reserved.
     // Licensed under the BSD-3 License"
@@ -967,10 +934,39 @@ namespace Core {
         return seconds;
     }
 
-    Time::Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
+    Time::Time(const struct timespec& time) 
+    : _time(time)
     {
-        struct tm source {
-        };
+    }
+
+    Time Time::ToLocal() const {
+        //convert to localtime
+        struct tm localtm{}; 
+        localtime_r(&_time.tv_sec, &localtm);
+        //now convert back to epoch time again but then with the localtime as UTC time...
+        struct timespec localasutc{};
+        localasutc.tv_sec = mktimegm(&localtm);
+        localasutc.tv_nsec = _time.tv_nsec;
+
+        return (Time(localasutc));
+    }
+
+    Time Time::ToUTC() const {
+        //convert to UTC 
+        struct tm utcaslocaltm{}; 
+        gmtime_r(&_time.tv_sec, &utcaslocaltm);
+        //now convert back to epoch time again 
+        struct timespec asutc{};
+        asutc.tv_sec = mktimegm(&utcaslocaltm);
+        asutc.tv_nsec = _time.tv_nsec;
+
+        return (Time(asutc));
+    }
+    
+    Time::Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
+    : _time{}
+    {
+        struct tm source{};
 
         source.tm_year = year - 1900;
         source.tm_mon = month - 1;
@@ -978,24 +974,15 @@ namespace Core {
         source.tm_hour = hour;
         source.tm_min = minute;
         source.tm_sec = second;
+        source.tm_isdst = -1; // make sure dst is calculated automatically
 
-        time_t flatTime{};
-        if (localTime)
-            flatTime = mktime(&source);
-        else
-            flatTime = mktimegm(&source);
-
-        if (localTime) {
-            localtime_r(&flatTime, &_time);
+        if( localTime == true) {
+            _time.tv_sec = mktime(&source); 
         } else {
-            gmtime_r(&flatTime, &_time);
+            _time.tv_sec = mktimegm(&source); 
         }
 
-        // Calculate ticks..
-        _ticks = (static_cast<uint64_t>(flatTime) * static_cast<uint64_t>(MicroSecondsPerSecond)) + (static_cast<uint64_t>(millisecond) * static_cast<uint64_t>(MicroSecondsPerMilliSecond)) + OffsetTicksForEpoch;
-
-        // Update time with new ticks to get milliseconds also in the final value
-        (operator=(Time(_ticks, localTime)));
+        _time.tv_nsec = millisecond * NanoSecondsPerMilliSecond;
     }
 
     /**
@@ -1003,51 +990,43 @@ namespace Core {
      * https://en.wikipedia.org/wiki/Julian_day
      */
     double Time::JulianDate() const {
-        uint16_t year = _time.tm_year + 1900;
-        uint8_t month = _time.tm_mon + 1;
-        uint8_t day = _time.tm_mday;
-        uint8_t hour = _time.tm_hour;
-        uint8_t minutes = _time.tm_min;
-        uint8_t seconds = _time.tm_sec;
+    
+        struct tm source = TMHandle();
+
+        uint16_t year = source.tm_year + 1900;
+        uint8_t month = source.tm_mon + 1;
+        uint8_t day = source.tm_mday;
+        uint8_t hour = source.tm_hour;
+        uint8_t minutes = source.tm_min;
+        uint8_t seconds = source.tm_sec;
 
         return JulianJDConverter(year, month, day, hour, minutes, seconds);
     }
 
-    Time::Time(const struct timeval& info)
-    {
-        _ticks = (static_cast<uint64_t>(info.tv_sec) * static_cast<uint64_t>(MicroSecondsPerSecond)) + static_cast<uint64_t>(info.tv_usec) + OffsetTicksForEpoch;
-
-        // This is the seconds since 1970...
-        struct tm* ptm = gmtime(&info.tv_sec);
-
-        _time = *ptm;
-    }
-    Time::Time(const uint64_t time, const bool localTime /*= false*/)
-        : _time()
-        , _ticks(time)
+    Time::Time(const microsecondsfromepoch time)
+        : _time{}
     {
         // This is the seconds since 1970...
         time_t epochTimestamp = static_cast<time_t>((time - OffsetTicksForEpoch) / MicroSecondsPerSecond);
 
-        if (localTime)
-            localtime_r(&epochTimestamp, &_time);
-        else
-            gmtime_r(&epochTimestamp, &_time);
+        _time.tv_sec = epochTimestamp; 
+
+        _time.tv_nsec = (time % MicroSecondsPerSecond) * NanoSecondsPerMicroSecond;
     }
 
-    uint64_t Time::Ticks() const
+    Time::microsecondsfromepoch Time::Ticks() const
     {
-        return (_ticks);
+        return ((static_cast<microsecondsfromepoch>(_time.tv_sec) * MicroSecondsPerSecond ) + (static_cast<microsecondsfromepoch>(_time.tv_nsec)/NanoSecondsPerMicroSecond));
     }
 
     uint8_t Time::DayOfWeek() const
     {
-        return (static_cast<uint8_t>(_time.tm_wday));
+        return DayOfWeek(TMHandle());
     }
 
     uint16_t Time::DayOfYear() const
     {
-        return (static_cast<uint16_t>(_time.tm_yday));
+        return DayOfYear(TMHandle());
     }
 
     string Time::ToRFC1123(const bool localTime) const
@@ -1059,22 +1038,16 @@ namespace Core {
         if (!IsValid())
             return string();
 
-        if (localTime != IsLocalTime()) {
-            // We need to convert from local to GMT or vv
-            time_t epochTimestamp;
-            struct tm originalTime = _time;
-            if (IsLocalTime())
-                epochTimestamp = mktime(&originalTime);
-            else
-                epochTimestamp = mktimegm(&originalTime);
-            timespec convertedTime{ epochTimestamp, 0 };
-            Time converted(convertedTime, localTime);
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), converted.WeekDayName(),
-                converted.Day(), converted.MonthName(), converted.Year(),
-                converted.Hours(), converted.Minutes(), converted.Seconds(), zone);
+        if (localTime == true) {
+            struct tm localTime{};
+            localtime_r(&_time.tv_sec, &localTime);
+            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(localTime),
+                Day(localTime), MonthName(localTime), Year(localTime),
+                Hours(localTime), Minutes(localTime), Seconds(localTime), zone);
         } else {
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(), Day(), MonthName(), Year(), Hours(),
-                Minutes(), Seconds(), zone);
+            struct tm utcTime = TMHandle();
+            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(utcTime), Day(utcTime), MonthName(utcTime), Year(utcTime), Hours(utcTime),
+                Minutes(utcTime), Seconds(utcTime), zone);
         }
 
         return (string(buffer));
@@ -1088,22 +1061,15 @@ namespace Core {
         if (!IsValid())
             return string();
 
-        if (localTime != IsLocalTime()) {
-            // We need to convert from local to GMT or vv
-            time_t epochTimestamp;
-            struct tm originalTime = _time;
-
-            if (IsLocalTime())
-                epochTimestamp = mktime(&originalTime);
-            else
-                epochTimestamp = mktimegm(&originalTime);
-
-            timespec convertedTime{ epochTimestamp, 0 };
-            Time converted(convertedTime, localTime);
-            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), converted.Year(), converted.Month(), converted.Day(), converted.Hours(),
-                converted.Minutes(), converted.Seconds(), zone);
+        if (localTime == true) {
+            struct tm localTime{};
+            localtime_r(&_time.tv_sec, &localTime);
+            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(localTime), Month(localTime), Day(localTime), Hours(localTime),
+                Minutes(localTime), Seconds(localTime), zone);
         } else {
-            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(), Month(), Day(), Hours(),Minutes(), Seconds(), zone);
+            struct tm utcTime = TMHandle();
+            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(utcTime), Month(utcTime), Day(utcTime), Hours(utcTime),Minutes(utcTime),
+                Seconds(utcTime), zone);
         }
 
         return (string(buffer));
@@ -1117,19 +1083,13 @@ namespace Core {
         if (!IsValid())
             return string();
 
-        if (localTime != IsLocalTime()) {
-            // We need to convert from local to GMT or vv
-            time_t epochTimestamp;
-            struct tm originalTime = _time;
-            if (IsLocalTime())
-                epochTimestamp = mktime(&originalTime);
-            else
-                epochTimestamp = mktimegm(&originalTime);
-            timespec convertedTime{ epochTimestamp, 0 };
-            Time converted(convertedTime, localTime);
-            _stprintf(buffer, _T("%02d:%02d:%02d"), converted.Hours(), converted.Minutes(), converted.Seconds());
+        if (localTime == true) {
+            struct tm localTime{};
+            localtime_r(&_time.tv_sec, &localTime);
+            _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(localTime), Minutes(localTime), Seconds(localTime));
         } else {
-            _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(), Minutes(), Seconds());
+            struct tm utcTime = TMHandle();
+            _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(utcTime), Minutes(utcTime), Seconds(utcTime));
         }
 
         string value(buffer);
@@ -1144,17 +1104,26 @@ namespace Core {
     {
         TCHAR buffer[200];
 
-        _tcsftime(buffer, sizeof(buffer), formatter, &_time);
+        struct tm tmtime = TMHandle(); // cannot get address from rvalue;
+        _tcsftime(buffer, sizeof(buffer), formatter, &tmtime);
 
         return (string(buffer));
     }
 
     /* static */ Time Time::Now()
     {
-        struct timeval currentTime;
-        gettimeofday(&currentTime, nullptr);
+        struct timespec currentTime{};
+        clock_gettime(CLOCK_REALTIME, &currentTime);
 
         return (Time(currentTime));
+    }
+
+
+    struct tm Time::TMHandle() const 
+    {
+        struct tm tmtime{};
+        gmtime_r(&_time.tv_sec, &tmtime);
+        return tmtime;
     }
 
 #endif
@@ -1173,14 +1142,14 @@ namespace Core {
     {
         // Calculate the new time !!
         uint64_t newTime = Ticks() + static_cast<uint64_t>(timeInMilliseconds) * MilliSecondsPerSecond;
-        return (operator=(Time(newTime, false)));
+        return (operator=(Time(newTime)));
     }
 
     Time& Time::Sub(const uint32_t timeInMilliseconds)
     {
         // Calculate the new time !!
         uint64_t newTime = Ticks() - static_cast<uint64_t>(timeInMilliseconds) * MilliSecondsPerSecond;
-        return (operator=(Time(newTime, false)));
+        return (operator=(Time(newTime)));
     }
 
     uint64_t Time::NTPTime() const
@@ -1196,16 +1165,5 @@ namespace Core {
         return (seconds);
     }
 
-    int32_t Time::DifferenceFromGMTSeconds() const
-    {
-#ifdef __WINDOWS__
-        TIME_ZONE_INFORMATION timeZoneInfo;
-        GetTimeZoneInformation(&timeZoneInfo);
-
-        return static_cast<int32_t>(-timeZoneInfo.Bias * 60);
-#else
-        return static_cast<int32_t>(Handle().tm_gmtoff);
-#endif
-    }
 }
 } // namespace Core
