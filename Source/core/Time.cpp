@@ -1016,7 +1016,7 @@ namespace Core {
 
     Time::microsecondsfromepoch Time::Ticks() const
     {
-        return ((_time.tv_sec * MicroSecondsPerSecond ) + (_time.tv_nsec/NanoSecondsPerMicroSecond));
+        return ((static_cast<microsecondsfromepoch>(_time.tv_sec) * MicroSecondsPerSecond ) + (static_cast<microsecondsfromepoch>(_time.tv_nsec)/NanoSecondsPerMicroSecond));
     }
 
     uint8_t Time::DayOfWeek() const
