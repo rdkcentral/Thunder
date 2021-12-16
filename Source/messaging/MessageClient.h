@@ -6,7 +6,7 @@ namespace Messaging {
 
     class EXTERNAL MessageClient {
         using Factories = std::unordered_map<Core::MessageInformation::MessageType, Core::IMessageEventFactory*>;
-        
+
     public:
         ~MessageClient() = default;
         MessageClient(const MessageClient&) = delete;

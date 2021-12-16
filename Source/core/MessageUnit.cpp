@@ -192,13 +192,12 @@ namespace Core {
 
     void MessageUnit::Push(const MessageInformation& info, const IMessageEvent* message)
     {
-        uint8_t buffer[DataSize];
         uint16_t length = 0;
 
-        length = info.Serialize(buffer, sizeof(buffer));
-        length += message->Serialize(buffer + length, sizeof(buffer) - length);
+        length = info.Serialize(_serializationBuffer, sizeof(_serializationBuffer));
+        length += message->Serialize(_serializationBuffer + length, sizeof(_serializationBuffer) - length);
 
-        _dispatcher->PushData(length, buffer);
+        _dispatcher->PushData(length, _serializationBuffer);
         _dispatcher->Ring();
     }
 

@@ -197,6 +197,7 @@ namespace Core {
         mutable Core::CriticalSection _adminLock;
         std::unique_ptr<MessageDispatcher> _dispatcher;
         string _defaultSettings;
+        uint8_t _serializationBuffer[DataSize];
 
         Controls _controls;
         std::unordered_map<string, TraceSetting> _defaultTraceSettings;
