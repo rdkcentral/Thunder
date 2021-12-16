@@ -401,7 +401,7 @@ namespace WPEFramework {
                     _refCount->AddRef();
                 }
             }
-            ProxyType(ProxyType<CONTEXT>&& move)
+            ProxyType(ProxyType<CONTEXT>&& move) noexcept
                 : _refCount(move._refCount)
                 , _realObject(move._realObject)
             {
@@ -463,7 +463,7 @@ namespace WPEFramework {
                 return(*this);
             }
 
-            ProxyType<CONTEXT>& operator=(ProxyType<CONTEXT>&& rhs)
+            ProxyType<CONTEXT>& operator=(ProxyType<CONTEXT>&& rhs) noexcept
             {
                 // If we already have one, lets remove the one we got first
                 if (_refCount != nullptr) _refCount->Release();
@@ -1623,7 +1623,7 @@ namespace WPEFramework {
             void Clear()
             {
                 _lock.Lock();
-                for (auto entry : _map) {
+                for (std::pair<const PROXYKEY, ContainerStorage>& entry : _map) {
                     entry.second.second.Unlink();
                 }
                 _map.clear();
@@ -1668,6 +1668,9 @@ namespace WPEFramework {
                 }
 
                 _lock.Unlock();
+            }
+            uint32_t Count() const {
+                return (static_cast<uint32_t>(_map.size()));
             }
 
         private:
@@ -1771,6 +1774,9 @@ namespace WPEFramework {
                 }
 
                 _lock.Unlock();
+            }
+            uint32_t Count() const {
+                return (static_cast<uint32_t>(_list.size()));
             }
 
         private:
