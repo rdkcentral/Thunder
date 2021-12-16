@@ -8,6 +8,7 @@ namespace Messaging {
         using Factories = std::unordered_map<Core::MessageInformation::MessageType, Core::IMessageEventFactory*>;
 
     public:
+        using Message = Core::OptionalType<std::pair<Core::MessageInformation, Core::ProxyType<Core::IMessageEvent>>>;
         ~MessageClient() = default;
         MessageClient(const MessageClient&) = delete;
         MessageClient& operator=(const MessageClient&) = delete;
@@ -26,7 +27,7 @@ namespace Messaging {
         void Enable(const bool enable, Core::MessageInformation::MessageType type, const string& category, const string& module = "MODULE_UNKNOWN");
         bool IsEnabled(Core::MessageInformation::MessageType type, const string& category, const string& module = "MODULE_UNKNOWN") const;
 
-        std::pair<Core::MessageInformation, Core::ProxyType<Core::IMessageEvent>> Pop(uint32_t id);
+        Message Pop();
 
         void AddFactory(Core::MessageInformation::MessageType type, Core::IMessageEventFactory* factory);
         void RemoveFactory(Core::MessageInformation::MessageType type);
