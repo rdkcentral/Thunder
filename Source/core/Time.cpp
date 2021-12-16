@@ -639,19 +639,23 @@ namespace Core {
 
     Time::Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
     {
-        _time.wYear = year;
-        _time.wMonth = month;
-        _time.wDay = day;
-        _time.wHour = hour % 24;
-        _time.wMinute = minute % 60;
-        _time.wSecond = second % 60;
-        _time.wMilliseconds = millisecond;
-        _time.wDayOfWeek = static_cast<WORD>(~0);
+        if ((year >= 1900) && ((month >= 1) && (month <= 12)) && ((day >= 1 ) && (day <= 31)) &&
+            (hour <= 24) && (minute <= 60) && (second <= 60) && (millisecond <= 999)) {
 
-        if (localTime) {
-            SYSTEMTIME convertedTime;
-            TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
-            _time = convertedTime;
+            _time.wYear = year;
+            _time.wMonth = month;
+            _time.wDay = day;
+            _time.wHour = hour % 24;
+            _time.wMinute = minute % 60;
+            _time.wSecond = second % 60;
+            _time.wMilliseconds = millisecond;
+            _time.wDayOfWeek = static_cast<WORD>(~0);
+
+            if (localTime) {
+                SYSTEMTIME convertedTime;
+                TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
+                _time = convertedTime;
+            }
         }
     }
 
@@ -968,21 +972,25 @@ namespace Core {
     {
         struct tm source{};
 
-        source.tm_year = year - 1900;
-        source.tm_mon = month - 1;
-        source.tm_mday = day;
-        source.tm_hour = hour;
-        source.tm_min = minute;
-        source.tm_sec = second;
-        source.tm_isdst = -1; // make sure dst is calculated automatically
+        if ((year >= 1900) && ((month >= 1) && (month <= 12)) && ((day >= 1 ) && (day <= 31)) &&
+            (hour <= 24) && (minute <= 60) && (second <= 60) && (millisecond <= 999)) {
 
-        if( localTime == true) {
-            _time.tv_sec = mktime(&source); 
-        } else {
-            _time.tv_sec = mktimegm(&source); 
+            source.tm_year = year - 1900;
+            source.tm_mon = month - 1;
+            source.tm_mday = day;
+            source.tm_hour = hour % 24;
+            source.tm_min = minute % 60;
+            source.tm_sec = second % 60;
+            source.tm_isdst = -1; // make sure dst is calculated automatically
+
+            if (localTime == true) {
+                _time.tv_sec = mktime(&source);
+            } else {
+                _time.tv_sec = mktimegm(&source);
+            }
+
+            _time.tv_nsec = millisecond * NanoSecondsPerMilliSecond;
         }
-
-        _time.tv_nsec = millisecond * NanoSecondsPerMilliSecond;
     }
 
     /**
