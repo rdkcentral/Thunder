@@ -269,14 +269,15 @@ namespace Core {
             if (_dataBuffer.Validate()) {
 
                 uint32_t length = _dataBuffer.Read(outValue, outLength, true);
-
-                if (length > outLength) {
-                    TRACE_L1("Lost part of the message\n");
-                    result = Core::ERROR_GENERAL;
-                    outLength = length;
-                } else {
-                    result = Core::ERROR_NONE;
-                    outLength = length;
+                if (length > 0) {
+                    if (length > outLength) {
+                        TRACE_L1("Lost part of the message\n");
+                        result = Core::ERROR_GENERAL;
+                        outLength = length;
+                    } else {
+                        result = Core::ERROR_NONE;
+                        outLength = length;
+                    }
                 }
             }
 
