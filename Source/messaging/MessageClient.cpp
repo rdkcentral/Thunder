@@ -2,12 +2,23 @@
 namespace WPEFramework {
 namespace Messaging {
 
+    /**
+     * @brief Construct a new Message Client:: Message Client object
+     * 
+     * @param identifer identifier of the buffers
+     * @param basePath where are those buffers located
+     */
     MessageClient::MessageClient(const string& identifer, const string& basePath)
         : _identifier(identifer)
         , _basePath(basePath)
     {
     }
 
+    /**
+     * @brief Add buffer for instance of given id
+     * 
+     * @param id 
+     */
     void MessageClient::AddInstance(uint32_t id)
     {
         _adminLock.Lock();
@@ -19,17 +30,31 @@ namespace Messaging {
         _adminLock.Unlock();
     }
 
+    /**
+     * @brief Remove buffer for instance of given id
+     * 
+     * @param id 
+     */
     void MessageClient::RemoveInstance(uint32_t id)
     {
         Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
         _clients.erase(id);
     }
 
+    /**
+     * @brief Remove all buffers
+     * 
+     */
     void MessageClient::ClearInstances()
     {
         _clients.clear();
     }
 
+    /**
+     * @brief Wait for updates in any of the buffers
+     * 
+     * @param waitTime for how much should this function block
+     */
     void MessageClient::WaitForUpdates(const uint32_t waitTime)
     {
         _adminLock.Lock();
@@ -45,6 +70,11 @@ namespace Messaging {
         }
     }
 
+    /**
+     * @brief When @ref WaitForUpdates is waiting in a blocking state, this function can be used to force it to stop.
+     *        It can be also used to "flush" the buffers (for example, data was already waiting, but the buffers were not registered on this side yet)
+     *        
+     */
     void MessageClient::SkipWaiting()
     {
         _adminLock.Lock();
@@ -59,6 +89,14 @@ namespace Messaging {
             _adminLock.Unlock();
         }
     }
+
+    /**
+     * @brief Enable or disable message (specified by the metaData)
+     * 
+     * @param metaData information bout the message
+     * @param enable should it be enabled or not
+     * @return uint16_t how many buffers correctly received this message
+     */
     uint16_t MessageClient::Enable(const Core::MessageMetaData& metaData, const bool enable)
     {
         uint16_t bufferSize = sizeof(_writeBuffer);
@@ -76,15 +114,11 @@ namespace Messaging {
         }
         return notified;
     }
-    //bool MessageClient::IsEnabled(Core::MessageMetaData::MessageType type, const string& category, const string& module) const
-    //{
-    //    return false;
-    //}
 
     /**
      * @brief Pop will return a message if available in any of the added message dispatchers. The Pop is non blocking and threadsafe
-     *        No data order guaranteed. Caller should call this function until Pop returns invalid Message, then WaitForUpdates should be called that will block
-     *        until data is available
+     *        Popped messages are not guaranteed to be in the same order as pushed. Caller should call this function until Pop returns invalid Message,
+     *        then WaitForUpdates should be called that will block until data is available
      * 
      * @return Message = Core::OptionalType<std::pair<Core::MessageInformation, Core::ProxyType<Core::IMessageEvent>>>
      *         Optional pair that contains information about the message and the deserialized message itself.
@@ -122,11 +156,23 @@ namespace Messaging {
         return result;
     }
 
+    /**
+     * @brief Register factory for a given message type. The factory will spawn a message suitable for deserializing received bytes
+     * 
+     * @param type for which message type the factory should be used
+     * @param factory 
+     */
     void MessageClient::AddFactory(Core::MessageMetaData::MessageType type, Core::IMessageEventFactory* factory)
     {
         Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
         _factories.emplace(type, factory);
     }
+
+    /**
+     * @brief Unregister factory for given type
+     * 
+     * @param type 
+     */
     void MessageClient::RemoveFactory(Core::MessageMetaData::MessageType type)
     {
         Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);

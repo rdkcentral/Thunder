@@ -25,6 +25,10 @@
 
 namespace WPEFramework {
 namespace Core {
+    /**
+     * @brief Data-Carrier class storing information about basic information about the Message.
+     * 
+     */
     class EXTERNAL MessageMetaData {
     public:
         enum MessageType : uint8_t {
@@ -59,6 +63,10 @@ namespace Core {
         string _module;
     };
 
+    /**
+     * @brief Data-Carrier, extended information about the message
+     * 
+     */
     class EXTERNAL MessageInformation {
     public:
         MessageInformation() = default;
@@ -151,6 +159,14 @@ namespace Core {
         Core::JSON::Boolean Enabled;
     };
 
+    /**
+     * @brief Class responsible for:
+     *        - opening buffers
+     *        - reading configuration and setting message configuration accordingly
+     *        - a center, where messages (and its information) from specific componenets can be pushed 
+     *        - receiving information that specific message should be enabled or disabled
+     * 
+     */
     class EXTERNAL MessageUnit {
 
         using Controls = std::list<IControl*>;
@@ -199,7 +215,7 @@ namespace Core {
         static MessageUnit& Instance();
         uint32_t Open(const uint32_t instanceId);
         uint32_t Open(const string& pathName);
-        uint32_t Close();
+        void Close();
 
         void Defaults(const string& setting);
         string Defaults() const;

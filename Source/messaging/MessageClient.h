@@ -4,6 +4,12 @@
 namespace WPEFramework {
 namespace Messaging {
 
+    /**
+     * @brief Class responsible for:
+     *        - retreiving data from buffers
+     *        - sending metadata to buffers (enabling categories)
+     * 
+     */
     class EXTERNAL MessageClient {
         using Factories = std::unordered_map<Core::MessageMetaData::MessageType, Core::IMessageEventFactory*>;
 
@@ -24,7 +30,6 @@ namespace Messaging {
         void SkipWaiting();
 
         uint16_t Enable(const Core::MessageMetaData& metaData,  const bool enable);
-        //bool IsEnabled(Core::MessageMetaData::MessageType type, const string& category, const string& module) const;
 
         Message Pop();
 
