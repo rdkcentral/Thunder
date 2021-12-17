@@ -9,6 +9,14 @@ namespace Core {
         : _type(INVALID)
     {
     }
+    /**
+     * @brief Construct a new MetaData object
+     * 
+     * NOTE: Category and module can be set as empty
+     * @param type type of the message
+     * @param category category name of the message
+     * @param module module name of the message
+     */
     MessageMetaData::MessageMetaData(const MessageType type, const string& category, const string& module)
         : _type(type)
         , _category(category)
@@ -108,13 +116,10 @@ namespace Core {
         Core::SystemInfo::SetEnvironment(MESSAGE_DISPACTHER_IDENTIFIER_ENV, identifier);
 
         _dispatcher.reset(new MessageDispatcher(identifier, 0, true, basePath));
+        if (_dispatcher != nullptr) {
+            _dispatcher->RegisterDataAvailable(std::bind(&MessageUnit::ReceiveMetaData, this, std::placeholders::_1, std::placeholders::_2));
+        }
         return Core::ERROR_NONE;
-    }
-
-    void MessageUnit::Ring()
-    {
-        //ring will affect all dispatchers with given identifier
-        _dispatcher->Ring();
     }
 
     uint32_t MessageUnit::Close()
@@ -210,6 +215,35 @@ namespace Core {
 
         auto entry = std::find(_controls.begin(), _controls.end(), control);
         _controls.erase(entry);
+    }
+
+    void MessageUnit::ReceiveMetaData(uint16_t size, const uint8_t* data)
+    {
+        MessageMetaData metaData;
+        auto length = metaData.Deserialize(const_cast<uint8_t*>(data), size); //for now, FrameType is not handling const buffers :/
+
+        if (length <= size - 1) {
+            bool enabled = data[length];
+
+            for (auto& control : _controls) {
+
+                if (metaData.Type() == control->Type()) {
+
+                    if (!metaData.Module().empty() && !metaData.Category().empty()) {
+                        if (metaData.Module() == control->Module() && metaData.Category() == control->Category()) {
+                            control->Enable(enabled);
+                        }
+                    } else if (!metaData.Module().empty() && metaData.Category().empty()) {
+                        if (metaData.Module() == control->Module()) {
+                            control->Enable(enabled);
+                        }
+                    } else {
+                        //enable/disable all categories for all modules
+                        control->Enable();
+                    }
+                }
+            }
+        }
     }
 
 }

@@ -59,14 +59,27 @@ namespace Messaging {
             _adminLock.Unlock();
         }
     }
+    uint16_t MessageClient::Enable(const Core::MessageMetaData& metaData, const bool enable)
+    {
+        uint16_t bufferSize = sizeof(_writeBuffer);
+        uint16_t notified = 0;
 
-    void MessageClient::Enable(Core::MessageMetaData::MessageType type, const string& category, const bool enable, const string& module)
-    {
+        auto length = metaData.Serialize(_writeBuffer, bufferSize);
+        if (length < bufferSize - 1) {
+            _writeBuffer[length++] = static_cast<uint8_t>(enable);
+
+            for (auto& client : _clients) {
+                if (client.second.PushMetadata(length, _writeBuffer) == Core::ERROR_NONE) {
+                    ++notified;
+                }
+            }
+        }
+        return notified;
     }
-    bool MessageClient::IsEnabled(Core::MessageMetaData::MessageType type, const string& category, const string& module) const
-    {
-        return false;
-    }
+    //bool MessageClient::IsEnabled(Core::MessageMetaData::MessageType type, const string& category, const string& module) const
+    //{
+    //    return false;
+    //}
 
     /**
      * @brief Pop will return a message if available in any of the added message dispatchers. The Pop is non blocking and threadsafe

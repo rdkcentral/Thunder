@@ -23,8 +23,8 @@ namespace Messaging {
         void WaitForUpdates(const uint32_t waitTime);
         void SkipWaiting();
 
-        void Enable(Core::MessageMetaData::MessageType type, const string& category, const bool enable, const string& module = "MODULE_UNKNOWN");
-        bool IsEnabled(Core::MessageMetaData::MessageType type, const string& category, const string& module = "MODULE_UNKNOWN") const;
+        uint16_t Enable(const Core::MessageMetaData& metaData,  const bool enable);
+        //bool IsEnabled(Core::MessageMetaData::MessageType type, const string& category, const string& module) const;
 
         Message Pop();
 

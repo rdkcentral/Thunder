@@ -196,17 +196,10 @@ namespace Core {
         };
 
     public:
-        ~MessageUnit() = default;
-        MessageUnit(const MessageUnit&) = delete;
-        MessageUnit& operator=(const MessageUnit&) = delete;
-
-    public:
         static MessageUnit& Instance();
         uint32_t Open(const uint32_t instanceId);
         uint32_t Open(const string& pathName);
         uint32_t Close();
-
-        void Ring();
 
         void Defaults(const string& setting);
         string Defaults() const;
@@ -217,8 +210,14 @@ namespace Core {
         void Announce(IControl* control);
         void Revoke(IControl* control);
 
-    protected:
+    private:
+        friend class Core::SingletonType<MessageUnit>;
         MessageUnit() = default;
+        ~MessageUnit() = default;
+        MessageUnit(const MessageUnit&) = delete;
+        MessageUnit& operator=(const MessageUnit&) = delete;
+
+        void ReceiveMetaData(uint16_t size, const uint8_t* data);
 
     private:
         mutable Core::CriticalSection _adminLock;
