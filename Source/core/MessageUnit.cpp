@@ -1,84 +1,75 @@
 #include "MessageUnit.h"
 
+//const string& vs string for tmp objects
+
 namespace WPEFramework {
 namespace Core {
-    MessageInformation::MessageInformation()
+
+    MessageMetaData::MessageMetaData()
         : _type(INVALID)
     {
     }
-
-    MessageInformation::MessageInformation(MessageType type, string category, string filename, uint16_t lineNumber)
+    MessageMetaData::MessageMetaData(const MessageType type, const string& category, const string& module)
         : _type(type)
         , _category(category)
-        , _filename(filename)
-        , _lineNumber(lineNumber)
+        , _module(module)
     {
     }
-
-    MessageInformation::MessageType MessageInformation::Type() const
+    uint16_t MessageMetaData::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
     {
-        return _type;
-    }
-
-    string MessageInformation::Category() const
-    {
-        return _category;
-    }
-
-    string MessageInformation::FileName() const
-    {
-        return _filename;
-    }
-
-    uint16_t MessageInformation::LineNumber() const
-    {
-        return _lineNumber;
-    }
-
-    void MessageInformation::Type(MessageType type)
-    {
-        _type = type;
-    }
-
-    void MessageInformation::Category(string category)
-    {
-        _category = category;
-    }
-
-    void MessageInformation::FileName(string filename)
-    {
-        _filename = filename;
-    }
-
-    void MessageInformation::LineNumber(uint16_t lineNumber)
-    {
-        _lineNumber = lineNumber;
-    }
-
-    uint16_t MessageInformation::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
-    {
-        ASSERT(bufferSize >= sizeof(Core::MessageInformation::MessageType) + _category.size() + 1 + _filename.size() + 1 + sizeof(_lineNumber));
-        uint16_t length = sizeof(Core::MessageInformation::MessageType) + _category.size() + 1 + _filename.size() + 1 + sizeof(_lineNumber);
+        uint16_t length = sizeof(_type) + _category.size() + 1 + _module.size() + 1;
+        ASSERT(bufferSize >= length);
 
         Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
         Core::FrameType<0>::Writer frameWriter(frame, 0);
         frameWriter.Number(_type);
         frameWriter.NullTerminatedText(_category);
+        frameWriter.NullTerminatedText(_module);
+
+        return length;
+    }
+    uint16_t MessageMetaData::Deserialize(uint8_t buffer[], const uint16_t bufferSize)
+    {
+        Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
+        Core::FrameType<0>::Reader frameReader(frame, 0);
+        _type = frameReader.Number<Core::MessageMetaData::MessageType>();
+        _category = frameReader.NullTerminatedText();
+        _module = frameReader.NullTerminatedText();
+
+        return sizeof(_type) + _category.size() + 1 + _module.size() + 1;
+    }
+
+    MessageInformation::MessageInformation(const MessageMetaData::MessageType type, const string& category, const string& module, const string& filename, uint16_t lineNumber)
+        : _metaData(type, category, module)
+        , _filename(filename)
+        , _lineNumber(lineNumber)
+    {
+    }
+
+    uint16_t MessageInformation::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
+    {
+        auto length = _metaData.Serialize(buffer, bufferSize);
+        ASSERT(bufferSize >= length);
+
+        Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
+        Core::FrameType<0>::Writer frameWriter(frame, 0);
         frameWriter.NullTerminatedText(_filename);
         frameWriter.Number(_lineNumber);
+        length += _filename.size() + 1 + sizeof(_lineNumber);
 
         return length;
     }
     uint16_t MessageInformation::Deserialize(uint8_t buffer[], const uint16_t bufferSize)
     {
-        Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
+        auto length = _metaData.Deserialize(buffer, bufferSize);
+
+        Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
         Core::FrameType<0>::Reader frameReader(frame, 0);
-        _type = frameReader.Number<Core::MessageInformation::MessageType>();
-        _category = frameReader.NullTerminatedText();
         _filename = frameReader.NullTerminatedText();
         _lineNumber = frameReader.Number<uint16_t>();
+        length += _filename.size() + 1 + sizeof(_lineNumber);
 
-        return sizeof(_type) + _category.size() + 1 + _filename.size() + 1 + sizeof(_lineNumber);
+        return length;
     }
 
     //----------MessageUNIT----------
@@ -151,13 +142,13 @@ namespace Core {
             auto setting = traceSettingsIterator.Current();
             _defaultTraceSettings.emplace(setting.Category.Value(), setting);
 
-            auto control = _controls.find({ MessageInformation::MessageType::TRACING, setting.Category.Value() });
+            auto control = std::find_if(_controls.begin(), _controls.end(), [&](const IControl* control) {
+                return control->Type() == MessageMetaData::MessageType::TRACING && control->Category() == setting.Category.Value();
+            });
 
             if (control != _controls.end()) {
-                if (control->second->Category() == setting.Category.Value()) {
-                    if (!setting.Module.IsSet() || setting.Module.Value() == control->second->Module()) {
-                        control->second->Enable(setting.Enabled.Value());
-                    }
+                if (!setting.Module.IsSet() || setting.Module.Value() == (*control)->Module()) {
+                    (*control)->Enable(setting.Enabled.Value());
                 }
             }
         }
@@ -174,7 +165,7 @@ namespace Core {
     {
         _adminLock.Lock();
 
-        if (control->Type() == Core::MessageInformation::TRACING) {
+        if (control->Type() == Core::MessageMetaData::MessageType::TRACING) {
             auto it = _defaultTraceSettings.find(control->Category());
             if (it != _defaultTraceSettings.end()) {
                 if (!it->second.Module.IsSet() || it->second.Module.Value() == control->Module()) {
@@ -201,15 +192,23 @@ namespace Core {
         _dispatcher->Ring();
     }
 
-    void MessageUnit::Announce(Core::MessageInformation::MessageType type, const string& category, IControl* control)
+    void MessageUnit::Announce(IControl* control)
     {
+        ASSERT(control != nullptr);
+        ASSERT(std::find(_controls.begin(), _controls.end(), control) == _controls.end());
+
         Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
-        _controls.emplace(std::make_pair(type, category), control);
+        _controls.emplace_back(control);
     }
-    void MessageUnit::Revoke(Core::MessageInformation::MessageType type, const string& category)
+
+    void MessageUnit::Revoke(IControl* control)
     {
+        ASSERT(control != nullptr);
+        ASSERT(std::find(_controls.begin(), _controls.end(), control) != _controls.end());
+
         Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
-        auto entry = _controls.find({ type, category });
+
+        auto entry = std::find(_controls.begin(), _controls.end(), control);
         _controls.erase(entry);
     }
 

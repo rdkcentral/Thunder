@@ -16,8 +16,6 @@ namespace Messaging {
             std::forward_as_tuple(id),
             std::forward_as_tuple(_identifier, id, false, _basePath));
 
-        _listId.emplace_back(id);
-
         _adminLock.Unlock();
     }
 
@@ -25,12 +23,6 @@ namespace Messaging {
     {
         Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
         _clients.erase(id);
-    }
-
-    const std::list<uint32_t>& MessageClient::InstanceIds() const
-    {
-        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
-        return _listId;
     }
 
     void MessageClient::ClearInstances()
@@ -68,13 +60,11 @@ namespace Messaging {
         }
     }
 
-    void MessageClient::Enable(const bool, Core::MessageInformation::MessageType, const string&, const string&)
+    void MessageClient::Enable(Core::MessageMetaData::MessageType type, const string& category, const bool enable, const string& module)
     {
-        //todo: send metadata
     }
-    bool MessageClient::IsEnabled(Core::MessageInformation::MessageType, const string&, const string&) const
+    bool MessageClient::IsEnabled(Core::MessageMetaData::MessageType type, const string& category, const string& module) const
     {
-        //todo: //check metadataa
         return false;
     }
 
@@ -119,12 +109,12 @@ namespace Messaging {
         return result;
     }
 
-    void MessageClient::AddFactory(Core::MessageInformation::MessageType type, Core::IMessageEventFactory* factory)
+    void MessageClient::AddFactory(Core::MessageMetaData::MessageType type, Core::IMessageEventFactory* factory)
     {
         Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
         _factories.emplace(type, factory);
     }
-    void MessageClient::RemoveFactory(Core::MessageInformation::MessageType type)
+    void MessageClient::RemoveFactory(Core::MessageMetaData::MessageType type)
     {
         Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
         _factories.erase(type);

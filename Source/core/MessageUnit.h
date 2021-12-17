@@ -25,7 +25,7 @@
 
 namespace WPEFramework {
 namespace Core {
-    class EXTERNAL MessageInformation {
+    class EXTERNAL MessageMetaData {
     public:
         enum MessageType : uint8_t {
             LOGGING,
@@ -33,18 +33,22 @@ namespace Core {
             WARNING_REPORTING,
             INVALID
         };
-        MessageInformation();
-        MessageInformation(MessageType type, string category, string filename, uint16_t lineNumber);
 
-        MessageType Type() const;
-        string Category() const;
-        string FileName() const;
-        uint16_t LineNumber() const;
+        MessageMetaData();
+        MessageMetaData(const MessageType type, const string& category, const string& module);
 
-        void Type(MessageType type);
-        void Category(string category);
-        void FileName(string filename);
-        void LineNumber(uint16_t lineNumber);
+        inline MessageType Type() const
+        {
+            return _type;
+        }
+        inline string Category() const
+        {
+            return _category;
+        }
+        inline string Module() const
+        {
+            return _module;
+        }
 
         uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const;
         uint16_t Deserialize(uint8_t buffer[], const uint16_t bufferSize);
@@ -52,6 +56,40 @@ namespace Core {
     private:
         MessageType _type;
         string _category;
+        string _module;
+    };
+
+    class EXTERNAL MessageInformation {
+    public:
+        MessageInformation() = default;
+        MessageInformation(const MessageMetaData::MessageType type, const string& category, const string& module, const string& filename, uint16_t lineNumber);
+
+        inline MessageMetaData::MessageType Type() const
+        {
+            return _metaData.Type();
+        }
+        inline string Category() const
+        {
+            return _metaData.Category();
+        }
+        inline string Module() const
+        {
+            return _metaData.Module();
+        }
+        inline string FileName() const
+        {
+            return _filename;
+        }
+        inline uint16_t LineNumber() const
+        {
+            return _lineNumber;
+        }
+
+        uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const;
+        uint16_t Deserialize(uint8_t buffer[], const uint16_t bufferSize);
+
+    private:
+        MessageMetaData _metaData;
         string _filename;
         uint16_t _lineNumber;
     };
@@ -69,14 +107,11 @@ namespace Core {
         virtual bool Enable() const = 0;
         virtual void Destroy() = 0;
 
-        virtual MessageInformation::MessageType Type() const = 0;
+        virtual MessageMetaData::MessageType Type() const = 0;
         virtual string Category() const = 0;
+        virtual string Module() const = 0;
 
         virtual void Configure(const string&) {}
-        virtual string Module() const
-        {
-            return _T("MODULE_UNKNOWN");
-        }
     };
 
     struct EXTERNAL IMessageEventFactory {
@@ -118,16 +153,8 @@ namespace Core {
 
     class EXTERNAL MessageUnit {
 
-        struct pair_hash {
-            template <class T1, class T2>
-            std::size_t operator()(const std::pair<T1, T2>& pair) const
-            {
-                return std::hash<T1>()(pair.first) ^ std::hash<T2>()(pair.second);
-            }
-        };
-        using ControlKey = std::pair<MessageInformation::MessageType, string>;
-        using Controls = std::unordered_map<ControlKey, IControl*, pair_hash>;
-        using Factories = std::unordered_map<MessageInformation::MessageType, Core::IMessageEventFactory*>;
+        using Controls = std::list<IControl*>;
+        using Factories = std::unordered_map<MessageMetaData::MessageType, Core::IMessageEventFactory*>;
 
     public:
         static constexpr uint32_t MetaDataSize = 1 * 1024;
@@ -187,8 +214,8 @@ namespace Core {
 
         void Push(const MessageInformation& info, const IMessageEvent* message);
 
-        void Announce(Core::MessageInformation::MessageType type, const string& category, IControl* control);
-        void Revoke(Core::MessageInformation::MessageType type, const string& category);
+        void Announce(IControl* control);
+        void Revoke(IControl* control);
 
     protected:
         MessageUnit() = default;

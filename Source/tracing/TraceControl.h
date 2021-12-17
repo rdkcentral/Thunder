@@ -43,14 +43,15 @@
     }
 
 #define TRACE2(CATEGORY, PARAMETERS)                                                                                                       \
-    if (WPEFramework::Trace::ControlLifetime<CATEGORY, &WPEFramework::Core::System::MODULE_NAME>::IsEnabled() == true) {                         \
+    if (WPEFramework::Trace::ControlLifetime<CATEGORY, &WPEFramework::Core::System::MODULE_NAME>::IsEnabled() == true) {                   \
         CATEGORY __data__ PARAMETERS;                                                                                                      \
-        WPEFramework::Core::MessageInformation __info__(WPEFramework::Core::MessageInformation::MessageType::TRACING,                            \
+        WPEFramework::Core::MessageInformation __info__(WPEFramework::Core::MessageMetaData::MessageType::TRACING,                         \
             Core::ClassNameOnly(typeid(CATEGORY).name()).Text(),                                                                           \
+            WPEFramework::Core::System::MODULE_NAME,                                                                                       \
             __FILE__,                                                                                                                      \
             __LINE__);                                                                                                                     \
         WPEFramework::Trace::Trace<CATEGORY, &WPEFramework::Core::System::MODULE_NAME> __message__(typeid(*this).name(), __data__.Data()); \
-        WPEFramework::Core::MessageUnit::Instance().Push(__info__, &__message__);                                                                      \
+        WPEFramework::Core::MessageUnit::Instance().Push(__info__, &__message__);                                                          \
     }
 
 #define TRACE_GLOBAL(CATEGORY, PARAMETERS)                                             \
@@ -302,13 +303,13 @@ namespace Trace {
 
             Control()
                 : _enabled(0x02)
-                , _type(Core::MessageInformation::MessageType::TRACING)
+                , _type(Core::MessageMetaData::MessageType::TRACING)
                 , _category(Core::ClassNameOnly(typeid(CONTROLCATEGORY).name()).Text())
                 , _module(CONTROLMODULE != nullptr ? *CONTROLMODULE : _T("UNKNOWN_MODULE"))
             {
                 // Register Our trace control unit, so it can be influenced from the outside
                 // if nessecary..
-                Core::MessageUnit::Instance().Announce(Core::MessageInformation::MessageType::TRACING, _category, this);
+                Core::MessageUnit::Instance().Announce(this);
 
                 //todo add checking
 
@@ -328,9 +329,9 @@ namespace Trace {
             }
 
         public:
-            Core::MessageInformation::MessageType Type() const override
+            Core::MessageMetaData::MessageType Type() const override
             {
-                return Core::MessageInformation::MessageType::TRACING;
+                return Core::MessageMetaData::MessageType::TRACING;
             }
 
             string Category() const override
@@ -363,14 +364,14 @@ namespace Trace {
                 if ((_enabled & 0x02) != 0) {
                     // Register Our trace control unit, so it can be influenced from the outside
                     // if nessecary..
-                    Core::MessageUnit::Instance().Revoke(Core::MessageInformation::MessageType::TRACING, _category);
+                    Core::MessageUnit::Instance().Revoke(this);
                     _enabled = 0;
                 }
             }
 
         private:
             uint8_t _enabled;
-            Core::MessageInformation::MessageType _type;
+            Core::MessageMetaData::MessageType _type;
             string _category;
             string _module;
         };
