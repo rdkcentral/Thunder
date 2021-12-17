@@ -85,7 +85,7 @@ namespace Core {
             #pragma warning(default: 4355)
             #endif
 
-            ~JobType()
+            virtual ~JobType()
             {
                 ASSERT (_state == IDLE);
                 _job.CompositRelease();
