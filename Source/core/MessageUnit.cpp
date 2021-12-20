@@ -45,11 +45,11 @@ namespace Core {
         return sizeof(_type) + _category.size() + 1 + _module.size() + 1;
     }
 
-    MessageInformation::MessageInformation(const MessageMetaData::MessageType type, const string& category, const string& module, const string& filename, uint16_t lineNumber)
+    MessageInformation::MessageInformation(const MessageMetaData::MessageType type, const string& category, const string& module, const string& filename, uint16_t lineNumber, const uint64_t timeStamp)
         : _metaData(type, category, module)
         , _filename(filename)
         , _lineNumber(lineNumber)
-        , _timeStamp(Core::Time::Now().Ticks())
+        , _timeStamp(timeStamp)
     {
     }
 
@@ -186,11 +186,11 @@ namespace Core {
             _defaultTraceSettings.emplace(setting.Category.Value(), setting);
 
             auto control = std::find_if(_controls.begin(), _controls.end(), [&](const IControl* control) {
-                return control->Type() == MessageMetaData::MessageType::TRACING && control->Category() == setting.Category.Value();
+                return control->MetaData().Type() == MessageMetaData::MessageType::TRACING && control->MetaData().Category() == setting.Category.Value();
             });
 
             if (control != _controls.end()) {
-                if (!setting.Module.IsSet() || setting.Module.Value() == (*control)->Module()) {
+                if (!setting.Module.IsSet() || setting.Module.Value() == (*control)->MetaData().Module()) {
                     (*control)->Enable(setting.Enabled.Value());
                 }
             }
@@ -221,10 +221,10 @@ namespace Core {
     {
         _adminLock.Lock();
 
-        if (control->Type() == Core::MessageMetaData::MessageType::TRACING) {
-            auto it = _defaultTraceSettings.find(control->Category());
+        if (control->MetaData().Type() == Core::MessageMetaData::MessageType::TRACING) {
+            auto it = _defaultTraceSettings.find(control->MetaData().Category());
             if (it != _defaultTraceSettings.end()) {
-                if (!it->second.Module.IsSet() || it->second.Module.Value() == control->Module()) {
+                if (!it->second.Module.IsSet() || it->second.Module.Value() == control->MetaData().Module()) {
                     outIsDefault = true;
                     outIsEnabled = it->second.Enabled.Value();
                 } else {
@@ -301,14 +301,14 @@ namespace Core {
 
             for (auto& control : _controls) {
 
-                if (metaData.Type() == control->Type()) {
+                if (metaData.Type() == control->MetaData().Type()) {
 
                     if (!metaData.Module().empty() && !metaData.Category().empty()) {
-                        if (metaData.Module() == control->Module() && metaData.Category() == control->Category()) {
+                        if (metaData.Module() == control->MetaData().Module() && metaData.Category() == control->MetaData().Category()) {
                             control->Enable(enabled);
                         }
                     } else if (!metaData.Module().empty() && metaData.Category().empty()) {
-                        if (metaData.Module() == control->Module()) {
+                        if (metaData.Module() == control->MetaData().Module()) {
                             control->Enable(enabled);
                         }
                     } else {

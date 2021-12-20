@@ -140,7 +140,7 @@ namespace Messaging {
             } else {
                 auto length = information.Deserialize(_readBuffer, size);
 
-                auto factory = _factories.find(information.Type());
+                auto factory = _factories.find(information.MetaData().Type());
                 if (factory != _factories.end()) {
                     message = factory->second->Create();
                     message->Deserialize(_readBuffer + length, size - length);

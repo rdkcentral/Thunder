@@ -29,7 +29,7 @@ namespace Messaging {
         void WaitForUpdates(const uint32_t waitTime);
         void SkipWaiting();
 
-        uint16_t Enable(const Core::MessageMetaData& metaData,  const bool enable);
+        uint16_t Enable(const Core::MessageMetaData& metaData, const bool enable);
 
         Message Pop();
 

@@ -40,6 +40,8 @@ namespace Core {
 
         MessageMetaData();
         MessageMetaData(const MessageType type, const string& category, const string& module);
+        MessageMetaData(const MessageMetaData&) = default;
+        MessageMetaData& operator=(const MessageMetaData&) = default;
 
         inline MessageType Type() const
         {
@@ -70,19 +72,14 @@ namespace Core {
     class EXTERNAL MessageInformation {
     public:
         MessageInformation() = default;
-        MessageInformation(const MessageMetaData::MessageType type, const string& category, const string& module, const string& filename, uint16_t lineNumber);
+        MessageInformation(const MessageMetaData::MessageType type, const string& category, const string& module, 
+                           const string& filename, uint16_t lineNumber, const uint64_t timestamp);
+        MessageInformation(const MessageInformation&) = default;
+        MessageInformation& operator=(const MessageInformation&) = default;
 
-        inline MessageMetaData::MessageType Type() const
+        inline const MessageMetaData& MetaData() const
         {
-            return _metaData.Type();
-        }
-        inline string Category() const
-        {
-            return _metaData.Category();
-        }
-        inline string Module() const
-        {
-            return _metaData.Module();
+            return _metaData;
         }
         inline string FileName() const
         {
@@ -120,11 +117,8 @@ namespace Core {
         virtual bool Enable() const = 0;
         virtual void Destroy() = 0;
 
-        virtual MessageMetaData::MessageType Type() const = 0;
-        virtual string Category() const = 0;
-        virtual string Module() const = 0;
-
-        virtual void Configure(const string&) {}
+        virtual const Core::MessageMetaData& MetaData() const = 0;
+        virtual void Configure(const string& setting) = 0;
     };
 
     struct EXTERNAL IMessageEventFactory {

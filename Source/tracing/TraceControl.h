@@ -49,7 +49,8 @@
             Core::ClassNameOnly(typeid(CATEGORY).name()).Text(),                                                                           \
             WPEFramework::Core::System::MODULE_NAME,                                                                                       \
             __FILE__,                                                                                                                      \
-            __LINE__);                                                                                                                     \
+            __LINE__,                                                                                                                      \
+            Core::Time::Now().Ticks());                                                                                                    \
         WPEFramework::Trace::Trace<CATEGORY, &WPEFramework::Core::System::MODULE_NAME> __message__(typeid(*this).name(), __data__.Data()); \
         WPEFramework::Core::MessageUnit::Instance().Push(__info__, &__message__);                                                          \
     }
@@ -303,9 +304,9 @@ namespace Trace {
 
             Control()
                 : _enabled(0x02)
-                , _type(Core::MessageMetaData::MessageType::TRACING)
-                , _category(Core::ClassNameOnly(typeid(CONTROLCATEGORY).name()).Text())
-                , _module(CONTROLMODULE != nullptr ? *CONTROLMODULE : _T("UNKNOWN_MODULE"))
+                , _metaData(Core::MessageMetaData::MessageType::TRACING,
+                      Core::ClassNameOnly(typeid(CONTROLCATEGORY).name()).Text(),
+                      CONTROLMODULE != nullptr ? *CONTROLMODULE : _T("UNKNOWN_MODULE"))
             {
                 // Register Our trace control unit, so it can be influenced from the outside
                 // if nessecary..
@@ -329,19 +330,9 @@ namespace Trace {
             }
 
         public:
-            Core::MessageMetaData::MessageType Type() const override
+            const Core::MessageMetaData& MetaData() const override
             {
-                return Core::MessageMetaData::MessageType::TRACING;
-            }
-
-            string Category() const override
-            {
-                return _category;
-            }
-
-            string Module() const override
-            {
-                return _module;
+                return _metaData;
             }
 
             //non virtual method, so it can be called faster
@@ -355,10 +346,11 @@ namespace Trace {
                 return IsEnabled();
             }
 
-            virtual void Enable(const bool enabled) override
+            void Enable(const bool enabled) override
             {
                 _enabled = (_enabled & 0xFE) | (enabled ? 0x01 : 0x00);
             }
+
             void Destroy() override
             {
                 if ((_enabled & 0x02) != 0) {
@@ -369,11 +361,14 @@ namespace Trace {
                 }
             }
 
+            void Configure(const string&) override
+            {
+                //nothing to configure
+            }
+
         private:
             uint8_t _enabled;
-            Core::MessageMetaData::MessageType _type;
-            string _category;
-            string _module;
+            Core::MessageMetaData _metaData;
         };
 
     public:
@@ -385,15 +380,15 @@ namespace Trace {
     public:
         inline static bool IsEnabled()
         {
-            return (_MessageControl.IsEnabled());
+            return (_messageControl.IsEnabled());
         }
 
     private:
-        static Control<CATEGORY, MODULENAME> _MessageControl;
+        static Control<CATEGORY, MODULENAME> _messageControl;
     };
 
     template <typename CATEGORY, const char** MODULENAME>
-    EXTERNAL_HIDDEN typename ControlLifetime<CATEGORY, MODULENAME>::template Control<CATEGORY, MODULENAME> ControlLifetime<CATEGORY, MODULENAME>::_MessageControl;
+    EXTERNAL_HIDDEN typename ControlLifetime<CATEGORY, MODULENAME>::template Control<CATEGORY, MODULENAME> ControlLifetime<CATEGORY, MODULENAME>::_messageControl;
 
 }
 
