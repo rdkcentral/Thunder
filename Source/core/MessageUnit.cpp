@@ -1,7 +1,5 @@
 #include "MessageUnit.h"
 
-//const string& vs string for tmp objects
-
 namespace WPEFramework {
 namespace Core {
 
@@ -51,6 +49,7 @@ namespace Core {
         : _metaData(type, category, module)
         , _filename(filename)
         , _lineNumber(lineNumber)
+        , _timeStamp(Core::Time::Now().Ticks())
     {
     }
 
@@ -63,7 +62,9 @@ namespace Core {
         Core::FrameType<0>::Writer frameWriter(frame, 0);
         frameWriter.NullTerminatedText(_filename);
         frameWriter.Number(_lineNumber);
-        length += _filename.size() + 1 + sizeof(_lineNumber);
+        frameWriter.Number(_timeStamp);
+
+        length += _filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp);
 
         return length;
     }
@@ -75,7 +76,9 @@ namespace Core {
         Core::FrameType<0>::Reader frameReader(frame, 0);
         _filename = frameReader.NullTerminatedText();
         _lineNumber = frameReader.Number<uint16_t>();
-        length += _filename.size() + 1 + sizeof(_lineNumber);
+        _timeStamp = frameReader.Number<uint64_t>();
+
+        length += _filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp);
 
         return length;
     }

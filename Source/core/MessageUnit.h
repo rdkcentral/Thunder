@@ -92,6 +92,10 @@ namespace Core {
         {
             return _lineNumber;
         }
+        inline uint16_t TimeStamp() const
+        {
+            return _timeStamp;
+        }
 
         uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const;
         uint16_t Deserialize(uint8_t buffer[], const uint16_t bufferSize);
@@ -100,6 +104,7 @@ namespace Core {
         MessageMetaData _metaData;
         string _filename;
         uint16_t _lineNumber;
+        uint64_t _timeStamp;
     };
 
     struct EXTERNAL IMessageEvent {
