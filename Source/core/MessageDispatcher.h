@@ -352,7 +352,6 @@ namespace Core {
 
         bool IsValid()
         {
-
             bool result = true;
 
             if (!_dataBuffer.IsValid()) {
@@ -402,7 +401,6 @@ namespace Core {
         DataBuffer _dataBuffer;
         std::unique_ptr<MetaDataBuffer<METADATA_SIZE>> _metaDataBuffer;
 
-        uint8_t _dataReadBuffer[DATA_SIZE];
     };
 }
 }
