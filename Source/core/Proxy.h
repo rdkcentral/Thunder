@@ -1743,7 +1743,7 @@ namespace WPEFramework {
 
                 typename ContainerList::iterator index = _list.begin();
 
-                while ((index != _list.end()) && (index->first != source)) {
+                while ((index != _list.end()) && (index->first.operator->() != source.operator->())) {
                     index++;
                 }
 

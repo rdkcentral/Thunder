@@ -12,3 +12,7 @@ endif()
 if(LOADER_TEST) 
     add_subdirectory(loader)
 endif()
+
+if(STRESS_TEST) 
+    add_subdirectory(stress)
+endif()
