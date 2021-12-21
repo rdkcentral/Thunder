@@ -503,23 +503,10 @@ namespace RPC {
         ASSERT(dynamic_cast<RPC::AnnounceMessage*>(&element) != nullptr);
 
         if (announceMessage->Response().IsSet() == true) {
-            // Is result of an announce message, contains default trace categories in JSON format.
-            string jsonDefaultCategories(announceMessage->Response().TraceCategories());
-#if defined(WARNING_REPORTING_ENABLED)
-            string jsonDefaultWarningCategories(announceMessage->Response().WarningCategories());
-#endif
-            // HPL todo: we need to extend sending this info here, or just pass the complete config and have it parsed here (nothing would need to be dynamicaly changed, we will not suport that)
-
-            if (jsonDefaultCategories.empty() == false) {
-                Trace::TraceUnit::Instance().Defaults(jsonDefaultCategories);
-            }
-#if defined(WARNING_REPORTING_ENABLED)
-            if(jsonDefaultWarningCategories.empty() == false){
-                WarningReporting::WarningReportingUnit::Instance().Defaults(jsonDefaultWarningCategories);
-            }
-#endif
             string jsonMessagingCategories(announceMessage->Response().MessagingCategories());
-            Core::MessageUnit::Instance().Defaults(jsonMessagingCategories);
+            if(!jsonMessagingCategories.empty()) {
+                Core::MessageUnit::Instance().Defaults(jsonMessagingCategories);
+            }
 
             _connectionId = announceMessage->Response().SequenceNumber();
 

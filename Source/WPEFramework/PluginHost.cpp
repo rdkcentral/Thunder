@@ -214,8 +214,7 @@ namespace PluginHost {
             closelog();
 #endif
 
-            // Do not forget to close the Tracing stuff...
-            Trace::TraceUnit::Instance().Close();
+            Core::MessageUnit::Instance().Close();
 
 #ifdef __CORE_WARNING_REPORTING__
             WarningReporting::WarningReportingUnit::Instance().Close();
@@ -503,19 +502,19 @@ namespace PluginHost {
             Core::MessageUnit::Instance().Open(_config->VolatilePath());
             Core::MessageUnit::Instance().Defaults(_config->MessagingCategories());
 
-            // Time to open up, the trace buffer for this process and define it for the out-of-proccess systems
-            // Define the environment variable for Tracing files, if it is not already set.
-            if ( Trace::TraceUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE){
+            // Time to open up, the message buffer for this process and define it for the out-of-proccess systems
+            // Define the environment variable for Messaging files, if it is not already set.
+            if ( Core::MessageUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE){
 #ifndef __WINDOWS__
                 if (_background == true) {
-                    syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable trace functionality!");
+                    syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable messaging functionality!");
                 } else
 #endif
                 {
-                    fprintf(stdout, "Could not enable trace functionality!\n");
+                    fprintf(stdout, "Could not enable messaging functionality!\n");
                 }
             }
-
+            /*
             if (_config->TraceCategoriesFile() == true) {
 
                 traceSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + _config->TraceCategories();
@@ -523,12 +522,13 @@ namespace PluginHost {
                 Core::File input (traceSettings);
 
                 if (input.Open(true)) {
-                    Trace::TraceUnit::Instance().Defaults(input);
+                    //Trace::TraceUnit::Instance().Defaults(input);
                 }
             }
-            else {
-                Trace::TraceUnit::Instance().Defaults(_config->TraceCategories());
-            }
+            */
+            //else {
+                Core::MessageUnit::Instance().Defaults(_config->MessagingCategories());
+            //}
 
 #ifdef __CORE_WARNING_REPORTING__
             if ( WarningReporting::WarningReportingUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE){

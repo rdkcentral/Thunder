@@ -338,7 +338,8 @@ namespace PluginHost
                 _reason = why;
                 State(PRECONDITION);
 
-                if (Trace::TraceType<Activity, &Core::System::MODULE_NAME>::IsEnabled() == true) {
+                
+                if (Trace::ControlLifetime<Activity, &Core::System::MODULE_NAME>::IsEnabled() == true) {
                     string feedback;
                     uint8_t index = 1;
                     uint32_t delta(_precondition.Delta(_administrator.SubSystemInfo()));
@@ -358,9 +359,15 @@ namespace PluginHost
                     }
 
                     Activity newData(_T("Delta preconditions: %s"), feedback.c_str());
-                    Trace::TraceType<Activity, &Core::System::MODULE_NAME> traceData(newData);
-                    Trace::TraceUnit::Instance().Trace(__FILE__, __LINE__, className.c_str(), &traceData);
+                    Trace::TraceMessage<Activity, &Core::System::MODULE_NAME> traceData(className.c_str(), newData.Data());
+
+                    Core::MessageInformation info(Core::MessageMetaData::MessageType::TRACING,
+                        Core::ClassNameOnly(typeid(Activity).name()).Text(),
+                        WPEFramework::Core::System::MODULE_NAME, __FILE__, __LINE__, Core::Time::Now().Ticks());
+                        
+                    Core::MessageUnit::Instance().Push(info, &traceData);
                 }
+                
             } else {
 
                 State(ACTIVATION);

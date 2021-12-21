@@ -624,9 +624,8 @@ int main(int argc, char** argv)
 
         TRACE_L1("Opening a trace file with ID: [%d].", options.Exchange);
 
-        // Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID.
-        Trace::TraceUnit::Instance().Open(options.Exchange);
         
+        // Due to the LXC container support all ID's get mapped. For the MessageBuffer, use the host given ID.
         Core::MessageUnit::Instance().Open(options.Exchange);
 
         // Time to open up the LOG tracings as specified by the caller.

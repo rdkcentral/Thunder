@@ -315,8 +315,7 @@ namespace PluginHost {
                 , Signature(_T("TestSecretKey"))
                 , IdleTime(0)
                 , IPV6(false)
-                , DefaultTraceCategories(false)
-                , DefaultWarningReportingCategories(false)
+                , DefaultMessagingCategories(false)
                 , Process()
                 , Input()
                 , Configs()
@@ -346,8 +345,6 @@ namespace PluginHost {
                 Add(_T("signature"), &Signature);
                 Add(_T("idletime"), &IdleTime);
                 Add(_T("ipv6"), &IPV6);
-                Add(_T("tracing"), &DefaultTraceCategories); 
-                Add(_T("warningreporting"), &DefaultWarningReportingCategories); 
                 Add(_T("messaging"), &DefaultMessagingCategories); 
                 Add(_T("redirect"), &Redirect);
                 Add(_T("process"), &Process);
@@ -384,8 +381,6 @@ namespace PluginHost {
             Core::JSON::String Signature;
             Core::JSON::DecUInt16 IdleTime;
             Core::JSON::Boolean IPV6;
-            Core::JSON::String DefaultTraceCategories;
-            Core::JSON::String DefaultWarningReportingCategories; 
             Core::JSON::String DefaultMessagingCategories; 
             ProcessSet Process;
             InputConfig Input;
@@ -553,13 +548,11 @@ namespace PluginHost {
                 _latitude = config.Latitude.Value();
                 _longitude = config.Longitude.Value();
 
-                _traceCategoriesFile = config.DefaultTraceCategories.IsQuoted();
-                if (_traceCategoriesFile == true) {
-                    config.DefaultTraceCategories.SetQuoted(true);
-                }
-                _traceCategories = config.DefaultTraceCategories.Value();
+                //_traceCategoriesFile = config.DefaultTraceCategories.IsQuoted();
+                //if (_traceCategoriesFile == true) {
+                //    config.DefaultTraceCategories.SetQuoted(true);
+                //}
 
-                _warningReportingCategories = config.DefaultWarningReportingCategories.Value();
                 _messagingCategories = config.DefaultMessagingCategories.Value();
 
                 if (config.Model.IsSet()) {
@@ -634,18 +627,6 @@ namespace PluginHost {
         inline const string& Model() const
         {
             return (_model);
-        }
-        inline bool TraceCategoriesFile() const
-        {
-            return (_traceCategoriesFile);
-        }
-        inline const string& TraceCategories() const
-        {
-            return (_traceCategories);
-        }
-        inline const string& WarningReportingCategories() const
-        {
-            return (_warningReportingCategories);
         }
         inline const string& MessagingCategories() const
         {
@@ -917,9 +898,6 @@ namespace PluginHost {
         ISecurity* _security;
         string _version;
         string _model;
-        string _traceCategories;
-        bool _traceCategoriesFile;
-        string _warningReportingCategories;
         string _messagingCategories;
         string _binding;
         string _interface;

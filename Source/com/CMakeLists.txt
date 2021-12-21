@@ -17,18 +17,13 @@
 
 set(TARGET ${NAMESPACE}COM)
 
-ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ICOM.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
-ProxyStubGenerator(NAMESPACE "WPEFramework::Trace" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ITrace.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 add_library(${TARGET} SHARED
         Administrator.cpp
         Communicator.cpp
-        ITracing.cpp
         IUnknown.cpp
         ConnectorType.cpp
         Module.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_COM.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Trace.cpp
         )
 
 set(PUBLIC_HEADERS
@@ -42,7 +37,6 @@ set(PUBLIC_HEADERS
         IStringIterator.h
         IValueIterator.h
         ICOM.h
-        ITrace.h
         IUnknown.h
         Messages.h
         Module.h

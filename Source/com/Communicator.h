@@ -26,7 +26,6 @@
 
 #include "Administrator.h"
 #include "ICOM.h"
-#include "ITrace.h"
 #include "IUnknown.h"
 #include "Ids.h"
 
@@ -35,7 +34,6 @@
 #include "../processcontainers/ProcessContainer.h"
 #endif
 
-#include "../tracing/TraceUnit.h"
 
 #if defined(WARNING_REPORTING_ENABLED)
 #include "../warningreporting/WarningReportingUnit.h"
@@ -1161,17 +1159,10 @@ namespace RPC {
 
                     Core::ProxyType<Client> proxyChannel(static_cast<Client&>(channel));
 
-                    // Anounce the interface as completed
-                    string jsonDefaultCategories(Trace::TraceUnit::Instance().Defaults());
-                    string jsonDefaultWarningCategories;
-
-#if defined(WARNING_REPORTING_ENABLED)
-                    jsonDefaultWarningCategories = WarningReporting::WarningReportingUnit::Instance().Defaults();
-#endif
                     string jsonDefaultMessagingSettings = Core::MessageUnit::Instance().Defaults();
                     void* result = _parent.Announce(proxyChannel, message->Parameters());
 
-                    message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultCategories, jsonDefaultWarningCategories, jsonDefaultMessagingSettings);
+                    message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultMessagingSettings);
 
                     // We are done, report completion
                     channel.ReportResponse(data);

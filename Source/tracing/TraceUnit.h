@@ -23,7 +23,6 @@
 // ---- Include system wide include files ----
 
 // ---- Include local include files ----
-#include "ITraceMedia.h"
 #include "Module.h"
 
 // ---- Helper types and constants ----
