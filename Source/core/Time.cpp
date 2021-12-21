@@ -645,7 +645,7 @@ namespace Core {
     Time::Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
         : _time()
     {
-        if (IsValidTime(year, month, day, hour, minute, second, millisecond) == true) {
+        if (IsValidDateTime(year, month, day, hour, minute, second, millisecond) == true) {
 
             _time.wYear = year;
             _time.wMonth = month;
@@ -971,7 +971,7 @@ namespace Core {
         : _time()
     {
         struct tm source{};
-        if (IsValidTime(year, month, day, hour, minute, second, millisecond) == true) {
+        if (IsValidDateTime(year, month, day, hour, minute, second, millisecond) == true) {
 
             source.tm_year = year - 1900;
             source.tm_mon = month - 1;
