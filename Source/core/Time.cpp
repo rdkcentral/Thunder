@@ -37,6 +37,11 @@ namespace {
 namespace WPEFramework {
 namespace Core {
 
+    static int IsLeapYear(const uint16_t year)
+    {
+        return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    }
+
     static void SkipLeadingSpaces(const TCHAR buffer[], const uint8_t maxLength, uint32_t& index) {
         while ((index < maxLength) && (::isspace(buffer[index]) != 0)) {
             index++;
@@ -638,16 +643,16 @@ namespace Core {
 #ifdef __WINDOWS__
 
     Time::Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
+        : _time()
     {
-        if ((year >= 1900) && ((month >= 1) && (month <= 12)) && ((day >= 1 ) && (day <= 31)) &&
-            (hour <= 24) && (minute <= 60) && (second <= 60) && (millisecond <= 999)) {
+        if (IsValidTime(year, month, day, hour, minute, second, millisecond) == true) {
 
             _time.wYear = year;
             _time.wMonth = month;
             _time.wDay = day;
-            _time.wHour = hour % 24;
-            _time.wMinute = minute % 60;
-            _time.wSecond = second % 60;
+            _time.wHour = hour;
+            _time.wMinute = minute;
+            _time.wSecond = second;
             _time.wMilliseconds = millisecond;
             _time.wDayOfWeek = static_cast<WORD>(~0);
 
@@ -900,11 +905,6 @@ namespace Core {
         0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
     };
 
-    static int is_leap_year(int year)
-    {
-        return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
-    }
-
     static int leap_days(int y1, int y2)
     {
         --y1;
@@ -927,7 +927,7 @@ namespace Core {
         days = 365 * (year - 1970) + leap_days(1970, year);
         days += monoff[tm->tm_mon];
 
-        if (tm->tm_mon > 1 && is_leap_year(year))
+        if (tm->tm_mon > 1 && IsLeapYear(year))
             ++days;
         days += tm->tm_mday - 1;
 
@@ -939,7 +939,7 @@ namespace Core {
     }
 
     Time::Time(const struct timespec& time) 
-    : _time(time)
+        : _time(time)
     {
     }
 
@@ -966,21 +966,19 @@ namespace Core {
 
         return (Time(asutc));
     }
-    
+
     Time::Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
-    : _time{}
+        : _time()
     {
         struct tm source{};
-
-        if ((year >= 1900) && ((month >= 1) && (month <= 12)) && ((day >= 1 ) && (day <= 31)) &&
-            (hour <= 24) && (minute <= 60) && (second <= 60) && (millisecond <= 999)) {
+        if (IsValidTime(year, month, day, hour, minute, second, millisecond) == true) {
 
             source.tm_year = year - 1900;
             source.tm_mon = month - 1;
             source.tm_mday = day;
-            source.tm_hour = hour % 24;
-            source.tm_min = minute % 60;
-            source.tm_sec = second % 60;
+            source.tm_hour = hour;
+            source.tm_min = minute;
+            source.tm_sec = second;
             source.tm_isdst = -1; // make sure dst is calculated automatically
 
             if (localTime == true) {
@@ -1012,7 +1010,7 @@ namespace Core {
     }
 
     Time::Time(const microsecondsfromepoch time)
-        : _time{}
+        : _time()
     {
         // This is the seconds since 1970...
         time_t epochTimestamp = static_cast<time_t>((time - OffsetTicksForEpoch) / MicroSecondsPerSecond);
@@ -1173,5 +1171,33 @@ namespace Core {
         return (seconds);
     }
 
+    bool Time::IsValidDate(const uint16_t year, const uint8_t month, const uint8_t day) const
+    {
+        uint8_t totalDays = 0;
+        switch (month - 1) {
+        case Month::Jan:
+        case Month::Mar:
+        case Month::May:
+        case Month::July:
+        case Month::Aug:
+        case Month::Oct:
+        case Month::Dec:
+            totalDays = 31;
+            break;
+
+        case Month::Feb:
+            totalDays = ((IsLeapYear(year) == true) ? 29 : 28);
+            break;
+        case Month::Apr:
+        case Month::June:
+        case Month::Sept:
+        case Month::Nov:
+            totalDays = 30;
+            break;
+        default:
+            break;
+        }
+        return (((day > 0) && (day <= totalDays)) ? true : false);
+    }
 }
 } // namespace Core

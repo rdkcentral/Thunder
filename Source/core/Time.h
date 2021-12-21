@@ -27,8 +27,23 @@ namespace WPEFramework {
 namespace Core {
  
     class EXTERNAL Time {
-
         friend class TimeAsLocal;
+
+    private:
+        enum Month {
+            Jan,
+            Feb,
+            Mar,
+            Apr,
+            May,
+            June,
+            July,
+            Aug,
+            Sept,
+            Oct,
+            Nov,
+            Dec
+        };
 
     public:
         static constexpr uint32_t MilliSecondsPerSecond = 1000;
@@ -343,7 +358,13 @@ public:
         {
             return (static_cast<uint16_t>(time.tm_yday));
         }
+        inline bool IsValidTime(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond) const
+        {
+            return (IsValidDate(year, month, day) && (hour < 24) &&
+                   (minute < 60) && (second < 60) && (millisecond < 1000));
+        }
 
+        bool IsValidDate(const uint16_t year, const uint8_t month, const uint8_t day) const;
         struct tm TMHandle() const;
 
 #endif
@@ -355,7 +376,7 @@ public:
 #ifdef __WINDOWS__
         mutable SYSTEMTIME _time;
 #else
-    struct timespec _time;
+        struct timespec _time;
 #endif
 
     };
