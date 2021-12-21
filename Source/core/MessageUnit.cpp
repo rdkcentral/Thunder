@@ -163,19 +163,57 @@ namespace Core {
     }
 
     /**
-     * @brief Set default settings (eg. what categories are enabled) for all the components. 
-     * 
+     * @brief Read defaults settings form string
      * @param setting json able to be parsed by @ref MessageUnit::Settings
      */
     void MessageUnit::Defaults(const string& setting)
     {
         _adminLock.Lock();
 
-        _defaultSettings = setting;
+        Settings serialized;
+
+        Core::OptionalType<Core::JSON::Error> error;
+        serialized.IElement::FromString(setting, error);
+        if (error.IsSet() == true) {
+
+            TRACE_L1(_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str());
+        }
+
+        SetDefaultSettings(serialized);
+
+        _adminLock.Unlock();
+    }
+
+    /**
+     * @brief Read default settings from file
+     * 
+     * @param file file containing configuraton
+     */
+    void MessageUnit::Defaults(Core::File& file)
+    {
+        _adminLock.Lock();
 
         Settings serialized;
-        serialized.FromString(setting);
 
+        Core::OptionalType<Core::JSON::Error> error;
+        serialized.IElement::FromFile(file, error);
+        if (error.IsSet() == true) {
+
+            TRACE_L1(_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str());
+        }
+
+        SetDefaultSettings(serialized);
+
+        _adminLock.Unlock();
+    }
+
+    /**
+     * @brief Set defaults acording to settings
+     * 
+     * @param serialized settings
+     */
+    void MessageUnit::SetDefaultSettings(const Settings& serialized)
+    {
         Core::JSON::ArrayType<Core::TraceSetting> traceSettings;
         traceSettings.FromString(serialized.Tracing.Value());
 
@@ -195,8 +233,6 @@ namespace Core {
                 }
             }
         }
-
-        _adminLock.Unlock();
     }
 
     /**

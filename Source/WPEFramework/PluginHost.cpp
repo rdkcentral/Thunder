@@ -491,16 +491,13 @@ namespace PluginHost {
                 pluginPath = Core::Directory::Normalize(pluginPath);
             }
 
-            string traceSettings (options.configFile);
+            string messagingSettings (options.configFile);
  
             // Create PostMortem path
             Core::Directory postMortemPath(_config->PostMortemPath().c_str());
             if (postMortemPath.Next() != true) {
                 postMortemPath.CreatePath();
             }
-
-            Core::MessageUnit::Instance().Open(_config->VolatilePath());
-            Core::MessageUnit::Instance().Defaults(_config->MessagingCategories());
 
             // Time to open up, the message buffer for this process and define it for the out-of-proccess systems
             // Define the environment variable for Messaging files, if it is not already set.
@@ -514,36 +511,21 @@ namespace PluginHost {
                     fprintf(stdout, "Could not enable messaging functionality!\n");
                 }
             }
-            /*
-            if (_config->TraceCategoriesFile() == true) {
+            
+            if (_config->MessagingCategoriesFile()) {
 
-                traceSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + _config->TraceCategories();
+                messagingSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + _config->MessagingCategories();
 
-                Core::File input (traceSettings);
+                Core::File input (messagingSettings);
 
                 if (input.Open(true)) {
-                    //Trace::TraceUnit::Instance().Defaults(input);
+                    Core::MessageUnit::Instance().Defaults(input);
                 }
             }
-            */
-            //else {
+            
+            else {
                 Core::MessageUnit::Instance().Defaults(_config->MessagingCategories());
-            //}
-
-#ifdef __CORE_WARNING_REPORTING__
-            if ( WarningReporting::WarningReportingUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE){
-#ifndef __WINDOWS__
-                if (_background == true) {
-                    syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable issue reporting functionality!");
-                } else
-#endif
-                {
-                    fprintf(stdout, "Could not enable issue reporting functionality!\n");
-                }
             }
-
-            WarningReporting::WarningReportingUnit::Instance().Defaults(_config->WarningReportingCategories()); 
-#endif
 
             SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
             SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
@@ -552,7 +534,7 @@ namespace PluginHost {
             SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
             SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
             SYSLOG(Logging::Startup, (_T("Version:       %s"), _config->Version().c_str()));
-            SYSLOG(Logging::Startup, (_T("Traces:        %s"), traceSettings.c_str()));
+            SYSLOG(Logging::Startup, (_T("Messages:        %s"), messagingSettings.c_str()));
 
             // Before we do any translation of IP, make sure we have the right network info...
             if (_config->IPv6() == false) {

@@ -548,12 +548,12 @@ namespace PluginHost {
                 _latitude = config.Latitude.Value();
                 _longitude = config.Longitude.Value();
 
-                //_traceCategoriesFile = config.DefaultTraceCategories.IsQuoted();
-                //if (_traceCategoriesFile == true) {
-                //    config.DefaultTraceCategories.SetQuoted(true);
-                //}
-
+                _messagingCategoriesFile = config.DefaultMessagingCategories.IsQuoted();
+                if (_messagingCategoriesFile == true) {
+                    config.DefaultMessagingCategories.SetQuoted(true);
+                }
                 _messagingCategories = config.DefaultMessagingCategories.Value();
+
 
                 if (config.Model.IsSet()) {
                     _model = config.Model.Value();
@@ -627,6 +627,10 @@ namespace PluginHost {
         inline const string& Model() const
         {
             return (_model);
+        }
+        inline bool MessagingCategoriesFile() const
+        {
+            return (_messagingCategoriesFile);
         }
         inline const string& MessagingCategories() const
         {
@@ -899,6 +903,7 @@ namespace PluginHost {
         string _version;
         string _model;
         string _messagingCategories;
+        bool _messagingCategoriesFile;
         string _binding;
         string _interface;
         string _URL;

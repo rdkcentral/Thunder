@@ -72,8 +72,8 @@ namespace Core {
     class EXTERNAL MessageInformation {
     public:
         MessageInformation() = default;
-        MessageInformation(const MessageMetaData::MessageType type, const string& category, const string& module, 
-                           const string& filename, uint16_t lineNumber, const uint64_t timestamp);
+        MessageInformation(const MessageMetaData::MessageType type, const string& category, const string& module,
+            const string& filename, uint16_t lineNumber, const uint64_t timestamp);
         MessageInformation(const MessageInformation&) = default;
         MessageInformation& operator=(const MessageInformation&) = default;
 
@@ -217,6 +217,8 @@ namespace Core {
         void Close();
 
         void Defaults(const string& setting);
+        void Defaults(Core::File& file);
+
         string Defaults() const;
         void FetchDefaultSettingsForCategory(const IControl* control, bool& outIsEnabled, bool& outIsDefault);
 
@@ -233,6 +235,7 @@ namespace Core {
         MessageUnit& operator=(const MessageUnit&) = delete;
 
         void ReceiveMetaData(uint16_t size, const uint8_t* data);
+        void SetDefaultSettings(const Settings& serialized);
 
     private:
         mutable Core::CriticalSection _adminLock;
