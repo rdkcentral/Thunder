@@ -198,8 +198,6 @@ namespace Core {
             // clang-format on
             , _metaDataBuffer(initialize ? new MetaDataBuffer<METADATA_SIZE>(_filenames.metaData) : nullptr)
         {
-            ASSERT(DATA_SIZE > sizeof(Core::CyclicBuffer::control));
-
             if (!IsValid()) {
                 TRACE_L1("MessageDispatcher is not valid!");
             }
