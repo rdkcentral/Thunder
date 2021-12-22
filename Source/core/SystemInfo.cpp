@@ -440,6 +440,14 @@ namespace Core {
 #endif
     }
 
+    void SystemInfo::SetTimeZone(const string& tz)
+    {
+       SetEnvironment(_T("TZ"), tz);
+#ifdef __LINUX__
+       ::tzset();
+#endif
+    }
+
     /* static */ bool SystemInfo::GetEnvironment(const string& name, string& value)
     {
 #ifdef __LINUX__
