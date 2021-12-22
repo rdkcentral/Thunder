@@ -37,7 +37,7 @@ namespace {
 namespace WPEFramework {
 namespace Core {
 
-    static int IsLeapYear(const uint16_t year)
+    static bool IsLeapYear(const uint16_t year)
     {
         return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
     }
@@ -1171,7 +1171,7 @@ namespace Core {
         return (seconds);
     }
 
-    bool Time::IsValidDate(const uint16_t year, const uint8_t month, const uint8_t day) const
+    inline bool Time::IsValidDate(const uint16_t year, const uint8_t month, const uint8_t day) const
     {
         uint8_t totalDays = 0;
         switch (month - 1) {
