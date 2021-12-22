@@ -339,17 +339,25 @@ namespace Core {
 
                 if (metaData.Type() == control->MetaData().Type()) {
 
+                    //toggle for module and category
                     if (!metaData.Module().empty() && !metaData.Category().empty()) {
                         if (metaData.Module() == control->MetaData().Module() && metaData.Category() == control->MetaData().Category()) {
                             control->Enable(enabled);
                         }
+                        //toggle all categories for module
                     } else if (!metaData.Module().empty() && metaData.Category().empty()) {
                         if (metaData.Module() == control->MetaData().Module()) {
                             control->Enable(enabled);
                         }
+                    }
+                    //toggle category for all modules
+                    else if (metaData.Module().empty() && !metaData.Category().empty()) {
+                        if (metaData.Category() == control->MetaData().Category()) {
+                            control->Enable(enabled);
+                        }
+                        //toggle all categories for all modules
                     } else {
-                        //enable/disable all categories for all modules
-                        control->Enable();
+                        control->Enable(enabled);
                     }
                 }
             }
