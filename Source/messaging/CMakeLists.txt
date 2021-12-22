@@ -25,6 +25,7 @@ add_library(${TARGET} SHARED
 set(PUBLIC_HEADERS
         Module.h
         MessageClient.h
+        IMessageOutput.h
         messaging.h
         )
 

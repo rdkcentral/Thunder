@@ -5,7 +5,7 @@ namespace WPEFramework {
 namespace Trace {
 
     template <typename CATEGORY, const char** MODULENAME>
-    class TraceMessage : public Core::IMessageEvent {
+    class EXTERNAL TraceMessage : public Core::IMessageEvent {
     public:
         TraceMessage() = default;
         TraceMessage(const string& classname, const string& text)

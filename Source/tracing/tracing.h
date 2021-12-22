@@ -30,6 +30,7 @@
 #include "TraceUnit.h"
 #include "TraceFactory.h"
 #include "TraceMessage.h"
+#include "TraceMessageAssembler.h"
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "tracing.lib")

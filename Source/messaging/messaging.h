@@ -24,3 +24,4 @@
 #endif
 
 #include "MessageClient.h"
+#include "IMessageOutput.h"

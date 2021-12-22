@@ -34,6 +34,7 @@ set(PUBLIC_HEADERS
         Module.h
         TraceFactory.h
         TraceMessage.h
+        TraceMessageAssembler.h
         )
 
 target_compile_definitions(${TARGET} PRIVATE TRACING_EXPORTS)

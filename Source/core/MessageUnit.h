@@ -126,6 +126,11 @@ namespace Core {
         virtual Core::ProxyType<IMessageEvent> Create() = 0;
     };
 
+    struct EXTERNAL IMessageAssembler {
+        virtual ~IMessageAssembler() = default;
+        virtual string Prepare(const bool abbreviateMessage, const Core::MessageInformation& info, const Core::IMessageEvent* message) const = 0;
+    };
+
     class TraceSetting : public Core::JSON::Container {
     public:
         TraceSetting& operator=(const TraceSetting&) = delete;

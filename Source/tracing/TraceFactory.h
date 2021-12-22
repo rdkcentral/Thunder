@@ -4,7 +4,7 @@
 namespace WPEFramework {
 namespace Trace {
 
-    class Factory : public Core::IMessageEventFactory {
+    class EXTERNAL Factory : public Core::IMessageEventFactory {
     private:
         class DefaultTrace : public TraceMessage<DefaultTrace, nullptr> {
         public:
@@ -21,7 +21,7 @@ namespace Trace {
         {
         }
 
-        Core::ProxyType<Core::IMessageEvent> Create() override
+        inline Core::ProxyType<Core::IMessageEvent> Create() override
         {
             Core::ProxyType<DefaultTrace> proxy = _tracePool.Element();
             return Core::ProxyType<Core::IMessageEvent>(proxy);
