@@ -118,7 +118,6 @@ namespace Core {
         virtual void Destroy() = 0;
 
         virtual const Core::MessageMetaData& MetaData() const = 0;
-        virtual void Configure(const string& setting) = 0;
     };
 
     struct EXTERNAL IMessageEventFactory {
