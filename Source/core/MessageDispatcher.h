@@ -214,8 +214,7 @@ namespace Core {
         MessageDispatcherType& operator=(const MessageDispatcherType&) = delete;
 
         /**
-        * @brief Writes data into cyclic buffer. If it does not fit the data already in the cyclic buffer will be flushed.
-        *        After writing everything, this side should call Ring() to notify other side.
+        * @brief Writes data into cyclic buffer. After writing everything, this side should call Ring() to notify other side.
         *        To receive this data other side needs to wait for the doorbel ring and then use PopData
         *
         * @param length length of message
