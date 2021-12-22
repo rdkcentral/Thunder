@@ -6,9 +6,11 @@ namespace Trace {
 
     class EXTERNAL TraceFormatter : public Core::IMessageAssembler {
     public:
-        TraceFormatter()
-        {
-        }
+        TraceFormatter() = default;
+        ~TraceFormatter() = default;
+        TraceFormatter(const TraceFormatter&) = delete;
+        TraceFormatter& operator=(const TraceFormatter&) = delete;
+
         inline string Prepare(const bool abbreviateMessage, const Core::MessageInformation& info, const Core::IMessageEvent* message) const override
         {
             _output.str("");
@@ -16,9 +18,14 @@ namespace Trace {
 
             message->ToString(_deserializedMessage);
 
-            string time(Core::Time::Now().ToRFC1123(true));
-            _output << '[' << time.c_str() << "]:[" << Core::FileNameOnly(info.FileName().c_str()) << ':' << info.LineNumber() << "] "
-                    << info.MetaData().Category() << ": " << _deserializedMessage << std::endl;
+            if (abbreviateMessage == true) {
+                string time(Core::Time::Now().ToTimeOnly(true));
+                _output << '[' << time.c_str() << ']' << '[' << info.MetaData().Category() << "]: " << _deserializedMessage << std::endl;
+            } else {
+                string time(Core::Time::Now().ToRFC1123(true));
+                _output << '[' << time.c_str() << "]:[" << Core::FileNameOnly(info.FileName().c_str()) << ':' << info.LineNumber() << "] "
+                        << info.MetaData().Category() << ": " << _deserializedMessage << std::endl;
+            }
 
             return _output.str();
         }
@@ -26,7 +33,6 @@ namespace Trace {
     private:
         mutable string _deserializedMessage;
         mutable std::ostringstream _output;
-        bool _abbreviated;
     };
 }
 }
