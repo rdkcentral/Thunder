@@ -139,13 +139,15 @@ namespace Messaging {
                 //warning trace here
             } else {
                 auto length = information.Deserialize(_readBuffer, size);
-
-                auto factory = _factories.find(information.MetaData().Type());
-                if (factory != _factories.end()) {
-                    message = factory->second->Create();
-                    message->Deserialize(_readBuffer + length, size - length);
-                    result.Value() = std::make_pair(information, message);
-                    break;
+                
+                if (length != 0 && length <= sizeof(_readBuffer)) {
+                    auto factory = _factories.find(information.MetaData().Type());
+                    if (factory != _factories.end()) {
+                        message = factory->second->Create();
+                        message->Deserialize(_readBuffer + length, size - length);
+                        result.Value() = std::make_pair(information, message);
+                        break;
+                    }
                 }
             }
 

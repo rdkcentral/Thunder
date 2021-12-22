@@ -24,13 +24,18 @@ namespace Core {
     uint16_t MessageMetaData::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
     {
         uint16_t length = sizeof(_type) + _category.size() + 1 + _module.size() + 1;
-        ASSERT(bufferSize >= length);
 
-        Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
-        Core::FrameType<0>::Writer frameWriter(frame, 0);
-        frameWriter.Number(_type);
-        frameWriter.NullTerminatedText(_category);
-        frameWriter.NullTerminatedText(_module);
+        if (bufferSize >= length) {
+            ASSERT(bufferSize >= length);
+
+            Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
+            Core::FrameType<0>::Writer frameWriter(frame, 0);
+            frameWriter.Number(_type);
+            frameWriter.NullTerminatedText(_category);
+            frameWriter.NullTerminatedText(_module);
+        } else {
+            length = 0;
+        }
 
         return length;
     }
@@ -56,15 +61,21 @@ namespace Core {
     uint16_t MessageInformation::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
     {
         auto length = _metaData.Serialize(buffer, bufferSize);
-        ASSERT(bufferSize >= length);
 
-        Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
-        Core::FrameType<0>::Writer frameWriter(frame, 0);
-        frameWriter.NullTerminatedText(_filename);
-        frameWriter.Number(_lineNumber);
-        frameWriter.Number(_timeStamp);
+        if (length != 0) {
+            if (bufferSize >= length + _filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp)) {
 
-        length += _filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp);
+                Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
+                Core::FrameType<0>::Writer frameWriter(frame, 0);
+                frameWriter.NullTerminatedText(_filename);
+                frameWriter.Number(_lineNumber);
+                frameWriter.Number(_timeStamp);
+                length += _filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp);
+
+            } else {
+                length = 0;
+            }
+        }
 
         return length;
     }
@@ -72,13 +83,17 @@ namespace Core {
     {
         auto length = _metaData.Deserialize(buffer, bufferSize);
 
-        Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
-        Core::FrameType<0>::Reader frameReader(frame, 0);
-        _filename = frameReader.NullTerminatedText();
-        _lineNumber = frameReader.Number<uint16_t>();
-        _timeStamp = frameReader.Number<uint64_t>();
+        if (length <= bufferSize) {
+            Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
+            Core::FrameType<0>::Reader frameReader(frame, 0);
+            _filename = frameReader.NullTerminatedText();
+            _lineNumber = frameReader.Number<uint16_t>();
+            _timeStamp = frameReader.Number<uint64_t>();
 
-        length += _filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp);
+            length += _filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp);
+        } else {
+            length = 0;
+        }
 
         return length;
     }
@@ -284,10 +299,18 @@ namespace Core {
         uint16_t length = 0;
 
         length = info.Serialize(_serializationBuffer, sizeof(_serializationBuffer));
-        length += message->Serialize(_serializationBuffer + length, sizeof(_serializationBuffer) - length);
 
-        _dispatcher->PushData(length, _serializationBuffer);
-        _dispatcher->Ring();
+        //only serialize message if the information could fit
+        if (length != 0) {
+            length += message->Serialize(_serializationBuffer + length, sizeof(_serializationBuffer) - length);
+
+            if (_dispatcher->PushData(length, _serializationBuffer) != Core::ERROR_WRITE_ERROR) {
+                _dispatcher->Ring();
+            }
+
+        } else {
+            TRACE_L1(_T("Unable to push data, buffer is too small!"));
+        }
     }
 
     /**
