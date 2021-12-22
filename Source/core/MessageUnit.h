@@ -32,10 +32,10 @@ namespace Core {
     class EXTERNAL MessageMetaData {
     public:
         enum MessageType : uint8_t {
-            LOGGING,
-            TRACING,
-            WARNING_REPORTING,
-            INVALID
+            TRACING = 0,
+            LOGGING = 1,
+            WARNING_REPORTING = 2,
+            INVALID = 3
         };
 
         MessageMetaData();
