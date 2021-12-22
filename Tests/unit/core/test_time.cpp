@@ -35,383 +35,722 @@ int32_t GetMachineTimeDifference(const string& zone)
     return time->tm_gmtoff;
 }
 
-// NOTE: time TCs executed in UTC time zone and PDT environments
-string GetTimeBasedOnTimeZone(string zone, struct tm time, bool localTime = true)
-{
-    setenv("TZ", zone.c_str(), 1);
-    tzset();
-    time_t rawTime;
-    struct tm convertedTime;
-    char strTime[25];
-    rawTime = mktime(&time);
-    if (localTime) {
-        localtime_r(&rawTime, &convertedTime);
-    } else {
-        gmtime_r(&rawTime, &convertedTime);
+std::string ExecuteCmd(const char* cmd) {
+    char buffer[128];
+    std::string result = "";
+    FILE* pipe = popen(cmd, "r");
+
+    EXPECT_TRUE(pipe != nullptr);
+#ifdef __CORE_EXCEPTION_CATCHING__
+    try {
+#endif
+        while (fgets(buffer, sizeof buffer, pipe) != NULL) {
+            result = buffer;
+            break;
+        }
+#ifdef __CORE_EXCEPTION_CATCHING__
+    } catch (...) {
+        pclose(pipe);
+        throw;
     }
+#endif
+    pclose(pipe);
 
-    uint32_t timeRead = convertedTime.tm_hour * 3600 + convertedTime.tm_min * 60 + convertedTime.tm_sec;
-    uint32_t newTime = timeRead + convertedTime.tm_gmtoff;
+    return result;
+}
+std::string GetSystemTime(bool local)
+{
 
-    uint8_t seconds = newTime % 60;
-    newTime -= seconds;
-    uint8_t minutes = (newTime / 60) % 60;
-    newTime -= minutes * 60;
-    uint8_t hours = (newTime / 3600);
+    std::string command = std::string("date +\"%a, %d %b %Y %H:%M:%S\"");
+    command.append((local != true) ? " -u" : "");
+    std::string systemTime = ExecuteCmd(command.c_str());
+    systemTime.erase(remove(systemTime.begin(), systemTime.end(), '\n'), systemTime.end()); 
+    systemTime.append((local != true) ? " GMT" : "");
+    return systemTime;
+}
 
-    sprintf(strTime, "%02d:%02d:%02d%s", hours, minutes, seconds,
-                                         ((localTime == true) ? "": "GMT"));
-    return strTime;
-}
-TEST(Core_Time, MilliSeconds)
+TEST(Core_Time, Ctor_TimeSpec)
 {
-    Time time(2000, 1, 2, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
-    time = Time(2000, 1, 2, 11, 30, 23, 100, false);
-    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(100));
-    time = Time(2000, 1, 2, 11, 30, 23, 1023, false);
-    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(23));
-    time = Time(2000, 1, 2, 11, 30, 23, 4999, false);
-    EXPECT_EQ(time.Seconds(), static_cast<uint8_t>(27));
-    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(999));
+#ifdef __POSIX__
+    struct timespec ts;
+    timespec_get(&ts, TIME_UTC);
+    Time time(ts);
+
+    string local;
+    time.ToString(local, true);
+    string utc;
+    time.ToString(utc, false);
+
+    EXPECT_STREQ(local.c_str(), GetSystemTime(true).c_str());
+    EXPECT_STREQ(utc.c_str(), GetSystemTime(false).c_str());
+#endif
 }
-TEST(Core_Time, MilliSeconds_LocalTimeEnabled)
-{
-    Time time(2000, 1, 2, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
-    time = Time(2000, 1, 2, 11, 30, 23, 100, true);
-    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(100));
-    time = Time(2000, 1, 2, 11, 30, 23, 1023, true);
-    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(23));
-    time = Time(2000, 1, 2, 11, 30, 23, 10999, true);
-    EXPECT_EQ(time.Seconds(), static_cast<uint8_t>(33));
-    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(999));
-}
-TEST(Core_Time, Seconds)
-{
-    Time time(2000, 1, 2, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.Seconds(), 23);
-    time =  Time(1970, 2, 255, 12, 45, 60, 21, false);
-    EXPECT_EQ(time.Seconds(), 0);
-    time =  Time(2000, 1, 24, 14, 61, 59, 21, false);
-    EXPECT_EQ(time.Seconds(), 59);
-    time =  Time(2021, 4, 30, 0, 30, 66, 21, false);
-    EXPECT_EQ(time.Seconds(), 6);
-    time =  Time(2021, 2, 32, 23, 0, 0, 21, false);
-    EXPECT_EQ(time.Seconds(), 0);
-    time =  Time(2021, 2, 31, 24, 66, 70, 21, false);
-    EXPECT_EQ(time.Seconds(), 10);
-}
-TEST(Core_Time, Seconds_LocalTimeEnabled)
-{
-    Time time(2000, 1, 2, 11, 66, 66, 21, true);
-    EXPECT_EQ(time.Seconds(), 6);
-    time =  Time(1970, 2, 255, 12, 0, 23, 21, true);
-    EXPECT_EQ(time.Seconds(), 23);
-    time =  Time(2000, 1, 2, 15, 70, 60, 21, true);
-    EXPECT_EQ(time.Seconds(), 0);
-    time =  Time(2021, 4, 30, 0, 30, 59, 21, true);
-    EXPECT_EQ(time.Seconds(), 59);
-    time =  Time(2021, 2, 3, 22, 60, 23, 21, true);
-    EXPECT_EQ(time.Seconds(), 23);
-    time =  Time(2021, 2, 66, 24, 33, 78, 21, true);
-    EXPECT_EQ(time.Seconds(), 18);
-}
-TEST(Core_Time, Minutes)
-{
-    Time time(2000, 1, 2, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.Minutes(), 30);
-    time =  Time(1971, 2, 255, 12, 45, 23, 21, false);
-    EXPECT_EQ(time.Minutes(), 45);
-    time =  Time(2000, 1, 23, 14, 61, 23, 21, false);
-    EXPECT_EQ(time.Minutes(), 1);
-    time =  Time(2021, 4, 30, 0, 30, 66, 21, false);
-    EXPECT_EQ(time.Minutes(), 31);
-    time =  Time(2021, 2, 6, 23, 0, 23, 21, false);
-    EXPECT_EQ(time.Minutes(), 0);
-    time =  Time(2021, 2, 26, 24, 66, 66, 21, false);
-    EXPECT_EQ(time.Minutes(), 7);
-    time =  Time(1981, 1, 36, 26, 60, 23, 21, false);
-    EXPECT_EQ(time.Minutes(), 0);
-}
-TEST(Core_Time, Minutes_LocalTimeEnabled)
-{
-    Time time(2000, 1, 2, 11, 66, 66, 21, true);
-    EXPECT_EQ(time.Minutes(), 7);
-    time =  Time(1971, 2, 255, 12, 0, 23, 21, true);
-    EXPECT_EQ(time.Minutes(), 0);
-    time =  Time(2000, 1, 20, 15, 70, 23, 21, true);
-    EXPECT_EQ(time.Minutes(), 10);
-    time =  Time(2021, 4, 30, 0, 30, 23, 21, true);
-    EXPECT_EQ(time.Minutes(), 30);
-    time =  Time(2021, 2, 36, 22, 60, 23, 21, true);
-    EXPECT_EQ(time.Minutes(), 0);
-    time =  Time(2021, 2, 3, 24, 33, 78, 21, true);
-    EXPECT_EQ(time.Minutes(), 34);
-    time =  Time(1981, 1, 37, 26, 59, 66, 21, true);
-    EXPECT_EQ(time.Minutes(), 0);
-}
-TEST(Core_Time, Hours)
-{
-    Time time(2000, 1, 2, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.Hours(), 11);
-    time =  Time(1971, 2, 255, 12, 30, 23, 21, false);
-    EXPECT_EQ(time.Hours(), 12);
-    time =  Time(2000, 1, 26, 14, 30, 23, 21, false);
-    EXPECT_EQ(time.Hours(), 14);
-    time =  Time(2021, 4, 30, 0, 30, 23, 21, false);
-    EXPECT_EQ(time.Hours(), 0);
-    time =  Time(2021, 2, 31, 23, 30, 23, 21, false);
-    EXPECT_EQ(time.Hours(), 23);
-    time =  Time(2021, 2, 14, 24, 30, 23, 21, false);
-    EXPECT_EQ(time.Hours(), 0);
-    time =  Time(1981, 1, 17, 26, 30, 23, 21, false);
-    EXPECT_EQ(time.Hours(), 2);
-}
-TEST(Core_Time, Hours_LocalTimeEnabled)
+TEST(Core_Time, Ctor_Copy)
 {
     char* currentZone = getenv("TZ");
     setenv("TZ", "", 1);
     tzset();
 
-    Time time(2000, 1, 2, 11, 66, 66, 21, true);
-    EXPECT_EQ(time.Hours(), 12);
-    time =  Time(1971, 2, 255, 12, 0, 23, 21, true);
-    EXPECT_EQ(time.Hours(), 12);
-    time =  Time(2000, 1, 21, 15, 70, 23, 21, true);
-    EXPECT_EQ(time.Hours(), 16);
-    time =  Time(2021, 4, 30, 0, 30, 23, 21, true);
-    EXPECT_EQ(time.Hours(), 0);
-    time =  Time(2021, 1, 10, 22, 30, 23, 21, true);
-    EXPECT_EQ(time.Hours(), 22);
-    time =  Time(2021, 2, 31, 24, 30, 23, 21, true);
-    EXPECT_EQ(time.Hours(), 0);
-    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    setenv("TZ", "Europe/Amsterdam", 1);
     tzset();
 
+    Time time1;
+    Time orig(1969,11, 1, 9, 10, 11, 500, true);
+    EXPECT_EQ(orig.IsValid(), true);
+    time1 = orig;
+    EXPECT_EQ(time1.IsValid(), true);
+    Time time2(orig);
+    EXPECT_EQ(time2.IsValid(), true);
+
+    string timeString;
+    EXPECT_EQ(orig.MilliSeconds(), 500u);
+    orig.ToString(timeString, true);
+    std::cout << "Localtime 1969-11-01 09:10:11.500 : " << timeString << " ms: " << orig.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Sat, 01 Nov 1969 09:10:11");
+    orig.ToString(timeString, false);
+    std::cout << "UTC 1969-11-01 09:10:11.500 : " << timeString << " ms: " << orig.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Sat, 01 Nov 1969 08:10:11 GMT");
+
+    EXPECT_EQ(time1.MilliSeconds(), 500u);
+    time1.ToString(timeString, true);
+    std::cout << "Localtime 1969-11-01 09:10:11.500 : " << timeString << " ms: " << time1.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Sat, 01 Nov 1969 09:10:11");
+    time1.ToString(timeString, false);
+    std::cout << "UTC 1969-11-01 09:10:11.500 : " << timeString << " ms: " << time1.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Sat, 01 Nov 1969 08:10:11 GMT");
+
+    EXPECT_EQ(time2.MilliSeconds(), 500u);
+    time2.ToString(timeString, true);
+    std::cout << "Localtime 1969-11-01 09:10:11.500 : " << timeString << " ms: " << time2.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Sat, 01 Nov 1969 09:10:11");
+    time2.ToString(timeString, false);
+    std::cout << "UTC 1969-11-01 09:10:11.500 : " << timeString << " ms: " << time2.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Sat, 01 Nov 1969 08:10:11 GMT");
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
+}
+TEST(Core_Time, MilliSeconds)
+{
+    Time time(2000, 1, 2, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
+    time = Time(2004, 2, 29, 11, 30, 23, 100, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(100));
+    time = Time(2000, 11, 2, 11, 30, 23, 823, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(823));
+    time = Time(2000, 12, 2, 11, 30, 23, 999, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(999));
+}
+TEST(Core_Time, MilliSeconds_LocalTimeEnabled)
+{
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "Europe/Amsterdam", 1);
+    tzset();
+
+    Time time(2000, 1, 2, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
+    time = Time(2000, 2, 28, 11, 30, 23, 100, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(100));
+    time = Time(2000, 3, 2, 11, 30, 23, 923, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(923));
+    time = Time(2000, 5, 2, 11, 30, 23, 999, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(999));
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
+}
+TEST(Core_Time, Seconds)
+{
+    Time time(2000, 1, 2, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Seconds(), 23);
+    time =  Time(1970, 2, 24, 12, 45, 58, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Seconds(), 58);
+    time =  Time(2000, 1, 24, 14, 1, 59, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Seconds(), 59);
+    time =  Time(2021, 2, 28, 23, 15, 0, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Seconds(), 0);
+    time =  Time(2021, 3, 31, 0, 6, 39, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Seconds(), 39);
+}
+TEST(Core_Time, Seconds_LocalTimeEnabled)
+{
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "Europe/Amsterdam", 1);
+    tzset();
+
+    Time time(2000, 1, 2, 11, 46, 6, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Seconds(), 6);
+    time =  Time(1970, 2, 13, 12, 1, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Seconds(), 23);
+    time =  Time(2000, 1, 2, 15, 59, 0, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Seconds(), 0);
+    time =  Time(2021, 4, 30, 1, 30, 59, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Seconds(), 59);
+    time =  Time(2021, 6, 3, 22, 59, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Seconds(), 23);
+    time =  Time(2021, 11, 30, 23, 33, 18, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Seconds(), 18);
+    time =  Time(2021, 7, 3, 22, 59, 0, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Seconds(), 0);
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
+}
+TEST(Core_Time, Minutes)
+{
+    Time time(2000, 1, 2, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Minutes(), 30);
+    time =  Time(1971, 12, 31, 12, 45, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Minutes(), 45);
+    time =  Time(2021, 4, 30, 1, 30, 56, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Minutes(), 30);
+    time =  Time(2021, 2, 6, 23, 1, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Minutes(), 1);
+    time =  Time(2021, 2, 26, 22, 45, 45, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Minutes(), 45);
+    time =  Time(1981, 1, 30, 23, 0, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Minutes(), 0);
+    time =  Time(1981, 1, 30, 23, 0, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Minutes(), 0);
+}
+TEST(Core_Time, Minutes_LocalTimeEnabled)
+{
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "Europe/Amsterdam", 1);
+    tzset();
+
+    Time time(2000, 1, 2, 11, 30, 30, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Minutes(), 30);
+    time =  Time(1971, 11, 1, 12, 0, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Minutes(), 0);
+    time =  Time(2000, 1, 20, 15, 10, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Minutes(), 10);
+    time =  Time(2021, 4, 30, 2, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Minutes(), 30);
+    time =  Time(2021, 2, 28, 22, 0, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Minutes(), 0);
+    time =  Time(2021, 2, 28, 22, 0, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Minutes(), 0);
+    time =  Time(2021, 2, 3, 23, 34, 18, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Minutes(), 34);
+    time =  Time(1981, 1, 31, 23, 59, 59, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Minutes(), 59);
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
+}
+TEST(Core_Time, Hours)
+{
+    Time time(2000, 1, 2, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Hours(), 11);
+    time =  Time(1972, 2, 29, 12, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Hours(), 12);
+    time =  Time(2000, 1, 26, 14, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Hours(), 14);
+    time =  Time(2021, 4, 30, 0, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Hours(), 0);
+    time =  Time(2021, 5, 31, 23, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Hours(), 23);
+    time =  Time(2021, 6, 30, 0, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Hours(), 0);
+    time =  Time(1981, 1, 17, 0, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Hours(), 0);
+}
+TEST(Core_Time, Hours_LocalTimeEnabled)
+{
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "Europe/Amsterdam", 1);
+    tzset();
+
+    Time time(2000, 1, 2, 11, 56, 46, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Hours(), 10);
+    time =  Time(1971, 9, 12, 12, 10, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Hours(), 11);
+    time =  Time(2000, 2, 29, 15, 10, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Hours(), 14);
+    time =  Time(2021, 5, 28, 23, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Hours(), 21);
+    time =  Time(2021, 5, 28, 0, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Hours(), 22);
+    time =  Time(2021, 1, 10, 22, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Hours(), 21);
+    time =  Time(2021, 7, 31, 1, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Hours(), 23);
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, Day)
 {
     Time time(2000, 1, 2, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Day(), 2);
-    time =  Time(1971, 2, 255, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.Day(), 13);
-    time =  Time(2000, 1, 30, 11, 30, 23, 21, false);
+    time =  Time(1971, 2, 25, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Day(), 25);
+    time =  Time(2000, 4, 30, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Day(), 30);
-    time =  Time(2021, 2, 30, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.Day(), 2);
-    time =  Time(2021, 2, 10, 24, 30, 23, 21, false);
-    EXPECT_EQ(time.Day(), 11);
-    time =  Time(1981, 1, 32, 25, 30, 23, 21, false);
-    EXPECT_EQ(time.Day(), 2);
+    time =  Time(2021, 2, 28, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Day(), 28);
+    time =  Time(2021, 5, 31, 20, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Day(), 31);
+    time =  Time(1981, 1, 31, 23, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Day(), 31);
 }
 TEST(Core_Time, Day_LocalTimeEnabled)
 {
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "Europe/Amsterdam", 1);
+    tzset();
+
     Time time(2000, 1, 4, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Day(), 4);
-    time =  Time(1971, 2, 255, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.Day(), 13);
+    time =  Time(1976, 2, 29, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Day(), 29);
     time =  Time(2000, 1, 31, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Day(), 31);
-    time =  Time(2021, 4, 31, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.Day(), 1);
-    time =  Time(2021, 2, 33, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.Day(), 5);
-    time =  Time(1981, 1, 25, 48, 30, 23, 21, true);
-    EXPECT_EQ(time.Day(), 27);
+    time =  Time(2021, 4, 30, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Day(), 30);
+    time =  Time(2021, 2, 28, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Day(), 28);
+    time =  Time(1981, 6, 24, 23, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Day(), 24);
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, WeekDayName)
 {
     Time time(2000, 1, 2, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_STREQ(time.WeekDayName(), "Sun");
-    time =  Time(1971, 2, 255, 11, 30, 23, 21, false);
-    EXPECT_STREQ(time.WeekDayName(), "Wed");
-    time =  Time(2000, 1, 34, 11, 30, 23, 21, false);
-    EXPECT_STREQ(time.WeekDayName(), "Thu");
-    time =  Time(2021, 4, 32, 11, 30, 23, 21, false);
-    EXPECT_STREQ(time.WeekDayName(), "Sun");
-    time =  Time(2021, 2, 29, 11, 30, 23, 21, false);
+    time =  Time(1971, 2, 1, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_STREQ(time.WeekDayName(), "Mon");
-    time =  Time(1981, 1, 13, 0, 30, 23, 21, false);
-    EXPECT_STREQ(time.WeekDayName(), "Tue");
+    time =  Time(2000, 3, 25, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_STREQ(time.WeekDayName(), "Sat");
+    time =  Time(2021, 4, 28, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_STREQ(time.WeekDayName(), "Wed");
+    time =  Time(2024, 2, 29, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_STREQ(time.WeekDayName(), "Thu");
+    time =  Time(1981, 7, 13, 1, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_STREQ(time.WeekDayName(), "Mon");
 }
 TEST(Core_Time, WeekDayName_LocalTimeEnabled)
 {
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
     Time time(2000, 1, 3, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_STREQ(time.WeekDayName(), "Mon");
-    time =  Time(1971, 2, 254, 11, 30, 23, 21, true);
+    time =  Time(1971, 2, 2, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_STREQ(time.WeekDayName(), "Tue");
     time =  Time(2000, 3, 31, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_STREQ(time.WeekDayName(), "Fri");
     time =  Time(2021, 4, 30, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_STREQ(time.WeekDayName(), "Fri");
     time =  Time(2021, 2, 28, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_STREQ(time.WeekDayName(), "Sun");
-    time =  Time(1981, 1, 32, 24, 30, 23, 21, true);
-    EXPECT_STREQ(time.WeekDayName(), "Mon");
+    time =  Time(1981, 1, 31, 23, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_STREQ(time.WeekDayName(), "Sat");
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, Month)
 {
     Time time(2000, 1, 1, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Month(), 1);
-    time =  Time(1971, 1, 255, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.Month(), 9);
-    time =  Time(2000, 1, 32, 11, 30, 23, 21, false);
+    time =  Time(1971, 2, 2, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Month(), 2);
-    time =  Time(2021, 1, 30, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.Month(), 1);
-    time =  Time(2021, 2, 29, 11, 30, 23, 21, false);
+    time =  Time(2000, 3, 31, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Month(), 3);
-    time =  Time(1981, 4, 30, 25, 30, 23, 21, false);
-    EXPECT_EQ(time.Month(), 5);
+    time =  Time(2021, 4, 30, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Month(), 4);
+    time =  Time(2021, 7, 28, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Month(), 7);
+    time =  Time(1981, 11, 30, 23, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Month(), 11);
 }
 TEST(Core_Time, Month_LocalTimeEnabled)
 {
-    Time time(2000, 1, 1, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.Month(), 1);
-    time =  Time(1971, 1, 255, 11, 30, 23, 21, true);
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "Europe/Amsterdam", 1);
+    tzset();
+
+    Time time(2000, 9, 1, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Month(), 9);
-    time =  Time(2000, 5, 33, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.Month(), 6);
-    time =  Time(2021, 1,25, 11, 30, 23, 21, true);
+    time =  Time(1971, 1, 2, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Month(), 1);
-    time =  Time(2021, 6, 31, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.Month(), 7);
-    time =  Time(1981, 7, 30, 48, 30, 23, 21, true);
+    time =  Time(2000, 8, 30, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Month(), 8);
+    time =  Time(2021, 11, 28, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Month(), 11);
+    time =  Time(2021, 6, 30, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Month(), 6);
+    time =  Time(1981, 12, 31, 23, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Month(), 12);
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, MonthName)
 {
     Time time(2000, 1, 1, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_STREQ(time.MonthName(), "Jan");
-    time =  Time(1971, 3, 255, 11, 30, 23, 21, false);
-    EXPECT_STREQ(time.MonthName(), "Nov");
-    time =  Time(2000, 5, 32, 11, 30, 23, 21, false);
-    EXPECT_STREQ(time.MonthName(), "Jun");
+    time =  Time(1971, 3, 2, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_STREQ(time.MonthName(), "Mar");
+    time =  Time(2000, 5, 31, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_STREQ(time.MonthName(), "May");
     time =  Time(2021, 4, 30, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_STREQ(time.MonthName(), "Apr");
     time =  Time(2021, 1, 12, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_STREQ(time.MonthName(), "Jan");
-    time =  Time(1981, 2, 27, 64, 64, 23, 21, false);
-    EXPECT_STREQ(time.MonthName(), "Mar");
+    time =  Time(1983, 6, 30, 22, 59, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_STREQ(time.MonthName(), "Jun");
+    time =  Time(1981, 7, 27, 23, 59, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_STREQ(time.MonthName(), "Jul");
 }
 TEST(Core_Time, MonthName_LocalTimeEnabled)
 {
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "Europe/Amsterdam", 1);
+    tzset();
+
     Time time(2000, 1, 31, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_STREQ(time.MonthName(), "Jan");
-    time =  Time(1971, 2, 255, 11, 30, 23, 21, true);
-    EXPECT_STREQ(time.MonthName(), "Oct");
-    time =  Time(2000, 8, 100, 11, 30, 23, 21, true);
-    EXPECT_STREQ(time.MonthName(), "Nov");
+    time =  Time(1971, 2, 28, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_STREQ(time.MonthName(), "Feb");
+    time =  Time(2000, 8, 10, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_STREQ(time.MonthName(), "Aug");
     time =  Time(2021, 9, 30, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_STREQ(time.MonthName(), "Sep");
-    time =  Time(2021, 10, 32, 11, 30, 23, 21, true);
+    time =  Time(2021, 10, 31, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_STREQ(time.MonthName(), "Oct");
+    time =  Time(1981, 11, 26, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_STREQ(time.MonthName(), "Nov");
-    time =  Time(1981, 2, 26, 80, 30, 23, 21, true);
+    time =  Time(1990, 12, 31, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_STREQ(time.MonthName(), "Dec");
+
+   (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, Year)
 {
     Time time(2000, 1, 1, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Year(), static_cast<uint32_t>(2000));
-    time =  Time(1971, 1, 255, 11, 30, 23, 21, false);
+    time =  Time(1971, 2, 28, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Year(), static_cast<uint32_t>(1971));
-    time =  Time(2000, 1, 10, 11, 30, 23, 21, false);
+    time =  Time(2000, 4, 10, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Year(), static_cast<uint32_t>(2000));
-    time =  Time(2021, 1, 30, 11, 30, 23, 21, false);
+    time =  Time(2021, 6, 30, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Year(), static_cast<uint32_t>(2021));
-    time =  Time(2021, 12, 33, 11, 30, 23, 21, false);
+    time =  Time(2022, 12, 31, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Year(), static_cast<uint32_t>(2022));
-    time =  Time(1981, 9, 140, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.Year(), static_cast<uint32_t>(1982));
+    time =  Time(1981, 9, 14, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Year(), static_cast<uint32_t>(1981));
 }
 TEST(Core_Time, Year_LocalTimeEnabled)
 {
-    Time time(2000, 1, 1, 11, 30, 23, 21, true);
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "Europe/Amsterdam", 1);
+    tzset();
+
+    Time time(2000, 3, 1, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Year(), static_cast<uint32_t>(2000));
-    time =  Time(1971, 1, 255, 11, 30, 23, 21, true);
+    time =  Time(1971, 5, 25, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Year(), static_cast<uint32_t>(1971));
-    time =  Time(2000, 1, 200, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.Year(), static_cast<uint32_t>(2000));
-    time =  Time(2021, 1, 30, 11, 30, 23, 21, true);
+    time =  Time(2002, 7, 20, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Year(), static_cast<uint32_t>(2002));
+    time =  Time(2021, 8, 30, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.Year(), static_cast<uint32_t>(2021));
-    time =  Time(2021, 12, 32, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.Year(), static_cast<uint32_t>(2022));
-    time =  Time(1981, 10, 100, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.Year(), static_cast<uint32_t>(1982));
+    time =  Time(2025, 12, 31, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Year(), static_cast<uint32_t>(2025));
+    time =  Time(1981, 10, 10, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.Year(), static_cast<uint32_t>(1981));
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, DayOfYear)
 {
     Time time(2000, 1, 1, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.DayOfYear(), 0);
-    time =  Time(2000, 1, 0, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.DayOfYear(), 364);
-    time =  Time(2000, 1, 255, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.DayOfYear(), 254);
-    time =  Time(2000, 2, 30, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.DayOfYear(), 60);
-    time =  Time(2000, 12, 32, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.DayOfYear(), 0);
-    time =  Time(2000, 12, 30, 11, 30, 23, 21, false);
-    EXPECT_EQ(time.DayOfYear(), 364);
+    time =  Time(2000, 2, 28, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.DayOfYear(), 58);
+    time =  Time(2000, 3, 25, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.DayOfYear(), 84);
+    time =  Time(2000, 4, 30, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.DayOfYear(), 120);
+    time =  Time(2000, 5, 31, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.DayOfYear(), 151);
+    time =  Time(2000, 6, 30, 11, 30, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.DayOfYear(), 181);
 }
 TEST(Core_Time, DayOfYear_LocalTimeEnabled)
 {
-    Time time(2002, 1, 1, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.DayOfYear(), 0);
-    time =  Time(2000, 1, 0, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.DayOfYear(), 364);
-    time =  Time(2000, 1, 255, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.DayOfYear(), 254);
-    time =  Time(2000, 2, 29, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.DayOfYear(), 59);
-    time =  Time(2000, 12, 32, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.DayOfYear(), 0);
-    time =  Time(2000, 11, 67, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.DayOfYear(), 5);
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "Europe/Amsterdam", 1);
+    tzset();
+
+    Time time(2002, 7, 1, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.DayOfYear(), 181);
+    time =  Time(2000, 8, 10, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.DayOfYear(), 222);
+    time =  Time(2000, 9, 25, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.DayOfYear(), 268);
+    time =  Time(2000, 10, 29, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.DayOfYear(), 302);
+    time =  Time(2000, 11, 30, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.DayOfYear(), 334);
+    time =  Time(2000, 12, 6, 11, 30, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.DayOfYear(), 340);
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
 TEST(Core_Time, DayOfWeek)
 {
     // Thu Jan  1 01:01:01 2004
     Time time(2004, 1, 1, 1, 1, 1, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.DayOfWeek(), 4);
     // Thu Jan  1 11:30:24 2004
     time = Time(2004, 1, 1, 11, 30, 24, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.DayOfWeek(), 4);
     // Thu Jun 20 20:20:22 2019
     time =  Time(2019, 6, 20, 20, 20, 22, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.DayOfWeek(), 4);
     // Mon Jul  1 13:40:33 2019
-    time =  Time(2019, 6, 31, 13, 40, 33, 21, false);
-    EXPECT_EQ(time.DayOfWeek(), 1);
+    time =  Time(2019, 5, 31, 13, 40, 33, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.DayOfWeek(), 5);
     // Mon Aug 31 11:50:31 2015
     time =  Time(2015, 8, 31, 11, 50, 31, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.DayOfWeek(), 1);
     // Tue Sep  1 11:50:23 2015
-    time =  Time(2015, 8, 32, 11, 50, 23, 21, false);
-    EXPECT_EQ(time.DayOfWeek(), 2);
+    time =  Time(2015, 8, 31, 11, 50, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.DayOfWeek(), 1);
 }
 TEST(Core_Time, DayOfWeek_LocalTimeEnabled)
 {
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "Europe/Amsterdam", 1);
+    tzset();
+
     // Thu Jan  1 01:01:01 2004
     Time time(2004, 1, 1, 1, 1, 1, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.DayOfWeek(), 4);
     // Thu Jan  1 11:30:24 2004
-    time = Time(2004, 1, 1, 11, 30, 24, 21, true);
-    EXPECT_EQ(time.DayOfWeek(), 4);
+    time = Time(2004, 5, 1, 11, 30, 24, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.DayOfWeek(), 6);
     // Thu Jun 20 20:20:22 2019
     time =  Time(2019, 6, 20, 20, 20, 22, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.DayOfWeek(), 4);
     // Mon Jul  1 13:40:33 2019
-    time =  Time(2019, 6, 31, 13, 40, 33, 21, true);
-    EXPECT_EQ(time.DayOfWeek(), 1);
+    time =  Time(2019, 7, 31, 13, 40, 33, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.DayOfWeek(), 3);
     // Mon Aug 31 11:50:31 2015
     time =  Time(2015, 8, 31, 11, 50, 31, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
     EXPECT_EQ(time.DayOfWeek(), 1);
     // Tue Sep  1 11:50:23 2015
-    time =  Time(2015, 8, 32, 11, 50, 23, 21, true);
-    EXPECT_EQ(time.DayOfWeek(), 2);
+    time =  Time(2015, 9, 30, 11, 50, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), true);
+    EXPECT_EQ(time.DayOfWeek(), 3);
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
 }
-TEST(Core_Time, FromString)
+TEST(Core_Time, Ctor_TimeValues_InvalidValues)
+{
+    Time time(2000, 1, 2, 11, 30, 23, 1000, false);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2000, 1, 2, 11, 30, 67, 21, false);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2000, 1, 2, 11, 100, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2000, 1, 2, 25, 30, 23, 10, false);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2000, 1, 32, 11, 30, 6, 21, false);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2000, 1, 0, 11, 30, 23, 100, false);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2001, 2, 29, 11, 30, 23, 100, false);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2004, 2, 30, 11, 30, 23, 100, false);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2003, 6, 31, 11, 30, 23, 100, false);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2000, 15, 2, 11, 1, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2000, 0, 2, 11, 1, 23, 21, false);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(1821, 1, 2, 11, 60, 23, 100, false);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(1871, 1, 2, 11, 0, 60, 100, false);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(1871, 1, 2, 24, 0, 35, 100, false);
+    EXPECT_EQ(time.IsValid(), false);
+
+}
+TEST(Core_Time, Ctor_TimeValues_LocalTimeEnabled_InvalidValues)
+{
+    Time time(2000, 1, 2, 11, 30, 23, 1000, true);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2000, 1, 2, 11, 30, 60, 21, true);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2000, 1, 2, 11, 30, 67, 21, true);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2000, 1, 2, 11, 60, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2000, 1, 2, 11, 100, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2000, 1, 2, 24, 30, 23, 10, true);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2000, 1, 32, 11, 30, 6, 21, true);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(1921, 1, 0, 11, 30, 23, 100, true);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(1923, 2, 29, 11, 30, 23, 100, true);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2000, 15, 2, 11, 1, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2000, 0, 2, 11, 1, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(2000, 9, 31, 11, 1, 23, 21, true);
+    EXPECT_EQ(time.IsValid(), false);
+    time = Time(1821, 1, 2, 24, 30, 23, 100, true);
+    EXPECT_EQ(time.IsValid(), false);
+}
+TEST(Core_Time, FromString_CurrentTime)
 {
     char* currentZone = getenv("TZ");
     setenv("TZ", "", 1);
@@ -436,6 +775,48 @@ TEST(Core_Time, FromString)
     EXPECT_EQ(time.FromString(timeString2, false), true);
     time.ToString(timeString2);
     EXPECT_STREQ(timeString1.c_str(), timeString2.c_str());
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
+}
+TEST(Core_Time, FromString_TimeCtor)
+{
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
+    Time orig(1969,10, 3, 10, 11, 12, 666, true);
+    string timeString;
+    orig.ToString(timeString, true);
+
+    Time time1;
+    time1.FromString(timeString, true);
+    orig.ToString(timeString, false);
+
+    Time time2;
+    time2.FromString(timeString, false);
+
+    EXPECT_EQ(orig.MilliSeconds(), 666u);
+    orig.ToString(timeString, true);
+    std::cout << "Localtime 1969-10-03 10:11:12 666 : " << timeString << " ms: " << orig.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Fri, 03 Oct 1969 10:11:12");
+    orig.ToString(timeString, false);
+    std::cout << "UTC 1969-10-03 10:11:12 666 : " << timeString << " ms: " << orig.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Fri, 03 Oct 1969 10:11:12 GMT");
+
+    time1.ToString(timeString, true);
+    std::cout << "Localtime 1969-10-03 10:11:12 666 : " << timeString << " ms: " << time1.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Fri, 03 Oct 1969 10:11:12");
+    time1.ToString(timeString, false);
+    std::cout << "UTC 1969-10-03 10:11:12 666 : " << timeString << " ms: " << time1.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Fri, 03 Oct 1969 10:11:12 GMT");
+
+    time2.ToString(timeString, true);
+    std::cout << "LocalTime 1969-10-03 10:11:12 666 : " << timeString << " ms: " << time2.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Fri, 03 Oct 1969 10:11:12");
+    time2.ToString(timeString, false);
+    std::cout << "UTC 1969-10-03 10:11:12 666 : " << timeString << " ms: " << time2.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Fri, 03 Oct 1969 10:11:12 GMT");
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
@@ -798,14 +1179,16 @@ TEST(Core_Time, FromStandard_RFC1123_TimeStringCreatedFromTime)
 }
 TEST(Core_Time, FromStandard_RFC1123_TimeStringCreatedFromTime_InvalidCase)
 {
-    Time time =  Time(18, 1, 23, 11, 30, 23, 21, false);
+    Time time =  Time(2018, 1, 23, 11, 30, 23, 21, false);
     std::string timeString;
     time.ToString(timeString, false);
-    EXPECT_EQ(time.FromRFC1123(timeString), false);
+    EXPECT_STREQ(timeString.c_str(), "Tue, 23 Jan 2018 11:30:23 GMT");
+    EXPECT_EQ(time.FromRFC1123(timeString), true);
 
-    time =  Time(80, 12, 23, 11, 30, 23, 21, false);
+    time =  Time(2080, 12, 23, 11, 30, 23, 21, false);
     time.ToString(timeString, false);
-    EXPECT_EQ(time.FromRFC1123(timeString), false);
+    EXPECT_STREQ(timeString.c_str(), "Mon, 23 Dec 2080 11:30:23 GMT");
+    EXPECT_EQ(time.FromRFC1123(timeString), true);
 }
 TEST(Core_Time, FromStandard_RFC1123_TimeStringCreatedWithLocalTimeEnabled)
 {
@@ -1001,6 +1384,33 @@ TEST(Core_Time, Ticks_withoutInterval)
     uint32_t intervalInSeconds = diff / Time::MicroSecondsPerSecond;
     EXPECT_EQ(intervalInSeconds, static_cast<uint32_t>(0));
 }
+TEST(Core_Time, Ticks_TimeCtor)
+{
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
+    setenv("TZ", "Europe/Amsterdam", 1);
+    tzset();
+
+    Time orig(2016,10, 3, 10, 11, 12, 666, true);
+    Time::microsecondsfromepoch flattime = orig.Ticks();
+
+    std::cout << " Ticks for local 2016-10-03 10:11:12 666 (so UTC ticks) : " << flattime << std::endl;
+    Time copyutc(flattime);
+    string timeString;
+    copyutc.ToString(timeString, true);
+    std::cout << "Localtime 2016-10-03 10:11:12 666 : " << timeString << " ms: " << copyutc.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Mon, 03 Oct 2016 10:11:12");
+
+    copyutc.ToString(timeString, false);
+    std::cout << "UTC 2016-10-03 08:11:12 666 : " << timeString << " ms: " << copyutc.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Mon, 03 Oct 2016 08:11:12 GMT");
+    EXPECT_EQ(copyutc.MilliSeconds(), 666u);
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
+}
 TEST(Core_Time, Ticks_withInterval)
 {
     uint32_t givenIntervalInSeconds = 2;
@@ -1078,13 +1488,13 @@ TEST(Core_Time, Format)
     Time time(2002, 5, 10, 11, 30, 23, 21, false);
     EXPECT_STREQ(time.Format("%Y-%m-%d").c_str(), "2002-05-10");
     EXPECT_STREQ(time.Format("%d-%m-%Y").c_str(), "10-05-2002");
-    time = Time(1970, 5, 32, 11, 30, 23, 21, false);
-    EXPECT_STREQ(time.Format("%Y-%m-%d").c_str(), "1970-06-01");
-    EXPECT_STREQ(time.Format("%Y %m %d").c_str(), "1970 06 01");
-    EXPECT_STREQ(time.Format("%Y:%m:%d").c_str(), "1970:06:01");
-    // Format conversion will not support year below 1970
-    time = Time(1969, 5, 32, 11, 30, 23, 21, false);
-    EXPECT_STRNE(time.Format("%Y-%m-%d").c_str(), "1969-06-01");
+    time = Time(1970, 5, 31, 11, 30, 23, 21, false);
+    EXPECT_STREQ(time.Format("%Y-%m-%d").c_str(), "1970-05-31");
+    EXPECT_STREQ(time.Format("%Y %m %d").c_str(), "1970 05 31");
+    EXPECT_STREQ(time.Format("%Y:%m:%d").c_str(), "1970:05:31");
+
+    time = Time(1969, 5, 31, 11, 30, 23, 21, false);
+    EXPECT_STREQ(time.Format("%Y-%m-%d").c_str(), "1969-05-31");
 }
 TEST(Core_Time, ToTimeOnly)
 {
@@ -1095,10 +1505,10 @@ TEST(Core_Time, ToTimeOnly)
     Time time(2002, 5, 10, 11, 30, 23, 21, false);
     EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "11:30:23GMT");
     EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
-    time = Time(1970, 5, 32, 24, 30, 23, 21, false);
+    time = Time(1970, 5, 31, 0, 30, 23, 21, false);
     EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "00:30:23GMT");
-    time = Time(1970, 5, 32, 24, 60, 23, 21, false);
-    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "01:00:23GMT");
+    time = Time(1970, 5, 31, 23, 0, 23, 21, false);
+    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "23:00:23GMT");
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
@@ -1119,28 +1529,32 @@ TEST(Core_Time, ToTimeOnly_LocalTimeEnabled)
 
     // Check time after unset time zone
     time = Time(2002, 5, 10, 11, 30, 23, 21, false);
-//    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("", time.Handle(), true).c_str());
+    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "11:30:23");
     EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
 
     setenv("TZ", "Africa/Algiers", 1);
     tzset();
-    time = Time(1970, 5, 32, 24, 30, 23, 21, false);
-//    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("Africa/Algiers", time.Handle(), true).c_str());
+    time = Time(1970, 5, 31, 0, 30, 23, 21, false);
+    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "00:30:23");
 
     setenv("TZ", "Asia/Kolkata", 1);
     tzset();
-    time = Time(1970, 5, 32, 24, 60, 23, 21, false);
-//    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("Asia/Kolkata", time.Handle(), true).c_str());
+    time = Time(1970, 5, 31, 22, 0, 23, 21, false);
+    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "03:30:23");
 
+    setenv("TZ", "GST", 1);
+    tzset();
     setenv("TZ", "America/Los_Angeles", 1);
     tzset();
     time = Time(80, 12, 23, 11, 30, 23, 21, false);
-//    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("America/Los_Angeles", time.Handle(), true).c_str());
+    //EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "03:30:23");
 
+    setenv("TZ", "GST", 1);
+    tzset();
     setenv("TZ", "Europe/Amsterdam", 1);
     tzset();
     time = Time(80, 12, 23, 11, 30, 23, 21, false);
-//    EXPECT_STREQ(time.ToTimeOnly(true).c_str(), GetTimeBasedOnTimeZone("Europe/Amsterdam", time.Handle(), true).c_str());
+    //EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "12:30:23");
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
@@ -1157,59 +1571,151 @@ TEST(Core_Time, ToTimeOnly_LocalTimeDisabled)
 
     setenv("TZ", "Africa/Algiers", 1);
     tzset();
-    time = Time(1970, 5, 32, 24, 30, 23, 21, false);
+    time = Time(1970, 5, 31, 0, 30, 23, 21, false);
     EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "00:30:23GMT");
 
     setenv("TZ", "Asia/Kolkata", 1);
     tzset();
-    time = Time(1970, 5, 32, 24, 60, 23, 21, false);
-    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "01:00:23GMT");
+    time = Time(1970, 5, 31, 0, 0, 23, 21, false);
+    EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "00:00:23GMT");
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
 }
-TEST(Core_Time, ToLocal)
+TEST(Core_Time, TimeWithLocalTimeTrue_ConvertTo_UTC_And_Local)
 {
-    //this code does not actually test ToLocal, needs improvement
-#if 0
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
+    setenv("TZ", "Europe/Amsterdam", 1);
+    tzset();
+
+    string timeString;
+    Time time = Time(2021, 07, 05, 22, 10, 5, 999, true);
+    EXPECT_EQ(time.MilliSeconds(), 999u);
+    time.ToString(timeString, true);
+    std::cout << "LocalTime 2021-07-05 22:10:05.999 : " << timeString << " ms: " << time.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Mon, 05 Jul 2021 22:10:05");
+    time.ToString(timeString, false);
+    std::cout << "UTC 2021-07-05 20:10:05.999 : " << timeString << " ms: " << time.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Mon, 05 Jul 2021 20:10:05 GMT");
+
+    time = Time(2021,12, 26, 23, 59, 59, 1, true);
+    EXPECT_EQ(time.MilliSeconds(), 1u);
+    time.ToString(timeString, true);
+    std::cout << "LocalTime 2021-12-26 23:59:59.001 : " << timeString << " ms: " << time.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Sun, 26 Dec 2021 23:59:59");
+    time.ToString(timeString, false);
+    std::cout << "UTC 2021-12-26 22:59:59.001 : " << timeString << " ms: " << time.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Sun, 26 Dec 2021 22:59:59 GMT");
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
+}
+TEST(Core_Time, TimeWithLocalTimeFalse_ConvertTo_UTC_And_Local)
+{
+    char* currentZone = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+
+    setenv("TZ", "Europe/Amsterdam", 1);
+    tzset();
+
+    string timeString;
+    Time time = Time(2021, 07, 05, 22, 10, 5, 999, false);
+    EXPECT_EQ(time.MilliSeconds(), 999u);
+    time.ToString(timeString, true);
+    std::cout << "LocalTime 2021-07-06 00:10:05.999 : " << timeString << " ms: " << time.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Tue, 06 Jul 2021 00:10:05");
+    time.ToString(timeString, false);
+    std::cout << "UTC 2021-07-05 22:10:05.999 : " << timeString << " ms: " << time.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Mon, 05 Jul 2021 22:10:05 GMT");
+
+    time = Time(2021,12, 26, 23, 59, 59, 1, false);
+    EXPECT_EQ(time.MilliSeconds(), 1u);
+    time.ToString(timeString, true);
+    std::cout << "LocalTime 2021-12-27 00:59:59.001 : " << timeString << " ms: " << time.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Mon, 27 Dec 2021 00:59:59");
+    time.ToString(timeString, false);
+    std::cout << "UTC 2021-12-26 23:59:59.001 : " << timeString << " ms: " << time.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Sun, 26 Dec 2021 23:59:59 GMT");
+
+    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
+    tzset();
+}
+TEST(Core_Time, TimeAsLocal)
+{
     char* currentZone = getenv("TZ");
     setenv("TZ", "Asia/Kolkata", 1);
     tzset();
 
-    Time time(2002, 5, 10, 11, 30, 23, 21, false);
 
-    time = Time(1970, 5, 32, 24, 30, 23, 21, false);
-    EXPECT_EQ(time.IsLocalTime(), false);
+    Time orig(2004, 12, 26, 8, 30, 45, 737, true);
 
-    time = Time(1970, 5, 32, 24, 30, 23, 21, true);
-    EXPECT_EQ(time.IsLocalTime(), true);
+    string timeString;
+    orig.ToString(timeString, true);
+    std::cout << "Reference local 2004-12-26 08:30:45 737 : " << timeString << " ms: " << orig.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Sun, 26 Dec 2004 08:30:45");
+    EXPECT_EQ(orig.MilliSeconds(), 737u);
 
-    (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
-    tzset();
-#endif
-}
-TEST(Core_Time, ToUTC)
-{
-    //this code does not actually test ToUTC, needs improvement
-#if 0
-    char* currentZone = getenv("TZ");
-    setenv("TZ", "Africa/Brazzaville", 1);
-    tzset();
-    Time time(2002, 5, 10, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.IsLocalTime(), true);
+    TimeAsLocal l1(orig);
+    TimeAsLocal l2;
+    l2 = orig;
 
-    time = Time(1970, 5, 32, 24, 30, 23, 21, false);
-    EXPECT_EQ(time.IsLocalTime(), false);
+    l1.ToString(timeString);
+    std::cout << "AsLocal 1 tostring : " << timeString << " ms: " << l1.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Sun, 26 Dec 2004 08:30:45 GMT");
+    EXPECT_EQ(l1.MilliSeconds(), 737u);
+    EXPECT_STREQ(l1.WeekDayName(), "Sun");
+    EXPECT_STREQ(l1.MonthName(), "Dec");
+    EXPECT_EQ(l1.DayOfYear(), 360u);
+    EXPECT_EQ(l1.DayOfWeek(), 0u);
+    EXPECT_EQ(l1.Year(), 2004u);
+    EXPECT_EQ(l1.Month(), 12u);
+    EXPECT_EQ(l1.Day(), 26u);
     
-    // Check time difference after unset time zone
-    setenv("TZ", "UTC", 1);
-    tzset();
-    time = Time(2002, 5, 10, 11, 30, 23, 21, true);
-    EXPECT_EQ(time.IsLocalTime(), false);
+    std::cout << "WeekDayName:" << l1.WeekDayName() << " MonthName:" << l1.MonthName() << " DayOfYear:" << l1.DayOfYear() << " DayOfWeek:" << static_cast<uint32_t>(l1.DayOfWeek()) << std::endl;
+    std::cout << "Year:" << static_cast<uint32_t>(l1.Year()) << " Month:" << static_cast<uint32_t>(l1.Month()) << " Day:" << static_cast<uint32_t>(l1.Day()) << " Hours:" << static_cast<uint32_t>(l1.Hours()) << " Minutes:" << static_cast<uint32_t>(l1.Minutes()) << " Seconds:" << static_cast<uint32_t>(l1.Seconds()) << " MilliSeconds:" << l1.MilliSeconds() << std::endl;
+
+    l2.ToString(timeString);
+    std::cout << "AsLocal 2 tostring : " << timeString << " ms: " << l2.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "Sun, 26 Dec 2004 08:30:45 GMT");
+    EXPECT_EQ(l2.MilliSeconds(), 737u);
+    EXPECT_STREQ(l2.WeekDayName(), "Sun");
+    EXPECT_STREQ(l2.MonthName(), "Dec");
+    EXPECT_EQ(l2.DayOfYear(), 360u);
+    EXPECT_EQ(l2.DayOfWeek(), 0u);
+    EXPECT_EQ(l2.Year(), 2004u);
+    EXPECT_EQ(l2.Month(), 12u);
+    EXPECT_EQ(l2.Day(), 26u);
+
+    std::cout << "WeekDayName:" << l2.WeekDayName() << " MonthName:" << l2.MonthName() << " DayOfYear:" << l2.DayOfYear() << " DayOfWeek:" << static_cast<uint32_t>(l2.DayOfWeek()) << std::endl;
+    std::cout << "Year:" << static_cast<uint32_t>(l2.Year()) << " Month:" << static_cast<uint32_t>(l2.Month()) << " Day:" << static_cast<uint32_t>(l2.Day()) << " Hours:" << static_cast<uint32_t>(l2.Hours()) << " Minutes:" << static_cast<uint32_t>(l2.Minutes()) << " Seconds:" << static_cast<uint32_t>(l2.Seconds()) << " MilliSeconds:" << l2.MilliSeconds() << std::endl;
+
+    l1.Add((3600 * 3 * 1000) + 500); // add 3 hours and 500 ms
+    l1.ToString(timeString);
+    EXPECT_STREQ(timeString.c_str(), "Sun, 26 Dec 2004 11:30:46 GMT");
+    EXPECT_EQ(l1.MilliSeconds(), 237u);
+
+    std::cout << "AsLocal + 3 hr and 500 ms  : " << timeString << " ms: " << l1.MilliSeconds() << std::endl;
+    l1.Sub((3600 * 3 * 1000) + 500); // add 3 hours and 500 ms
+    l1.ToString(timeString);
+    EXPECT_STREQ(timeString.c_str(), "Sun, 26 Dec 2004 08:30:45 GMT");
+    EXPECT_EQ(l1.MilliSeconds(), 737u);
+    std::cout << "AsLocal - 3 hr and 500 ms  : " << timeString << " ms: " << l1.MilliSeconds() << std::endl;
+
+    Time t1 = l1.ToUTC();
+    orig.ToString(timeString, true);
+    EXPECT_STREQ(timeString.c_str(), "Sun, 26 Dec 2004 08:30:45");
+    EXPECT_EQ(t1.MilliSeconds(), 737u);
+    std::cout << "Back to UTC local 2004-12-26 08:30:45 737 local: " << timeString << " ms: " << t1.MilliSeconds() << std::endl;
+    orig.ToString(timeString, false);
+    EXPECT_STREQ(timeString.c_str(), "Sun, 26 Dec 2004 03:00:45 GMT");
+    std::cout << "Back to UTC local 2004-12-26 08:30:45 737 as UTC : " << timeString << " ms: " << t1.MilliSeconds() << std::endl;
 
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
-#endif
 }
 TEST(Core_Time, JulianDate)
 {
@@ -1582,3 +2088,31 @@ TEST(Core_Time, OperatorOverloadingSubtractionWithAssignment)
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
 }
+#if 0
+TEST(Core_Time, TimeHandle)
+{
+    Time time(2021,1, 1, 12, 00, 00, 333, true);
+
+    string timeString;
+    time.ToString(timeString, true);
+    std::cout << "Reference local 2021-1-1 12:00:00 333 : " << timeString << " ms: " << time.MilliSeconds() << std::endl;
+    EXPECT_STREQ(timeString.c_str(), "");
+    EXPECT_EQ(time.MilliSeconds(), 333u);
+    std::cout << " DayOfYear:" << static_cast<uint32_t>(time.TMHandle().tm_yday) << " DayOfWeek:" << static_cast<uint32_t>(time.TMHandle().tm_wday) << std::endl;
+
+    EXPECT_EQ(static_cast<uint32_t>(time.TMHandle().tm_yday), 0u);
+    EXPECT_EQ(static_cast<uint32_t>(time.TMHandle().tm_wday), 0u);
+
+    std::cout << "Year:" << static_cast<uint32_t>(time.TMHandle().tm_year) << " Month:" << static_cast<uint32_t>(time.TMHandle().tm_mon) << " Day:" << static_cast<uint32_t>(.timeTMHandle().tm_mday) << " Hours:";
+
+    EXPECT_EQ(static_cast<uint32_t>(time.TMHandle().tm_year), 0u);
+    EXPECT_EQ(static_cast<uint32_t>(time.TMHandle().tm_mon), 0u);
+    EXPECT_EQ(static_cast<uint32_t>(time.TMHandle().tm_mday), 0u);
+
+    std::cout << static_cast<uint32_t>(time.TMHandle().tm_hour) << " Minutes:" << static_cast<uint32_t>(.time.TMHandle().tm_min) << " Seconds:" << static_cast<uint32_t>(time.TMHandle().tm_sec) << std::endl;
+
+    EXPECT_EQ(static_cast<uint32_t>(time.TMHandle().tm_hour), 0u);
+    EXPECT_EQ(static_cast<uint32_t>(time.TMHandle().tm_min), 0u);
+    EXPECT_EQ(static_cast<uint32_t>(time.TMHandle().tm_sec), 0u);
+}
+#endif
