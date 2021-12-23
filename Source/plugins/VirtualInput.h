@@ -225,9 +225,7 @@ namespace PluginHost {
             {
                 _passThrough = enabled;
             }
-            DEPRECATED uint32_t Load(const string& mappingFile);
             uint32_t Import(const Core::JSON::ArrayType<KeyMapEntry>& mappingTable);
-            DEPRECATED uint32_t Save(const string& mappingFile);
             void Export(Core::JSON::ArrayType<KeyMapEntry>& mappingTable);
 
             inline const ConversionInfo* operator[](const uint32_t code) const

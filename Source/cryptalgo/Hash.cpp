@@ -331,7 +331,7 @@ namespace Crypto {
         /*
          * Split lenght to lower and higher portion
          */
-        uint32_t lengthLow = reinterpret_cast<uint32_t*>(&ctx->length)[0];
+        uint32_t lengthLow = static_cast<uint32_t>(ctx->length & 0xFFFFFFFF);
         uint32_t lengthHigh = reinterpret_cast<uint32_t*>(&ctx->length)[1];
 
         saved_lo = lengthLow;
@@ -374,7 +374,7 @@ namespace Crypto {
         /*
          * Split lenght to lower and higher portion
          */
-        uint32_t lengthLow = reinterpret_cast<uint32_t*>(&_context.length)[0];
+        uint32_t lengthLow = static_cast<uint32_t>(_context.length & 0xFFFFFFFF);
         uint32_t lengthHigh = reinterpret_cast<uint32_t*>(&_context.length)[1];
 
         used = lengthLow & 0x3f;
@@ -528,7 +528,7 @@ namespace Crypto {
         /*
          * Split lenght to lower and higher portion
          */
-        uint32_t lengthLow = reinterpret_cast<uint32_t*>(&_context.length)[0];
+        uint32_t lengthLow = static_cast<uint32_t>(_context.length & 0xFFFFFFFF);
         uint32_t lengthHigh = reinterpret_cast<uint32_t*>(&_context.length)[1];
 
         ASSERT((_computed == false) || (_corrupted == false));
@@ -659,11 +659,11 @@ namespace Crypto {
             W[t] = CircularShift(1, W[t - 3] ^ W[t - 8] ^ W[t - 14] ^ W[t - 16]);
         }
 
-        A = _context.h[0];
-        B = _context.h[1];
-        C = _context.h[2];
-        D = _context.h[3];
-        E = _context.h[4];
+        A = static_cast<unsigned int>(_context.h[0]);
+        B = static_cast<unsigned int>(_context.h[1]);
+        C = static_cast<unsigned int>(_context.h[2]);
+        D = static_cast<unsigned int>(_context.h[3]);
+        E = static_cast<unsigned int>(_context.h[4]);
 
         for (t = 0; t < 20; t++) {
             temp = CircularShift(5, A) + ((B & C) | ((~B) & D)) + E + W[t] + K[0];
@@ -757,7 +757,7 @@ namespace Crypto {
         /*
          * Split lenght to lower and higher portion
          */
-        uint32_t lengthLow = reinterpret_cast<uint32_t*>(&_context.length)[0];
+        uint32_t lengthLow = static_cast<uint32_t>(_context.length & 0xFFFFFFFF);
         uint32_t lengthHigh = reinterpret_cast<uint32_t*>(&_context.length)[1];
 
         /*
@@ -777,7 +777,7 @@ namespace Crypto {
         uint32_t* writer = reinterpret_cast<uint32_t*>(&_context.block[0]);
 
         for (uint8_t teller = 0; teller < 5; teller++) {
-            *writer++ = htonl(_context.h[teller]);
+            *writer++ = htonl(static_cast<uint32_t>(_context.h[teller]));
         }
 
         _computed = true;
@@ -900,7 +900,7 @@ namespace Crypto {
             }
 
             for (j = 0; j < 8; j++) {
-                wv[j] = ctx->h[j];
+                wv[j] = static_cast<uint32_t>(ctx->h[j]);
             }
 
             for (j = 0; j < 64; j++) {
@@ -1083,14 +1083,14 @@ namespace Crypto {
                 m[i] = SHA256_F4(m[i - 2]) + m[i - 7] + SHA256_F3(m[i - 15]) + m[i - 16];
         }
 
-        a = ctx->h[0];
-        b = ctx->h[1];
-        c = ctx->h[2];
-        d = ctx->h[3];
-        e = ctx->h[4];
-        f = ctx->h[5];
-        g = ctx->h[6];
-        h = ctx->h[7];
+        a = static_cast<uint32_t>(ctx->h[0]);
+        b = static_cast<uint32_t>(ctx->h[1]);
+        c = static_cast<uint32_t>(ctx->h[2]);
+        d = static_cast<uint32_t>(ctx->h[3]);
+        e = static_cast<uint32_t>(ctx->h[4]);
+        f = static_cast<uint32_t>(ctx->h[5]);
+        g = static_cast<uint32_t>(ctx->h[6]);
+        h = static_cast<uint32_t>(ctx->h[7]);
 
         for (i = 0; i < 64; ++i) {
             t1 = h + SHA256_F2(e) + CH(e,f,g) + sha256_k[i] + m[i];
@@ -1675,7 +1675,7 @@ namespace Crypto {
 
         block_nb = 1 + ((SHA512_BLOCK_SIZE - 17) < (_context.index % SHA512_BLOCK_SIZE));
 
-        len_b = (_context.length + _context.index) << 3;
+        len_b = static_cast<unsigned int>(_context.length + _context.index) << 3;
         pm_len = block_nb << 7;
 
         memset(_context.block + _context.index, 0, pm_len - _context.index);
@@ -1844,7 +1844,7 @@ namespace Crypto {
 
         block_nb = (1 + ((SHA384_BLOCK_SIZE - 17) < (_context.index % SHA384_BLOCK_SIZE)));
 
-        len_b = (_context.length + _context.index) << 3;
+        len_b = static_cast<unsigned int>((_context.length + _context.index) << 3);
         pm_len = block_nb << 7;
 
         memset(_context.block + _context.index, 0, pm_len - _context.index);

@@ -314,58 +314,6 @@ namespace Core {
 #endif
     }
 
-#if defined(__LINUX__) && !defined(__APPLE__)
-
-
-    // Copyright (c) 2001-2006, NLnet Labs. All rights reserved.
-    // Licensed under the BSD-3 License
- 
-
-    // GMT specific version of mktime(), taken from BSD source code
-    /* Number of days per month (except for February in leap years). */
-    static const int monoff[] = {
-        0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
-    };
-
-    static int is_leap_year(int year)
-    {
-        return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
-    }
-
-    static int leap_days(int y1, int y2)
-    {
-        --y1;
-        --y2;
-        return (y2 / 4 - y1 / 4) - (y2 / 100 - y1 / 100) + (y2 / 400 - y1 / 400);
-    }
-   /*
-    * Code adapted from Python 2.4.1 sources (Lib/calendar.py).
-    */
-    static time_t mktimegm(const struct tm* tm)
-    {
-        int year;
-        time_t days;
-        time_t hours;
-        time_t minutes;
-        time_t seconds;
-
-        year = 1900 + tm->tm_year;
-        days = 365 * (year - 1970) + leap_days(1970, year);
-        days += monoff[tm->tm_mon];
-
-        if (tm->tm_mon > 1 && is_leap_year(year))
-            ++days;
-        days += tm->tm_mday - 1;
-
-        hours = days * 24 + tm->tm_hour;
-        minutes = hours * 60 + tm->tm_min;
-        seconds = minutes * 60 + tm->tm_sec;
-
-        return seconds;
-    }
-
-#endif
-
     void SystemInfo::UpdateRealtimeInfo()
     {
 
@@ -416,11 +364,7 @@ namespace Core {
         ASSERT("Time not set");
 #else
 
-        struct tm setTime;
-
-        ::memcpy(&setTime, &(time.Handle()), sizeof(setTime));
-
-        time_t value = mktimegm(&setTime);
+        time_t value = time.Handle().tv_sec;
 
 #if defined(__GNU_LIBRARY__)
   #if (__GLIBC__ >= 2) && (__GLIBC_MINOR__ > 30)
