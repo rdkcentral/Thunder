@@ -39,6 +39,7 @@ NAME = "JsonGenerator"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
+INTERFACES_SECTION = True
 VERBOSE = False
 GENERATED_JSON = False
 SHOW_WARNINGS = True
@@ -2798,7 +2799,7 @@ def CreateDocument(schema, path):
             MdBody("- " + link("head.Description"))
         if document_type == "plugin":
             MdBody("- " + link("head.Configuration"))
-        if document_type == "plugin" and (method_count or property_count or event_count):
+        if INTERFACES_SECTION and (document_type == "plugin") and (method_count or property_count or event_count):
             MdBody("- " + link("head.Interfaces"))
         if method_count:
             MdBody("- " + link("head.Methods"))
@@ -2927,7 +2928,7 @@ def CreateDocument(schema, path):
 
                 ParamTable("", totalConfig)
 
-            if document_type == "plugin" and (method_count or property_count or event_count):
+            if INTERFACES_SECTION and (document_type == "plugin") and (method_count or property_count or event_count):
                 MdHeader("Interfaces")
                 MdParagraph("This plugin implements the following interfaces:")
                 for face in interfaces:
@@ -3228,6 +3229,11 @@ if __name__ == "__main__":
                            action="store_true",
                            default=not SHOW_WARNINGS,
                            help="suppress duplicate object warnings (default: show all duplicate object warnings)")
+    argparser.add_argument("--no-interfaces-section",
+                           dest="no_interfaces_section",
+                           action="store_true",
+                           default=False,
+                           help="do not include Interfaces section in the documentation (default: include interface section)")
     argparser.add_argument("--include",
                            dest="extra_include",
                            metavar="FILE",
@@ -3261,6 +3267,7 @@ if __name__ == "__main__":
     DUMP_JSON = args.dump_json
     DEFAULT_DEFINITIONS_FILE = args.extra_include
     INTERFACE_NAMESPACE = "::" + args.if_namespace if args.if_namespace.find("::") != 0 else args.if_namespace
+    INTERFACES_SECTION = not args.no_interfaces_section
     if args.if_path and args.if_path != ".":
         IF_PATH = args.if_path
     IF_PATH = posixpath.normpath(IF_PATH) + os.sep
