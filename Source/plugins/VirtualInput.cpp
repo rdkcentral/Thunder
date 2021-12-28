@@ -39,32 +39,6 @@ namespace PluginHost
 {
     /* static */ VirtualInput* InputHandler::_keyHandler;
 
-    uint32_t VirtualInput::KeyMap::Load(const string& keyMap)
-    {
-        uint32_t result = Core::ERROR_ILLEGAL_STATE;
-
-        if ((keyMap.empty() == false) && (Core::File(keyMap).Exists() == true)) {
-            result = Core::ERROR_OPENING_FAILED;
-
-            Core::File mappingFile(keyMap);
-            Core::JSON::ArrayType<KeyMapEntry> mappingTable;
-
-            if (mappingFile.Open(true) == true) {
-                result = Core::ERROR_ILLEGAL_STATE;
-                Core::OptionalType<Core::JSON::Error> error;
-                mappingTable.IElement::FromFile(mappingFile, error);
-                if (error.IsSet() == true) {
-                    SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
-                } else {
-                    result = Import(mappingTable);
-                }
-                mappingFile.Close();
-            }
-        }
-
-        return (result);
-    }
-
     uint32_t VirtualInput::KeyMap::Import(const Core::JSON::ArrayType<KeyMapEntry>& mappingTable)
     {
         uint32_t result = Core::ERROR_ILLEGAL_STATE;
@@ -138,25 +112,6 @@ namespace PluginHost
 
             ChangeIterator updated(updatedKeys);
             _parent.MapChanges(updated);
-        }
-
-        return (result);
-    }
-
-    uint32_t VirtualInput::KeyMap::Save(const string& keyMap)
-    {
-        uint32_t result = Core::ERROR_ILLEGAL_STATE;
-
-        Core::File mappingFile(keyMap);
-        Core::JSON::ArrayType<KeyMapEntry> mappingTable;
-
-        if (mappingFile.Create() == true) {
-            mappingFile.SetSize(0);
-
-            result = Core::ERROR_NONE;
-
-            Export(mappingTable);
-            mappingTable.IElement::ToFile(mappingFile);
         }
 
         return (result);

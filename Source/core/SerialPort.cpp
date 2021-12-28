@@ -254,7 +254,9 @@ namespace Core {
                                 port->Read(static_cast<uint16_t>(info));
                             }
                             else {
-                                TRACE_L1("Oopsie daisy, could not read Serial Port :-(");
+                                DWORD result = GetLastError();
+
+                                TRACE_L1("Oopsie daisy, could not read Serial Port: Error: %s :-(", LastError(result).c_str());
                             }
                         }
 
@@ -266,7 +268,9 @@ namespace Core {
                                 port->Write(static_cast<uint16_t>(info));
                             }
                             else {
-                                TRACE_L1("Oopsie daisy, could not write Serial Port :-(");
+                                DWORD result = GetLastError();
+
+                                TRACE_L1("Oopsie daisy, could not write Serial Port: Error: %s :-(", LastError(result).c_str());
                             }
                         }
                     }
