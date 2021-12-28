@@ -845,6 +845,7 @@ namespace PluginHost {
                         printf("  [P]lugins\n");
                         printf("  [C]hannels\n");
                         printf("  [S]erver stats\n");
+                        printf("  [E]lements in the ProxyPools\n");
                         printf("  [T]rigger resource monitor\n");
                         printf("  [M]etadata resource monitor\n");
                         printf("  [R]esource monitor stack\n");
