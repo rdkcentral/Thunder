@@ -33,12 +33,24 @@ MODULE_NAME_DECLARATION(BUILD_REFERENCE);
 extern "C" void __gcov_flush();
 #endif
 
-
-const uint32_t g_maxTimeOut = 2; // In seconds.
-
-IPTestAdministrator::IPTestAdministrator(OtherSideMain otherSideMain)
+IPTestAdministrator::IPTestAdministrator(OtherSideMain otherSideMain, void* data, const uint32_t waitTime)
    : m_sharedData(nullptr)
    , m_childPid(0)
+   , m_data(data)
+   , m_maxWaitTime(waitTime)
+{
+    ForkChildProcess(otherSideMain);
+}
+IPTestAdministrator::IPTestAdministrator(OtherSideMain otherSideMain, const uint32_t waitTime)
+   : m_sharedData(nullptr)
+   , m_childPid(0)
+   , m_data(nullptr)
+   , m_maxWaitTime(waitTime)
+{
+    ForkChildProcess(otherSideMain);
+}
+
+void IPTestAdministrator::ForkChildProcess(OtherSideMain otherSideMain)
 {
    m_sharedData = static_cast<SharedData *>(mmap(NULL, sizeof(int), PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0));
 
@@ -209,5 +221,5 @@ void IPTestAdministrator::TimedWait(pthread_cond_t * cond, pthread_mutex_t * mut
 void IPTestAdministrator::FillTimeOut(timespec & timeSpec)
 {
    clock_gettime(CLOCK_REALTIME, &timeSpec);
-   timeSpec.tv_sec += g_maxTimeOut;
+   timeSpec.tv_sec += m_maxWaitTime;
 }

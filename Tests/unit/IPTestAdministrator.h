@@ -28,16 +28,22 @@ class IPTestAdministrator;
 
 class IPTestAdministrator
 {
+private:
+   static constexpr uint32_t MaxWaitTime = 2; // In seconds
+
 public:
    typedef void (*OtherSideMain)(IPTestAdministrator & testAdmin);
 
-   IPTestAdministrator(OtherSideMain otherSideMain);
+   IPTestAdministrator(OtherSideMain otherSideMain, const uint32_t waitTime = MaxWaitTime);
+   IPTestAdministrator(OtherSideMain otherSideMain, void* data, const uint32_t waitTime = MaxWaitTime);
    ~IPTestAdministrator();
 
+   void ForkChildProcess(OtherSideMain otherSideMain);
    // Method to sync the two test processes.
    bool Sync(const std::string & str);
    void WaitForChildCompletion();
 
+   void* Data() { return m_data; }
 private:
    static const uint32_t m_messageBufferSize = 1024;
 
@@ -56,10 +62,12 @@ private:
 
    SharedData * m_sharedData;
    pid_t m_childPid; // Set if we are parent processs.
+   void* m_data;
+   uint32_t m_maxWaitTime; // In seconds.
 
    const char * GetProcessName() const;
    void TimedLock(pthread_mutex_t * mutex, const std::string & str);
    void TimedWait(pthread_cond_t * cond, pthread_mutex_t * mutex, const std::string & str);
    
-   static void FillTimeOut(timespec & timeSpec);
+   void FillTimeOut(timespec & timeSpec);
 };

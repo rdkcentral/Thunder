@@ -331,7 +331,7 @@ namespace Crypto {
         /*
          * Split lenght to lower and higher portion
          */
-        uint32_t lengthLow = reinterpret_cast<uint32_t*>(&ctx->length)[0];
+        uint32_t lengthLow = static_cast<uint32_t>(ctx->length & 0xFFFFFFFF);
         uint32_t lengthHigh = reinterpret_cast<uint32_t*>(&ctx->length)[1];
 
         saved_lo = lengthLow;
@@ -374,7 +374,7 @@ namespace Crypto {
         /*
          * Split lenght to lower and higher portion
          */
-        uint32_t lengthLow = reinterpret_cast<uint32_t*>(&_context.length)[0];
+        uint32_t lengthLow = static_cast<uint32_t>(_context.length & 0xFFFFFFFF);
         uint32_t lengthHigh = reinterpret_cast<uint32_t*>(&_context.length)[1];
 
         used = lengthLow & 0x3f;
@@ -528,7 +528,7 @@ namespace Crypto {
         /*
          * Split lenght to lower and higher portion
          */
-        uint32_t lengthLow = reinterpret_cast<uint32_t*>(&_context.length)[0];
+        uint32_t lengthLow = static_cast<uint32_t>(_context.length & 0xFFFFFFFF);
         uint32_t lengthHigh = reinterpret_cast<uint32_t*>(&_context.length)[1];
 
         ASSERT((_computed == false) || (_corrupted == false));
@@ -757,7 +757,7 @@ namespace Crypto {
         /*
          * Split lenght to lower and higher portion
          */
-        uint32_t lengthLow = reinterpret_cast<uint32_t*>(&_context.length)[0];
+        uint32_t lengthLow = static_cast<uint32_t>(_context.length & 0xFFFFFFFF);
         uint32_t lengthHigh = reinterpret_cast<uint32_t*>(&_context.length)[1];
 
         /*
