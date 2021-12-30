@@ -234,7 +234,7 @@ namespace Core {
             }
             void Revoked() {
                 state expected = REVOKING;
-                bool result = _state.compare_exchange_strong(expected, IDLE);
+                VARIABLE_IS_NOT_USED bool result = _state.compare_exchange_strong(expected, IDLE);
                 ASSERT(result == true);
             }
             operator IMPLEMENTATION& () {
