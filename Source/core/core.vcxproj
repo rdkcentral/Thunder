@@ -85,6 +85,7 @@
     <ClInclude Include="TextFragment.h" />
     <ClInclude Include="TextReader.h" />
     <ClInclude Include="Thread.h" />
+    <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="Time.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Trace.h" />

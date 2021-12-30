@@ -40,12 +40,11 @@ namespace PluginHost {
         };
 
         class RepeatKeyTimer : public Core::IDispatch {
-        private:
+        public:
             RepeatKeyTimer() = delete;
             RepeatKeyTimer(const RepeatKeyTimer&) = delete;
             RepeatKeyTimer& operator=(const RepeatKeyTimer&) = delete;
 
-        public:
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
@@ -62,9 +61,7 @@ namespace PluginHost {
 #ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
-            ~RepeatKeyTimer() override
-            {
-            }
+            ~RepeatKeyTimer() override = default;
 
         public:
             void AddReference()
