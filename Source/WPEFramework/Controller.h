@@ -35,62 +35,41 @@ namespace Plugin {
         class Sink : public PluginHost::IPlugin::INotification,
                      public PluginHost::ISubSystem::INotification {
         private:
-            Sink() = delete;
-            Sink(const Sink&) = delete;
-            Sink& operator=(const Sink&) = delete;
-
-            class Job : public Core::IDispatchType<void> {
-            private:
+            class Job {
+            public:
                 Job() = delete;
                 Job(const Job&) = delete;
                 Job& operator=(const Job&) = delete;
 
-            public:
-                Job(Controller* parent)
-                    : _parent(*parent)
-                    , _schedule(false)
-                {
-                    ASSERT(parent != nullptr);
-                }
-                virtual ~Job()
-                {
-                }
+                Job(Controller& parent) : _parent(parent) { }
+                ~Job() = default;
 
             public:
-                void Schedule()
-                {
-                    if (_schedule == false) {
-                        _schedule = true;
-                        Core::WorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatchType<void>>(*this));
-                    }
-                }
-                virtual void Dispatch()
-                {
-                    _schedule = false;
+                void Dispatch() {
                     _parent.SubSystems();
                 }
 
             private:
                 Controller& _parent;
-                bool _schedule;
             };
 
         public:
-            Sink(Controller* parent)
-                : _parent(*parent)
-                , _decoupled(Core::ProxyType<Job>::Create(parent))
-            {
-                ASSERT(parent != nullptr);
+            Sink() = delete;
+            Sink(const Sink&) = delete;
+            Sink& operator=(const Sink&) = delete;
+
+            Sink(Controller& parent)
+                : _parent(parent)
+                , _job(parent) {
             }
-            virtual ~Sink()
-            {
-                Core::WorkerPool::Instance().Revoke(Core::ProxyType<Core::IDispatch>(_decoupled));
+            virtual ~Sink() {
+                _job.Revoke();
             }
 
         private:
             void Updated() override
             {
-                _decoupled->Schedule();
+                _job.Submit();
             }
             void Activated(const string& callsign, PluginHost::IShell* plugin) override
             {
@@ -106,12 +85,12 @@ namespace Plugin {
             }
 
             BEGIN_INTERFACE_MAP(Sink)
-            INTERFACE_ENTRY(PluginHost::IPlugin::INotification)
+                INTERFACE_ENTRY(PluginHost::IPlugin::INotification)
             END_INTERFACE_MAP
 
         private:
             Controller& _parent;
-            Core::ProxyType<Job> _decoupled;
+            Core::WorkerPool::JobType<Job> _job;
         };
 
         // GET -> URL /<MetaDataCallsign>/Plugin/<Callsign>
@@ -182,7 +161,7 @@ namespace Plugin {
             , _pluginServer(nullptr)
             , _service(nullptr)
             , _probe(nullptr)
-            , _systemInfoReport(this)
+            , _systemInfoReport(*this)
             , _resumes()
             , _lastReported()
         {
