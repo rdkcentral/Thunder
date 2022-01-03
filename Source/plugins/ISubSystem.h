@@ -64,16 +64,11 @@ namespace PluginHost {
             NOT_BLUETOOTH // The Bluetooth communication system is NOT available.
         };
 
-        struct EXTERNAL INotification
-            : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
 
             enum {
                 ID = RPC::ID_SUBSYSTEM_NOTIFICATION
             };
-
-            virtual ~INotification()
-            {
-            }
 
             // Some change happened with respect to the Network..
             virtual void Updated() = 0;
@@ -95,7 +90,7 @@ namespace PluginHost {
 
             enum { SUBSYSTEM = INTERNET };
 
-            enum network_type {
+            enum network_type : uint8_t {
                 UNKNOWN,
                 IPV4,
                 IPV6
@@ -212,13 +207,6 @@ namespace PluginHost {
     };
 
 } // namespace PluginHost
-
-namespace Core {
-    template <>
-    EXTERNAL /* static */ const EnumerateConversion<PluginHost::ISubSystem::subsystem>*
-    EnumerateType<PluginHost::ISubSystem::subsystem>::Table(const uint16_t index);
 }
-
-} // namespace WPEFramework
 
 #endif // __ISYSTEMINFO_H

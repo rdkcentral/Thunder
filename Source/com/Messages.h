@@ -17,8 +17,7 @@
  * limitations under the License.
  */
 
-#ifndef __COM_MESSAGES_H
-#define __COM_MESSAGES_H
+#pragma once
 
 #include "Module.h"
 
@@ -40,18 +39,17 @@ namespace RPC {
     namespace Data {
         static const uint16_t IPC_BLOCK_SIZE = 512;
 
-        class Frame : public Core::FrameType<IPC_BLOCK_SIZE> {
+        class Frame : public Core::FrameType<IPC_BLOCK_SIZE, true, uint16_t> {
         private:
+            using BaseClass = Core::FrameType < IPC_BLOCK_SIZE, true, uint16_t>;
+
+        public:
             Frame(Frame&) = delete;
             Frame& operator=(const Frame&) = delete;
 
-        public:
-            Frame()
-            {
+            Frame() : BaseClass() {
             }
-            ~Frame()
-            {
-            }
+            ~Frame() = default;
 
         public:
             friend class Input;
@@ -77,18 +75,13 @@ namespace RPC {
         };
 
         class Input {
-        private:
+        public:
             Input(const Input&) = delete;
             Input& operator=(const Input&) = delete;
 
-        public:
-            Input()
-                : _data()
-            {
+            Input() : _data() {
             }
-            ~Input()
-            {
-            }
+            ~Input() = default;
 
         public:
             inline void Clear()
@@ -151,18 +144,13 @@ namespace RPC {
         };
 
         class Output {
-        private:
+        public:
             Output(const Output&) = delete;
             Output& operator=(const Output&) = delete;
 
-        public:
-            Output()
-                : _data()
-            {
+            Output() : _data() {
             }
-            ~Output()
-            {
-            }
+            ~Output() = default;
 
         public:
             inline void Clear()
@@ -201,8 +189,6 @@ namespace RPC {
 
         class Init {
         private:
-            Init(const Init&) = delete;
-            Init& operator=(const Init&) = delete;
             uint32_t ParentId() const 
             {
                 uint32_t exchangeId = 0;
@@ -223,6 +209,9 @@ namespace RPC {
             };
 
         public:
+            Init(const Init&) = delete;
+            Init& operator=(const Init&) = delete;
+
             Init()
                 : _id(0)
                 , _implementation(0)
@@ -232,9 +221,7 @@ namespace RPC {
             {
                 _className[0] = '\0';
             }
-            ~Init()
-            {
-            }
+            ~Init() = default;
 
         public:
             bool IsOffer() const
@@ -330,18 +317,13 @@ namespace RPC {
         };
 
         class Setup {
-        private:
+        public:
             Setup(const Setup&) = delete;
             Setup& operator=(const Setup&) = delete;
 
-        public:
-            Setup()
-                : _data()
-            {
+            Setup() : _data() {
             }
-            ~Setup()
-            {
-            }
+            ~Setup() = default;
 
         public:
             inline void Clear()
@@ -435,5 +417,3 @@ namespace RPC {
     typedef Core::IPCMessageType<2, Data::Input, Data::Output> InvokeMessage;
 }
 }
-
-#endif // __COM_MESSAGES_H

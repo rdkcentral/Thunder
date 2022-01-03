@@ -48,9 +48,6 @@ namespace WPEFramework {
 namespace Core {
     template <typename CONTENT>
     class TimerType {
-    private:
-        TimerType(const TimerType&);
-        TimerType& operator=(const TimerType&);
 
     private:
         template <typename ACTIVECONTENT>
@@ -88,6 +85,15 @@ namespace Core {
 
             inline ~TimedInfo()
             {
+            }
+
+            inline bool operator== (const CONTENT& RHS) const
+            {
+                return (m_Info == RHS);
+            }
+            inline bool operator!= (const CONTENT& RHS) const
+            {
+                return (m_Info != RHS);
             }
 
             inline TimedInfo& operator=(const TimedInfo& RHS)
@@ -132,16 +138,14 @@ namespace Core {
             TimeWorker(const TimeWorker&) = delete;
             TimeWorker& operator=(const TimeWorker&) = delete;
 
-            inline TimeWorker(TimerType& parent, const uint32_t stackSize, const TCHAR* timerName)
+            TimeWorker(TimerType& parent, const uint32_t stackSize, const TCHAR* timerName)
                 : Thread(stackSize, timerName)
                 , m_Parent(parent)
             {
             }
-            inline ~TimeWorker()
-            {
-            }
+            ~TimeWorker() = default;
 
-            virtual uint32_t Worker()
+            uint32_t Worker() override
             {
                 return (m_Parent.Process());
             }
@@ -150,30 +154,37 @@ namespace Core {
             TimerType<CONTENT>& m_Parent;
         };
 
-        typedef TimedInfo<CONTENT> TimeInfoBlocks;
-        typedef typename std::list<TimeInfoBlocks> SubscriberList;
+        using TimeInfoBlocks = TimedInfo<CONTENT>;
+        using SubscriberList = typename std::list<TimeInfoBlocks>;
 
     public:
+        TimerType(const TimerType&) = delete;
+        TimerType& operator=(const TimerType&) = delete;
+
         TimerType(const uint32_t stackSize, const TCHAR* timerName)
-            : m_PendingQueue()
-            , m_TimerThread(*this, stackSize, timerName)
-            , m_Admin()
-            , m_NextTrigger(NUMBER_MAX_UNSIGNED(uint64_t))
+            : _pendingQueue()
+            , _timerThread(*this, stackSize, timerName)
+            , _adminLock()
+            , _nextTrigger(NUMBER_MAX_UNSIGNED(uint64_t))
+            , _waitForCompletion(true, true)
+            , _executing(nullptr)
+
         {
             // Everything is initialized, go...
-            m_TimerThread.Block();
+            _timerThread.Block();
         }
         ~TimerType()
         {
-            m_Admin.Lock();
+            _adminLock.Lock();
 
-            m_TimerThread.Stop();
+            _timerThread.Stop();
 
             // Force kill on all pending stuff...
-            m_PendingQueue.clear();
-            m_Admin.Unlock();
+            _pendingQueue.clear();
 
-            m_TimerThread.Wait(Thread::BLOCKED|Thread::STOPPED, Core::infinite);
+            _adminLock.Unlock();
+
+            _timerThread.Wait(Thread::STOPPED, Core::infinite);
         }
 
         inline void Schedule(const Time& time, CONTENT&& info)
@@ -196,78 +207,132 @@ namespace Core {
             Schedule(std::move(TimedInfo<CONTENT>(time, info)));
         }
 
+        inline void Flush() {
+            _adminLock.Lock();
+
+            _timerThread.Block();
+
+            // Force kill on all pending stuff...
+            _pendingQueue.clear();
+            _adminLock.Unlock();
+
+            _timerThread.Wait(Thread::BLOCKED, Core::infinite);
+        }
+
+        inline bool HasEntry(const CONTENT& element) const {
+
+            // This needs to be atomic. Make sure it is.
+            _adminLock.Lock();
+
+            typename SubscriberList::const_iterator index = _pendingQueue.cbegin();
+
+            // Clear all entries !!
+            while ((index != _pendingQueue.cend()) && (*index != element)) {
+                index++;
+            }
+
+            bool found = (index != _pendingQueue.cend());
+
+            // Done with the administration. Release the lock.
+            _adminLock.Unlock();
+
+            return (found);
+        }
+
     private:
         void Schedule(TimedInfo<CONTENT>&& timeInfo)
         {
-            m_Admin.Lock();
+            _adminLock.Lock();
 
             if (ScheduleEntry(std::move(timeInfo)) == true) {
-                m_TimerThread.Run();
+                _timerThread.Run();
             }
 
-            m_Admin.Unlock();
+            _adminLock.Unlock();
         }
 
     public:
-
         void Trigger(const uint64_t& time, const CONTENT& info)
         {
             TimedInfo<CONTENT> newEntry(time, info);
 
-            m_Admin.Lock();
+            _adminLock.Lock();
 
-            typename SubscriberList::iterator index = m_PendingQueue.begin();
+            typename SubscriberList::iterator index = _pendingQueue.begin();
 
-            while ((index != m_PendingQueue.end()) && ((*index).Content() != info)) {
+            while ((index != _pendingQueue.end()) && ((*index).Content() != info)) {
                 ++index;
             }
 
-            if (index != m_PendingQueue.end()) {
-                m_PendingQueue.erase(index);
+            if (index != _pendingQueue.end()) {
+                _pendingQueue.erase(index);
             }
 
             if (ScheduleEntry(std::move(newEntry)) == true) {
-                m_TimerThread.Run();
+                _timerThread.Run();
             }
 
-            m_Admin.Unlock();
+            _adminLock.Unlock();
         }
 
         bool Revoke(const CONTENT& info)
         {
             bool foundElement = false;
 
-            m_Admin.Lock();
+            _adminLock.Lock();
 
-            typename SubscriberList::iterator index = m_PendingQueue.begin();
+            if (&info == _executing) {
 
-            // Since we have the admin lock, we are pretty sure that there is not any
-            // context running, so we can be pretty sure that if it was scheduled, it
-            // is gone !!!
-            if (RemoveEntry(index, info, foundElement) == true) {
+                // Seems like we are also executing this ocntext, wait till it is completed and signal that it should not reschedule !!!
+                _executing = nullptr;
 
-                // If we added the new time up front, retrigger the scheduler.
-                m_TimerThread.Run();
+                _adminLock.Unlock();
+
+                _waitForCompletion.Lock();
+
+                _adminLock.Lock();
             }
 
-            m_Admin.Unlock();
+            typename SubscriberList::iterator index = _pendingQueue.begin();
+
+            bool changedHead = false;
+
+            while (index != _pendingQueue.end()) {
+                if (index->Content() == info) {
+                    changedHead |= (index == _pendingQueue.begin());
+                    foundElement = true;
+
+                    // Remove this... Found it, remove it.
+                    index = _pendingQueue.erase(index);
+                }
+                else {
+                    ++index;
+                }
+            }
+
+            if (changedHead == true) {
+                // If we added the new time up front, retrigger the scheduler.
+                _timerThread.Run();
+            }
+
+            _adminLock.Unlock();
 
             return (foundElement);
         }
 
         uint64_t NextTrigger() const
         {
-            return (m_NextTrigger);
+            return (_nextTrigger);
         }
 
         uint32_t Pending() const
         {
-            return (m_PendingQueue.size());
+            return (_pendingQueue.size());
         }
 
         ::ThreadId ThreadId() const
         {
-            return (m_TimerThread.Id());
+            return (_timerThread.Id());
         }
 
     protected:
@@ -276,51 +341,56 @@ namespace Core {
             uint32_t delayTime = Core::infinite;
             uint64_t now = Time::Now().Ticks();
 
-            m_Admin.Lock();
+            _adminLock.Lock();
 
             // Move to a blocked delay state. We would like to have some delay afterwards..
             // Ranging from 0-Core::infinite
-            m_TimerThread.Block();
+            _timerThread.Block();
 
-            while ((m_PendingQueue.empty() == false) && (m_PendingQueue.front().ScheduleTime() <= now)) {
-                TimedInfo<CONTENT> info(std::move(m_PendingQueue.front()));
+            while ((_pendingQueue.empty() == false) && (_pendingQueue.front().ScheduleTime() <= now)) {
+                TimedInfo<CONTENT> info(std::move(_pendingQueue.front()));
+                _executing = &(info.Content());
 
                 // Make sure we loose the current one before we do the call, that one might add ;-)
-                m_PendingQueue.pop_front();
+                _pendingQueue.pop_front();
+                _waitForCompletion.ResetEvent();
 
-                m_Admin.Unlock();
+                _adminLock.Unlock();
 
-                uint64_t reschedule = info.Content().Timed(info.ScheduleTime());
+                uint64_t reschedule = _executing->Timed(info.ScheduleTime());
 
-                m_Admin.Lock();
+                _adminLock.Lock();
 
-                if (reschedule != 0) {
+                if ((_executing != nullptr) && (reschedule != 0)) {
                     ASSERT(reschedule > now);
 
                     info.ScheduleTime(reschedule);
                     ScheduleEntry(std::move(info));
                 }
+
+                _waitForCompletion.SetEvent();
+                _executing = nullptr;
             }
 
             // Calculate the delay...
-            if (m_PendingQueue.empty() == true) {
-                m_NextTrigger = NUMBER_MAX_UNSIGNED(uint64_t);
+            if (_pendingQueue.empty() == true) {
+                _nextTrigger = NUMBER_MAX_UNSIGNED(uint64_t);
             } else {
                 // Refresh the time, just to be on the safe side...
                 uint64_t delta = Time::Now().Ticks();
 
-                if (delta >= m_PendingQueue.front().ScheduleTime()) {
-                    m_NextTrigger = delta;
+                if (delta >= _pendingQueue.front().ScheduleTime()) {
+                    _nextTrigger = delta;
                     delayTime = 0;
                 } else {
                     // The windows counter is in 100ns intervals dus we mmoeten even delen door  1000 (us) * 10 ns = 10.000
                     // om de waarde in ms te krijgen.
-                    m_NextTrigger = m_PendingQueue.front().ScheduleTime();
-                    delayTime = static_cast<uint32_t>((m_NextTrigger - delta) / Time::TicksPerMillisecond);
+                    _nextTrigger = _pendingQueue.front().ScheduleTime();
+                    delayTime = static_cast<uint32_t>((_nextTrigger - delta) / Time::TicksPerMillisecond);
                 }
             }
 
-            m_Admin.Unlock();
+            _adminLock.Unlock();
 
             return (delayTime);
         }
@@ -329,52 +399,33 @@ namespace Core {
         bool ScheduleEntry(TimedInfo<CONTENT>&& infoBlock)
         {
             bool reevaluate = false;
-            typename SubscriberList::iterator index = m_PendingQueue.begin();
+            typename SubscriberList::iterator index = _pendingQueue.begin();
 
-            while ((index != m_PendingQueue.end()) && (infoBlock.ScheduleTime() >= (*index).ScheduleTime())) {
+            while ((index != _pendingQueue.end()) && (infoBlock.ScheduleTime() >= (*index).ScheduleTime())) {
                 ++index;
             }
 
-            if (index == m_PendingQueue.begin()) {
-                m_PendingQueue.push_front(std::move(infoBlock));
+            if (index == _pendingQueue.begin()) {
+                _pendingQueue.push_front(std::move(infoBlock));
 
                 // If we added the new time up front, retrigger the scheduler.
                 reevaluate = true;
-            } else if (index == m_PendingQueue.end()) {
-                m_PendingQueue.push_back(std::move(infoBlock));
+            } else if (index == _pendingQueue.end()) {
+                _pendingQueue.push_back(std::move(infoBlock));
             } else {
-                m_PendingQueue.insert(index, std::move(infoBlock));
+                _pendingQueue.insert(index, std::move(infoBlock));
             }
 
             return (reevaluate);
         }
-        bool RemoveEntry(typename SubscriberList::iterator& index, const CONTENT& info, bool& found)
-        {
-            bool changedHead = false;
-
-            found = false;
-
-            while (index != m_PendingQueue.end()) {
-                if (index->Content() == info) {
-                    changedHead |= (index == m_PendingQueue.begin());
-                    found = true;
-
-                    // Remove this... Found it, remove it.
-                    index = m_PendingQueue.erase(index);
-                } else {
-
-                    ++index;
-                }
-            }
-
-            return (changedHead);
-        }
 
     private:
-        SubscriberList m_PendingQueue;
-        TimeWorker m_TimerThread;
-        CriticalSection m_Admin;
-        uint64_t m_NextTrigger;
+        SubscriberList _pendingQueue;
+        TimeWorker _timerThread;
+        mutable CriticalSection _adminLock;
+        uint64_t _nextTrigger;
+        Core::Event _waitForCompletion;
+        CONTENT* _executing;
     };
 
     template <typename HANDLER>

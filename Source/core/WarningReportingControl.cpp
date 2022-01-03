@@ -148,11 +148,11 @@ namespace WarningReporting {
         boundsconfig.FromString(boundsConfig);
 
         if (boundsconfig.ReportBound.IsSet()) {
-            outReportingBound = boundsconfig.ReportBound.Value();
+            outReportingBound = static_cast<uint32_t>(boundsconfig.ReportBound.Value());
         }
 
         if (boundsconfig.WarningBound.IsSet()) {
-            outWarningBound = boundsconfig.WarningBound.Value();
+            outWarningBound = static_cast<uint32_t>(boundsconfig.WarningBound.Value());
         }
 
         if (boundsconfig.CategoryConfig.IsSet()) {

@@ -19,14 +19,12 @@
 
 #pragma once
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Broadcast
-#endif
+#include "Module.h"
+#include "IShell.h"
 
-#include <core/core.h>
+namespace WPEFramework {
 
-#if defined(__WINDOWS__) && defined(BROADCAST_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
-#endif
+ENUM_CONVERSION_HANDLER(PluginHost::IShell::reason);
+ENUM_CONVERSION_HANDLER(PluginHost::IShell::state);
 
+}

@@ -25,14 +25,65 @@
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
-TEST(test_stopWatch, simple_stopWatch)
+TEST(test_stopWatch, Elapsed_WithoutDelay)
 {
-    StopWatch stopwatch;
-    uint64_t elapsed = stopwatch.Elapsed();
-    uint64_t elapsed1 = elapsed;
-    EXPECT_EQ(elapsed,elapsed1);
+    StopWatch stopWatch1, stopWatch2;
+    uint64_t elapsed1 = stopWatch1.Elapsed();
+    uint64_t elapsed2 = stopWatch2.Elapsed();
+    EXPECT_EQ(elapsed1 /Time::MilliSecondsPerSecond, elapsed2 / Time::MilliSecondsPerSecond);
+}
+TEST(test_stopWatch, Elapsed_WithDelay)
+{
+    int8_t wait = 1;
+    StopWatch stopWatch1, stopWatch2;
+    uint64_t elapsed1 = stopWatch1.Elapsed();
+    EXPECT_EQ(stopWatch1.Elapsed() / Time::MicroSecondsPerSecond, (stopWatch1.Elapsed() / Time::MicroSecondsPerSecond));
+    sleep(wait);
+    uint64_t elapsed2 = stopWatch2.Elapsed();
+    uint64_t elapsed3 = stopWatch1.Elapsed();
+    EXPECT_EQ(elapsed2 / Time::MicroSecondsPerSecond, (elapsed1 / Time::MicroSecondsPerSecond) + wait);
+    EXPECT_EQ(elapsed3 / Time::MicroSecondsPerSecond, (elapsed1 / Time::MicroSecondsPerSecond) + wait);
+    EXPECT_EQ(elapsed3 / Time::MicroSecondsPerSecond, (elapsed2 / Time::MicroSecondsPerSecond));
+}
+TEST(test_stopWatch, Reset_WithoutDelay)
+{
+    StopWatch stopWatch1, stopWatch2;
+    uint64_t elapsed1 = stopWatch1.Elapsed();
+    uint64_t reset1 = stopWatch1.Reset();
+    uint64_t elapsed2 = stopWatch2.Elapsed();
+    uint64_t reset2 = stopWatch2.Reset();
 
-    uint64_t reset = stopwatch.Reset();
-    uint64_t reset1 = reset;
-    EXPECT_EQ(reset,reset1);
+    // Microsecond comparison is not doing
+    // instead simply checking reset is a value after elapsed one
+    EXPECT_LE(elapsed1, reset1);
+    EXPECT_LE(elapsed2, reset2);
+
+    elapsed1 = stopWatch1.Elapsed();
+    elapsed2 = stopWatch2.Elapsed();
+
+    // Microsecond comparison is not doing
+    // instead simply checking converting to millisecond
+    EXPECT_EQ(elapsed1 / Time::MilliSecondsPerSecond, reset1 / Time::MilliSecondsPerSecond);
+    EXPECT_EQ(elapsed2 / Time::MilliSecondsPerSecond, reset2 / Time::MilliSecondsPerSecond);
+}
+TEST(test_stopWatch, Reset_WithDelay)
+{
+    int8_t wait = 1;
+    StopWatch stopWatch1, stopWatch2;
+    uint64_t elapsed1 = stopWatch1.Elapsed();
+    uint64_t elapsed2 = stopWatch2.Elapsed();
+    sleep(wait);
+    uint64_t reset1 = stopWatch1.Reset();
+    uint64_t reset2 = stopWatch2.Reset();
+
+    EXPECT_EQ(reset1 / Time::MicroSecondsPerSecond, (elapsed1 / Time::MicroSecondsPerSecond) + wait);
+    EXPECT_EQ(reset2 / Time::MicroSecondsPerSecond, (elapsed2 / Time::MicroSecondsPerSecond) + wait);
+
+    sleep(wait);
+    elapsed1 = stopWatch1.Elapsed();
+    sleep(wait);
+    elapsed2 = stopWatch2.Elapsed();
+
+    EXPECT_EQ(elapsed1 / Time::MicroSecondsPerSecond, (reset1 / Time::MicroSecondsPerSecond));
+    EXPECT_EQ(elapsed2 / Time::MicroSecondsPerSecond, (reset2 / Time::MicroSecondsPerSecond) + wait);
 }

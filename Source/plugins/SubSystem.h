@@ -19,20 +19,11 @@
 
 #pragma once
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Bluetooth 
-#endif
+#include "Module.h"
+#include "ISubSystem.h"
 
-#include <core/core.h>
-#include <tracing/tracing.h>
+namespace WPEFramework {
 
-#include <../include/bluetooth/bluetooth.h>
-#include <../include/bluetooth/hci.h>
-#include <../include/bluetooth/mgmt.h>
-#include <../include/bluetooth/l2cap.h>
+ENUM_CONVERSION_HANDLER(PluginHost::ISubSystem::subsystem);
 
-#if defined(__WINDOWS__) && defined(BLUETOOTH_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
-#endif
-
+}

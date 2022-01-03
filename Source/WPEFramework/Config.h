@@ -216,11 +216,12 @@ namespace PluginHost {
             class InputConfig : public Core::JSON::Container {
             public:
                 InputConfig()
+                    : Core::JSON::Container()
 #ifdef __WINDOWS__
-                    : Locator("127.0.0.1:9631")
+                    , Locator("127.0.0.1:9631")
                     , Type(InputHandler::VIRTUAL)
 #else
-                    : Locator("/tmp/keyhandler|0766")
+                    , Locator("/tmp/keyhandler|0766")
                     , Type(InputHandler::VIRTUAL)
 #endif
                     , OutputEnabled(true)
@@ -231,7 +232,8 @@ namespace PluginHost {
                     Add(_T("output"), &OutputEnabled);
                 }
                 InputConfig(const InputConfig& copy)
-                    : Locator(copy.Locator)
+                    : Core::JSON::Container()
+                    , Locator(copy.Locator)
                     , Type(copy.Type)
                     , OutputEnabled(copy.OutputEnabled)
                 {

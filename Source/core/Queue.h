@@ -38,31 +38,22 @@ namespace WPEFramework {
 namespace Core {
     template <typename CONTEXT>
     class QueueType {
-    private:
-        // -------------------------------------------------------------------
-        // This object should not be copied or assigned. Prevent the copy
-        // constructor and assignment constructor from being used. Compiler
-        // generated assignment and copy methods will be blocked by the
-        // following statments.
-        // Define them but do not implement them, compile error/link error.
-        // -------------------------------------------------------------------
-        QueueType();
-        QueueType(const QueueType<CONTEXT>&);
-        QueueType& operator=(const QueueType<CONTEXT>&);
-
     public:
+        QueueType() = delete;
+        QueueType(const QueueType<CONTEXT>&) = delete;
+        QueueType& operator=(const QueueType<CONTEXT>&) = delete;
+
         explicit QueueType(
             const uint32_t a_HighWaterMark)
-            : m_Queue()
-            , m_State(EMPTY)
-            , m_MaxSlots(a_HighWaterMark)
+            : _queue()
+            , _state(EMPTY)
+            , _maxSlots(a_HighWaterMark)
         {
             // A highwatermark of 0 is bullshit.
-            ASSERT(m_MaxSlots != 0);
+            ASSERT(_maxSlots != 0);
 
             TRACE_L5("Constructor QueueType <%p>", (this));
         }
-
         ~QueueType()
         {
             TRACE_L5("Destructor QueueType <%p>", (this));
@@ -91,25 +82,25 @@ namespace Core {
             bool l_Removed = false;
 
             // This needs to be atomic. Make sure it is.
-            m_Admin.Lock();
+            _adminLock.Lock();
 
-            if (m_State != DISABLED) {
+            if (_state != DISABLED) {
                 typename std::list<CONTEXT>::iterator
                     index
-                    = std::find(m_Queue.begin(), m_Queue.end(), a_Entry);
+                    = std::find(_queue.begin(), _queue.end(), a_Entry);
 
-                if (index != m_Queue.end()) {
+                if (index != _queue.end()) {
                     // Yep, we found it, remove it
                     l_Removed = true;
-                    m_Queue.erase(index);
+                    _queue.erase(index);
                 }
 
                 // Determine the new state.
-                m_State.SetState(IsEmpty() ? EMPTY : ENTRIES);
+                _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
             }
 
             // Done with the administration. Release the lock.
-            m_Admin.Unlock();
+            _adminLock.Unlock();
 
             return (l_Removed);
         }
@@ -119,21 +110,21 @@ namespace Core {
             bool Result = false;
 
             // This needs to be atomic. Make sure it is.
-            m_Admin.Lock();
+            _adminLock.Lock();
 
-            if (m_State != DISABLED) {
+            if (_state != DISABLED) {
                 // Yep, let's fill it
                 //lint -e{534}
-                m_Queue.push_back(a_Entry);
+                _queue.push_back(a_Entry);
 
                 // Determine the new state.
-                m_State.SetState(IsFull() ? LIMITED : ENTRIES);
+                _state.SetState(IsFull() ? LIMITED : ENTRIES);
 
                 Result = true;
             }
 
             // Done with the administration. Release the lock.
-            m_Admin.Unlock();
+            _adminLock.Unlock();
 
             return (Result);
         }
@@ -144,39 +135,39 @@ namespace Core {
             bool l_Triggered = true;
 
             // This needs to be atomic. Make sure it is.
-            m_Admin.Lock();
+            _adminLock.Lock();
 
-            if (m_State != DISABLED) {
+            if (_state != DISABLED) {
                 do {
                     // And is there a slot available to us ?
-                    if (m_State != LIMITED) {
+                    if (_state != LIMITED) {
                         // We have posted it.
                         l_Posted = true;
 
                         // Yep, let's fill it
-                        m_Queue.push_back(a_Entry);
+                        _queue.push_back(a_Entry);
 
                         // Determine the new state.
-                        m_State.SetState(IsFull() ? LIMITED : ENTRIES);
+                        _state.SetState(IsFull() ? LIMITED : ENTRIES);
                     } else {
                         // We are moving into a wait, release the lock.
-                        m_Admin.Unlock();
+                        _adminLock.Unlock();
 
                         // Wait till the status of the queue changes.
-                        l_Triggered = m_State.WaitState(DISABLED | ENTRIES | EMPTY, a_WaitTime);
+                        l_Triggered = _state.WaitState(DISABLED | ENTRIES | EMPTY, a_WaitTime);
 
                         // Seems something happend, lock the administration.
-                        m_Admin.Lock();
+                        _adminLock.Lock();
 
                         // If we were reset, that is assumed to be also a timeout
-                        l_Triggered = l_Triggered && (m_State != DISABLED);
+                        l_Triggered = l_Triggered && (_state != DISABLED);
                     }
 
                 } while ((l_Posted == false) && (l_Triggered != false));
             }
 
             // Done with the administration. Release the lock.
-            m_Admin.Unlock();
+            _adminLock.Unlock();
 
             return (l_Posted);
         }
@@ -187,43 +178,43 @@ namespace Core {
             bool l_Triggered = true;
 
             // This needs to be atomic. Make sure it is.
-            m_Admin.Lock();
+            _adminLock.Lock();
 
-            if (m_State != DISABLED) {
+            if (_state != DISABLED) {
                 do {
                     // And is there a slot to read ?
-                    if (m_State != EMPTY) {
+                    if (_state != EMPTY) {
                         l_Received = true;
 
                         typename std::list<CONTEXT>::iterator
                             index
-                            = m_Queue.begin();
+                            = _queue.begin();
 
                         // Get the first entry from the first spot..
                         a_Result = *index;
-                        m_Queue.erase(index);
+                        _queue.erase(index);
 
                         // Determine the new state.
-                        m_State.SetState(IsEmpty() ? EMPTY : ENTRIES);
+                        _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
                     } else {
                         // We are moving into a wait, release the lock.
-                        m_Admin.Unlock();
+                        _adminLock.Unlock();
 
                         // Wait till the status of the queue changes.
-                        l_Triggered = m_State.WaitState(DISABLED | ENTRIES | LIMITED, a_WaitTime);
+                        l_Triggered = _state.WaitState(DISABLED | ENTRIES | LIMITED, a_WaitTime);
 
                         // Seems something happend, lock the administration.
-                        m_Admin.Lock();
+                        _adminLock.Lock();
 
                         // If we were reset, that is assumed to be also a timeout
-                        l_Triggered = l_Triggered && (m_State != DISABLED);
+                        l_Triggered = l_Triggered && (_state != DISABLED);
                     }
 
                 } while ((l_Received == false) && (l_Triggered != false));
             }
 
             // Done with the administration. Release the lock.
-            m_Admin.Unlock();
+            _adminLock.Unlock();
 
             return (l_Received);
         }
@@ -231,69 +222,94 @@ namespace Core {
         void Enable()
         {
             // This needs to be atomic. Make sure it is.
-            m_Admin.Lock();
+            _adminLock.Lock();
 
-            if (m_State == DISABLED) {
-                m_State.SetState(EMPTY);
+            if (_state == DISABLED) {
+                _state.SetState(EMPTY);
             }
 
             // Done with the administration. Release the lock.
-            m_Admin.Unlock();
+            _adminLock.Unlock();
         }
 
         void Disable()
         {
             // This needs to be atomic. Make sure it is.
-            m_Admin.Lock();
+            _adminLock.Lock();
 
-            if (m_State != DISABLED) {
+            if (_state != DISABLED) {
                 // Change the state
-                m_State.SetState(DISABLED);
+                _state.SetState(DISABLED);
             }
 
             // Done with the administration. Release the lock.
-            m_Admin.Unlock();
+            _adminLock.Unlock();
         }
 
         void Flush()
         {
             // Clear is only possible in a "DISABLED" state !!
-            ASSERT(m_State == DISABLED);
+            ASSERT(_state == DISABLED);
 
             // This needs to be atomic. Make sure it is.
-            m_Admin.Lock();
+            _adminLock.Lock();
 
             // Clear all entries !!
-            while (m_Queue.empty() == false) {
-                m_Queue.erase(m_Queue.begin());
+            while (_queue.empty() == false) {
+                _queue.erase(_queue.begin());
             }
 
             // Done with the administration. Release the lock.
-            m_Admin.Unlock();
+            _adminLock.Unlock();
         }
 
         inline void FreeSlot() const
         {
-            m_State.WaitState(false, DISABLED | ENTRIES | EMPTY, Core::infinite);
+            _state.WaitState(false, DISABLED | ENTRIES | EMPTY, Core::infinite);
         }
         inline bool IsEmpty() const
         {
-            return (m_Queue.empty());
+            return (_queue.empty());
         }
         inline bool IsFull() const
         {
-            return (m_Queue.size() >= m_MaxSlots);
+            return (_queue.size() >= _maxSlots);
         }
         inline uint32_t Length() const
         {
-            return (static_cast<uint32_t>(m_Queue.size()));
+            return (static_cast<uint32_t>(_queue.size()));
+        }
+        inline bool HasEntry(const CONTEXT& element) const {
+
+            // This needs to be atomic. Make sure it is.
+            _adminLock.Lock();
+
+            typename std::list<CONTEXT>::const_iterator index = _queue.cbegin();
+
+            // Clear all entries !!
+            while ((index != _queue.cend()) && (*index != element)) {
+                index++;
+            }
+
+            bool found = (index != _queue.cend());
+
+            // Done with the administration. Release the lock.
+            _adminLock.Unlock();
+
+            return (found);
+        }
+        void Lock() {
+            _adminLock.Lock();
+        }
+        void Unlock() {
+            _adminLock.Unlock();
         }
 
     private:
-        std::list<CONTEXT> m_Queue;
-        StateTrigger<enumQueueState> m_State;
-        CriticalSection m_Admin;
-        uint32_t m_MaxSlots;
+        std::list<CONTEXT> _queue;
+        StateTrigger<enumQueueState> _state;
+        mutable CriticalSection _adminLock;
+        const uint32_t _maxSlots;
     };
 }
 } // namespace Core

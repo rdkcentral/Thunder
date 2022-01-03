@@ -21,7 +21,7 @@
 # C++ header parser
 #
 
-import re, uuid, sys, copy, hashlib, os
+import re, uuid, sys, copy, hashlib, random, os
 from collections import OrderedDict
 from enum import IntEnum
 
@@ -77,6 +77,7 @@ class Ref(IntEnum):
 
 class Metadata:
     def __init__(self):
+        self.sourcelocation = ""
         self.brief = ""
         self.details = ""
         self.input = False
@@ -84,6 +85,8 @@ class Metadata:
         self.is_property = False
         self.is_deprecated = False
         self.is_obsolete = False
+        self.is_index = False
+        self.is_listener = False
         self.length = None
         self.maxlength = None
         self.interface = None
@@ -218,7 +221,7 @@ class Identifier():
         elif string.count("[") > 1:
             raise ParserError("multi-dimensional arrays are not supported: '%s'" % (" ".join(string)))
         elif "[" in string and "*" in string:
-            raise ParserError("arrays of pointers are not supported: '%s'" % (" ".join(string)))
+            raise ParserError("arrays of pointers are not supported: '%s'" % (" ".join([str(i) for i in string])))
         elif "&&" in string:
             raise ParserError("rvalue references are not supported: '%s'" % (" ".join(string)))
 
@@ -275,6 +278,11 @@ class Identifier():
                         self.meta.output = True
                     else:
                         raise ParserError("in/out tags not allowed on return value")
+                elif token[1:] == "INDEX":
+                    if tags_allowed:
+                        self.meta.is_index = True
+                    else:
+                        raise ParserError("@index tag not allowed on return value")
                 elif token[1:] == "LENGTH":
                     self.meta.length = string[i + 1]
                     skip = 1
@@ -283,7 +291,7 @@ class Identifier():
                     if tags_allowed:
                         self.meta.maxlength = string[i + 1]
                     else:
-                        raise ParserError("maxlength tag not allowed on return value")
+                        raise ParserError("@maxlength tag not allowed on return value")
                     skip = 1
                     continue
                 elif token[1:] == "INTERFACE":
@@ -615,6 +623,21 @@ class Name:
         self.full_name = parentName + ("" if not self.name else "::" + self.name)
         self.parser_file = CurrentFile()
         self.parser_line = CurrentLine()
+        exists = []
+        if isinstance(parent_block, Function):
+            exists = exists + [x for x in self.parent.vars if x.name == self.name]
+        if isinstance(parent_block, Class) or isinstance(parent_block, Union) or isinstance(parent_block, Namespace):
+            exists = exists + [x for x in self.parent.vars if x.name == self.name]
+            exists = exists + [x for x in self.parent.unions if x.name == self.name]
+            exists = exists + [x for x in self.parent.enums if x.name == self.name]
+            exists = exists + [x for x in self.parent.typedefs if x.name == self.name]
+            if not isinstance(self, Function):
+                exists = exists + [x for x in self.parent.methods if x.name == self.name]
+            #exists = exists + [x for x in self.parent.classes if x.name == self.name]
+        if isinstance(parent_block, Namespace) and not isinstance(self, Namespace):
+            exists = exists + [x for x in self.parent.namespaces if x.name == self.name]
+        if exists:
+            raise ParserError("duplicate indentifier: %s" % self.name)
 
     def Name(self):
         return self.full_name
@@ -752,7 +775,7 @@ def TypeStr(s):
 
 
 def ValueStr(s):
-    return str(s) if isinstance(s, int) else str(Undefined(s, "/* unparsable */ ")) if not isinstance(s, str) else s
+    return str(s) if isinstance(s, int) else str(Undefined(s, "/* unparsable expression */ ")) if not isinstance(s, str) else s
 
 
 # Holds typedef definition
@@ -792,6 +815,7 @@ class Class(Identifier, Block):
         self.is_event = False
         self.is_extended = False
         self.is_iterator = False
+        self.sourcelocation = None
         self.type_name = name
         self.parent.classes.append(self)
 
@@ -890,6 +914,7 @@ class Variable(Identifier, Name):
         Identifier.__init__(self, parent_block, self, string, valid_specifiers)
         Name.__init__(self, parent_block, self.name)
         self.value = Evaluate(value) if value else None
+        self.parent.vars
         self.parent.vars.append(self)
 
     def Proto(self):
@@ -1060,7 +1085,7 @@ class TemplateTypeParameter(Name):
 
 class InstantiatedTemplateClass(Class):
     def __init__(self, parent_block, name, params, args):
-        hash = hashlib.sha1("_".join(args).encode('utf-8')).hexdigest()[:8].upper()
+        hash = hashlib.sha1("_".join(args+[str(random.random())]).encode('utf-8')).hexdigest()[:8].upper()
         Class.__init__(self, parent_block, name + "Instance" + hash)
         self.baseName = Name(parent_block, name)
         self.params = params
@@ -1069,7 +1094,7 @@ class InstantiatedTemplateClass(Class):
         self.type = self.TypeName()
 
     def TypeName(self):
-        return "%s<%s>" % (self.baseName.full_name, ", ".join([str("".join(p.type) if isinstance(p.type, list) else p.type) for p in self.resolvedArgs]))
+        return "%s<%s> /* instatiated template class */ " % (self.baseName.full_name, ", ".join([str("".join(p.type) if isinstance(p.type, list) else p.type) for p in self.resolvedArgs]))
 
     def Proto(self):
         return self.TypeName()
@@ -1248,7 +1273,7 @@ def __Tokenize(contents,log = None):
                 else:
                     continue
 
-            def __ParseLength(string, tag):
+            def __ParseParameterValue(string, tag):
                 formula = (r"(\"[^\"]+\")"
                            r"|(\'[^\']+\')"
                            r"|(\*/)|(::)|(==)|(!=)|(>=)|(<=)|(&&)|(\|\|)"
@@ -1295,15 +1320,14 @@ def __Tokenize(contents,log = None):
                 raise ParserError("multi-line comment not closed")
 
             if ((token[:2] == "/*") or (token[:2] == "//")):
-
                 def _find(word, string):
                     return re.compile(r"[ \r\n/\*]({0})([: \r\n\*]|$)".format(word)).search(string) != None
 
                 if _find("@stubgen", token):
                     if "@stubgen:skip" in token:
                         skipmode = True
-                        if log :
-                            log.Warn("The Use of @stubgen:skip is deprecated, Please use @stubgen:omit instead",(CurrentFile()+" Line: "+str(CurrentLine())))
+                        if log:
+                            log.Warn("The Use of @stubgen:skip is deprecated, use @stubgen:omit instead", ("%s(%i): " % (CurrentFile(), CurrentLine())))
                     elif "@stubgen:omit" in token:
                         tagtokens.append("@OMIT")
                     elif "@stubgen:stub" in token:
@@ -1313,7 +1337,7 @@ def __Tokenize(contents,log = None):
                     else:
                         raise ParserError("invalid @stubgen tag")
                 if _find("@stop", token):
-                    skipMode = True
+                    skipmode = True
                 if _find("@omit", token):
                     tagtokens.append("@OMIT")
                 if _find("@stub", token):
@@ -1325,6 +1349,8 @@ def __Tokenize(contents,log = None):
                 if _find("@inout", token):
                     tagtokens.append("@IN")
                     tagtokens.append("@OUT")
+                if _find("@index", token):
+                    tagtokens.append("@INDEX")
                 if _find("@property", token):
                     tagtokens.append("@PROPERTY")
                 if _find("@deprecated", token):
@@ -1341,14 +1367,16 @@ def __Tokenize(contents,log = None):
                     tagtokens.append("@EXTENDED")
                 if _find("@iterator", token):
                     tagtokens.append("@ITERATOR")
+                if _find("@sourcelocation", token):
+                    tagtokens.append(__ParseParameterValue(token, "@sourcelocation"))
                 if _find("@text", token):
-                    tagtokens.append(__ParseLength(token, "@text"))
+                    tagtokens.append(__ParseParameterValue(token, "@text"))
                 if _find("@length", token):
-                    tagtokens.append(__ParseLength(token, "@length"))
+                    tagtokens.append(__ParseParameterValue(token, "@length"))
                 if _find("@maxlength", token):
-                    tagtokens.append(__ParseLength(token, "@maxlength"))
+                    tagtokens.append(__ParseParameterValue(token, "@maxlength"))
                 if _find("@interface", token):
-                    tagtokens.append(__ParseLength(token, "@interface"))
+                    tagtokens.append(__ParseParameterValue(token, "@interface"))
 
                 def FindDoxyString(tag, hasParam, string, tagtokens):
                     def EndOfTag(string, start):
@@ -1365,7 +1393,8 @@ def __Tokenize(contents,log = None):
                     start = string.find(tag)
                     if (start != -1):
                         start += len(tag) + 1
-                        desc = string[start:EndOfTag(token, start)].strip(" *\n")
+                        end = EndOfTag(token, start)
+                        desc = string[start:end].strip(" *\n")
                         if desc:
                             tagtokens.append(tag.upper())
                             if hasParam:
@@ -1373,7 +1402,8 @@ def __Tokenize(contents,log = None):
                                 tagtokens.append(desc.split(" ",1)[1])
                             else:
                                 tagtokens.append(desc)
-                            FindDoxyString(tag, hasParam, string[start+1], tagtokens)
+                            if end != None:
+                                FindDoxyString(tag, hasParam, string[end:], tagtokens)
 
                 FindDoxyString("@brief", False, token, tagtokens)
                 FindDoxyString("@details", False, token, tagtokens)
@@ -1476,6 +1506,7 @@ def Parse(contents,log = None):
     event_next = False
     extended_next = False
     iterator_next = False
+    sourcelocation_next = False
     in_typedef = False
 
 
@@ -1510,6 +1541,9 @@ def Parse(contents,log = None):
             extended_next = True
             tokens[i] = ";"
             i += 1
+        elif tokens[i] == "@SOURCELOCATION":
+            sourcelocation_next = tokens[i + 1][0]
+            i += 2
         elif tokens[i] == "@ITERATOR":
             iterator_next = True
             tokens[i] = ";"
@@ -1525,6 +1559,7 @@ def Parse(contents,log = None):
             event_next = False
             extended_next = False
             iterator_next = False
+            sourcelocation_next = False
             in_typedef = False
             tokens[i] = ";"
             i += 1
@@ -1565,8 +1600,13 @@ def Parse(contents,log = None):
                 typedef.is_event = True
                 event_next = False
             if not isinstance(typedef.type, Type) and typedef.type[0] == "enum":
+                # To be removed
+                if log:
+                    log.Warn("Support for typedefs to anonymous enums is deprecated, (%s(%i): " % (CurrentFile(), CurrentLine()))
                 in_typedef = True
                 i += 1
+            elif not isinstance(typedef.type, Type) and (not isinstance(typedef.type, list) or typedef.type[0] in ["struct", "class", "union"]):
+                raise ParserError("typedef to anonymous struct, class or union is not supported")
             else:
                 i = j + 1
 
@@ -1641,6 +1681,9 @@ def Parse(contents,log = None):
             if iterator_next:
                 new_class.is_iterator = True
                 event_next = False
+            if sourcelocation_next:
+                new_class.sourcelocation = sourcelocation_next
+                sourcelocation_next = False
 
             if new_class.parent.omit:
                 # Inherit omiting...
@@ -1845,16 +1888,16 @@ def Parse(contents,log = None):
             next_block = Block(current_block[-1]) # new anonymous scope
 
         # Parse variables and member attributes
-        elif isinstance(current_block[-1],
-                        (Namespace, Class)) and tokens[i] == ';' and (is_valid(tokens[i - 1]) or tokens[i - 1] == "]"):
+        elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == ';':
             j = i - 1
             while j >= min_index and tokens[j] not in ['{', '}', ';', ":"]:
                 j -= 1
-            if not current_block[-1].omit:
+            identifier = tokens[j + 1:i]
+            if len(identifier) != 0 and not current_block[-1].omit:
                 if isinstance(current_block[-1], Class):
-                    Attribute(current_block[-1], tokens[j + 1:i])
+                    Attribute(current_block[-1], identifier)
                 else:
-                    Variable(current_block[-1], tokens[j + 1:i])
+                    Variable(current_block[-1], identifier)
             i += 1
 
         # Parse constants and member constants
@@ -1865,12 +1908,14 @@ def Parse(contents,log = None):
                 j -= 1
             while tokens[k] != ';':
                 k += 1
-            if not current_block[-1].omit:
+            identifier = tokens[j + 1:i]
+            value = tokens[i + 1:k]
+            if len(identifier) != 0 and not current_block[-1].omit:
                 if isinstance(current_block[-1], Class):
-                    Attribute(current_block[-1], tokens[j + 1:i], tokens[i + 1:k])
+                    Attribute(current_block[-1], identifier, value)
                 else:
-                    Variable(current_block[-1], tokens[j + 1:i], tokens[i + 1:k])
-            i = k
+                    Variable(current_block[-1], identifier, value)
+            i = k + 1
 
         # Parse an enum block...
         elif isinstance(current_block[-1], Enum):

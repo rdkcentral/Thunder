@@ -17,21 +17,14 @@
  * limitations under the License.
  */
 
-#include <IDriver.h>
+#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "Module.h"
+#include "IStateControl.h"
 
-const char* construct_bluetooth_driver(const char* /* config */) {
-    return (nullptr);
+namespace WPEFramework {
+
+ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::command);
+ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::state);
+
 }
-
-void destruct_bluetooth_driver() {
-}
-
-
-#ifdef __cplusplus
-}
-#endif
-

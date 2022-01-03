@@ -29,23 +29,40 @@ class Log:
 
     def Info(self, text, file=""):
         if self.show_infos:
+            if not file: file = self.file
             self.infos.append("%s: %s: %s%s%s" % (self.name, self.info, file, ": " if file else "", text))
             self.__Print(self.infos[-1])
 
-    def DocIssue(self, text):
+    def DocIssue(self, text, file=""):
         if self.show_doc_issues:
-            self.__Print("%s: %s%s %s" % (self.file, self.cdocissue, self.creset, text))
+            if not file: file = self.file
+            self.__Print("%s: %s%s: %s%s%s" % (self.name, self.cdocissue, self.creset, file, ": " if file else "", text))
 
     def Warn(self, text, file=""):
         if self.show_warnings:
+            if not file: file = self.file
             self.warnings.append("%s: %s%s: %s%s%s" % (self.name, self.cwarn, self.creset, file, ": " if file else "", text))
             self.__Print(self.warnings[-1])
 
+    def WarnLine(self, obj, text, file=""):
+        if self.show_warnings:
+            if not file: file = self.file
+            try:
+                if not file: file = obj.parser_file
+                line = str(obj.parser_line)
+            except:
+                file = ""
+                line = ""
+            self.warnings.append("%s: %s%s: %s%s" % (self.name, self.cwarn, self.creset, ("%s(%s): " % (file, line)) if file else "", text))
+            self.__Print(self.warnings[-1])
+
     def Error(self, text, file=""):
+        if not file: file = self.file
         self.errors.append("%s: %s%s: %s%s%s" % (self.name, self.cerror, self.creset, file, ": " if file else "", text))
-        self.__Print(self.errors[-1], file=sys.stderr)
+        self.__Print(self.errors[-1])
 
     def Print(self, text, file=""):
+        if not file: file = self.file
         print("%s: %s%s%s" % (self.name, file, ": " if file else "", text))
 
     def Dump(self):

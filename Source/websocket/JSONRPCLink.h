@@ -143,7 +143,7 @@ namespace JSONRPC {
             public:
                 virtual void Received(Core::ProxyType<INTERFACE>& jsonObject) override
                 {
-                    Core::ProxyType<Core::JSONRPC::Message> inbound(Core::proxy_cast<Core::JSONRPC::Message>(jsonObject));
+                    Core::ProxyType<Core::JSONRPC::Message> inbound(jsonObject);
     
                     ASSERT(inbound.IsValid() == true);
     
@@ -171,7 +171,7 @@ namespace JSONRPC {
             private:
                 void ToMessage(const Core::ProxyType<Core::JSON::IElement>& jsonObject, string& message) const
                 {
-                    Core::ProxyType<Core::JSONRPC::Message> inbound(Core::proxy_cast<Core::JSONRPC::Message>(jsonObject));
+                    Core::ProxyType<Core::JSONRPC::Message> inbound(jsonObject);
 
                     ASSERT(inbound.IsValid() == true);
                     if (inbound.IsValid() == true) {
@@ -180,7 +180,7 @@ namespace JSONRPC {
                 }
                 void ToMessage(const Core::ProxyType<Core::JSON::IMessagePack>& jsonObject, string& message) const
                 {
-                    Core::ProxyType<Core::JSONRPC::Message> inbound(Core::proxy_cast<Core::JSONRPC::Message>(jsonObject));
+                    Core::ProxyType<Core::JSONRPC::Message> inbound(jsonObject);
 
                     ASSERT(inbound.IsValid() == true);
                     if (inbound.IsValid() == true) {
@@ -225,10 +225,6 @@ namespace JSONRPC {
             {
                 return (FactoryImpl::Instance().Element(string()));
             }
-            bool IsOperational() const
-            {
-                return (const_cast< CommunicationChannel&>(*this).Open(0));
-            }
             uint32_t Sequence() const
             {
                 return (++_sequence);
@@ -240,7 +236,7 @@ namespace JSONRPC {
                 _observers.push_back(&client);
                 if (_channel.IsOpen() == true) {
                     client.Opened();
-				}
+                }
                 _adminLock.Unlock();
             }
             void Unregister(LinkType<INTERFACE>& client)
@@ -261,7 +257,15 @@ namespace JSONRPC {
             {
                 return (_channel.IsSuspended());
             }
-    
+            uint32_t Initialize()
+            {
+                return (Open(0));
+            }
+            void Deinitialize()
+            {
+                Close();
+            }
+
         protected:
             void StateChange()
             {
@@ -289,7 +293,7 @@ namespace JSONRPC {
             {
                 _channel.Close(Core::infinite);
             }
-    
+
         private:
             uint32_t Inbound(const Core::ProxyType<Core::JSONRPC::Message>& inbound)
             {
@@ -448,7 +452,7 @@ namespace JSONRPC {
         typedef std::map<uint32_t, Entry> PendingMap;
         typedef std::function<uint32_t(const string&, const string& parameters, string& result)> InvokeFunction;
 
-	protected:
+        protected:
     
         static constexpr uint32_t DefaultWaitTime = 10000;
 
@@ -464,7 +468,7 @@ namespace JSONRPC {
             , _versionstring()
         {
             if (localCallsign == nullptr) {
-	        static uint32_t sequence;
+                static uint32_t sequence;
                 _localSpace = string("temporary") + Core::NumberType<uint32_t>(Core::InterlockedIncrement(sequence)).Text();
             } else {
                 _localSpace = localCallsign;
@@ -1042,7 +1046,7 @@ namespace JSONRPC {
 
                     if (index->second.Signal(inbound) == true) {
                         _pendingQueue.erase(index);
-					}
+                    }
 
                     result = Core::ERROR_NONE;
                 }

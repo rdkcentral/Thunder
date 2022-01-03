@@ -20,6 +20,7 @@
 #ifndef __COM_PROCESSLAUNCH_H
 #define __COM_PROCESSLAUNCH_H
 
+#include <atomic>
 #include "Module.h"
 
 
@@ -447,13 +448,17 @@ namespace RPC {
                 : _channel()
                 , _id(_sequenceId++)
                 , _remoteId(0)
+                , _stopInvokedFlag()
             {
+                _stopInvokedFlag.clear();
             }
             RemoteConnection(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const uint32_t remoteId)
                 : _channel(channel)
                 , _id(_sequenceId++)
                 , _remoteId(remoteId)
+                , _stopInvokedFlag()
             {
+                _stopInvokedFlag.clear();
             }
 
         public:
@@ -511,6 +516,9 @@ namespace RPC {
             uint32_t _id;
             uint32_t _remoteId;
             static std::atomic<uint32_t> _sequenceId;
+
+        protected:
+            std::atomic_flag _stopInvokedFlag;
         };
 
     private:
@@ -840,10 +848,10 @@ namespace RPC {
                     _adminLock.Unlock();
 
                     // Start the process, and....
-                    result->Launch();
+                    uint32_t launchResult = result->Launch();
 
                     // wait for the announce message to be exchanged
-                    if (trigger.Lock(waitTime) == Core::ERROR_NONE) {
+                    if ((launchResult == Core::ERROR_NONE) && (trigger.Lock(waitTime) == Core::ERROR_NONE)) {
 
                         interfaceReturned = locator.first->second.Interface();
 
@@ -1146,7 +1154,7 @@ namespace RPC {
             public:
                 virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override
                 {
-                    Core::ProxyType<AnnounceMessage> message(Core::proxy_cast<AnnounceMessage>(data));
+                    Core::ProxyType<AnnounceMessage> message(data);
 
                     ASSERT(message.IsValid() == true);
                     ASSERT(dynamic_cast<Client*>(&channel) != nullptr);

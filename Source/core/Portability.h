@@ -82,10 +82,12 @@
 #else
   #if __GNUC__ >= 4 && !defined(__mips__)
     #define EXTERNAL_HIDDEN __attribute__ ((visibility ("hidden")))
-    #define EXTERNAL        __attribute__ ((visibility ("default")))
-  #else
+    #define EXTERNAL_EXPORT __attribute__ ((visibility ("default")))
+    #define EXTERNAL EXTERNAL_EXPORT        
+#else
     #define EXTERNAL
     #define EXTERNAL_HIDDEN
+    #define EXTERNAL_EXPORT 
   #endif
 #endif
 
@@ -383,7 +385,7 @@ inline void EXTERNAL SleepS(unsigned int a_Time)
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #define BIG_ENDIAN_PLATFORM 1
 #else
-#pragma message "Unknown endianess"
+#error "Unknown endianess: please set __BYTE_ORDER__ to proper endianess"
 #endif
 
 #endif
@@ -615,13 +617,11 @@ namespace Core {
     public:
         template <typename... Args>
         inline Void(Args&&...) {}
-        inline Void(const Void&) {}
-        inline ~Void() {}
+        inline Void(const Void&) = default;
+        inline Void(Void&&) = default;
+        inline ~Void() = default;
 
-        inline Void& operator=(const Void&)
-        {
-            return (*this);
-        }
+        inline Void& operator=(const Void&) = default;
     };
 
     struct EXTERNAL IReferenceCounted {
@@ -630,12 +630,12 @@ namespace Core {
         virtual uint32_t Release() const = 0;
     };
 
-    struct EXTERNAL IUnknown : virtual public IReferenceCounted  {
+    struct EXTERNAL IUnknown : public IReferenceCounted  {
         enum { ID = 0x00000000 };
 
         ~IUnknown() override = default;
 
-        virtual void* QueryInterface(const uint32_t interfaceNummer) = 0;
+        virtual void* QueryInterface(const uint32_t interfaceNumber) = 0;
 
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* QueryInterface()

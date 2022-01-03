@@ -22,7 +22,6 @@
 #ifndef __WINDOWS__
 #include <dlfcn.h> // for dladdr
 #include <syslog.h>
-#include <regex>
 #endif
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
@@ -281,13 +280,6 @@ namespace PluginHost {
 
             ExitHandler::StartShutdown();
         }
-    }
-    // Workaround solution: OCDM plugin supports blacklist feature that uses regex.
-    // That prevents unloading of OCDM shared lib from memory after de-activation.
-    // Following is the workaround solution although it is not being called anywhere.
-    void RegexInit()
-    {
-        std::regex_match(std::string(""), std::regex(""));
     }
 
 #endif
@@ -609,6 +601,18 @@ namespace PluginHost {
                         }
                         break;
                     }
+                    case 'E': {
+                        uint32_t requests, responses, filebodies, jsonrequests;
+                        _dispatcher->Statistics(requests, responses, filebodies, jsonrequests);
+                        printf("\nProxyPool Elements:\n");
+                        printf("============================================================\n");
+                        printf("HTTP requests:    %d\n", requests);
+                        printf("HTTP responses:   %d\n", responses);
+                        printf("HTTP Files:       %d\n", filebodies);
+                        printf("JSONRPC messages: %d\n", jsonrequests);
+
+                        break;
+                    }
                     case 'P': {
                         Core::JSON::ArrayType<MetaData::Service> metaData;
                         _dispatcher->Services().GetMetaData(metaData);
@@ -841,6 +845,7 @@ namespace PluginHost {
                         printf("  [P]lugins\n");
                         printf("  [C]hannels\n");
                         printf("  [S]erver stats\n");
+                        printf("  [E]lements in the ProxyPools\n");
                         printf("  [T]rigger resource monitor\n");
                         printf("  [M]etadata resource monitor\n");
                         printf("  [R]esource monitor stack\n");

@@ -230,7 +230,7 @@ void DumpCallStack(const ThreadId threadId, std::list<string>& stackList)
             if (info.dli_sname[0] == '_') {
                 demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
             }
-            snprintf(buffer, sizeof(buffer), "%-3d %*p %s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i],
+            snprintf(buffer, sizeof(buffer), "%-3d %*p %s + %zd", i, int(2 + sizeof(void*) * 2), callstack[i],
                 status == 0 ? demangled : info.dli_sname == 0 ? symbols[i] : info.dli_sname,
                 (char*)callstack[i] - (char*)info.dli_saddr);
 
@@ -332,21 +332,6 @@ uint64_t ntohll(const uint64_t& value)
 
 namespace WPEFramework {
 namespace Core {
-
-    /* virtual */ IIPC::~IIPC() {}
-    /* virtual */ IIPCServer::~IIPCServer() {}
-    /* virtual */ IPCChannel::~IPCChannel() {}
-
-
-
-    // In windows you need the newest compiler for this...
-    //template <typename First, typename... Rest> const string Format(const First* first, const Rest&... rest) {
-    //	TCHAR buffer[2057];
-
-    //	::vsnprintf_s (buffer, sizeof(buffer),sizeof(buffer), first, rest...);
-
-    //	return (string(buffer));
-    //}
 
 #ifndef va_copy
 #ifdef _MSC_VER

@@ -274,7 +274,7 @@ namespace Web {
                     if (_parent._webSocketMessage == realItem) {
                         _parent.UpgradeCompleted();
                     } else {
-                        _parent.Serialized(Core::proxy_cast<OUTBOUND>(realItem));
+                        _parent.Serialized(Core::ProxyType<OUTBOUND>(realItem));
                     }
 
                     _adminLock.Lock();
@@ -647,9 +647,13 @@ namespace Web {
             {
                 return (_path);
             }
-            inline const string& Protocol() const
+            inline const ProtocolsArray& Protocols() const
             {
                 return (_protocol);
+            }
+            inline void Protocols(const ProtocolsArray& protocols)
+            {
+                _protocol = protocols;
             }
             inline const string& Query() const
             {
@@ -926,7 +930,7 @@ namespace Web {
             }
             inline void Serialized(const Core::ProxyType<OUTBOUND>& element)
             {
-                _parent.Send(Core::proxy_cast<OUTBOUND>(element));
+                _parent.Send(Core::ProxyType<OUTBOUND>(element));
             }
             inline void Deserialized(Core::ProxyType<INBOUND>& element)
             {
@@ -982,13 +986,15 @@ namespace Web {
                             _state = static_cast<EnumlinkState>((_state & 0xF0) | WEBSERVER);
                             _path.clear();
                             _query.clear();
-                            _protocol.clear();
+                            _protocol.Clear();
                         } else {
                             _webSocketMessage->Connection = Web::Response::CONNECTION_UPGRADE;
                             _webSocketMessage->Upgrade = Web::Response::UPGRADE_WEBSOCKET;
                             _webSocketMessage->WebSocketAccept = _handler.ResponseKey(element->WebSocketKey.Value());
-                            if (_protocol.empty() == false) {
-                                _webSocketMessage->WebSocketProtocol = _protocol;
+                            if (_protocol.Empty() == false) {
+                                //only one protocol should be selected
+                                ASSERT(_protocol.Size() == 1);
+                                _webSocketMessage->WebSocketProtocol = _protocol.First();
                             }
                         }
                     }
@@ -1049,12 +1055,12 @@ namespace Web {
                         _webSocketMessage->Query = query;
                     }
                     if (protocol.empty() == false) {
-                        _webSocketMessage->WebSocketProtocol = protocol;
+                        _webSocketMessage->WebSocketProtocol = Web::ProtocolsArray(protocol);
                     }
 
                     _query = query;
                     _path = path;
-                    _protocol = protocol;
+                    _protocol = Web::ProtocolsArray(protocol);
 
                     _serializerImpl.Submit(_webSocketMessage);
                     ACTUALLINK::Trigger();
@@ -1082,6 +1088,8 @@ namespace Web {
                     _parent.StateChange();
 
                     _adminLock.Unlock();
+
+                    ACTUALLINK::Trigger();
                 } else if ((_webSocketMessage.IsValid() == true) && (element->ErrorCode == Web::STATUS_FORBIDDEN)) {
                     ASSERT((_state & UPGRADING) != 0);
 
@@ -1100,7 +1108,7 @@ namespace Web {
             SerializerImpl _serializerImpl;
             DeserializerImpl _deserialiserImpl;
             string _path;
-            string _protocol;
+            ProtocolsArray _protocol;
             string _query;
             string _origin;
             string _commandData;
@@ -1268,9 +1276,13 @@ namespace Web {
         {
             return (_channel.Query());
         }
-        inline const string& Protocol() const
+        inline const ProtocolsArray& Protocols() const
         {
-            return (_channel.Protocol());
+            return (_channel.Protocols());
+        }
+        inline void Protocols(const ProtocolsArray& protocols)
+        {
+            _channel.Protocols(protocols);
         }
         inline bool Upgrade(const string& protocol, const string& path, const string& query, const string& origin)
         {

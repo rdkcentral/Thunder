@@ -22,8 +22,10 @@
 namespace WPEFramework {
 namespace ProcessContainers {
 
-    template <typename Mixin> // Core::IRefCounted mixin
-    class BaseRefCount : public Mixin {
+    template <typename CONTEXT>
+    class BaseRefCount : public CONTEXT {
+    private:
+        BaseRefCount<CONTEXT>& operator=(const BaseRefCount<CONTEXT>& rhs) = delete;
     public:
         BaseRefCount()
             : _refCount(1)

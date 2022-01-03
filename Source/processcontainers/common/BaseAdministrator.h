@@ -25,15 +25,16 @@
 namespace WPEFramework {
 namespace ProcessContainers {
 
-    template <typename TContainer, typename Mixin> // IContainerAdministrator, Lockable Mixin
-    class BaseAdministrator : public Mixin {
+    template <typename CONTAINER>
+    class BaseContainerAdministrator : public IContainerAdministrator {
     public:
-        BaseAdministrator()
+        BaseContainerAdministrator()
             : _containers()
+            , _adminLock()
         {
         }
 
-        ~BaseAdministrator() override
+        ~BaseContainerAdministrator() override
         {
             if (_containers.size() > 0) {
                 TRACE_L1("There are still active containers when shutting down administrator!");
@@ -50,11 +51,11 @@ namespace ProcessContainers {
             std::vector<string> containers;
             containers.reserve(_containers.size());
 
-            Mixin::InternalLock();
+            _adminLock.Lock();
             for (auto& container : _containers) {
                 containers.push_back(container->Id());
             }
-            Mixin::InternalUnlock();
+            _adminLock.Unlock();
 
             return new BaseContainerIterator(std::move(containers));
         }
@@ -63,34 +64,45 @@ namespace ProcessContainers {
         {
             IContainer* result = nullptr;
 
-            Mixin::InternalLock();
+            _adminLock.Lock();
             auto found = std::find_if(_containers.begin(), _containers.end(), [&id](const IContainer* c) { return c->Id() == id; });
             if (found != _containers.end()) {
                 result = *found;
                 result->AddRef();
             }
-            Mixin::InternalUnlock();
+            _adminLock.Unlock();
 
             return result;
         }
 
-        // Call only from TContainer when destructing instance!
-        void RemoveContainer(TContainer* container)
+        // Called only from CONTAINER when destructing instance!
+        void RemoveContainer(CONTAINER* container)
         {
-            Mixin::InternalLock();
+            _adminLock.Lock();
             _containers.remove(container);
-            Mixin::InternalUnlock();
+            _adminLock.Unlock();
+        }
+
+        void InternalLock() const
+        {
+            _adminLock.Lock();
+        }
+
+        void InternalUnlock() const
+        {
+            _adminLock.Unlock();
         }
 
     protected:
         // Must be called in internal Lock!
-        void InsertContainer(TContainer* container)
+        void InsertContainer(CONTAINER* container)
         {
             _containers.push_back(container);
         }
 
     private:
-        std::list<TContainer*> _containers;
+        std::list<CONTAINER*> _containers;
+        mutable Core::CriticalSection _adminLock;
     };
 
 } // ProcessContainers

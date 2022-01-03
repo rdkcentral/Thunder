@@ -30,8 +30,8 @@ function(JsonGenerator)
         message(FATAL_ERROR "JsonGenerator path ${JSON_GENERATOR} invalid.")
     endif()
 
-    set(optionsArgs CODE STUBS DOCS NO_STYLE_WARNINGS COPY_CTOR NO_REF_NAMES)
-    set(oneValueArgs OUTPUT IFDIR INDENT DEF_STRING DEF_INT_SIZE PATH)
+    set(optionsArgs CODE STUBS DOCS NO_STYLE_WARNINGS COPY_CTOR NO_REF_NAMES NO_INTERFACES_SECTION)
+    set(oneValueArgs OUTPUT IFDIR CPPIFDIR INDENT DEF_STRING DEF_INT_SIZE PATH)
     set(multiValueArgs INPUT INCLUDE_PATH)
 
     cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
@@ -68,12 +68,20 @@ function(JsonGenerator)
         list(APPEND _execute_command  "--no-ref-names")
     endif()
 
+    if(Argument_NO_INTERFACES_SECTION)
+        list(APPEND _execute_command  "--no-interfaces-section")
+    endif()
+
     if (Argument_PATH)
         list(APPEND _execute_command  "-p" "${Argument_PATH}")
     endif()
 
     if (Argument_IFDIR)
         list(APPEND _execute_command  "-i" "${Argument_IFDIR}")
+    endif()
+
+    if (Argument_CPPIFDIR)
+        list(APPEND _execute_command  "-j" "${Argument_CPPIFDIR}")
     endif()
 
     if (Argument_OUTPUT)
@@ -106,3 +114,17 @@ function(JsonGenerator)
 endfunction(JsonGenerator)
 
 message(STATUS "JsonGenerator ready ${JSON_GENERATOR}")
+
+function(DocGenerator)
+
+    set(oneValueArgs NAME)
+    cmake_parse_arguments(Argument "" "${oneValueArgs}" "" ${ARGN})
+    set(PLUGIN_NAME ${Argument_NAME})
+
+    set(WPEFRAMEWORK_IFDIR_PATH ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE})
+    set(CPPIFDIR_PATH ${WPEFRAMEWORK_IFDIR_PATH}/interfaces)
+    set(IFDIR_PATH ${WPEFRAMEWORK_IFDIR_PATH}/interfaces/jsonrpc)
+    JsonGenerator(INPUT ${CMAKE_CURRENT_SOURCE_DIR}/${PLUGIN_NAME}Plugin.json DOCS OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/doc" INCLUDE_PATH ${WPEFRAMEWORK_IFDIR_PATH} CPPIFDIR ${CPPIFDIR_PATH} IFDIR ${IFDIR_PATH})
+
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/doc/${PLUGIN_NAME}Plugin.md DESTINATION "${CMAKE_INSTALL_PREFIX}/share/doc")
+endfunction(DocGenerator)

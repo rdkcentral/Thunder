@@ -21,63 +21,157 @@
 #include "Number.h"
 #include <time.h>
 
-namespace WPEFramework {
-namespace Core {
-    static constexpr uint32_t MilliSecondsPerSecond = 1000;
-    static constexpr uint32_t MicroSecondsPerMilliSecond = 1000;
-    static constexpr uint32_t NanoSecondsPerMicroSecond = 1000;
-    static constexpr uint32_t MicroSecondsPerSecond = MilliSecondsPerSecond * MicroSecondsPerMilliSecond;
-
+namespace {
     // Start day of NTP time as days past the imaginary date 12/1/1 BC.
     // (This is the beginning of the Christian Era, or BCE.)
-    static constexpr uint32_t DayNTPStarts = 693596;
+    constexpr uint32_t DayNTPStarts = 693596;
 
     // Start day of the UNIX epoch (1970-01-01), also counting from BCE
-    static constexpr uint32_t DayUNIXEpochStarts = 719163;
+    constexpr uint32_t DayUNIXEpochStarts = 719163;
 
-    // Difference in Seconds between UNIX and NTP epoch (25567).
-    static constexpr uint32_t SecondsPerMinute = 60;
-    static constexpr uint32_t MinutesPerHour = 60;
-    static constexpr uint32_t HoursPerDay = 24;
-    static constexpr uint32_t SecondsPerHour = SecondsPerMinute * MinutesPerHour;
-    static constexpr uint32_t SecondsPerDay = SecondsPerHour * HoursPerDay;
+    constexpr uint32_t NTPToUNIXSeconds = (DayUNIXEpochStarts - DayNTPStarts) * WPEFramework::Core::Time::SecondsPerDay;
 
-    static constexpr uint32_t NTPToUNIXSeconds = (DayUNIXEpochStarts - DayNTPStarts) * SecondsPerDay;
+}
 
-    static uint8_t MonthFromString(const TCHAR entry[])
+
+namespace WPEFramework {
+namespace Core {
+
+    static bool IsLeapYear(const uint16_t year)
+    {
+        return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    }
+
+    static void SkipLeadingSpaces(const TCHAR buffer[], const uint8_t maxLength, uint32_t& index) {
+        while ((index < maxLength) && (::isspace(buffer[index]) != 0)) {
+            index++;
+        }
+        return;
+    }
+
+    static uint8_t WeekFromName(const TCHAR entry[])
     {
         assert(nullptr != entry);
+        uint8_t day = static_cast<uint8_t>(~0);
         // Case sensitive quick compare :-)
-        uint32_t value = (static_cast<uint8_t>(entry[0]) << 16) | (static_cast<uint8_t>(entry[1]) << 8) | (static_cast<uint8_t>(entry[2]) << 0);
 
-        switch (value) {
-        case 'J' << 16 | 'a' << 8 | 'n':
-            return (1);
-        case 'F' << 16 | 'e' << 8 | 'b':
-            return (2);
-        case 'M' << 16 | 'a' << 8 | 'r':
-            return (3);
-        case 'A' << 16 | 'p' << 8 | 'r':
-            return (4);
-        case 'M' << 16 | 'a' << 8 | 'y':
-            return (5);
-        case 'J' << 16 | 'u' << 8 | 'n':
-            return (6);
-        case 'J' << 16 | 'u' << 8 | 'l':
-            return (7);
-        case 'A' << 16 | 'u' << 8 | 'g':
-            return (8);
-        case 'S' << 16 | 'e' << 8 | 'p':
-            return (9);
-        case 'O' << 16 | 'c' << 8 | 't':
-            return (10);
-        case 'N' << 16 | 'o' << 8 | 'v':
-            return (11);
-        case 'D' << 16 | 'e' << 8 | 'c':
-            return (12);
-        default:
-            return (static_cast<uint8_t>(~0));
+        if (strcmp(entry, "Sunday") == 0) {
+            day = (0);
+        } else if (strcmp(entry, "Monday") == 0) {
+            day = (1);
+        } else if (strcmp(entry, "Tuesday") == 0) {
+            day = (2);
+        } else if (strcmp(entry, "Wednesday") == 0) {
+            day = (3);
+        } else if (strcmp(entry, "Thursday") == 0) {
+            day = (4);
+        } else if (strcmp(entry, "Friday") == 0) {
+            day = (5);
+        } else if (strcmp(entry, "Saturday") == 0) {
+           day = (6);
         }
+        return (day);
+    }
+
+    static uint8_t WeekFromAbbrevation(const TCHAR entry[])
+    {
+        assert(nullptr != entry);
+        uint8_t day = static_cast<uint8_t>(~0);
+        // Case sensitive quick compare :-)
+
+        uint32_t value = (static_cast<uint8_t>(entry[0]) << 16) | (static_cast<uint8_t>(entry[1]) << 8) | (static_cast<uint8_t>(entry[2]) << 0);
+        switch (value) {
+        case 'S' << 16 | 'u' << 8 | 'n':
+            day = (0);
+            break;
+        case 'M' << 16 | 'o' << 8 | 'n':
+            day = (1);
+            break;
+        case 'T' << 16 | 'u' << 8 | 'e':
+            day = (2);
+            break;
+        case 'W' << 16 | 'e' << 8 | 'd':
+            day = (3);
+            break;
+        case 'T' << 16 | 'h' << 8 | 'u':
+            day = (4);
+            break;
+        case 'F' << 16 | 'r' << 8 | 'i':
+            day = (5);
+            break;
+        case 'S' << 16 | 'a' << 8 | 't':
+            day = (6);
+            break;
+        default:
+            break;
+        }
+        return (day);
+    }
+
+    static uint32_t WeekFromString(const string& buffer, const uint8_t delimeter, const bool fromName, uint8_t& wday) {
+        uint32_t index = 0;
+        SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
+        string weekDayName = buffer.substr(index, buffer.find_first_of(delimeter, index));
+        if (weekDayName.size() > 0) {
+            wday = (fromName ? WeekFromName(weekDayName.c_str()) : (weekDayName.size() == 3) ? WeekFromAbbrevation(weekDayName.c_str()) : static_cast<uint8_t>(~0));
+            index += static_cast<uint32_t>(weekDayName.length()) + 1;
+        }
+        return index;
+    }
+
+    static uint32_t MonthFromString(const TCHAR entry[], const uint8_t maxLength, uint8_t& month)
+    {
+        assert(nullptr != entry);
+        uint32_t index = 0;
+        SkipLeadingSpaces(entry, maxLength, index);
+        // Case sensitive quick compare :-)
+        if ((index + 3) < maxLength) {
+            uint32_t value = (static_cast<uint8_t>(entry[index]) << 16) | (static_cast<uint8_t>(entry[index + 1]) << 8) | (static_cast<uint8_t>(entry[index + 2]) << 0);
+            index += 3;
+
+            switch (value) {
+            case 'J' << 16 | 'a' << 8 | 'n':
+                month = (1);
+                break;
+            case 'F' << 16 | 'e' << 8 | 'b':
+                month = (2);
+                break;
+            case 'M' << 16 | 'a' << 8 | 'r':
+                month = (3);
+                break;
+            case 'A' << 16 | 'p' << 8 | 'r':
+                month = (4);
+                break;
+            case 'M' << 16 | 'a' << 8 | 'y':
+                month = (5);
+                break;
+            case 'J' << 16 | 'u' << 8 | 'n':
+                month = (6);
+                break;
+            case 'J' << 16 | 'u' << 8 | 'l':
+                month = (7);
+                break;
+            case 'A' << 16 | 'u' << 8 | 'g':
+                month = (8);
+                break;
+            case 'S' << 16 | 'e' << 8 | 'p':
+                month = (9);
+                break;
+            case 'O' << 16 | 'c' << 8 | 't':
+                month = (10);
+                break;
+            case 'N' << 16 | 'o' << 8 | 'v':
+                month = (11);
+                break;
+            case 'D' << 16 | 'e' << 8 | 'c':
+                month = (12);
+                break;
+            default:
+                month = (static_cast<uint8_t>(~0));
+                break;
+            }
+        }
+        return index;
     }
 
     static uint32_t YearFromString(const TCHAR entry[], const uint8_t maxLength, uint16_t& year)
@@ -86,11 +180,7 @@ namespace Core {
 
         uint32_t index = 0;
 
-        // Last but not least, lets get the year..
-        // Find first digit
-        while ((index < maxLength) && (::isdigit(entry[index]) == 0)) {
-            index++;
-        }
+        SkipLeadingSpaces(entry, maxLength, index);
 
         // If we have at least two digits
         if (((index + 1) < maxLength) && (::isdigit(entry[index]) != 0) && (::isdigit(entry[index + 1]) != 0)) {
@@ -117,15 +207,12 @@ namespace Core {
     {
         assert(nullptr != entry);
 
-        uint8_t index = 0;
+        uint32_t index = 0;
 
-        // Find first digit
-        while ((index < maxLength) && (::isdigit(entry[index]) == 0)) {
-            index++;
-        }
+        SkipLeadingSpaces(entry, maxLength, index);
 
         // Do we have hh:mm:ss or h:mm:ss
-        if ((index + 5) < maxLength) {
+        if (((index + 5) <= maxLength) && (::isdigit(entry[index]) != 0)) {
             hours = static_cast<uint8_t>(entry[index] - '0');
             if (::isdigit(entry[index + 1]) != 0) {
                 // hh:mm:ss
@@ -169,10 +256,20 @@ namespace Core {
     }
 
     const TCHAR* Time::WeekDayName() const
+#ifdef __POSIX__
+    {
+        return WeekDayName(TMHandle());
+    }
+    const TCHAR* Time::WeekDayName(const struct tm& time)
+#endif
     {
         static const TCHAR _weekDayNames[] = _T("Sun\0Mon\0Tue\0Wed\0Thu\0Fri\0Sat\0???\0");
 
+#ifdef __WINDOWS__
         uint8_t weekDay = DayOfWeek();
+#else
+        uint8_t weekDay = DayOfWeek(time);
+#endif
 
         ASSERT(weekDay <= 6);
 
@@ -180,10 +277,20 @@ namespace Core {
     }
 
     const TCHAR* Time::MonthName() const
+#ifdef __POSIX__
+    {
+        return MonthName(TMHandle());
+    }
+    const TCHAR* Time::MonthName(const struct tm& time)
+#endif
     {
         static const TCHAR _monthNames[] = _T("???\0Jan\0Feb\0Mar\0Apr\0May\0Jun\0Jul\0Aug\0Sep\0Oct\0Nov\0Dec\0");
 
+#ifdef __WINDOWS__
         uint8_t month = Month();
+#else
+        uint8_t month = Month(time);
+#endif
 
         ASSERT(month >= 1 && month <= 12);
 
@@ -193,50 +300,44 @@ namespace Core {
     bool Time::FromANSI(const string& buffer, const bool localTime)
     {
         // Sun Nov  6 08:49:37 1994       ; ANSI C's asctime() format [18]
-        uint32_t index = 4;
+        uint32_t index = 0;
         uint16_t year = static_cast<uint16_t>(~0);
         uint8_t month = static_cast<uint8_t>(~0);
         uint8_t day = static_cast<uint8_t>(~0);
         uint8_t hours = static_cast<uint8_t>(~0);
         uint8_t minutes = static_cast<uint8_t>(~0);
         uint8_t seconds = static_cast<uint8_t>(~0);
+        uint8_t wday = static_cast<uint8_t>(~0);
+        index += WeekFromString(buffer, ' ', false, wday);
 
-        // Skip space
-        while ((index < buffer.size()) && (::isspace(buffer[index]) != 0)) {
-            index++;
-        }
+        if (wday != static_cast<uint8_t>(~0)) {
 
-        // Now we should be on the Month
-        if ((index + 3) < static_cast<uint32_t>(buffer.size())) {
-            month = MonthFromString(&(buffer.c_str()[index]));
+            // Now we should be on the Month
+            if ((index + 3) < static_cast<uint32_t>(buffer.size())) {
+                index += MonthFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index), month);
 
-            if (month != static_cast<uint8_t>(~0)) {
-                index += 3;
+                if (month != static_cast<uint8_t>(~0)) {
+                    SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
 
-                // Skip Space
-                while ((index < static_cast<uint32_t>(buffer.size())) && (::isdigit(buffer[index]) == 0)) {
-                    index++;
-                }
+                    if (((index + 7) < buffer.size()) && (::isdigit(buffer[index]) != 0)) {
+                        // Now we should be on the day
+                        day = static_cast<uint8_t>(buffer[index] - '0');
+                        if (::isdigit(buffer[index + 1]) != 0) {
+                            day = static_cast<uint8_t>((day * 10) + (buffer[index + 1] - '0'));
+                            index += 2;
+                        } else {
+                            index++;
+                        }
 
-                if ((index + 7) < buffer.size()) {
-                    // Now we should be on the day
-                    day = static_cast<uint8_t>(buffer[index] - '0');
-                    if (::isdigit(buffer[index + 1]) != 0) {
-                        day = static_cast<uint8_t>((day * 10) + (buffer[index + 1] - '0'));
-                        index += 2;
-                    } else {
-                        index++;
-                    }
+                        index += TimeFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index), hours,
+                            minutes, seconds);
 
-                    index += TimeFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index), hours,
-                        minutes, seconds);
+                         index += YearFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index), year);
 
-                    index += YearFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index), year);
-
-                    if ((day != 0) && (seconds != static_cast<uint8_t>(~0)) && (year != static_cast<uint8_t>(~0))) {
-                        *this = Time(year, month, day, hours, minutes, seconds, 0, localTime);
-
-                        return (true);
+                        if ((day != 0) && (seconds != static_cast<uint8_t>(~0)) && (year != static_cast<uint16_t>(~0))) {
+                            *this = Time(year, month, day, hours, minutes, seconds, 0, localTime);
+                            return (true);
+                        }
                     }
                 }
             }
@@ -248,71 +349,60 @@ namespace Core {
     bool Time::FromRFC1123(const string& buffer)
     {
         // Sun, 06 Nov 1994 08:49:37 GMT  ; RFC 822, updated by RFC 1123
-        uint32_t index = 5;
+        uint32_t index = 0;
         uint16_t year = static_cast<uint16_t>(~0);
         uint8_t month = static_cast<uint8_t>(~0);
         uint8_t day = static_cast<uint8_t>(~0);
         uint8_t hours = static_cast<uint8_t>(~0);
         uint8_t minutes = static_cast<uint8_t>(~0);
         uint8_t seconds = static_cast<uint8_t>(~0);
+        uint8_t wday = static_cast<uint8_t>(~0);
+        index += WeekFromString(buffer, ',', false, wday);
 
-        // Find first digit
-        while ((index < buffer.size()) && (::isdigit(buffer[index]) == 0)) {
-            index++;
-        }
+        if (wday != static_cast<uint8_t>(~0)) {
+           SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
 
-        if ((index + 14) < static_cast<uint32_t>(buffer.size())) {
-            // Now we should be on the day
-            day = static_cast<uint8_t>(buffer[index] - '0');
-            if (::isdigit(buffer[index + 1]) != 0) {
-                // dd
-                day = static_cast<uint8_t>((day * 10) + (buffer[index + 1] - '0'));
-                index += 2;
-            } else {
-                // d
-                index++;
-            }
+            if ((index + 14) < static_cast<uint32_t>(buffer.size())) {
+                // Now we should be on the day
+                day = static_cast<uint8_t>(buffer[index] - '0');
+                if (::isdigit(buffer[index + 1]) != 0) {
+                    // dd
+                    day = static_cast<uint8_t>((day * 10) + (buffer[index + 1] - '0'));
+                    index += 2;
+                } else {
+                    // d
+                    index++;
+                }
 
-            // Skip spaces
-            while ((index < buffer.size()) && (::isspace(buffer[index]) != 0)) {
-                index++;
-            }
+                // Now we should be on the month
+                if ((index + 11) < buffer.size()) {
+                    index += MonthFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index), month);
 
-            // Now we should be on the month
-            if ((index + 11) < buffer.size()) {
-                month = MonthFromString(&(buffer.c_str()[index]));
+                    if (month != static_cast<uint8_t>(~0)) {
 
-                if (month != static_cast<uint8_t>(~0)) {
-                    index += 3;
+                        if ((index + 7) < buffer.size()) {
+                            index += YearFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index),
+                                year);
 
-                    // Find next digit
-                    while ((index < static_cast<uint32_t>(buffer.size())) && (::isdigit(buffer[index]) == 0)) {
-                        index++;
-                    }
+                            index += TimeFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index),
+                                hours, minutes, seconds);
 
-                    if ((index + 7) < buffer.size()) {
-                        index += YearFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index),
-                            year);
+                            if ((day != 0) && (seconds != static_cast<uint8_t>(~0)) && (year != static_cast<uint8_t>(~0))) {
+                                bool localTime = true;
 
-                        index += TimeFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index),
-                            hours, minutes, seconds);
 
-                        if ((day != 0) && (seconds != static_cast<uint8_t>(~0)) && (year != static_cast<uint8_t>(~0))) {
-                            bool localTime = true;
+                                // Seems like we have a valid time, let see if we need to change the timezone..
+                                SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
 
-                            // Seems like we have a valid time, let see if we need to change the timezone..
-                            while ((index < static_cast<uint32_t>(buffer.size())) && (::isspace(buffer[index]) != 0)) {
-                                index++;
+                                if ((index + 2) < static_cast<uint32_t>(buffer.size())) {
+                                    uint32_t value = (static_cast<uint8_t>(buffer[index + 0]) << 16) | (static_cast<uint8_t>(buffer[index + 1]) << 8) | (static_cast<uint8_t>(buffer[index + 2]) << 0);
+                                    localTime = (value != (('G' << 16) | ('M' << 8) | ('T'))) && (value != (('U' << 16) | ('T' << 8) | ('C')));
+                                }
+
+                                *this = Time(year, month, day, hours, minutes, seconds, 0, localTime);
+
+                                return (true);
                             }
-
-                            if ((index + 2) < static_cast<uint32_t>(buffer.size())) {
-                                uint32_t value = (static_cast<uint8_t>(buffer[index + 0]) << 16) | (static_cast<uint8_t>(buffer[index + 1]) << 8) | (static_cast<uint8_t>(buffer[index + 2]) << 0);
-                                localTime = (value != (('G' << 16) | ('M' << 8) | ('T'))) && (value != (('U' << 16) | ('T' << 8) | ('C')));
-                            }
-
-                            *this = Time(year, month, day, hours, minutes, seconds, 0, localTime);
-
-                            return (true);
                         }
                     }
                 }
@@ -325,59 +415,62 @@ namespace Core {
     bool Time::FromRFC1036(const string& buffer)
     {
         // Sunday, 06-Nov-94 08:49:37 GMT ; RFC 850, obsoleted by RFC 1036
-        uint32_t index = 6;
+        uint32_t index = 0;
         uint16_t year = static_cast<uint16_t>(~0);
         uint8_t month = static_cast<uint8_t>(~0);
         uint8_t day = static_cast<uint8_t>(~0);
         uint8_t hours = static_cast<uint8_t>(~0);
         uint8_t minutes = static_cast<uint8_t>(~0);
         uint8_t seconds = static_cast<uint8_t>(~0);
+        uint8_t wday = static_cast<uint8_t>(~0);
+        index += WeekFromString(buffer, ',', true, wday);
 
-        while ((index < buffer.size()) && (::isdigit(buffer[index]) == 0)) {
-            index++;
-        }
+        if (wday != static_cast<uint8_t>(~0)) {
 
-        // Now we should be on the Month
-        if ((index + 14) < static_cast<uint32_t>(buffer.size())) {
-            // Now we should be on the day
-            day = static_cast<uint8_t>(buffer[index] - '0');
-            if (::isdigit(buffer[index + 1]) != 0) {
-                day = static_cast<uint8_t>((day * 10) + (buffer[index + 1] - '0'));
-                index += 2;
-            } else {
-                index++;
-            }
+            SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
+            if ((index + 14) <= static_cast<uint32_t>(buffer.size())) {
+                // Now we should be on the day
+                day = static_cast<uint8_t>(buffer[index] - '0');
+                if (::isdigit(buffer[index + 1]) != 0) {
+                    day = static_cast<uint8_t>((day * 10) + (buffer[index + 1] - '0'));
+                    index += 2;
+                } else {
+                    index++;
+                }
 
-            if ((buffer[index]) == '-') {
-                ++index;
-                month = MonthFromString(&(buffer.c_str()[index]));
+                // Now we should be on the Month
+                if ((buffer[index]) == '-') {
+                    ++index;
+                    index += MonthFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index), month);
 
-                if ((month != static_cast<uint8_t>(~0)) && ((buffer[index + 3]) == '-')) {
-                    index += 4;
+                    if ((month != static_cast<uint8_t>(~0)) && ((buffer[index]) == '-')) {
+                        index += 1;
 
-                    if ((index + 7) < buffer.size()) {
-                        index += YearFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index),
-                            year);
+                        if ((index + 7) < buffer.size()) {
+                            index += YearFromString(&(buffer.c_str()[index]),
+                                     static_cast<uint8_t>(buffer.size() - index), year);
 
-                        index += TimeFromString(&(buffer.c_str()[index]), static_cast<uint8_t>(buffer.size() - index),
-                            hours, minutes, seconds);
+                            index += TimeFromString(&(buffer.c_str()[index]),
+                                     static_cast<uint8_t>(buffer.size() - index), hours, minutes, seconds);
 
-                        if ((day != 0) && (seconds != static_cast<uint8_t>(~0)) && (year != static_cast<uint8_t>(~0))) {
-                            bool localTime = true;
+                            if ((day != 0) && (seconds != static_cast<uint8_t>(~0)) &&
+                                (year != static_cast<uint8_t>(~0))) {
+                                bool localTime = true;
 
-                            // Seems like we have a valid time, let see if we need to change the timezone..
-                            while ((index < static_cast<uint32_t>(buffer.size())) && (::isspace(buffer[index]) != 0)) {
-                                index++;
+                                SkipLeadingSpaces(buffer.c_str(), static_cast<uint8_t>(buffer.size()), index);
+
+                                if ((index + 2) < static_cast<uint32_t>(buffer.size())) {
+                                    uint32_t value = (static_cast<uint8_t>(buffer[index + 0]) << 16) |
+                                            (static_cast<uint8_t>(buffer[index + 1]) << 8) |
+                                            (static_cast<uint8_t>(buffer[index + 2]) << 0);
+                                    localTime = (value != (('G' << 16) | ('M' << 8) | ('T'))) &&
+                                                (value != (('U' << 16) | ('T' << 8) | ('C')));
+                                }
+
+                                *this = Time(year, month, day, hours, minutes, seconds, 0, localTime);
+
+                                return (true);
                             }
-
-                            if ((index + 2) < static_cast<uint32_t>(buffer.size())) {
-                                uint32_t value = (static_cast<uint8_t>(buffer[index + 0]) << 16) | (static_cast<uint8_t>(buffer[index + 1]) << 8) | (static_cast<uint8_t>(buffer[index + 2]) << 0);
-                                localTime = (value != (('G' << 16) | ('M' << 8) | ('T'))) && (value != (('U' << 16) | ('T' << 8) | ('C')));
-                            }
-
-                            *this = Time(year, month, day, hours, minutes, seconds, 0, localTime);
-
-                            return (true);
                         }
                     }
                 }
@@ -429,12 +522,15 @@ namespace Core {
                                 seconds = std::strtol(cbuffer + 17, &endptr, 10);
                                 if ((seconds >= 0) && (seconds <= 59)) {
                                     result = true; // date and time was OK
-
+ 
                                     // Handle fractions of seconds
                                     if (*endptr == '.') {
-                                        if (buffer.length() >= static_cast<size_t>((endptr - cbuffer) + 2)) {
-                                            uint32_t length = static_cast<uint32_t>(buffer.length() -  static_cast<size_t>((endptr - cbuffer) + 2));
+                                        if (buffer.length() >= static_cast<size_t>((endptr - cbuffer) + 1)) {
+                                            uint32_t length = (static_cast<uint32_t>(buffer.length() -
+                                                              static_cast<size_t>((endptr - cbuffer) + 1)));
                                             miliseconds = NumberType<uint32_t>(TextFragment(&(endptr[1]), length)).Value();
+                                            length = static_cast<uint32_t>(NumberType<uint32_t>(TextFragment(&(endptr[1]), length)).Text().length());
+                                            endptr += length + 1;
                                         } else {
                                             result = false;
                                         }
@@ -464,7 +560,9 @@ namespace Core {
                                                         // Nothing more expected after timezone offset
                                                         result = false;
                                                     } else {
-                                                        if ((timezoneHr >= -23) && (timezoneHr <= 23) && (timezoneMin >= 0) && (timezoneMin <= 59)){
+                                                        if ((timezoneHr >= -23) && (timezoneHr <= 23) &&
+                                                                 (timezoneMin >= 0) && (timezoneMin <= 59)) {
+
                                                             offset = (timezoneHr * 60) + timezoneMin;
                                                         } else {
                                                             result = false;
@@ -477,7 +575,8 @@ namespace Core {
                                             }
                                         }
                                         else if (*endptr != 'Z') {
-                                            // Nothing else except time offset or 'Z' is allowed at the end of the string
+                                            // Nothing else except time offset or 'Z' is allowed
+                                            // at the end of the string
                                             result = false;
                                         }
                                     }
@@ -541,25 +640,27 @@ namespace Core {
 
 #endif
 
-    // Invariant for both Linux and Windows: internal time stored is always according to local time specification, so GMT / UTC if local time  is false, local time otherwise.
-
 #ifdef __WINDOWS__
 
     Time::Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
+        : _time()
     {
-        _time.wYear = year;
-        _time.wMonth = month;
-        _time.wDay = day;
-        _time.wHour = hour % 24;
-        _time.wMinute = minute % 60;
-        _time.wSecond = second % 60;
-        _time.wMilliseconds = millisecond;
-        _time.wDayOfWeek = static_cast<WORD>(~0);
+        if (IsValidDateTime(year, month, day, hour, minute, second, millisecond) == true) {
 
-        if (localTime) {
-            SYSTEMTIME convertedTime;
-            TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
-            _time = convertedTime;
+            _time.wYear = year;
+            _time.wMonth = month;
+            _time.wDay = day;
+            _time.wHour = hour;
+            _time.wMinute = minute;
+            _time.wSecond = second;
+            _time.wMilliseconds = millisecond;
+            _time.wDayOfWeek = static_cast<WORD>(~0);
+
+            if (localTime) {
+                SYSTEMTIME convertedTime;
+                TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
+                _time = convertedTime;
+            }
         }
     }
 
@@ -579,7 +680,7 @@ namespace Core {
     }
 
     // Uint64 is the time in MicroSeconds !!!
-    Time::Time(const uint64_t time, bool localTime)
+    Time::Time(const microsecondsfromepoch time)
         : _time()
     {
         FILETIME fileTime;
@@ -591,11 +692,6 @@ namespace Core {
         fileTime.dwHighDateTime = result.HighPart;
 
         ::FileTimeToSystemTime(&fileTime, &_time);
-        if (localTime) {
-            SYSTEMTIME convertedTime;
-            TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
-            _time = convertedTime;
-        }
     }
 
     Time::Time(const FILETIME& time, bool localTime /*= false*/)
@@ -636,8 +732,7 @@ namespace Core {
             static_cast<uint16_t>(_time.wMilliseconds), true));
     }
 
-    // Return the time in MicroSeconds, since since January 1, 1970 00:00:00 (UTC)...
-    uint64_t Time::Ticks() const
+    Time::microsecondsfromepoch Time::Ticks() const
     {
         // Contains a 64-bit value representing the number of 100-nanosecond intervals since January 1, 1601 (UTC).
         FILETIME fileTime{};
@@ -724,7 +819,7 @@ namespace Core {
             _stprintf(buffer, _T("%02d:%02d:%02d"), converted.Hours(), converted.Minutes(), converted.Seconds());
         } else
 #pragma warning(disable : 4996)
-            _stprintf(buffer, _T("]%02d:%02d:%02d"), Hours(), Minutes(), Seconds());
+            _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(), Minutes(), Seconds());
 #pragma warning(default : 4996)
 
         string value(buffer);
@@ -743,18 +838,18 @@ namespace Core {
         if (!IsValid())
             return string();
 
-        const TCHAR* zone = (localTime == false ? _T("GMT") : _T(""));
+        const TCHAR* zone = (localTime == false ? _T(" GMT") : _T(""));
 
         if (localTime == true) {
             SYSTEMTIME convertedTime;
             SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
            Time converted(convertedTime, localTime);
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d %s"), converted.WeekDayName(),
+            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), converted.WeekDayName(),
                 converted.Day(), converted.MonthName(), converted.Year(),
                 converted.Hours(), converted.Minutes(), converted.Seconds(), zone);
         } else
 #pragma warning(disable : 4996)
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d %s"), WeekDayName(), Day(), MonthName(), Year(),
+            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(), Day(), MonthName(), Year(),
                 Hours(), Minutes(), Seconds(), zone);
 #pragma warning(default : 4996)
 
@@ -799,44 +894,6 @@ namespace Core {
 #endif
 
 #ifdef __POSIX__
-    Time::Time(const struct timespec& time, bool localTime)
-    {
-        if (localTime) {
-            localtime_r(&time.tv_sec, &_time);
-        } else {
-            gmtime_r(&time.tv_sec, &_time);
-        }
-
-        // Calculate ticks..
-        _ticks = (static_cast<uint64_t>(time.tv_sec) * MicroSecondsPerSecond) + (time.tv_nsec / NanoSecondsPerMicroSecond) + OffsetTicksForEpoch;
-    }
-
-    Time Time::ToLocal() const {
-        struct tm local = _time;
-        time_t flatTime;
-        flatTime = mktime(&local);
-        localtime_r(&flatTime, &local);
-
-        return (Time(
-            static_cast<uint16_t>(local.tm_year + 1900),
-            static_cast<uint8_t>(local.tm_mon + 1),
-            static_cast<uint8_t>(local.tm_mday),
-            static_cast<uint8_t>(local.tm_hour),
-            static_cast<uint8_t>(local.tm_min),
-            static_cast<uint8_t>(local.tm_sec),
-            0, false));
-    }
-
-    Time Time::ToUTC() const {
-        return (Time(
-            static_cast<uint16_t>(_time.tm_year + 1900),
-            static_cast<uint8_t>(_time.tm_mon + 1),
-            static_cast<uint8_t>(_time.tm_mday),
-            static_cast<uint8_t>(_time.tm_hour),
-            static_cast<uint8_t>(_time.tm_min),
-            static_cast<uint8_t>(_time.tm_sec),
-            0, true));
-    }
 
     // Copyright (c) 2001-2006, NLnet Labs. All rights reserved.
     // Licensed under the BSD-3 License"
@@ -847,11 +904,6 @@ namespace Core {
     static const int monoff[] = {
         0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
     };
-
-    static int is_leap_year(int year)
-    {
-        return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
-    }
 
     static int leap_days(int y1, int y2)
     {
@@ -875,7 +927,7 @@ namespace Core {
         days = 365 * (year - 1970) + leap_days(1970, year);
         days += monoff[tm->tm_mon];
 
-        if (tm->tm_mon > 1 && is_leap_year(year))
+        if (tm->tm_mon > 1 && IsLeapYear(year))
             ++days;
         days += tm->tm_mday - 1;
 
@@ -886,32 +938,57 @@ namespace Core {
         return seconds;
     }
 
-    Time::Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
+    Time::Time(const struct timespec& time) 
+        : _time(time)
     {
-        struct tm source {
-        };
+    }
 
-        source.tm_year = year - 1900;
-        source.tm_mon = month - 1;
-        source.tm_mday = day;
-        source.tm_hour = hour;
-        source.tm_min = minute;
-        source.tm_sec = second;
+    Time Time::ToLocal() const {
+        //convert to localtime
+        struct tm localtm{}; 
+        localtime_r(&_time.tv_sec, &localtm);
+        //now convert back to epoch time again but then with the localtime as UTC time...
+        struct timespec localasutc{};
+        localasutc.tv_sec = mktimegm(&localtm);
+        localasutc.tv_nsec = _time.tv_nsec;
 
-        time_t flatTime{};
-        if (localTime)
-            flatTime = mktime(&source);
-        else
-            flatTime = mktimegm(&source);
+        return (Time(localasutc));
+    }
 
-        if (localTime) {
-            localtime_r(&flatTime, &_time);
-        } else {
-            gmtime_r(&flatTime, &_time);
+    Time Time::ToUTC() const {
+        //convert to UTC 
+        struct tm utcaslocaltm{}; 
+        gmtime_r(&_time.tv_sec, &utcaslocaltm);
+        //now convert back to epoch time again 
+        struct timespec asutc{};
+        asutc.tv_sec = mktimegm(&utcaslocaltm);
+        asutc.tv_nsec = _time.tv_nsec;
+
+        return (Time(asutc));
+    }
+
+    Time::Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
+        : _time()
+    {
+        struct tm source{};
+        if (IsValidDateTime(year, month, day, hour, minute, second, millisecond) == true) {
+
+            source.tm_year = year - 1900;
+            source.tm_mon = month - 1;
+            source.tm_mday = day;
+            source.tm_hour = hour;
+            source.tm_min = minute;
+            source.tm_sec = second;
+            source.tm_isdst = -1; // make sure dst is calculated automatically
+
+            if (localTime == true) {
+                _time.tv_sec = mktime(&source);
+            } else {
+                _time.tv_sec = mktimegm(&source);
+            }
+
+            _time.tv_nsec = millisecond * NanoSecondsPerMilliSecond;
         }
-
-        // Calculate ticks..
-        _ticks = (static_cast<uint64_t>(flatTime) * static_cast<uint64_t>(MicroSecondsPerSecond)) + (static_cast<uint64_t>(millisecond) * static_cast<uint64_t>(MicroSecondsPerMilliSecond)) + OffsetTicksForEpoch;
     }
 
     /**
@@ -919,78 +996,64 @@ namespace Core {
      * https://en.wikipedia.org/wiki/Julian_day
      */
     double Time::JulianDate() const {
-        uint16_t year = _time.tm_year + 1900;
-        uint8_t month = _time.tm_mon + 1;
-        uint8_t day = _time.tm_mday;
-        uint8_t hour = _time.tm_hour;
-        uint8_t minutes = _time.tm_min;
-        uint8_t seconds = _time.tm_sec;
+    
+        struct tm source = TMHandle();
+
+        uint16_t year = source.tm_year + 1900;
+        uint8_t month = source.tm_mon + 1;
+        uint8_t day = source.tm_mday;
+        uint8_t hour = source.tm_hour;
+        uint8_t minutes = source.tm_min;
+        uint8_t seconds = source.tm_sec;
 
         return JulianJDConverter(year, month, day, hour, minutes, seconds);
     }
 
-    Time::Time(const struct timeval& info)
-    {
-        _ticks = (static_cast<uint64_t>(info.tv_sec) * static_cast<uint64_t>(MicroSecondsPerSecond)) + static_cast<uint64_t>(info.tv_usec) + OffsetTicksForEpoch;
-
-        // This is the seconds since 1970...
-        struct tm* ptm = gmtime(&info.tv_sec);
-
-        _time = *ptm;
-    }
-    Time::Time(const uint64_t time, const bool localTime /*= false*/)
+    Time::Time(const microsecondsfromepoch time)
         : _time()
-        , _ticks(time)
     {
         // This is the seconds since 1970...
         time_t epochTimestamp = static_cast<time_t>((time - OffsetTicksForEpoch) / MicroSecondsPerSecond);
 
-        if (localTime)
-            localtime_r(&epochTimestamp, &_time);
-        else
-            gmtime_r(&epochTimestamp, &_time);
+        _time.tv_sec = epochTimestamp; 
+
+        _time.tv_nsec = (time % MicroSecondsPerSecond) * NanoSecondsPerMicroSecond;
     }
 
-    uint64_t Time::Ticks() const
+    Time::microsecondsfromepoch Time::Ticks() const
     {
-        return (_ticks);
+        return ((static_cast<microsecondsfromepoch>(_time.tv_sec) * MicroSecondsPerSecond ) + (static_cast<microsecondsfromepoch>(_time.tv_nsec)/NanoSecondsPerMicroSecond));
     }
 
     uint8_t Time::DayOfWeek() const
     {
-        return (static_cast<uint8_t>(_time.tm_wday));
+        return DayOfWeek(TMHandle());
     }
 
     uint16_t Time::DayOfYear() const
     {
-        return (static_cast<uint16_t>(_time.tm_yday));
+        return DayOfYear(TMHandle());
     }
 
     string Time::ToRFC1123(const bool localTime) const
     {
         // Sun, 06 Nov 1994 08:49:37 GMT  ; RFC 822, updated by RFC 1123
         TCHAR buffer[32];
-        const TCHAR* zone = (localTime == false) ? _T("GMT") : _T("");
+        const TCHAR* zone = (localTime == false) ? _T(" GMT") : _T("");
 
         if (!IsValid())
             return string();
 
-        if (localTime != IsLocalTime()) {
-            // We need to convert from local to GMT or vv
-            time_t epochTimestamp;
-            struct tm originalTime = _time;
-            if (IsLocalTime())
-                epochTimestamp = mktime(&originalTime);
-            else
-                epochTimestamp = mktimegm(&originalTime);
-            timespec convertedTime{ epochTimestamp, 0 };
-            Time converted(convertedTime, localTime);
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d %s"), converted.WeekDayName(),
-                converted.Day(), converted.MonthName(), converted.Year(),
-                converted.Hours(), converted.Minutes(), converted.Seconds(), zone);
+        if (localTime == true) {
+            struct tm localTime{};
+            localtime_r(&_time.tv_sec, &localTime);
+            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(localTime),
+                Day(localTime), MonthName(localTime), Year(localTime),
+                Hours(localTime), Minutes(localTime), Seconds(localTime), zone);
         } else {
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d %s"), WeekDayName(), Day(), MonthName(), Year(), Hours(),
-                Minutes(), Seconds(), zone);
+            struct tm utcTime = TMHandle();
+            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(utcTime), Day(utcTime), MonthName(utcTime), Year(utcTime), Hours(utcTime),
+                Minutes(utcTime), Seconds(utcTime), zone);
         }
 
         return (string(buffer));
@@ -1004,21 +1067,15 @@ namespace Core {
         if (!IsValid())
             return string();
 
-        if (localTime != IsLocalTime()) {
-            // We need to convert from local to GMT or vv
-            time_t epochTimestamp;
-            struct tm originalTime = _time;
-            if (IsLocalTime())
-                epochTimestamp = mktime(&originalTime);
-            else
-                epochTimestamp = mktimegm(&originalTime);
-
-            timespec convertedTime{ epochTimestamp, 0 };
-            Time converted(convertedTime, localTime);
-            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), converted.Year(), converted.Month(), converted.Day(), converted.Hours(),
-                converted.Minutes(), converted.Seconds(), zone);
+        if (localTime == true) {
+            struct tm localTime{};
+            localtime_r(&_time.tv_sec, &localTime);
+            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(localTime), Month(localTime), Day(localTime), Hours(localTime),
+                Minutes(localTime), Seconds(localTime), zone);
         } else {
-            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(), Month(), Day(), Hours(),Minutes(), Seconds(), zone);
+            struct tm utcTime = TMHandle();
+            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(utcTime), Month(utcTime), Day(utcTime), Hours(utcTime),Minutes(utcTime),
+                Seconds(utcTime), zone);
         }
 
         return (string(buffer));
@@ -1032,19 +1089,13 @@ namespace Core {
         if (!IsValid())
             return string();
 
-        if (localTime != IsLocalTime()) {
-            // We need to convert from local to GMT or vv
-            time_t epochTimestamp;
-            struct tm originalTime = _time;
-            if (IsLocalTime())
-                epochTimestamp = mktime(&originalTime);
-            else
-                epochTimestamp = mktimegm(&originalTime);
-            timespec convertedTime{ epochTimestamp, 0 };
-            Time converted(convertedTime, localTime);
-            _stprintf(buffer, _T("%02d:%02d:%02d"), converted.Hours(), converted.Minutes(), converted.Seconds());
+        if (localTime == true) {
+            struct tm localTime{};
+            localtime_r(&_time.tv_sec, &localTime);
+            _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(localTime), Minutes(localTime), Seconds(localTime));
         } else {
-            _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(), Minutes(), Seconds());
+            struct tm utcTime = TMHandle();
+            _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(utcTime), Minutes(utcTime), Seconds(utcTime));
         }
 
         string value(buffer);
@@ -1059,17 +1110,26 @@ namespace Core {
     {
         TCHAR buffer[200];
 
-        _tcsftime(buffer, sizeof(buffer), formatter, &_time);
+        struct tm tmtime = TMHandle(); // cannot get address from rvalue;
+        _tcsftime(buffer, sizeof(buffer), formatter, &tmtime);
 
         return (string(buffer));
     }
 
     /* static */ Time Time::Now()
     {
-        struct timeval currentTime;
-        gettimeofday(&currentTime, nullptr);
+        struct timespec currentTime{};
+        clock_gettime(CLOCK_REALTIME, &currentTime);
 
         return (Time(currentTime));
+    }
+
+
+    struct tm Time::TMHandle() const 
+    {
+        struct tm tmtime{};
+        gmtime_r(&_time.tv_sec, &tmtime);
+        return tmtime;
     }
 
 #endif
@@ -1088,14 +1148,14 @@ namespace Core {
     {
         // Calculate the new time !!
         uint64_t newTime = Ticks() + static_cast<uint64_t>(timeInMilliseconds) * MilliSecondsPerSecond;
-        return (operator=(Time(newTime, false)));
+        return (operator=(Time(newTime)));
     }
 
     Time& Time::Sub(const uint32_t timeInMilliseconds)
     {
         // Calculate the new time !!
         uint64_t newTime = Ticks() - static_cast<uint64_t>(timeInMilliseconds) * MilliSecondsPerSecond;
-        return (operator=(Time(newTime, false)));
+        return (operator=(Time(newTime)));
     }
 
     uint64_t Time::NTPTime() const
@@ -1111,16 +1171,33 @@ namespace Core {
         return (seconds);
     }
 
-    int32_t Time::DifferenceFromGMTSeconds() const
+    inline bool Time::IsValidDate(const uint16_t year, const uint8_t month, const uint8_t day) const
     {
-#ifdef __WINDOWS__
-        TIME_ZONE_INFORMATION timeZoneInfo;
-        GetTimeZoneInformation(&timeZoneInfo);
+        uint8_t totalDays = 0;
+        switch (month - 1) {
+        case Month::Jan:
+        case Month::Mar:
+        case Month::May:
+        case Month::July:
+        case Month::Aug:
+        case Month::Oct:
+        case Month::Dec:
+            totalDays = 31;
+            break;
 
-        return static_cast<int32_t>(-timeZoneInfo.Bias * 60);
-#else
-        return static_cast<int32_t>(Handle().tm_gmtoff);
-#endif
+        case Month::Feb:
+            totalDays = ((IsLeapYear(year) == true) ? 29 : 28);
+            break;
+        case Month::Apr:
+        case Month::June:
+        case Month::Sept:
+        case Month::Nov:
+            totalDays = 30;
+            break;
+        default:
+            break;
+        }
+        return (((day > 0) && (day <= totalDays)) ? true : false);
     }
 }
 } // namespace Core

@@ -46,7 +46,7 @@ namespace Web {
     public:
         inline Core::ProxyType<ELEMENT> Element()
         {
-            return (Core::ProxyType<ELEMENT>(&_singleElement, &_singleElement));
+            return (Core::ProxyType<ELEMENT>(_singleElement));
         }
 
     private:
@@ -300,11 +300,17 @@ namespace Web {
 
             return (result);
         }
-        inline uint64_t FileSize() const {
+        inline uint64_t FileSize() const
+        {
             return (_fileBody.Core::File::Size());
         }
-        inline uint64_t Transferred () const {
+        inline uint64_t Transferred() const
+        {
             return (_fileBody.Position());
+        }
+        inline void LoadHash(const Crypto::Context& context)
+        {
+            _LoadHash(context);
         }
         inline void Close()
         {
@@ -377,10 +383,10 @@ namespace Web {
             }
         }
 
-        HAS_MEMBER(Hash, hasHash);
+        IS_MEMBER_AVAILABLE(Hash, hasHash);
 
         template < typename ACTUALFILEBODY = FILEBODY>
-        inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
+        inline typename Core::TypeTraits::enable_if<hasHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, void>::type
         _CalculateHash(Web::Request& request)
         {
             uint8_t   buffer[64];
@@ -405,13 +411,13 @@ namespace Web {
         }
 
         template < typename ACTUALFILEBODY = FILEBODY>
-        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
+        inline typename Core::TypeTraits::enable_if<!hasHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, void>::type
         _CalculateHash()
         {
         }
 
         template <typename ACTUALFILEBODY = FILEBODY>
-        inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, bool>::type
+        inline typename Core::TypeTraits::enable_if<hasHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, bool>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             // See if this is a valid. frame
@@ -421,10 +427,27 @@ namespace Web {
         }
 
         template < typename ACTUALFILEBODY = FILEBODY>
-        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, bool>::type
+        inline typename Core::TypeTraits::enable_if<!hasHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, bool>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             return (true);
+        }
+
+        IS_MEMBER_AVAILABLE(Hash, hasLoadHash);
+
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<hasLoadHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, void>::type
+        _LoadHash(const Crypto::Context& context)
+        {
+            typename ACTUALFILEBODY::HashType& hash = const_cast<typename ACTUALFILEBODY::HashType&>(_fileBody.Hash());
+            hash.Reset();
+            hash.Load(context);
+        }
+
+        template < typename ACTUALFILEBODY = FILEBODY>
+        inline typename Core::TypeTraits::enable_if<!hasLoadHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, void>::type
+        _LoadHash(const Crypto::Context& context)
+        {
         }
 
     private:
@@ -550,10 +573,10 @@ namespace Web {
         }
 
     private:
-        HAS_MEMBER(Hash, hasHash);
+        IS_MEMBER_AVAILABLE(Hash, hasHash);
 
         template < typename ACTUALFILEBODY = FILEBODY>
-        inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
+        inline typename Core::TypeTraits::enable_if<hasHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, void>::type
         _CalculateHash(Web::Response& request)
         {
             uint8_t   buffer[64];
@@ -577,13 +600,13 @@ namespace Web {
         }
 
         template < typename ACTUALFILEBODY = FILEBODY>
-        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, void>::type
+        inline typename Core::TypeTraits::enable_if<!hasHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, void>::type
         _CalculateHash(Web::Response& request)
         {
         }
 
         template <typename ACTUALFILEBODY = FILEBODY>
-        inline typename Core::TypeTraits::enable_if<hasHash<ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, bool>::type
+        inline typename Core::TypeTraits::enable_if<hasHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, bool>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             // See if this is a valid. frame
@@ -593,7 +616,7 @@ namespace Web {
         }
 
         template <typename ACTUALFILEBODY = FILEBODY>
-        inline typename Core::TypeTraits::enable_if<!hasHash<ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType& (ACTUALFILEBODY::*)() const>::value, bool>::type
+        inline typename Core::TypeTraits::enable_if<!hasHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, bool>::type
         _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             return (true);

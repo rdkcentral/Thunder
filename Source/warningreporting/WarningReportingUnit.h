@@ -22,8 +22,8 @@
 // ---- Include system wide include files ----
 
 // ---- Include local include files ----
-#include "IWarningReportingMedia.h"
 #include "Module.h"
+#include "IWarningReportingMedia.h"
 
 // ---- Helper types and constants ----
 

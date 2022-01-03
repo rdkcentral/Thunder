@@ -40,12 +40,11 @@ namespace PluginHost {
         };
 
         class RepeatKeyTimer : public Core::IDispatch {
-        private:
+        public:
             RepeatKeyTimer() = delete;
             RepeatKeyTimer(const RepeatKeyTimer&) = delete;
             RepeatKeyTimer& operator=(const RepeatKeyTimer&) = delete;
 
-        public:
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
@@ -62,9 +61,7 @@ namespace PluginHost {
 #ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
-            ~RepeatKeyTimer() override
-            {
-            }
+            ~RepeatKeyTimer() override = default;
 
         public:
             void AddReference()
@@ -225,8 +222,8 @@ namespace PluginHost {
             {
                 _passThrough = enabled;
             }
-            uint32_t Load(const string& mappingFile);
-            uint32_t Save(const string& mappingFile);
+            uint32_t Import(const Core::JSON::ArrayType<KeyMapEntry>& mappingTable);
+            void Export(Core::JSON::ArrayType<KeyMapEntry>& mappingTable);
 
             inline const ConversionInfo* operator[](const uint32_t code) const
             {

@@ -54,18 +54,28 @@ TEST(test_datafile, simple_test)
     string message = ">echo 'DataElement file checking......'";
     snprintf(buffer,(message.size() + fileName.size()+1), "%s%s",message.c_str(),fileName.c_str());
     File file(fileName);
-    File fileSample(file);
-    DataFile obj1(fileSample);
+
+    // Clear error no since it will be already set internally from
+    // the LoadInfo sequence with non existing file
+    EXPECT_EQ(file.ErrorCode(), unsigned(2));
+    errno = 0;
+
+    file.Create(true);
+    EXPECT_EQ(file.IsOpen(), true);
+    EXPECT_EQ(file.Name(), fileName);
+    DataFile obj1(file);
+
+    EXPECT_EQ(obj1.ErrorCode(), unsigned(0));
     DataFile object(fileName, 1, 10);
-    EXPECT_EQ(obj1.ErrorCode(),unsigned(2));
     DataFile obj2(fileName, 1, 50);
     obj1.Sync();
     obj2.MemoryMap();
 
     const string& name = obj1.Name();
     EXPECT_EQ(name.c_str(), fileName);
-    EXPECT_FALSE(obj2.IsValid());
+    EXPECT_EQ(obj2.IsValid(), true);
     obj1.Storage();
     obj1.ReloadFileInfo();
     obj1.MemoryMap();
+    file.Destroy();
 }

@@ -109,6 +109,9 @@ namespace PluginHost {
         public:
             static Core::ProxyType<Core::IDispatch> Create(IShell* shell, IShell::state toState, IShell::reason why);
 
+            //
+            // Core::IDispatch implementation
+            // -------------------------------------------------------------------------------
             void Dispatch() override
             {
                 ASSERT(_shell != nullptr);
@@ -336,19 +339,8 @@ namespace PluginHost {
             return std::vector<string> {};
         }
     };
+
 } // namespace PluginHost
-
-namespace Core {
-
-    template <>
-    EXTERNAL /* static */ const EnumerateConversion<PluginHost::IShell::state>*
-    EnumerateType<PluginHost::IShell::state>::Table(const uint16_t);
-
-    template <>
-    EXTERNAL /* static */ const EnumerateConversion<PluginHost::IShell::reason>*
-    EnumerateType<PluginHost::IShell::reason>::Table(const uint16_t);
-
-} // namespace Core
-} // namespace WPEFramework
+}
 
 #endif //__ISHELL_H__

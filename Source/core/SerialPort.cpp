@@ -254,7 +254,9 @@ namespace Core {
                                 port->Read(static_cast<uint16_t>(info));
                             }
                             else {
-                                TRACE_L1("Oopsie daisy, could not read Serial Port :-(");
+                                DWORD result = GetLastError();
+
+                                TRACE_L1("Oopsie daisy, could not read Serial Port: Error: %s :-(", LastError(result).c_str());
                             }
                         }
 
@@ -265,9 +267,15 @@ namespace Core {
                             if (::GetOverlappedResult(port->Descriptor(), &(port->m_WriteInfo), &info, FALSE)) {
                                 port->Write(static_cast<uint16_t>(info));
                             }
+                            #ifdef __DEBUG__
                             else {
-                                TRACE_L1("Oopsie daisy, could not write Serial Port :-(");
+                                DWORD result = GetLastError();
+
+                                if (result != ERROR_IO_INCOMPLETE) {
+                                    TRACE_L1("Oopsie daisy, could not write Serial Port: Error: 0x%X => %s :-(", result, LastError(result).c_str());
+                                }
                             }
+                            #endif
                         }
                     }
 
