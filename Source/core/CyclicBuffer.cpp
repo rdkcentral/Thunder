@@ -41,6 +41,7 @@ namespace Core {
         , _alert(false)
         , _administration(nullptr)
     {
+        ASSERT((mode & Core::File::USER_WRITE) != 0);
 #ifdef __WINDOWS__
         string strippedName(Core::File::PathName(_buffer.Name()) + Core::File::FileName(_buffer.Name()));
         _mutex = CreateSemaphore(nullptr, 1, 1, (strippedName + ".mutex").c_str());
@@ -95,7 +96,7 @@ namespace Core {
         uint32_t actual_offset = RoundUp(offset, sizeof(void*));
         uint32_t actual_bufferSize = 0;
         if (bufferSize == 0) {
-            actual_bufferSize = actual_offset <= static_cast<uint32_t>(_buffer.Size()) ? static_cast<uint32_t>(_buffer.Size() - actual_offset) : 0;
+            actual_bufferSize = actual_offset <= _buffer.Size() ? (_buffer.Size() - actual_offset) : 0;
         } else {
             actual_bufferSize = bufferSize <= _buffer.Size() ? bufferSize : 0;
         }
@@ -183,10 +184,11 @@ namespace Core {
     }
 
     // This is in MS...
-    uint32_t CyclicBuffer::SignalLock(const uint32_t waitTime)
+    uint32_t CyclicBuffer::SignalLock(uint32_t& waitTime)
     {
 
-        uint32_t result = waitTime;
+        uint32_t result = Core::ERROR_NONE;
+        uint32_t pendingWaitTime = waitTime;
 
         if (waitTime != Core::infinite) {
 #ifdef __POSIX__
@@ -195,7 +197,7 @@ namespace Core {
             clock_gettime(CLOCK_REALTIME, &structTime);
 
             structTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
-            structTime.tv_sec += (waitTime / 1000); // + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
+            structTime.tv_sec += (waitTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
             structTime.tv_nsec = structTime.tv_nsec % 1000000000;
 
             if (pthread_cond_timedwait(&(_administration->_signal), &(_administration->_mutex), &structTime) != 0) {
@@ -204,30 +206,35 @@ namespace Core {
                 clock_gettime(CLOCK_REALTIME, &nowTime);
                 if (nowTime.tv_nsec > structTime.tv_nsec) {
 
-                    result = (nowTime.tv_sec - structTime.tv_sec) * 1000 + ((nowTime.tv_nsec - structTime.tv_nsec) / 1000000);
+                    pendingWaitTime = (nowTime.tv_sec - structTime.tv_sec) * 1000 + ((nowTime.tv_nsec - structTime.tv_nsec) / 1000000);
                 } else {
 
-                    result = (nowTime.tv_sec - structTime.tv_sec - 1) * 1000 + ((1000000000 - (structTime.tv_nsec - nowTime.tv_nsec)) / 1000000);
+                    pendingWaitTime = (nowTime.tv_sec - structTime.tv_sec - 1) * 1000 + ((1000000000 - (structTime.tv_nsec - nowTime.tv_nsec)) / 1000000);
                 }
                 TRACE_L1("End wait. %d\n", result);
+                result = Core::ERROR_TIMEDOUT;
             }
 #else
             if (::WaitForSingleObjectEx(_signal, waitTime, FALSE) == WAIT_OBJECT_0) {
 
                 // Calculate the time we used, and subtract it from the waitTime.
-                result = 100;
+                pendingWaitTime = 100;
+                result = Core::ERROR_TIMEDOUT;
             }
 #endif
 
             // We can not wait longer than the set time.
-            ASSERT(result <= waitTime);
+            ASSERT(pendingWaitTime <= waitTime);
         } else {
 #ifdef __POSIX__
             pthread_cond_wait(&(_administration->_signal), &(_administration->_mutex));
 #else
             ::WaitForSingleObjectEx(_signal, INFINITE, FALSE);
 #endif
+            pendingWaitTime = 0;
         }
+
+        waitTime = pendingWaitTime;
         return (result);
     }
 
@@ -246,10 +253,12 @@ namespace Core {
     void CyclicBuffer::Reevaluate()
     {
 
+        AdminLock();
         // See if we need to have some interested actor reevaluate its state..
         if (_administration->_agents.load() > 0) {
 
 #ifdef __POSIX__
+
             for (int index = _administration->_agents.load(); index != 0; index--) {
                 pthread_cond_signal(&(_administration->_signal));
             }
@@ -259,9 +268,12 @@ namespace Core {
 
             // Wait till all waiters have seen the trigger..
             while (_administration->_agents.load() > 0) {
+                AdminUnlock();
                 std::this_thread::yield();
+                AdminLock();
             }
         }
+        AdminUnlock();
     }
 
     void CyclicBuffer::Alert()
@@ -271,10 +283,10 @@ namespace Core {
         AdminLock();
 
         _alert = true;
+        AdminUnlock();
 
         Reevaluate();
 
-        AdminUnlock();
     }
 
     uint32_t CyclicBuffer::Read(uint8_t buffer[], const uint32_t length, bool partialRead)
@@ -303,7 +315,7 @@ namespace Core {
                 // No data, or too much, return 0.
                 return 0;
             }
-            
+
             uint32_t bufferLength = std::min(length, result);
 
             foundData = true;
@@ -383,7 +395,7 @@ namespace Core {
                 shouldMoveHead = false;
             }
         } else {
-            if (((_administration->_state.load() & state::OVERWRITE) == 0) && (length > Free()))
+            if (((_administration->_state.load() & state::OVERWRITE) == 0) && (length >= Free()))
                 return 0;
 
             // A write without reservation, make sure we have the space.
@@ -412,12 +424,8 @@ namespace Core {
 
             if (startingEmpty) {
                 // Was empty before, tell observers about new data.
-                AdminLock();
-
                 Reevaluate();
                 DataAvailable();
-
-                AdminUnlock();
             }
         }
 
@@ -430,22 +438,27 @@ namespace Core {
         uint32_t tail = oldTail & _administration->_tailIndexMask;
         uint32_t free = Free(_administration->_head, tail);
 
-        while (free <= required) {
-            uint32_t remaining = required - free;
-            Cursor cursor(*this, oldTail, remaining);
-            uint32_t offset = GetOverwriteSize(cursor);
-            ASSERT((offset + free) >= required);
+        if (free <= required) {
+            while (free <= required) {
+                uint32_t remaining = (required + 1) - free;
+                Cursor cursor(*this, oldTail, remaining);
+                uint32_t offset = GetOverwriteSize(cursor);
+                ASSERT((offset + free) >= required);
 
-            uint32_t newTail = cursor.GetCompleteTail(offset);
+                uint32_t newTail = cursor.GetCompleteTail(offset);
 
-            if (std::atomic_compare_exchange_weak(&(_administration->_tail), &oldTail, newTail) == false) {
-                oldTail = _administration->_tail;
-                tail = oldTail & _administration->_tailIndexMask;
-                free = Free(_administration->_head, tail);
-            } else {
-                free = Free(_administration->_head, newTail & _administration->_tailIndexMask);
-                ASSERT(Free() >= required);
+                if (std::atomic_compare_exchange_weak(&(_administration->_tail), &oldTail, newTail) == false) {
+                    oldTail = _administration->_tail;
+                    tail = oldTail & _administration->_tailIndexMask;
+                    free = Free(_administration->_head, tail);
+                } else {
+                    free = Free(_administration->_head, newTail & _administration->_tailIndexMask);
+                    ASSERT(Free() >= required);
+                }
             }
+            std::atomic_fetch_or(&(_administration->_state), static_cast<uint16_t>(state::OVERWRITTEN));
+        } else {
+            std::atomic_fetch_and(&(_administration->_state), static_cast<uint16_t>(~state::OVERWRITTEN));
         }
     }
 
@@ -459,7 +472,7 @@ namespace Core {
         pid_t expectedProcessId = static_cast<pid_t>(0);
 #endif
 
-        if (((_administration->_state.load() & state::OVERWRITE) == 0) && (length > Free()))
+        if (((_administration->_state.load() & state::OVERWRITE) == 0) && (length >= Free()))
             return Core::ERROR_INVALID_INPUT_LENGTH;
 
         bool noOtherReservation = atomic_compare_exchange_strong(&(_administration->_reservedPID), &expectedProcessId, processId);
@@ -506,13 +519,9 @@ namespace Core {
 
                 _administration->_agents++;
 
-                AdminUnlock();
-
-                timeLeft = SignalLock(timeLeft);
+                result = SignalLock(timeLeft);
 
                 _administration->_agents--;
-
-                AdminLock();
 
                 if (_alert == true) {
                     _alert = false;
@@ -544,13 +553,14 @@ namespace Core {
 
             _administration->_lockPID = 0;
             std::atomic_fetch_and(&(_administration->_state), static_cast<uint16_t>(~state::LOCKED));
+            AdminUnlock();
 
             Reevaluate();
 
             result = Core::ERROR_NONE;
+        } else {
+            AdminUnlock();
         }
-
-        AdminUnlock();
 
         return (result);
     }

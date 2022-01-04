@@ -175,7 +175,7 @@ namespace Core {
         }
         inline bool IsValid() const
         {
-            return (_buffer.IsValid());
+            return (_buffer.IsValid() && (_administration != nullptr));
         }
         inline const File& Storage() const
         {
@@ -252,7 +252,7 @@ namespace Core {
         void AdminLock();
         void AdminUnlock();
         void Reevaluate();
-        uint32_t SignalLock(const uint32_t waitTime);
+        uint32_t SignalLock(uint32_t& waitTime);
 
     private:
         enum state {
