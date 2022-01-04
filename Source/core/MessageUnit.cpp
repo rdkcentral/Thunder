@@ -345,13 +345,15 @@ namespace Core {
     }
 
     /**
-     * @brief Notification, that there is metadata available (somebody requested change in the enabled categories)
+     * @brief Notification, that there is metadata available
      * 
      * @param size size of the buffer
      * @param data buffer containing data
+     * @return std::vector<uint8_t> binary response to the other side
      */
-    void MessageUnit::ReceiveMetaData(uint16_t size, const uint8_t* data)
+    std::vector<uint8_t> MessageUnit::ReceiveMetaData(uint16_t size, const uint8_t* data)
     {
+        std::vector<uint8_t> result;
         MessageMetaData metaData;
         auto length = metaData.Deserialize(const_cast<uint8_t*>(data), size); //for now, FrameType is not handling const buffers :/
 
@@ -385,6 +387,8 @@ namespace Core {
                 }
             }
         }
+
+        return result;
     }
 
 }

@@ -294,19 +294,20 @@ namespace Tests {
     TEST_F(Core_MessageDispatcher, WriteAndReadMetaDataAreEqualInSameProcess)
     {
         uint8_t testData[2] = { 13, 37 };
-        bool called = false;
 
-        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value) {
-            ASSERT_EQ(length, sizeof(testData));
-            ASSERT_EQ(value[0], 13);
-            ASSERT_EQ(value[1], 37);
-            called = true;
+        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value) -> std::vector<uint8_t> {
+            std::vector<uint8_t> result{ 60, 61 };
+            EXPECT_EQ(length, sizeof(testData));
+            EXPECT_EQ(value[0], 13);
+            EXPECT_EQ(value[1], 37);
+            return result;
         });
 
-        ASSERT_EQ(_dispatcher->PushMetadata(sizeof(testData), testData), Core::ERROR_NONE);
+        auto result = _dispatcher->PushMetadata(sizeof(testData), testData);
+        ASSERT_EQ(result[0], 60);
+        ASSERT_EQ(result[1], 61);
         ::SleepMs(50); //wait for callback complete before closing
 
-        ASSERT_EQ(called, true);
         _dispatcher->UnregisterDataAvailable();
     }
 
@@ -316,22 +317,30 @@ namespace Tests {
         uint8_t testData2[2] = { 12, 34 };
 
         //first write and read
-        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value) {
-            ASSERT_EQ(length, sizeof(testData1));
-            ASSERT_EQ(value[0], 13);
-            ASSERT_EQ(value[1], 37);
+        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value) -> std::vector<uint8_t> {
+            std::vector<uint8_t> result{ 60, 61 };
+            EXPECT_EQ(length, sizeof(testData1));
+            EXPECT_EQ(value[0], 13);
+            EXPECT_EQ(value[1], 37);
+            return result;
         });
-        ASSERT_EQ(_dispatcher->PushMetadata(sizeof(testData1), testData1), Core::ERROR_NONE);
+        auto result = _dispatcher->PushMetadata(sizeof(testData1), testData1);
+        ASSERT_EQ(result[0], 60);
+        ASSERT_EQ(result[1], 61);
         ::SleepMs(50); //need to wait before unregistering, not clean solution though
         _dispatcher->UnregisterDataAvailable();
 
         //second write and read
-        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value) {
-            ASSERT_EQ(length, sizeof(testData2));
-            ASSERT_EQ(value[0], 12);
-            ASSERT_EQ(value[1], 34);
+        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value) -> std::vector<uint8_t> {
+            std::vector<uint8_t> result{ 60, 61 };
+            EXPECT_EQ(length, sizeof(testData2));
+            EXPECT_EQ(value[0], 12);
+            EXPECT_EQ(value[1], 34);
+            return result;
         });
-        ASSERT_EQ(_dispatcher->PushMetadata(sizeof(testData2), testData2), Core::ERROR_NONE);
+        result = _dispatcher->PushMetadata(sizeof(testData2), testData2);
+        ASSERT_EQ(result[0], 60);
+        ASSERT_EQ(result[1], 61);
         ::SleepMs(50);
         _dispatcher->UnregisterDataAvailable();
     }
@@ -344,7 +353,9 @@ namespace Tests {
             uint8_t testData[2] = { 13, 37 };
             //testAdmin.Sync("setup");
 
-            ASSERT_EQ(dispatcher.PushMetadata(sizeof(testData), testData), Core::ERROR_NONE);
+            auto result = _dispatcher->PushMetadata(sizeof(testData), testData);
+            ASSERT_EQ(result[0], 60);
+            ASSERT_EQ(result[1], 61);
             ::SleepMs(2000);
         };
 
@@ -354,11 +365,12 @@ namespace Tests {
         // This side (tested) acts as reader
         IPTestAdministrator testAdmin(otherSide);
         {
-            _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value) {
-                ASSERT_EQ(length, 2);
-                ASSERT_EQ(value[0], 13);
-                ASSERT_EQ(value[1], 37);
-                std::cerr << "CALLED" << std::endl;
+            _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value) -> std::vector<uint8_t> {
+                std::vector<uint8_t> result{ 60, 61 };
+                EXPECT_EQ(length, 2);
+                EXPECT_EQ(value[0], 13);
+                EXPECT_EQ(value[1], 37);
+                return result;
             });
 
             ::SleepMs(2000);
@@ -370,7 +382,8 @@ namespace Tests {
     {
         uint8_t testData[2] = { 13, 37 };
 
-        ASSERT_EQ(_dispatcher->PushMetadata(sizeof(testData), testData), Core::ERROR_UNAVAILABLE);
+        auto result = _dispatcher->PushMetadata(sizeof(testData), testData);
+        ASSERT_EQ(result.size(), 0);
     }
 
 } // Tests

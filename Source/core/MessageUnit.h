@@ -238,7 +238,7 @@ namespace Core {
         MessageUnit(const MessageUnit&) = delete;
         MessageUnit& operator=(const MessageUnit&) = delete;
 
-        void ReceiveMetaData(uint16_t size, const uint8_t* data);
+        std::vector<uint8_t> ReceiveMetaData(uint16_t size, const uint8_t* data);
         void SetDefaultSettings(const Settings& serialized);
 
     private:

@@ -30,7 +30,7 @@ namespace Core {
     template <uint16_t METADATA_SIZE, uint16_t DATA_SIZE>
     class EXTERNAL MessageDispatcherType {
     private:
-        using MetaDataCallback = std::function<void(const uint16_t, const uint8_t*)>;
+        using MetaDataCallback = std::function<std::vector<uint8_t>(const uint16_t, const uint8_t*)>;
 
         class DataBuffer : public Core::CyclicBuffer {
         public:
@@ -125,13 +125,9 @@ namespace Core {
                     auto value = message->Parameters().Value();
 
                     if (_parent._notification != nullptr) {
-                        _parent._notification(length, value);
-                        message->Response() = Core::ERROR_NONE;
-
-                    } else {
-                        message->Response() = Core::ERROR_UNAVAILABLE;
+                        auto result = _parent._notification(length, value);
+                        message->Response().Set(result.size(), result.data());
                     }
-
                     source.ReportResponse(data);
                 }
 
@@ -140,10 +136,10 @@ namespace Core {
             };
 
         public:
-            using MetaDataFrame = Core::IPCMessageType<1, Core::IPC::BufferType<SIZE>, Core::IPC::ScalarType<uint32_t>>;
+            using MetaDataFrame = Core::IPCMessageType<1, Core::IPC::BufferType<SIZE>, Core::IPC::BufferType<SIZE>>;
 
             MetaDataBuffer() = default;
-            MetaDataBuffer(const std::string& binding)
+            MetaDataBuffer(const string& binding)
                 : BaseClass(Core::NodeId(binding.c_str()), SIZE)
             {
                 CreateFactory<MetaDataFrame>(1);
@@ -297,23 +293,19 @@ namespace Core {
         }
 
         /**
-         * @brief Writes metadata. Reader needs to register for notifications to recevie this message
+         * @brief Exchanges metadata with the server. Reader needs to register for notifications to recevie this message
          * 
-         * @param length length of message
-         * @param value vbuffer
-         * @return uint32_t ERROR_GENERAL: unable to open communication channel
-         *                  ERROR_WRITE_ERROR: unable to write
-         *                  ERROR_UNAVAILABLE: message was sent but not reported (missing Register call on the other side)
-         *                                     caller should send this message again
-         *                  ERROR_NONE: OK
+         * @param length length of the message
+         * @param value buffer
+         * @return std::vector<uint8_t> response from the server in binary format
          */
-        uint32_t PushMetadata(const uint16_t length, const uint8_t* value)
+        std::vector<uint8_t> PushMetadata(const uint16_t length, const uint8_t* value)
         {
             _metaDataLock.Lock();
 
             ASSERT(length > 0);
 
-            uint32_t result = Core::ERROR_GENERAL;
+            std::vector<uint8_t> result;
 
             Core::IPCChannelClientType<Core::Void, false, true> channel(Core::NodeId(_filenames.metaData.c_str()), METADATA_SIZE);
 
@@ -323,9 +315,10 @@ namespace Core {
                 metaDataFrame->Parameters().Set(length, value);
 
                 if (channel.Invoke(metaDataFrame, Core::infinite) == Core::ERROR_NONE) {
-                    result = metaDataFrame->Response();
-                } else {
-                    result = Core::ERROR_WRITE_ERROR;
+                    auto bufferType = metaDataFrame->Response();
+
+                    result.resize(bufferType.Length());
+                    std::copy_n(bufferType.Value(), bufferType.Length(), result.begin());
                 }
 
                 channel.Close(Core::infinite);
@@ -397,7 +390,6 @@ namespace Core {
 
         DataBuffer _dataBuffer;
         std::unique_ptr<MetaDataBuffer<METADATA_SIZE>> _metaDataBuffer;
-
     };
 }
 }

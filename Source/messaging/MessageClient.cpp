@@ -95,24 +95,19 @@ namespace Messaging {
      * 
      * @param metaData information bout the message
      * @param enable should it be enabled or not
-     * @return uint16_t how many buffers correctly received this message
      */
-    uint16_t MessageClient::Enable(const Core::MessageMetaData& metaData, const bool enable)
+    void MessageClient::Enable(const Core::MessageMetaData& metaData, const bool enable)
     {
         uint16_t bufferSize = sizeof(_writeBuffer);
-        uint16_t notified = 0;
 
         auto length = metaData.Serialize(_writeBuffer, bufferSize);
         if (length < bufferSize - 1) {
             _writeBuffer[length++] = static_cast<uint8_t>(enable);
 
             for (auto& client : _clients) {
-                if (client.second.PushMetadata(length, _writeBuffer) == Core::ERROR_NONE) {
-                    ++notified;
-                }
+                client.second.PushMetadata(length, _writeBuffer);
             }
         }
-        return notified;
     }
 
     /**
@@ -139,7 +134,7 @@ namespace Messaging {
                 //warning trace here
             } else {
                 auto length = information.Deserialize(_readBuffer, size);
-                
+
                 if (length != 0 && length <= sizeof(_readBuffer)) {
                     auto factory = _factories.find(information.MetaData().Type());
                     if (factory != _factories.end()) {

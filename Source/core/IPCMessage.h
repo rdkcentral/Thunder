@@ -251,7 +251,10 @@ namespace Core {
         template <const uint16_t LENGTH>
         class BufferType {
         public:
-            BufferType(const BufferType<LENGTH>& copy) = delete;
+            BufferType(const BufferType<LENGTH>& copy)
+                : _buffer(copy._buffer)
+            {
+            }
             BufferType<LENGTH>& operator=(const BufferType<LENGTH>& RHS) = delete;
 
             inline BufferType()
