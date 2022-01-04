@@ -51,12 +51,6 @@ namespace Core {
         #ifdef __CORE_WARNING_REPORTING__
         class MeasurableJob {
         public:
-            MeasurableJob()
-                : _job()
-                , _time(NumberType<uint64_t>::Max())
-            {
-            }
-
             /**
              * @brief Measurable job is used with warning reporting to measure 
              *        time job was in queue and it's execution time.
@@ -65,26 +59,37 @@ namespace Core {
              *        conversion from ProxyType<IDispatch> to MeasurableJob in
              *        QueueType methods such as Post or Insert.
              */
+            MeasurableJob(MeasurableJob&&) = delete;
+
+            MeasurableJob()
+                : _job()
+                , _time(NumberType<uint64_t>::Max())
+            {
+            }
             MeasurableJob(const ProxyType<IDispatch>& job)
                 : _job(job)
                 , _time(Time::Now().Ticks())
             {
             }
-
             MeasurableJob(const MeasurableJob&) = default;
+            ~MeasurableJob() {
+                if (_job.IsValid() == true) {
+                    _job.Release();
+                }
+            }
+
             MeasurableJob& operator=(const MeasurableJob&) = default;
 
+        public:
             bool operator==(const MeasurableJob& other) const
             {
                 return _job == other._job;
             }
-
             bool operator!=(const MeasurableJob& other) const
             {
                 return _job != other._job;
             }
-
-            void Process(IDispatcher* dispatcher)
+            IJob* Process(IDispatcher* dispatcher)
             {
                 ASSERT(dispatcher != nullptr);
                 ASSERT(_job.IsValid());
@@ -95,9 +100,8 @@ namespace Core {
                 REPORT_OUTOFBOUNDS_WARNING(WarningReporting::JobTooLongWaitingInQueue, static_cast<uint32_t>((Time::Now().Ticks() - _time) / Time::TicksPerMillisecond));
                 REPORT_DURATION_WARNING({ dispatcher->Dispatch(request); }, WarningReporting::JobTooLongToFinish);
 
-                _job.Release();
+                return (dynamic_cast<IJob*>(request));
             }
-
             bool IsValid() const
             {
                 return _job.IsValid();
@@ -342,7 +346,7 @@ namespace Core {
             }
             void Process()
             {
-		        _dispatcher->Initialize();
+		_dispatcher->Initialize();
 
                 while (_parent._queue.Extract(_currentRequest, infinite) == true) {
 
@@ -350,13 +354,17 @@ namespace Core {
 
                     _runs++;
 
+                    #ifdef __CORE_WARNING_REPORTING__
+                    IJob* job = _currentRequest.Process(_dispatcher);
+
+                    if (job != nullptr) {
+                        // Maybe we need to reschedule this request....
+                        _parent.Closure(*job);
+                    }
+                    #else
                     IDispatch* request = &(*_currentRequest);
 
-                    #ifdef __CORE_WARNING_REPORTING__
-                    _currentRequest.Process(_dispatcher);
-                    #else
                     _dispatcher->Dispatch(request); 
-                    #endif
 
                     IJob* job = dynamic_cast<IJob*>(request);
 
@@ -366,6 +374,7 @@ namespace Core {
                     }
 
                     _currentRequest.Release();
+                    #endif
 
                     // if someone is observing this run, (WaitForCompletion) make sure that
                     // thread, sees that his object was running and is now completed.
@@ -383,7 +392,7 @@ namespace Core {
                     _adminLock.Unlock();
                 }
 
-		        _dispatcher->Deinitialize();
+		_dispatcher->Deinitialize();
             }
 
         private:
