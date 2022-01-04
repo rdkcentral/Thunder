@@ -47,8 +47,6 @@ set(NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")
 find_package(ProxyStubGenerator REQUIRED)
 find_package(JsonGenerator REQUIRED)
 
-set(CMAKE_BUILD_TYPE "MinSizeRel" CACHE STRING "How do you want to build it, MinSizeRel, Release/RelWithDebInfo or Debug/DebugOptimized")
-
 #
 # Build type specific options
 #
