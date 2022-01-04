@@ -23,8 +23,7 @@
 #include <core/core.h>
 #include <thread>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace WPEFramework; using namespace WPEFramework::Core;
 
 static constexpr uint32_t MaxJobWaitTime = 1000; // In milliseconds
 static constexpr uint8_t MaxAdditionalWorker = 5;
@@ -178,7 +177,7 @@ public:
         , _external()
     {
         for (uint8_t index = 0; index < MaxAdditionalWorker; ++index) {
-            _external.push_back(*(new ExternalWorker<IMPLEMENTATION>(parent)));
+            _external.push_back(new ExternalWorker<IMPLEMENTATION>(parent));
         }
     }
     ~JobControl()
@@ -187,6 +186,10 @@ public:
             delete job.second.Event;
         }
         _jobs.clear();
+        for (auto& external: _external) {
+            delete external;
+        }
+        _external.clear();
 
         Singleton::Dispose();
     }
@@ -232,7 +235,7 @@ public:
     {
         if (_index < MaxAdditionalWorker) {
             InsertJobData(job, 0);
-            _external[_index++].Submit(job);
+            _external[_index++]->Submit(job);
         }
     }
     void ScheduleJobs(Core::ProxyType<IDispatch>& job, const uint16_t scheduledTime)
@@ -250,10 +253,10 @@ public:
         const uint8_t MaxSize = 15;
         bool isPoolId = false;
         char id[MaxSize];
-        sprintf(id, "%x", static_cast<::ThreadId>(pthread_self()));
+        sprintf(id, "%x", static_cast<uint32_t>(pthread_self()));
         for (uint8_t index = 0; index < _threadsCount + 2; index++) {
         char workerId[MaxSize];
-        sprintf(workerId, "%x", IWorkerPool::Instance().Id(index));
+        sprintf(workerId, "%x", static_cast<uint32_t>(IWorkerPool::Instance().Id(index)));
 
             if (strcpy(workerId, id)) {
                 isPoolId = true;
@@ -299,7 +302,7 @@ private:
     uint8_t _threadsCount;
     JobMap _jobs;
     IMPLEMENTATION& _parent;
-    std::vector<ExternalWorker<IMPLEMENTATION>> _external;
+    std::vector<ExternalWorker<IMPLEMENTATION>*> _external;
 };
 
 class WorkerPoolTester : public Core::WorkerPool, public JobControl<WorkerPoolTester>, public Core::Thread {
@@ -530,20 +533,13 @@ void CheckWorkerPool_MultipleJobs_CancelJobs_InBetween(const uint8_t threadCount
         workerPool.SubmitUsingExternalWorker(jobs[i]);
     }
 
-    if (threadCount == 1) {
-        workerPool.RunThreadPool();
-        for (uint8_t index = 0; index < cancelJobsCount; index++) {
-            workerPool.Revoke(jobs[cancelJobsId[index]], 0);
-        }
-    } else {
-        // Multi Pool case jobs can be run in parallel once we start thread, hence revoke inbetween maynot work
-        // it just have to wait for proceesing jobs completion.
-        // Hence revoking before starting the job. Just to ensure the status meets
-        for (uint8_t index = 0; index < cancelJobsCount; index++) {
-            workerPool.Revoke(jobs[cancelJobsId[index]], 0);
-        }
-        workerPool.RunThreadPool();
+    // Multi Pool case jobs can be run in parallel once we start thread, hence revoke inbetween maynot work
+    // it just have to wait for processing jobs completion.
+    // Hence revoking before starting the job. Just to ensure the status meets
+    for (uint8_t index = 0; index < cancelJobsCount; index++) {
+         workerPool.Revoke(jobs[cancelJobsId[index]], 0);
     }
+    workerPool.RunThreadPool();
 
     for (uint8_t index = 0; index < jobs.size(); index++) {
         bool isCanceledJob = false;
@@ -1085,7 +1081,7 @@ public:
     bool Schedule(const Core::Time& time)
     {
         _expectedTime = time;
-        return _job.Schedule(time);
+        return _job.Reschedule(time);
     }
     bool Reschedule(const Core::Time& time)
     {
@@ -1094,7 +1090,7 @@ public:
     }
     void Revoke()
     {
-        return _job.Revoke();
+        _job.Revoke();
     }
     bool IsIdle()
     {
@@ -1128,7 +1124,7 @@ TEST(Core_WorkerPool, Check_JobType_Submit)
     workerPool.RunThreadPool();
     {
         WorkerJobTester jobTester(0);
-        jobTester.Submit();
+        EXPECT_EQ(jobTester.Submit(), true);
         EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 3), Core::ERROR_NONE);
     }
     workerPool.Stop();
@@ -1138,11 +1134,11 @@ TEST(Core_WorkerPool, Check_JobType_Submit_Revoke)
 {
     WorkerPoolTester workerPool(4, 0, 1);
     Core::WorkerPool::Assign(&workerPool);
-    workerPool.RunThreadPool();
     {
         WorkerJobTester jobTester(0);
-        jobTester.Submit();
+        EXPECT_EQ(jobTester.Submit(), true);
         jobTester.Revoke();
+        workerPool.RunThreadPool();
         EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 3), Core::ERROR_TIMEDOUT);
     }
     workerPool.Stop();
@@ -1185,7 +1181,7 @@ void CheckJobType_Reschedule(const uint16_t scheduleTime, const uint16_t resched
         WorkerJobTester jobTester(0);
         jobTester.Schedule(Core::Time::Now().Add(scheduleTime));
         usleep(500);
-        jobTester.Reschedule(Core::Time::Now().Add(rescheduleTime));
+        EXPECT_EQ(jobTester.Reschedule(Core::Time::Now().Add(rescheduleTime)), true);
         EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 4), Core::ERROR_NONE);
     }
     workerPool.Stop();
@@ -1233,7 +1229,7 @@ void CheckJobType_RescheduleJobs(const uint8_t threadCount, const uint8_t queueS
         }
 
         for (uint8_t i = 0; i < jobs.size(); ++i) {
-            jobs[i]->Reschedule(Core::Time::Now().Add(rescheduledTimes[i]));
+            EXPECT_EQ(jobs[i]->Reschedule(Core::Time::Now().Add(rescheduledTimes[i])), true);
         }
         for (uint8_t i = 0; i < jobs.size(); ++i) {
             EXPECT_EQ(jobs[i]->IsIdle(), false);
@@ -1257,8 +1253,9 @@ void CheckJobType_RescheduleJobs(const uint8_t threadCount, const uint8_t queueS
                 EXPECT_EQ(jobs[index]->WaitForEvent(MaxJobWaitTime * 3), Core::ERROR_TIMEDOUT);
             } else {
                 EXPECT_EQ(jobs[index]->WaitForEvent(MaxJobWaitTime * 15), Core::ERROR_NONE);
-                EXPECT_EQ(jobs[index]->IsIdle(), true);
+                usleep(200);
             }
+            EXPECT_EQ(jobs[index]->IsIdle(), true);
         }
         for (auto& job: jobs) {
             job.Release();
@@ -1318,8 +1315,7 @@ public:
         if (_instancesActive > 1) {
             printf("Ooopsie daisy, that is unexpected, it seems there are multiples of me running, thats not according to the spec !!!!\n");
         }
-        //FIXME:: this has to success, in the old code it failing
-        //EXPECT_FALSE(_instancesActive > 1);
+        EXPECT_FALSE(_instancesActive > 1);
         SleepMs(_sleepTimeInMilliSeconds); // Sleep for _sleepTimeInMilliSeconds
         _instancesActive--;
     }
@@ -1350,7 +1346,7 @@ public:
 public:
     void Start(const uint8_t cycles) {
         _cycles = cycles;
-        bool status = _triggerJob.Schedule(Core::Time::Now().Add(_intervalInMilliSeconds));
+        _triggerJob.Reschedule(Core::Time::Now().Add(_intervalInMilliSeconds));
     }
 
     uint8_t Pending()
@@ -1377,7 +1373,7 @@ public:
         // Reschedule our selves to submit another run for the Job in _intervalInMilliSeconds
         // from now..
         if (--_cycles != 0) {
-            bool status = _triggerJob.Schedule(Core::Time::Now().Add(_intervalInMilliSeconds));
+            _triggerJob.Reschedule(Core::Time::Now().Add(_intervalInMilliSeconds));
         } else {
             Notify();
         }

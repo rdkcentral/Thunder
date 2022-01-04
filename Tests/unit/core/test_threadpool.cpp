@@ -146,7 +146,6 @@ private:
             Core::Thread::Block();
             return (Core::infinite);
         }
-
         void Submit(Core::ProxyType<IDispatch>& job, const uint32_t waitTime = 0)
         {
             _job = &job;
@@ -169,7 +168,7 @@ public:
         , _external()
     {
         for (uint8_t index = 0; index < MaxAdditionalWorker; ++index) {
-            _external.push_back(*(new ExternalWorker<IMPLEMENTATION>(parent)));
+            _external.push_back(new ExternalWorker<IMPLEMENTATION>(parent));
         }
     }
     ~JobControl()
@@ -178,6 +177,10 @@ public:
             delete job.second;
         }
         _jobs.clear();
+        for (auto& external: _external) {
+            delete external;
+        }
+        _external.clear();
         Singleton::Dispose();
     }
 public:
@@ -208,7 +211,7 @@ public:
         if (_index < MaxAdditionalWorker) {
             _jobs.emplace(std::piecewise_construct, std::forward_as_tuple(job.operator->()), std::forward_as_tuple(new EventControl()));
 
-            _external[_index++].Submit(job, waitTime);
+            _external[_index++]->Submit(job, waitTime);
         }
     }
 
@@ -216,7 +219,68 @@ private:
     uint8_t _index;
     JobMap _jobs;
     IMPLEMENTATION& _parent;
-    std::vector<ExternalWorker<IMPLEMENTATION>> _external;
+    std::vector<ExternalWorker<IMPLEMENTATION>*> _external;
+};
+
+class Scheduler : public ThreadPool::IScheduler {
+private:
+    class Timer {
+    public:
+        Timer& operator=(const Timer& RHS) = delete;
+        Timer()
+            : _job()
+            , _pool(nullptr)
+        {
+        }
+        Timer(const Timer& copy)
+            : _job(copy._job)
+            , _pool(copy._pool)
+        {
+        }
+        Timer(ThreadPool* pool, const ProxyType<IDispatch>& job)
+            : _job(job)
+            , _pool(pool)
+        {
+        }
+        ~Timer()
+        {
+        }
+
+    public:
+        uint64_t Timed(const uint64_t /* scheduledTime */)
+        {
+            ASSERT(_pool != nullptr);
+            _pool->Submit(_job, Core::infinite);
+            //_job.Release();
+            // No need to reschedule, just drop it..
+            return (0);
+        }
+
+     private:
+        ProxyType<IDispatch> _job;
+        ThreadPool* _pool;
+    };
+public:
+    Scheduler() = delete;
+    Scheduler(const Scheduler&) = delete;
+    Scheduler& operator=(const Scheduler&) = delete;
+
+    Scheduler(ThreadPool& pool)
+        : _pool(pool)
+        , _timer(1024 * 1024, _T("ThreadPool::Timer"))
+    {
+    }
+    ~Scheduler() override = default;
+
+public:
+    void Schedule(const Time& time, const ProxyType<IDispatch>& job) override
+    {
+        _timer.Schedule(time, Timer(&_pool, job));
+    }
+
+private:
+    ThreadPool& _pool;
+    Core::TimerType<Timer> _timer;
 };
 
 class Dispatcher : public Core::ThreadPool::IDispatcher {
@@ -237,55 +301,55 @@ private:
     }
 };
 
-class QueueControl {
+class ThreadPoolTester : public EventControl, public JobControl<ThreadPoolTester>, public ThreadPool {
+private:
 public:
-    typedef Core::QueueType<Core::ProxyType<IDispatch>> MessageQueue;
+    ThreadPoolTester() = delete;
+    ThreadPoolTester(const ThreadPoolTester&) = delete;
+    ThreadPoolTester& operator=(const ThreadPoolTester&) = delete;
+    ThreadPoolTester(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize)
+        : JobControl(*this)
+        , ThreadPool(count, stackSize, queueSize, &_dispatcher, &_scheduler)
+        , _queueSize(queueSize)
+        , _dispatcher()
+        , _scheduler(*this)
+    {
+    }
+    ~ThreadPoolTester()
+    {
+    }
 
-    QueueControl() = delete;
-    QueueControl(const QueueControl&) = delete;
-    QueueControl& operator=(const QueueControl&) = delete;
-    QueueControl(const uint32_t queueSize)
-        : _queue(queueSize)
+public:
+    uint32_t WaitForJobEvent(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime = 0)
     {
-        _queue.Enable();
+        return static_cast<TestJob<ThreadPoolTester>&>(*job).WaitForEvent(waitTime);
     }
-    ~QueueControl() = default;
-    MessageQueue& Queue()
+    bool QueueIsFull()
     {
-        return _queue;
+        return (ThreadPool::Pending() == _queueSize);
     }
-    void Submit(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime = 0)
+    bool QueueIsEmpty()
     {
-        _queue.Enable();
-        if (waitTime) {
-            _queue.Insert(job, waitTime);
-        } else {
-            _queue.Post(job);
-        }
-    }
-    void Revoke(const Core::ProxyType<IDispatch>& job)
-    {
-        _queue.Remove(job);
-    }
-    void Shutdown()
-    {
-        _queue.Disable();
+         return (ThreadPool::Pending() == 0);
     }
 
 private:
-    MessageQueue _queue;
+    uint32_t _queueSize;
+    Dispatcher _dispatcher;
+    Scheduler _scheduler;
 };
 
-class MinionTester : public Thread, public QueueControl, public JobControl<MinionTester>, public ThreadPool::Minion {
+class MinionTester : public Thread, public JobControl<MinionTester>, public ThreadPool::Minion {
 public:
 
     MinionTester() = delete;
     MinionTester(const MinionTester&) = delete;
     MinionTester& operator=(const MinionTester&) = delete;
-    MinionTester(const uint32_t queueSize)
-        : QueueControl(queueSize)
-        , JobControl(*this)
-        , ThreadPool::Minion(QueueControl::Queue(), &_dispatcher)
+    MinionTester(ThreadPoolTester& threadPool, const uint32_t queueSize)
+        : JobControl(*this)
+        , ThreadPool::Minion(threadPool, &_dispatcher)
+        , _queueSize(queueSize)
+        , _threadPool(threadPool)
         , _dispatcher()
     {
     }
@@ -295,12 +359,23 @@ public:
     }
 
 public:
+    void Submit(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime = 0)
+    {
+        _threadPool.Submit(job, waitTime);
+    }
+    void RunThreadPool()
+    {
+        _threadPool.Run();
+    }
+    void Shutdown()
+    {
+        _threadPool.Stop();
+    }
     void Revoke(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime = 0)
     {
-        QueueControl::Revoke(job);
+        _threadPool.Revoke(job, waitTime);
         Completed(job, waitTime);
     }
-
     uint32_t Completed(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime)
     {
         uint32_t result = ThreadPool::Minion::Completed(job, waitTime);
@@ -325,38 +400,26 @@ public:
     {
         return static_cast<TestJob<MinionTester>&>(*job).WaitForEvent(waitTime);
     }
-
-private:
-    Dispatcher _dispatcher;
-};
-
-class ThreadPoolTester : public EventControl, public JobControl<ThreadPoolTester>, public ThreadPool {
-private:
-public:
-    ThreadPoolTester() = delete;
-    ThreadPoolTester(const ThreadPoolTester&) = delete;
-    ThreadPoolTester& operator=(const ThreadPoolTester&) = delete;
-    ThreadPoolTester(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize)
-        : JobControl(*this)
-        , ThreadPool(count, stackSize, queueSize, &_dispatcher)
-        , _dispatcher()
+    bool QueueIsFull()
     {
+        return (_threadPool.Pending() == _queueSize);
     }
-    ~ThreadPoolTester() = default;
-
-public:
-    uint32_t WaitForJobEvent(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime = 0)
+    bool QueueIsEmpty()
     {
-        return static_cast<TestJob<ThreadPoolTester>&>(*job).WaitForEvent(waitTime);
+         return (_threadPool.Pending() == 0);
     }
 
 private:
+    uint32_t _queueSize;
+    ThreadPoolTester& _threadPool;
     Dispatcher _dispatcher;
 };
-
 TEST(Core_ThreadPool, CheckMinion_ProcessJob)
 {
-    MinionTester minion(5);
+    uint8_t queueSize = 5;
+    ThreadPoolTester threadPool(0, 0, queueSize);
+    MinionTester minion(threadPool, queueSize);
+
     Core::ProxyType<Core::IDispatch> job = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob<MinionTester>>::Create(minion, TestJob<MinionTester>::INITIATED, 500));
     EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::INITIATED);
     EXPECT_EQ(minion.IsActive(), false);
@@ -373,7 +436,10 @@ TEST(Core_ThreadPool, CheckMinion_ProcessJob)
 }
 TEST(Core_ThreadPool, CheckMinion_ProcessJob_CheckActiveStateInBetweenDispatch)
 {
-    MinionTester minion(5);
+    uint8_t queueSize = 5;
+    ThreadPoolTester threadPool(0, 0, queueSize);
+    MinionTester minion(threadPool, queueSize);
+
     Core::ProxyType<Core::IDispatch> job = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob<MinionTester>>::Create(minion, TestJob<MinionTester>::INITIATED, 500, true));
     EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::INITIATED);
     EXPECT_EQ(minion.IsActive(), false);
@@ -391,7 +457,10 @@ TEST(Core_ThreadPool, CheckMinion_ProcessJob_CheckActiveStateInBetweenDispatch)
 }
 TEST(Core_ThreadPool, CheckMinion_CancelJob_BeforeProcessing)
 {
-    MinionTester minion(5);
+    uint8_t queueSize = 5;
+    ThreadPoolTester threadPool(0, 0, queueSize);
+    MinionTester minion(threadPool, queueSize);
+
     Core::ProxyType<Core::IDispatch> job = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob<MinionTester>>::Create(minion, TestJob<MinionTester>::INITIATED));
     EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::INITIATED);
     EXPECT_EQ(minion.IsActive(), false);
@@ -405,7 +474,10 @@ TEST(Core_ThreadPool, CheckMinion_CancelJob_BeforeProcessing)
 }
 TEST(Core_ThreadPool, CheckMinion_CancelJob_WhileProcessing)
 {
-    MinionTester minion(5);
+    uint8_t queueSize = 5;
+    ThreadPoolTester threadPool(0, 0, queueSize);
+    MinionTester minion(threadPool, queueSize);
+
     Core::ProxyType<Core::IDispatch> job = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob<MinionTester>>::Create(minion, TestJob<MinionTester>::INITIATED, 500));
     EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::INITIATED);
     EXPECT_EQ(minion.IsActive(), false);
@@ -413,7 +485,7 @@ TEST(Core_ThreadPool, CheckMinion_CancelJob_WhileProcessing)
     EXPECT_EQ(minion.IsActive(), false);
     minion.Run();
 
-    while(minion.Queue().IsEmpty() != true);
+    while(minion.QueueIsEmpty() != true);
     minion.Revoke(job);
     EXPECT_EQ(minion.WaitForJobEvent(job, MaxJobWaitTime * 3), Core::ERROR_NONE);
     minion.Shutdown();
@@ -424,7 +496,9 @@ TEST(Core_ThreadPool, CheckMinion_CancelJob_WhileProcessing)
 }
 TEST(Core_ThreadPool, CheckMinion_CancelJob_WhileProcessing_ByAddingWaitOnTheDispatcher)
 {
-    MinionTester minion(5);
+    uint8_t queueSize = 5;
+    ThreadPoolTester threadPool(0, 0, queueSize);
+    MinionTester minion(threadPool, queueSize);
     Core::ProxyType<Core::IDispatch> job = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob<MinionTester>>::Create(minion, TestJob<MinionTester>::INITIATED, 500, true));
     EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::INITIATED);
     EXPECT_EQ(minion.IsActive(), false);
@@ -446,23 +520,23 @@ TEST(Core_ThreadPool, CheckMinion_ProcessMultipleJobs)
 {
     uint8_t queueSize = 5;
     uint8_t additionalJobs = 1;
-    MinionTester minion(queueSize);
+    ThreadPoolTester threadPool(0, 0, queueSize);
+    MinionTester minion(threadPool, queueSize);
     std::vector<Core::ProxyType<Core::IDispatch>> jobs;
     for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
         jobs.push_back(Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob<MinionTester>>::Create(minion, TestJob<MinionTester>::INITIATED, 500)));
     }
     for (auto& job: jobs) {
         EXPECT_EQ(static_cast<TestJob<ThreadPoolTester>&>(*job).GetStatus(), TestJob<ThreadPoolTester>::INITIATED);
-        if (minion.Queue().IsFull() == false) {
+        if (minion.QueueIsFull() == false) {
             minion.SubmitUsingSelfWorker(job);
         } else {
-            EXPECT_EQ(minion.Queue().IsFull(), true);
+            EXPECT_EQ(minion.QueueIsFull(), true);
             minion.SubmitUsingExternalWorker(job, Core::infinite);
         }
     }
-    EXPECT_EQ(minion.Queue().IsFull(), true);
-    EXPECT_EQ(minion.Queue().IsEmpty(), false);
-    EXPECT_EQ(minion.Queue().Length(), queueSize);
+    EXPECT_EQ(minion.QueueIsFull(), true);
+    EXPECT_EQ(minion.QueueIsEmpty(), false);
 
     minion.Run();
     for (auto& job: jobs) {
@@ -486,7 +560,8 @@ TEST(Core_ThreadPool, CheckMinion_ProcessMultipleJobs_CancelInBetween)
 {
     uint8_t queueSize = 5;
     uint8_t additionalJobs = 2;
-    MinionTester minion(queueSize);
+    ThreadPoolTester threadPool(0, 0, queueSize);
+    MinionTester minion(threadPool, queueSize);
     std::vector<Core::ProxyType<Core::IDispatch>> jobs;
     for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
         jobs.push_back(Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob<MinionTester>>::Create(minion, TestJob<MinionTester>::INITIATED, 500)));
@@ -494,16 +569,15 @@ TEST(Core_ThreadPool, CheckMinion_ProcessMultipleJobs_CancelInBetween)
 
     for (auto& job: jobs) {
         EXPECT_EQ(static_cast<TestJob<ThreadPoolTester>&>(*job).GetStatus(), TestJob<ThreadPoolTester>::INITIATED);
-        if (minion.Queue().IsFull() == false) {
+        if (minion.QueueIsFull() == false) {
             minion.SubmitUsingSelfWorker(job);
         } else {
-            EXPECT_EQ(minion.Queue().IsFull(), true);
+            EXPECT_EQ(minion.QueueIsFull(), true);
             minion.SubmitUsingExternalWorker(job, Core::infinite);
         }
     }
-    EXPECT_EQ(minion.Queue().IsFull(), true);
-    EXPECT_EQ(minion.Queue().IsEmpty(), false);
-    EXPECT_EQ(minion.Queue().Length(), queueSize);
+    EXPECT_EQ(minion.QueueIsFull(), true);
+    EXPECT_EQ(minion.QueueIsEmpty(), false);
 
     minion.Run();
 
@@ -545,10 +619,10 @@ TEST(Core_ThreadPool, CheckThreadPool_ProcessJob)
     EXPECT_EQ(threadPool.Active(), false);
     threadPool.Submit(job, 0);
     EXPECT_EQ(threadPool.Pending(), queueSize);
-    EXPECT_EQ(threadPool.Queue().IsEmpty(), false);
+    EXPECT_EQ(threadPool.QueueIsEmpty(), false);
     EXPECT_EQ(threadPool.Active(), false);
     threadPool.Run();
-    while(threadPool.Queue().IsEmpty() != true);
+    while(threadPool.QueueIsEmpty() != true);
     EXPECT_EQ(threadPool.Active(), true);
     EXPECT_EQ(threadPool.WaitForJobEvent(job, MaxJobWaitTime), Core::ERROR_NONE);
     EXPECT_EQ(threadPool.Pending(), 0u);
@@ -570,7 +644,7 @@ TEST(Core_ThreadPool, CheckThreadPool_RevokeJob)
     EXPECT_EQ(threadPool.Pending(), queueSize);
     threadPool.Revoke(job, 0);
     EXPECT_EQ(threadPool.Pending(), 0u);
-    EXPECT_EQ(threadPool.Queue().IsEmpty(), true);
+    EXPECT_EQ(threadPool.QueueIsEmpty(), true);
     EXPECT_EQ(threadPool.Active(), false);
     threadPool.Run();
     EXPECT_EQ(threadPool.Active(), false);
@@ -590,11 +664,11 @@ TEST(Core_ThreadPool, CheckThreadPool_CancelJob_WhileProcessing)
     EXPECT_EQ(threadPool.Active(), false);
     threadPool.Submit(job, 0);
     EXPECT_EQ(threadPool.Pending(), queueSize);
-    EXPECT_EQ(threadPool.Queue().IsEmpty(), false);
+    EXPECT_EQ(threadPool.QueueIsEmpty(), false);
     EXPECT_EQ(threadPool.Active(), false);
     threadPool.Run();
-    EXPECT_EQ(threadPool.Queue().IsEmpty(), false);
-    while(threadPool.Queue().IsEmpty() != true);
+    EXPECT_EQ(threadPool.QueueIsEmpty(), false);
+    while(threadPool.QueueIsEmpty() != true);
     EXPECT_EQ(threadPool.Active(), true);
     threadPool.Revoke(job, 0);
     EXPECT_EQ(threadPool.Pending(), 0u);
@@ -616,17 +690,16 @@ void CheckThreadPool_ProcessMultipleJobs(const uint8_t threadCount, const uint8_
 
     for (auto& job: jobs) {
         EXPECT_EQ(static_cast<TestJob<ThreadPoolTester>&>(*job).GetStatus(), TestJob<ThreadPoolTester>::INITIATED);
-        if (threadPool.Queue().IsFull() == false) {
+        if (threadPool.QueueIsFull() == false) {
             threadPool.SubmitUsingSelfWorker(job);
         } else {
-            EXPECT_EQ(threadPool.Queue().IsFull(), true);
+            EXPECT_EQ(threadPool.QueueIsFull(), true);
             threadPool.SubmitUsingExternalWorker(job, Core::infinite);
         }
     }
-    EXPECT_EQ(threadPool.Queue().IsFull(), true);
-    EXPECT_EQ(threadPool.Queue().IsEmpty(), false);
+    EXPECT_EQ(threadPool.QueueIsFull(), true);
+    EXPECT_EQ(threadPool.QueueIsEmpty(), false);
     EXPECT_EQ(threadPool.Pending(), queueSize);
-    EXPECT_EQ(threadPool.Queue().Length(), queueSize);
 
     threadPool.Run();
     for (auto& job: jobs) {
@@ -659,7 +732,7 @@ TEST(Core_ThreadPool, CheckThreadPool_ProcessMultipleJobs)
 }
 TEST(Core_ThreadPool, CheckThreadPool_ProcessMultipleJobs_AdditionalJobs)
 {
-    CheckThreadPool_ProcessMultipleJobs(5, 1, 1);
+    //CheckThreadPool_ProcessMultipleJobs(5, 1, 1);
     CheckThreadPool_ProcessMultipleJobs(5, 5, 5);
 }
 
@@ -679,23 +752,22 @@ TEST(Core_ThreadPool, CheckThreadPool_ProcessMultipleJobs_CancelInBetween)
 
     for (auto& job: jobs) {
         EXPECT_EQ(static_cast<TestJob<ThreadPoolTester>&>(*job).GetStatus(), TestJob<ThreadPoolTester>::INITIATED);
-        if (threadPool.Queue().IsFull() == false) {
+        if (threadPool.QueueIsFull() == false) {
             threadPool.SubmitUsingSelfWorker(job);
         } else {
-            EXPECT_EQ(threadPool.Queue().IsFull(), true);
+            EXPECT_EQ(threadPool.QueueIsFull(), true);
             threadPool.SubmitUsingExternalWorker(job, Core::infinite);
         }
     }
-    EXPECT_EQ(threadPool.Queue().IsFull(), true);
-    EXPECT_EQ(threadPool.Queue().IsEmpty(), false);
+    EXPECT_EQ(threadPool.QueueIsFull(), true);
+    EXPECT_EQ(threadPool.QueueIsEmpty(), false);
     EXPECT_EQ(threadPool.Pending(), queueSize);
-    EXPECT_EQ(threadPool.Queue().Length(), queueSize);
 
     threadPool.Run();
     threadPool.Revoke(jobs[3], 0);
     threadPool.Revoke(jobs[4], 0);
 
-    EXPECT_EQ(threadPool.Queue().IsFull(), false);
+    EXPECT_EQ(threadPool.QueueIsFull(), false);
     Core::ProxyType<Core::IDispatch> newJob = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob<ThreadPoolTester>>::Create(threadPool, TestJob<ThreadPoolTester>::INITIATED));
     EXPECT_EQ(static_cast<TestJob<ThreadPoolTester>&>(*newJob).GetStatus(), TestJob<ThreadPoolTester>::INITIATED);
     // Try to push additional job to queue from external worker
@@ -745,16 +817,15 @@ void CheckThreadPool_ProcessMultipleJobs_CancelInBetween_WithMultiplePool(const 
 
     for (auto& job: jobs) {
         EXPECT_EQ(static_cast<TestJob<ThreadPoolTester>&>(*job).GetStatus(), TestJob<ThreadPoolTester>::INITIATED);
-        if (threadPool.Queue().IsFull() == false) {
+        if (threadPool.QueueIsFull() == false) {
             threadPool.SubmitUsingSelfWorker(job);
         } else {
-            EXPECT_EQ(threadPool.Queue().IsFull(), true);
+            EXPECT_EQ(threadPool.QueueIsFull(), true);
             threadPool.SubmitUsingExternalWorker(job, Core::infinite);
         }
     }
-    EXPECT_EQ(threadPool.Queue().IsEmpty(), false);
+    EXPECT_EQ(threadPool.QueueIsEmpty(), false);
     EXPECT_EQ(threadPool.Pending(), queueSize);
-    EXPECT_EQ(threadPool.Queue().Length(), queueSize);
 
     threadPool.Run();
     usleep(100);
@@ -804,7 +875,6 @@ TEST(Core_ThreadPool, CheckThreadPool_ProcessMultipleJobs_CancelInBetween_WithMu
     CheckThreadPool_ProcessMultipleJobs_CancelInBetween_WithMultiplePool(5, 5, 1);
     CheckThreadPool_ProcessMultipleJobs_CancelInBetween_WithMultiplePool(5, 5, 5);
 }
-
 class ThreadJobTester : public EventControl {
 public:
     ThreadJobTester(const ThreadJobTester&) = delete;
@@ -817,13 +887,23 @@ public:
     }
     ~ThreadJobTester() = default;
 
-    Core::ProxyType<Core::IDispatch> Reset()
+    Core::ProxyType<Core::IDispatch> Submit()
     {
-        return _job.Reset();
+        return _job.Submit();
     }
-    Core::ProxyType<Core::IDispatch> Aquire()
+    Core::ProxyType<Core::IDispatch> Reschedule(const Time& time)
     {
-        return _job.Aquire();
+        return _job.Reschedule(time);
+    }
+    Core::ProxyType<Core::IDispatch> Revoke()
+    {
+        Core::ProxyType<Core::IDispatch> job = _job.Revoke();
+        _job.Revoked();
+        return job;
+    }
+    Core::ProxyType<Core::IDispatch> Idle()
+    {
+        return _job.Idle();
     }
     bool IsIdle()
     {
@@ -841,8 +921,7 @@ private:
     Core::ThreadPool::JobType<ThreadJobTester&> _job;
 };
 
-
-void CheckThreadPool_JobType_Submit(const uint8_t threadCount, const uint8_t queueSize, const uint8_t additionalJobs, const uint8_t cancelJobsCount, const uint8_t* cancelJobsId)
+void CheckThreadPool_JobType_Submit_Using_Idle(const uint8_t threadCount, const uint8_t queueSize, const uint8_t additionalJobs, const uint8_t cancelJobsCount, const uint8_t* cancelJobsId)
 {
     ThreadPoolTester threadPool(threadCount, 0, queueSize);
     EXPECT_EQ(threadPool.Count(), threadCount);
@@ -865,26 +944,30 @@ void CheckThreadPool_JobType_Submit(const uint8_t threadCount, const uint8_t que
         Core::ProxyType<Core::IDispatch> job;
         if (isCanceledJob == true) {
             EXPECT_EQ(jobs[i]->IsIdle(), true);
+            job = (jobs[i]->Idle());
+            EXPECT_EQ(jobs[i]->IsIdle(), false);
+            job = (jobs[i]->Revoke());
             EXPECT_EQ(jobs[i]->IsIdle(), true);
-            job = (jobs[i]->Aquire());
-            job = (jobs[i]->Reset());
 
         } else {
             EXPECT_EQ(jobs[i]->IsIdle(), true);
-            job = (jobs[i]->Aquire());
+            job = (jobs[i]->Idle());
             EXPECT_EQ(jobs[i]->IsIdle(), false);
+
+            // Try to get same job again
+            Core::ProxyType<Core::IDispatch> jobRetry = (jobs[i]->Idle());
+            EXPECT_EQ(jobRetry.IsValid(), false);
         }
         if (job.IsValid() && (jobs[i]->IsIdle() != true)) {
-            if (threadPool.Queue().IsFull() == false) {
+            if (threadPool.QueueIsFull() == false) {
                 threadPool.SubmitUsingSelfWorker(job);
             } else {
-                EXPECT_EQ(threadPool.Queue().IsFull(), true);
+                EXPECT_EQ(threadPool.QueueIsFull(), true);
                 threadPool.SubmitUsingExternalWorker(job, Core::infinite);
             }
         }
     }
-    EXPECT_EQ(threadPool.Pending(), queueSize - cancelJobsCount);
-    EXPECT_EQ(threadPool.Queue().Length(), queueSize - cancelJobsCount);
+    EXPECT_EQ(threadPool.Pending(), static_cast<uint32_t>(queueSize - cancelJobsCount));
 
     threadPool.Run();
     usleep(100);
@@ -902,6 +985,7 @@ void CheckThreadPool_JobType_Submit(const uint8_t threadCount, const uint8_t que
             EXPECT_EQ(jobs[i]->WaitForEvent(MaxJobWaitTime * 3), Core::ERROR_TIMEDOUT);
         } else {
             EXPECT_EQ(jobs[i]->WaitForEvent(MaxJobWaitTime * 3), Core::ERROR_NONE);
+            usleep(500);
         }
         EXPECT_EQ(jobs[i]->IsIdle(), true);
     }
@@ -924,28 +1008,372 @@ void CheckThreadPool_JobType_Submit(const uint8_t threadCount, const uint8_t que
 
 TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_SinglePool_SingleJob)
 {
-    CheckThreadPool_JobType_Submit(1, 1, 0, 0, nullptr);
+    CheckThreadPool_JobType_Submit_Using_Idle(1, 1, 0, 0, nullptr);
 }
 TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_SinglePool_SingleJob_CancelJobs)
 {
     const uint8_t job = 0;
-    CheckThreadPool_JobType_Submit(1, 1, 0, 1, &job);
+    CheckThreadPool_JobType_Submit_Using_Idle(1, 1, 0, 1, &job);
 }
 TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_SinglePool_MultipleJobs)
 {
-    CheckThreadPool_JobType_Submit(1, 5, 0, 0, nullptr);
+    CheckThreadPool_JobType_Submit_Using_Idle(1, 5, 0, 0, nullptr);
 }
 TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_SinglePool_MultipleJobs_CancelJobs)
 {
     const uint8_t jobs[] = {0, 2};
-    CheckThreadPool_JobType_Submit(1, 5, 0, sizeof(jobs), jobs);
+    CheckThreadPool_JobType_Submit_Using_Idle(1, 5, 0, sizeof(jobs), jobs);
 }
 TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_MultiplePool_MultipleJobs)
 {
-    CheckThreadPool_JobType_Submit(5, 5, 0, 0, nullptr);
+    CheckThreadPool_JobType_Submit_Using_Idle(5, 5, 0, 0, nullptr);
 }
 TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_MultiplePool_MultipleJobs_CancelJobs)
 {
     const uint8_t jobs[] = {0, 2};
-    CheckThreadPool_JobType_Submit(5, 5, 0, sizeof(jobs), jobs);
+    CheckThreadPool_JobType_Submit_Using_Idle(5, 5, 0, sizeof(jobs), jobs);
 }
+
+void CheckThreadPool_JobType_Submit_Using_Submit(const uint8_t threadCount, const uint8_t queueSize, const uint8_t additionalJobs, const uint8_t cancelJobsCount, const uint8_t* cancelJobsId)
+{
+    ThreadPoolTester threadPool(threadCount, 0, queueSize);
+    EXPECT_EQ(threadPool.Count(), threadCount);
+
+    std::vector<Core::ProxyType<ThreadJobTester>> jobs;
+    // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
+    for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+        jobs.push_back(Core::ProxyType<ThreadJobTester>(Core::ProxyType<ThreadJobTester>::Create()));
+    }
+
+    for (uint8_t i = 0; i < jobs.size(); ++i) {
+        bool isCanceledJob = false;
+        for (uint8_t cancelIndex = 0; cancelIndex < cancelJobsCount; cancelIndex++)
+        {
+            if (i == cancelJobsId[cancelIndex]) {
+                isCanceledJob = true;
+                break;
+            }
+        }
+        Core::ProxyType<Core::IDispatch> job;
+        if (isCanceledJob == true) {
+            EXPECT_EQ(jobs[i]->IsIdle(), true);
+            job = (jobs[i]->Idle());
+            EXPECT_EQ(jobs[i]->IsIdle(), false);
+            job = (jobs[i]->Revoke());
+            EXPECT_EQ(jobs[i]->IsIdle(), true);
+        } else {
+            EXPECT_EQ(jobs[i]->IsIdle(), true);
+            job = (jobs[i]->Submit());
+            EXPECT_EQ(jobs[i]->IsIdle(), false);
+
+            // Try to get same job again
+            Core::ProxyType<Core::IDispatch> jobRetry = (jobs[i]->Submit());
+            EXPECT_EQ(jobRetry.IsValid(), false);
+        }
+        if (job.IsValid() && (jobs[i]->IsIdle() != true)) {
+            if (threadPool.QueueIsFull() == false) {
+                threadPool.SubmitUsingSelfWorker(job);
+            } else {
+                EXPECT_EQ(threadPool.QueueIsFull(), true);
+                threadPool.SubmitUsingExternalWorker(job, Core::infinite);
+            }
+        }
+    }
+    EXPECT_EQ(threadPool.Pending(), static_cast<uint32_t>(queueSize - cancelJobsCount));
+
+    threadPool.Run();
+    usleep(100);
+
+    for (uint8_t i = 0; i < jobs.size(); ++i) {
+        bool isCanceledJob = false;
+        for (uint8_t cancelIndex = 0; cancelIndex < cancelJobsCount; cancelIndex++)
+        {
+            if (i == cancelJobsId[cancelIndex]) {
+                isCanceledJob = true;
+                break;
+            }
+        }
+        if (isCanceledJob == true) {
+            EXPECT_EQ(jobs[i]->WaitForEvent(MaxJobWaitTime * 3), Core::ERROR_TIMEDOUT);
+        } else {
+            EXPECT_EQ(jobs[i]->WaitForEvent(MaxJobWaitTime * 3), Core::ERROR_NONE);
+            usleep(100);
+        }
+        EXPECT_EQ(jobs[i]->IsIdle(), true);
+    }
+
+    uint8_t totalRuns = 0;
+    uint32_t counters[threadCount] = {0};
+    threadPool.Runs(threadCount, counters);
+    for (uint8_t i = 0; i < threadCount; ++i) {
+        totalRuns += counters[i];
+    }
+
+    EXPECT_EQ(totalRuns, queueSize + additionalJobs - cancelJobsCount);
+    threadPool.Stop();
+
+    for (auto& job: jobs) {
+        job.Release();
+    }
+    jobs.clear();
+}
+TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_Using_Submit_SinglePool_SingleJob)
+{
+    CheckThreadPool_JobType_Submit_Using_Submit(1, 1, 0, 0, nullptr);
+}
+TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_Using_Submit_SinglePool_SingleJob_CancelJobs)
+{
+    const uint8_t job = 0;
+    CheckThreadPool_JobType_Submit_Using_Submit(1, 1, 0, 1, &job);
+}
+TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_Using_Submit_SinglePool_MultipleJobs)
+{
+    CheckThreadPool_JobType_Submit_Using_Submit(1, 5, 0, 0, nullptr);
+}
+TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_Using_Submit_SinglePool_MultipleJobs_CancelJobs)
+{
+    const uint8_t jobs[] = {0, 2};
+    CheckThreadPool_JobType_Submit_Using_Submit(1, 5, 0, sizeof(jobs), jobs);
+}
+TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_Using_Submit_MultiplePool_MultipleJobs)
+{
+    CheckThreadPool_JobType_Submit_Using_Submit(5, 5, 0, 0, nullptr);
+}
+TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_Using_Submit_MultiplePool_MultipleJobs_CancelJobs)
+{
+    const uint8_t jobs[] = {0, 2};
+    CheckThreadPool_JobType_Submit_Using_Submit(5, 5, 0, sizeof(jobs), jobs);
+}
+
+void CheckThreadPool_JobType_Submit_Using_Reschedule(const uint8_t threadCount, const uint8_t queueSize, const uint8_t additionalJobs, const uint8_t cancelJobsCount, const uint8_t* cancelJobsId, const uint16_t scheduledTimes[])
+{
+    ThreadPoolTester threadPool(threadCount, 0, queueSize);
+    EXPECT_EQ(threadPool.Count(), threadCount);
+    threadPool.Run();
+
+    std::vector<Core::ProxyType<ThreadJobTester>> jobs;
+    // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
+    for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+        jobs.push_back(Core::ProxyType<ThreadJobTester>(Core::ProxyType<ThreadJobTester>::Create()));
+    }
+    for (uint8_t i = 0; i < jobs.size(); ++i) {
+        bool isCanceledJob = false;
+        for (uint8_t cancelIndex = 0; cancelIndex < cancelJobsCount; cancelIndex++)
+        {
+            if (i == cancelJobsId[cancelIndex]) {
+                isCanceledJob = true;
+                break;
+            }
+        }
+        Core::ProxyType<Core::IDispatch> job;
+        if (isCanceledJob == true) {
+            EXPECT_EQ(jobs[i]->IsIdle(), true);
+            job = (jobs[i]->Idle());
+            EXPECT_EQ(jobs[i]->IsIdle(), false);
+            job = (jobs[i]->Revoke());
+            EXPECT_EQ(jobs[i]->IsIdle(), true);
+        } else {
+            EXPECT_EQ(jobs[i]->IsIdle(), true);
+            job = (jobs[i]->Reschedule(Core::Time::Now().Add(scheduledTimes[i])));
+            EXPECT_EQ(jobs[i]->IsIdle(), false);
+
+            // Try to get same job again
+            Core::ProxyType<Core::IDispatch> jobRetry = (jobs[i]->Reschedule(Core::Time::Now().Add(scheduledTimes[i])));
+            EXPECT_EQ(jobRetry.IsValid(), false);
+        }
+        if (job.IsValid() && (jobs[i]->IsIdle() != true)) {
+            if (threadPool.QueueIsFull() == false) {
+                threadPool.SubmitUsingSelfWorker(job);
+            } else {
+                EXPECT_EQ(threadPool.QueueIsFull(), true);
+                threadPool.SubmitUsingExternalWorker(job, Core::infinite);
+            }
+        }
+    }
+
+    for (uint8_t i = 0; i < jobs.size(); ++i) {
+        bool isCanceledJob = false;
+        for (uint8_t cancelIndex = 0; cancelIndex < cancelJobsCount; cancelIndex++)
+        {
+            if (i == cancelJobsId[cancelIndex]) {
+                isCanceledJob = true;
+                break;
+            }
+        }
+        if (isCanceledJob == true) {
+            EXPECT_EQ(jobs[i]->WaitForEvent(MaxJobWaitTime * 3), Core::ERROR_TIMEDOUT);
+        } else {
+            EXPECT_EQ(jobs[i]->WaitForEvent(MaxJobWaitTime * 4), Core::ERROR_NONE);
+            usleep(100);
+        }
+        EXPECT_EQ(jobs[i]->IsIdle(), true);
+    }
+
+    uint8_t totalRuns = 0;
+    uint32_t counters[threadCount] = {0};
+    threadPool.Runs(threadCount, counters);
+    for (uint8_t i = 0; i < threadCount; ++i) {
+        totalRuns += counters[i];
+    }
+
+    EXPECT_EQ(totalRuns, (queueSize + additionalJobs - cancelJobsCount) * 2);
+    threadPool.Stop();
+
+    for (auto& job: jobs) {
+        job.Release();
+    }
+    jobs.clear();
+}
+TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_Using_Reschedule_SinglePool_SingleJob)
+{
+    const uint16_t scheduledTimes[] = {1000, 1000};
+    CheckThreadPool_JobType_Submit_Using_Reschedule(1, 1, 1, 0, nullptr, scheduledTimes);
+}
+TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_Using_Reschedule_SinglePool_SingleJob_CancelJobs)
+{
+    const uint8_t job = 0;
+    const uint16_t scheduledTimes[] = {2000};
+    CheckThreadPool_JobType_Submit_Using_Reschedule(1, 1, 0, 1, &job, scheduledTimes);
+}
+TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_Using_Reschedule_SinglePool_MultipleJobs)
+{
+    const uint16_t scheduledTimes[] = {1000, 2000, 4000, 1000, 2000, 1000};
+    CheckThreadPool_JobType_Submit_Using_Reschedule(1, 5, 1, 0, nullptr, scheduledTimes);
+}
+TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_Using_Reschedule_SinglePool_MultipleJobs_CancelJobs)
+{
+    const uint8_t jobs[] = {0, 2};
+    const uint16_t scheduledTimes[] = {2000, 2000, 2000, 1000, 2000};
+    CheckThreadPool_JobType_Submit_Using_Reschedule(1, 5, 0, sizeof(jobs), jobs, scheduledTimes);
+}
+TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_Using_Reschedule_MultiplePool_MultipleJobs)
+{
+    const uint16_t scheduledTimes[] = {3000, 2000, 1000, 1000, 3000, 1000};
+    CheckThreadPool_JobType_Submit_Using_Reschedule(5, 5, 1, 0, nullptr, scheduledTimes);
+}
+TEST(Core_ThreadPool, Check_ThreadPool_JobType_Submit_Using_Reschedule_MultiplePool_MultipleJobs_CancelJobs)
+{
+    const uint8_t jobs[] = {0, 2};
+    const uint16_t scheduledTimes[] = {3000, 2000, 2000, 1000, 2000};
+    CheckThreadPool_JobType_Submit_Using_Reschedule(5, 5, 0, sizeof(jobs), jobs, scheduledTimes);
+}
+
+TEST(Core_ThreadPool, CheckThreadPool_JobType_Reschedule_AfterSubmit)
+{
+    uint8_t queueSize = 5;
+    uint8_t additionalJobs = 1;
+    uint8_t threadCount = 5;
+    const uint16_t scheduledTimes[] = {2000, 2000, 3000, 1000, 2000, 1000};
+    ThreadPoolTester threadPool(threadCount, 0, queueSize);
+    EXPECT_EQ(threadPool.Count(), threadCount);
+    threadPool.Run();
+
+    std::vector<Core::ProxyType<ThreadJobTester>> jobs;
+    // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
+    for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+        jobs.push_back(Core::ProxyType<ThreadJobTester>(Core::ProxyType<ThreadJobTester>::Create()));
+    }
+
+    for (uint8_t i = 0; i < jobs.size(); ++i) {
+        Core::ProxyType<Core::IDispatch> job;
+        EXPECT_EQ(jobs[i]->IsIdle(), true);
+        job = (jobs[i]->Submit());
+        EXPECT_EQ(jobs[i]->IsIdle(), false);
+
+        // Try to get same job again
+        Core::ProxyType<Core::IDispatch> jobRetry = (jobs[i]->Reschedule(Core::Time::Now().Add(scheduledTimes[i])));
+        EXPECT_EQ(jobs[i]->IsIdle(), false);
+        EXPECT_EQ(job.IsValid(), true);
+
+        if (job.IsValid() && (jobs[i]->IsIdle() != true)) {
+            if (threadPool.QueueIsFull() == false) {
+                threadPool.SubmitUsingSelfWorker(job);
+            } else {
+                EXPECT_EQ(threadPool.QueueIsFull(), true);
+                threadPool.SubmitUsingExternalWorker(job, Core::infinite);
+            }
+        }
+    }
+
+    sleep(2);
+    for (uint8_t i = 0; i < jobs.size(); ++i) {
+        EXPECT_EQ(jobs[i]->WaitForEvent(MaxJobWaitTime * 3), Core::ERROR_NONE);
+        usleep(500);
+        EXPECT_EQ(jobs[i]->IsIdle(), true);
+    }
+
+    uint8_t totalRuns = 0;
+    uint32_t counters[threadCount] = {0};
+    threadPool.Runs(threadCount, counters);
+    for (uint8_t i = 0; i < threadCount; ++i) {
+        totalRuns += counters[i];
+    }
+    EXPECT_EQ(totalRuns, (queueSize + additionalJobs) * 2);
+
+    threadPool.Stop();
+
+    for (auto& job: jobs) {
+        job.Release();
+    }
+    jobs.clear();
+}
+TEST(Core_ThreadPool, CheckThreadPool_JobType_Reschedule_AfterIdle)
+{
+    uint8_t queueSize = 5;
+    uint8_t additionalJobs = 1;
+    uint8_t threadCount = 5;
+    const uint16_t scheduledTimes[] = {1000, 2000, 3000, 1000, 4000, 1000};
+    ThreadPoolTester threadPool(threadCount, 0, queueSize);
+    EXPECT_EQ(threadPool.Count(), threadCount);
+    threadPool.Run();
+
+    std::vector<Core::ProxyType<ThreadJobTester>> jobs;
+    // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
+    for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
+        jobs.push_back(Core::ProxyType<ThreadJobTester>(Core::ProxyType<ThreadJobTester>::Create()));
+    }
+
+    for (uint8_t i = 0; i < jobs.size(); ++i) {
+        Core::ProxyType<Core::IDispatch> job;
+        EXPECT_EQ(jobs[i]->IsIdle(), true);
+        job = (jobs[i]->Submit());
+        EXPECT_EQ(jobs[i]->IsIdle(), false);
+
+        // Try to get same job again
+        Core::ProxyType<Core::IDispatch> jobRetry = (jobs[i]->Reschedule(Core::Time::Now().Add(scheduledTimes[i])));
+        EXPECT_EQ(jobs[i]->IsIdle(), false);
+        EXPECT_EQ(job.IsValid(), true);
+
+        if (job.IsValid() && (jobs[i]->IsIdle() != true)) {
+            if (threadPool.QueueIsFull() == false) {
+                threadPool.SubmitUsingSelfWorker(job);
+            } else {
+                EXPECT_EQ(threadPool.QueueIsFull(), true);
+                threadPool.SubmitUsingExternalWorker(job, Core::infinite);
+            }
+        }
+    }
+
+    sleep(2);
+    for (uint8_t i = 0; i < jobs.size(); ++i) {
+        EXPECT_EQ(jobs[i]->WaitForEvent(MaxJobWaitTime * 3), Core::ERROR_NONE);
+        usleep(500);
+        EXPECT_EQ(jobs[i]->IsIdle(), true);
+    }
+
+    uint8_t totalRuns = 0;
+    uint32_t counters[threadCount] = {0};
+    threadPool.Runs(threadCount, counters);
+    for (uint8_t i = 0; i < threadCount; ++i) {
+        totalRuns += counters[i];
+    }
+    EXPECT_EQ(totalRuns, (queueSize + additionalJobs) * 2);
+
+    threadPool.Stop();
+
+    for (auto& job: jobs) {
+        job.Release();
+    }
+    jobs.clear();
+}
+
