@@ -93,7 +93,7 @@ namespace Messaging {
     /**
      * @brief Enable or disable message (specified by the metaData)
      * 
-     * @param metaData information bout the message
+     * @param metaData information about the message
      * @param enable should it be enabled or not
      */
     void MessageClient::Enable(const Core::MessageMetaData& metaData, const bool enable)
@@ -105,7 +105,7 @@ namespace Messaging {
             _writeBuffer[length++] = static_cast<uint8_t>(enable);
 
             for (auto& client : _clients) {
-                client.second.PushMetadata(length, _writeBuffer);
+                client.second.PushMetadata(length, _writeBuffer, bufferSize);
             }
         }
     }

@@ -132,7 +132,16 @@ namespace Core {
 
     class TraceSetting : public Core::JSON::Container {
     public:
-        TraceSetting& operator=(const TraceSetting&) = delete;
+        TraceSetting(const string& module, const string& category, const bool enabled)
+            : Core::JSON::Container()
+            , Module(module)
+            , Category(category)
+            , Enabled(enabled)
+        {
+            Add(_T("module"), &Module);
+            Add(_T("category"), &Category);
+            Add(_T("enabled"), &Enabled);
+        }
         TraceSetting()
             : Core::JSON::Container()
             , Module()
@@ -143,18 +152,31 @@ namespace Core {
             Add(_T("category"), &Category);
             Add(_T("enabled"), &Enabled);
         }
-        TraceSetting(const TraceSetting& copy)
+        ~TraceSetting() override = default;
+
+        TraceSetting(const TraceSetting& other)
             : Core::JSON::Container()
-            , Module(copy.Module)
-            , Category(copy.Category)
-            , Enabled(copy.Enabled)
+            , Module(other.Module)
+            , Category(other.Category)
+            , Enabled(other.Enabled)
         {
             Add(_T("module"), &Module);
             Add(_T("category"), &Category);
             Add(_T("enabled"), &Enabled);
         }
 
-        ~TraceSetting() override = default;
+        TraceSetting& operator=(const TraceSetting& other)
+        {
+            if (&other == this) {
+                return *this;
+            }
+
+            Module = other.Module;
+            Category = other.Category;
+            Enabled = other.Enabled;
+
+            return *this;
+        }
 
     public:
         Core::JSON::String Module;
@@ -238,8 +260,10 @@ namespace Core {
         MessageUnit(const MessageUnit&) = delete;
         MessageUnit& operator=(const MessageUnit&) = delete;
 
-        std::vector<uint8_t> ReceiveMetaData(uint16_t size, const uint8_t* data);
+        void ReceiveMetaData(const uint16_t size, const uint8_t* data, uint16_t& outSize, uint8_t* outData);
         void SetDefaultSettings(const Settings& serialized);
+        void UpdateControls(const MessageMetaData& metaData, const bool enabled);
+        void UpdateDefaultSettings(const MessageMetaData& metaData, const bool isEnabled);
 
     private:
         mutable Core::CriticalSection _adminLock;
@@ -248,7 +272,7 @@ namespace Core {
         uint8_t _serializationBuffer[DataSize];
 
         Controls _controls;
-        std::unordered_map<string, TraceSetting> _defaultTraceSettings;
+        std::list<TraceSetting>_defaultTraceSettings;
     };
 
 }

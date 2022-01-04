@@ -2,6 +2,7 @@
 
 namespace WPEFramework {
 namespace Core {
+    using namespace std::placeholders;
 
     MessageMetaData::MessageMetaData()
         : _type(INVALID)
@@ -136,7 +137,7 @@ namespace Core {
         _dispatcher.reset(new MessageDispatcher(identifier, 0, true, basePath));
         if (_dispatcher != nullptr) {
             if (_dispatcher->IsValid()) {
-                _dispatcher->RegisterDataAvailable(std::bind(&MessageUnit::ReceiveMetaData, this, std::placeholders::_1, std::placeholders::_2));
+                _dispatcher->RegisterDataAvailable(std::bind(&MessageUnit::ReceiveMetaData, this, _1, _2, _3, _4));
                 result = Core::ERROR_NONE;
             }
         }
@@ -236,16 +237,22 @@ namespace Core {
 
         while (traceSettingsIterator.Next()) {
             auto setting = traceSettingsIterator.Current();
-            _defaultTraceSettings.emplace(setting.Category.Value(), setting);
 
-            auto control = std::find_if(_controls.begin(), _controls.end(), [&](const IControl* control) {
-                return control->MetaData().Type() == MessageMetaData::MessageType::TRACING && control->MetaData().Category() == setting.Category.Value();
-            });
+            MessageMetaData metadata(MessageMetaData::MessageType::TRACING,
+                setting.Category.IsSet() ? setting.Category.Value() : _T(""),
+                setting.Module.IsSet() ? setting.Module.Value() : _T(""));
 
-            if (control != _controls.end()) {
-                if (!setting.Module.IsSet() || setting.Module.Value() == (*control)->MetaData().Module()) {
-                    (*control)->Enable(setting.Enabled.Value());
-                }
+            UpdateControls(metadata, setting.Enabled.Value());
+            UpdateDefaultSettings(metadata, setting.Enabled.Value());
+        }
+    }
+
+    void MessageUnit::UpdateDefaultSettings(const MessageMetaData& metaData, const bool isEnabled)
+    {
+        //todo
+        bool found = false;
+        if (metaData.Type() == MessageMetaData::MessageType::TRACING) {
+            for (auto& setting : _defaultTraceSettings) {
             }
         }
     }
@@ -273,11 +280,10 @@ namespace Core {
         _adminLock.Lock();
 
         if (control->MetaData().Type() == Core::MessageMetaData::MessageType::TRACING) {
-            auto it = _defaultTraceSettings.find(control->MetaData().Category());
-            if (it != _defaultTraceSettings.end()) {
-                if (!it->second.Module.IsSet() || it->second.Module.Value() == control->MetaData().Module()) {
+            for (const auto& setting : _defaultTraceSettings) {
+                if (!setting.Module.IsSet() || setting.Module.Value() == control->MetaData().Module()) {
                     outIsDefault = true;
-                    outIsEnabled = it->second.Enabled.Value();
+                    outIsEnabled = setting.Enabled.Value();
                 } else {
                     outIsDefault = false;
                     outIsEnabled = false;
@@ -348,48 +354,50 @@ namespace Core {
      * @brief Notification, that there is metadata available
      * 
      * @param size size of the buffer
-     * @param data buffer containing data
-     * @return std::vector<uint8_t> binary response to the other side
+     * @param data buffer containing in data
+     * @param outSize size of the out buffer (initially set to the maximum one can write)
+     * @param outData out buffer (passed to the other side)
      */
-    std::vector<uint8_t> MessageUnit::ReceiveMetaData(uint16_t size, const uint8_t* data)
+    void MessageUnit::ReceiveMetaData(const uint16_t size, const uint8_t* data, uint16_t& outSize, uint8_t* outData)
     {
-        std::vector<uint8_t> result;
         MessageMetaData metaData;
         auto length = metaData.Deserialize(const_cast<uint8_t*>(data), size); //for now, FrameType is not handling const buffers :/
 
         if (length <= size - 1) {
             bool enabled = data[length];
+            UpdateControls(metaData, enabled);
+            UpdateDefaultSettings(metaData, enabled);
+        }
+    }
 
-            for (auto& control : _controls) {
+    void MessageUnit::UpdateControls(const MessageMetaData& metaData, const bool enabled)
+    {
+        for (auto& control : _controls) {
 
-                if (metaData.Type() == control->MetaData().Type()) {
+            if (metaData.Type() == control->MetaData().Type()) {
 
-                    //toggle for module and category
-                    if (!metaData.Module().empty() && !metaData.Category().empty()) {
-                        if (metaData.Module() == control->MetaData().Module() && metaData.Category() == control->MetaData().Category()) {
-                            control->Enable(enabled);
-                        }
-                        //toggle all categories for module
-                    } else if (!metaData.Module().empty() && metaData.Category().empty()) {
-                        if (metaData.Module() == control->MetaData().Module()) {
-                            control->Enable(enabled);
-                        }
+                //toggle for module and category
+                if (!metaData.Module().empty() && !metaData.Category().empty()) {
+                    if (metaData.Module() == control->MetaData().Module() && metaData.Category() == control->MetaData().Category()) {
+                        control->Enable(enabled);
                     }
-                    //toggle category for all modules
-                    else if (metaData.Module().empty() && !metaData.Category().empty()) {
-                        if (metaData.Category() == control->MetaData().Category()) {
-                            control->Enable(enabled);
-                        }
-                        //toggle all categories for all modules
-                    } else {
+                    //toggle all categories for module
+                } else if (!metaData.Module().empty() && metaData.Category().empty()) {
+                    if (metaData.Module() == control->MetaData().Module()) {
                         control->Enable(enabled);
                     }
                 }
+                //toggle category for all modules
+                else if (metaData.Module().empty() && !metaData.Category().empty()) {
+                    if (metaData.Category() == control->MetaData().Category()) {
+                        control->Enable(enabled);
+                    }
+                    //toggle all categories for all modules
+                } else {
+                    control->Enable(enabled);
+                }
             }
         }
-
-        return result;
     }
-
 }
 }

@@ -30,7 +30,12 @@ namespace Core {
     template <uint16_t METADATA_SIZE, uint16_t DATA_SIZE>
     class EXTERNAL MessageDispatcherType {
     private:
-        using MetaDataCallback = std::function<std::vector<uint8_t>(const uint16_t, const uint8_t*)>;
+        /**
+        * @brief MetaData Callback. First two arguments are for data in. Two later for data out (responded to the other side).
+        *        Third parameter is initially set to maximum length that can be written to the out buffer
+        * 
+        */
+        using MetaDataCallback = std::function<void(const uint16_t, const uint8_t*, uint16_t&, uint8_t*)>;
 
         class DataBuffer : public Core::CyclicBuffer {
         public:
@@ -121,17 +126,16 @@ namespace Core {
                 {
                     auto message = Core::ProxyType<MetaDataFrame>(data);
 
-                    auto length = message->Parameters().Length();
-                    auto value = message->Parameters().Value();
-
                     if (_parent._notification != nullptr) {
-                        auto result = _parent._notification(length, value);
-                        message->Response().Set(result.size(), result.data());
+                        uint16_t outLength = sizeof(_outBuffer);
+                        _parent._notification(message->Parameters().Length(), message->Parameters().Value(), outLength, _outBuffer);
+                        message->Response().Set(outLength, _outBuffer);
                     }
                     source.ReportResponse(data);
                 }
 
             private:
+                uint8_t _outBuffer[SIZE];
                 MetaDataBuffer& _parent;
             };
 
@@ -293,19 +297,20 @@ namespace Core {
         }
 
         /**
-         * @brief Exchanges metadata with the server. Reader needs to register for notifications to recevie this message
+         * @brief Exchanges metadata with the server. Reader needs to register for notifications to recevie this message.
+         *        Passed buffer will be filled with data from thr other side
          * 
          * @param length length of the message
          * @param value buffer
-         * @return std::vector<uint8_t> response from the server in binary format
+         * @param maxLength maximum size of the buffer
+         * @return uint16_t how much data was written back to the buffer
          */
-        std::vector<uint8_t> PushMetadata(const uint16_t length, const uint8_t* value)
+        uint16_t PushMetadata(const uint16_t length, uint8_t* value, const uint16_t maxLength)
         {
             _metaDataLock.Lock();
+            uint16_t readLength = 0;
 
             ASSERT(length > 0);
-
-            std::vector<uint8_t> result;
 
             Core::IPCChannelClientType<Core::Void, false, true> channel(Core::NodeId(_filenames.metaData.c_str()), METADATA_SIZE);
 
@@ -317,8 +322,10 @@ namespace Core {
                 if (channel.Invoke(metaDataFrame, Core::infinite) == Core::ERROR_NONE) {
                     auto bufferType = metaDataFrame->Response();
 
-                    result.resize(bufferType.Length());
-                    std::copy_n(bufferType.Value(), bufferType.Length(), result.begin());
+                    readLength = bufferType.Length();
+                    if (readLength <= maxLength) {
+                        std::copy_n(bufferType.Value(), length, value);
+                    }
                 }
 
                 channel.Close(Core::infinite);
@@ -326,7 +333,7 @@ namespace Core {
 
             _metaDataLock.Unlock();
 
-            return result;
+            return readLength;
         }
 
         void RegisterDataAvailable(MetaDataCallback notification)

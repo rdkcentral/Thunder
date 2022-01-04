@@ -295,17 +295,20 @@ namespace Tests {
     {
         uint8_t testData[2] = { 13, 37 };
 
-        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value) -> std::vector<uint8_t> {
-            std::vector<uint8_t> result{ 60, 61 };
+        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value, uint16_t& outLength, uint8_t* outValue) {
             EXPECT_EQ(length, sizeof(testData));
             EXPECT_EQ(value[0], 13);
             EXPECT_EQ(value[1], 37);
-            return result;
+
+            outValue[0] = 60;
+            outValue[1] = 61;
+            outLength = 2;
         });
 
-        auto result = _dispatcher->PushMetadata(sizeof(testData), testData);
-        ASSERT_EQ(result[0], 60);
-        ASSERT_EQ(result[1], 61);
+        auto result = _dispatcher->PushMetadata(sizeof(testData), testData, sizeof(testData));
+        ASSERT_EQ(result, 2);
+        ASSERT_EQ(testData[0], 60);
+        ASSERT_EQ(testData[1], 61);
         ::SleepMs(50); //wait for callback complete before closing
 
         _dispatcher->UnregisterDataAvailable();
@@ -317,30 +320,36 @@ namespace Tests {
         uint8_t testData2[2] = { 12, 34 };
 
         //first write and read
-        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value) -> std::vector<uint8_t> {
-            std::vector<uint8_t> result{ 60, 61 };
+        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value, uint16_t& outLength, uint8_t* outValue) {
             EXPECT_EQ(length, sizeof(testData1));
             EXPECT_EQ(value[0], 13);
             EXPECT_EQ(value[1], 37);
-            return result;
+
+            outValue[0] = 60;
+            outValue[1] = 61;
+            outLength = 2;
         });
-        auto result = _dispatcher->PushMetadata(sizeof(testData1), testData1);
-        ASSERT_EQ(result[0], 60);
-        ASSERT_EQ(result[1], 61);
+        auto result = _dispatcher->PushMetadata(sizeof(testData1), testData1, sizeof(testData1));
+        ASSERT_EQ(result, 2);
+        ASSERT_EQ(testData1[0], 60);
+        ASSERT_EQ(testData1[1], 61);
         ::SleepMs(50); //need to wait before unregistering, not clean solution though
         _dispatcher->UnregisterDataAvailable();
 
         //second write and read
-        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value) -> std::vector<uint8_t> {
-            std::vector<uint8_t> result{ 60, 61 };
+        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value, uint16_t& outLength, uint8_t* outValue) {
             EXPECT_EQ(length, sizeof(testData2));
             EXPECT_EQ(value[0], 12);
             EXPECT_EQ(value[1], 34);
-            return result;
+
+            outValue[0] = 60;
+            outValue[1] = 61;
+            outLength = 2;
         });
-        result = _dispatcher->PushMetadata(sizeof(testData2), testData2);
-        ASSERT_EQ(result[0], 60);
-        ASSERT_EQ(result[1], 61);
+        result = _dispatcher->PushMetadata(sizeof(testData2), testData2, sizeof(testData2));
+        ASSERT_EQ(result, 2);
+        ASSERT_EQ(testData2[0], 60);
+        ASSERT_EQ(testData2[1], 61);
         ::SleepMs(50);
         _dispatcher->UnregisterDataAvailable();
     }
@@ -353,9 +362,10 @@ namespace Tests {
             uint8_t testData[2] = { 13, 37 };
             //testAdmin.Sync("setup");
 
-            auto result = _dispatcher->PushMetadata(sizeof(testData), testData);
-            ASSERT_EQ(result[0], 60);
-            ASSERT_EQ(result[1], 61);
+            auto result = _dispatcher->PushMetadata(sizeof(testData), testData, sizeof(testData));
+            ASSERT_EQ(result, 2);
+            ASSERT_EQ(testData[0], 60);
+            ASSERT_EQ(testData[1], 61);
             ::SleepMs(2000);
         };
 
@@ -365,7 +375,7 @@ namespace Tests {
         // This side (tested) acts as reader
         IPTestAdministrator testAdmin(otherSide);
         {
-            _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value) -> std::vector<uint8_t> {
+            _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value, uint16_t& outLength, uint8_t* outValue) {
                 std::vector<uint8_t> result{ 60, 61 };
                 EXPECT_EQ(length, 2);
                 EXPECT_EQ(value[0], 13);
@@ -382,8 +392,8 @@ namespace Tests {
     {
         uint8_t testData[2] = { 13, 37 };
 
-        auto result = _dispatcher->PushMetadata(sizeof(testData), testData);
-        ASSERT_EQ(result.size(), 0);
+        auto result = _dispatcher->PushMetadata(sizeof(testData), testData, sizeof(testData));
+        ASSERT_EQ(result, 0);
     }
 
 } // Tests
