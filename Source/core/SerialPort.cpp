@@ -359,8 +359,8 @@ namespace Core {
         , _sendBytes(0)
         , _descriptor(INVALID_HANDLE_VALUE)
     {
-        Construct(DefaultSendBuffer, DefaultReceiveBuffer);
-        Configuration(port, baudRate, parity, dataBits, stopBits, flowControl, sendBufferSize, receiveBufferSize);
+        Construct(sendBufferSize, receiveBufferSize);
+        Configuration(port, baudRate, parity, dataBits, stopBits, flowControl);
     }
 
     /* virtual */ SerialPort::~SerialPort()
@@ -377,6 +377,95 @@ namespace Core {
         ::CloseHandle(_readInfo.hEvent);
         ::CloseHandle(_writeInfo.hEvent);
         #endif
+    }
+
+    /* static */ SerialPort::BaudRate SerialPort::Convert(const uint32_t speed) {
+        if (speed <= 110) {
+            return(BAUDRATE_110);
+        }
+        else if (speed <= 300) {
+            return(BAUDRATE_300);
+        }
+        else if (speed <= 600) {
+            return(BAUDRATE_600);
+        }
+        else if (speed <= 1200) {
+            return(BAUDRATE_1200);
+        }
+        else if (speed <= 2400) {
+            return(BAUDRATE_2400);
+        }
+        else if (speed <= 4800) {
+            return(BAUDRATE_4800);
+        }
+        else if (speed <= 9600) {
+            return(BAUDRATE_9600);
+        }
+        else if (speed <= 19200) {
+            return(BAUDRATE_19200);
+        }
+        else if (speed <= 38400) {
+            return(BAUDRATE_38400);
+        }
+        else if (speed <= 57600) {
+            return(BAUDRATE_57600);
+        }
+        else if (speed <= 115200) {
+            return(BAUDRATE_115200);
+        }
+#ifdef B230400
+        else if (speed <= 230400) {
+            return(BAUDRATE_230400);
+        }
+#endif
+#ifdef B460800
+        else if (speed <= 460800) {
+            return(BAUDRATE_460800);
+        }
+#endif
+        else if (speed <= 500000) {
+            return(BAUDRATE_500000);
+        }
+#ifdef B576000
+        else if (speed <= 576000) {
+            return(BAUDRATE_576000);
+        }
+#endif
+#ifdef B921600
+        else if (speed <= 921600) {
+            return(BAUDRATE_921600);
+        }
+#endif
+        else if (speed <= 1000000) {
+            return(BAUDRATE_1000000);
+        }
+        else if (speed <= 1152000) {
+            return(BAUDRATE_1152000);
+        }
+        else if (speed <= 1500000) {
+            return(BAUDRATE_1500000);
+        }
+        else if (speed <= 2000000) {
+            return(BAUDRATE_2000000);
+        }
+        else if (speed <= 2500000) {
+            return(BAUDRATE_2500000);
+        }
+        else if (speed <= 3000000) {
+            return(BAUDRATE_3000000);
+        }
+        else if (speed <= 3500000) {
+            return(BAUDRATE_3500000);
+        }
+#ifdef B3710000
+        else if (speed <= 3710000) {
+            return(BAUDRATE_3710000);
+        }
+#endif
+        else if (speed <= 4000000) {
+            return(BAUDRATE_4000000);
+        }
+        return(BAUDRATE_0);
     }
 
     uint32_t SerialPort::Configuration(
@@ -401,9 +490,7 @@ namespace Core {
         const Parity parity,
         const DataBits dataBits,
         const StopBits stopBits,
-        const FlowControl flowControl,
-        const uint16_t sendBufferSize,
-        const uint16_t receiveBufferSize)
+        const FlowControl flowControl)
     {
         uint32_t result = Core::ERROR_NONE;
 
@@ -843,28 +930,24 @@ void SerialPort::Read(const uint16_t readBytes)
 
 #ifdef __LINUX__
         struct termios options;
-        speed_t setSpeed;
 
         if (::tcgetattr(_descriptor, &options) != 0) {
             result = Core::ERROR_BAD_REQUEST;
         }
         else {
-            setSpeed = cfsetispeed(&options, _baudRate);
-
-            if (setSpeed != static_cast<speed_t>(_baudRate)) {
-                _baudRate = static_cast<BaudRate>(setSpeed);
+            if (cfsetospeed(&options, _baudRate) != 0) {
+                _baudRate = static_cast<BaudRate>(cfgetospeed(&options));
             }
-            setSpeed = cfsetospeed(&options, _baudRate); 
 
-            ASSERT (setSpeed == static_cast<speed_t>(_baudRate));
+            // Set the input baurate equal to the output!
+            cfsetispeed(&options, 0); 
 
-            options.c_cflag &= ~(PARENB | PARODD | CSTOPB | CS5 | CS6 | CS7 | CS8); // Clear all relevant bits
+            options.c_cflag &= ~(PARENB | PARODD | CSTOPB | CSIZE); // Clear all relevant bits
             options.c_cflag |= _parity | _stopBits | _dataBits; // Set the requested bits
             options.c_cflag |= (CLOCAL | CREAD);
-            options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
             options.c_oflag &= ~OPOST;
-
-            // options.c_iflag &= (IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+            options.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL);
+            options.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
 
             if (_flowControl == OFF) {
                 options.c_cflag &= ~CRTSCTS;

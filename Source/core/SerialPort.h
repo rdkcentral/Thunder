@@ -116,24 +116,23 @@ namespace Core {
         };
 
 #ifdef __WINDOWS__
-        typedef enum {
+        enum enumState {
             READ = 0x0001,
             WRITE = 0x0002,
             EXCEPTION = 0x0200,
             OPEN = 0x0400,
-
-        } enumState;
+        };
 
 #endif
 
 #ifdef __LINUX__
-        typedef enum {
+        enum enumState {
             READ = POLLIN,
             WRITE = POLLOUT,
             WRITESLOT = 0x0100,
             EXCEPTION = 0x0200,
             OPEN = 0x0400
-        } enumState;
+        };
 #endif
         // -------------------------------------------------------------------------
         // This object should not be copied, assigned or created with a default
@@ -158,6 +157,8 @@ namespace Core {
             const uint16_t receiveBufferSize);
 
         virtual ~SerialPort();
+
+        static BaudRate Convert(const uint32_t speed);
 
     public:
         inline bool operator==(const SerialPort& RHS) const
@@ -216,9 +217,7 @@ namespace Core {
             const Parity parity,
             const DataBits dataBits,
             const StopBits stopBits,
-            const FlowControl flowControl,
-            const uint16_t sendBufferSize,
-            const uint16_t receiveBufferSize);
+            const FlowControl flowControl);
 
         uint32_t Configuration(
             const BaudRate baudRate,
