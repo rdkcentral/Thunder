@@ -41,6 +41,10 @@ namespace Core {
 #else
     class EXTERNAL SerialPort : public IResource {
 #endif
+    private:
+        static constexpr uint16_t DefaultSendBuffer = 64;
+        static constexpr uint16_t DefaultReceiveBuffer = 64;
+
         friend class SerialMonitor;
 
     public:
@@ -112,24 +116,23 @@ namespace Core {
         };
 
 #ifdef __WINDOWS__
-        typedef enum {
+        enum enumState {
             READ = 0x0001,
             WRITE = 0x0002,
             EXCEPTION = 0x0200,
             OPEN = 0x0400,
-
-        } enumState;
+        };
 
 #endif
 
 #ifdef __LINUX__
-        typedef enum {
+        enum enumState {
             READ = POLLIN,
             WRITE = POLLOUT,
             WRITESLOT = 0x0100,
             EXCEPTION = 0x0200,
             OPEN = 0x0400
-        } enumState;
+        };
 #endif
         // -------------------------------------------------------------------------
         // This object should not be copied, assigned or created with a default
@@ -155,10 +158,12 @@ namespace Core {
 
         virtual ~SerialPort();
 
+        static BaudRate Convert(const uint32_t speed);
+
     public:
         inline bool operator==(const SerialPort& RHS) const
         {
-            return (m_Descriptor == RHS.m_Descriptor);
+            return (_descriptor == RHS._descriptor);
         }
         inline bool operator!=(const SerialPort& RHS) const
         {
@@ -166,7 +171,7 @@ namespace Core {
         }
         inline bool IsOpen() const
         {
-            return ((m_State & SerialPort::OPEN) == SerialPort::OPEN);
+            return ((_state & SerialPort::OPEN) == SerialPort::OPEN);
         }
         inline bool IsClosed() const
         {
@@ -174,27 +179,27 @@ namespace Core {
         }
         inline bool HasError() const
         {
-            return ((m_State & SerialPort::EXCEPTION) != 0);
+            return ((_state & SerialPort::EXCEPTION) != 0);
         }
         inline void Flush()
         {
-            m_syncAdmin.Lock();
-            m_ReadBytes = 0;
-            m_SendOffset = 0;
-            m_SendBytes = 0;
+            _adminLock.Lock();
+            _readBytes = 0;
+            _sendOffset = 0;
+            _sendBytes = 0;
 #ifndef __WINDOWS__
-            tcflush(m_Descriptor, TCIOFLUSH);
+            tcflush(_descriptor, TCIOFLUSH);
 #endif
 
-            m_syncAdmin.Unlock();
+            _adminLock.Unlock();
         }
         inline const string& LocalId() const
         {
-            return (m_PortName);
+            return (_portName);
         }
         inline const string& RemoteId() const
         {
-            return (m_PortName);
+            return (_portName);
         }
 
         uint32_t Open(uint32_t waitTime);
@@ -206,60 +211,52 @@ namespace Core {
         virtual uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize) = 0;
         virtual void StateChange() = 0;
 
-        bool Configuration(
+        uint32_t Configuration(
             const string& port,
             const BaudRate baudRate,
             const Parity parity,
             const DataBits dataBits,
             const StopBits stopBits,
-            const FlowControl flowControl,
-            const uint16_t sendBufferSize,
-            const uint16_t receiveBufferSize);
+            const FlowControl flowControl);
 
-        bool Configuration(
+        uint32_t Configuration(
             const BaudRate baudRate,
-            const FlowControl flowControl,
-            const uint16_t sendBufferSize,
-            const uint16_t receiveBufferSize);
+            const FlowControl flowControl);
 
-        void SetBaudRate(const BaudRate baudrate)
+        uint32_t SetBaudRate(const BaudRate baudrate)
         {
-#ifdef __WINDOWS__
-            m_PortSettings.BaudRate = baudrate;
-            if (m_Descriptor != INVALID_HANDLE_VALUE) {
-                // TODO implementa on the fly changes..
-                ASSERT(false);
-            }
-#else
-            cfsetospeed(&m_PortSettings, baudrate);
-            cfsetispeed(&m_PortSettings, baudrate);
-            if (m_Descriptor != -1) {
+            uint32_t result = Core::ERROR_NONE;
 
-                if (tcsetattr(m_Descriptor, TCSANOW, &m_PortSettings) < 0) {
-                    TRACE_L1("Error setting a new speed: %d", -errno);
-                }
-                else {
-                    ::tcflush(m_Descriptor, TCIOFLUSH);
-                }
+            _adminLock.Lock();
+
+            _baudRate = baudrate;
+
+            if (_descriptor != INVALID_HANDLE_VALUE) {
+                result = Settings();
             }
-#endif
+            _adminLock.Unlock();
+
+            return (result);
         }
         void SendBreak()
         {
+            if (_descriptor != INVALID_HANDLE_VALUE) {
 #ifdef __WINDOWS__
-            // TODO: Implement a windows variant..
-            ASSERT(false);
+                // TODO: Implement a windows variant..
+                ASSERT(false);
 #else
-            if (m_Descriptor != -1) {
-                tcsendbreak(m_Descriptor, 0);
-            }
+                tcsendbreak(_descriptor, 0);
 #endif
+            }
         }
 
     private:
+        void Construct(const uint16_t sendBufferSize, const uint16_t receiveBufferSize);
+        uint32_t Settings();
+
         void Opened()
         {
-            m_State = SerialPort::OPEN | SerialPort::READ | SerialPort::WRITE;
+            _state = SerialPort::OPEN | SerialPort::READ | SerialPort::WRITE;
             StateChange();
         }
         void Closed()
@@ -267,16 +264,15 @@ namespace Core {
             StateChange();
 
 #ifdef __LINUX__
-            close(m_Descriptor);
-            m_Descriptor = -1;
+            close(_descriptor);
 #endif
 
 #ifdef __WINDOWS__
-            ::CloseHandle(m_Descriptor);
-            m_Descriptor = INVALID_HANDLE_VALUE;
+            ::CloseHandle(_descriptor);
 #endif
 
-            m_State = 0;
+            _descriptor = INVALID_HANDLE_VALUE;
+            _state = 0;
         }
         uint32_t WaitForClosure(const uint32_t time) const;
 #ifdef __WINDOWS__
@@ -286,12 +282,12 @@ namespace Core {
 #ifdef __LINUX__
         void Write();
         void Read();
-        virtual IResource::handle Descriptor() const override
+        IResource::handle Descriptor() const override
         {
-            return (static_cast<IResource::handle>(m_Descriptor));
+            return (static_cast<IResource::handle>(_descriptor));
         }
-        virtual uint16_t Events() override;
-        virtual void Handle(const uint16_t events) override;
+        uint16_t Events() override;
+        void Handle(const uint16_t events) override;
 #endif
 
 #ifdef __LINUX__
@@ -303,33 +299,37 @@ namespace Core {
 #ifdef __WINDOWS__
         inline HANDLE Descriptor()
         {
-            return (m_Descriptor);
+            return (_descriptor);
         }
 #endif
     private:
-        mutable CriticalSection m_syncAdmin;
-        string m_PortName;
-        volatile uint16_t m_State;
-        uint16_t m_SendBufferSize;
-        uint16_t m_ReceiveBufferSize;
-        uint8_t* m_SendBuffer;
-        uint8_t* m_ReceiveBuffer;
-        uint16_t m_ReadBytes;
-        uint16_t m_WriteBytes;
-        uint16_t m_SendOffset;
-        uint16_t m_SendBytes;
+        mutable CriticalSection _adminLock;
+        string _portName;
+        volatile uint16_t _state;
+        uint16_t _sendBufferSize;
+        uint16_t _receiveBufferSize;
+        uint8_t* _sendBuffer;
+        uint8_t* _receiveBuffer;
+        uint16_t _readBytes;
+        uint16_t _WriteBytes;
+        uint16_t _sendOffset;
+        uint16_t _sendBytes;
 
 #ifdef __WINDOWS__
-        HANDLE m_Descriptor;
-        DCB m_PortSettings;
-        mutable OVERLAPPED m_WriteInfo;
-        mutable OVERLAPPED m_ReadInfo;
+        HANDLE _descriptor;
+        mutable OVERLAPPED _writeInfo;
+        mutable OVERLAPPED _readInfo;
 #endif
 
 #ifdef __LINUX__
-        int m_Descriptor;
-        struct termios m_PortSettings;
+        int _descriptor;
 #endif
+
+        BaudRate _baudRate;
+        Parity _parity;
+        DataBits _dataBits;
+        StopBits _stopBits;
+        FlowControl _flowControl;
     };
 }
 } // namespace Core
