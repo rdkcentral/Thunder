@@ -60,29 +60,6 @@ option(DEADLOCK_DETECTION
 option(WARNING_REPORTING
         "Include warning reporting in the build." OFF)
 
-set(BUILD_TYPE "Production" CACHE STRING "How do you want to build it, Production, Release/ReleaseSymbols or Debug/DebugOptimized")
-
-#
-# Build type specific options
-#
-if(NOT BUILD_TYPE)
-    set(BUILD_TYPE Production)
-    message(AUTHOR_WARNING "BUILD_TYPE not set, assuming '${BUILD_TYPE}'")
-endif()
-if("${BUILD_TYPE}" STREQUAL "Debug")
-    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
-elseif("${BUILD_TYPE}" STREQUAL "DebugOptimized")
-    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
-elseif("${BUILD_TYPE}" STREQUAL "ReleaseSymbols")
-    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build." FORCE)
-elseif("${BUILD_TYPE}" STREQUAL "Release")
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)
-elseif("${BUILD_TYPE}" STREQUAL "Production")
-    set(CMAKE_BUILD_TYPE "MinSizeRel" CACHE STRING "Choose the type of build." FORCE)
-else()
-    message(FATAL_ERROR "Invalid BUILD_TYPE: '${BUILD_TYPE}'")
-endif()
-
 if (HIDE_NON_EXTERNAL_SYMBOLS)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
     set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
