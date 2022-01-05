@@ -307,6 +307,8 @@ int clock_gettime(int, struct timespec*);
 #define MARKPARITY  8
 #define SPACEPARITY 9
 
+#define INVALID_HANDLE_VALUE -1
+
 #define ESUCCESS 0
 #define _Geterrno() errno
 #define BYTE unsigned char
