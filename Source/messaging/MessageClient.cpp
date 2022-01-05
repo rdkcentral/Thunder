@@ -100,11 +100,12 @@ namespace Messaging {
     {
         uint16_t bufferSize = sizeof(_writeBuffer);
 
-        auto length = metaData.Serialize(_writeBuffer, bufferSize);
-        if (length < bufferSize - 1) {
-            _writeBuffer[length++] = static_cast<uint8_t>(enable);
+        for (auto& client : _clients) {
+            auto length = metaData.Serialize(_writeBuffer, bufferSize);
+            
+            if (length < bufferSize - 1) {
+                _writeBuffer[length++] = static_cast<uint8_t>(enable);
 
-            for (auto& client : _clients) {
                 client.second.PushMetadata(length, _writeBuffer, bufferSize);
             }
         }

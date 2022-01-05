@@ -99,10 +99,169 @@ namespace Core {
         return length;
     }
 
+    //----------TraceSettings----------
+    TraceSetting::TraceSetting(const string& module, const string& category, const bool enabled)
+        : Core::JSON::Container()
+    {
+        Add(_T("module"), &Module);
+        Add(_T("category"), &Category);
+        Add(_T("enabled"), &Enabled);
+
+        //if done in initializer list, set values are seen as "Defaults", not as "Values"
+        Module = module;
+        Category = category;
+        Enabled = enabled;
+    }
+    TraceSetting::TraceSetting()
+        : Core::JSON::Container()
+        , Module()
+        , Category()
+        , Enabled(false)
+    {
+        Add(_T("module"), &Module);
+        Add(_T("category"), &Category);
+        Add(_T("enabled"), &Enabled);
+    }
+
+    TraceSetting::TraceSetting(const TraceSetting& other)
+        : Core::JSON::Container()
+        , Module(other.Module)
+        , Category(other.Category)
+        , Enabled(other.Enabled)
+    {
+        Add(_T("module"), &Module);
+        Add(_T("category"), &Category);
+        Add(_T("enabled"), &Enabled);
+    }
+
+    TraceSetting& TraceSetting::operator=(const TraceSetting& other)
+    {
+        if (&other == this) {
+            return *this;
+        }
+
+        Module = other.Module;
+        Category = other.Category;
+        Enabled = other.Enabled;
+
+        return *this;
+    }
+
+    //----------Settings----------
+    Settings::Settings()
+        : Core::JSON::Container()
+        , Tracing()
+        , Logging()
+        , WarningReporting(false)
+    {
+        Add(_T("tracing"), &Tracing);
+        Add(_T("logging"), &Logging);
+        Add(_T("warning_reporting"), &WarningReporting);
+    }
+    Settings::Settings(const Settings& other)
+        : Core::JSON::Container()
+        , Tracing(other.Tracing)
+        , Logging(other.Logging)
+        , WarningReporting(other.WarningReporting)
+    {
+        Add(_T("tracing"), &Tracing);
+        Add(_T("logging"), &Logging);
+        Add(_T("warning_reporting"), &WarningReporting);
+    }
+
+    Settings& Settings::operator=(const Settings& other)
+    {
+        if (this == &other) {
+            return *this;
+        }
+
+        Tracing = other.Tracing;
+        Logging = other.Logging;
+        WarningReporting = other.WarningReporting;
+        return *this;
+    }
+
+    //----------MessageList----------
+    /**
+     * @brief Based on metadata, update specific message. If there is no match, add entry to the list
+     * 
+     * @param metaData information about the message
+     * @param isEnabled should the message be enabled 
+     */
+    void MessageList::Update(const MessageMetaData& metaData, const bool isEnabled)
+    {
+        if (metaData.Type() == MessageMetaData::MessageType::TRACING) {
+            bool found = false;
+            auto it = _settings.Tracing.Elements();
+            while (it.Next()) {
+
+                //toggle for module and category
+                if (!metaData.Module().empty() && !metaData.Category().empty()) {
+                    if (metaData.Module() == it.Current().Module.Value() && metaData.Category() == it.Current().Category.Value()) {
+                        it.Current().Enabled = isEnabled;
+                        found = true;
+                    }
+                    //toggle all categories for module
+                } else if (!metaData.Module().empty() && metaData.Category().empty()) {
+                    if (metaData.Module() == it.Current().Module.Value()) {
+                        it.Current().Enabled = isEnabled;
+                        found = true;
+                    }
+                }
+                //toggle category for all modules
+                else if (metaData.Module().empty() && !metaData.Category().empty()) {
+                    if (metaData.Category() == it.Current().Category.Value()) {
+                        it.Current().Enabled = isEnabled;
+                        found = true;
+                    }
+                }
+            }
+            if (!found) {
+                _settings.Tracing.Add({ metaData.Module(), metaData.Category(), isEnabled });
+            }
+        }
+    }
+    Settings MessageList::JsonSettings() const
+    {
+        return _settings;
+    }
+    void MessageList::JsonSettings(const Settings& settings)
+    {
+        _settings = settings;
+    }
+    /**
+     * @brief Check if speific message (control) should be enabled
+     * 
+     * @param metaData information about the message
+     * @return true should be enabled
+     * @return false should not be enabled
+     */
+    bool MessageList::IsEnabled(const MessageMetaData& metaData) const
+    {
+        bool result = false;
+        if (metaData.Type() == Core::MessageMetaData::MessageType::TRACING) {
+            auto it = _settings.Tracing.Elements();
+
+            while (it.Next()) {
+                if (!it.Current().Module.IsSet() || it.Current().Module.Value() == metaData.Module()) {
+                    result = it.Current().Enabled.Value();
+                } else {
+                    result = false;
+                }
+            }
+        }
+        return result;
+    }
+
     //----------MessageUNIT----------
     MessageUnit& MessageUnit::Instance()
     {
         return (Core::SingletonType<MessageUnit>::Instance());
+    }
+
+    MessageUnit::~MessageUnit()
+    {
+        Close();
     }
 
     /**
@@ -230,30 +389,12 @@ namespace Core {
      */
     void MessageUnit::SetDefaultSettings(const Settings& serialized)
     {
-        Core::JSON::ArrayType<Core::TraceSetting> traceSettings;
-        traceSettings.FromString(serialized.Tracing.Value());
+        _messages.JsonSettings(serialized);
+        serialized.ToString(_defaultSettings);
 
-        auto traceSettingsIterator = traceSettings.Elements();
-
-        while (traceSettingsIterator.Next()) {
-            auto setting = traceSettingsIterator.Current();
-
-            MessageMetaData metadata(MessageMetaData::MessageType::TRACING,
-                setting.Category.IsSet() ? setting.Category.Value() : _T(""),
-                setting.Module.IsSet() ? setting.Module.Value() : _T(""));
-
-            UpdateControls(metadata, setting.Enabled.Value());
-            UpdateDefaultSettings(metadata, setting.Enabled.Value());
-        }
-    }
-
-    void MessageUnit::UpdateDefaultSettings(const MessageMetaData& metaData, const bool isEnabled)
-    {
-        //todo
-        bool found = false;
-        if (metaData.Type() == MessageMetaData::MessageType::TRACING) {
-            for (auto& setting : _defaultTraceSettings) {
-            }
+        for (auto& control : _controls) {
+            auto enabled = _messages.IsEnabled(control->MetaData());
+            control->Enable(enabled);
         }
     }
 
@@ -264,7 +405,11 @@ namespace Core {
      */
     string MessageUnit::Defaults() const
     {
-        return _defaultSettings;
+        string result;
+        auto settings = _messages.JsonSettings();
+        settings.ToString(result);
+
+        return result;
     }
 
     /**
@@ -279,17 +424,7 @@ namespace Core {
     {
         _adminLock.Lock();
 
-        if (control->MetaData().Type() == Core::MessageMetaData::MessageType::TRACING) {
-            for (const auto& setting : _defaultTraceSettings) {
-                if (!setting.Module.IsSet() || setting.Module.Value() == control->MetaData().Module()) {
-                    outIsDefault = true;
-                    outIsEnabled = setting.Enabled.Value();
-                } else {
-                    outIsDefault = false;
-                    outIsEnabled = false;
-                }
-            }
-        }
+        outIsEnabled = _messages.IsEnabled(control->MetaData());
 
         _adminLock.Unlock();
     }
@@ -360,16 +495,27 @@ namespace Core {
      */
     void MessageUnit::ReceiveMetaData(const uint16_t size, const uint8_t* data, uint16_t& outSize, uint8_t* outData)
     {
-        MessageMetaData metaData;
-        auto length = metaData.Deserialize(const_cast<uint8_t*>(data), size); //for now, FrameType is not handling const buffers :/
+        if (size != 0) {
+            MessageMetaData metaData;
+            //last byte is enabled flag
+            auto length = metaData.Deserialize(const_cast<uint8_t*>(data), size - 1); //for now, FrameType is not handling const buffers :/
 
-        if (length <= size - 1) {
-            bool enabled = data[length];
-            UpdateControls(metaData, enabled);
-            UpdateDefaultSettings(metaData, enabled);
+            if (length <= size - 1) {
+                bool enabled = data[length];
+                UpdateControls(metaData, enabled);
+                _messages.Update(metaData, enabled);
+            }
+        } else {
+            //outData should be filled with information about enabled controls
         }
     }
 
+    /**
+     * @brief Update announced controls
+     * 
+     * @param metaData information about the message
+     * @param enabled should the control be enabled
+     */
     void MessageUnit::UpdateControls(const MessageMetaData& metaData, const bool enabled)
     {
         for (auto& control : _controls) {

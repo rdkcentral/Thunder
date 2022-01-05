@@ -130,58 +130,57 @@ namespace Core {
         virtual string Prepare(const bool abbreviateMessage, const Core::MessageInformation& info, const Core::IMessageEvent* message) const = 0;
     };
 
+    struct EXTERNAL IJsonSetting {
+        virtual ~IJsonSetting() = default;
+    };
+
     class TraceSetting : public Core::JSON::Container {
     public:
-        TraceSetting(const string& module, const string& category, const bool enabled)
-            : Core::JSON::Container()
-            , Module(module)
-            , Category(category)
-            , Enabled(enabled)
-        {
-            Add(_T("module"), &Module);
-            Add(_T("category"), &Category);
-            Add(_T("enabled"), &Enabled);
-        }
-        TraceSetting()
-            : Core::JSON::Container()
-            , Module()
-            , Category()
-            , Enabled(false)
-        {
-            Add(_T("module"), &Module);
-            Add(_T("category"), &Category);
-            Add(_T("enabled"), &Enabled);
-        }
-        ~TraceSetting() override = default;
-
-        TraceSetting(const TraceSetting& other)
-            : Core::JSON::Container()
-            , Module(other.Module)
-            , Category(other.Category)
-            , Enabled(other.Enabled)
-        {
-            Add(_T("module"), &Module);
-            Add(_T("category"), &Category);
-            Add(_T("enabled"), &Enabled);
-        }
-
-        TraceSetting& operator=(const TraceSetting& other)
-        {
-            if (&other == this) {
-                return *this;
-            }
-
-            Module = other.Module;
-            Category = other.Category;
-            Enabled = other.Enabled;
-
-            return *this;
-        }
+        TraceSetting(const string& module, const string& category, const bool enabled);
+        TraceSetting();
+        ~TraceSetting() = default;
+        TraceSetting(const TraceSetting& other);
+        TraceSetting& operator=(const TraceSetting& other);
 
     public:
         Core::JSON::String Module;
         Core::JSON::String Category;
         Core::JSON::Boolean Enabled;
+    };
+
+    class Settings : public Core::JSON::Container {
+    public:
+        Settings();
+        ~Settings() = default;
+        Settings(const Settings& other);
+        Settings& operator=(const Settings& other);
+
+    public:
+        Core::JSON::ArrayType<TraceSetting> Tracing;
+        Core::JSON::String Logging;
+        Core::JSON::String WarningReporting;
+    };
+
+    /**
+     * @brief Class responsible for storing information about all messages, so announced IControl will know if it should be enabled
+     *        Initial list is retreived from thunder config, and is modified/extended when there is change requested in enabled categories.
+     *        Info will be passed to another starting unit.
+     * 
+     */
+    class MessageList {
+    public:
+        MessageList() = default;
+        ~MessageList() = default;
+        MessageList(const MessageList&) = delete;
+        MessageList& operator=(const MessageList&) = delete;
+
+        void Update(const MessageMetaData& metaData, const bool isEnabled);
+        Settings JsonSettings() const;
+        void JsonSettings(const Settings& settings);
+        bool IsEnabled(const MessageMetaData& metaData) const;
+
+    private:
+        Settings _settings;
     };
 
     /**
@@ -204,38 +203,6 @@ namespace Core {
         static constexpr const char* MESSAGE_DISPACTHER_IDENTIFIER_ENV = _T("MESSAGE_DISPACTHER_IDENTIFIER");
         using MessageDispatcher = Core::MessageDispatcherType<MetaDataSize, DataSize>;
 
-        class Settings : public Core::JSON::Container {
-        public:
-            Settings& operator=(const Settings&) = delete;
-            Settings()
-                : Core::JSON::Container()
-                , Tracing()
-                , Logging()
-                , WarningReporting(false)
-            {
-                Add(_T("tracing"), &Tracing);
-                Add(_T("logging"), &Logging);
-                Add(_T("warning_reporting"), &WarningReporting);
-            }
-            Settings(const Settings& other)
-                : Core::JSON::Container()
-                , Tracing(other.Tracing)
-                , Logging(other.Logging)
-                , WarningReporting(other.WarningReporting)
-            {
-                Add(_T("tracing"), &Tracing);
-                Add(_T("logging"), &Logging);
-                Add(_T("warning_reporting"), &WarningReporting);
-            }
-
-            ~Settings() override = default;
-
-        public:
-            Core::JSON::String Tracing;
-            Core::JSON::String Logging;
-            Core::JSON::String WarningReporting;
-        };
-
     public:
         static MessageUnit& Instance();
         uint32_t Open(const uint32_t instanceId);
@@ -256,14 +223,13 @@ namespace Core {
     private:
         friend class Core::SingletonType<MessageUnit>;
         MessageUnit() = default;
-        ~MessageUnit() = default;
+        ~MessageUnit();
         MessageUnit(const MessageUnit&) = delete;
         MessageUnit& operator=(const MessageUnit&) = delete;
 
         void ReceiveMetaData(const uint16_t size, const uint8_t* data, uint16_t& outSize, uint8_t* outData);
         void SetDefaultSettings(const Settings& serialized);
         void UpdateControls(const MessageMetaData& metaData, const bool enabled);
-        void UpdateDefaultSettings(const MessageMetaData& metaData, const bool isEnabled);
 
     private:
         mutable Core::CriticalSection _adminLock;
@@ -272,8 +238,7 @@ namespace Core {
         uint8_t _serializationBuffer[DataSize];
 
         Controls _controls;
-        std::list<TraceSetting>_defaultTraceSettings;
+        MessageList _messages;
     };
-
 }
 }
