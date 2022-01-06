@@ -383,8 +383,7 @@ namespace Core {
         {
             SIZE_CONTEXT requiredLength(static_cast<SIZE_CONTEXT>(sizeof(TYPENAME) + length));
 
-//            For now turn this check off as not all code is compliant yet
-//            static_assert(sizeof(TYPENAME) <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
+            static_assert(sizeof(TYPENAME) <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
 
             if ((offset + requiredLength) >= _size) {
                 Size(offset + requiredLength);
@@ -443,8 +442,7 @@ namespace Core {
             TYPENAME textLength;
 
             ASSERT((offset + sizeof(TYPENAME)) <= _size);
-//            For now turn this check off as not all code is compliant yet
-//            static_assert(sizeof(TYPENAME) <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
+            static_assert(sizeof(TYPENAME) <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
 
             GetNumber<TYPENAME>(offset, textLength);
 
@@ -464,8 +462,7 @@ namespace Core {
         {
             TYPENAME textLength;
             ASSERT((offset + sizeof(TYPENAME)) <= _size);
-//            For now turn this check off as not all code is compliant yet
-//            static_assert(sizeof(TYPENAME) <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
+            static_assert(sizeof(TYPENAME) <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
 
             GetNumber<TYPENAME>(offset, textLength);
 
