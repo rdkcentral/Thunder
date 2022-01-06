@@ -1003,7 +1003,7 @@ void SerialPort::Read(const uint16_t readBytes)
         }
 
         if (::SetCommState(_descriptor, &options) == 0) {
-            result = etLastError();
+            result = GetLastError();
         }
 #endif
 
