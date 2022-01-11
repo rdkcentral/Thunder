@@ -85,16 +85,11 @@ namespace Trace {
                 // if nessecary..
                 Core::MessageUnit::Instance().Announce(this);
 
-                //todo add checking
 
-                bool isEnabled = false;
-                bool isDefault = false;
-                Core::MessageUnit::Instance().FetchDefaultSettingsForCategory(this, isEnabled, isDefault);
+                bool isEnabled = Core::MessageUnit::Instance().IsControlEnabled(this);
 
-                if (isDefault) {
-                    if (isEnabled) {
-                        _enabled = _enabled | 0x01;
-                    }
+                if (isEnabled) {
+                    _enabled = _enabled | 0x01;
                 }
             }
             ~Control() override

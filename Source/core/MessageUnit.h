@@ -42,6 +42,14 @@ namespace Core {
         MessageMetaData(const MessageType type, const string& category, const string& module);
         MessageMetaData(const MessageMetaData&) = default;
         MessageMetaData& operator=(const MessageMetaData&) = default;
+        inline bool operator==(const MessageMetaData& other) const
+        {
+            return _type == other._type && _category == other._category && _module == other._module;
+        }
+        inline bool operator!=(const MessageMetaData& other) const
+        {
+            return !operator==(other);
+        }
 
         inline MessageType Type() const
         {
@@ -183,6 +191,29 @@ namespace Core {
         Settings _settings;
     };
 
+    class EXTERNAL ControlList {
+    public:
+        using Element = std::pair<MessageMetaData, bool>;
+        using Storage = std::list<Element>;
+        using Iterator = Core::IteratorType<Storage, Element>;
+
+        ControlList() = default;
+        ~ControlList() = default;
+        ControlList(const ControlList&) = delete;
+        ControlList& operator=(const ControlList&) = delete;
+
+        uint16_t Serialize(uint8_t buffer[], const uint16_t length, const std::list<IControl*>& controls) const;
+        uint16_t Deserialize(uint8_t buffer[], const uint16_t length);
+
+        inline Iterator Controls()
+        {
+            return Iterator(_info);
+        }
+
+    private:
+        Storage _info;
+    };
+
     /**
      * @brief Class responsible for:
      *        - opening buffers
@@ -213,7 +244,7 @@ namespace Core {
         void Defaults(Core::File& file);
 
         string Defaults() const;
-        void FetchDefaultSettingsForCategory(const IControl* control, bool& outIsEnabled, bool& outIsDefault);
+        bool IsControlEnabled(const IControl* control);
 
         void Push(const MessageInformation& info, const IMessageEvent* message);
 
@@ -234,11 +265,11 @@ namespace Core {
     private:
         mutable Core::CriticalSection _adminLock;
         std::unique_ptr<MessageDispatcher> _dispatcher;
-        string _defaultSettings;
         uint8_t _serializationBuffer[DataSize];
 
         Controls _controls;
         MessageList _messages;
+        ControlList _controlList;
     };
 }
 }

@@ -243,7 +243,7 @@ namespace Core {
             auto it = _settings.Tracing.Elements();
 
             while (it.Next()) {
-                if (!it.Current().Module.IsSet() || it.Current().Module.Value() == metaData.Module()) {
+                if ((!it.Current().Module.IsSet() && it.Current().Category.Value() == metaData.Category()) || (it.Current().Module.Value() == metaData.Module() && it.Current().Category.Value() == metaData.Category())) {
                     result = it.Current().Enabled.Value();
                 } else {
                     result = false;
@@ -253,6 +253,52 @@ namespace Core {
         return result;
     }
 
+    //----------ControlList----------
+
+    /**
+     * @brief Write information about the announced controls to the buffer
+     * 
+     * @param buffer buffer to be written to
+     * @param length max length of the buffer
+     * @param controls controls to be serialized
+     * @return uint16_t how much bytes serialized
+     */
+    uint16_t ControlList::Serialize(uint8_t buffer[], const uint16_t length, const std::list<IControl*>& controls) const
+    {
+        ASSERT(length > 0);
+
+        uint16_t serialized = 0;
+        buffer[serialized++] = static_cast<uint8_t>(controls.size()); //num of entries
+        for (const auto& control : controls) {
+            serialized += control->MetaData().Serialize(buffer + serialized, length - serialized);
+            buffer[serialized++] = control->Enable();
+        }
+        return serialized;
+    }
+
+    /**
+     * @brief Restore information about announced controls from the buffer
+     * 
+     * @param buffer serialized buffer 
+     * @param length max length of the buffer
+     * @return uint16_t how much bytes deserialized
+     */
+    uint16_t ControlList::Deserialize(uint8_t buffer[], const uint16_t length)
+    {
+        uint16_t deserialized = 0;
+        uint8_t entries = buffer[deserialized++];
+
+        for (int i = 0; i < entries; i++) {
+            MessageMetaData metadata;
+            bool isEnabled = false;
+            deserialized += metadata.Deserialize(buffer + deserialized, length - deserialized);
+            isEnabled = buffer[deserialized++];
+
+            _info.push_back({ metadata, isEnabled });
+        }
+
+        return deserialized;
+    }
     //----------MessageUNIT----------
     MessageUnit& MessageUnit::Instance()
     {
@@ -390,7 +436,6 @@ namespace Core {
     void MessageUnit::SetDefaultSettings(const Settings& serialized)
     {
         _messages.JsonSettings(serialized);
-        serialized.ToString(_defaultSettings);
 
         for (auto& control : _controls) {
             auto enabled = _messages.IsEnabled(control->MetaData());
@@ -413,20 +458,16 @@ namespace Core {
     }
 
     /**
-     * @brief Retreive information about category controlled by IControl implementation. 
-     *        When category is not enabled, it must not be pushed.
+     * @brief Check if given control is enabled (by default setings, or by user input)
      * 
-     * @param control Implementaion controlling enablind/disabling specific category
-     * @param outIsEnabled is the category enabled
-     * @param outIsDefault is the category default
+     * @param control specified control
+     * @return true enabled
+     * @return false not enabled (messages from this control should not be pushed)
      */
-    void MessageUnit::FetchDefaultSettingsForCategory(const IControl* control, bool& outIsEnabled, bool& outIsDefault)
+    bool MessageUnit::IsControlEnabled(const IControl* control)
     {
-        _adminLock.Lock();
-
-        outIsEnabled = _messages.IsEnabled(control->MetaData());
-
-        _adminLock.Unlock();
+        Core::SafeSyncType<CriticalSection> guard(_adminLock);
+        return _messages.IsEnabled(control->MetaData());
     }
 
     /**
@@ -506,7 +547,8 @@ namespace Core {
                 _messages.Update(metaData, enabled);
             }
         } else {
-            //outData should be filled with information about enabled controls
+            auto length = _controlList.Serialize(outData, outSize, _controls);
+            outSize = length;
         }
     }
 
