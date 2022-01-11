@@ -30,6 +30,8 @@ namespace Messaging {
         void SkipWaiting();
 
         void Enable(const Core::MessageMetaData& metaData, const bool enable);
+        Core::ControlList::Iterator Enabled();
+        
 
         Message Pop();
 
@@ -45,6 +47,7 @@ namespace Messaging {
 
         std::unordered_map<uint32_t, Core::MessageUnit::MessageDispatcher> _clients;
         Factories _factories;
+        Core::ControlList::Storage _enabledCategories;
     };
 }
 }

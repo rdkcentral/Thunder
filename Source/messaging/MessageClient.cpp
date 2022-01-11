@@ -102,13 +102,40 @@ namespace Messaging {
 
         for (auto& client : _clients) {
             auto length = metaData.Serialize(_writeBuffer, bufferSize);
-            
+
             if (length < bufferSize - 1) {
                 _writeBuffer[length++] = static_cast<uint8_t>(enable);
 
                 client.second.PushMetadata(length, _writeBuffer, bufferSize);
             }
         }
+    }
+
+    /**
+     * @brief Get list of currently active message controls
+     * 
+     * @return Core::ControlList::Iterator iterator for all the controls
+     */
+    Core::ControlList::Iterator MessageClient::Enabled()
+    {
+        _enabledCategories.clear();
+
+        uint16_t bufferSize = sizeof(_writeBuffer);
+
+        for (auto& client : _clients) {
+            auto writtenBack = client.second.PushMetadata(0, _writeBuffer, bufferSize);
+            if (writtenBack > 0) {
+                Core::ControlList controlList;
+                controlList.Deserialize(_writeBuffer, writtenBack);
+
+                auto it = controlList.Controls();
+                while (it.Next()) {
+                    _enabledCategories.push_back(it.Current());
+                }
+            }
+        }
+
+        return Core::ControlList::Iterator(_enabledCategories);
     }
 
     /**
@@ -131,9 +158,7 @@ namespace Messaging {
         auto currentClientIt = _clients.begin();
         while (currentClientIt != _clients.end()) {
 
-            if (currentClientIt->second.PopData(size, _readBuffer) != Core::ERROR_NONE) {
-                //warning trace here
-            } else {
+            if (currentClientIt->second.PopData(size, _readBuffer) == Core::ERROR_NONE) {
                 auto length = information.Deserialize(_readBuffer, size);
 
                 if (length != 0 && length <= sizeof(_readBuffer)) {
