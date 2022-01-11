@@ -310,8 +310,6 @@ namespace Core {
             _metaDataLock.Lock();
             uint16_t readLength = 0;
 
-            ASSERT(length > 0);
-
             Core::IPCChannelClientType<Core::Void, false, true> channel(Core::NodeId(_filenames.metaData.c_str()), METADATA_SIZE);
 
             auto metaDataFrame = Core::ProxyType<typename MetaDataBuffer<METADATA_SIZE>::MetaDataFrame>::Create();
@@ -324,7 +322,7 @@ namespace Core {
 
                     readLength = bufferType.Length();
                     if (readLength <= maxLength) {
-                        std::copy_n(bufferType.Value(), length, value);
+                        std::copy_n(bufferType.Value(), readLength, value);
                     }
                 }
 
