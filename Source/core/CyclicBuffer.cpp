@@ -95,7 +95,7 @@ namespace Core {
         uint32_t actual_offset = RoundUp(offset, sizeof(void*));
         uint32_t actual_bufferSize = 0;
         if (bufferSize == 0) {
-            actual_bufferSize = actual_offset <= _buffer.Size() ? (_buffer.Size() - actual_offset) : 0;
+            actual_bufferSize = actual_offset <= static_cast<uint32_t>(_buffer.Size()) ? static_cast<uint32_t>(_buffer.Size() - actual_offset) : 0;
         } else {
             actual_bufferSize = bufferSize <= _buffer.Size() ? bufferSize : 0;
         }

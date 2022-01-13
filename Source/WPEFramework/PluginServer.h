@@ -1627,66 +1627,56 @@ namespace PluginHost {
             };
             class SubSystems : public Core::IDispatch, public SystemInfo {
             private:
-                SubSystems() = delete;
-                SubSystems(const SubSystems&) = delete;
-                SubSystems& operator=(const SubSystems&) = delete;
-
-                class Job : public Core::IDispatchType<void> {
-                private:
+                class Job {
+                public:
                     Job() = delete;
                     Job(const Job&) = delete;
                     Job& operator=(const Job&) = delete;
 
-                public:
-                    Job(SubSystems* parent)
-                        : _parent(*parent)
-                        , _schedule(false)
-                    {
-                        ASSERT(parent != nullptr);
-                    }
-                    virtual ~Job()
+                    Job(SubSystems& parent)
+                        : _parent(parent)
                     {
                     }
+                    ~Job() = default;
 
                 public:
-                    void Schedule()
-                    {
-                        if (_schedule == false) {
-                            _schedule = true;
-                            _parent.WorkerPool().Submit(Core::ProxyType<Core::IDispatchType<void>>(*this));
-                        }
-                    }
-                    virtual void Dispatch()
-                    {
-                        _schedule = false;
+                    void Dispatch() {
                         _parent.Evaluate();
                     }
 
                 private:
                     SubSystems& _parent;
-                    bool _schedule;
                 };
 
             public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+                SubSystems() = delete;
+                SubSystems(const SubSystems&) = delete;
+                SubSystems& operator=(const SubSystems&) = delete;
+
+                #ifdef __WINDOWS__
+                #pragma warning(disable : 4355)
+                #endif
                 SubSystems(ServiceMap* parent)
                     : SystemInfo(parent->Configuration(), this)
                     , _parent(*parent)
-                    , _decoupling(Core::ProxyType<Job>::Create(this))
+                    , _job(*this)
                 {
                 }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
-                virtual ~SubSystems()
+                #ifdef __WINDOWS__
+                #pragma warning(default : 4355)
+                #endif
+                ~SubSystems() override
                 {
-                    _parent.WorkerPool().Revoke(Core::ProxyType<Core::IDispatch>(_decoupling));
+                    Core::ProxyType<Core::IDispatch> job(_job.Revoke());
+
+                    if (job.IsValid()) {
+                        _parent.WorkerPool().Revoke(job);
+                        _job.Revoked();
+                    }
                 }
 
             private:
-                virtual void Dispatch() override
+                void Dispatch() override
                 {
                     static uint32_t previousState = 0;
                     uint32_t changedFlags = (previousState ^ Value());
@@ -1700,20 +1690,19 @@ namespace PluginHost {
                         _parent.Security(SystemInfo::IsActive(ISubSystem::SECURITY));
                     }
 
-                    _decoupling->Schedule();
+                    Core::ProxyType<Core::IDispatch> job(_job.Submit());
+                    if (job.IsValid() == true) {
+                        _parent.WorkerPool().Submit(job);
+                    }
                 }
                 inline void Evaluate()
                 {
                     _parent.Evaluate();
                 }
-                inline Core::WorkerPool& WorkerPool()
-                {
-                    return (_parent.WorkerPool());
-                }
 
             private:
                 ServiceMap& _parent;
-                Core::ProxyType<Job> _decoupling;
+                Core::ThreadPool::JobType<Job> _job;
             };
 
         public:
@@ -2378,7 +2367,7 @@ namespace PluginHost {
                     _jsonrpc = JSONRPC;
                     _token = token;
                 }
-                virtual void Dispatch()
+                void Dispatch() override
                 {
                     ASSERT(Job::HasService() == true);
                     ASSERT(_element.IsValid() == true);
@@ -2691,7 +2680,7 @@ namespace PluginHost {
                         if (job.IsValid() == true) {
                             Core::ProxyType<Web::Request> baseRequest(request);
                             job->Set(Id(), &_parent, service, baseRequest, _security->Token(), !request->ServiceCall());
-                            _parent.Submit(Core::ProxyType<Core::IDispatchType<void>>(job));
+                            _parent.Submit(Core::ProxyType<Core::IDispatch>(job));
                         }
                     }
                     break;
@@ -2829,6 +2818,7 @@ namespace PluginHost {
 
                     State(CLOSED, false);
                     _parent.Dispatcher().TriggerCleanup();
+
                 } else if (IsUpgrading() == true) {
 
                     ASSERT(_service.IsValid() == false);
@@ -2921,67 +2911,41 @@ namespace PluginHost {
         private:
             typedef Core::SocketServerType<Channel> BaseClass;
 
-            class Job : public Core::IDispatchType<void> {
-            private:
-                Job() = delete;
-                Job(const Job& copy) = delete;
-                Job& operator=(const Job& RHS) = delete;
-
-            public:
-                Job(ChannelMap* parent)
-                    : _parent(*parent)
-                {
-                    ASSERT(parent != nullptr);
-                }
-                virtual ~Job()
-                {
-                }
-
-            public:
-                virtual void Dispatch() override
-                {
-                    return (_parent.Timed());
-                }
-
-            private:
-                ChannelMap& _parent;
-            };
-
         public:
             ChannelMap() = delete;
             ChannelMap(const ChannelMap&) = delete;
             ChannelMap& operator=(const ChannelMap&) = delete;
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+            #ifdef __WINDOWS__
+            #pragma warning(disable : 4355)
+            #endif
             ChannelMap(Server& parent, const Core::NodeId& listeningNode, const uint16_t connectionCheckTimer)
                 : Core::SocketServerType<Channel>(listeningNode)
                 , _parent(parent)
                 , _connectionCheckTimer(connectionCheckTimer * 1000)
-                , _job(Core::ProxyType<Job>::Create(this))
+                , _job(*this)
             {
                 if (connectionCheckTimer != 0) {
                     Core::Time NextTick = Core::Time::Now();
 
                     NextTick.Add(_connectionCheckTimer);
 
-                    _parent.Schedule(NextTick.Ticks(), _job);
+                    Core::ProxyType<Core::IDispatch> job(_job.Submit());
+                    if (job.IsValid() == true) {
+                        _parent.Schedule(NextTick.Ticks(), job);
+                    }
                 }
             }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
-            void TriggerCleanup()
-            {
-                if (_connectionCheckTimer == 0) {
-                    _parent.Submit(_job);
-                }
-            }
+            #ifdef __WINDOWS__
+            #pragma warning(default : 4355)
+            #endif
             ~ChannelMap()
             {
-
-                _parent.Revoke(_job);
+                Core::ProxyType<Core::IDispatch> job(_job.Revoke());
+                if (job.IsValid() == true) {
+                    _parent.Revoke(job);
+                    _job.Revoked();
+                }
 
                 // Start by closing the server thread..
                 Close(100);
@@ -3027,10 +2991,21 @@ namespace PluginHost {
                     client->RequestClose();
                 }
             }
+            void TriggerCleanup()
+            {
+                if (_connectionCheckTimer == 0) {
+                    Core::ProxyType<Core::IDispatch> job(_job.Reschedule(Core::Time::Now()));
+                    if (job.IsValid() == true) {
+                        _parent.Submit(job);
+                    }
+                }
+            }
             void GetMetaData(Core::JSON::ArrayType<MetaData::Channel>& metaData) const;
 
         private:
-            void Timed()
+            friend class Core::ThreadPool::JobType<ChannelMap&>;
+
+            void Dispatch()
             {
                 TRACE(Activity, (string(_T("Cleanup job running..\n"))));
 
@@ -3057,14 +3032,14 @@ namespace PluginHost {
                     Core::Time NextTick(Core::Time::Now());
                     NextTick.Add(_connectionCheckTimer);
 
-                    _parent.Schedule(NextTick.Ticks(), _job);
+                    _job.Reschedule(NextTick);
                 }
             }
 
         private:
             Server& _parent;
             const uint32_t _connectionCheckTimer;
-            Core::ProxyType<Core::IDispatchType<void>> _job;
+            Core::ThreadPool::JobType<ChannelMap&> _job;
         };
 
     public:
@@ -3087,15 +3062,15 @@ namespace PluginHost {
         {
             return (_dispatcher);
         }
-        inline void Submit(const Core::ProxyType<Core::IDispatchType<void>>& job)
+        inline void Submit(const Core::ProxyType<Core::IDispatch>& job)
         {
             _dispatcher.Submit(job);
         }
-        inline void Schedule(const uint64_t time, const Core::ProxyType<Core::IDispatchType<void>>& job)
+        inline void Schedule(const uint64_t time, const Core::ProxyType<Core::IDispatch>& job)
         {
             _dispatcher.Schedule(time, job);
         }
-        inline void Revoke(const Core::ProxyType<Core::IDispatchType<void>> job)
+        inline void Revoke(const Core::ProxyType<Core::IDispatch> job)
         {
             _dispatcher.Revoke(job);
         }

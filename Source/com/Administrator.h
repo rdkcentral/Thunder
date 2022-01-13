@@ -316,7 +316,7 @@ namespace RPC {
             _channel = Core::ProxyType<Core::IPCChannel>(channel);
             _handler = handler;
         }
-        virtual void Dispatch() override
+        void Dispatch() override
         {
             if (_message->Label() == InvokeMessage::Id()) {
                 Invoke(_channel, _message);
@@ -411,7 +411,7 @@ namespace RPC {
             }
             void Deinitialize() override {
             }
-            void Dispatch(Core::IDispatchType<void>* job) override {
+            void Dispatch(Core::IDispatch* job) override {
                 job->Dispatch();
             }
         };
@@ -422,7 +422,7 @@ namespace RPC {
 
         InvokeServerType()
             : _dispatcher()
-            , _threadPoolEngine(THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS, &_dispatcher)
+            , _threadPoolEngine(THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS, &_dispatcher, nullptr)
             , _handler(nullptr)
         {
             _threadPoolEngine.Run();
@@ -455,7 +455,7 @@ namespace RPC {
                 ASSERT(_handler != nullptr);
                 _handler->Procedure(source, message);
             } else {
-                Core::ProxyType<Job> job(Job::Instance());
+                Core::ProxyType<RPC::Job> job(Job::Instance());
 
                 job->Set(source, message, _handler);
                 _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite);
