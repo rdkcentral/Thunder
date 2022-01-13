@@ -359,13 +359,13 @@ namespace PluginHost
                     }
 
                     Activity newData(_T("Delta preconditions: %s"), feedback.c_str());
-                    Trace::TraceMessage traceData(newData.Data());
+                    Trace::Message traceData(newData.Data());
 
-                    Core::MessageInformation info(Core::MessageMetaData::MessageType::TRACING,
+                    Core::Messaging::Information info(Core::Messaging::MetaData::MessageType::TRACING,
                         Core::ClassNameOnly(typeid(Activity).name()).Text(),
                         WPEFramework::Core::System::MODULE_NAME, __FILE__, __LINE__, Core::Time::Now().Ticks());
                         
-                    Core::MessageUnit::Instance().Push(info, &traceData);
+                    Core::Messaging::MessageUnit::Instance().Push(info, &traceData);
                 }
                 
             } else {

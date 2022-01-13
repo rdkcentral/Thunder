@@ -4,16 +4,16 @@
 namespace WPEFramework {
 namespace Trace {
 
-    class EXTERNAL TraceMessage : public Core::IMessageEvent {
+    class EXTERNAL Message : public Core::Messaging::IEvent {
     public:
-        TraceMessage() = default;
-        TraceMessage(const string& text)
+        Message() = default;
+        Message(const string& text)
             : _text(text)
         {
         }
 
-        TraceMessage(const TraceMessage&) = delete;
-        TraceMessage& operator=(const TraceMessage&) = delete;
+        Message(const Message&) = delete;
+        Message& operator=(const Message&) = delete;
 
         uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override
         {

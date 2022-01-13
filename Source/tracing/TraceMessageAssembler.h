@@ -4,14 +4,14 @@
 namespace WPEFramework {
 namespace Trace {
 
-    class EXTERNAL TraceFormatter : public Core::IMessageAssembler {
+    class EXTERNAL Formatter : public Core::Messaging::IAssembler {
     public:
-        TraceFormatter() = default;
-        ~TraceFormatter() = default;
-        TraceFormatter(const TraceFormatter&) = delete;
-        TraceFormatter& operator=(const TraceFormatter&) = delete;
+        Formatter() = default;
+        ~Formatter() = default;
+        Formatter(const Formatter&) = delete;
+        Formatter& operator=(const Formatter&) = delete;
 
-        inline string Prepare(const bool abbreviateMessage, const Core::MessageInformation& info, const Core::IMessageEvent* message) const override
+        inline string Prepare(const bool abbreviateMessage, const Core::Messaging::Information& info, const Core::Messaging::IEvent* message) const override
         {
             _output.str("");
             _output.clear();
@@ -20,11 +20,11 @@ namespace Trace {
 
             if (abbreviateMessage == true) {
                 string time(Core::Time::Now().ToTimeOnly(true));
-                _output << '[' << time.c_str() << ']' << '[' << info.MetaData().Category() << "]: " << _deserializedMessage << std::endl;
+                _output << '[' << time.c_str() << ']' << '[' << info.MessageMetaData().Category() << "]: " << _deserializedMessage << std::endl;
             } else {
                 string time(Core::Time::Now().ToRFC1123(true));
                 _output << '[' << time.c_str() << "]:[" << Core::FileNameOnly(info.FileName().c_str()) << ':' << info.LineNumber() << "] "
-                        << info.MetaData().Category() << ": " << _deserializedMessage << std::endl;
+                        << info.MessageMetaData().Category() << ": " << _deserializedMessage << std::endl;
             }
 
             return _output.str();

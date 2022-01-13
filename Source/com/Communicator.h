@@ -1159,7 +1159,7 @@ namespace RPC {
 
                     Core::ProxyType<Client> proxyChannel(static_cast<Client&>(channel));
 
-                    string jsonDefaultMessagingSettings = Core::MessageUnit::Instance().Defaults();
+                    string jsonDefaultMessagingSettings = Core::Messaging::MessageUnit::Instance().Defaults();
                     void* result = _parent.Announce(proxyChannel, message->Parameters());
 
                     message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultMessagingSettings);

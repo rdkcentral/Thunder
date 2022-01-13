@@ -11,10 +11,10 @@ namespace Messaging {
      * 
      */
     class EXTERNAL MessageClient {
-        using Factories = std::unordered_map<Core::MessageMetaData::MessageType, Core::IMessageEventFactory*>;
+        using Factories = std::unordered_map<Core::Messaging::MetaData::MessageType, Core::Messaging::IEventFactory*>;
 
     public:
-        using Message = Core::OptionalType<std::pair<Core::MessageInformation, Core::ProxyType<Core::IMessageEvent>>>;
+        using Message = Core::OptionalType<std::pair<Core::Messaging::Information, Core::ProxyType<Core::Messaging::IEvent>>>;
         ~MessageClient() = default;
         MessageClient(const MessageClient&) = delete;
         MessageClient& operator=(const MessageClient&) = delete;
@@ -29,25 +29,24 @@ namespace Messaging {
         void WaitForUpdates(const uint32_t waitTime);
         void SkipWaiting();
 
-        void Enable(const Core::MessageMetaData& metaData, const bool enable);
-        Core::ControlList::Iterator Enabled();
-        
+        void Enable(const Core::Messaging::MetaData& metaData, const bool enable);
+        Core::Messaging::ControlList::Iterator Enabled();
 
         Message Pop();
 
-        void AddFactory(Core::MessageMetaData::MessageType type, Core::IMessageEventFactory* factory);
-        void RemoveFactory(Core::MessageMetaData::MessageType type);
+        void AddFactory(Core::Messaging::MetaData::MessageType type, Core::Messaging::IEventFactory* factory);
+        void RemoveFactory(Core::Messaging::MetaData::MessageType type);
 
     private:
         mutable Core::CriticalSection _adminLock;
         string _identifier;
         string _basePath;
-        uint8_t _readBuffer[Core::MessageUnit::DataSize];
-        uint8_t _writeBuffer[Core::MessageUnit::MetaDataSize];
+        uint8_t _readBuffer[Core::Messaging::MessageUnit::DataSize];
+        uint8_t _writeBuffer[Core::Messaging::MessageUnit::MetaDataSize];
 
-        std::unordered_map<uint32_t, Core::MessageUnit::MessageDispatcher> _clients;
+        std::unordered_map<uint32_t, Core::Messaging::MessageUnit::MessageDispatcher> _clients;
         Factories _factories;
-        Core::ControlList::Storage _enabledCategories;
+        Core::Messaging::ControlList::Storage _enabledCategories;
     };
 }
 }

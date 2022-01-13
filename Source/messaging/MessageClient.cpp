@@ -96,7 +96,7 @@ namespace Messaging {
      * @param metaData information about the message
      * @param enable should it be enabled or not
      */
-    void MessageClient::Enable(const Core::MessageMetaData& metaData, const bool enable)
+    void MessageClient::Enable(const Core::Messaging::MetaData& metaData, const bool enable)
     {
         uint16_t bufferSize = sizeof(_writeBuffer);
 
@@ -116,7 +116,7 @@ namespace Messaging {
      * 
      * @return Core::ControlList::Iterator iterator for all the controls
      */
-    Core::ControlList::Iterator MessageClient::Enabled()
+    Core::Messaging::ControlList::Iterator MessageClient::Enabled()
     {
         _enabledCategories.clear();
 
@@ -125,7 +125,7 @@ namespace Messaging {
         for (auto& client : _clients) {
             auto writtenBack = client.second.PushMetadata(0, _writeBuffer, bufferSize);
             if (writtenBack > 0) {
-                Core::ControlList controlList;
+                Core::Messaging::ControlList controlList;
                 controlList.Deserialize(_writeBuffer, writtenBack);
 
                 auto it = controlList.Controls();
@@ -135,7 +135,7 @@ namespace Messaging {
             }
         }
 
-        return Core::ControlList::Iterator(_enabledCategories);
+        return Core::Messaging::ControlList::Iterator(_enabledCategories);
     }
 
     /**
@@ -152,8 +152,8 @@ namespace Messaging {
         uint16_t size = sizeof(_readBuffer);
 
         Message result;
-        Core::MessageInformation information;
-        Core::ProxyType<Core::IMessageEvent> message;
+        Core::Messaging::Information information;
+        Core::ProxyType<Core::Messaging::IEvent> message;
 
         auto currentClientIt = _clients.begin();
         while (currentClientIt != _clients.end()) {
@@ -162,7 +162,7 @@ namespace Messaging {
                 auto length = information.Deserialize(_readBuffer, size);
 
                 if (length != 0 && length <= sizeof(_readBuffer)) {
-                    auto factory = _factories.find(information.MetaData().Type());
+                    auto factory = _factories.find(information.MessageMetaData().Type());
                     if (factory != _factories.end()) {
                         message = factory->second->Create();
                         message->Deserialize(_readBuffer + length, size - length);
@@ -185,7 +185,7 @@ namespace Messaging {
      * @param type for which message type the factory should be used
      * @param factory 
      */
-    void MessageClient::AddFactory(Core::MessageMetaData::MessageType type, Core::IMessageEventFactory* factory)
+    void MessageClient::AddFactory(Core::Messaging::MetaData::MessageType type, Core::Messaging::IEventFactory* factory)
     {
         Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
         _factories.emplace(type, factory);
@@ -196,7 +196,7 @@ namespace Messaging {
      * 
      * @param type 
      */
-    void MessageClient::RemoveFactory(Core::MessageMetaData::MessageType type)
+    void MessageClient::RemoveFactory(Core::Messaging::MetaData::MessageType type)
     {
         Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
         _factories.erase(type);

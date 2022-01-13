@@ -29,30 +29,30 @@
 // ---- Referenced classes and types ----
 
 // ---- Helper types and constants ----
-#define TRACE(CATEGORY, PARAMETERS)                                                                                      \
-    if (WPEFramework::Trace::ControlLifetime<CATEGORY, &WPEFramework::Core::System::MODULE_NAME>::IsEnabled() == true) { \
-        CATEGORY __data__ PARAMETERS;                                                                                    \
-        WPEFramework::Core::MessageInformation __info__(WPEFramework::Core::MessageMetaData::MessageType::TRACING,       \
-            Core::ClassNameOnly(typeid(CATEGORY).name()).Text(),                                                         \
-            WPEFramework::Core::System::MODULE_NAME,                                                                     \
-            __FILE__,                                                                                                    \
-            __LINE__,                                                                                                    \
-            Core::Time::Now().Ticks());                                                                                  \
-        WPEFramework::Trace::TraceMessage __message__(__data__.Data());                                                  \
-        WPEFramework::Core::MessageUnit::Instance().Push(__info__, &__message__);                                        \
+#define TRACE(CATEGORY, PARAMETERS)                                                                                        \
+    if (WPEFramework::Trace::ControlLifetime<CATEGORY, &WPEFramework::Core::System::MODULE_NAME>::IsEnabled() == true) {   \
+        CATEGORY __data__ PARAMETERS;                                                                                      \
+        WPEFramework::Core::Messaging::Information __info__(WPEFramework::Core::Messaging::MetaData::MessageType::TRACING, \
+            Core::ClassNameOnly(typeid(CATEGORY).name()).Text(),                                                           \
+            WPEFramework::Core::System::MODULE_NAME,                                                                       \
+            __FILE__,                                                                                                      \
+            __LINE__,                                                                                                      \
+            Core::Time::Now().Ticks());                                                                                    \
+        WPEFramework::Trace::Message __message__(__data__.Data());                                                         \
+        WPEFramework::Core::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                               \
     }
 
-#define TRACE_GLOBAL(CATEGORY, PARAMETERS)                                                                               \
-    if (WPEFramework::Trace::ControlLifetime<CATEGORY, &WPEFramework::Core::System::MODULE_NAME>::IsEnabled() == true) { \
-        CATEGORY __data__ PARAMETERS;                                                                                    \
-        WPEFramework::Core::MessageInformation __info__(WPEFramework::Core::MessageMetaData::MessageType::TRACING,       \
-            __FUNCTION__,                                                                                                \
-            WPEFramework::Core::System::MODULE_NAME,                                                                     \
-            __FILE__,                                                                                                    \
-            __LINE__,                                                                                                    \
-            Core::Time::Now().Ticks());                                                                                  \
-        WPEFramework::Trace::TraceMessage __message__(__data__.Data());                                                  \
-        WPEFramework::Core::MessageUnit::Instance().Push(__info__, &__message__);                                        \
+#define TRACE_GLOBAL(CATEGORY, PARAMETERS)                                                                                 \
+    if (WPEFramework::Trace::ControlLifetime<CATEGORY, &WPEFramework::Core::System::MODULE_NAME>::IsEnabled() == true) {   \
+        CATEGORY __data__ PARAMETERS;                                                                                      \
+        WPEFramework::Core::Messaging::Information __info__(WPEFramework::Core::Messaging::MetaData::MessageType::TRACING, \
+            __FUNCTION__,                                                                                                  \
+            WPEFramework::Core::System::MODULE_NAME,                                                                       \
+            __FILE__,                                                                                                      \
+            __LINE__,                                                                                                      \
+            Core::Time::Now().Ticks());                                                                                    \
+        WPEFramework::Trace::Message __message__(__data__.Data());                                                         \
+        WPEFramework::Core::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                               \
     }
 
 #define TRACE_DURATION(CODE, ...)                                     \
@@ -71,22 +71,21 @@ namespace Trace {
     class ControlLifetime {
     private:
         template <typename CONTROLCATEGORY, const char** CONTROLMODULE>
-        class Control : public Core::IControl {
+        class Control : public Core::Messaging::IControl {
         public:
             Control(const Control<CONTROLCATEGORY, CONTROLMODULE>&) = delete;
             Control<CONTROLCATEGORY, CONTROLMODULE>& operator=(const Control<CONTROLCATEGORY, CONTROLMODULE>&) = delete;
 
             Control()
                 : _enabled(0x02)
-                , _metaData(Core::MessageMetaData::MessageType::TRACING,
+                , _metaData(Core::Messaging::MetaData::MessageType::TRACING,
                       Core::ClassNameOnly(typeid(CONTROLCATEGORY).name()).Text(), *CONTROLMODULE)
             {
                 // Register Our trace control unit, so it can be influenced from the outside
                 // if nessecary..
-                Core::MessageUnit::Instance().Announce(this);
+                Core::Messaging::MessageUnit::Instance().Announce(this);
 
-
-                bool isEnabled = Core::MessageUnit::Instance().IsControlEnabled(this);
+                bool isEnabled = Core::Messaging::MessageUnit::Instance().IsControlEnabled(this);
 
                 if (isEnabled) {
                     _enabled = _enabled | 0x01;
@@ -98,7 +97,7 @@ namespace Trace {
             }
 
         public:
-            const Core::MessageMetaData& MetaData() const override
+            const Core::Messaging::MetaData& MessageMetaData() const override
             {
                 return _metaData;
             }
@@ -124,14 +123,14 @@ namespace Trace {
                 if ((_enabled & 0x02) != 0) {
                     // Register Our trace control unit, so it can be influenced from the outside
                     // if nessecary..
-                    Core::MessageUnit::Instance().Revoke(this);
+                    Core::Messaging::MessageUnit::Instance().Revoke(this);
                     _enabled = 0;
                 }
             }
 
         private:
             uint8_t _enabled;
-            Core::MessageMetaData _metaData;
+            Core::Messaging::MetaData _metaData;
         };
 
     public:
@@ -156,5 +155,4 @@ namespace Trace {
 }
 
 } // namespace Trace
-
 #endif // __TRACECONTROL_H

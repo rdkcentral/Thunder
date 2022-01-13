@@ -214,7 +214,7 @@ namespace PluginHost {
             closelog();
 #endif
 
-            Core::MessageUnit::Instance().Close();
+            Core::Messaging::MessageUnit::Instance().Close();
 
 #ifdef __CORE_WARNING_REPORTING__
             WarningReporting::WarningReportingUnit::Instance().Close();
@@ -501,7 +501,7 @@ namespace PluginHost {
 
             // Time to open up, the message buffer for this process and define it for the out-of-proccess systems
             // Define the environment variable for Messaging files, if it is not already set.
-            if ( Core::MessageUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE){
+            if ( Core::Messaging::MessageUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE){
 #ifndef __WINDOWS__
                 if (_background == true) {
                     syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable messaging functionality!");
@@ -519,12 +519,12 @@ namespace PluginHost {
                 Core::File input (messagingSettings);
 
                 if (input.Open(true)) {
-                    Core::MessageUnit::Instance().Defaults(input);
+                    Core::Messaging::MessageUnit::Instance().Defaults(input);
                 }
             }
             
             else {
-                Core::MessageUnit::Instance().Defaults(_config->MessagingCategories());
+                Core::Messaging::MessageUnit::Instance().Defaults(_config->MessagingCategories());
             }
 
             SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));

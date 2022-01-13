@@ -505,7 +505,7 @@ namespace RPC {
         if (announceMessage->Response().IsSet() == true) {
             string jsonMessagingCategories(announceMessage->Response().MessagingCategories());
             if(!jsonMessagingCategories.empty()) {
-                Core::MessageUnit::Instance().Defaults(jsonMessagingCategories);
+                Core::Messaging::MessageUnit::Instance().Defaults(jsonMessagingCategories);
             }
 
             _connectionId = announceMessage->Response().SequenceNumber();
