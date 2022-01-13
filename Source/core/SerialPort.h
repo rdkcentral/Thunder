@@ -311,7 +311,6 @@ namespace Core {
         uint8_t* _sendBuffer;
         uint8_t* _receiveBuffer;
         uint16_t _readBytes;
-        uint16_t _WriteBytes;
         uint16_t _sendOffset;
         uint16_t _sendBytes;
 
