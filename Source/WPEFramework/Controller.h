@@ -262,7 +262,7 @@ namespace Plugin {
     private:
         //  IDispatch methods
         // -------------------------------------------------------------------------------------------------------
-        Core::ProxyType<Core::JSONRPC::Message> Invoke(const string& token, const uint32_t channelId, const Core::JSONRPC::Message& inbound) override;
+        Core::ProxyType<Core::JSONRPC::Message> Invoke(const Core::JSONRPC::Context& token, const Core::JSONRPC::Message& inbound) override;
 
         inline Core::ProxyType<PluginHost::Server::Service> FromIdentifier(const string& callsign) const
         {
