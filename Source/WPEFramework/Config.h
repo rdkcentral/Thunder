@@ -320,6 +320,7 @@ namespace PluginHost {
                 , Process()
                 , Input()
                 , Configs()
+                , EthernetCard()
                 , Environments()
                 , ExitReasons()
                 , Latitude(51832547) // Divider 1.000.000
@@ -353,6 +354,7 @@ namespace PluginHost {
                 Add(_T("input"), &Input);
                 Add(_T("plugins"), &Plugins);
                 Add(_T("configs"), &Configs);
+                Add(_T("ethernetcard"), &EthernetCard);
                 Add(_T("environments"), &Environments);
                 Add(_T("exitreasons"), &ExitReasons);
                 Add(_T("latitude"), &Latitude);
@@ -388,6 +390,7 @@ namespace PluginHost {
             ProcessSet Process;
             InputConfig Input;
             Core::JSON::String Configs;
+            Core::JSON::String EthernetCard;
             Core::JSON::ArrayType<Plugin::Config> Plugins;
             Core::JSON::ArrayType<Environment> Environments;
             Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::IShell::reason>> ExitReasons;
@@ -548,6 +551,7 @@ namespace PluginHost {
                 _stackSize = config.Process.IsSet() ? config.Process.StackSize.Value() : 0;
                 _inputInfo.Set(config.Input);
                 _processInfo.Set(config.Process);
+                _ethernetCard = config.EthernetCard.Value();
                 _latitude = config.Latitude.Value();
                 _longitude = config.Longitude.Value();
 
@@ -742,6 +746,9 @@ namespace PluginHost {
         inline uint32_t StackSize() const {
             return (_stackSize);
         }
+        inline string EthernetCard() const {
+            return _ethernetCard;
+        }
         inline int32_t Latitude() const {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_latitude);
@@ -916,6 +923,7 @@ namespace PluginHost {
         string _binding;
         string _interface;
         string _URL;
+        string _ethernetCard;
         uint16_t _portNumber;
         bool _IPV6;
         uint16_t _idleTime;

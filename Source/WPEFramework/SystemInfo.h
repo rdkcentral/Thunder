@@ -27,11 +27,13 @@ namespace WPEFramework {
 namespace PluginHost {
 
     class SystemInfo : public PluginHost::ISubSystem {
-    private:
+    public:
         SystemInfo() = delete;
         SystemInfo(const SystemInfo&) = delete;
         SystemInfo& operator=(const SystemInfo&) = delete;
 
+    private:
+        static int32_t constexpr WaitTimeForInterfaceReady = 3000;
         class Id : public PluginHost::ISubSystem::IIdentifier {
         public:
             Id(const Id&) = delete;
@@ -373,8 +375,17 @@ namespace PluginHost {
                         _identifier->Release();
                     }
 
+                    uint32_t timeLeft = WaitTimeForInterfaceReady;
+                    while ((IsActive(PluginHost::ISubSystem::NETWORK) == false) &&
+                           (timeLeft > 0)) {
+                        ::SleepMs(100);
+                        if (timeLeft != Core::infinite) {
+                            timeLeft -= (timeLeft > 100 ? 100 : timeLeft);
+                        }
+                    }
+
                     _identifier = Core::Service<Id>::Create<Id>();
-                    const uint8_t* id(Core::SystemInfo::Instance().RawDeviceId());
+                    const uint8_t* id(RawDeviceId(_config.EthernetCard()));
                     _identifier->Set(id[0], &id[1], 
                             Core::SystemInfo::Instance().Architecture(), 
                             Core::SystemInfo::Instance().Chipset(), 
@@ -739,6 +750,8 @@ namespace PluginHost {
         {
             return (_flags);
         }
+        // First byte of the RawDeviceId is the length of the DeviceId to follow.
+        static const uint8_t* RawDeviceId(const string& interfaceName);
 
         BEGIN_INTERFACE_MAP(SystemInfo)
         INTERFACE_ENTRY(PluginHost::ISubSystem)
@@ -748,7 +761,6 @@ namespace PluginHost {
         typedef Core::IteratorType<std::list<PluginHost::ISubSystem::INotification*>, PluginHost::ISubSystem::INotification*> ClientIterator;
 
         void RecursiveList(ClientIterator& index);
-
         void Update();
 
     private:
