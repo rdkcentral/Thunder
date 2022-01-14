@@ -381,6 +381,11 @@ namespace Core {
         void MessageUnit::Close()
         {
             Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+
+            while (_controls.size() != 0) {
+                (*_controls.begin())->Destroy();
+            }
+
             _dispatcher.reset(nullptr);
         }
 

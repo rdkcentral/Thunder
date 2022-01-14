@@ -206,6 +206,7 @@ namespace Core {
         ~MessageDispatcherType()
         {
             _dataBuffer.Relinquish();
+            _metaDataBuffer.reset(nullptr);
         }
 
         MessageDispatcherType(const MessageDispatcherType&) = delete;

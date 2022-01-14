@@ -6,6 +6,8 @@
 #ifdef USE_BREAKPAD
 #include <client/linux/handler/exception_handler.h>
 #endif
+#include <unistd.h>
+#include <iostream>
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
@@ -663,6 +665,8 @@ int main(int argc, char** argv)
                 process.Run(options.ProxyStubPath, options.InterfaceId, base, options.Exchange);
             }
         }
+        //close messaging unit before singletons are cleared
+        Core::Messaging::MessageUnit::Instance().Close();
     }
 
     TRACE_L1("End of Process!!!!");
