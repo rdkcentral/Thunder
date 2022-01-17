@@ -100,15 +100,25 @@ namespace PluginHost {
 
         // Fetch MAC of configured interface
         if (interfaceName.empty() != true) {
-            Core::AdapterIterator adapter(interfaceName);
+            uint32_t timeLeft = WaitTimeForInterfaceReady;
 
-            if (adapter.IsValid() == true) {
-                adapter.MACAddress(&MACAddressBuffer[1], 6);
+            do {
+                Core::AdapterIterator adapter(interfaceName);
 
-                MACAddressBuffer[0] = 6;
-                MACAddress = &MACAddressBuffer[0];
-            }
+                if (adapter.IsValid() == true) {
+                    adapter.MACAddress(&MACAddressBuffer[1], 6);
+
+                    MACAddressBuffer[0] = 6;
+                    MACAddress = &MACAddressBuffer[0];
+                    break;
+                }
+                ::SleepMs(100);
+                if (timeLeft != Core::infinite) {
+                    timeLeft -= (timeLeft > 100 ? 100 : timeLeft);
+                }
+            } while (timeLeft > 0);
         }
+
         // Try to fetch MAC of first valid interface, if interface is not configured or
         // configured interface is not valid
         if (MACAddress == nullptr) {

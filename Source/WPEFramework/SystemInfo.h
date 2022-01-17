@@ -33,7 +33,7 @@ namespace PluginHost {
         SystemInfo& operator=(const SystemInfo&) = delete;
 
     private:
-        static int32_t constexpr WaitTimeForInterfaceReady = 3000;
+        static int32_t constexpr WaitTimeForInterfaceReady = 5000;
         class Id : public PluginHost::ISubSystem::IIdentifier {
         public:
             Id(const Id&) = delete;
@@ -373,15 +373,6 @@ namespace PluginHost {
 
                     if (_identifier != nullptr) {
                         _identifier->Release();
-                    }
-
-                    uint32_t timeLeft = WaitTimeForInterfaceReady;
-                    while ((IsActive(PluginHost::ISubSystem::NETWORK) == false) &&
-                           (timeLeft > 0)) {
-                        ::SleepMs(100);
-                        if (timeLeft != Core::infinite) {
-                            timeLeft -= (timeLeft > 100 ? 100 : timeLeft);
-                        }
                     }
 
                     _identifier = Core::Service<Id>::Create<Id>();
