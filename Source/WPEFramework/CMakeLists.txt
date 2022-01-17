@@ -60,6 +60,7 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
           ${NAMESPACE}COM::${NAMESPACE}COM
+          ${NAMESPACE}Connector::${NAMESPACE}Connector
         )
         
 if (PROCESSCONTAINERS)

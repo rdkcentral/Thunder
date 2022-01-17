@@ -22,6 +22,7 @@
 
 #include "IPlugin.h"
 #include "IShell.h"
+#include "connector/Connector.h"
 
 namespace WPEFramework {
 namespace PluginHost {
@@ -234,7 +235,7 @@ namespace PluginHost {
 }
 
 namespace RPC {
-
+ 
     template <typename INTERFACE, Core::ProxyType<RPC::IIPCServer> ENGINE() = DefaultInvokeServer>
     class SmartInterfaceType {
     private:
@@ -249,8 +250,9 @@ namespace RPC {
 #endif
         SmartInterfaceType()
             : _controller(nullptr)
-            , _administrator()
             , _monitor(*this)
+            , _connector()
+            
         {
         }
 #ifdef __WINDOWS__
@@ -266,34 +268,25 @@ namespace RPC {
         uint32_t Open(const uint32_t waitTime, const Core::NodeId& node, const string& callsign)
         {
             ASSERT(_controller == nullptr);
-
-            if (_controller == nullptr) {
-                _controller = _administrator.template Aquire<PluginHost::IShell>(waitTime, node, _T(""), ~0);
-
-                if (_controller != nullptr) {
-
-                    _monitor.Register(_controller, callsign);
-                }
+            _controller = _connector.ControllerInterface(waitTime,node);
+            if (_controller != nullptr) {
+                _monitor.Register(_controller, callsign);
             }
-
             return (_controller != nullptr ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
         }
         uint32_t Close(const uint32_t waitTime)
         {
             if (_controller != nullptr) {
                 _monitor.Unregister(_controller);
+                printf("Releasing Controller\n");
                 _controller->Release();
+                printf("Released Controller\n");
                 _controller = nullptr;
             }
 
             return (Core::ERROR_NONE);
         }
-        template <typename EXPECTED_INTERFACE>
-        EXPECTED_INTERFACE* Aquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version = ~0)
-        {
-            return (_administrator.template Aquire<EXPECTED_INTERFACE>(waitTime, nodeId, className, version));
-        }
-
+        
         INTERFACE* Interface()
         {
             return (_monitor.Interface());
@@ -302,6 +295,7 @@ namespace RPC {
         {
             return (_monitor.Interface());
         }
+       
         PluginHost::IShell* ControllerInterface()
         {
             return _controller;
@@ -310,7 +304,6 @@ namespace RPC {
         {
             return _controller;
         }
-
         // Allow a derived class to take action on a new interface, or almost dissapeared interface..
         virtual void Operational(const bool upAndRunning)
         {
@@ -344,9 +337,12 @@ namespace RPC {
         }
 
     private:
-        PluginHost::IShell* _controller;
-        ConnectorType<ENGINE> _administrator;
+        PluginHost::IShell* _controller;        
         Monitor _monitor;
+        RPC::Connector<ENGINE> _connector;
     };
+
+
+
 }
 }
