@@ -320,6 +320,11 @@ namespace Core {
         , _sendOffset(0)
         , _sendBytes(0)
         , _descriptor(INVALID_HANDLE_VALUE)
+        , _baudRate(BAUDRATE_57600)
+        , _parity(NONE)
+        , _dataBits(BITS_8)
+        , _stopBits(BITS_1)
+        , _flowControl(OFF)
     {
         Construct(DefaultSendBuffer, DefaultReceiveBuffer);
     }
@@ -335,6 +340,11 @@ namespace Core {
         , _sendOffset(0)
         , _sendBytes(0)
         , _descriptor(INVALID_HANDLE_VALUE)
+        , _baudRate(BAUDRATE_57600)
+        , _parity(NONE)
+        , _dataBits(BITS_8)
+        , _stopBits(BITS_1)
+        , _flowControl(OFF)
     {
         Construct(DefaultSendBuffer, DefaultReceiveBuffer);
     }
@@ -358,6 +368,11 @@ namespace Core {
         , _sendOffset(0)
         , _sendBytes(0)
         , _descriptor(INVALID_HANDLE_VALUE)
+        , _baudRate(BAUDRATE_57600)
+        , _parity(NONE)
+        , _dataBits(BITS_8)
+        , _stopBits(BITS_1)
+        , _flowControl(OFF)
     {
         Construct(sendBufferSize, receiveBufferSize);
         Configuration(port, baudRate, parity, dataBits, stopBits, flowControl);

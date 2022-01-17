@@ -656,7 +656,7 @@ namespace PluginHost {
 
                 return (result);
             }
-            Core::ProxyType<Core::JSONRPC::Message> Invoke(const string& token, const uint32_t id, const Core::JSONRPC::Message& message)
+            Core::ProxyType<Core::JSONRPC::Message> Invoke(const Core::JSONRPC::Context& context, const Core::JSONRPC::Message& message)
             {
                 Core::ProxyType<Core::JSONRPC::Message> result;
 
@@ -679,7 +679,7 @@ namespace PluginHost {
                     IncrementProcessedRequests();
 #endif
                     Core::InterlockedIncrement(_activity);
-                    result = service->Invoke(token, id, message);
+                    result = service->Invoke(context, message);
                     Core::InterlockedDecrement(_activity);
 
                     service->Release();
@@ -2192,7 +2192,8 @@ namespace PluginHost {
                 Core::ProxyType<Core::JSONRPC::Message> Process(const string& token, const Core::ProxyType<Core::JSONRPC::Message>& message)
                 {
                     Core::ProxyType<Core::JSONRPC::Message> result;
-                    REPORT_DURATION_WARNING( { result = _service->Invoke(token, _ID, *message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    Core::JSONRPC::Context context (_ID, message->Id.Value(), token);
+                    REPORT_DURATION_WARNING( { result = _service->Invoke(context, *message); }, WarningReporting::TooLongInvokeMessage, *message);  
                     return result;
                 }
                 Core::ProxyType<Web::Response> Process(const Core::ProxyType<Web::Request>& message)
