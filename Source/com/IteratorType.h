@@ -34,7 +34,7 @@ namespace RPC {
         IteratorType& operator=(const IteratorType&) = delete;
 
         explicit IteratorType(Container&& container)
-            : _container(std::forward(container))
+            : _container(std::forward<Container>(container))
             , _index(0)
         {
             _iterator = _container.begin();
