@@ -96,47 +96,15 @@ namespace PluginHost {
     /* static */ const uint8_t* SystemInfo::RawDeviceId(const string& interfaceName)
     {
         static uint8_t* MACAddress = nullptr;
-        static uint8_t MACAddressBuffer[7];
+        static uint8_t MACAddressBuffer[AdapterObserver::MacSize + 1];
 
-        // Fetch MAC of configured interface
-        if (interfaceName.empty() != true) {
-            uint32_t timeLeft = WaitTimeForInterfaceReady;
-
-            do {
-                Core::AdapterIterator adapter(interfaceName);
-
-                if (adapter.IsValid() == true) {
-                    adapter.MACAddress(&MACAddressBuffer[1], 6);
-
-                    MACAddressBuffer[0] = 6;
-                    MACAddress = &MACAddressBuffer[0];
-                    break;
-                }
-                ::SleepMs(100);
-                if (timeLeft != Core::infinite) {
-                    timeLeft -= (timeLeft > 100 ? 100 : timeLeft);
-                }
-            } while (timeLeft > 0);
-        }
-
-        // Try to fetch MAC of first valid interface, if interface is not configured or
-        // configured interface is not valid
         if (MACAddress == nullptr) {
-            bool valid = false;
-            Core::AdapterIterator adapters;
+            AdapterObserver observer(interfaceName);
 
-            while ((adapters.Next() == true) && (valid == false)) {
-                uint8_t check = 1;
-                adapters.MACAddress(&MACAddressBuffer[1], 6);
-                while ((check <= 4) && (MACAddressBuffer[check] == 0)) {
-                    check++;
-                }
-                valid = (check <= 4);
+            if (observer.WaitForCompletion(AdapterObserver::WaitTime) == Core::ERROR_NONE) {
+                memcpy(MACAddressBuffer, observer.MACAddress(), AdapterObserver::MacSize + 1);
+                MACAddress = &MACAddressBuffer[0];
             }
-
-            MACAddressBuffer[0] = 6;
-
-            MACAddress = &MACAddressBuffer[0];
         }
 
         return MACAddress;
