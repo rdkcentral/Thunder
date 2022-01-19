@@ -24,10 +24,6 @@
 #endif
 
 #include <core/core.h>
-#include <com/com.h>
-#include <tracing/tracing.h>
-#include "plugins/IShell.h"
-
 
 #if defined(__WINDOWS__) && defined(CONNECTOR_EXPORTS)
 #undef EXTERNAL

@@ -18,51 +18,43 @@
  */
 
 #pragma once
-#include "Module.h"
-#include "RootShell.h"
 
 namespace WPEFramework {
 
-namespace RPC {
+namespace PluginHost {
+    struct IShell;
+}
 
-template <Core::ProxyType<RPC::IIPCServer> ENGINE() = DefaultInvokeServer>
-    class Connector {
+namespace Connector {
+
+    class EXTERNAL Connector {
     
-    public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+    protected:
         Connector()
             : _controller(nullptr)
-            , _administrator()
         {
-            _controller = PluginHost::RootShell::Instance().Get();
         }
-
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
-        ~Connector() {
-        }
-
     public:
-        PluginHost::IShell* ControllerInterface(const uint32_t waitTime, const Core::NodeId& node)
-        {
-            if (_controller == nullptr) {
-                printf("We are not in-process with Thunder\n");
-                return(_administrator.template Aquire<PluginHost::IShell>(waitTime, node, _T(""), ~0));
-            }
-            else
-            {
-                printf("We got the Ishell in-process\n");
-            }
-            return _controller;
-        }
+        Connector(const Connector&) = delete;
+        Connector& operator=(const Connector&) = delete;
+        ~Connector();
+
+        static Connector& Instance();
+
+        void Announce(PluginHost::IShell* controller);
+        void Revoke(PluginHost::IShell* controller);
+        PluginHost::IShell* Controller();
   
     private:
         PluginHost::IShell* _controller;
-        ConnectorType<ENGINE> _administrator;
     };
 
-}//namespace RPC
+}//namespace Connector
 }//namespace WPEFramework
+
+extern "C" {
+    EXTERNAL void connector_announce(WPEFramework::PluginHost::IShell *);
+    EXTERNAL void connector_revoke(WPEFramework::PluginHost::IShell *);
+
+    EXTERNAL WPEFramework::PluginHost::IShell* connector_controller();
+}

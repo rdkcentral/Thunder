@@ -19,7 +19,7 @@
 
 #include "Controller.h"
 #include "SystemInfo.h"
-#include "connector/RootShell.h"
+#include "connector/Connector.h"
 
 namespace WPEFramework {
 
@@ -72,7 +72,7 @@ namespace Plugin {
         _resumes.clear();
         _service = service;
         
-        PluginHost::RootShell::Instance().Set(service);
+        Connector::Connector::Instance().Announce(service);
         
         _skipURL = static_cast<uint8_t>(_service->WebPrefix().length());
 
@@ -114,7 +114,7 @@ namespace Plugin {
     {
         ASSERT(_service == service);
 
-        PluginHost::RootShell::Instance().Reset();
+        Connector::Connector::Instance().Revoke(service);
 
         // Detach the SubSystems, we are shutting down..
         PluginHost::ISubSystem* subSystems(_service->SubSystems());

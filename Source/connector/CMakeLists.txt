@@ -18,12 +18,11 @@
 set(TARGET ${NAMESPACE}Connector)
 
 add_library(${TARGET} SHARED
-        RootShell.cpp
+        Connector.cpp
         Module.cpp
         )
 
 set(PUBLIC_HEADERS
-        RootShell.h
         Connector.h
         )
 
@@ -31,8 +30,6 @@ target_link_libraries(${TARGET}
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
           ${NAMESPACE}Core::${NAMESPACE}Core
-          ${NAMESPACE}COM::${NAMESPACE}COM
-          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
         )
 
 target_include_directories( ${TARGET}
