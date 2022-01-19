@@ -23,12 +23,10 @@
 #error "Please define a MODULE_NAME that describes the binary/library you are building."
 #endif
 
-#include "ITraceControl.h"
 #include "Logging.h"
 #include "LoggingCategories.h"
 #include "TraceCategories.h"
 #include "TraceControl.h"
-#include "TraceUnit.h"
 #include "TraceFactory.h"
 #include "TextMessage.h"
 #include "TraceMessageAssembler.h"

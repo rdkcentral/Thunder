@@ -20,15 +20,12 @@ set(TARGET ${NAMESPACE}Tracing)
 add_library(${TARGET} SHARED
         Module.cpp
         TraceCategories.cpp
-        TraceUnit.cpp
         Logging.cpp
         )
 
 set(PUBLIC_HEADERS
-        ITraceControl.h
         TraceCategories.h
         TraceControl.h
-        TraceUnit.h
         Logging.h
         LoggingCategories.h
         tracing.h

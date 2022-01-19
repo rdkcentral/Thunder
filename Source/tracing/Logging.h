@@ -19,11 +19,9 @@
 
 #pragma once
 
-#include "ITraceControl.h"
 #include "LoggingCategories.h"
 #include "Module.h"
 #include "TextMessage.h"
-#include "TraceUnit.h"
 
 #include <stdarg.h>
 
