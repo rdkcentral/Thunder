@@ -25,6 +25,7 @@
 
 #include "ITraceControl.h"
 #include "Logging.h"
+#include "LoggingCategories.h"
 #include "TraceCategories.h"
 #include "TraceControl.h"
 #include "TraceUnit.h"

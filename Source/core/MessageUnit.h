@@ -99,7 +99,7 @@ namespace Core {
             {
                 return _lineNumber;
             }
-            inline uint16_t TimeStamp() const
+            inline uint64_t TimeStamp() const
             {
                 return _timeStamp;
             }
@@ -140,21 +140,49 @@ namespace Core {
             virtual string Prepare(const bool abbreviateMessage, const Information& info, const IEvent* message) const = 0;
         };
 
-        class TraceSetting : public Core::JSON::Container {
-        public:
-            TraceSetting(const string& module, const string& category, const bool enabled);
-            TraceSetting();
-            ~TraceSetting() = default;
-            TraceSetting(const TraceSetting& other);
-            TraceSetting& operator=(const TraceSetting& other);
-
-        public:
-            Core::JSON::String Module;
-            Core::JSON::String Category;
-            Core::JSON::Boolean Enabled;
-        };
-
+        /**
+         * @brief JSON Settings for all messages
+         * 
+         */
         class Settings : public Core::JSON::Container {
+        private:
+            class Messages : public Core::JSON::Container {
+            private:
+                class Entry : public Core::JSON::Container {
+                public:
+                    Entry(const string& module, const string& category, const bool enabled);
+                    Entry();
+                    ~Entry() = default;
+                    Entry(const Entry& other);
+                    Entry& operator=(const Entry& other);
+
+                public:
+                    Core::JSON::String Module;
+                    Core::JSON::String Category;
+                    Core::JSON::Boolean Enabled;
+                };
+
+            public:
+                Messages();
+                ~Messages() = default;
+                Messages(const Messages& other);
+                Messages& operator=(const Messages& other);
+
+            public:
+                Core::JSON::ArrayType<Entry> Entries;
+            };
+
+            class LoggingSetting : public Messages {
+            public:
+                LoggingSetting();
+                ~LoggingSetting() = default;
+                LoggingSetting(const LoggingSetting& other);
+                LoggingSetting& operator=(const LoggingSetting& other);
+
+            public:
+                Core::JSON::Boolean Abbreviated;
+            };
+
         public:
             Settings();
             ~Settings() = default;
@@ -162,8 +190,8 @@ namespace Core {
             Settings& operator=(const Settings& other);
 
         public:
-            Core::JSON::ArrayType<TraceSetting> Tracing;
-            Core::JSON::String Logging;
+            Messages Tracing;
+            LoggingSetting Logging;
             Core::JSON::String WarningReporting;
         };
 
@@ -181,7 +209,7 @@ namespace Core {
             MessageList& operator=(const MessageList&) = delete;
 
             void Update(const MetaData& metaData, const bool isEnabled);
-            Settings JsonSettings() const;
+            const Settings& JsonSettings() const;
             void JsonSettings(const Settings& settings);
             bool IsEnabled(const MetaData& metaData) const;
 
@@ -213,6 +241,38 @@ namespace Core {
         };
 
         /**
+         * @brief Logging can be used in Core, so messages should be printed asap. This class prepares a message and prints it
+         *        to a channel.
+         * 
+         */
+        class LoggingOutput {
+        private:
+            class LoggingAssembler : IAssembler {
+            public:
+                LoggingAssembler(uint64_t baseTime);
+                ~LoggingAssembler() override = default;
+                string Prepare(const bool abbreviate, const Information& info, const IEvent* message) const override;
+
+            private:
+                uint64_t _baseTime;
+            };
+
+        public:
+            LoggingOutput(bool isSyslog, bool abbreviate);
+            LoggingOutput();
+            ~LoggingOutput() = default;
+            LoggingOutput(const LoggingOutput&) = default;
+            LoggingOutput& operator=(const LoggingOutput&) = default;
+
+            void Output(const Information& info, const IEvent* message) const;
+
+        private:
+            LoggingAssembler _assembler;
+            bool _isSyslog;
+            bool _abbreviate;
+        };
+
+        /**
      * @brief Class responsible for:
      *        - opening buffers
      *        - reading configuration and setting message configuration accordingly
@@ -230,12 +290,14 @@ namespace Core {
             static constexpr uint32_t DataSize = 9 * 1024;
             static constexpr const char* MESSAGE_DISPATCHER_PATH_ENV = _T("MESSAGE_DISPATCHER_PATH");
             static constexpr const char* MESSAGE_DISPACTHER_IDENTIFIER_ENV = _T("MESSAGE_DISPACTHER_IDENTIFIER");
+            static constexpr const char* MESSAGE_UNIT_LOGGING_SYSLOG_ENV = _T("MESSAGE_UNIT_LOGGING_SYSLOG");
+
             using MessageDispatcher = Core::MessageDispatcherType<MetaDataSize, DataSize>;
 
         public:
             static MessageUnit& Instance();
+            uint32_t Open(const string& pathName, bool isBackground);
             uint32_t Open(const uint32_t instanceId);
-            uint32_t Open(const string& pathName);
             void Close();
 
             void Defaults(const string& setting);
@@ -268,6 +330,10 @@ namespace Core {
             Controls _controls;
             MessageList _messages;
             ControlList _controlList;
+
+            //logging
+            LoggingOutput _loggingOutput;
+            bool _isBackground;
         };
     }
 }

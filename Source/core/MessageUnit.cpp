@@ -100,8 +100,8 @@ namespace Core {
             return length;
         }
 
-        //----------TraceSettings----------
-        TraceSetting::TraceSetting(const string& module, const string& category, const bool enabled)
+        //----------Entry----------
+        Settings::Messages::Entry::Entry(const string& module, const string& category, const bool enabled)
             : Core::JSON::Container()
         {
             Add(_T("module"), &Module);
@@ -113,7 +113,7 @@ namespace Core {
             Category = category;
             Enabled = enabled;
         }
-        TraceSetting::TraceSetting()
+        Settings::Messages::Entry::Entry()
             : Core::JSON::Container()
             , Module()
             , Category()
@@ -124,7 +124,7 @@ namespace Core {
             Add(_T("enabled"), &Enabled);
         }
 
-        TraceSetting::TraceSetting(const TraceSetting& other)
+        Settings::Messages::Entry::Entry(const Entry& other)
             : Core::JSON::Container()
             , Module(other.Module)
             , Category(other.Category)
@@ -135,7 +135,7 @@ namespace Core {
             Add(_T("enabled"), &Enabled);
         }
 
-        TraceSetting& TraceSetting::operator=(const TraceSetting& other)
+        Settings::Messages::Entry& Settings::Messages::Entry::operator=(const Entry& other)
         {
             if (&other == this) {
                 return *this;
@@ -144,6 +144,53 @@ namespace Core {
             Module = other.Module;
             Category = other.Category;
             Enabled = other.Enabled;
+
+            return *this;
+        }
+
+        //----------Messages----------
+        Settings::Messages::Messages()
+            : Core::JSON::Container()
+            , Entries()
+        {
+            Add(_T("messages"), &Entries);
+        }
+        Settings::Messages::Messages(const Messages& other)
+            : Core::JSON::Container()
+            , Entries(other.Entries)
+        {
+            Add(_T("messages"), &Entries);
+        }
+        Settings::Messages& Settings::Messages::operator=(const Messages& other)
+        {
+            if (&other == this) {
+                return *this;
+            }
+
+            Entries = other.Entries;
+            return *this;
+        }
+
+        //----------LoggingSettings----------
+        Settings::LoggingSetting::LoggingSetting()
+            : Messages()
+            , Abbreviated(true)
+        {
+            Add(_T("abbreviated"), &Abbreviated);
+        }
+        Settings::LoggingSetting::LoggingSetting(const LoggingSetting& other)
+            : Messages()
+            , Abbreviated(other.Abbreviated)
+        {
+            Add(_T("abbreviated"), &Abbreviated);
+        }
+        Settings::LoggingSetting& Settings::LoggingSetting::operator=(const LoggingSetting& other)
+        {
+            if (&other == this) {
+                return *this;
+            }
+            Messages::operator=(other);
+            Abbreviated = other.Abbreviated;
 
             return *this;
         }
@@ -193,7 +240,7 @@ namespace Core {
         {
             if (metaData.Type() == MetaData::MessageType::TRACING) {
                 bool found = false;
-                auto it = _settings.Tracing.Elements();
+                auto it = _settings.Tracing.Entries.Elements();
                 while (it.Next()) {
 
                     //toggle for module and category
@@ -218,11 +265,27 @@ namespace Core {
                     }
                 }
                 if (!found) {
-                    _settings.Tracing.Add({ metaData.Module(), metaData.Category(), isEnabled });
+                    _settings.Tracing.Entries.Add({ metaData.Module(), metaData.Category(), isEnabled });
+                }
+            }
+
+            else if (metaData.Type() == MetaData::MessageType::LOGGING) {
+                bool found = false;
+                auto it = _settings.Tracing.Entries.Elements();
+                while (it.Next()) {
+                    if (!metaData.Category().empty()) {
+                        if (metaData.Category() == it.Current().Category.Value()) {
+                            it.Current().Enabled = isEnabled;
+                            found = true;
+                        }
+                    }
+                }
+                if (!found) {
+                    _settings.Logging.Entries.Add({ _T("SysLog"), metaData.Category(), isEnabled });
                 }
             }
         }
-        Settings MessageList::JsonSettings() const
+        const Settings& MessageList::JsonSettings() const
         {
             return _settings;
         }
@@ -241,16 +304,23 @@ namespace Core {
         {
             bool result = false;
             if (metaData.Type() == MetaData::MessageType::TRACING) {
-                auto it = _settings.Tracing.Elements();
+                auto it = _settings.Tracing.Entries.Elements();
 
                 while (it.Next()) {
                     if ((!it.Current().Module.IsSet() && it.Current().Category.Value() == metaData.Category()) || (it.Current().Module.Value() == metaData.Module() && it.Current().Category.Value() == metaData.Category())) {
                         result = it.Current().Enabled.Value();
-                    } else {
-                        result = false;
+                    }
+                }
+            } else if (metaData.Type() == MetaData::MessageType::LOGGING) {
+                result = true;
+                auto it = _settings.Logging.Entries.Elements();
+                while (it.Next()) {
+                    if (it.Current().Category.Value() == metaData.Category()) {
+                        result = it.Current().Enabled.Value();
                     }
                 }
             }
+
             return result;
         }
 
@@ -300,6 +370,62 @@ namespace Core {
 
             return deserialized;
         }
+        //----------LoggingOutput----------
+        LoggingOutput::LoggingAssembler::LoggingAssembler(uint64_t baseTime)
+            : _baseTime(baseTime)
+        {
+        }
+        string LoggingOutput::LoggingAssembler::Prepare(const bool abbreviate, const Information& info, const IEvent* message) const
+        {
+            string result;
+            string messageString;
+            message->ToString(messageString);
+
+            if (abbreviate) {
+                result = Core::Format("[%11ju us] %s", static_cast<uintmax_t>(info.TimeStamp() - _baseTime), messageString.c_str());
+            } else {
+                Core::Time now(info.TimeStamp());
+                string time(now.ToRFC1123(true));
+
+                result = Core::Format("[%s]:[%s:%d]: %s: %s", time.c_str(),
+                    Core::FileNameOnly(info.FileName().c_str()),
+                    info.LineNumber(),
+                    info.MessageMetaData().Category().c_str(),
+                    messageString.c_str());
+            }
+
+            return result;
+        }
+
+        LoggingOutput::LoggingOutput(bool isSyslog, bool abbreviate)
+            : _assembler(Core::Time::Now().Ticks())
+            , _isSyslog(isSyslog)
+            , _abbreviate(abbreviate)
+
+        {
+        }
+        LoggingOutput::LoggingOutput()
+            : _assembler(Core::Time::Now().Ticks())
+            , _isSyslog(true)
+            , _abbreviate(true)
+        {
+        }
+
+        void LoggingOutput::Output(const Information& info, const IEvent* message) const
+        {
+#ifndef __WINDOWS__
+            if (_isSyslog) {
+                //use longer messages for syslog
+                auto result = _assembler.Prepare(false, info, message);
+                syslog(LOG_NOTICE, "%s\n", result.c_str());
+            } else
+#endif
+            {
+                auto result = _assembler.Prepare(_abbreviate, info, message);
+                std::cout << result << std::endl;
+            }
+        }
+
         //----------MessageUNIT----------
         MessageUnit& MessageUnit::Instance()
         {
@@ -321,7 +447,7 @@ namespace Core {
      * @return uint32_t ERROR_NONE: opened sucessfully
      *                  ERROR_OPENING_FAILED failed to open
      */
-        uint32_t MessageUnit::Open(const string& pathName)
+        uint32_t MessageUnit::Open(const string& pathName, bool isBackground)
         {
             uint32_t result = Core::ERROR_OPENING_FAILED;
 
@@ -339,8 +465,10 @@ namespace Core {
 
             Core::SystemInfo::SetEnvironment(MESSAGE_DISPATCHER_PATH_ENV, basePath);
             Core::SystemInfo::SetEnvironment(MESSAGE_DISPACTHER_IDENTIFIER_ENV, identifier);
+            Core::SystemInfo::SetEnvironment(MESSAGE_UNIT_LOGGING_SYSLOG_ENV, std::to_string(isBackground));
 
             _dispatcher.reset(new MessageDispatcher(identifier, 0, true, basePath));
+            _isBackground = isBackground;
             if (_dispatcher != nullptr) {
                 if (_dispatcher->IsValid()) {
                     _dispatcher->RegisterDataAvailable(std::bind(&MessageUnit::ReceiveMetaData, this, _1, _2, _3, _4));
@@ -364,11 +492,14 @@ namespace Core {
 
             string basePath;
             string identifier;
+            string isBackground;
 
             Core::SystemInfo::GetEnvironment(MESSAGE_DISPATCHER_PATH_ENV, basePath);
             Core::SystemInfo::GetEnvironment(MESSAGE_DISPACTHER_IDENTIFIER_ENV, identifier);
+            Core::SystemInfo::GetEnvironment(MESSAGE_UNIT_LOGGING_SYSLOG_ENV, isBackground);
 
             _dispatcher.reset(new MessageDispatcher(identifier, instanceId, true, basePath));
+            std::istringstream(isBackground) >> _isBackground;
             if (_dispatcher != nullptr) {
                 if (_dispatcher->IsValid()) {
                     result = Core::ERROR_NONE;
@@ -407,6 +538,7 @@ namespace Core {
             }
 
             SetDefaultSettings(serialized);
+            _loggingOutput = LoggingOutput(_isBackground, serialized.Logging.Abbreviated.Value());
 
             _adminLock.Unlock();
         }
@@ -457,7 +589,7 @@ namespace Core {
         string MessageUnit::Defaults() const
         {
             string result;
-            auto settings = _messages.JsonSettings();
+            auto& settings = _messages.JsonSettings();
             settings.ToString(result);
 
             return result;
@@ -484,20 +616,27 @@ namespace Core {
      */
         void MessageUnit::Push(const Information& info, const IEvent* message)
         {
-            uint16_t length = 0;
-
-            length = info.Serialize(_serializationBuffer, sizeof(_serializationBuffer));
-
-            //only serialize message if the information could fit
-            if (length != 0) {
-                length += message->Serialize(_serializationBuffer + length, sizeof(_serializationBuffer) - length);
-
-                if (_dispatcher->PushData(length, _serializationBuffer) != Core::ERROR_WRITE_ERROR) {
-                    _dispatcher->Ring();
-                }
-
+            //logging messages can happen in Core, meaning, otherside plugin can be not started yet
+            //those should be just printed
+            if (info.MessageMetaData().Type() == MetaData::MessageType::LOGGING) {
+                _loggingOutput.Output(info, message);
             } else {
-                TRACE_L1(_T("Unable to push data, buffer is too small!"));
+
+                uint16_t length = 0;
+
+                length = info.Serialize(_serializationBuffer, sizeof(_serializationBuffer));
+
+                //only serialize message if the information could fit
+                if (length != 0) {
+                    length += message->Serialize(_serializationBuffer + length, sizeof(_serializationBuffer) - length);
+
+                    if (_dispatcher->PushData(length, _serializationBuffer) != Core::ERROR_WRITE_ERROR) {
+                        _dispatcher->Ring();
+                    }
+
+                } else {
+                    TRACE_L1(_T("Unable to push data, buffer is too small!"));
+                }
             }
         }
 

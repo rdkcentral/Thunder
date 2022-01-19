@@ -30,6 +30,7 @@ set(PUBLIC_HEADERS
         TraceControl.h
         TraceUnit.h
         Logging.h
+        LoggingCategories.h
         tracing.h
         Module.h
         TraceFactory.h

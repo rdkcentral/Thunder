@@ -424,7 +424,6 @@ namespace PluginHost {
 
         std::set_terminate(UncaughtExceptions);
 
-        Logging::SysLog(!_background);
 
         // Read the config file, to instantiate the proper plugins and for us to open up the right listening ear.
         Core::File configFile(string(options.configFile));
@@ -501,7 +500,7 @@ namespace PluginHost {
 
             // Time to open up, the message buffer for this process and define it for the out-of-proccess systems
             // Define the environment variable for Messaging files, if it is not already set.
-            if ( Core::Messaging::MessageUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE){
+            if ( Core::Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), _background) != Core::ERROR_NONE){
 #ifndef __WINDOWS__
                 if (_background == true) {
                     syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable messaging functionality!");

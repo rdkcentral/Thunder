@@ -375,17 +375,6 @@ namespace RPC {
         }
         uint32_t Launch(uint32_t& id)
         {
-             uint32_t loggingSettings =
-                    (Logging::LoggingType<Logging::Startup>::IsEnabled() ? 0x01 : 0) |
-                    (Logging::LoggingType<Logging::Shutdown>::IsEnabled() ? 0x02 : 0) |
-                    (Logging::LoggingType<Logging::Notification>::IsEnabled() ? 0x04 : 0) |
-                    (Logging::LoggingType<Logging::Crash>::IsEnabled() ? 0x08 : 0) |
-                    (Logging::LoggingType<Logging::ParsingError>::IsEnabled() ? 0x10 : 0) |
-                    (Logging::LoggingType<Logging::Error>::IsEnabled() ? 0x20 : 0) |
-                    (Logging::LoggingType<Logging::Fatal>::IsEnabled() ? 0x40 : 0);
-            _options.Add(_T("-e")).Add(Core::NumberType<uint32_t>(loggingSettings).Text());
-
-
             string oldPath;
             _ldLibLock.Lock();
             if (_linkLoaderPath.empty() == false) {

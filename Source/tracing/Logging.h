@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -20,8 +20,9 @@
 #pragma once
 
 #include "ITraceControl.h"
+#include "LoggingCategories.h"
 #include "Module.h"
-#include "TraceCategories.h"
+#include "TextMessage.h"
 #include "TraceUnit.h"
 
 #include <stdarg.h>
@@ -29,396 +30,106 @@
 namespace WPEFramework {
 namespace Logging {
 
-#define SYSLOG(CATEGORY, PARAMETERS)				\
-    if (Logging::LoggingType<CATEGORY>::IsEnabled() == true) {  \
-        Logging::LoggingType<CATEGORY> __data__ PARAMETERS;     \
-        Logging::SysLog(__FILE__, __LINE__, &__data__);		\
+#define SYSLOG(CATEGORY, PARAMETERS)                                                                                       \
+    if (WPEFramework::Logging::ControlLifetime<CATEGORY>::IsEnabled() == true) {                                           \
+        CATEGORY __data__ PARAMETERS;                                                                                      \
+        WPEFramework::Core::Messaging::Information __info__(WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING, \
+            Core::ClassNameOnly(typeid(CATEGORY).name()).Text(),                                                           \
+            _T("SysLog"),                                                                                                  \
+            __FILE__,                                                                                                      \
+            __LINE__,                                                                                                      \
+            Core::Time::Now().Ticks());                                                                                    \
+        WPEFramework::Messaging::TextMessage __message__(__data__.Data());                                                 \
+        WPEFramework::Core::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                               \
     }
 
     void EXTERNAL DumpException(const string& exceptionType);
     void EXTERNAL DumpSystemFiles(const Core::process_t pid);
-    void EXTERNAL SysLog(const char filename[], const uint32_t line, const Trace::ITrace* data);
-    void EXTERNAL SysLog(const bool toConsole);
-    extern EXTERNAL const char* MODULE_LOGGING;
-
-    class EXTERNAL Startup {
-    private:
-        Startup() = delete;
-        Startup(const Startup& a_Copy) = delete;
-        Startup& operator=(const Startup& a_RHS) = delete;
-
-    public:
-        Startup(const TCHAR formatter[], ...)
-        {
-            va_list ap;
-            va_start(ap, formatter);
-            Core::Format(_text, formatter, ap);
-            va_end(ap);
-        }
-        explicit Startup(const string& text)
-            : _text(Core::ToString(text))
-        {
-        }
-        ~Startup()
-        {
-        }
-
-    public:
-        inline const char* Data() const
-        {
-            return (_text.c_str());
-        }
-        inline uint16_t Length() const
-        {
-            return (static_cast<uint16_t>(_text.length()));
-        }
-
-    private:
-        std::string _text;
-    };
-
-    class EXTERNAL Shutdown {
-    private:
-        Shutdown() = delete;
-        Shutdown(const Shutdown& a_Copy) = delete;
-        Shutdown& operator=(const Shutdown& a_RHS) = delete;
-
-    public:
-        Shutdown(const TCHAR formatter[], ...)
-        {
-            va_list ap;
-            va_start(ap, formatter);
-            Core::Format(_text, formatter, ap);
-            va_end(ap);
-        }
-        explicit Shutdown(const string& text)
-            : _text(Core::ToString(text))
-        {
-        }
-        ~Shutdown()
-        {
-        }
-
-    public:
-        inline const char* Data() const
-        {
-            return (_text.c_str());
-        }
-        inline uint16_t Length() const
-        {
-            return (static_cast<uint16_t>(_text.length()));
-        }
-
-    private:
-        std::string _text;
-    };
-
-    class EXTERNAL Notification {
-    private:
-        Notification() = delete;
-        Notification(const Notification& a_Copy) = delete;
-        Notification& operator=(const Notification& a_RHS) = delete;
-
-    public:
-        Notification(const TCHAR formatter[], ...)
-        {
-            va_list ap;
-            va_start(ap, formatter);
-            Core::Format(_text, formatter, ap);
-            va_end(ap);
-        }
-        explicit Notification(const string& text)
-            : _text(Core::ToString(text))
-        {
-        }
-        ~Notification()
-        {
-        }
-
-    public:
-        inline const char* Data() const
-        {
-            return (_text.c_str());
-        }
-        inline uint16_t Length() const
-        {
-            return (static_cast<uint16_t>(_text.length()));
-        }
-
-    private:
-        std::string _text;
-    };
-
-    class EXTERNAL Crash {
-    public:
-        Crash() = delete;
-        Crash(const Crash& a_Copy) = delete;
-        Crash& operator=(const Crash& a_RHS) = delete;
-
-        Crash(const TCHAR formatter[], ...)
-        {
-            va_list ap;
-            va_start(ap, formatter);
-            Core::Format(_text, formatter, ap);
-            va_end(ap);
-        }
-        explicit Crash(const string& text)
-            : _text(Core::ToString(text))
-        {
-        }
-        ~Crash()
-        {
-        }
-
-    public:
-        inline const char* Data() const
-        {
-            return (_text.c_str());
-        }
-        inline uint16_t Length() const
-        {
-            return (static_cast<uint16_t>(_text.length()));
-        }
-
-    private:
-        std::string _text;
-    };
-
-    class EXTERNAL ParsingError {
-    private:
-        ParsingError() = delete;
-        ParsingError(const ParsingError& a_Copy) = delete;
-        ParsingError& operator=(const ParsingError& a_RHS) = delete;
-
-    public:
-        ParsingError(const TCHAR formatter[], ...)
-        {
-            va_list ap;
-            va_start(ap, formatter);
-            Core::Format(_text, formatter, ap);
-            va_end(ap);
-        }
-        explicit ParsingError(const string& text)
-            : _text(Core::ToString(text))
-        {
-        }
-        ~ParsingError()
-        {
-        }
-
-    public:
-        inline const char* Data() const
-        {
-            return (_text.c_str());
-        }
-        inline uint16_t Length() const
-        {
-            return (static_cast<uint16_t>(_text.length()));
-        }
-
-    private:
-        std::string _text;
-    };
-
-    class EXTERNAL Error {
-    private:
-        Error() = delete;
-        Error(const Error& a_Copy) = delete;
-        Error& operator=(const Error& a_RHS) = delete;
-
-    public:
-        Error(const TCHAR formatter[], ...)
-        {
-            va_list ap;
-            va_start(ap, formatter);
-            Core::Format(_text, formatter, ap);
-            va_end(ap);
-        }
-        explicit Error(const string& text)
-            : _text(Core::ToString(text))
-        {
-        }
-        ~Error()
-        {
-        }
-
-    public:
-        inline const char* Data() const
-        {
-            return (_text.c_str());
-        }
-        inline uint16_t Length() const
-        {
-            return (static_cast<uint16_t>(_text.length()));
-        }
-
-    private:
-        std::string _text;
-    };
-
-    class EXTERNAL Fatal {
-    private:
-        Fatal() = delete;
-        Fatal(const Fatal& a_Copy) = delete;
-        Fatal& operator=(const Fatal& a_RHS) = delete;
-
-    public:
-        Fatal(const TCHAR formatter[], ...)
-        {
-            va_list ap;
-            va_start(ap, formatter);
-            Core::Format(_text, formatter, ap);
-            va_end(ap);
-        }
-        explicit Fatal(const string& text)
-            : _text(Core::ToString(text))
-        {
-        }
-        ~Fatal()
-        {
-        }
-
-    public:
-        inline const char* Data() const
-        {
-            return (_text.c_str());
-        }
-        inline uint16_t Length() const
-        {
-            return (static_cast<uint16_t>(_text.length()));
-        }
-
-    private:
-        std::string _text;
-    };
 
     template <typename CATEGORY>
-    class LoggingType : public Trace::ITrace {
+    class ControlLifetime {
     private:
         template <typename CONTROLCATEGORY>
-        class LoggingControl : public Trace::ITraceControl {
-        private:
-            LoggingControl(const LoggingControl<CONTROLCATEGORY>&) = delete;
-            LoggingControl<CONTROLCATEGORY>& operator=(const LoggingControl<CONTROLCATEGORY>&) = delete;
-
+        class Control : public Core::Messaging::IControl {
         public:
-            LoggingControl()
-                : m_CategoryName(Core::ClassNameOnly(typeid(CONTROLCATEGORY).name()).Text())
-                , m_Enabled(0x02)
-            {
-                // Register Our trace control unit, so it can be influenced from the outside
-                // if nessecary..
-                Trace::TraceUnit::Instance().Announce(*this);
+            Control(const Control<CONTROLCATEGORY>&) = delete;
+            Control<CONTROLCATEGORY>& operator=(const Control<CONTROLCATEGORY>&) = delete;
 
-                // Logs, by default, are enabled.
-                m_Enabled |= 0x01;
+            Control()
+                : _enabled(0x02)
+                , _metaData(Core::Messaging::MetaData::MessageType::LOGGING,
+                      Core::ClassNameOnly(typeid(CONTROLCATEGORY).name()).Text(), _T("SysLog"))
+            {
+                // Register Our logging control unit, so it can be influenced from the outside
+                // if nessecary..
+                Core::Messaging::MessageUnit::Instance().Announce(this);
+
+                bool isEnabled = Core::Messaging::MessageUnit::Instance().IsControlEnabled(this);
+
+                if (isEnabled) {
+                    _enabled = _enabled | 0x01;
+                }
             }
-            virtual ~LoggingControl()
+            ~Control() override
             {
                 Destroy();
             }
 
         public:
+            const Core::Messaging::MetaData& MessageMetaData() const override
+            {
+                return _metaData;
+            }
+
+            //non virtual method, so it can be called faster
             inline bool IsEnabled() const
             {
-                return ((m_Enabled & 0x01) != 0);
+                return ((_enabled & 0x01) != 0);
             }
-            virtual const char* Category() const
+
+            bool Enable() const override
             {
-                return (m_CategoryName.c_str());
+                return IsEnabled();
             }
-            virtual const char* Module() const
+
+            void Enable(const bool enabled) override
             {
-                return (Logging::MODULE_LOGGING);
+                _enabled = (_enabled & 0xFE) | (enabled ? 0x01 : 0x00);
             }
-            virtual bool Enabled() const
+
+            void Destroy() override
             {
-                return (IsEnabled());
-            }
-            virtual void Enabled(const bool enabled)
-            {
-                m_Enabled = (m_Enabled & 0xFE) | (enabled ? 0x01 : 0x00);
-            }
-            virtual void Destroy()
-            {
-                if ((m_Enabled & 0x02) != 0) {
+                if ((_enabled & 0x02) != 0) {
                     // Register Our trace control unit, so it can be influenced from the outside
                     // if nessecary..
-                    Trace::TraceUnit::Instance().Revoke(*this);
-                    m_Enabled = 0;
+                    Core::Messaging::MessageUnit::Instance().Revoke(this);
+                    _enabled = 0;
                 }
             }
 
-        protected:
-            const string m_CategoryName;
-            uint8_t m_Enabled;
+        private:
+            uint8_t _enabled;
+            Core::Messaging::MetaData _metaData;
         };
 
     public:
-        LoggingType(const LoggingType<CATEGORY>&) = delete;
-        LoggingType<CATEGORY>& operator=(const LoggingType<CATEGORY>&) = delete;
-
-        template <typename... Args>
-        LoggingType(Args... args)
-            : _traceInfo(args...)
-        {
-        }
-        virtual ~LoggingType()
-        {
-        }
+        ControlLifetime() = default;
+        ~ControlLifetime() = default;
+        ControlLifetime(const ControlLifetime<CATEGORY>&) = delete;
+        ControlLifetime<CATEGORY>& operator=(const ControlLifetime<CATEGORY>&) = delete;
 
     public:
-        // No dereference etc.. 1 straight line to enabled or not... Quick method..
         inline static bool IsEnabled()
         {
-            return (s_LogControl.IsEnabled());
-        }
-
-        inline static void Enable(const bool status)
-        {
-            s_LogControl.Enabled(status);
-        }
-
-        virtual const char* Category() const
-        {
-            return (s_LogControl.Category());
-        }
-
-        virtual const char* Module() const
-        {
-            return (s_LogControl.Module());
-        }
-
-        virtual bool Enabled() const
-        {
-            return (s_LogControl.Enabled());
-        }
-
-        virtual void Enabled(const bool enabled)
-        {
-            s_LogControl.Enabled(enabled);
-        }
-
-        virtual void Destroy()
-        {
-            s_LogControl.Destroy();
-        }
-
-        virtual const char* Data() const
-        {
-            return (_traceInfo.Data());
-        }
-        virtual uint16_t Length() const
-        {
-            return (_traceInfo.Length());
+            return (_messageControl.IsEnabled());
         }
 
     private:
-        CATEGORY _traceInfo;
-        static LoggingControl<CATEGORY> s_LogControl;
+        static Control<CATEGORY> _messageControl;
     };
 
     template <typename CATEGORY>
-    typename LoggingType<CATEGORY>::template LoggingControl<CATEGORY> LoggingType<CATEGORY>::s_LogControl;
+    EXTERNAL_HIDDEN typename ControlLifetime<CATEGORY>::template Control<CATEGORY> ControlLifetime<CATEGORY>::_messageControl;
+
 }
 } // namespace Logging

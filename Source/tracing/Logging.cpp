@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -28,79 +28,39 @@
 namespace WPEFramework {
 namespace Logging {
 
-    template<>
-    /* static */ LoggingType<Startup>::template LoggingControl<Startup> LoggingType<Startup>::s_LogControl;
-    template<>
-    /* static */ LoggingType<Shutdown>::template LoggingControl<Shutdown> LoggingType<Shutdown>::s_LogControl;
-    template<>
-    /* static */ LoggingType<Notification>::template LoggingControl<Notification> LoggingType<Notification>::s_LogControl;
-
-    static const string LoggingToConsole(_T("LOGGING_TO_CONSOLE"));
-
-    static bool DetectLoggingOutput()
-    {
-        string result;
-
-        if (Core::SystemInfo::GetEnvironment(LoggingToConsole, result) == true) {
-            return (result[0] != '1');
-        }
-        return (true);
-    }
-
-    /* static */ const char* MODULE_LOGGING = _T("SysLog");
-    static uint64_t _baseTime(Core::Time::Now().Ticks());
-    static bool _syslogging = DetectLoggingOutput();
-
-    void SysLog(const bool toConsole)
-    {
-        _syslogging = !toConsole;
-        Core::SystemInfo::SetEnvironment(LoggingToConsole, (toConsole ? _T("1") : nullptr));
-    }
-
-    void SysLog(const char fileName[], const uint32_t lineNumber, const Trace::ITrace* information)
-    {
-        // Time to printf...
-        Core::Time now(Core::Time::Now());
-
-#ifndef __WINDOWS__
-        if (_syslogging == true) {
-            string time(now.ToRFC1123(true));
-            syslog(LOG_NOTICE, "[%s]:[%s:%d]: %s: %s\n", time.c_str(), Core::FileNameOnly(fileName), lineNumber, information->Category(), information->Data());
-        } else
-#endif
-        {
-            printf("[%11ju us] %s\n", static_cast<uintmax_t>(now.Ticks() - _baseTime), information->Data());
-        }
-    }
+    template <>
+    ControlLifetime<Startup>::template Control<Startup> ControlLifetime<Startup>::_messageControl;
+    template <>
+    ControlLifetime<Shutdown>::template Control<Shutdown> ControlLifetime<Shutdown>::_messageControl;
+    template <>
+    ControlLifetime<Notification>::template Control<Notification> ControlLifetime<Notification>::_messageControl;
 
     static const TCHAR* UnknownCallsign = _T("NoTLSCallsign");
 
-    void DumpException(const string& exceptionType) {
+    void DumpException(const string& exceptionType)
+    {
         std::list<string> stack;
         DumpCallStack(Core::Thread::ThreadId(), stack);
-        #if defined(__CORE_EXCEPTION_CATCHING__) || defined(__CORE_WARNING_REPORTING__)
+#if defined(__CORE_EXCEPTION_CATCHING__) || defined(__CORE_WARNING_REPORTING__)
         const TCHAR* callsign = Core::CallsignTLS::CallsignAccess<&UnknownCallsign>::Callsign();
-        #else
+#else
         const TCHAR* callsign = UnknownCallsign;
-        #endif
-        SYSLOG (Logging::Crash, (_T("-== Unhandled exception in: %s [%s] ==-\n"), callsign, exceptionType.c_str()));
-        for (const string& line : stack)
-        {
+#endif
+        SYSLOG(Logging::Crash, (_T("-== Unhandled exception in: %s [%s] ==-\n"), callsign, exceptionType.c_str()));
+        for (const string& line : stack) {
             SYSLOG(Logging::Crash, (line));
         }
     }
 
     void DumpSystemFiles(const Core::process_t pid)
     {
-        static auto logProcPath = [](const std::string& path)
-        {
+        static auto logProcPath = [](const std::string& path) {
             std::ifstream fileStream(path);
             if (fileStream.is_open()) {
-                SYSLOG (Logging::Crash, ("-== %s ==-\n", path.c_str()));
+                SYSLOG(Logging::Crash, ("-== %s ==-\n", path.c_str()));
                 std::string line;
-                while (std::getline(fileStream, line))
-                {
-                    SYSLOG (Logging::Crash, (line));
+                while (std::getline(fileStream, line)) {
+                    SYSLOG(Logging::Crash, (line));
                 }
             }
         };
@@ -114,27 +74,28 @@ namespace Logging {
         }
     }
 
-    #ifdef __CORE_EXCEPTION_CATCHING__
+#ifdef __CORE_EXCEPTION_CATCHING__
     namespace {
-    class ExceptionCatcher : Core::Thread::IExceptionCallback {
+        class ExceptionCatcher : Core::Thread::IExceptionCallback {
         public:
-        ExceptionCatcher()
-        {
-            Core::Thread::ExceptionCallback(this);
-        }
-        ~ExceptionCatcher() override {
-            Core::Thread::ExceptionCallback(nullptr);
-        }
+            ExceptionCatcher()
+            {
+                Core::Thread::ExceptionCallback(this);
+            }
+            ~ExceptionCatcher() override
+            {
+                Core::Thread::ExceptionCallback(nullptr);
+            }
 
-        void Exception(const string& message) override
-        {
-            DumpException(message);
-        }
-    };
-    
-    static ExceptionCatcher exceptionCatcher;
-    
+            void Exception(const string& message) override
+            {
+                DumpException(message);
+            }
+        };
+
+        static ExceptionCatcher exceptionCatcher;
+
     }
-    #endif 
+#endif
 }
 } // namespace PluginHost

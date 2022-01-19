@@ -190,7 +190,6 @@ namespace Process {
             , User(nullptr)
             , Group(nullptr)
             , Threads(1)
-            , EnabledLoggings(0)
         {
             Parse();
         }
@@ -216,7 +215,6 @@ namespace Process {
         const TCHAR* User;
         const TCHAR* Group;
         uint8_t Threads;
-        uint32_t EnabledLoggings;
 
     private:
         string Strip(const TCHAR text[]) const
@@ -275,9 +273,6 @@ namespace Process {
                 break;
             case 'i':
                 InterfaceId = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
-                break;
-            case 'e':
-                EnabledLoggings = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
                 break;
             case 'V':
                 Version = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
@@ -577,7 +572,6 @@ int main(int argc, char** argv)
         printf("        [-v <volatile path>]\n");
         printf("        [-a <app path>]\n");
         printf("        [-m <proxy stub library path>]\n");
-        printf("        [-e <enabled SYSLOG categories>]\n");
         printf("        [-P <post mortem path>]\n\n");
         printf("This application spawns a seperate process space for a plugin. The plugins");
         printf("are searched in the same order as they are done in process. Starting from:\n");
@@ -624,20 +618,11 @@ int main(int argc, char** argv)
         // Any remote connection that will be spawned from here, will have this ExchangeId as its parent ID.
         Core::SystemInfo::SetEnvironment(_T("COM_PARENT_EXCHANGE_ID"), Core::NumberType<uint32_t>(options.Exchange).Text());
 
-        TRACE_L1("Opening a trace file with ID: [%d].", options.Exchange);
+        TRACE_L1("Opening a message file with ID: [%d].", options.Exchange);
 
         
         // Due to the LXC container support all ID's get mapped. For the MessageBuffer, use the host given ID.
         Core::Messaging::MessageUnit::Instance().Open(options.Exchange);
-
-        // Time to open up the LOG tracings as specified by the caller.
-        Logging::LoggingType<Logging::Startup>::Enable((options.EnabledLoggings & 0x00000001) != 0);
-        Logging::LoggingType<Logging::Shutdown>::Enable((options.EnabledLoggings & 0x00000002) != 0);
-        Logging::LoggingType<Logging::Notification>::Enable((options.EnabledLoggings & 0x00000004) != 0);
-        Logging::LoggingType<Logging::Crash>::Enable((options.EnabledLoggings & 0x00000008) != 0);
-        Logging::LoggingType<Logging::ParsingError>::Enable((options.EnabledLoggings & 0x00000010) != 0);
-        Logging::LoggingType<Logging::Error>::Enable((options.EnabledLoggings & 0x00000020) != 0);
-        Logging::LoggingType<Logging::Fatal>::Enable((options.EnabledLoggings & 0x00000040) != 0);
 
 #ifdef __CORE_WARNING_REPORTING__
         WarningReporting::WarningReportingUnit::Instance().Open(options.Exchange);
