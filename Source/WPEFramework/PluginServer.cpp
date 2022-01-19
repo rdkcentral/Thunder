@@ -359,7 +359,7 @@ namespace PluginHost
                     }
 
                     Activity newData(_T("Delta preconditions: %s"), feedback.c_str());
-                    Trace::Message traceData(newData.Data());
+                    Messaging::TextMessage traceData(newData.Data());
 
                     Core::Messaging::Information info(Core::Messaging::MetaData::MessageType::TRACING,
                         Core::ClassNameOnly(typeid(Activity).name()).Text(),

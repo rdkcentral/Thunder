@@ -1,27 +1,27 @@
 #pragma once
-#include "TraceMessage.h"
+#include "TextMessage.h"
 
 namespace WPEFramework {
-namespace Trace {
+namespace Messaging {
 
-    class EXTERNAL Factory : public Core::Messaging::IEventFactory {
+    class EXTERNAL TraceFactory : public Core::Messaging::IEventFactory {
     public:
-        Factory()
+        TraceFactory()
             : _tracePool(2)
         {
         }
-        ~Factory() override = default;
-        Factory(const Factory&) = delete;
-        Factory& operator=(const Factory&) = delete;
+        ~TraceFactory() override = default;
+        TraceFactory(const TraceFactory&) = delete;
+        TraceFactory& operator=(const TraceFactory&) = delete;
 
         inline Core::ProxyType<Core::Messaging::IEvent> Create() override
         {
-            Core::ProxyType<Message> proxy = _tracePool.Element();
+            Core::ProxyType<TextMessage> proxy = _tracePool.Element();
             return Core::ProxyType<Core::Messaging::IEvent>(proxy);
         }
 
     private:
-        Core::ProxyPoolType<Message> _tracePool;
+        Core::ProxyPoolType<Messaging::TextMessage> _tracePool;
     };
 }
 }

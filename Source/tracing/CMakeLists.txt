@@ -33,7 +33,7 @@ set(PUBLIC_HEADERS
         tracing.h
         Module.h
         TraceFactory.h
-        TraceMessage.h
+        TextMessage.h
         TraceMessageAssembler.h
         )
 

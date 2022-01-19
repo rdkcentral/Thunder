@@ -2,18 +2,18 @@
 #include "Module.h"
 
 namespace WPEFramework {
-namespace Trace {
+namespace Messaging {
 
-    class EXTERNAL Message : public Core::Messaging::IEvent {
+    class EXTERNAL TextMessage : public Core::Messaging::IEvent {
     public:
-        Message() = default;
-        Message(const string& text)
+        TextMessage() = default;
+        TextMessage(const string& text)
             : _text(text)
         {
         }
 
-        Message(const Message&) = delete;
-        Message& operator=(const Message&) = delete;
+        TextMessage(const TextMessage&) = delete;
+        TextMessage& operator=(const TextMessage&) = delete;
 
         uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override
         {

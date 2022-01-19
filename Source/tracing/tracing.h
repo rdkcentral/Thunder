@@ -29,7 +29,7 @@
 #include "TraceControl.h"
 #include "TraceUnit.h"
 #include "TraceFactory.h"
-#include "TraceMessage.h"
+#include "TextMessage.h"
 #include "TraceMessageAssembler.h"
 
 #ifdef __WINDOWS__

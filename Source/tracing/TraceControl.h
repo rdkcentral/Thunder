@@ -25,7 +25,7 @@
 
 // ---- Include local include files ----
 #include "Module.h"
-#include "TraceMessage.h"
+#include "TextMessage.h"
 // ---- Referenced classes and types ----
 
 // ---- Helper types and constants ----
@@ -38,7 +38,7 @@
             __FILE__,                                                                                                      \
             __LINE__,                                                                                                      \
             Core::Time::Now().Ticks());                                                                                    \
-        WPEFramework::Trace::Message __message__(__data__.Data());                                                         \
+        WPEFramework::Messaging::TextMessage __message__(__data__.Data());                                                 \
         WPEFramework::Core::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                               \
     }
 
@@ -51,7 +51,7 @@
             __FILE__,                                                                                                      \
             __LINE__,                                                                                                      \
             Core::Time::Now().Ticks());                                                                                    \
-        WPEFramework::Trace::Message __message__(__data__.Data());                                                         \
+        WPEFramework::Messaging::TextMessage __message__(__data__.Data());                                                 \
         WPEFramework::Core::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                               \
     }
 
