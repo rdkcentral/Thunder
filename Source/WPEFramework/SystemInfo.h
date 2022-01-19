@@ -53,12 +53,12 @@ namespace PluginHost {
             {
                 _observer.Open();
                 if (_interface.empty() != true) {
-                    // Check configured interface has valid MAC
+                    // Check given interface has valid MAC
                     if (IsInterfaceHasValidMAC(interface) == true) {
                         _signal.SetEvent();
                     }
                 } else {
-                    // If interface is not configured then,
+                    // If interface is not given then,
                     // check any of the activated interface has valid MAC
                     if (IsAnyInterfaceHasValidMAC() == true) {
                         _signal.SetEvent();

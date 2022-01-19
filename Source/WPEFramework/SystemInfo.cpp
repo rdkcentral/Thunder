@@ -105,7 +105,13 @@ namespace PluginHost {
                 memcpy(MACAddressBuffer, observer.MACAddress(), AdapterObserver::MacSize + 1);
                 MACAddress = &MACAddressBuffer[0];
             }
-        }
+        } else {
+            if (interfaceName.empty() != true) {
+                TRACE_L1("Interface <%s>: is neither active nor a physical interface", interfaceName.c_str());
+	    } else {
+                TRACE_L1("There is no any valid physical interface available");
+	    }
+	}
 
         return MACAddress;
     }
