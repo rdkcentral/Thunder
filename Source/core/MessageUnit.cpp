@@ -10,13 +10,13 @@ namespace Core {
         {
         }
         /**
-     * @brief Construct a new MetaData object
-     * 
-     * NOTE: Category and module can be set as empty
-     * @param type type of the message
-     * @param category category name of the message
-     * @param module module name of the message
-     */
+        * @brief Construct a new MetaData object
+        * 
+        * NOTE: Category and module can be set as empty
+        * @param type type of the message
+        * @param category category name of the message
+        * @param module module name of the message
+        */
         MetaData::MetaData(const MessageType type, const string& category, const string& module)
             : _type(type)
             , _category(category)
@@ -231,11 +231,11 @@ namespace Core {
 
         //----------MessageList----------
         /**
-     * @brief Based on metadata, update specific message. If there is no match, add entry to the list
-     * 
-     * @param metaData information about the message
-     * @param isEnabled should the message be enabled 
-     */
+        * @brief Based on metadata, update specific message. If there is no match, add entry to the list
+        * 
+        * @param metaData information about the message
+        * @param isEnabled should the message be enabled 
+        */
         void MessageList::Update(const MetaData& metaData, const bool isEnabled)
         {
             if (metaData.Type() == MetaData::MessageType::TRACING) {
@@ -294,12 +294,12 @@ namespace Core {
             _settings = settings;
         }
         /**
-     * @brief Check if speific message (control) should be enabled
-     * 
-     * @param metaData information about the message
-     * @return true should be enabled
-     * @return false should not be enabled
-     */
+        * @brief Check if speific message (control) should be enabled
+        * 
+        * @param metaData information about the message
+        * @return true should be enabled
+        * @return false should not be enabled
+        */
         bool MessageList::IsEnabled(const MetaData& metaData) const
         {
             bool result = false;
@@ -327,13 +327,13 @@ namespace Core {
         //----------ControlList----------
 
         /**
-     * @brief Write information about the announced controls to the buffer
-     * 
-     * @param buffer buffer to be written to
-     * @param length max length of the buffer
-     * @param controls controls to be serialized
-     * @return uint16_t how much bytes serialized
-     */
+        * @brief Write information about the announced controls to the buffer
+        * 
+        * @param buffer buffer to be written to
+        * @param length max length of the buffer
+        * @param controls controls to be serialized
+        * @return uint16_t how much bytes serialized
+        */
         uint16_t ControlList::Serialize(uint8_t buffer[], const uint16_t length, const std::list<IControl*>& controls) const
         {
             ASSERT(length > 0);
@@ -348,12 +348,12 @@ namespace Core {
         }
 
         /**
-     * @brief Restore information about announced controls from the buffer
-     * 
-     * @param buffer serialized buffer 
-     * @param length max length of the buffer
-     * @return uint16_t how much bytes deserialized
-     */
+        * @brief Restore information about announced controls from the buffer
+        * 
+        * @param buffer serialized buffer 
+        * @param length max length of the buffer
+        * @return uint16_t how much bytes deserialized
+        */
         uint16_t ControlList::Deserialize(uint8_t buffer[], const uint16_t length)
         {
             uint16_t deserialized = 0;
@@ -436,17 +436,16 @@ namespace Core {
         {
             Close();
         }
-
         /**
-     * @brief Open MessageUnit. This method is used on the WPEFramework side. 
-     *        This method: 
-     *        - sets env variables, so the OOP components will get information (eg. where to place its files)
-     *        - create buffer where all InProcess components will write
-     * 
-     * @param pathName volatile path (/tmp/ by default)
-     * @return uint32_t ERROR_NONE: opened sucessfully
-     *                  ERROR_OPENING_FAILED failed to open
-     */
+        * @brief Open MessageUnit. This method is used on the WPEFramework side. 
+        *        This method: 
+        *        - sets env variables, so the OOP components will get information (eg. where to place its files)
+        *        - create buffer where all InProcess components will write
+        * 
+        * @param pathName volatile path (/tmp/ by default)
+        * @return uint32_t ERROR_NONE: opened sucessfully
+        *                  ERROR_OPENING_FAILED failed to open
+        */
         uint32_t MessageUnit::Open(const string& pathName, bool isBackground)
         {
             uint32_t result = Core::ERROR_OPENING_FAILED;
@@ -479,13 +478,13 @@ namespace Core {
         }
 
         /**
-     * @brief Open MessageUnit. Method used in OOP components
-     * 
-     * @param instanceId number of the instance
-     * @return uint32_t ERROR_NONE: Opened sucesfully
-     *                  ERROR_OPENING_FAILED: failed to open
-     * 
-     */
+        * @brief Open MessageUnit. Method used in OOP components
+        * 
+        * @param instanceId number of the instance
+        * @return uint32_t ERROR_NONE: Opened sucesfully
+        *                  ERROR_OPENING_FAILED: failed to open
+        * 
+        */
         uint32_t MessageUnit::Open(const uint32_t instanceId)
         {
             uint32_t result = Core::ERROR_OPENING_FAILED;
@@ -521,9 +520,9 @@ namespace Core {
         }
 
         /**
-     * @brief Read defaults settings form string
-     * @param setting json able to be parsed by @ref MessageUnit::Settings
-     */
+        * @brief Read defaults settings form string
+        * @param setting json able to be parsed by @ref MessageUnit::Settings
+        */
         void MessageUnit::Defaults(const string& setting)
         {
             _adminLock.Lock();
@@ -544,10 +543,10 @@ namespace Core {
         }
 
         /**
-     * @brief Read default settings from file
-     * 
-     * @param file file containing configuraton
-     */
+        * @brief Read default settings from file
+        * 
+        * @param file file containing configuraton
+        */
         void MessageUnit::Defaults(Core::File& file)
         {
             _adminLock.Lock();
@@ -567,14 +566,16 @@ namespace Core {
         }
 
         /**
-     * @brief Set defaults acording to settings
-     * 
-     * @param serialized settings
-     */
+        * @brief Set defaults acording to settings
+        * 
+        * @param serialized settings
+        */
         void MessageUnit::SetDefaultSettings(const Settings& serialized)
         {
             _messages.JsonSettings(serialized);
 
+            //according to received config,
+            //let all announced controls know, whether they should push messages
             for (auto& control : _controls) {
                 auto enabled = _messages.IsEnabled(control->MessageMetaData());
                 control->Enable(enabled);
@@ -582,10 +583,10 @@ namespace Core {
         }
 
         /**
-     * @brief Get defaults settings
-     * 
-     * @return string json containing information about default values
-     */
+        * @brief Get defaults settings
+        * 
+        * @return string json containing information about default values
+        */
         string MessageUnit::Defaults() const
         {
             string result;
@@ -596,24 +597,11 @@ namespace Core {
         }
 
         /**
-     * @brief Check if given control is enabled (by default setings, or by user input)
-     * 
-     * @param control specified control
-     * @return true enabled
-     * @return false not enabled (messages from this control should not be pushed)
-     */
-        bool MessageUnit::IsControlEnabled(const IControl* control)
-        {
-            Core::SafeSyncType<CriticalSection> guard(_adminLock);
-            return _messages.IsEnabled(control->MessageMetaData());
-        }
-
-        /**
-     * @brief Push a message and its information to a buffer
-     * 
-     * @param info contains information about the event (where it happened)
-     * @param message message
-     */
+        * @brief Push a message and its information to a buffer
+        * 
+        * @param info contains information about the event (where it happened)
+        * @param message message
+        */
         void MessageUnit::Push(const Information& info, const IEvent* message)
         {
             //logging messages can happen in Core, meaning, otherside plugin can be not started yet
@@ -641,11 +629,11 @@ namespace Core {
         }
 
         /**
-     * @brief When IControl spawns it should announce itself to the unit, so it can be influenced from here
-     *        (For example for enabling the category it controls)
-     * 
-     * @param control IControl implementation
-     */
+        * @brief When IControl spawns it should announce itself to the unit, so it can be influenced from here
+        *        (For example for enabling the category it controls)
+        * 
+        * @param control IControl implementation
+        */
         void MessageUnit::Announce(IControl* control)
         {
             ASSERT(control != nullptr);
@@ -653,13 +641,17 @@ namespace Core {
 
             Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
             _controls.emplace_back(control);
+
+            //if control was announced after we received defaults config (eg. plugin re-initialized)
+            //we already have information about it - let know the control if it should push messages or not
+            control->Enable(_messages.IsEnabled(control->MessageMetaData()));
         }
 
         /**
-     * @brief When IControl dies it should be unregistered
-     * 
-     * @param control IControl implementation
-     */
+        * @brief When IControl dies it should be unregistered
+        * 
+        * @param control IControl implementation
+        */
         void MessageUnit::Revoke(IControl* control)
         {
             ASSERT(control != nullptr);
@@ -672,13 +664,13 @@ namespace Core {
         }
 
         /**
-     * @brief Notification, that there is metadata available
-     * 
-     * @param size size of the buffer
-     * @param data buffer containing in data
-     * @param outSize size of the out buffer (initially set to the maximum one can write)
-     * @param outData out buffer (passed to the other side)
-     */
+        * @brief Notification, that there is metadata available
+        * 
+        * @param size size of the buffer
+        * @param data buffer containing in data
+        * @param outSize size of the out buffer (initially set to the maximum one can write)
+        * @param outData out buffer (passed to the other side)
+        */
         void MessageUnit::ReceiveMetaData(const uint16_t size, const uint8_t* data, uint16_t& outSize, uint8_t* outData)
         {
             if (size != 0) {
@@ -698,11 +690,11 @@ namespace Core {
         }
 
         /**
-     * @brief Update announced controls
-     * 
-     * @param metaData information about the message
-     * @param enabled should the control be enabled
-     */
+        * @brief Update announced controls
+        * 
+        * @param metaData information about the message
+        * @param enabled should the control be enabled
+        */
         void MessageUnit::UpdateControls(const MetaData& metaData, const bool enabled)
         {
             for (auto& control : _controls) {

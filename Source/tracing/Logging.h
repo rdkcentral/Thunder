@@ -63,12 +63,6 @@ namespace Logging {
                 // Register Our logging control unit, so it can be influenced from the outside
                 // if nessecary..
                 Core::Messaging::MessageUnit::Instance().Announce(this);
-
-                bool isEnabled = Core::Messaging::MessageUnit::Instance().IsControlEnabled(this);
-
-                if (isEnabled) {
-                    _enabled = _enabled | 0x01;
-                }
             }
             ~Control() override
             {

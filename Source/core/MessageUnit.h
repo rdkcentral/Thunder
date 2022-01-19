@@ -304,7 +304,6 @@ namespace Core {
             void Defaults(Core::File& file);
 
             string Defaults() const;
-            bool IsControlEnabled(const IControl* control);
 
             void Push(const Information& info, const IEvent* message);
 
