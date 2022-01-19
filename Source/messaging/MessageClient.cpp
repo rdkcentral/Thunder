@@ -114,9 +114,9 @@ namespace Messaging {
     /**
      * @brief Get list of currently active message controls
      * 
-     * @return Core::ControlList::Iterator iterator for all the controls
+     * @return Core::ControlList::InformationIterator iterator for all the controls
      */
-    Core::Messaging::ControlList::Iterator MessageClient::Enabled()
+    Core::Messaging::ControlList::InformationIterator MessageClient::Enabled()
     {
         _enabledCategories.clear();
 
@@ -128,14 +128,14 @@ namespace Messaging {
                 Core::Messaging::ControlList controlList;
                 controlList.Deserialize(_writeBuffer, writtenBack);
 
-                auto it = controlList.Controls();
+                auto it = controlList.Information();
                 while (it.Next()) {
                     _enabledCategories.push_back(it.Current());
                 }
             }
         }
 
-        return Core::Messaging::ControlList::Iterator(_enabledCategories);
+        return Core::Messaging::ControlList::InformationIterator(_enabledCategories);
     }
 
     /**

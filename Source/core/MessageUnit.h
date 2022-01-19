@@ -28,9 +28,9 @@ namespace Core {
     namespace Messaging {
 
         /**
-     * @brief Data-Carrier class storing information about basic information about the Message.
-     * 
-     */
+        * @brief Data-Carrier class storing information about basic information about the Message.
+        * 
+        */
         class EXTERNAL MetaData {
         public:
             enum MessageType : uint8_t {
@@ -76,9 +76,9 @@ namespace Core {
         };
 
         /**
-     * @brief Data-Carrier, extended information about the message
-     * 
-     */
+        * @brief Data-Carrier, extended information about the message
+        * 
+        */
         class EXTERNAL Information {
         public:
             Information() = default;
@@ -196,11 +196,11 @@ namespace Core {
         };
 
         /**
-     * @brief Class responsible for storing information about all messages, so announced IControl will know if it should be enabled
-     *        Initial list is retreived from thunder config, and is modified/extended when there is change requested in enabled categories.
-     *        Info will be passed to another starting unit.
-     * 
-     */
+        * @brief Class responsible for storing information about all messages, so announced IControl will know if it should be enabled
+        *        Initial list is retreived from thunder config, and is modified/extended when there is change requested in enabled categories.
+        *        Info will be passed to another starting unit.
+        * 
+        */
         class MessageList {
         public:
             MessageList() = default;
@@ -217,27 +217,41 @@ namespace Core {
             Settings _settings;
         };
 
+        /**
+         * @brief Class responsible for storing information about announced controls and updating them based on incoming metadata or 
+         *        MessageList from config. 
+         *        This class can be serialized, and then recreated on the other side to get information about all announced controls on this side.
+         * 
+         */
         class EXTERNAL ControlList {
         public:
-            using Element = std::pair<MetaData, bool>;
-            using Storage = std::list<Element>;
-            using Iterator = Core::IteratorType<Storage, Element>;
+            using InformationElement = std::pair<MetaData, bool>;
+            using InformationStorage = std::list<InformationElement>;
+            using InformationIterator = Core::IteratorType<InformationStorage, InformationElement>;
 
             ControlList() = default;
             ~ControlList() = default;
             ControlList(const ControlList&) = delete;
             ControlList& operator=(const ControlList&) = delete;
 
-            uint16_t Serialize(uint8_t buffer[], const uint16_t length, const std::list<IControl*>& controls) const;
+            uint16_t Serialize(uint8_t buffer[], const uint16_t length) const;
             uint16_t Deserialize(uint8_t buffer[], const uint16_t length);
 
-            inline Iterator Controls()
+            void Announce(IControl* control);
+            void Revoke(IControl* control);
+            void Update(const MetaData& metaData, const bool enabled);
+            void Update(const MessageList& messages);
+            void Destroy();
+
+            inline InformationIterator Information()
             {
-                return Iterator(_info);
+                return InformationIterator(_info);
             }
 
         private:
-            Storage _info;
+            Core::CriticalSection _adminLock;
+            InformationStorage _info;
+            std::list<IControl*> _controls;
         };
 
         /**
@@ -273,13 +287,13 @@ namespace Core {
         };
 
         /**
-     * @brief Class responsible for:
-     *        - opening buffers
-     *        - reading configuration and setting message configuration accordingly
-     *        - a center, where messages (and its information) from specific componenets can be pushed 
-     *        - receiving information that specific message should be enabled or disabled
-     * 
-     */
+        * @brief Class responsible for:
+        *        - opening buffers
+        *        - reading configuration and setting message configuration accordingly
+        *        - a center, where messages (and its information) from specific componenets can be pushed 
+        *        - receiving information that specific message should be enabled or disabled
+        * 
+        */
         class EXTERNAL MessageUnit {
 
             using Controls = std::list<IControl*>;
@@ -319,18 +333,15 @@ namespace Core {
 
             void ReceiveMetaData(const uint16_t size, const uint8_t* data, uint16_t& outSize, uint8_t* outData);
             void SetDefaultSettings(const Settings& serialized);
-            void UpdateControls(const MetaData& metaData, const bool enabled);
 
         private:
             mutable Core::CriticalSection _adminLock;
             std::unique_ptr<MessageDispatcher> _dispatcher;
             uint8_t _serializationBuffer[DataSize];
 
-            Controls _controls;
             MessageList _messages;
             ControlList _controlList;
 
-            //logging
             LoggingOutput _loggingOutput;
             bool _isBackground;
         };

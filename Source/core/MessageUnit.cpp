@@ -331,16 +331,15 @@ namespace Core {
         * 
         * @param buffer buffer to be written to
         * @param length max length of the buffer
-        * @param controls controls to be serialized
         * @return uint16_t how much bytes serialized
         */
-        uint16_t ControlList::Serialize(uint8_t buffer[], const uint16_t length, const std::list<IControl*>& controls) const
+        uint16_t ControlList::Serialize(uint8_t buffer[], const uint16_t length) const
         {
             ASSERT(length > 0);
 
             uint16_t serialized = 0;
-            buffer[serialized++] = static_cast<uint8_t>(controls.size()); //num of entries
-            for (const auto& control : controls) {
+            buffer[serialized++] = static_cast<uint8_t>(_controls.size()); //num of entries
+            for (const auto& control : _controls) {
                 serialized += control->MessageMetaData().Serialize(buffer + serialized, length - serialized);
                 buffer[serialized++] = control->Enable();
             }
@@ -369,6 +368,81 @@ namespace Core {
             }
 
             return deserialized;
+        }
+
+        void ControlList::Announce(IControl* control)
+        {
+            ASSERT(control != nullptr);
+            ASSERT(std::find(_controls.begin(), _controls.end(), control) == _controls.end());
+
+            Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+            _controls.emplace_back(control);
+        }
+
+        void ControlList::Revoke(IControl* control)
+        {
+            ASSERT(control != nullptr);
+            ASSERT(std::find(_controls.begin(), _controls.end(), control) != _controls.end());
+
+            Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+
+            auto entry = std::find(_controls.begin(), _controls.end(), control);
+            _controls.erase(entry);
+        }
+
+        /**
+         * @brief Update controls based on metadata
+         *
+         */
+        void ControlList::Update(const MetaData& metaData, const bool enabled)
+        {
+            for (auto& control : _controls) {
+
+                if (metaData.Type() == control->MessageMetaData().Type()) {
+
+                    //toggle for module and category
+                    if (!metaData.Module().empty() && !metaData.Category().empty()) {
+                        if (metaData.Module() == control->MessageMetaData().Module() && metaData.Category() == control->MessageMetaData().Category()) {
+                            control->Enable(enabled);
+                        }
+                        //toggle all categories for module
+                    } else if (!metaData.Module().empty() && metaData.Category().empty()) {
+                        if (metaData.Module() == control->MessageMetaData().Module()) {
+                            control->Enable(enabled);
+                        }
+                    }
+                    //toggle category for all modules
+                    else if (metaData.Module().empty() && !metaData.Category().empty()) {
+                        if (metaData.Category() == control->MessageMetaData().Category()) {
+                            control->Enable(enabled);
+                        }
+                        //toggle all categories for all modules
+                    } else {
+                        control->Enable(enabled);
+                    }
+                }
+            }
+        }
+        /**
+         * @brief Update controls based on list of messages (eg. coming from config)
+         * 
+         * @param messages message list
+         */
+        void ControlList::Update(const MessageList& messages)
+        {
+            for (auto& control : _controls) {
+                auto enabled = messages.IsEnabled(control->MessageMetaData());
+                control->Enable(enabled);
+            }
+        }
+
+        void ControlList::Destroy()
+        {
+            Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+
+            while (_controls.size() != 0) {
+                (*_controls.begin())->Destroy();
+            }
         }
         //----------LoggingOutput----------
         LoggingOutput::LoggingAssembler::LoggingAssembler(uint64_t baseTime)
@@ -511,11 +585,7 @@ namespace Core {
         void MessageUnit::Close()
         {
             Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
-
-            while (_controls.size() != 0) {
-                (*_controls.begin())->Destroy();
-            }
-
+            _controlList.Destroy();
             _dispatcher.reset(nullptr);
         }
 
@@ -576,10 +646,7 @@ namespace Core {
 
             //according to received config,
             //let all announced controls know, whether they should push messages
-            for (auto& control : _controls) {
-                auto enabled = _messages.IsEnabled(control->MessageMetaData());
-                control->Enable(enabled);
-            }
+            _controlList.Update(_messages);
         }
 
         /**
@@ -636,12 +703,7 @@ namespace Core {
         */
         void MessageUnit::Announce(IControl* control)
         {
-            ASSERT(control != nullptr);
-            ASSERT(std::find(_controls.begin(), _controls.end(), control) == _controls.end());
-
-            Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
-            _controls.emplace_back(control);
-
+            _controlList.Announce(control);
             //if control was announced after we received defaults config (eg. plugin re-initialized)
             //we already have information about it - let know the control if it should push messages or not
             control->Enable(_messages.IsEnabled(control->MessageMetaData()));
@@ -654,13 +716,7 @@ namespace Core {
         */
         void MessageUnit::Revoke(IControl* control)
         {
-            ASSERT(control != nullptr);
-            ASSERT(std::find(_controls.begin(), _controls.end(), control) != _controls.end());
-
-            Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
-
-            auto entry = std::find(_controls.begin(), _controls.end(), control);
-            _controls.erase(entry);
+            _controlList.Revoke(control);
         }
 
         /**
@@ -680,50 +736,15 @@ namespace Core {
 
                 if (length <= size - 1) {
                     bool enabled = data[length];
-                    UpdateControls(metaData, enabled);
+                    _controlList.Update(metaData, enabled);
                     _messages.Update(metaData, enabled);
                 }
             } else {
-                auto length = _controlList.Serialize(outData, outSize, _controls);
+                auto length = _controlList.Serialize(outData, outSize);
                 outSize = length;
             }
         }
 
-        /**
-        * @brief Update announced controls
-        * 
-        * @param metaData information about the message
-        * @param enabled should the control be enabled
-        */
-        void MessageUnit::UpdateControls(const MetaData& metaData, const bool enabled)
-        {
-            for (auto& control : _controls) {
-
-                if (metaData.Type() == control->MessageMetaData().Type()) {
-
-                    //toggle for module and category
-                    if (!metaData.Module().empty() && !metaData.Category().empty()) {
-                        if (metaData.Module() == control->MessageMetaData().Module() && metaData.Category() == control->MessageMetaData().Category()) {
-                            control->Enable(enabled);
-                        }
-                        //toggle all categories for module
-                    } else if (!metaData.Module().empty() && metaData.Category().empty()) {
-                        if (metaData.Module() == control->MessageMetaData().Module()) {
-                            control->Enable(enabled);
-                        }
-                    }
-                    //toggle category for all modules
-                    else if (metaData.Module().empty() && !metaData.Category().empty()) {
-                        if (metaData.Category() == control->MessageMetaData().Category()) {
-                            control->Enable(enabled);
-                        }
-                        //toggle all categories for all modules
-                    } else {
-                        control->Enable(enabled);
-                    }
-                }
-            }
-        }
     }
 }
 }
