@@ -26,6 +26,7 @@ add_library(${TARGET} SHARED
 set(PUBLIC_HEADERS
         TraceCategories.h
         TraceControl.h
+        Control.h
         Logging.h
         LoggingCategories.h
         tracing.h

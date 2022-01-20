@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "Control.h"
 #include "LoggingCategories.h"
 #include "Module.h"
 #include "TextMessage.h"
@@ -28,100 +29,23 @@
 namespace WPEFramework {
 namespace Logging {
 
-#define SYSLOG(CATEGORY, PARAMETERS)                                                                                       \
-    if (WPEFramework::Logging::ControlLifetime<CATEGORY>::IsEnabled() == true) {                                           \
-        CATEGORY __data__ PARAMETERS;                                                                                      \
-        WPEFramework::Core::Messaging::Information __info__(WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING, \
-            Core::ClassNameOnly(typeid(CATEGORY).name()).Text(),                                                           \
-            _T("SysLog"),                                                                                                  \
-            __FILE__,                                                                                                      \
-            __LINE__,                                                                                                      \
-            Core::Time::Now().Ticks());                                                                                    \
-        WPEFramework::Messaging::TextMessage __message__(__data__.Data());                                                 \
-        WPEFramework::Core::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                               \
+    extern EXTERNAL const char* MODULE_LOGGING;
+
+#define SYSLOG(CATEGORY, PARAMETERS)                                                                                                                                              \
+    if (WPEFramework::Messaging::ControlLifetime<CATEGORY, &WPEFramework::Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::IsEnabled()) { \
+        CATEGORY __data__ PARAMETERS;                                                                                                                                             \
+        WPEFramework::Core::Messaging::Information __info__(WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING,                                                        \
+            Core::ClassNameOnly(typeid(CATEGORY).name()).Text(),                                                                                                                  \
+            WPEFramework::Logging::MODULE_LOGGING,                                                                                                                                \
+            __FILE__,                                                                                                                                                             \
+            __LINE__,                                                                                                                                                             \
+            Core::Time::Now().Ticks());                                                                                                                                           \
+        WPEFramework::Messaging::TextMessage __message__(__data__.Data());                                                                                                        \
+        WPEFramework::Core::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                                                                                      \
     }
 
     void EXTERNAL DumpException(const string& exceptionType);
     void EXTERNAL DumpSystemFiles(const Core::process_t pid);
-
-    template <typename CATEGORY>
-    class ControlLifetime {
-    private:
-        template <typename CONTROLCATEGORY>
-        class Control : public Core::Messaging::IControl {
-        public:
-            Control(const Control<CONTROLCATEGORY>&) = delete;
-            Control<CONTROLCATEGORY>& operator=(const Control<CONTROLCATEGORY>&) = delete;
-
-            Control()
-                : _enabled(0x02)
-                , _metaData(Core::Messaging::MetaData::MessageType::LOGGING,
-                      Core::ClassNameOnly(typeid(CONTROLCATEGORY).name()).Text(), _T("SysLog"))
-            {
-                // Register Our logging control unit, so it can be influenced from the outside
-                // if nessecary..
-                Core::Messaging::MessageUnit::Instance().Announce(this);
-            }
-            ~Control() override
-            {
-                Destroy();
-            }
-
-        public:
-            const Core::Messaging::MetaData& MessageMetaData() const override
-            {
-                return _metaData;
-            }
-
-            //non virtual method, so it can be called faster
-            inline bool IsEnabled() const
-            {
-                return ((_enabled & 0x01) != 0);
-            }
-
-            bool Enable() const override
-            {
-                return IsEnabled();
-            }
-
-            void Enable(const bool enabled) override
-            {
-                _enabled = (_enabled & 0xFE) | (enabled ? 0x01 : 0x00);
-            }
-
-            void Destroy() override
-            {
-                if ((_enabled & 0x02) != 0) {
-                    // Register Our trace control unit, so it can be influenced from the outside
-                    // if nessecary..
-                    Core::Messaging::MessageUnit::Instance().Revoke(this);
-                    _enabled = 0;
-                }
-            }
-
-        private:
-            uint8_t _enabled;
-            Core::Messaging::MetaData _metaData;
-        };
-
-    public:
-        ControlLifetime() = default;
-        ~ControlLifetime() = default;
-        ControlLifetime(const ControlLifetime<CATEGORY>&) = delete;
-        ControlLifetime<CATEGORY>& operator=(const ControlLifetime<CATEGORY>&) = delete;
-
-    public:
-        inline static bool IsEnabled()
-        {
-            return (_messageControl.IsEnabled());
-        }
-
-    private:
-        static Control<CATEGORY> _messageControl;
-    };
-
-    template <typename CATEGORY>
-    EXTERNAL_HIDDEN typename ControlLifetime<CATEGORY>::template Control<CATEGORY> ControlLifetime<CATEGORY>::_messageControl;
 
 }
 } // namespace Logging

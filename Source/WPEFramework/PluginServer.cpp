@@ -339,7 +339,7 @@ namespace PluginHost
                 State(PRECONDITION);
 
                 
-                if (Trace::ControlLifetime<Activity, &Core::System::MODULE_NAME>::IsEnabled() == true) {
+                if (Messaging::ControlLifetime<Activity, &Core::System::MODULE_NAME, Core::Messaging::MetaData::MessageType::TRACING>::IsEnabled() == true) {
                     string feedback;
                     uint8_t index = 1;
                     uint32_t delta(_precondition.Delta(_administrator.SubSystemInfo()));

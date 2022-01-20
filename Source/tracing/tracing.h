@@ -27,6 +27,7 @@
 #include "LoggingCategories.h"
 #include "TraceCategories.h"
 #include "TraceControl.h"
+#include "Control.h"
 #include "TraceFactory.h"
 #include "TextMessage.h"
 #include "TraceMessageAssembler.h"
