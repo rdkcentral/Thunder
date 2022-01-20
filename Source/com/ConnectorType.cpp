@@ -42,9 +42,21 @@ Core::ProxyType<RPC::IIPCServer> DefaultInvokeServer()
             }
         };
 
+    protected:
+        void Acquire(Core::ProxyType<Engine>& source)
+        {
+            RPC::InvokeServerType<1, 0, 8>::Run();
+        }
+
+        void Relinquish(Core::ProxyType<Engine>& source)
+        {
+            RPC::InvokeServerType<1, 0, 8>::Stop();
+        }
+
     public:
         Engine()
         {
+            printf("DefaultInvokeServer created\n");
             Announcements(&_sink);
         }
 
@@ -56,8 +68,8 @@ Core::ProxyType<RPC::IIPCServer> DefaultInvokeServer()
         AnnouncementSink _sink;
 
     };
-
-    return Core::ProxyType<RPC::IIPCServer>(Core::SingletonProxyType<Engine>::Instance());
+    static Core::ProxyType<Engine> engine = Core::ProxyType<Engine>::Create();
+    return Core::ProxyType<RPC::IIPCServer>(engine);
 };
 
 Core::ProxyType<RPC::IIPCServer> WorkerPoolInvokeServer()

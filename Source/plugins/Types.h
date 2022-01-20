@@ -257,7 +257,10 @@ namespace RPC {
 #ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
-        virtual ~SmartInterfaceType() = default;
+        virtual ~SmartInterfaceType()
+        {
+            ASSERT(_controller == nullptr);
+        }
 
     public:
         bool IsOperational() const
@@ -271,12 +274,12 @@ namespace RPC {
             _controller = Connector::Connector::Instance().Controller();
             if (_controller == nullptr) {
                 _controller = _administrator.template Aquire<PluginHost::IShell>(waitTime, node, _T(""), ~0);
-
-                if (_controller != nullptr) {
-
-                    _monitor.Register(_controller, callsign);
-                }
             }
+
+            if (_controller != nullptr) {
+                _monitor.Register(_controller, callsign);
+            }
+
             return (_controller != nullptr ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
         }
         uint32_t Close(const uint32_t waitTime)

@@ -38,7 +38,6 @@ namespace Connector {
         Connector(const Connector&) = delete;
         Connector& operator=(const Connector&) = delete;
         ~Connector();
-
         static Connector& Instance();
 
         void Announce(PluginHost::IShell* controller);

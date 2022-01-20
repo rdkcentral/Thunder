@@ -25,7 +25,9 @@ namespace Connector {
 
     /* static */ Connector& Connector::Instance()
     {
-        return( Core::SingletonType<Connector>::Instance());
+        static Connector* instance = new Connector;
+        ASSERT(instance!=nullptr);
+        return(*instance);
     }
     void Connector::Announce(PluginHost::IShell* controller)
     {
