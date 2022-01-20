@@ -17,19 +17,12 @@
  * limitations under the License.
  */
 
-#ifndef __TRACECATEGORIES_H
-#define __TRACECATEGORIES_H
+#pragma once
 
-// ---- Include local include files ----
 #include "Module.h"
 #include "TraceControl.h"
 
-// ---- Referenced classes and types ----
 
-// ---- Helper types and constants ----
-// ---- Helper functions ----
-
-// ---- Class Definition ----
 namespace WPEFramework {
 namespace Trace {
 
@@ -638,4 +631,3 @@ namespace Trace {
 }
 } // namespace Trace
 
-#endif // __TRACECATEGORIES_H

@@ -144,7 +144,7 @@ namespace Core {
          * @brief JSON Settings for all messages
          * 
          */
-        class Settings : public Core::JSON::Container {
+        class EXTERNAL Settings : public Core::JSON::Container {
         private:
             class Messages : public Core::JSON::Container {
             private:
@@ -201,7 +201,7 @@ namespace Core {
         *        Info will be passed to another starting unit.
         * 
         */
-        class MessageList {
+        class EXTERNAL MessageList {
         public:
             MessageList() = default;
             ~MessageList() = default;
@@ -259,7 +259,7 @@ namespace Core {
          *        to a channel.
          * 
          */
-        class LoggingOutput {
+        class EXTERNAL LoggingOutput {
         private:
             class LoggingAssembler : IAssembler {
             public:
