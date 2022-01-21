@@ -471,17 +471,8 @@ namespace Core {
             return result;
         }
 
-        LoggingOutput::LoggingOutput(bool isSyslog, bool abbreviate)
-            : _assembler(Core::Time::Now().Ticks())
-            , _isSyslog(isSyslog)
-            , _abbreviate(abbreviate)
-
-        {
-        }
         LoggingOutput::LoggingOutput()
             : _assembler(Core::Time::Now().Ticks())
-            , _isSyslog(true)
-            , _abbreviate(true)
         {
         }
 
@@ -520,7 +511,7 @@ namespace Core {
         * @return uint32_t ERROR_NONE: opened sucessfully
         *                  ERROR_OPENING_FAILED failed to open
         */
-        uint32_t MessageUnit::Open(const string& pathName, bool isBackground)
+        uint32_t MessageUnit::Open(const string& pathName)
         {
             uint32_t result = Core::ERROR_OPENING_FAILED;
 
@@ -538,10 +529,8 @@ namespace Core {
 
             Core::SystemInfo::SetEnvironment(MESSAGE_DISPATCHER_PATH_ENV, basePath);
             Core::SystemInfo::SetEnvironment(MESSAGE_DISPACTHER_IDENTIFIER_ENV, identifier);
-            Core::SystemInfo::SetEnvironment(MESSAGE_UNIT_LOGGING_SYSLOG_ENV, std::to_string(isBackground));
 
             _dispatcher.reset(new MessageDispatcher(identifier, 0, true, basePath));
-            _isBackground = isBackground;
             if (_dispatcher != nullptr) {
                 if (_dispatcher->IsValid()) {
                     _dispatcher->RegisterDataAvailable(std::bind(&MessageUnit::ReceiveMetaData, this, _1, _2, _3, _4));
@@ -589,6 +578,12 @@ namespace Core {
             _dispatcher.reset(nullptr);
         }
 
+        void MessageUnit::IsBackground(bool background)
+        {
+            _loggingOutput.IsBackground(background);
+            Core::SystemInfo::SetEnvironment(MESSAGE_UNIT_LOGGING_SYSLOG_ENV, std::to_string(background));
+        }
+
         /**
         * @brief Read defaults settings form string
         * @param setting json able to be parsed by @ref MessageUnit::Settings
@@ -607,7 +602,7 @@ namespace Core {
             }
 
             SetDefaultSettings(serialized);
-            _loggingOutput = LoggingOutput(_isBackground, serialized.Logging.Abbreviated.Value());
+            _loggingOutput.IsAbbreviated(serialized.Logging.Abbreviated.Value());
 
             _adminLock.Unlock();
         }
@@ -661,6 +656,18 @@ namespace Core {
             settings.ToString(result);
 
             return result;
+        }
+
+        /**
+         * @brief Check if message of given metaData is enabled by default configuration
+         * 
+         * @param metaData message information
+         * @return true is enabled by default
+         * @return false not enabled by default
+         */
+        bool MessageUnit::IsEnabledByDefault(const MetaData& metaData) const
+        {
+            return _messages.IsEnabled(metaData);
         }
 
         /**

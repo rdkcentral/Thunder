@@ -272,18 +272,25 @@ namespace Core {
             };
 
         public:
-            LoggingOutput(bool isSyslog, bool abbreviate);
             LoggingOutput();
             ~LoggingOutput() = default;
             LoggingOutput(const LoggingOutput&) = default;
             LoggingOutput& operator=(const LoggingOutput&) = default;
+            inline void IsBackground(bool background)
+            {
+                _isSyslog.store(background);
+            }
+            inline void IsAbbreviated(bool abbreviate)
+            {
+                _abbreviate.store(abbreviate);
+            }
 
             void Output(const Information& info, const IEvent* message) const;
 
         private:
             LoggingAssembler _assembler;
-            bool _isSyslog;
-            bool _abbreviate;
+            std::atomic_bool _isSyslog{ true };
+            std::atomic_bool _abbreviate{ true };
         };
 
         /**
@@ -310,14 +317,15 @@ namespace Core {
 
         public:
             static MessageUnit& Instance();
-            uint32_t Open(const string& pathName, bool isBackground);
+            uint32_t Open(const string& pathName);
             uint32_t Open(const uint32_t instanceId);
             void Close();
+            void IsBackground(bool background);
 
             void Defaults(const string& setting);
             void Defaults(Core::File& file);
-
             string Defaults() const;
+            bool IsEnabledByDefault(const MetaData& metaData) const;
 
             void Push(const Information& info, const IEvent* message);
 
