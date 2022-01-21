@@ -56,7 +56,6 @@ Core::ProxyType<RPC::IIPCServer> DefaultInvokeServer()
     public:
         Engine()
         {
-            printf("DefaultInvokeServer created\n");
             Announcements(&_sink);
         }
 
