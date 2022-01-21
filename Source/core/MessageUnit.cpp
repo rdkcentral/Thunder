@@ -338,11 +338,22 @@ namespace Core {
             ASSERT(length > 0);
 
             uint16_t serialized = 0;
-            buffer[serialized++] = static_cast<uint8_t>(_controls.size()); //num of entries
+            uint16_t lastSerialized = 0;
+            buffer[serialized++] = static_cast<uint8_t>(0); //buffer[0] will indicate how much entries was serialized
+
             for (const auto& control : _controls) {
-                serialized += control->MessageMetaData().Serialize(buffer + serialized, length - serialized);
-                buffer[serialized++] = control->Enable();
+                lastSerialized = control->MessageMetaData().Serialize(buffer + serialized, length - serialized);
+
+                if (serialized + lastSerialized < length && lastSerialized != 0) {
+                    serialized += lastSerialized;
+                    buffer[serialized++] = control->Enable();
+                    buffer[0]++;
+                } else {
+                    //unlucky, not all entries will fit
+                    break;
+                }
             }
+
             return serialized;
         }
 
@@ -355,14 +366,23 @@ namespace Core {
         */
         uint16_t ControlList::Deserialize(uint8_t buffer[], const uint16_t length)
         {
+            ASSERT(length > 0);
+
             uint16_t deserialized = 0;
+            uint16_t lastDeserialized = 0;
             uint8_t entries = buffer[deserialized++];
 
             for (int i = 0; i < entries; i++) {
                 MetaData metadata;
                 bool isEnabled = false;
-                deserialized += metadata.Deserialize(buffer + deserialized, length - deserialized);
-                isEnabled = buffer[deserialized++];
+                lastDeserialized = metadata.Deserialize(buffer + deserialized, length - deserialized);
+
+                if (deserialized < length && lastDeserialized != 0) {
+                    deserialized += lastDeserialized;
+                    isEnabled = buffer[deserialized++];
+                } else {
+                    break;
+                }
 
                 _info.push_back({ metadata, isEnabled });
             }
