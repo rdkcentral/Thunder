@@ -40,7 +40,6 @@ add_executable(${TEST_RUNNER_NAME}
    test_keyvalue.cpp
    test_library.cpp
    test_lockablecontainer.cpp
-   test_logging.cpp
    test_measurementtype.cpp
    test_memberavailability.cpp
    #test_messageException.cpp
@@ -71,7 +70,6 @@ add_executable(${TEST_RUNNER_NAME}
    test_thread.cpp
    test_time.cpp
    #test_timer.cpp
-   test_tracing.cpp
    test_tristate.cpp
    #test_valuerecorder.cpp
    test_weblinkjson.cpp
@@ -81,6 +79,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_workerpool.cpp
    test_xgetopt.cpp
    test_message_dispatcher.cpp
+   test_message_unit.cpp
 )
 
 set_source_files_properties(test_systeminfo.cpp PROPERTIES COMPILE_OPTIONS "-fexceptions")
@@ -99,6 +98,7 @@ target_link_libraries(${TEST_RUNNER_NAME}
     ${CMAKE_THREAD_LIBS_INIT}
     WPEFrameworkCore
     WPEFrameworkTracing
+    WPEFrameworkMessaging
     WPEFrameworkCOM
     WPEFrameworkWebSocket
 )
