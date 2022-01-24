@@ -109,6 +109,9 @@ namespace PluginHost {
         public:
             static Core::ProxyType<Core::IDispatch> Create(IShell* shell, IShell::state toState, IShell::reason why);
 
+            //
+            // Core::IDispatch implementation
+            // -------------------------------------------------------------------------------
             void Dispatch() override
             {
                 ASSERT(_shell != nullptr);

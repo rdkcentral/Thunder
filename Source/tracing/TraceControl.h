@@ -31,6 +31,9 @@
 // ---- Referenced classes and types ----
 
 // ---- Helper types and constants ----
+#define TRACE_ENABLED(CATEGORY)                                                         \
+    WPEFramework::Trace::TraceType<CATEGORY, &WPEFramework::Core::System::MODULE_NAME>::IsEnabled()
+
 #define TRACE(CATEGORY, PARAMETERS)                                                    \
     if (WPEFramework::Trace::TraceType<CATEGORY, &WPEFramework::Core::System::MODULE_NAME>::IsEnabled() == true) { \
         CATEGORY __data__ PARAMETERS;                                                  \
