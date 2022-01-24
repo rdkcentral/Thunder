@@ -36,6 +36,8 @@ option(PROXY_STUB
         "Include proxy/stubs." ON)
 option(PLUGINS
         "Include plugins library." ON)
+option(THUNDER_CONNECTOR
+        "Include Connector Library in the build." ON)
 option(EXECUTABLE
         "Include the hosting executable." ON)
 option(VIRTUALINPUT
@@ -59,6 +61,7 @@ option(DEADLOCK_DETECTION
         "Enable deadlock detection tooling." OFF)
 option(WARNING_REPORTING
         "Include warning reporting in the build." OFF)
+
 
 set(BUILD_TYPE "Production" CACHE STRING "How do you want to build it, Production, Release/ReleaseSymbols or Debug/DebugOptimized")
 
@@ -133,6 +136,10 @@ endif()
 
 if(PROXY_STUB)
     add_subdirectory(proxystubs)
+endif()
+
+if(THUNDER_CONNECTOR)
+    add_subdirectory(connector)
 endif()
 
 if(PLUGINS)

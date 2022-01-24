@@ -443,6 +443,13 @@ namespace RPC {
         void Revoke(const Core::ProxyType<Core::IDispatch>& job) override {
             _threadPoolEngine.Revoke(job, Core::infinite);
         }
+        void Run() {
+            _threadPoolEngine.Run();
+        }
+
+        void Stop() {
+             _threadPoolEngine.Stop();
+        }
 
     private:
         void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& message) override
