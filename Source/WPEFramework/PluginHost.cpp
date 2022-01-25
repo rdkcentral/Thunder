@@ -171,7 +171,7 @@ namespace PluginHost {
 
                 _adminLock.Unlock();
 
-		if (destructor != nullptr) {
+                if (destructor != nullptr) {
                     CloseDown (destructor);
                 }
             }
@@ -337,6 +337,29 @@ namespace PluginHost {
         }
     }
 #endif
+
+    static string GetDeviceId(PluginHost::ISubSystem* subSystems)
+    {
+        string deviceId;
+        if (subSystems != nullptr) {
+            if (subSystems->IsActive(PluginHost::ISubSystem::IDENTIFIER) == true) {
+                const PluginHost::ISubSystem::IIdentifier* id(subSystems->Get<PluginHost::ISubSystem::IIdentifier>());
+                if (id != nullptr) {
+                    uint8_t buffer[64];
+
+                    buffer[0] = static_cast<const PluginHost::ISubSystem::IIdentifier*>(id)
+                                ->Identifier(sizeof(buffer) - 1, &(buffer[1]));
+
+                    if (buffer[0] != 0) {
+                        deviceId = Core::SystemInfo::Instance().Id(buffer, ~0);
+                    }
+
+                    id->Release();
+                }
+            }
+        }
+        return deviceId;
+    }
 
     static void ForcedExit() {
         if (_atExitActive == true) {
@@ -545,7 +568,6 @@ namespace PluginHost {
             SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
             SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
             SYSLOG(Logging::Startup, (_T("Process Id:    %d"), Core::ProcessInfo().Id()));
-            SYSLOG(Logging::Startup, (_T("SystemId:      %s"), Core::SystemInfo::Instance().Id(SystemInfo::RawDeviceId(_config->EthernetCard()), ~0).c_str()));
             SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
             SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
             SYSLOG(Logging::Startup, (_T("Version:       %s"), _config->Version().c_str()));
@@ -572,6 +594,11 @@ namespace PluginHost {
 
             // If we have handlers open up the gates to analyze...
             _dispatcher->Open();
+
+            string id = GetDeviceId(_dispatcher->Services().SubSystemsInterface());
+            if (id.empty() == false) {
+                SYSLOG(Logging::Startup, (_T("SystemId:      %s"), id.c_str()));
+            }
 
 #ifndef __WINDOWS__
             if (_background == true) {

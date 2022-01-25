@@ -223,14 +223,6 @@ namespace PluginHost {
         virtual ISecurity* Officer(const string& token) = 0;
     };
 
-    struct EXTERNAL IConfigure : virtual public Core::IUnknown {
-
-        enum { ID = RPC::ID_CONFIGURE };
-
-        ~IConfigure() override = default;
-
-        virtual uint32_t Configure(PluginHost::IShell* shell) = 0;
-    };
 } // namespace PluginHost
 } // namespace WPEFramework
 

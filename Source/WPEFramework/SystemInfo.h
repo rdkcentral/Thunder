@@ -33,118 +33,6 @@ namespace PluginHost {
         SystemInfo& operator=(const SystemInfo&) = delete;
 
     private:
-        class AdapterObserver : public WPEFramework::Core::AdapterObserver::INotification {
-        public:
-            static uint8_t constexpr MacSize = 6;
-            static int32_t constexpr WaitTime = 5000; //Just wait for 5 seconds
-
-        public:
-            AdapterObserver() = delete;
-            AdapterObserver(const AdapterObserver&) = delete;
-            AdapterObserver& operator=(const AdapterObserver&) = delete;
-
-            #ifdef __WINDOWS__
-            #pragma warning(disable: 4355)
-            #endif
-            AdapterObserver(const string& interface)
-                : _signal(false, true)
-                , _interface(interface)
-                , _observer(this)
-            {
-                _observer.Open();
-                if (_interface.empty() != true) {
-                    // Check given interface has valid MAC
-                    if (IsInterfaceHasValidMAC(interface) == true) {
-                        _signal.SetEvent();
-                    }
-                } else {
-                    // If interface is not given then,
-                    // check any of the activated interface has valid MAC
-                    if (IsAnyInterfaceHasValidMAC() == true) {
-                        _signal.SetEvent();
-                    }
-                }
-            }
-            #ifdef __WINDOWS__
-            #pragma warning(default: 4355)
-            #endif
-            ~AdapterObserver() override
-            {
-                _observer.Close();
-            }
-
-        public:
-            virtual void Event(const string& interface) override
-            {
-                if (_interface.empty() != true) {
-                    // Check configured interface has valid MAC
-                    if (interface == _interface) {
-                         if (IsInterfaceHasValidMAC(interface) == true) {
-                           _signal.SetEvent();
-                         }
-                    }
-                } else {
-                    // If interface is not configured then,
-                    // check activated interface has valid MAC
-                    if (IsInterfaceHasValidMAC(interface) == true) {
-                       _signal.SetEvent();
-                    }
-                }
-            }
-            inline uint32_t WaitForCompletion(int32_t waitTime)
-            {
-                return _signal.Lock(waitTime);
-            }
-            const uint8_t* MACAddress()
-            {
-                return _MACAddressBuffer;
-            }
-       private:
-            bool IsAnyInterfaceHasValidMAC()
-            {
-                bool valid = false;
-                Core::AdapterIterator adapters;
-
-                while ((adapters.Next() == true)) {
-                    if ((valid = IsValidMAC(adapters)) == true) {
-                        break;
-                    }
-                }
-                return valid;
-            }
-            bool IsInterfaceHasValidMAC(const string& interface)
-            {
-                bool valid = false;
-                Core::AdapterIterator adapter(interface);
-                if (adapter.IsValid()) {
-                    valid = IsValidMAC(adapter);
-                }
-                return valid;
-            }
-            inline bool IsValidMAC(Core::AdapterIterator& adapter)
-            {
-                uint8_t check = 1;
-
-                memset(_MACAddressBuffer, 0, MacSize + 1);
-                adapter.MACAddress(&_MACAddressBuffer[1], MacSize);
-
-                while ((check < MacSize - 1) && (_MACAddressBuffer[check] == 0)) {
-                    check++;
-                }
-                if (check < MacSize - 1) {
-                    _MACAddressBuffer[0] = MacSize;
-                }
-
-                return (_MACAddressBuffer[0] == MacSize);
-            }
-        private:
-            Core::Event _signal;
-            string _interface;
-            Core::AdapterObserver _observer;
-            uint8_t _MACAddressBuffer[MacSize + 1];
-        };
-
-    private:
         class Id : public PluginHost::ISubSystem::IIdentifier {
         public:
             Id(const Id&) = delete;
@@ -852,14 +740,14 @@ namespace PluginHost {
         {
             return (_flags);
         }
-        // First byte of the RawDeviceId is the length of the DeviceId to follow.
-        static const uint8_t* RawDeviceId(const string& interfaceName);
-
         BEGIN_INTERFACE_MAP(SystemInfo)
         INTERFACE_ENTRY(PluginHost::ISubSystem)
         END_INTERFACE_MAP
 
     private:
+        // First byte of the RawDeviceId is the length of the DeviceId to follow.
+        const uint8_t* RawDeviceId(const string& interfaceName) const;
+
         typedef Core::IteratorType<std::list<PluginHost::ISubSystem::INotification*>, PluginHost::ISubSystem::INotification*> ClientIterator;
 
         void RecursiveList(ClientIterator& index);
