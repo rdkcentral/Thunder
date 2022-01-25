@@ -33,7 +33,6 @@ set(PUBLIC_HEADERS
         Module.h
         TraceFactory.h
         TextMessage.h
-        TraceMessageAssembler.h
         )
 
 target_compile_definitions(${TARGET} PRIVATE TRACING_EXPORTS)

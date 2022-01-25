@@ -135,11 +135,6 @@ namespace Core {
             virtual Core::ProxyType<IEvent> Create() = 0;
         };
 
-        struct EXTERNAL IAssembler {
-            virtual ~IAssembler() = default;
-            virtual string Prepare(const bool abbreviateMessage, const Information& info, const IEvent* message) const = 0;
-        };
-
         /**
          * @brief JSON Settings for all messages
          * 
@@ -261,11 +256,11 @@ namespace Core {
          */
         class EXTERNAL LoggingOutput {
         private:
-            class LoggingAssembler : IAssembler {
+            class LoggingAssembler {
             public:
                 LoggingAssembler(uint64_t baseTime);
-                ~LoggingAssembler() override = default;
-                string Prepare(const bool abbreviate, const Information& info, const IEvent* message) const override;
+                ~LoggingAssembler() = default;
+                string Prepare(const bool abbreviate, const Information& info, const IEvent* message) const;
 
             private:
                 uint64_t _baseTime;
