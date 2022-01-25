@@ -512,26 +512,19 @@ TEST_F(Core_Messaging_MessageUnit, PopMessageShouldReturnLastPushedMessage)
 
     Core::Messaging::MessageUnit::Instance().Push(info, &tm);
 
-    Messaging::MessageClient::Message message;
-    int poppedMessages = 0;
-    do {
-        message = client.Pop();
-        if (message.Value().first.MessageMetaData().Type() != Core::Messaging::MetaData::MessageType::INVALID) {
-            if (message.Value().first.MessageMetaData() == info.MessageMetaData()) {
-                string result;
-                message.Value().second->ToString(result);
+    auto messages = client.Pop();
+    ASSERT_EQ(messages.size(), 1);
+    auto message = messages.front();
 
-                ASSERT_STREQ(message.Value().first.FileName().c_str(), info.FileName().c_str());
-                ASSERT_EQ(message.Value().first.LineNumber(), info.LineNumber());
-                ASSERT_EQ(message.Value().first.TimeStamp(), info.TimeStamp());
-                ASSERT_STREQ(traceMessage.c_str(), result.c_str());
+    ASSERT_NE(message.first.MessageMetaData().Type(), Core::Messaging::MetaData::MessageType::INVALID);
+    ASSERT_EQ(message.first.MessageMetaData(), info.MessageMetaData());
 
-                ++poppedMessages;
-            }
-        }
-    } while (message.IsSet());
-
-    ASSERT_EQ(poppedMessages, 1);
+    string result;
+    message.second->ToString(result);
+    ASSERT_STREQ(message.first.FileName().c_str(), info.FileName().c_str());
+    ASSERT_EQ(message.first.LineNumber(), info.LineNumber());
+    ASSERT_EQ(message.first.TimeStamp(), info.TimeStamp());
+    ASSERT_STREQ(traceMessage.c_str(), result.c_str());
 }
 
 TEST_F(Core_Messaging_MessageUnit, PopMessageShouldReturnLastPushedMessageInOtherProcess)
@@ -552,26 +545,21 @@ TEST_F(Core_Messaging_MessageUnit, PopMessageShouldReturnLastPushedMessageInOthe
         client.AddFactory(Core::Messaging::MetaData::MessageType::TRACING, &factory);
         testAdmin.Sync("setup");
         testAdmin.Sync("writer wrote");
-        Messaging::MessageClient::Message message;
-        int poppedMessages = 0;
-        do {
-            message = client.Pop();
-            if (message.Value().first.MessageMetaData().Type() != Core::Messaging::MetaData::MessageType::INVALID) {
-                if (message.Value().first.MessageMetaData() == info.MessageMetaData()) {
-                    string result;
-                    message.Value().second->ToString(result);
+        auto messages = client.Pop();
 
-                    ASSERT_STREQ(message.Value().first.FileName().c_str(), info.FileName().c_str());
-                    ASSERT_EQ(message.Value().first.LineNumber(), info.LineNumber());
-                    ASSERT_EQ(message.Value().first.TimeStamp(), info.TimeStamp());
-                    ASSERT_STREQ(traceMessage.c_str(), result.c_str());
+        ASSERT_EQ(messages.size(), 1);
+        auto message = messages.front();
 
-                    ++poppedMessages;
-                }
-            }
-        } while (message.IsSet());
+        ASSERT_NE(message.first.MessageMetaData().Type(), Core::Messaging::MetaData::MessageType::INVALID);
+        ASSERT_EQ(message.first.MessageMetaData(), info.MessageMetaData());
 
-        ASSERT_EQ(poppedMessages, 1);
+        string result;
+        message.second->ToString(result);
+        ASSERT_STREQ(message.first.FileName().c_str(), info.FileName().c_str());
+        ASSERT_EQ(message.first.LineNumber(), info.LineNumber());
+        ASSERT_EQ(message.first.TimeStamp(), info.TimeStamp());
+        ASSERT_STREQ(traceMessage.c_str(), result.c_str());
+
         testAdmin.Sync("reader read");
         testAdmin.Sync("done");
     };
