@@ -14,7 +14,7 @@ namespace Messaging {
         using Factories = std::unordered_map<Core::Messaging::MetaData::MessageType, Core::Messaging::IEventFactory*>;
 
     public:
-        using Message = Core::OptionalType<std::pair<Core::Messaging::Information, Core::ProxyType<Core::Messaging::IEvent>>>;
+        using Messages = std::list<std::pair<Core::Messaging::Information, Core::ProxyType<Core::Messaging::IEvent>>>;
         ~MessageClient() = default;
         MessageClient(const MessageClient&) = delete;
         MessageClient& operator=(const MessageClient&) = delete;
@@ -32,19 +32,20 @@ namespace Messaging {
         void Enable(const Core::Messaging::MetaData& metaData, const bool enable);
         Core::Messaging::ControlList::InformationIterator Enabled();
 
-        Message Pop();
+        Messages Pop();
 
         void AddFactory(Core::Messaging::MetaData::MessageType type, Core::Messaging::IEventFactory* factory);
         void RemoveFactory(Core::Messaging::MetaData::MessageType type);
 
     private:
+        using Clients = std::unordered_map<uint32_t, Core::Messaging::MessageUnit::MessageDispatcher>;
         mutable Core::CriticalSection _adminLock;
         string _identifier;
         string _basePath;
         uint8_t _readBuffer[Core::Messaging::MessageUnit::DataSize];
         uint8_t _writeBuffer[Core::Messaging::MessageUnit::MetaDataSize];
 
-        std::unordered_map<uint32_t, Core::Messaging::MessageUnit::MessageDispatcher> _clients;
+        Clients _clients;
         Factories _factories;
         Core::Messaging::ControlList::InformationStorage _enabledCategories;
     };

@@ -702,7 +702,9 @@ namespace Core {
             //those should be just printed
             if (info.MessageMetaData().Type() == MetaData::MessageType::LOGGING) {
                 _loggingOutput.Output(info, message);
-            } else {
+            }
+
+            if (_dispatcher != nullptr) {
 
                 uint16_t length = 0;
 

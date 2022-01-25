@@ -139,26 +139,22 @@ namespace Messaging {
     }
 
     /**
-     * @brief Pop will return a message if available in any of the added message dispatchers. The Pop is non blocking and threadsafe
-     *        Popped messages are not guaranteed to be in the same order as pushed. Caller should call this function until Pop returns invalid Message,
-     *        then WaitForUpdates should be called that will block until data is available
+     * @brief This method will return all messages from all registered clients. It is non blocking and threadsafe. 
+     *        Messages in the list are not guaranteed to be in the same order as pushed
      * 
-     * @return Message = Core::OptionalType<std::pair<Core::MessageInformation, Core::ProxyType<Core::IMessageEvent>>>
-     *         Optional pair that contains information about the message and the deserialized message itself.
+     * @return MessageClient::Messages List of messages from all clients, that were pushed before ringing a bell
      */
-    MessageClient::Message MessageClient::Pop()
+    MessageClient::Messages MessageClient::Pop()
     {
         _adminLock.Lock();
         uint16_t size = sizeof(_readBuffer);
 
-        Message result;
+        Messages result;
         Core::Messaging::Information information;
         Core::ProxyType<Core::Messaging::IEvent> message;
 
-        auto currentClientIt = _clients.begin();
-        while (currentClientIt != _clients.end()) {
-
-            if (currentClientIt->second.PopData(size, _readBuffer) == Core::ERROR_NONE) {
+        for (auto& client : _clients) {
+            while (client.second.PopData(size, _readBuffer) == Core::ERROR_NONE) {
                 auto length = information.Deserialize(_readBuffer, size);
 
                 if (length != 0 && length <= sizeof(_readBuffer)) {
@@ -166,13 +162,11 @@ namespace Messaging {
                     if (factory != _factories.end()) {
                         message = factory->second->Create();
                         message->Deserialize(_readBuffer + length, size - length);
-                        result.Value() = std::make_pair(information, message);
-                        break;
+                        result.emplace_back(information, message);
+                        size = sizeof(_readBuffer);
                     }
                 }
             }
-
-            ++currentClientIt;
         }
 
         _adminLock.Unlock();
