@@ -401,7 +401,7 @@ namespace WPEFramework {
                     _refCount->AddRef();
                 }
             }
-            ProxyType(ProxyType<CONTEXT>&& move)
+            ProxyType(ProxyType<CONTEXT>&& move) noexcept
                 : _refCount(move._refCount)
                 , _realObject(move._realObject)
             {
@@ -463,7 +463,7 @@ namespace WPEFramework {
                 return(*this);
             }
 
-            ProxyType<CONTEXT>& operator=(ProxyType<CONTEXT>&& rhs)
+            ProxyType<CONTEXT>& operator=(ProxyType<CONTEXT>&& rhs) noexcept
             {
                 // If we already have one, lets remove the one we got first
                 if (_refCount != nullptr) _refCount->Release();
@@ -1613,9 +1613,18 @@ namespace WPEFramework {
             }
             // void action<const PROXYKEY& key, const Core::ProxyType<PROXYELEMENT>& element>
             template<typename ACTION>
+            void Visit(ACTION&& action) {
+                _lock.Lock();
+                for (std::pair<const PROXYKEY, ContainerStorage>& entry : _map) {
+                    action(entry.first, entry.second.first);
+                }
+                _lock.Unlock();
+            }
+            // void action<const PROXYKEY& key, const Core::ProxyType<PROXYELEMENT>& element>
+            template<typename ACTION>
             void Visit(ACTION&& action) const {
                 _lock.Lock();
-                for (auto entry : _map) {
+                for (const std::pair<const PROXYKEY, ContainerStorage>& entry : _map) {
                     action(entry.first, entry.second.first);
                 }
                 _lock.Unlock();
@@ -1623,7 +1632,7 @@ namespace WPEFramework {
             void Clear()
             {
                 _lock.Lock();
-                for (auto entry : _map) {
+                for (std::pair<const PROXYKEY, ContainerStorage>& entry : _map) {
                     entry.second.second.Unlink();
                 }
                 _map.clear();
@@ -1668,6 +1677,9 @@ namespace WPEFramework {
                 }
 
                 _lock.Unlock();
+            }
+            uint32_t Count() const {
+                return (static_cast<uint32_t>(_map.size()));
             }
 
         private:
@@ -1771,6 +1783,9 @@ namespace WPEFramework {
                 }
 
                 _lock.Unlock();
+            }
+            uint32_t Count() const {
+                return (static_cast<uint32_t>(_list.size()));
             }
 
         private:

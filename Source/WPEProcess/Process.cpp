@@ -94,7 +94,7 @@ namespace Process {
                 }
             }
             void Destructed() override {
-                Core::ProxyType<Core::IDispatch> job(_job.Aquire());
+                Core::ProxyType<Core::IDispatch> job(_job.Submit());
 
                 if (job.IsValid() == true) {
                     _parent.Submit(job);
@@ -150,9 +150,8 @@ namespace Process {
         }
         void Stop()
         {
-            Core::WorkerPool::Shutdown();
+            Core::WorkerPool::Stop();
         }
-
 
     protected:
         void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override

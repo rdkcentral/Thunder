@@ -82,10 +82,12 @@
 #else
   #if __GNUC__ >= 4 && !defined(__mips__)
     #define EXTERNAL_HIDDEN __attribute__ ((visibility ("hidden")))
-    #define EXTERNAL        __attribute__ ((visibility ("default")))
-  #else
+    #define EXTERNAL_EXPORT __attribute__ ((visibility ("default")))
+    #define EXTERNAL EXTERNAL_EXPORT        
+#else
     #define EXTERNAL
     #define EXTERNAL_HIDDEN
+    #define EXTERNAL_EXPORT 
   #endif
 #endif
 
@@ -304,6 +306,8 @@ int clock_gettime(int, struct timespec*);
 #define ODDPARITY (PARENB | PARODD)
 #define MARKPARITY  8
 #define SPACEPARITY 9
+
+#define INVALID_HANDLE_VALUE -1
 
 #define ESUCCESS 0
 #define _Geterrno() errno

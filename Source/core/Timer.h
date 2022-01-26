@@ -87,6 +87,15 @@ namespace Core {
             {
             }
 
+            inline bool operator== (const CONTENT& RHS) const
+            {
+                return (m_Info == RHS);
+            }
+            inline bool operator!= (const CONTENT& RHS) const
+            {
+                return (m_Info != RHS);
+            }
+
             inline TimedInfo& operator=(const TimedInfo& RHS)
             {
                 m_ScheduleTime = RHS.m_ScheduleTime;
@@ -208,6 +217,26 @@ namespace Core {
             _adminLock.Unlock();
 
             _timerThread.Wait(Thread::BLOCKED, Core::infinite);
+        }
+
+        inline bool HasEntry(const CONTENT& element) const {
+
+            // This needs to be atomic. Make sure it is.
+            _adminLock.Lock();
+
+            typename SubscriberList::const_iterator index = _pendingQueue.cbegin();
+
+            // Clear all entries !!
+            while ((index != _pendingQueue.cend()) && (*index != element)) {
+                index++;
+            }
+
+            bool found = (index != _pendingQueue.cend());
+
+            // Done with the administration. Release the lock.
+            _adminLock.Unlock();
+
+            return (found);
         }
 
     private:
@@ -393,7 +422,7 @@ namespace Core {
     private:
         SubscriberList _pendingQueue;
         TimeWorker _timerThread;
-        CriticalSection _adminLock;
+        mutable CriticalSection _adminLock;
         uint64_t _nextTrigger;
         Core::Event _waitForCompletion;
         CONTENT* _executing;
