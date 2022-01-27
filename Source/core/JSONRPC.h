@@ -34,10 +34,6 @@ namespace Core {
     namespace JSONRPC {
 
         class EXTERNAL Message : public Core::JSON::Container {
-        private:
-            Message(const Message&) = delete;
-            Message& operator=(const Message&) = delete;
-
         public:
             class Info : public Core::JSON::Container {
             public:
@@ -117,14 +113,16 @@ namespace Core {
         public:
             static constexpr TCHAR DefaultVersion[] = _T("2.0");
 
+            Message& operator=(const Message&) = delete;
+
             Message()
                 : Core::JSON::Container()
-                 , JSONRPC(DefaultVersion)
-                 , Id(~0)
-                 , Designator()
-                 , Parameters(false)
-                 , Result(false)
-                 , Error()
+                , JSONRPC(DefaultVersion)
+                , Id(~0)
+                , Designator()
+                , Parameters(false)
+                , Result(false)
+                , Error()
             {
                 Add(_T("jsonrpc"), &JSONRPC);
                 Add(_T("id"), &Id);
@@ -135,9 +133,22 @@ namespace Core {
 
                 Clear();
             }
-            ~Message()
-            {
+            Message(const Message& copy)
+                : Core::JSON::Container()
+                , JSONRPC(copy.JSONRPC)
+                , Id(copy.Id)
+                , Designator(copy.Designator)
+                , Parameters(copy.Parameters)
+                , Result(copy.Result)
+                , Error(copy.Error) {
+                Add(_T("jsonrpc"), &JSONRPC);
+                Add(_T("id"), &Id);
+                Add(_T("method"), &Designator);
+                Add(_T("params"), &Parameters);
+                Add(_T("result"), &Result);
+                Add(_T("error"), &Error);
             }
+            ~Message() override = default;
 
         public:
             static string Callsign(const string& designator)
