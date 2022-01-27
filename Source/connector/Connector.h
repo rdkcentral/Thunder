@@ -20,40 +20,33 @@
 #pragma once
 
 namespace WPEFramework {
-
 namespace PluginHost {
     struct IShell;
 }
-
-namespace Connector {
-
-    class EXTERNAL Connector {
-    
-    protected:
-        Connector()
-            : _controller(nullptr)
-        {
-        }
-    public:
-        Connector(const Connector&) = delete;
-        Connector& operator=(const Connector&) = delete;
-        ~Connector();
-        static Connector& Instance();
-
-        void Announce(PluginHost::IShell* controller);
-        void Revoke(PluginHost::IShell* controller);
-        PluginHost::IShell* Controller();
-  
-    private:
-        PluginHost::IShell* _controller;
-    };
-
-}//namespace Connector
-}//namespace WPEFramework
+}
 
 extern "C" {
-    EXTERNAL void connector_announce(WPEFramework::PluginHost::IShell *);
-    EXTERNAL void connector_revoke(WPEFramework::PluginHost::IShell *);
+/**
+ * @brief Announce the availability of the Thunder Controller Plugin's Shell
+ *
+ * @param controller Pointer to Controller's IShell
+ *
+ */
+EXTERNAL void connector_announce(WPEFramework::PluginHost::IShell* controller);
 
-    EXTERNAL WPEFramework::PluginHost::IShell* connector_controller();
+/**
+ * @brief Revoke the  Thunder Controller Plugin's Shell that was already announced
+ *
+ * @param controller Pointer to Controller's IShell
+ *
+ */
+EXTERNAL void connector_revoke(WPEFramework::PluginHost::IShell*);
+
+/**
+ * @brief Get the Thunder Controller Plugin's Shell.
+ *
+ * @return Reference counted Pointer to Controller's IShell. Caller must release after usage.
+ *         Returns nullptr if Controller's IShell was not announced.
+ */
+EXTERNAL WPEFramework::PluginHost::IShell* connector_controller();
 }

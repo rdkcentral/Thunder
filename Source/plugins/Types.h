@@ -271,11 +271,10 @@ namespace RPC {
         {
             ASSERT(_controller == nullptr);
 
-            _controller = Connector::Connector::Instance().Controller();
+            _controller = connector_controller();
             if (_controller == nullptr) {
                 _controller = _administrator.template Aquire<PluginHost::IShell>(waitTime, node, _T(""), ~0);
             }
-
             if (_controller != nullptr) {
                 _monitor.Register(_controller, callsign);
             }

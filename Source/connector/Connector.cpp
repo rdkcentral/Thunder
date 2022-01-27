@@ -23,44 +23,60 @@
 namespace WPEFramework {
 namespace Connector {
 
-    /* static */ Connector& Connector::Instance()
-    {
-        static Connector* instance = new Connector;
-        ASSERT(instance!=nullptr);
-        return(*instance);
-    }
-    void Connector::Announce(PluginHost::IShell* controller)
-    {
-        ASSERT(_controller==nullptr);
-        if(controller != nullptr){
-            controller->AddRef();
-            _controller = controller;
-        }
-    }
-    void Connector::Revoke(PluginHost::IShell* controller)
-    {
-        ASSERT(_controller!=nullptr);
-        ASSERT(_controller==controller);
+    class Connector {
 
-        if(controller != nullptr){
-            controller->Release();
-            _controller = nullptr;
+    private:
+        Connector()
+            : _controller(nullptr)
+        {
         }
-    }
-    PluginHost::IShell* Connector::Controller()
-    {
-        if(_controller != nullptr){
-            _controller->AddRef();
-        }
-        return _controller;
-    }
-    Connector::~Connector()
-    {
-        ASSERT(_controller==nullptr);
-    }
+    public:
+        Connector(const Connector&) = delete;
+        Connector& operator=(const Connector&) = delete;
 
-} // namespace Connector
-} // namespace WPEFramework
+        static Connector& Instance()
+        {
+            static Connector* instance = new Connector;
+            ASSERT(instance!=nullptr);
+            return(*instance);
+        }
+        void Announce(PluginHost::IShell* controller)
+        {
+            ASSERT(_controller==nullptr);
+            if(controller != nullptr){
+                controller->AddRef();
+                _controller = controller;
+            }
+        }
+        void Revoke(PluginHost::IShell* controller)
+        {
+            ASSERT(_controller!=nullptr);
+            ASSERT(_controller==controller);
+
+            if(controller != nullptr){
+                controller->Release();
+                _controller = nullptr;
+            }
+        }
+        PluginHost::IShell* Controller()
+        {
+            if(_controller != nullptr){
+                _controller->AddRef();
+            }
+            return _controller;
+        }
+        ~Connector()
+        {
+            ASSERT(_controller==nullptr);
+        }
+
+    private:
+        PluginHost::IShell* _controller;
+    };
+
+}//namespace Connector
+}//namespace WPEFramework
+
 
 extern "C" {
     void connector_announce(WPEFramework::PluginHost::IShell* controller)
