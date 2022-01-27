@@ -72,7 +72,7 @@ namespace Plugin {
         _resumes.clear();
         _service = service;
         
-        Connector::Connector::Instance().Announce(service);
+        connector_announce(service);
         
         _skipURL = static_cast<uint8_t>(_service->WebPrefix().length());
 
@@ -114,7 +114,7 @@ namespace Plugin {
     {
         ASSERT(_service == service);
 
-        Connector::Connector::Instance().Revoke(service);
+        connector_revoke(service);
 
         // Detach the SubSystems, we are shutting down..
         PluginHost::ISubSystem* subSystems(_service->SubSystems());
