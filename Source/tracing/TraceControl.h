@@ -38,7 +38,7 @@
     }
 
 #define TRACE_GLOBAL(CATEGORY, PARAMETERS)                                                                                                                                              \
-    if (WPEFramework::Trace::ControlLifetime<CATEGORY, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::Messaging::MetaData::MessageType::TRACING>::IsEnabled() == true) { \
+    if (WPEFramework::Messaging::ControlLifetime<CATEGORY, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::Messaging::MetaData::MessageType::TRACING>::IsEnabled() == true) { \
         CATEGORY __data__ PARAMETERS;                                                                                                                                                   \
         WPEFramework::Core::Messaging::Information __info__(WPEFramework::Core::Messaging::MetaData::MessageType::TRACING,                                                              \
             __FUNCTION__,                                                                                                                                                               \
