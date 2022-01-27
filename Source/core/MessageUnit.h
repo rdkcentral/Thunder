@@ -302,8 +302,8 @@ namespace Core {
             using Factories = std::unordered_map<MetaData::MessageType, IEventFactory*>;
 
         public:
-            static constexpr uint32_t MetaDataSize = 1 * 1024;
-            static constexpr uint32_t DataSize = 9 * 1024;
+            static constexpr uint32_t MetaDataSize = 10 * 1024;
+            static constexpr uint32_t DataSize = 20 * 1024;
             static constexpr const char* MESSAGE_DISPATCHER_PATH_ENV = _T("MESSAGE_DISPATCHER_PATH");
             static constexpr const char* MESSAGE_DISPACTHER_IDENTIFIER_ENV = _T("MESSAGE_DISPACTHER_IDENTIFIER");
             static constexpr const char* MESSAGE_UNIT_LOGGING_SYSLOG_ENV = _T("MESSAGE_UNIT_LOGGING_SYSLOG");

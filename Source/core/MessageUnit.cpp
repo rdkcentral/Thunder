@@ -349,6 +349,7 @@ namespace Core {
                     buffer[serialized++] = control->Enable();
                     buffer[0]++;
                 } else {
+                    TRACE_L1(_T("ControlList is cut, not enough memory to fit all controls. (MetaDataSize too small)"));
                     //unlucky, not all entries will fit
                     break;
                 }
