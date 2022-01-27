@@ -413,6 +413,10 @@ namespace PluginHost
                 }
             }
         }
+	if ((result != Core::ERROR_NONE) && (_connection != nullptr)) {
+            _connection->Release();
+            _connection = nullptr;
+        }
 
         Unlock();
 
