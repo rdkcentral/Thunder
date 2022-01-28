@@ -122,11 +122,13 @@ private:
         {
         }
 
-        ExternalWorker(PARENTIMPL &parent)
-            : _job(nullptr)
+        ExternalWorker(PARENTIMPL &parent, Core::ProxyType<IDispatch> job, const uint32_t waitTime = 0)
+            : _job(job)
             , _parent(parent)
-            , _waitTime(0)
+            , _waitTime(waitTime)
         {
+
+            Core::Thread::Run();
         }
         ~ExternalWorker()
         {
@@ -136,24 +138,19 @@ private:
     public:
         void Stop()
         {
+            Core::Thread::Stop();
             Core::Thread::Wait(Core::Thread::STOPPED|Core::Thread::BLOCKED, Core::infinite);
         }
         virtual uint32_t Worker() override
         {
             if (IsRunning()) {
-                _parent.Submit(*_job, _waitTime);
+                _parent.Submit(_job, _waitTime);
             }
             Core::Thread::Block();
             return (Core::infinite);
         }
-        void Submit(Core::ProxyType<IDispatch>& job, const uint32_t waitTime = 0)
-        {
-            _job = &job;
-            _waitTime = waitTime;
-            Core::Thread::Run();
-        }
     private:
-        Core::ProxyType<IDispatch>* _job;
+        Core::ProxyType<IDispatch> _job;
         IMPLEMENTATION& _parent;
         uint32_t _waitTime;
     };
@@ -167,11 +164,11 @@ public:
         , _parent(parent)
         , _external()
     {
-        for (uint8_t index = 0; index < MaxAdditionalWorker; ++index) {
-            _external.push_back(new ExternalWorker<IMPLEMENTATION>(parent));
-        }
     }
-    ~JobControl()
+    ~JobControl() = default;
+
+public:
+    void Stop()
     {
         for (auto& job: _jobs) {
             delete job.second;
@@ -183,7 +180,6 @@ public:
         _external.clear();
         Singleton::Dispose();
     }
-public:
     uint32_t WaitForReady(IDispatch* job, const uint32_t waitTime = 0)
     {
         uint32_t result = Core::ERROR_NONE;
@@ -208,10 +204,10 @@ public:
     }
     void SubmitUsingExternalWorker(Core::ProxyType<IDispatch>& job, const uint32_t waitTime = 0)
     {
-        if (_index < MaxAdditionalWorker) {
+        if (_external.size() < MaxAdditionalWorker) {
             _jobs.emplace(std::piecewise_construct, std::forward_as_tuple(job.operator->()), std::forward_as_tuple(new EventControl()));
 
-            _external[_index++]->Submit(job, waitTime);
+            _external.push_back(new ExternalWorker<IMPLEMENTATION>(_parent, job, waitTime));
         }
     }
 
@@ -332,6 +328,11 @@ public:
     {
          return (ThreadPool::Pending() == 0);
     }
+    void Stop()
+    {
+        ThreadPool::Stop();
+        JobControl<ThreadPoolTester>::Stop();
+    }
 
 private:
     uint32_t _queueSize;
@@ -396,6 +397,7 @@ public:
     {
         Core::Thread::Stop();
         Core::Thread::Wait(Core::Thread::STOPPED|Core::Thread::BLOCKED, Core::infinite);
+        JobControl<MinionTester>::Stop();
     }
     uint32_t WaitForJobEvent(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime = 0)
     {
@@ -583,11 +585,10 @@ TEST(Core_ThreadPool, CheckMinion_ProcessMultipleJobs_CancelInBetween)
     EXPECT_EQ(minion.QueueIsFull(), true);
     EXPECT_EQ(minion.QueueIsEmpty(), false);
 
-    minion.Run();
-
     minion.Revoke(jobs[3]);
     minion.Revoke(jobs[4]);
 
+    minion.Run();
     for (uint8_t i = 0; i < jobs.size(); ++i) {
         if ((i == 3) || (i == 4)) {
             EXPECT_EQ(minion.WaitForJobEvent(jobs[i], MaxJobWaitTime), Core::ERROR_TIMEDOUT);

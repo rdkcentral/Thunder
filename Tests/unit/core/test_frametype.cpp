@@ -36,8 +36,8 @@ TEST(test_frame, simple_set)
     uint16_t len = 15;
     uint16_t len1 = 13;
     uint16_t offset = 0;
-    EXPECT_EQ(obj1.SetBuffer<uint16_t>(offset, len, arr), 23u);
-    EXPECT_EQ(obj1.GetBuffer<uint16_t>(offset, len1, arr1), 23u);
+    EXPECT_EQ(obj1.SetBuffer<uint16_t>(offset, len, arr), 17u);
+    EXPECT_EQ(obj1.GetBuffer<uint16_t>(offset, len1, arr1), 17u);
 
     FrameType<BLOCKSIZE>::Writer obj3(obj1, offset);
     obj3.Buffer<uint16_t>(15, arr);
