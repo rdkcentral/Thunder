@@ -394,6 +394,7 @@ public:
     }
     void Stop()
     {
+        Core::Thread::Stop();
         Core::Thread::Wait(Core::Thread::STOPPED|Core::Thread::BLOCKED, Core::infinite);
     }
     uint32_t WaitForJobEvent(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime = 0)
@@ -485,7 +486,10 @@ TEST(Core_ThreadPool, CheckMinion_CancelJob_WhileProcessing)
     EXPECT_EQ(minion.IsActive(), false);
     minion.Run();
 
-    while(minion.QueueIsEmpty() != true);
+    volatile bool queueIsEmpty = false;
+    while((queueIsEmpty = minion.QueueIsEmpty()) != true) {
+        __asm__ volatile("nop");
+    }
     minion.Revoke(job);
     EXPECT_EQ(minion.WaitForJobEvent(job, MaxJobWaitTime * 3), Core::ERROR_NONE);
     minion.Shutdown();
@@ -609,6 +613,7 @@ TEST(Core_ThreadPool, CheckMinion_ProcessMultipleJobs_CancelInBetween)
     }
     jobs.clear();
 }
+
 TEST(Core_ThreadPool, CheckThreadPool_ProcessJob)
 {
     uint32_t queueSize = 1;
@@ -622,7 +627,9 @@ TEST(Core_ThreadPool, CheckThreadPool_ProcessJob)
     EXPECT_EQ(threadPool.QueueIsEmpty(), false);
     EXPECT_EQ(threadPool.Active(), false);
     threadPool.Run();
-    while(threadPool.QueueIsEmpty() != true);
+    while(threadPool.QueueIsEmpty() != true) {
+        __asm__ volatile("nop");
+    }
     EXPECT_EQ(threadPool.Active(), true);
     EXPECT_EQ(threadPool.WaitForJobEvent(job, MaxJobWaitTime), Core::ERROR_NONE);
     EXPECT_EQ(threadPool.Pending(), 0u);
@@ -631,6 +638,7 @@ TEST(Core_ThreadPool, CheckThreadPool_ProcessJob)
     EXPECT_EQ(static_cast<TestJob<ThreadPoolTester>&>(*job).GetStatus(), TestJob<ThreadPoolTester>::COMPLETED);
     job.Release();
 }
+
 TEST(Core_ThreadPool, CheckThreadPool_RevokeJob)
 {
     uint32_t queueSize = 1;
@@ -668,7 +676,9 @@ TEST(Core_ThreadPool, CheckThreadPool_CancelJob_WhileProcessing)
     EXPECT_EQ(threadPool.Active(), false);
     threadPool.Run();
     EXPECT_EQ(threadPool.QueueIsEmpty(), false);
-    while(threadPool.QueueIsEmpty() != true);
+    while(threadPool.QueueIsEmpty() != true) {
+        __asm__ volatile("nop");
+    }
     EXPECT_EQ(threadPool.Active(), true);
     threadPool.Revoke(job, 0);
     EXPECT_EQ(threadPool.Pending(), 0u);

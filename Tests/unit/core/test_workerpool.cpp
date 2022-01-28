@@ -145,6 +145,7 @@ private:
     public:
         void Stop()
         {
+            Core::Thread::Stop();
             Core::Thread::Wait(Core::Thread::STOPPED|Core::Thread::BLOCKED, Core::infinite);
         }
         virtual uint32_t Worker() override
@@ -328,6 +329,7 @@ public:
     void Stop()
     {
         Core::WorkerPool::Stop();
+        Core::Thread::Wait(Core::Thread::STOPPED|Core::Thread::BLOCKED, Core::infinite);
     }
 
     uint32_t WaitForJobEvent(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime = 0)
