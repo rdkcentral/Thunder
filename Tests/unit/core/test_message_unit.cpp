@@ -126,7 +126,6 @@ TEST_F(Core_Messaging_MessageUnit, TraceMessageIsEnabledByDefaultWhenConfigFully
     ASSERT_TRUE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
     ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
     ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
-    ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::WARNING_REPORTING, _T("Information"), _T("Plugin_DeviceInfo") }));
 }
 
 TEST_F(Core_Messaging_MessageUnit, TraceMessageIsDisabledByDefaultWhenConfigFullySpecified)
@@ -137,7 +136,6 @@ TEST_F(Core_Messaging_MessageUnit, TraceMessageIsDisabledByDefaultWhenConfigFull
     ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
     ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
     ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
-    ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::WARNING_REPORTING, _T("Information"), _T("Plugin_DeviceInfo") }));
 }
 
 TEST_F(Core_Messaging_MessageUnit, TraceMessagesAreEnabledWhenModuleNotSpecified)
@@ -148,7 +146,6 @@ TEST_F(Core_Messaging_MessageUnit, TraceMessagesAreEnabledWhenModuleNotSpecified
     ASSERT_TRUE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
     ASSERT_TRUE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
     ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
-    ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::WARNING_REPORTING, _T("Information"), _T("Plugin_DeviceInfo") }));
 }
 
 TEST_F(Core_Messaging_MessageUnit, TraceMessagesAreDisabledWhenModuleNotSpecified)
@@ -159,7 +156,6 @@ TEST_F(Core_Messaging_MessageUnit, TraceMessagesAreDisabledWhenModuleNotSpecifie
     ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
     ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
     ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
-    ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::WARNING_REPORTING, _T("Information"), _T("Plugin_DeviceInfo") }));
 }
 
 TEST_F(Core_Messaging_MessageUnit, LoggingMessageIsEnabledIfNotConfigured)
