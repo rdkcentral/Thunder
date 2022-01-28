@@ -526,6 +526,21 @@ namespace PluginHost {
                 Core::Messaging::MessageUnit::Instance().Defaults(_config->MessagingCategories());
             }
 
+#ifdef __CORE_WARNING_REPORTING__
+            if (WarningReporting::WarningReportingUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE) {
+#ifndef __WINDOWS__
+                if (_background == true) {
+                    syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable issue reporting functionality!");
+                } else
+#endif
+                {
+                    fprintf(stdout, "Could not enable issue reporting functionality!\n");
+                }
+            }
+
+            WarningReporting::WarningReportingUnit::Instance().Defaults(_config->WarningReportingCategories());
+#endif
+
             SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
             SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
             SYSLOG(Logging::Startup, (_T("Process Id:    %d"), Core::ProcessInfo().Id()));

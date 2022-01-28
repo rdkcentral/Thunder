@@ -316,6 +316,7 @@ namespace PluginHost {
                 , IdleTime(0)
                 , IPV6(false)
                 , DefaultMessagingCategories(false)
+                , DefaultWarningReportingCategories(false)
                 , Process()
                 , Input()
                 , Configs()
@@ -346,6 +347,7 @@ namespace PluginHost {
                 Add(_T("idletime"), &IdleTime);
                 Add(_T("ipv6"), &IPV6);
                 Add(_T("messaging"), &DefaultMessagingCategories); 
+                Add(_T("warningreporting"), &DefaultWarningReportingCategories); 
                 Add(_T("redirect"), &Redirect);
                 Add(_T("process"), &Process);
                 Add(_T("input"), &Input);
@@ -382,6 +384,7 @@ namespace PluginHost {
             Core::JSON::DecUInt16 IdleTime;
             Core::JSON::Boolean IPV6;
             Core::JSON::String DefaultMessagingCategories; 
+            Core::JSON::String DefaultWarningReportingCategories; 
             ProcessSet Process;
             InputConfig Input;
             Core::JSON::String Configs;
@@ -553,6 +556,7 @@ namespace PluginHost {
                     config.DefaultMessagingCategories.SetQuoted(true);
                 }
                 _messagingCategories = config.DefaultMessagingCategories.Value();
+                _warningReportingCategories = config.DefaultWarningReportingCategories.Value();
 
 
                 if (config.Model.IsSet()) {
@@ -635,6 +639,10 @@ namespace PluginHost {
         inline const string& MessagingCategories() const
         {
             return (_messagingCategories);
+        }
+        inline const string& WarningReportingCategories() const
+        {
+            return (_warningReportingCategories);
         }
         inline const string& Redirect() const
         {
@@ -904,6 +912,7 @@ namespace PluginHost {
         string _model;
         string _messagingCategories;
         bool _messagingCategoriesFile;
+        string _warningReportingCategories;
         string _binding;
         string _interface;
         string _URL;

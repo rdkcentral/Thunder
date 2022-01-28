@@ -36,7 +36,6 @@ namespace Core {
             enum MessageType : uint8_t {
                 TRACING = 0,
                 LOGGING = 1,
-                WARNING_REPORTING = 2,
                 INVALID = 3
             };
 
