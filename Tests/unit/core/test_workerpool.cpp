@@ -1257,6 +1257,8 @@ void CheckJobType_RescheduleJobs(const uint8_t threadCount, const uint8_t queueS
                 EXPECT_EQ(jobs[index]->WaitForEvent(MaxJobWaitTime * 15), Core::ERROR_NONE);
                 usleep(200);
             }
+
+            usleep(200);
             EXPECT_EQ(jobs[index]->IsIdle(), true);
         }
         for (auto& job: jobs) {
