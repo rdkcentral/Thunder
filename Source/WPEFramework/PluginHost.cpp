@@ -338,9 +338,11 @@ namespace PluginHost {
     }
 #endif
 
-    static string GetDeviceId(PluginHost::ISubSystem* subSystems)
+    static string GetDeviceId(PluginHost::Server* dispatcher)
     {
         string deviceId;
+
+        PluginHost::ISubSystem* subSystems = dispatcher->Services().SubSystemsInterface();
         if (subSystems != nullptr) {
             if (subSystems->IsActive(PluginHost::ISubSystem::IDENTIFIER) == true) {
                 const PluginHost::ISubSystem::IIdentifier* id(subSystems->Get<PluginHost::ISubSystem::IIdentifier>());
@@ -357,6 +359,7 @@ namespace PluginHost {
                     id->Release();
                 }
             }
+            subSystems->Release();
         }
         return deviceId;
     }
@@ -595,7 +598,7 @@ namespace PluginHost {
             // If we have handlers open up the gates to analyze...
             _dispatcher->Open();
 
-            string id = GetDeviceId(_dispatcher->Services().SubSystemsInterface());
+            string id = GetDeviceId(_dispatcher);
             if (id.empty() == false) {
                 SYSLOG(Logging::Startup, (_T("SystemId:      %s"), id.c_str()));
             }
