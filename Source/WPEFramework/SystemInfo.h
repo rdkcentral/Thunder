@@ -27,11 +27,12 @@ namespace WPEFramework {
 namespace PluginHost {
 
     class SystemInfo : public PluginHost::ISubSystem {
-    private:
+    public:
         SystemInfo() = delete;
         SystemInfo(const SystemInfo&) = delete;
         SystemInfo& operator=(const SystemInfo&) = delete;
 
+    private:
         class Id : public PluginHost::ISubSystem::IIdentifier {
         public:
             Id(const Id&) = delete;
@@ -374,7 +375,7 @@ namespace PluginHost {
                     }
 
                     _identifier = Core::Service<Id>::Create<Id>();
-                    const uint8_t* id(Core::SystemInfo::Instance().RawDeviceId());
+                    const uint8_t* id(RawDeviceId(_config.EthernetCard()));
                     _identifier->Set(id[0], &id[1], 
                             Core::SystemInfo::Instance().Architecture(), 
                             Core::SystemInfo::Instance().Chipset(), 
@@ -739,16 +740,17 @@ namespace PluginHost {
         {
             return (_flags);
         }
-
         BEGIN_INTERFACE_MAP(SystemInfo)
         INTERFACE_ENTRY(PluginHost::ISubSystem)
         END_INTERFACE_MAP
 
     private:
+        // First byte of the RawDeviceId is the length of the DeviceId to follow.
+        const uint8_t* RawDeviceId(const string& interfaceName) const;
+
         typedef Core::IteratorType<std::list<PluginHost::ISubSystem::INotification*>, PluginHost::ISubSystem::INotification*> ClientIterator;
 
         void RecursiveList(ClientIterator& index);
-
         void Update();
 
     private:
