@@ -145,6 +145,7 @@ private:
     public:
         void Stop()
         {
+            Core::Thread::Stop();
             Core::Thread::Wait(Core::Thread::STOPPED|Core::Thread::BLOCKED, Core::infinite);
         }
         virtual uint32_t Worker() override
@@ -328,6 +329,7 @@ public:
     void Stop()
     {
         Core::WorkerPool::Stop();
+        Core::Thread::Wait(Core::Thread::STOPPED|Core::Thread::BLOCKED, Core::infinite);
     }
 
     uint32_t WaitForJobEvent(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime = 0)
@@ -1255,6 +1257,8 @@ void CheckJobType_RescheduleJobs(const uint8_t threadCount, const uint8_t queueS
                 EXPECT_EQ(jobs[index]->WaitForEvent(MaxJobWaitTime * 15), Core::ERROR_NONE);
                 usleep(200);
             }
+
+            usleep(200);
             EXPECT_EQ(jobs[index]->IsIdle(), true);
         }
         for (auto& job: jobs) {
