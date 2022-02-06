@@ -19,7 +19,6 @@
 
 #include "Controller.h"
 #include "SystemInfo.h"
-#include "connector/Connector.h"
 
 namespace WPEFramework {
 
@@ -72,7 +71,7 @@ namespace Plugin {
         _resumes.clear();
         _service = service;
         
-        connector_announce(service);
+        RPC::ConnectorController::Instance().Announce(service);
         
         _skipURL = static_cast<uint8_t>(_service->WebPrefix().length());
 
@@ -114,8 +113,6 @@ namespace Plugin {
     {
         ASSERT(_service == service);
 
-        connector_revoke(service);
-
         // Detach the SubSystems, we are shutting down..
         PluginHost::ISubSystem* subSystems(_service->SubSystems());
 
@@ -135,6 +132,8 @@ namespace Plugin {
 
         /* stop the file serving over http.... */
         service->DisableWebServer();
+
+        RPC::ConnectorController::Instance().Revoke(service);
     }
 
     /* virtual */ string Controller::Information() const
