@@ -52,9 +52,6 @@ namespace Core {
     public:
         string Id(const uint8_t RawDeviceId[], const uint8_t KeyLength);
 
-        // First byte of the RawDeviceId is the length of the DeviceId to follow.
-        const uint8_t* RawDeviceId() const;
-
         static bool GetEnvironment(const string& name, string& value);
         static bool SetEnvironment(const string& name, const TCHAR* value, const bool forced = true);
         static bool SetEnvironment(const string& name, const string& value, const bool forced = true);

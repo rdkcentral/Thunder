@@ -22,6 +22,7 @@
 
 #include "IPlugin.h"
 #include "IShell.h"
+#include "connector/Connector.h"
 
 namespace WPEFramework {
 namespace PluginHost {
@@ -256,7 +257,10 @@ namespace RPC {
 #ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
-        virtual ~SmartInterfaceType() = default;
+        virtual ~SmartInterfaceType()
+        {
+            ASSERT(_controller == nullptr);
+        }
 
     public:
         bool IsOperational() const
@@ -267,13 +271,12 @@ namespace RPC {
         {
             ASSERT(_controller == nullptr);
 
+            _controller = connector_controller();
             if (_controller == nullptr) {
                 _controller = _administrator.template Aquire<PluginHost::IShell>(waitTime, node, _T(""), ~0);
-
-                if (_controller != nullptr) {
-
-                    _monitor.Register(_controller, callsign);
-                }
+            }
+            if (_controller != nullptr) {
+                _monitor.Register(_controller, callsign);
             }
 
             return (_controller != nullptr ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
