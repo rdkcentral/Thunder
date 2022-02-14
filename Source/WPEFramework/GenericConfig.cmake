@@ -36,6 +36,7 @@ set(OOMADJUST 0 CACHE STRING "Adapt the OOM score [-15 - 15]")
 set(STACKSIZE 0 CACHE STRING "Default stack size per thread")
 set(KEY_OUTPUT_DISABLED false CACHE STRING "New outputs on the VirtualInput will be disabled by default")
 set(EXIT_REASONS "Failure;MemoryExceeded;WatchdogExpired" CACHE STRING "Process exit reason list for which the postmortem is required")
+set(ETHERNETCARD_NAME "eth0" CACHE STRING "Ethernet Card name which has to be associated for the Raw Device Id creation")
 
 map()
   key(plugins)
@@ -56,7 +57,7 @@ map_set(${CONFIG} systempath ${SYSTEM_PATH})
 map_set(${CONFIG} proxystubpath ${PROXYSTUB_PATH})
 map_set(${CONFIG} postmortempath ${POSTMORTEM_PATH})
 map_set(${CONFIG} redirect "/Service/Controller/UI")
-
+map_set(${CONFIG} ethernetcard ${ETHERNETCARD_NAME})
 map_set(${CONFIG} communicator ${COMMUNICATOR})
 
 map()

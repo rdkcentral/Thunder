@@ -2377,7 +2377,7 @@ namespace PluginHost {
 #if THUNDER_PERFORMANCE
                         Core::ProxyType<TrackingJSONRPC> tracking (_element);
                         ASSERT (tracking.IsValid() == true);
-			            tracking->Dispatch();
+                                    tracking->Dispatch();
 #endif
                         Core::ProxyType<Core::JSONRPC::Message> message(_element);
                         ASSERT(message.IsValid() == true);
@@ -2385,7 +2385,7 @@ namespace PluginHost {
                         _element = Core::ProxyType<Core::JSON::IElement>(Job::Process(_token, message));
 
 #if THUNDER_PERFORMANCE
-			tracking->Execution();
+                        tracking->Execution();
 #endif
 
                     } else {
