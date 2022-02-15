@@ -505,11 +505,6 @@ namespace PluginHost
                 if (dispatcher != nullptr) {
                     dispatcher->Deactivate();
                 }
-
-                if (_connection != nullptr) {
-                    _connection->Release();
-                    _connection = nullptr;
-                }
             }
 
             SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));

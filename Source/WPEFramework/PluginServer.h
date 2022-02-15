@@ -1040,6 +1040,11 @@ namespace PluginHost {
                     // Could be that we can now drop the dynamic library...
                     Core::ServiceAdministrator::Instance().FlushLibraries();
                 }
+
+                if (_connection != nullptr) {
+                    _connection->Release();
+                    _connection = nullptr;
+                }
             }
 
         private:
