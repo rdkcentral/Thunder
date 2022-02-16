@@ -28,7 +28,7 @@ namespace PluginHost {
 #pragma warning(disable : 4355)
 #endif
     Channel::Channel(const SOCKET& connector, const Core::NodeId& remoteId)
-        : BaseClass(true, false, 5, _requestAllocator, false, connector, remoteId, 1024, 1024)
+        : BaseClass(true, false, 5, _requestAllocator, false, connector, remoteId, 1024, -1)
         , _adminLock()
         , _ID(0)
         , _nameOffset(~0)
