@@ -41,6 +41,7 @@ namespace Core {
         , _alert(false)
         , _administration(nullptr)
     {
+        ASSERT((mode & Core::File::USER_WRITE) != 0);
 #ifdef __WINDOWS__
         string strippedName(Core::File::PathName(_buffer.Name()) + Core::File::FileName(_buffer.Name()));
         _mutex = CreateSemaphore(nullptr, 1, 1, (strippedName + ".mutex").c_str());
@@ -303,7 +304,7 @@ namespace Core {
                 // No data, or too much, return 0.
                 return 0;
             }
-            
+
             uint32_t bufferLength = std::min(length, result);
 
             foundData = true;
@@ -383,7 +384,7 @@ namespace Core {
                 shouldMoveHead = false;
             }
         } else {
-            if (((_administration->_state.load() & state::OVERWRITE) == 0) && (length > Free()))
+            if ((length >= Size()) || (((_administration->_state.load() & state::OVERWRITE) == 0) && (length >= Free())))
                 return 0;
 
             // A write without reservation, make sure we have the space.
@@ -431,7 +432,7 @@ namespace Core {
         uint32_t free = Free(_administration->_head, tail);
 
         while (free <= required) {
-            uint32_t remaining = required - free;
+            uint32_t remaining = (required + 1) - free;
             Cursor cursor(*this, oldTail, remaining);
             uint32_t offset = GetOverwriteSize(cursor);
             ASSERT((offset + free) >= required);
@@ -459,7 +460,7 @@ namespace Core {
         pid_t expectedProcessId = static_cast<pid_t>(0);
 #endif
 
-        if (((_administration->_state.load() & state::OVERWRITE) == 0) && (length > Free()))
+        if ((length >= Size()) || (((_administration->_state.load() & state::OVERWRITE) == 0) && (length >= Free())))
             return Core::ERROR_INVALID_INPUT_LENGTH;
 
         bool noOtherReservation = atomic_compare_exchange_strong(&(_administration->_reservedPID), &expectedProcessId, processId);

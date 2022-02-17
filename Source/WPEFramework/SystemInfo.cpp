@@ -92,6 +92,38 @@ namespace PluginHost {
         _adminLock.Unlock();
     }
 
+    // Use MAC address and let the framework handle the OTP ID.
+    const uint8_t* SystemInfo::RawDeviceId(const string& interfaceName) const
+    {
+        static uint8_t* MACAddress = nullptr;
+        static uint8_t MACAddressBuffer[Core::AdapterIterator::MacSize + 1];
+
+        if (MACAddress == nullptr) {
+            memset(MACAddressBuffer, 0, Core::AdapterIterator::MacSize + 1);
+
+            if (interfaceName.empty() != true) {
+
+                Core::AdapterIterator adapter(interfaceName);
+                if ((adapter.IsValid() == true) && adapter.HasMAC() == true) {
+                    adapter.MACAddress(&MACAddressBuffer[1], Core::AdapterIterator::MacSize);
+                }
+            } else {
+
+                Core::AdapterIterator adapters;
+                while ((adapters.Next() == true)) {
+                    if (adapters.HasMAC() == true) {
+                        adapters.MACAddress(&MACAddressBuffer[1], Core::AdapterIterator::MacSize);
+                        break;
+                    }
+                }
+            }
+            MACAddressBuffer[0] = Core::AdapterIterator::MacSize;
+            MACAddress = &MACAddressBuffer[0];
+        }
+
+        return MACAddress;
+    }
+
     void SystemInfo::Update()
     {
         _adminLock.Lock();
