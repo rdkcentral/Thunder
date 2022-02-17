@@ -507,7 +507,7 @@ TEST_F(Core_Messaging_MessageUnit, PopMessageShouldReturnLastPushedMessage)
 
     Core::Messaging::MessageUnit::Instance().Push(info, &tm);
 
-    auto messages = client.Pop();
+    auto messages = client.PopMessagesAsList();
     ASSERT_EQ(messages.size(), 1);
     auto message = messages.front();
 
@@ -540,7 +540,7 @@ TEST_F(Core_Messaging_MessageUnit, PopMessageShouldReturnLastPushedMessageInOthe
         client.AddFactory(Core::Messaging::MetaData::MessageType::TRACING, &factory);
         testAdmin.Sync("setup");
         testAdmin.Sync("writer wrote");
-        auto messages = client.Pop();
+        auto messages = client.PopMessagesAsList();
 
         ASSERT_EQ(messages.size(), 1);
         auto message = messages.front();

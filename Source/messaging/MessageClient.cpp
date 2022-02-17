@@ -157,18 +157,27 @@ namespace Messaging {
         return Core::Messaging::ControlList::InformationIterator(_enabledCategories);
     }
 
+    MessageClient::Messages MessageClient::PopMessagesAsList()
+    {
+        Messages result;
+        PopMessagesAndCall([&result](const Core::Messaging::Information& info, const Core::ProxyType<Core::Messaging::IEvent>& message) {
+            result.emplace_back(info, message);
+        });
+
+        return result;
+    }
+
     /**
-     * @brief This method will return all messages from all registered clients. It is non blocking and threadsafe. 
-     *        Messages in the list are not guaranteed to be in the same order as pushed
+     * @brief Pop all messages from all buffers, and for each of them call a passed function, with information about popped message
+     *        This method should be called after receiving doorbell ring (after WaitForUpdated function)
      * 
-     * @return MessageClient::Messages List of messages from all clients, that were pushed before ringing a bell
+     * @param function function to be called on each of the messages in the buffer
      */
-    MessageClient::Messages MessageClient::Pop()
+    void MessageClient::PopMessagesAndCall(std::function<void(const Core::Messaging::Information& info, const Core::ProxyType<Core::Messaging::IEvent>& message)> function)
     {
         _adminLock.Lock();
         uint16_t size = sizeof(_readBuffer);
 
-        Messages result;
         Core::Messaging::Information information;
         Core::ProxyType<Core::Messaging::IEvent> message;
 
@@ -181,7 +190,7 @@ namespace Messaging {
                     if (factory != _factories.end()) {
                         message = factory->second->Create();
                         message->Deserialize(_readBuffer + length, size - length);
-                        result.emplace_back(information, message);
+                        function(information, message);
                         size = sizeof(_readBuffer);
                     }
                 }
@@ -189,7 +198,6 @@ namespace Messaging {
         }
 
         _adminLock.Unlock();
-        return result;
     }
 
     /**
