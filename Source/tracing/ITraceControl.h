@@ -17,15 +17,34 @@
  * limitations under the License.
  */
 
-#include "TraceCategories.h"
+#ifndef __ITRACECONTROL_H
+#define __ITRACECONTROL_H
 
-// ---- Class Definition ----
+// ---- Include system wide include files ----
+
+// ---- Include local include files ----
+#include "Module.h"
+
 namespace WPEFramework {
 namespace Trace {
+    const uint16_t TRACINGBUFFERSIZE = 1024;
 
-    /* static */ const std::string Constructor::_text("Constructor called");
-    /* static */ const std::string Destructor::_text("Destructor called");
-    /* static */ const std::string CopyConstructor::_text("Copy Constructor called");
-    /* static */ const std::string AssignmentOperator::_text("Assignment Operator called");
+    struct ITraceControl {
+        virtual ~ITraceControl() {}
+        virtual void Destroy() = 0;
+        virtual const char* Category() const = 0;
+        virtual const char* Module() const = 0;
+        virtual bool Enabled() const = 0;
+        virtual void Enabled(const bool enabled) = 0;
+    };
+
+    struct ITrace {
+        virtual const char* Category() const = 0;
+        virtual const char* Module() const = 0;
+        virtual const char* Data() const = 0;
+        virtual uint16_t Length() const = 0;
+    };
 }
-} // namespace Trace
+}
+
+#endif // __ITRACECONTROL_H

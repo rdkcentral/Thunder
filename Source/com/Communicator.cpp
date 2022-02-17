@@ -504,8 +504,12 @@ namespace RPC {
 
         if (announceMessage->Response().IsSet() == true) {
             string jsonMessagingCategories(announceMessage->Response().MessagingCategories());
-            if(!jsonMessagingCategories.empty()) {
+            if (!jsonMessagingCategories.empty()) {
+#if defined(__CORE_MESSAGING__)
                 Core::Messaging::MessageUnit::Instance().Defaults(jsonMessagingCategories);
+#else
+                Trace::TraceUnit::Instance().Defaults(jsonMessagingCategories);
+#endif
             }
 
 #if defined(WARNING_REPORTING_ENABLED)

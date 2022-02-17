@@ -347,7 +347,11 @@ namespace PluginHost {
                 Add(_T("signature"), &Signature);
                 Add(_T("idletime"), &IdleTime);
                 Add(_T("ipv6"), &IPV6);
-                Add(_T("messaging"), &DefaultMessagingCategories); 
+#ifdef __CORE_MESSAGING__
+                Add(_T("messaging"), &DefaultMessagingCategories);
+#else
+                Add(_T("tracing"), &DefaultMessagingCategories);
+#endif
                 Add(_T("warningreporting"), &DefaultWarningReportingCategories); 
                 Add(_T("redirect"), &Redirect);
                 Add(_T("process"), &Process);

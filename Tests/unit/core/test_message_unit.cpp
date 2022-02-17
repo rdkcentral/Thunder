@@ -21,7 +21,6 @@
 
 #include <gtest/gtest.h>
 #include <messaging/messaging.h>
-#include <tracing/tracing.h>
 
 using namespace WPEFramework;
 

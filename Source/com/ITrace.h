@@ -19,14 +19,20 @@
 
 #pragma once
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Tracing
-#endif
+#include "Ids.h"
 
-#include <core/core.h>
+namespace WPEFramework {
+    namespace Trace {
+        struct EXTERNAL ITraceIterator : virtual public Core::IUnknown {
+            enum { ID = RPC::ID_TRACEITERATOR };
 
-#if defined(__WINDOWS__) && defined(TRACING_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
-#endif
+            virtual void Reset() = 0;
+            virtual bool Info(bool& enabled /* @out */, string& module /* @out */, string& category /* @out */) const = 0;
+        };
+        struct EXTERNAL ITraceController : virtual public Core::IUnknown {
+            enum { ID = RPC::ID_TRACECONTROLLER };
 
+            virtual void Enable(const bool enabled, const string& module, const string& category) = 0;
+        };
+    }
+}

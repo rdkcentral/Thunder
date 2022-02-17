@@ -214,7 +214,9 @@ namespace PluginHost {
             closelog();
 #endif
 
+#if defined(__CORE_MESSAGING__)
             Core::Messaging::MessageUnit::Instance().Close();
+#endif
 
 #ifdef __CORE_WARNING_REPORTING__
             WarningReporting::WarningReportingUnit::Instance().Close();
@@ -449,7 +451,11 @@ namespace PluginHost {
 #endif
 
         std::set_terminate(UncaughtExceptions);
+#if defined(__CORE_MESSAGING__)
         Core::Messaging::MessageUnit::Instance().IsBackground(_background);
+#else
+        Logging::SysLog(!_background);
+#endif
 
         // Read the config file, to instantiate the proper plugins and for us to open up the right listening ear.
         Core::File configFile(string(options.configFile));
@@ -526,14 +532,21 @@ namespace PluginHost {
 
             // Time to open up, the message buffer for this process and define it for the out-of-proccess systems
             // Define the environment variable for Messaging files, if it is not already set.
-            if ( Core::Messaging::MessageUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE){
+            uint32_t messagingErrorCode = Core::ERROR_GENERAL;
+#if defined(__CORE_MESSAGING__)
+            messagingErrorCode = Core::Messaging::MessageUnit::Instance().Open(_config->VolatilePath());
+#else
+            messagingErrorCode = Trace::TraceUnit::Instance().Open(_config->VolatilePath());
+#endif
+
+            if ( messagingErrorCode != Core::ERROR_NONE){
 #ifndef __WINDOWS__
                 if (_background == true) {
-                    syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable messaging functionality!");
+                    syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable messaging/tracing functionality!");
                 } else
 #endif
                 {
-                    fprintf(stdout, "Could not enable messaging functionality!\n");
+                    fprintf(stdout, "Could not enable messaging/tracing functionality!\n");
                 }
             }
             
@@ -544,12 +557,20 @@ namespace PluginHost {
                 Core::File input (messagingSettings);
 
                 if (input.Open(true)) {
+#if defined(__CORE_MESSAGING__)
                     Core::Messaging::MessageUnit::Instance().Defaults(input);
+#else
+                    Trace::TraceUnit::Instance().Defaults(input);
+#endif
                 }
             }
-            
+
             else {
+#if defined(__CORE_MESSAGING__)
                 Core::Messaging::MessageUnit::Instance().Defaults(_config->MessagingCategories());
+#else
+                Trace::TraceUnit::Instance().Defaults(_config->MessagingCategories());
+#endif
             }
 
 #ifdef __CORE_WARNING_REPORTING__

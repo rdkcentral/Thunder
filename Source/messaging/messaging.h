@@ -23,5 +23,16 @@
 #error "Please define a MODULE_NAME that describes the binary/library you are building."
 #endif
 
+#ifndef __CORE_MESSAGING__
+#define __CORE_MESSAGING__
+#endif
+
 #include "MessageClient.h"
 #include "IMessageOutput.h"
+#include "Logging.h"
+#include "LoggingCategories.h"
+#include "TraceCategories.h"
+#include "TraceControl.h"
+#include "Control.h"
+#include "TraceFactory.h"
+#include "TextMessage.h"

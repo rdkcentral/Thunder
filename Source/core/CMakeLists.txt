@@ -55,7 +55,6 @@ add_library(${TARGET} SHARED
         WorkerPool.cpp
         XGetopt.cpp
         ResourceMonitor.cpp
-        MessageUnit.cpp
         )
 
 
@@ -155,6 +154,12 @@ set(PUBLIC_HEADERS
 if(DISABLE_TRACING)
     target_compile_definitions(${TARGET} PUBLIC _TRACE_LEVEL=0)
     message(STATUS "Force trace level to 0")
+endif()
+
+if(MESSAGING)
+    target_compile_definitions(${TARGET} PUBLIC __CORE_MESSAGING__)
+    target_sources(${TARGET} PRIVATE MessageUnit.cpp)
+    message(STATUS "Messaging enabled")
 endif()
 
 if(WARNING_REPORTING)

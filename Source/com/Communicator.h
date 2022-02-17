@@ -26,6 +26,11 @@
 
 #include "Administrator.h"
 #include "ICOM.h"
+
+#ifndef __CORE_MESSAGING__
+#include "ITrace.h"
+#endif
+
 #include "IUnknown.h"
 #include "Ids.h"
 
@@ -375,6 +380,18 @@ namespace RPC {
         }
         uint32_t Launch(uint32_t& id)
         {
+            #ifndef __CORE_MESSAGING__
+            uint32_t loggingSettings =
+                    (Logging::LoggingType<Logging::Startup>::IsEnabled() ? 0x01 : 0) |
+                    (Logging::LoggingType<Logging::Shutdown>::IsEnabled() ? 0x02 : 0) |
+                    (Logging::LoggingType<Logging::Notification>::IsEnabled() ? 0x04 : 0) |
+                    (Logging::LoggingType<Logging::Crash>::IsEnabled() ? 0x08 : 0) |
+                    (Logging::LoggingType<Logging::ParsingError>::IsEnabled() ? 0x10 : 0) |
+                    (Logging::LoggingType<Logging::Error>::IsEnabled() ? 0x20 : 0) |
+                    (Logging::LoggingType<Logging::Fatal>::IsEnabled() ? 0x40 : 0);
+            _options.Add(_T("-e")).Add(Core::NumberType<uint32_t>(loggingSettings).Text());
+            #endif
+
             string oldPath;
             _ldLibLock.Lock();
             if (_linkLoaderPath.empty() == false) {
@@ -1148,8 +1165,15 @@ namespace RPC {
 
                     Core::ProxyType<Client> proxyChannel(static_cast<Client&>(channel));
 
-                    string jsonDefaultMessagingSettings = Core::Messaging::MessageUnit::Instance().Defaults();
+                    string jsonDefaultMessagingSettings;
                     string jsonDefaultWarningReportingSettings;
+#if defined(__CORE_MESSAGING__)
+                    jsonDefaultMessagingSettings = Core::Messaging::MessageUnit::Instance().Defaults();
+#else
+                    jsonDefaultMessagingSettings = Trace::TraceUnit::Instance().Defaults();
+
+#endif
+
 #if defined(WARNING_REPORTING_ENABLED)
                     jsonDefaultWarningReportingSettings = WarningReporting::WarningReportingUnit::Instance().Defaults();
 #endif

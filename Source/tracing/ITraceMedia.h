@@ -1,4 +1,4 @@
-/*
+ /*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -17,16 +17,19 @@
  * limitations under the License.
  */
 
-#pragma once
+#ifndef __ITRACEMEDIA_H
+#define __ITRACEMEDIA_H
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Tracing
-#endif
+#include "ITraceControl.h"
+#include "Module.h"
 
-#include <core/core.h>
+namespace WPEFramework {
+namespace Trace {
+    struct EXTERNAL ITraceMedia {
+        virtual ~ITraceMedia(){};
+        virtual void Output(const char fileName[], const uint32_t lineNumber, const char className[], const ITrace* information) = 0;
+    };
+}
+} // namespace Trace
 
-#if defined(__WINDOWS__) && defined(TRACING_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
-#endif
-
+#endif // __ITRACEMEDIA_H

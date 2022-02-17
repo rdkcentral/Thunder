@@ -25,7 +25,7 @@ option(CRYPTALGO
 option(WEBSOCKET
         "Include the websocket library." ON)
 option(TRACING
-        "Include the tracing library." ON)
+        "Include the tracing library." OFF)
 option(MESSAGING
         "Include the messaging library." ON)
 option(PROFILER

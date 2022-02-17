@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2022 Metrological
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,13 @@
 #error "Please define a MODULE_NAME that describes the binary/library you are building."
 #endif
 
+#include "ITraceControl.h"
+#include "ITraceMedia.h"
 #include "Logging.h"
-#include "LoggingCategories.h"
 #include "TraceCategories.h"
 #include "TraceControl.h"
-#include "Control.h"
-#include "TraceFactory.h"
-#include "TextMessage.h"
+#include "TraceMedia.h"
+#include "TraceUnit.h"
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "tracing.lib")
