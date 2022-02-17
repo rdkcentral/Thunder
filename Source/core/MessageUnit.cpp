@@ -734,8 +734,8 @@ namespace Core {
                 if (length != 0) {
                     length += message->Serialize(_serializationBuffer + length, sizeof(_serializationBuffer) - length);
 
-                    if (_dispatcher->PushData(length, _serializationBuffer) != Core::ERROR_WRITE_ERROR) {
-                        _dispatcher->Ring();
+                    if (_dispatcher->PushData(length, _serializationBuffer) != Core::ERROR_NONE) {
+                        TRACE_L1(_T("Unable to push message data!"));
                     }
 
                 } else {

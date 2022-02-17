@@ -101,6 +101,11 @@ namespace Core {
                 return entrySize - sizeof(entrySize);
             }
 
+            void DataAvailable() override
+            {
+                Ring();
+            }
+
         private:
             Core::DoorBell _doorBell;
         };
