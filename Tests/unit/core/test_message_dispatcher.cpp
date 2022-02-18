@@ -260,6 +260,7 @@ namespace Tests {
             uint16_t readLength = sizeof(readData);
 
             bool called = false;
+            dispatcher.Wait(0); //initialize socket
             testAdmin.Sync("init");
 
             if (dispatcher.Wait(Core::infinite) == Core::ERROR_NONE) {
@@ -285,8 +286,6 @@ namespace Tests {
             testAdmin.Sync("init");
 
             ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
-            ::SleepMs(10); //not a nice way, but now Wait will be called before ringing
-            _dispatcher->Ring();
         }
         testAdmin.Sync("done");
     }
