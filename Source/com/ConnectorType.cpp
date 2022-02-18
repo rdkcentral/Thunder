@@ -108,5 +108,13 @@ Core::ProxyType<RPC::IIPCServer> WorkerPoolInvokeServer()
     return Core::ProxyType<RPC::IIPCServer>(Core::SingletonProxyType<Engine>::Instance(&Core::IWorkerPool::Instance()));
 };
 
+ConnectorController::ConnectorController() : _controller(nullptr) {
+}
+
+ConnectorController::~ConnectorController() {
+    ASSERT(_controller == nullptr);
+}
+
+/* static */ ConnectorController ConnectorController::_instance;
 
 } } 
