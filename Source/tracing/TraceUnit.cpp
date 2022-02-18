@@ -69,7 +69,6 @@ namespace Trace {
 
             cursor.Forward(chunkSize);
         }
-        Ring(); //give readers a chance to react to data being overwritten
 
         return cursor.Offset();
     }
