@@ -691,10 +691,13 @@ namespace Core {
         */
         string MessageUnit::Defaults() const
         {
+            _adminLock.Lock();
+
             string result;
             auto& settings = _messages.JsonSettings();
             settings.ToString(result);
 
+            _adminLock.Unlock();
             return result;
         }
 
