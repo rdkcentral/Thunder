@@ -9,12 +9,12 @@
             "name": "Local Debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "/usr/bin/WPEFramework",
+            "program": "${config:thunder.installPath}/usr/bin/WPEFramework",
             "args": [
-                "-c/etc/WPEFramework/config.json"
+                "-c${config:thunder.installPath}/etc/WPEFramework/config.json"
              ],
             "stopAtEntry": false,
-            "cwd": "/root/repos",
+            "cwd": "${config:thunder.installPath}",
             "logging": {
                 "moduleLoad": false,
                 "trace": true
@@ -22,8 +22,7 @@
             "externalConsole": false,
             "linux": {
                 "name": "Local Debug WPEFramework on Linux",
-                //"program": "/root/repos/Thunder/build/Tests/unit/core/WPEFramework_test_core",
-                "program": "/usr/bin/WPEFramework",
+                "program": "${config:thunder.installPath}/usr/bin/WPEFramework",
                 "type":"cppdbg",
                 "request": "launch",
                 "MIMode": "gdb",
@@ -34,23 +33,53 @@
                         "text": "-enable-pretty-printing",
                         "ignoreFailures": true
                     }
-                    //,{   "description":"In this mode GDB will be attached to both processes after a call to fork() or vfork().",
-                    //    "text": "-gdb-set detach-on-fork off",
-                    //    "ignoreFailures": true
-                    //},
-                    //{   "description": "The new process is debugged after a fork. The parent process runs unimpeded.",
-                    //    "text": "-gdb-set follow-fork-mode child",
-                    //    "ignoreFailures": true
-                    //}
                 ],
                 "sourceFileMap": {
                 },
                 "environment": [
-                    { "name": "LD_LIBRARY_PATH", "value": "/usr/lib" },
-                    { "name": "PATH", "value": "/usr/bin"},
+                    { "name": "LD_LIBRARY_PATH", "value": "${config:thunder.installPath}/usr/lib" },
+                    { "name": "PATH", "value": "${config:thunder.installPath}/usr/bin"},
                 ],
-                "additionalSOLibSearchPath": "/usr/lib;/usr/local/lib;/usr/lib;/lib",
+                "additionalSOLibSearchPath": "${config:thunder.installPath}/usr/lib;/usr/local/lib;/usr/lib;/lib",
             },
+        },
+        {
+            "name": "Remote Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${config:thunder.installPath}/usr/bin/WPEFramework",
+            "cwd": "${config:thunder.installPath}",
+            "stopAtEntry": false,
+            "logging": {
+                "moduleLoad": false,
+                "trace": false,
+                "traceResponse": false,
+                "engineLogging": false,
+              },
+            "linux": {
+                "name": "Remote Debug WPEFramework on Linux",
+                "program": "${config:thunder.installPath}/usr/bin/WPEFramework",
+                "type":"cppdbg",
+                "request": "launch",
+                "MIMode": "gdb",
+                "miDebuggerServerAddress": "${config:thunder.remoteTargetHost}:${config:thunder.remoteTargetDebugPort}",
+                "miDebuggerPath": "${config:thunder.crossToolsPath}/${config:thunder.crossToolsPrefix}gdb",
+                "miDebuggerArgs": "",
+                "setupCommands": [
+                    {"text": "-enable-pretty-printing"},
+                    // commands if gdbserver is started with --multi
+                    // {"text": "target extended-remote ${config:thunder.remoteTargetHost}:${config:thunder.remoteTargetDebugPort}"},
+                    // {"text": "set remote exec-file WPEFramework"}
+                ],
+                "sourceFileMap": {
+                    // "remote": "local"
+                    "/usr": "${config:thunder.installPath}/usr",
+                    "/usr/bin": "${config:thunder.installPath}/usr/bin",
+                    "/usr/lib": "${config:thunder.installPath}/usr/lib",
+                },
+                "preLaunchTask": "Prepare WPEFramework for remote gdb debugging",
+                "postDebugTask": "Clean debugging run"
+            }
         }
     ]
 }

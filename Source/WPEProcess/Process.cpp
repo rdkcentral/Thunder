@@ -6,8 +6,6 @@
 #ifdef USE_BREAKPAD
 #include <client/linux/handler/exception_handler.h>
 #endif
-#include <unistd.h>
-#include <iostream>
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
