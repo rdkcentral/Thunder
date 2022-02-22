@@ -257,9 +257,31 @@ float GetUpTime() {
     return 0;
 }
 #endif
+const uint8_t* RawDeviceId()
+{
+    static uint8_t* MACAddress = nullptr;
+    static uint8_t MACAddressBuffer[Core::AdapterIterator::MacSize + 1];
+
+    if (MACAddress == nullptr) {
+        memset(MACAddressBuffer, 0, Core::AdapterIterator::MacSize + 1);
+
+        Core::AdapterIterator adapters;
+        while ((adapters.Next() == true)) {
+            if (adapters.HasMAC() == true) {
+                adapters.MACAddress(&MACAddressBuffer[1], Core::AdapterIterator::MacSize);
+                break;
+            }
+        }
+        MACAddressBuffer[0] = Core::AdapterIterator::MacSize;
+        MACAddress = &MACAddressBuffer[0];
+    }
+
+    return MACAddress;
+}
+
 TEST(Core_SystemInfo, RawDeviceId)
 {
-    const uint8_t* rawDeviceId = (Core::SystemInfo::Instance().RawDeviceId());
+    const uint8_t* rawDeviceId = RawDeviceId();
     // Simple check added, since the rawId is currently based on MAC address of first active interface
     EXPECT_EQ((rawDeviceId != nullptr), true);
 
@@ -268,7 +290,7 @@ TEST(Core_SystemInfo, RawDeviceId)
 }
 TEST(Core_SystemInfo, RawDeviceId_To_ID)
 {
-    const uint8_t* rawDeviceId = (Core::SystemInfo::Instance().RawDeviceId());
+    const uint8_t* rawDeviceId = RawDeviceId();
     string id1 (Core::SystemInfo::Instance().Id(rawDeviceId, 0xFF));
     uint8_t readPaddedSize = 0x11;
     string id2 (Core::SystemInfo::Instance().Id(rawDeviceId, readPaddedSize));
