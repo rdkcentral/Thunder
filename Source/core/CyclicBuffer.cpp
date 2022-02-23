@@ -364,7 +364,7 @@ namespace Core {
         ASSERT(IsValid() == true);
 
         uint32_t head = _administration->_head;
-        bool startingEmpty = (Used() == 0);
+        uint32_t tail = _administration->_tail;
         uint32_t writeStart = head;
         bool shouldMoveHead = true;
 
@@ -420,6 +420,7 @@ namespace Core {
         }
 
         if (shouldMoveHead) {
+            bool startingEmpty = (Used() == 0);
             _administration->_head = writeEnd;
 
             if (startingEmpty) {
@@ -430,11 +431,18 @@ namespace Core {
                 DataAvailable();
 
                 AdminUnlock();
+            } else {
+                //The tail moved during write which could mean the reader read everything from the buffer
+                //and won't be notified about new data coming in, because the writer thinks it is not empty.
+                //Make sure the used size (based on the new tail position) is greater than 0
+                if ((tail != _administration->_tail) && (Used() > 0)) {
+                    DataAvailable();
+                }
             }
         }
 
-        return length;
-    }
+            return length;
+        }
 
     void CyclicBuffer::AssureFreeSpace(uint32_t required)
     {
