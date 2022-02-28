@@ -26,6 +26,8 @@ option(WEBSOCKET
         "Include the websocket library." ON)
 option(TRACING
         "Include the tracing library." ON)
+option(MESSAGING
+        "Include the messaging library." OFF)
 option(PROFILER
         "Include the profiler library." OFF)
 option(COM
@@ -90,6 +92,10 @@ endif()
 
 if(TRACING)
     add_subdirectory(tracing)
+endif()
+
+if(MESSAGING)
+    add_subdirectory(messaging)
 endif()
 
 if(WARNING_REPORTING)

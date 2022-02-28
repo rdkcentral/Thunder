@@ -338,6 +338,36 @@ namespace PluginHost
                 _reason = why;
                 State(PRECONDITION);
 
+#ifdef __CORE_MESSAGING__
+                if (Messaging::ControlLifetime<Activity, &Core::System::MODULE_NAME, Core::Messaging::MetaData::MessageType::TRACING>::IsEnabled() == true) {
+                    string feedback;
+                    uint8_t index = 1;
+                    uint32_t delta(_precondition.Delta(_administrator.SubSystemInfo()));
+
+                    while (delta != 0) {
+                        if ((delta & 0x01) != 0) {
+                            if (feedback.empty() == false) {
+                                feedback += ',';
+                            }
+
+                            PluginHost::ISubSystem::subsystem element(static_cast<PluginHost::ISubSystem::subsystem>(index));
+                            feedback += string(Core::EnumerateType<PluginHost::ISubSystem::subsystem>(element).Data());
+                        }
+
+                        delta = (delta >> 1);
+                        index++;
+                    }
+
+                    Activity newData(_T("Delta preconditions: %s"), feedback.c_str());
+                    Messaging::TextMessage traceData(newData.Data());
+
+                    Core::Messaging::Information info(Core::Messaging::MetaData::MessageType::TRACING,
+                        Core::ClassNameOnly(typeid(Activity).name()).Text(),
+                        WPEFramework::Core::System::MODULE_NAME, __FILE__, __LINE__, Core::Time::Now().Ticks());
+
+                    Core::Messaging::MessageUnit::Instance().Push(info, &traceData);
+                }
+#else
                 if (Trace::TraceType<Activity, &Core::System::MODULE_NAME>::IsEnabled() == true) {
                     string feedback;
                     uint8_t index = 1;
@@ -361,6 +391,8 @@ namespace PluginHost
                     Trace::TraceType<Activity, &Core::System::MODULE_NAME> traceData(newData);
                     Trace::TraceUnit::Instance().Trace(__FILE__, __LINE__, className.c_str(), &traceData);
                 }
+#endif
+
             } else {
 
                 State(ACTIVATION);

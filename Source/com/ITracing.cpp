@@ -19,6 +19,7 @@
 
 #include "Communicator.h"
 #include "IUnknown.h"
+#include "ITrace.h"
 
 namespace WPEFramework {
 namespace ProxyStub {
