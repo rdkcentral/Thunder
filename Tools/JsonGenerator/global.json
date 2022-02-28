@@ -1,5 +1,6 @@
 {
-  "sourcelocation": "https://github.com/rdkcentral/ThunderInterfaces/tree/master/interfaces/{interfacefile}",
+  "sourcelocation": "https://github.com/rdkcentral/ThunderInterfaces/blob/{revision}/interfaces/{interfacefile}",
+  "sourcerevision": "master",
   "acronyms": {
     "API": "Application Programming Interface",
     "HTTP": "Hypertext Transfer Protocol",

@@ -1028,6 +1028,10 @@ namespace PluginHost {
                     _jsonrpc->Release();
                     _jsonrpc = nullptr;
                 }
+                if (_connection != nullptr) {
+                    _connection->Release();
+                    _connection = nullptr;
+                }
 
                 _handler = nullptr;
 
