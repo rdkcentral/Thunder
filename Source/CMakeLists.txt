@@ -38,8 +38,6 @@ option(PROXY_STUB
         "Include proxy/stubs." ON)
 option(PLUGINS
         "Include plugins library." ON)
-option(THUNDER_CONNECTOR
-        "Include Connector Library in the build." ON)
 option(EXECUTABLE
         "Include the hosting executable." ON)
 option(VIRTUALINPUT
@@ -119,10 +117,6 @@ endif()
 
 if(PROXY_STUB)
     add_subdirectory(proxystubs)
-endif()
-
-if(THUNDER_CONNECTOR)
-    add_subdirectory(connector)
 endif()
 
 if(PLUGINS)
