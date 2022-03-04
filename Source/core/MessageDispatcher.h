@@ -98,7 +98,7 @@ namespace Core {
                 uint16_t entrySize = 0;
                 cursor.Peek(entrySize);
                 cursor.Forward(sizeof(entrySize));
-                return entrySize - sizeof(entrySize);
+                return entrySize > sizeof(entrySize) ? entrySize - sizeof(entrySize) : 0;
             }
 
             void DataAvailable() override

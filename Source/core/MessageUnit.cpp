@@ -62,13 +62,21 @@ namespace Core {
         }
         uint16_t MetaData::Deserialize(uint8_t buffer[], const uint16_t bufferSize)
         {
+            uint16_t deserialized = 0;
             Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
             Core::FrameType<0>::Reader frameReader(frame, 0);
+            
             _type = frameReader.Number<MetaData::MessageType>();
-            _category = frameReader.NullTerminatedText();
-            _module = frameReader.NullTerminatedText();
-
-            return sizeof(_type) + _category.size() + 1 + _module.size() + 1;
+            deserialized += sizeof(_type);
+            if(_type < MessageType::INVALID){ 
+                _category = frameReader.NullTerminatedText();
+                deserialized += _category.size() + 1;
+                
+                _module = frameReader.NullTerminatedText();
+                deserialized += _module.size() + 1;
+            }
+            
+            return deserialized;
         }
 
         Information::Information(const MetaData::MessageType type, const string& category, const string& module, const string& filename, uint16_t lineNumber, const uint64_t timeStamp)
@@ -104,7 +112,7 @@ namespace Core {
         {
             auto length = _metaData.Deserialize(buffer, bufferSize);
 
-            if (length <= bufferSize) {
+            if (length <= bufferSize && length > sizeof(MetaData::MessageType)) {
                 Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
                 Core::FrameType<0>::Reader frameReader(frame, 0);
                 _filename = frameReader.NullTerminatedText();
@@ -112,8 +120,6 @@ namespace Core {
                 _timeStamp = frameReader.Number<uint64_t>();
 
                 length += _filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp);
-            } else {
-                length = 0;
             }
 
             return length;
