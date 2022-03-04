@@ -26,8 +26,13 @@
 #include <core/core.h>
 #include <cryptalgo/cryptalgo.h>
 #include <plugins/plugins.h>
-#include <tracing/tracing.h>
 #include <websocket/websocket.h>
+
+#ifdef __CORE_MESSAGING__
+#include <messaging/messaging.h>
+#else
+#include <tracing/tracing.h>
+#endif
 
 #ifdef __CORE_WARNING_REPORTING__
 #include <warningreporting/warningreporting.h>

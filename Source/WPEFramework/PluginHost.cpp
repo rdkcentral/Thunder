@@ -171,7 +171,7 @@ namespace PluginHost {
 
                 _adminLock.Unlock();
 
-		if (destructor != nullptr) {
+                if (destructor != nullptr) {
                     CloseDown (destructor);
                 }
             }
@@ -214,8 +214,9 @@ namespace PluginHost {
             closelog();
 #endif
 
-            // Do not forget to close the Tracing stuff...
-            Trace::TraceUnit::Instance().Close();
+#if defined(__CORE_MESSAGING__)
+            Core::Messaging::MessageUnit::Instance().Close();
+#endif
 
 #ifdef __CORE_WARNING_REPORTING__
             WarningReporting::WarningReportingUnit::Instance().Close();
@@ -338,6 +339,32 @@ namespace PluginHost {
     }
 #endif
 
+    static string GetDeviceId(PluginHost::Server* dispatcher)
+    {
+        string deviceId;
+
+        PluginHost::ISubSystem* subSystems = dispatcher->Services().SubSystemsInterface();
+        if (subSystems != nullptr) {
+            if (subSystems->IsActive(PluginHost::ISubSystem::IDENTIFIER) == true) {
+                const PluginHost::ISubSystem::IIdentifier* id(subSystems->Get<PluginHost::ISubSystem::IIdentifier>());
+                if (id != nullptr) {
+                    uint8_t buffer[64];
+
+                    buffer[0] = static_cast<const PluginHost::ISubSystem::IIdentifier*>(id)
+                                ->Identifier(sizeof(buffer) - 1, &(buffer[1]));
+
+                    if (buffer[0] != 0) {
+                        deviceId = Core::SystemInfo::Instance().Id(buffer, ~0);
+                    }
+
+                    id->Release();
+                }
+            }
+            subSystems->Release();
+        }
+        return deviceId;
+    }
+
     static void ForcedExit() {
         if (_atExitActive == true) {
 #ifndef __WINDOWS__
@@ -424,8 +451,11 @@ namespace PluginHost {
 #endif
 
         std::set_terminate(UncaughtExceptions);
-
+#if defined(__CORE_MESSAGING__)
+        Core::Messaging::MessageUnit::Instance().IsBackground(_background);
+#else
         Logging::SysLog(!_background);
+#endif
 
         // Read the config file, to instantiate the proper plugins and for us to open up the right listening ear.
         Core::File configFile(string(options.configFile));
@@ -492,7 +522,7 @@ namespace PluginHost {
                 pluginPath = Core::Directory::Normalize(pluginPath);
             }
 
-            string traceSettings (options.configFile);
+            string messagingSettings (options.configFile);
  
             // Create PostMortem path
             Core::Directory postMortemPath(_config->PostMortemPath().c_str());
@@ -500,35 +530,51 @@ namespace PluginHost {
                 postMortemPath.CreatePath();
             }
 
-            // Time to open up, the trace buffer for this process and define it for the out-of-proccess systems
-            // Define the environment variable for Tracing files, if it is not already set.
-            if ( Trace::TraceUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE){
+            // Time to open up, the message buffer for this process and define it for the out-of-proccess systems
+            // Define the environment variable for Messaging files, if it is not already set.
+            uint32_t messagingErrorCode = Core::ERROR_GENERAL;
+#if defined(__CORE_MESSAGING__)
+            messagingErrorCode = Core::Messaging::MessageUnit::Instance().Open(_config->VolatilePath());
+#else
+            messagingErrorCode = Trace::TraceUnit::Instance().Open(_config->VolatilePath());
+#endif
+
+            if ( messagingErrorCode != Core::ERROR_NONE){
 #ifndef __WINDOWS__
                 if (_background == true) {
-                    syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable trace functionality!");
+                    syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable messaging/tracing functionality!");
                 } else
 #endif
                 {
-                    fprintf(stdout, "Could not enable trace functionality!\n");
+                    fprintf(stdout, "Could not enable messaging/tracing functionality!\n");
                 }
             }
+            
+            if (_config->MessagingCategoriesFile()) {
 
-            if (_config->TraceCategoriesFile() == true) {
+                messagingSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + _config->MessagingCategories();
 
-                traceSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + _config->TraceCategories();
-
-                Core::File input (traceSettings);
+                Core::File input (messagingSettings);
 
                 if (input.Open(true)) {
+#if defined(__CORE_MESSAGING__)
+                    Core::Messaging::MessageUnit::Instance().Defaults(input);
+#else
                     Trace::TraceUnit::Instance().Defaults(input);
+#endif
                 }
             }
+
             else {
-                Trace::TraceUnit::Instance().Defaults(_config->TraceCategories());
+#if defined(__CORE_MESSAGING__)
+                Core::Messaging::MessageUnit::Instance().Defaults(_config->MessagingCategories());
+#else
+                Trace::TraceUnit::Instance().Defaults(_config->MessagingCategories());
+#endif
             }
 
 #ifdef __CORE_WARNING_REPORTING__
-            if ( WarningReporting::WarningReportingUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE){
+            if (WarningReporting::WarningReportingUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE) {
 #ifndef __WINDOWS__
                 if (_background == true) {
                     syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable issue reporting functionality!");
@@ -539,17 +585,16 @@ namespace PluginHost {
                 }
             }
 
-            WarningReporting::WarningReportingUnit::Instance().Defaults(_config->WarningReportingCategories()); 
+            WarningReporting::WarningReportingUnit::Instance().Defaults(_config->WarningReportingCategories());
 #endif
 
             SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
             SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
             SYSLOG(Logging::Startup, (_T("Process Id:    %d"), Core::ProcessInfo().Id()));
-            SYSLOG(Logging::Startup, (_T("SystemId:      %s"), Core::SystemInfo::Instance().Id(Core::SystemInfo::Instance().RawDeviceId(), ~0).c_str()));
             SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
             SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
             SYSLOG(Logging::Startup, (_T("Version:       %s"), _config->Version().c_str()));
-            SYSLOG(Logging::Startup, (_T("Traces:        %s"), traceSettings.c_str()));
+            SYSLOG(Logging::Startup, (_T("Messages:        %s"), messagingSettings.c_str()));
 
             // Before we do any translation of IP, make sure we have the right network info...
             if (_config->IPv6() == false) {
@@ -572,6 +617,11 @@ namespace PluginHost {
 
             // If we have handlers open up the gates to analyze...
             _dispatcher->Open();
+
+            string id = GetDeviceId(_dispatcher);
+            if (id.empty() == false) {
+                SYSLOG(Logging::Startup, (_T("SystemId:      %s"), id.c_str()));
+            }
 
 #ifndef __WINDOWS__
             if (_background == true) {

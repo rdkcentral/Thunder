@@ -114,6 +114,6 @@ if(BUILD_TESTS)
   enable_testing()
 endif()
 
-add_subdirectory(Tests)
-
 add_subdirectory(Source)
+
+add_subdirectory(Tests)

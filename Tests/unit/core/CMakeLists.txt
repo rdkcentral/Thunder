@@ -21,7 +21,7 @@ set(TEST_RUNNER_NAME "WPEFramework_test_core")
 
 add_executable(${TEST_RUNNER_NAME}
    ../IPTestAdministrator.cpp
-#   test_cyclicbuffer.cpp
+   test_cyclicbuffer.cpp
    test_databuffer.cpp
    test_dataelement.cpp
    test_dataelementfile.cpp
@@ -40,7 +40,6 @@ add_executable(${TEST_RUNNER_NAME}
    test_keyvalue.cpp
    test_library.cpp
    test_lockablecontainer.cpp
-   test_logging.cpp
    test_measurementtype.cpp
    test_memberavailability.cpp
    #test_messageException.cpp
@@ -72,7 +71,6 @@ add_executable(${TEST_RUNNER_NAME}
    test_threadpool.cpp
    test_time.cpp
    #test_timer.cpp
-   test_tracing.cpp
    test_tristate.cpp
    #test_valuerecorder.cpp
    test_weblinkjson.cpp
@@ -83,6 +81,18 @@ add_executable(${TEST_RUNNER_NAME}
    test_xgetopt.cpp
    test_message_dispatcher.cpp
 )
+    
+if(MESSAGING)    
+   target_sources(${TEST_RUNNER_NAME} PRIVATE test_message_unit.cpp)
+   target_link_libraries(${TEST_RUNNER_NAME}
+      WPEFrameworkMessaging
+   )
+else()
+   target_sources(${TEST_RUNNER_NAME} PRIVATE test_tracing.cpp)
+   target_link_libraries(${TEST_RUNNER_NAME}
+      WPEFrameworkTracing
+   )
+endif()
 
 set_source_files_properties(test_systeminfo.cpp PROPERTIES COMPILE_OPTIONS "-fexceptions")
 
@@ -99,7 +109,6 @@ target_link_libraries(${TEST_RUNNER_NAME}
     ${GTEST_MAIN_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}
     WPEFrameworkCore
-    WPEFrameworkTracing
     WPEFrameworkCOM
     WPEFrameworkWebSocket
 )

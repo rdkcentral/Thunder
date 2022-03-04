@@ -40,6 +40,9 @@ DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 FRAMEWORK_NAMESPACE = "WPEFramework"
 INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
 INTERFACES_SECTION = True
+INTERFACE_SOURCE_LOCATION = None
+INTERFACE_SOURCE_REVISION = None
+DEFAULT_INTERFACE_SOURCE_REVISION = "main"
 VERBOSE = False
 GENERATED_JSON = False
 SHOW_WARNINGS = True
@@ -2761,9 +2764,25 @@ def CreateDocument(schema, path):
         else:
             raise RuntimeError("missing class in 'info'")
 
+        def SourceRevision(face):
+            sourcerevision = DEFAULT_INTERFACE_SOURCE_REVISION
+            if INTERFACE_SOURCE_REVISION:
+                sourcerevision = INTERFACE_SOURCE_REVISION
+            elif "sourcerevision" in face["info"]:
+                sourcerevision = face["info"]["sourcerevision"]
+            elif "sourcerevision" in info:
+                sourcerevision = info["sourcerevision"]
+            elif "common" in face and "sourcerevision" in face["common"]:
+                sourcerevision = face["common"]["sourcerevision"]
+            elif "sourcerevision" in commons:
+                sourcerevision = commons["sourcerevision"]
+            return sourcerevision
+
         def SourceLocation(face):
             sourcelocation = None
-            if "sourcelocation" in face["info"]:
+            if INTERFACE_SOURCE_LOCATION:
+                sourcelocation = INTERFACE_SOURCE_LOCATION
+            elif "sourcelocation" in face["info"]:
                 sourcelocation = face["info"]["sourcelocation"]
             elif "sourcelocation" in info:
                 sourcelocation = info["sourcelocation"]
@@ -2771,11 +2790,11 @@ def CreateDocument(schema, path):
                 sourcelocation = face["common"]["sourcelocation"]
             elif "sourcelocation" in commons:
                 sourcelocation = commons["sourcelocation"]
-            else:
-                sourcelocation = None
-
             if sourcelocation:
                 sourcelocation = sourcelocation.replace("{interfacefile}", face["info"]["sourcefile"] if "sourcefile" in face["info"] else ((face["info"]["class"] if "class" in face["info"] else input_basename) + ".json"))
+                sourcerevision = SourceRevision(face)
+                if sourcerevision:
+                    sourcelocation = sourcelocation.replace("{revision}", sourcerevision)
             return sourcelocation
 
         document_type = "plugin"
@@ -3127,141 +3146,170 @@ enumTracker = EnumTracker()
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(
-        description='Generate JSON C++ classes, stub code and API documentation from JSON definition files.',
+        description='Generate JSON C++ classes, stub code and API documentation from JSON definition files and C++ header files',
+        epilog="For information about custom tags supprted in C++ code please see StubGenerator help (--help-tags).",
         formatter_class=argparse.RawTextHelpFormatter)
-    argparser.add_argument('path', nargs="*", help="JSON file(s), wildcards are allowed")
-    argparser.add_argument("--version", dest="version", action="store_true", default=False, help="display version")
-    argparser.add_argument("--verbose", dest="verbose", action="store_true", default=VERBOSE, help="enable verbose logging (default: no verbouse logging)")
+    argparser.add_argument('path',
+            nargs="*",
+            help="JSON file(s) and/or C++ header files, wildcards are allowed")
     argparser.add_argument("-d",
-                           "--docs",
-                           dest="docs",
-                           action="store_true",
-                           default=False,
-                           help="generate documentation")
+            "--docs",
+            dest="docs",
+            action="store_true",
+            default=False,
+            help="generate documentation")
     argparser.add_argument("-c",
-                           "--code",
-                           dest="code",
-                           action="store_true",
-                           default=False,
-                           help="generate JSON classes and JSON-RPC code if applicable")
+            "--code",
+            dest="code",
+            action="store_true",
+            default=False,
+            help="generate C++ code building JSON classes and complete JSON-RPC functionality (the latter only if applicable)")
     argparser.add_argument("-s",
-                           "--stubs",
-                           dest="stubs",
-                           action="store_true",
-                           default=False,
-                           help="generate JSON-RPC stub code")
-    argparser.add_argument(
-        "-p",
-        dest="if_path",
-        metavar="PATH",
-        action="store",
-        type=str,
-        default=IF_PATH,
-        help="relative path for #include'ing JsonData header file (default: 'interfaces/json', '.' for no path)")
-    argparser.add_argument(
-        "-i",
-        dest="if_dir",
-        metavar="DIR",
-        action="store",
-        type=str,
-        default=None,
-        help=
-        "a directory with JSON API interfaces that will substitute the {interfacedir} tag (default: same directory as source file)"
-    )
-    argparser.add_argument(
-        "-j",
-        dest="cppif_dir",
-        metavar="DIR",
-        action="store",
-        type=str,
-        default=None,
-        help=
-        "a directory with C++ API interfaces that will substitute the {cppinterfacedir} tag (default: same directory as source file)"
-    )
-    argparser.add_argument(
-        "-o",
-        "--output",
-        dest="output_dir",
-        metavar="DIR",
-        action="store",
-        default=None,
-        help=
-        "output directory, absolute path or directory relative to output file(default: output in the same directory as the source json)"
-    )
-    argparser.add_argument("--indent",
-                           dest="indent_size",
-                           metavar="SIZE",
-                           type=int,
-                           action="store",
-                           default=INDENT_SIZE,
-                           help="code indentation in spaces (default: %i)" % INDENT_SIZE)
-    argparser.add_argument("--dump-json",
-                           dest="dump_json",
-                           action="store_true",
-                           default=False,
-                           help="dump intermediate JSON file when parsing C++ header")
-    argparser.add_argument(
-        "--copy-ctor",
-        dest="copy_ctor",
-        action="store_true",
-        default=False,
-        help="always emit a copy constructor and assignment operator for a class (default: emit only when needed)")
-    argparser.add_argument("--keep-empty",
-                           dest="keep_empty",
-                           action="store_true",
-                           default=False,
-                           help="keep generated files that have no content (default: remove empty cpp/h files)")
-    argparser.add_argument("--no-ref-names",
-                           dest="no_ref_names",
-                           action="store_true",
-                           default=False,
-                           help="do not derive class names from $refs (default: derive class names from $ref)")
-    argparser.add_argument("--def-string",
-                           dest="def_string",
-                           metavar="STRING",
-                           type=str,
-                           action="store",
-                           default=DEFAULT_EMPTY_STRING,
-                           help="default string initialisation (default: \"%s\")" % DEFAULT_EMPTY_STRING)
-    argparser.add_argument("--def-int-size",
-                           dest="def_int_size",
-                           metavar="SIZE",
-                           type=int,
-                           action="store",
-                           default=DEFAULT_INT_SIZE,
-                           help="default integer size in bits (default: %i)" % DEFAULT_INT_SIZE)
-    argparser.add_argument("--no-style-warnings",
-                           dest="no_style_warnings",
-                           action="store_true",
-                           default=not DOC_ISSUES,
-                           help="suppress documentation issues (default: show all documentation issues)")
-    argparser.add_argument("--no-duplicates-warnings",
-                           dest="no_duplicates_warnings",
-                           action="store_true",
-                           default=not SHOW_WARNINGS,
-                           help="suppress duplicate object warnings (default: show all duplicate object warnings)")
-    argparser.add_argument("--no-interfaces-section",
-                           dest="no_interfaces_section",
-                           action="store_true",
-                           default=False,
-                           help="do not include Interfaces section in the documentation (default: include interface section)")
-    argparser.add_argument("--include",
-                           dest="extra_include",
-                           metavar="FILE",
-                           action="store",
-                           default=DEFAULT_DEFINITIONS_FILE,
-                           help="for C++ source: include a C++ header file (default: include '%s')" %
-                           DEFAULT_DEFINITIONS_FILE)
-    argparser.add_argument("--namespace",
-                           dest="if_namespace",
-                           metavar="NS",
-                           type=str,
-                           action="store",
-                           default=INTERFACE_NAMESPACE,
-                           help="for C++ source: set namespace to look for interfaces in (default: %s)" %
-                           INTERFACE_NAMESPACE)
-    argparser.add_argument('-I', dest="includePaths", metavar="INCLUDE_DIR", action='append', default=[], type=str,
-                           help='for C++ source: add an include path (can be used multiple times)')
+            "--stubs",
+            dest="stubs",
+            action="store_true",
+            default=False,
+            help="generate C++ stub code for JSON-RPC (i.e. *JsonRpc.cpp file to fill in manually)")
+    argparser.add_argument("-o",
+            "--output",
+            dest="output_dir",
+            metavar="DIR",
+            action="store",
+            default=None,
+            help=
+            "output directory, absolute path or directory relative to output file (default: output in the same directory as the source json)")
+
+    json_group = argparser.add_argument_group("JSON parser arguments (optional)")
+    json_group.add_argument("-i",
+            dest="if_dir",
+            metavar="DIR",
+            action="store",
+            type=str,
+            default=None,
+            help=
+            "a directory with JSON API interfaces that will substitute the {interfacedir} tag (default: same directory as source file)")
+    json_group.add_argument("--no-ref-names",
+            dest="no_ref_names",
+            action="store_true",
+            default=False,
+            help="do not derive class names from $refs (default: derive class names from $ref)")
+    json_group.add_argument("--no-duplicates-warnings",
+            dest="no_duplicates_warnings",
+            action="store_true",
+            default=not SHOW_WARNINGS,
+            help="suppress duplicate object warnings (default: show all duplicate object warnings)")
+
+    cpp_group = argparser.add_argument_group("C++ parser arguments (optional)")
+    cpp_group.add_argument("-j",
+            dest="cppif_dir",
+            metavar="DIR",
+            action="store",
+            type=str,
+            default=None,
+            help=
+            "a directory with C++ API interfaces that will substitute the {cppinterfacedir} tag (default: same directory as source file)")
+    cpp_group.add_argument('-I',
+            dest="includePaths",
+            metavar="INCLUDE_DIR",
+            action='append',
+            default=[],
+            type=str,
+            help='add an include path (can be used multiple times)')
+    cpp_group.add_argument("--include",
+            dest="extra_include",
+            metavar="FILE",
+            action="store",
+            default=DEFAULT_DEFINITIONS_FILE,
+            help="include a C++ header file with common types (default: include '%s')" %
+            DEFAULT_DEFINITIONS_FILE)
+    cpp_group.add_argument("--namespace",
+            dest="if_namespace",
+            metavar="NS",
+            type=str,
+            action="store",
+            default=INTERFACE_NAMESPACE,
+            help="set namespace to look for interfaces in (default: %s)" %
+            INTERFACE_NAMESPACE)
+
+    data_group = argparser.add_argument_group("C++ output arguments (optional)")
+    data_group.add_argument("-p",
+            "--data-path",
+            dest="if_path",
+            metavar="PATH",
+            action="store",
+            type=str,
+            default=IF_PATH,
+            help="relative path for #include'ing JsonData header file (default: 'interfaces/json', '.' for no path)")
+    data_group.add_argument("--copy-ctor",
+            dest="copy_ctor",
+            action="store_true",
+            default=False,
+            help="always emit a copy constructor and assignment operator (default: emit only when needed)")
+    data_group.add_argument("--def-string",
+            dest="def_string",
+            metavar="STRING",
+            type=str,
+            action="store",
+            default=DEFAULT_EMPTY_STRING,
+            help="default string initialisation (default: \"%s\")" % DEFAULT_EMPTY_STRING)
+    data_group.add_argument("--def-int-size",
+            dest="def_int_size",
+            metavar="SIZE",
+            type=int,
+            action="store",
+            default=DEFAULT_INT_SIZE,
+            help="default integer size in bits (default: %i)" % DEFAULT_INT_SIZE)
+    data_group.add_argument("--indent",
+            dest="indent_size",
+            metavar="SIZE",
+            type=int,
+            action="store",
+            default=INDENT_SIZE,
+            help="code indentation in spaces (default: %i)" % INDENT_SIZE)
+
+    doc_group = argparser.add_argument_group("Documentation output arguments (optional)")
+    doc_group.add_argument("--no-style-warnings",
+            dest="no_style_warnings",
+            action="store_true",
+            default=not DOC_ISSUES,
+            help="suppress documentation issues (default: show all documentation issues)")
+    doc_group.add_argument("--no-interfaces-section",
+            dest="no_interfaces_section",
+            action="store_true",
+            default=False,
+            help="do not include 'Interfaces' section (default: include interface section)")
+    doc_group.add_argument("--source-location",
+            dest="source_location",
+            metavar="LN",
+            type=str,
+            action="store",
+            default=INTERFACE_SOURCE_LOCATION,
+            help="override interface source file location to the link specified")
+    doc_group.add_argument("--source-revision",
+            dest="source_revision",
+            metavar="ID",
+            type=str,
+            action="store",
+            default=None,
+            help="override interface source file revision to the commit id specified")
+
+    ts_group = argparser.add_argument_group("Troubleshooting arguments (optional)")
+    ts_group.add_argument("--verbose",
+            dest="verbose",
+            action="store_true",
+            default=VERBOSE,
+            help="enable verbose logging")
+    ts_group.add_argument("--keep-empty",
+            dest="keep_empty",
+            action="store_true",
+            default=False,
+            help="keep generated files that have no code")
+    ts_group.add_argument("--dump-json",
+            dest="dump_json",
+            action="store_true",
+            default=False,
+            help="dump the intermediate JSON file created while parsing a C++ header")
+
 
     args = argparser.parse_args(sys.argv[1:])
 
@@ -3279,6 +3327,8 @@ if __name__ == "__main__":
     DEFAULT_DEFINITIONS_FILE = args.extra_include
     INTERFACE_NAMESPACE = "::" + args.if_namespace if args.if_namespace.find("::") != 0 else args.if_namespace
     INTERFACES_SECTION = not args.no_interfaces_section
+    INTERFACE_SOURCE_LOCATION = args.source_location
+    INTERFACE_SOURCE_REVISION = args.source_revision
     if args.if_path and args.if_path != ".":
         IF_PATH = args.if_path
     IF_PATH = posixpath.normpath(IF_PATH) + os.sep

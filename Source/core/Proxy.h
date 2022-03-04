@@ -1613,9 +1613,18 @@ namespace WPEFramework {
             }
             // void action<const PROXYKEY& key, const Core::ProxyType<PROXYELEMENT>& element>
             template<typename ACTION>
+            void Visit(ACTION&& action) {
+                _lock.Lock();
+                for (std::pair<const PROXYKEY, ContainerStorage>& entry : _map) {
+                    action(entry.first, entry.second.first);
+                }
+                _lock.Unlock();
+            }
+            // void action<const PROXYKEY& key, const Core::ProxyType<PROXYELEMENT>& element>
+            template<typename ACTION>
             void Visit(ACTION&& action) const {
                 _lock.Lock();
-                for (auto entry : _map) {
+                for (const std::pair<const PROXYKEY, ContainerStorage>& entry : _map) {
                     action(entry.first, entry.second.first);
                 }
                 _lock.Unlock();

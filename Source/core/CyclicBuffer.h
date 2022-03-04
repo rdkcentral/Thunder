@@ -175,7 +175,7 @@ namespace Core {
         }
         inline bool IsValid() const
         {
-            return (_buffer.IsValid());
+            return (_administration != nullptr);
         }
         inline const File& Storage() const
         {

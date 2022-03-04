@@ -70,6 +70,9 @@ namespace Plugin {
 
         _resumes.clear();
         _service = service;
+        
+        RPC::ConnectorController::Instance().Announce(service);
+        
         _skipURL = static_cast<uint8_t>(_service->WebPrefix().length());
 
         Config config;
@@ -129,6 +132,8 @@ namespace Plugin {
 
         /* stop the file serving over http.... */
         service->DisableWebServer();
+
+        RPC::ConnectorController::Instance().Revoke(service);
     }
 
     /* virtual */ string Controller::Information() const
@@ -572,7 +577,7 @@ namespace Plugin {
             Notify("subsystemchange", responseJsonRpc);
         }
     }
-    /* virtual */ Core::ProxyType<Core::JSONRPC::Message> Controller::Invoke(const string& token, const uint32_t channelId, const Core::JSONRPC::Message& inbound)
+    /* virtual */ Core::ProxyType<Core::JSONRPC::Message> Controller::Invoke(const Core::JSONRPC::Context& context, const Core::JSONRPC::Message& inbound)
     {
         uint32_t result = Core::ERROR_BAD_REQUEST;
         bool asyncCall = false;
@@ -580,7 +585,7 @@ namespace Plugin {
         Core::ProxyType<Core::JSONRPC::Message> response;
 
         if (callsign.empty() || (callsign == PluginHost::JSONRPC::Callsign())) {
-            response = PluginHost::JSONRPC::Invoke(token, channelId, inbound);
+            response = PluginHost::JSONRPC::Invoke(context, inbound);
 		} else {
 			Core::ProxyType<PluginHost::Server::Service> service;
 
@@ -595,7 +600,7 @@ namespace Plugin {
                 forwarder.Parameters = inbound.Parameters;
                     
                 forwarder.Designator = inbound.VersionedFullMethod();
-                response = service->Invoke(token, channelId, forwarder);
+                response = service->Invoke(context, forwarder);
                 asyncCall = (response.IsValid() == false);
             }
         }

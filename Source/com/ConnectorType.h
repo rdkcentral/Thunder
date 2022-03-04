@@ -27,6 +27,60 @@ namespace RPC {
     EXTERNAL Core::ProxyType<RPC::IIPCServer> DefaultInvokeServer();
     EXTERNAL Core::ProxyType<RPC::IIPCServer> WorkerPoolInvokeServer();
 
+    // This class is not thread safe. It is assumed that the Controller IUnknown
+    // is always set prior to any retrieval (WPEFramework/WPEProcess startup) and
+    // the interface is only revoked at process hsutdown, after shutting down all
+    // the other class (shutdown of WPEFrmaework or WPEProcess. So no need to
+    // lock the access to the _controller member variable.
+    class EXTERNAL ConnectorController {
+    private:
+        ConnectorController();
+
+    public:
+        ConnectorController(const ConnectorController&) = delete;
+        ConnectorController& operator=(const ConnectorController&) = delete;
+
+        ~ConnectorController();
+
+        static ConnectorController& Instance()
+        {
+            return(_instance);
+        }
+
+    public:
+        void Announce(Core::IUnknown* controller)
+        {
+            ASSERT(_controller == nullptr);
+
+            if (controller != nullptr){
+                _controller = controller;
+                _controller->AddRef();
+            }
+        }
+        void Revoke(Core::IUnknown* controller)
+        {
+            ASSERT(_controller == controller);
+
+            if(_controller != nullptr){
+                _controller->Release();
+                _controller = nullptr;
+            }
+        }
+
+        Core::IUnknown* Controller()
+        {
+            if(_controller != nullptr){
+                _controller->AddRef();
+            }
+
+            return (_controller);
+        }
+
+    private:
+        Core::IUnknown* _controller;
+        static ConnectorController _instance;
+    };
+
     template <Core::ProxyType<RPC::IIPCServer> ENGINE() = DefaultInvokeServer>
     class ConnectorType {
     private:

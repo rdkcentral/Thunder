@@ -41,6 +41,7 @@ namespace Core {
         , _alert(false)
         , _administration(nullptr)
     {
+        ASSERT((mode & Core::File::USER_WRITE) != 0);
 #ifdef __WINDOWS__
         string strippedName(Core::File::PathName(_buffer.Name()) + Core::File::FileName(_buffer.Name()));
         _mutex = CreateSemaphore(nullptr, 1, 1, (strippedName + ".mutex").c_str());
@@ -283,67 +284,78 @@ namespace Core {
         ASSERT(IsValid() == true);
 
         bool foundData = false;
+        uint32_t result = 0;
+        uint32_t oldTail = 0;
+        uint32_t head = 0;
+        uint32_t offset = 0;
 
-        uint32_t result;
         while (!foundData) {
-            uint32_t oldTail = _administration->_tail;
-            uint32_t head = _administration->_head;
-            uint32_t offset = oldTail & _administration->_tailIndexMask;
+            oldTail = _administration->_tail;
+            head = _administration->_head;
+            offset = oldTail & _administration->_tailIndexMask;
 
             result = Used(head, offset);
             if (result == 0) {
-                // No data, just return 0.
-                return 0;
+                //no data, no need in trying reading
+                break;
             }
 
             Cursor cursor(*this, oldTail, length);
             result = GetReadSize(cursor);
 
-            if ((result == 0) || ((result > length) && (partialRead == false))) {
-                // No data, or too much, return 0.
-                return 0;
-            }
-            
-            uint32_t bufferLength = std::min(length, result);
-
-            foundData = true;
-            offset += cursor.Offset();
-            uint32_t roundCount = oldTail / (1 + _administration->_tailIndexMask);
-            if ((offset + result) < _administration->_size) {
-                memcpy(buffer, _realBuffer + offset, bufferLength);
-
-                uint32_t newTail = offset + result + roundCount * (1 + _administration->_tailIndexMask);
-                if (!_administration->_tail.compare_exchange_weak(oldTail, newTail)) {
-                    foundData = false;
-                }
+            //data was found if result is greater than 0 and the tail was not moved by the writer.
+            //If it was moved, the package size could have been overwritten
+            //by random data and can be invalid - we cannot trust it
+            if ((result == 0) || (oldTail != _administration->_tail)) {
+                foundData = false;
             } else {
-                uint32_t part1 = 0;
-                uint32_t part2 = 0;
-                
-                if(_administration->_size < offset){
-                    part2 = result - (offset - _administration->_size);
-                }
-                else {
-                    part1 = _administration->_size - offset;
-                    part2 = result - part1;
-                }
+                foundData = true;
 
-                memcpy(buffer, _realBuffer + offset, std::min(part1, bufferLength));
+                ASSERT(result != 0);
+                ASSERT((result <= length) || ((result > length) && (partialRead == true)));
 
-                if(part1 < bufferLength){
-                    memcpy(buffer + part1, _realBuffer, bufferLength - part1);
-                }
+                //if does not allow partial read, we found a data, but it is too small to fit
+                if ((result <= length) || ((result > length) && (partialRead == true))) {
+                    uint32_t bufferLength = std::min(length, result);
 
-                // Add one round, but prevent overflow.
-                roundCount = (roundCount + 1) % _administration->_roundCountModulo;
-                uint32_t newTail = part2 + roundCount * (1 + _administration->_tailIndexMask);
-                if (!_administration->_tail.compare_exchange_weak(oldTail, newTail)) {
-                    foundData = false;
+                    offset += cursor.Offset();
+                    uint32_t roundCount = oldTail / (1 + _administration->_tailIndexMask);
+                    if ((offset + result) < _administration->_size) {
+                        memcpy(buffer, _realBuffer + offset, bufferLength);
+
+                        uint32_t newTail = offset + result + roundCount * (1 + _administration->_tailIndexMask);
+                        if (!_administration->_tail.compare_exchange_weak(oldTail, newTail)) {
+                            foundData = false;
+                        }
+                    } else {
+                        uint32_t part1 = 0;
+                        uint32_t part2 = 0;
+
+                        if (_administration->_size < offset) {
+                            part2 = result - (offset - _administration->_size);
+                        } else {
+                            part1 = _administration->_size - offset;
+                            part2 = result - part1;
+                        }
+
+                        memcpy(buffer, _realBuffer + offset, std::min(part1, bufferLength));
+
+                        if (part1 < bufferLength) {
+                            memcpy(buffer + part1, _realBuffer, bufferLength - part1);
+                        }
+
+                        // Add one round, but prevent overflow.
+                        roundCount = (roundCount + 1) % _administration->_roundCountModulo;
+                        uint32_t newTail = part2 + roundCount * (1 + _administration->_tailIndexMask);
+                        if (!_administration->_tail.compare_exchange_weak(oldTail, newTail)) {
+                            foundData = false;
+                        }
+                    }
                 }
             }
         }
 
-        return (result);
+         return (result);
     }
 
     uint32_t CyclicBuffer::Write(const uint8_t buffer[], const uint32_t length)
@@ -352,7 +364,7 @@ namespace Core {
         ASSERT(IsValid() == true);
 
         uint32_t head = _administration->_head;
-        bool startingEmpty = (Used() == 0);
+        uint32_t tail = _administration->_tail;
         uint32_t writeStart = head;
         bool shouldMoveHead = true;
 
@@ -383,7 +395,7 @@ namespace Core {
                 shouldMoveHead = false;
             }
         } else {
-            if (((_administration->_state.load() & state::OVERWRITE) == 0) && (length > Free()))
+            if ((length >= Size()) || (((_administration->_state.load() & state::OVERWRITE) == 0) && (length >= Free())))
                 return 0;
 
             // A write without reservation, make sure we have the space.
@@ -408,6 +420,7 @@ namespace Core {
         }
 
         if (shouldMoveHead) {
+            bool startingEmpty = (Used() == 0);
             _administration->_head = writeEnd;
 
             if (startingEmpty) {
@@ -418,11 +431,18 @@ namespace Core {
                 DataAvailable();
 
                 AdminUnlock();
+            } else {
+                //The tail moved during write which could mean the reader read everything from the buffer
+                //and won't be notified about new data coming in, because the writer thinks it is not empty.
+                //Make sure the used size (based on the new tail position) is greater than 0
+                if ((tail != _administration->_tail) && (Used() > 0)) {
+                    DataAvailable();
+                }
             }
         }
 
-        return length;
-    }
+            return length;
+        }
 
     void CyclicBuffer::AssureFreeSpace(uint32_t required)
     {
@@ -431,7 +451,7 @@ namespace Core {
         uint32_t free = Free(_administration->_head, tail);
 
         while (free <= required) {
-            uint32_t remaining = required - free;
+            uint32_t remaining = (required + 1) - free;
             Cursor cursor(*this, oldTail, remaining);
             uint32_t offset = GetOverwriteSize(cursor);
             ASSERT((offset + free) >= required);
@@ -459,7 +479,7 @@ namespace Core {
         pid_t expectedProcessId = static_cast<pid_t>(0);
 #endif
 
-        if (((_administration->_state.load() & state::OVERWRITE) == 0) && (length > Free()))
+        if ((length >= Size()) || (((_administration->_state.load() & state::OVERWRITE) == 0) && (length >= Free())))
             return Core::ERROR_INVALID_INPUT_LENGTH;
 
         bool noOtherReservation = atomic_compare_exchange_strong(&(_administration->_reservedPID), &expectedProcessId, processId);

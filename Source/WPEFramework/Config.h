@@ -315,11 +315,12 @@ namespace PluginHost {
                 , Signature(_T("TestSecretKey"))
                 , IdleTime(0)
                 , IPV6(false)
-                , DefaultTraceCategories(false)
+                , DefaultMessagingCategories(false)
                 , DefaultWarningReportingCategories(false)
                 , Process()
                 , Input()
                 , Configs()
+                , EthernetCard()
                 , Environments()
                 , ExitReasons()
                 , Latitude(51832547) // Divider 1.000.000
@@ -346,13 +347,18 @@ namespace PluginHost {
                 Add(_T("signature"), &Signature);
                 Add(_T("idletime"), &IdleTime);
                 Add(_T("ipv6"), &IPV6);
-                Add(_T("tracing"), &DefaultTraceCategories); 
+#ifdef __CORE_MESSAGING__
+                Add(_T("messaging"), &DefaultMessagingCategories);
+#else
+                Add(_T("tracing"), &DefaultMessagingCategories);
+#endif
                 Add(_T("warningreporting"), &DefaultWarningReportingCategories); 
                 Add(_T("redirect"), &Redirect);
                 Add(_T("process"), &Process);
                 Add(_T("input"), &Input);
                 Add(_T("plugins"), &Plugins);
                 Add(_T("configs"), &Configs);
+                Add(_T("ethernetcard"), &EthernetCard);
                 Add(_T("environments"), &Environments);
                 Add(_T("exitreasons"), &ExitReasons);
                 Add(_T("latitude"), &Latitude);
@@ -383,11 +389,12 @@ namespace PluginHost {
             Core::JSON::String Signature;
             Core::JSON::DecUInt16 IdleTime;
             Core::JSON::Boolean IPV6;
-            Core::JSON::String DefaultTraceCategories;
+            Core::JSON::String DefaultMessagingCategories; 
             Core::JSON::String DefaultWarningReportingCategories; 
             ProcessSet Process;
             InputConfig Input;
             Core::JSON::String Configs;
+            Core::JSON::String EthernetCard;
             Core::JSON::ArrayType<Plugin::Config> Plugins;
             Core::JSON::ArrayType<Environment> Environments;
             Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::IShell::reason>> ExitReasons;
@@ -548,16 +555,17 @@ namespace PluginHost {
                 _stackSize = config.Process.IsSet() ? config.Process.StackSize.Value() : 0;
                 _inputInfo.Set(config.Input);
                 _processInfo.Set(config.Process);
+                _ethernetCard = config.EthernetCard.Value();
                 _latitude = config.Latitude.Value();
                 _longitude = config.Longitude.Value();
 
-                _traceCategoriesFile = config.DefaultTraceCategories.IsQuoted();
-                if (_traceCategoriesFile == true) {
-                    config.DefaultTraceCategories.SetQuoted(true);
+                _messagingCategoriesFile = config.DefaultMessagingCategories.IsQuoted();
+                if (_messagingCategoriesFile == true) {
+                    config.DefaultMessagingCategories.SetQuoted(true);
                 }
-                _traceCategories = config.DefaultTraceCategories.Value();
-
+                _messagingCategories = config.DefaultMessagingCategories.Value();
                 _warningReportingCategories = config.DefaultWarningReportingCategories.Value();
+
 
                 if (config.Model.IsSet()) {
                     _model = config.Model.Value();
@@ -632,13 +640,13 @@ namespace PluginHost {
         {
             return (_model);
         }
-        inline bool TraceCategoriesFile() const
+        inline bool MessagingCategoriesFile() const
         {
-            return (_traceCategoriesFile);
+            return (_messagingCategoriesFile);
         }
-        inline const string& TraceCategories() const
+        inline const string& MessagingCategories() const
         {
-            return (_traceCategories);
+            return (_messagingCategories);
         }
         inline const string& WarningReportingCategories() const
         {
@@ -741,6 +749,9 @@ namespace PluginHost {
         }
         inline uint32_t StackSize() const {
             return (_stackSize);
+        }
+        inline string EthernetCard() const {
+            return _ethernetCard;
         }
         inline int32_t Latitude() const {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
@@ -910,12 +921,13 @@ namespace PluginHost {
         ISecurity* _security;
         string _version;
         string _model;
-        string _traceCategories;
-        bool _traceCategoriesFile;
+        string _messagingCategories;
+        bool _messagingCategoriesFile;
         string _warningReportingCategories;
         string _binding;
         string _interface;
         string _URL;
+        string _ethernetCard;
         uint16_t _portNumber;
         bool _IPV6;
         uint16_t _idleTime;

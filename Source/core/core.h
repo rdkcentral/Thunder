@@ -114,6 +114,7 @@
 #include "CallsignTLS.h"
 #include "TokenizedStringList.h"
 #include "MessageDispatcher.h"
+#include "MessageUnit.h"
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "core.lib")
