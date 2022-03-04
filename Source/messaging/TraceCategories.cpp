@@ -1,8 +1,8 @@
-/*
+ /*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2022 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,25 +17,15 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "TraceCategories.h"
 
-#ifndef MODULE_NAME
-#define MODULE_NAME COM
-#endif
+// ---- Class Definition ----
+namespace WPEFramework {
+namespace Trace {
 
-#include <core/core.h>
-
-#ifdef __CORE_MESSAGING__
-#include <messaging/messaging.h>
-#else
-#include <tracing/tracing.h>
-#endif
-
-#ifdef __CORE_WARNING_REPORTING__
-#include <warningreporting/warningreporting.h>
-#endif
-
-#if defined(__WINDOWS__) && defined(COM_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
-#endif
+    /* static */ const std::string Constructor::_text("Constructor called");
+    /* static */ const std::string Destructor::_text("Destructor called");
+    /* static */ const std::string CopyConstructor::_text("Copy Constructor called");
+    /* static */ const std::string AssignmentOperator::_text("Assignment Operator called");
+}
+} // namespace Trace

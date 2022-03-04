@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2022 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,22 +20,19 @@
 #pragma once
 
 #ifndef MODULE_NAME
-#define MODULE_NAME COM
+#error "Please define a MODULE_NAME that describes the binary/library you are building."
 #endif
 
-#include <core/core.h>
-
-#ifdef __CORE_MESSAGING__
-#include <messaging/messaging.h>
-#else
-#include <tracing/tracing.h>
+#ifndef __CORE_MESSAGING__
+#define __CORE_MESSAGING__
 #endif
 
-#ifdef __CORE_WARNING_REPORTING__
-#include <warningreporting/warningreporting.h>
-#endif
-
-#if defined(__WINDOWS__) && defined(COM_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
-#endif
+#include "MessageClient.h"
+#include "IMessageOutput.h"
+#include "Logging.h"
+#include "LoggingCategories.h"
+#include "TraceCategories.h"
+#include "TraceControl.h"
+#include "Control.h"
+#include "TraceFactory.h"
+#include "TextMessage.h"

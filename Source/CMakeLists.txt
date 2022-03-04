@@ -26,6 +26,8 @@ option(WEBSOCKET
         "Include the websocket library." ON)
 option(TRACING
         "Include the tracing library." ON)
+option(MESSAGING
+        "Include the messaging library." OFF)
 option(PROFILER
         "Include the profiler library." OFF)
 option(COM
@@ -52,6 +54,7 @@ option(WCHAR_SUPPORT
         "Enable support for WCHAR." OFF)
 option(DISABLE_TRACING
         "Disable tracing in debug" OFF)
+set(ENABLED_TRACING_LEVEL 0 CACHE STRING "If tracing is enabled, this sets its default level.")
 option(HIDE_NON_EXTERNAL_SYMBOLS
         "Hide all non EXTERNAL tagged symbols" ON)
 
@@ -90,6 +93,10 @@ endif()
 
 if(TRACING)
     add_subdirectory(tracing)
+endif()
+
+if(MESSAGING)
+    add_subdirectory(messaging)
 endif()
 
 if(WARNING_REPORTING)

@@ -69,7 +69,6 @@ namespace Trace {
 
             cursor.Forward(chunkSize);
         }
-
         return cursor.Offset();
     }
 
