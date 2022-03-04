@@ -56,6 +56,90 @@ namespace Core {
     {
         Close();
     }
+
+    /* static */ string File::Normalize(const string& location, bool& valid)
+    {
+        string result(location);
+
+        valid = true;
+
+        // First see if we are not empy.
+        if (result.empty() == false) {
+            uint32_t index = 0;
+
+           while (index < result.length()) {
+
+#ifdef __WINDOWS__
+                if (result[index] == '\\') {
+                    result[index] = '/';
+                }
+#endif
+
+                if ((result[index] == '/') && (index >= 1) ) {
+                    if (result[index - 1] == '/') {
+                        if (index >= 2) {
+                            // We have a double slash, clear all till the beginning
+                           result = result.substr(index - 1);
+                           index = 1;
+                        }
+                    }
+                    else if (result[index - 1] == '.') {
+                        if ((index == 1) || (result[index - 2] == '/')) {
+                            // It is a dot, remove it...
+                            uint32_t offset = (index == 1 ? 0 : index - 2);
+                            result.erase(offset, 2);
+                            index = offset;
+                        }
+                        else if ((result[index - 2] == '.') && ((index == 2) || (result[index - 3] == '/'))) {
+                            if (index <= 3) {
+                                valid = false;
+                                result.clear();
+                            }
+                            else {
+                                // Seems like we are moving up a directory... execute that on the result... if we can...
+                                // there is data we can drop, drop it, drop it till the '/' is found
+                                uint32_t offset = (index <= 3 ? 0 : index - 4);
+                                while ((offset > 0) && (result[offset] != '/')) {
+                                    offset--;
+                                }
+                                result.erase(offset, index - offset);
+                                index = offset;
+                            }
+                        }
+                    }
+                }
+                index++;
+           }
+
+            // Also do not allow .. or /.. at the beginning or at the end.. not detected by the loop
+           if ((result.length() >= 1) && (result[result.length() - 1] == '.')) {
+
+               if (result.length() == 1) {
+                   // We have only a dot...
+                   result.clear();
+               }
+               else if ( (result.length() == 2) && (result[0] == '.') ) {
+                   // We have a ".." and nothing more
+                   valid = false;
+                   result.clear();
+               }
+               else if ((result.length() >= 2) && (result[result.length() - 2] == '/')) {
+                   result = result.substr(0, result.length() - 2);
+               }
+               else if ((result.length() >= 3) && (result[result.length() - 2] == '.') && (result[result.length() - 3] == '/')) {
+                    // there is data we can drop, drop it, drop it till the '/' is found
+                    uint32_t offset = (result.length() <= 3 ? 0 : result.length() - 4);
+                    while ((offset > 0) && (result[offset] != '/')) {
+                        offset--;
+                    }
+                    result = result.substr(0, offset);
+                    valid = result.length() > 0;
+               }
+           }
+        }
+        return (result);
+    }
+
     void File::LoadFileInfo()
     {
 #ifdef __WINDOWS__
@@ -169,34 +253,6 @@ namespace Core {
             _dirFD = INVALID_HANDLE_VALUE;
         }
 #endif
-    }
-
-    /* static */ string Directory::Normalize(const string& location)
-    {
-        string result(location);
-
-        // First see if we are not empy.
-        if (result.empty() == false) {
-            uint32_t length = static_cast<uint32_t>(result.length());
-
-#ifdef __WINDOWS__
-            for (uint32_t teller = 0; teller < length; teller++) {
-                if (result[teller] == '\\') {
-                    result[teller] = '/';
-                }
-            }
-#endif
-
-#ifdef __WINDOWS__
-            if ((result[length - 1] != '/') && (result[length - 1] != '\\'))
-#else
-            if (result[length - 1] != '/')
-#endif
-            {
-                result += '/';
-            }
-        }
-        return (result);
     }
 
     bool Directory::Create()

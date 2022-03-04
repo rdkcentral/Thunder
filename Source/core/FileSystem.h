@@ -156,6 +156,8 @@ namespace Core {
             return (*this);
         }
 
+        static string Normalize(const string& input, bool& valid);
+
     public:
         inline static string FileName(const string& name)
         {
@@ -595,7 +597,22 @@ namespace Core {
         ~Directory();
 
     public:
-        static string Normalize(const string& input);
+        static string Normalize(const string& location)
+        {
+            // First see if we are not empy.
+            if (location.empty() == false) {
+
+                bool valid;
+                string result = File::Normalize(location, valid);
+
+                if ((valid == true) && ((result.empty() == true) || (result[result.length() - 1] != '/'))) {
+                    result += '/';
+                }
+
+                return (result);
+            }
+            return (location);
+        }
 
         bool Create();
         bool CreatePath();
@@ -703,42 +720,35 @@ namespace Core {
             return (*this);
         }
 
-        bool Destroy (const bool safePathOnly) {
-
-            bool result = false;
+        bool Destroy () {
 
             // Allow only if the path does not contain ".." entries
-            if ((safePathOnly == false) || (_name.find("..") == string::npos)) {
+            Reset();
 
-                Reset();
+            while (Next() == true) {
+                Core::File file(Current());
 
-                while (Next() == true) {
-                    Core::File file(Current());
+                if (file.IsDirectory() == true) {
+                    string name(file.FileName());
 
-                    if (file.IsDirectory() == true) {
-                        string name(file.FileName());
-
-                        // We can not delete the "." or  ".." entries....
-                        if ( (name.length() > 2) || 
-                             ((name.length() == 1) && (name[0] != '.')) ||
-                             ((name.length() == 2) && !((name[0] == '.') && (name[1] == '.'))) ) {
-                            Directory deleteIt(Current().c_str());
-                            deleteIt.Destroy(false);
-                            file.Destroy();
-                        }
-                    } else {
+                    // We can not delete the "." or  ".." entries....
+                    if ( (name.length() > 2) || 
+                            ((name.length() == 1) && (name[0] != '.')) ||
+                            ((name.length() == 2) && !((name[0] == '.') && (name[1] == '.'))) ) {
+                        Directory deleteIt(Current().c_str());
+                        deleteIt.Destroy();
                         file.Destroy();
                     }
+                } else {
+                    file.Destroy();
                 }
-
-                if (_name.back() != '/') {
-                    Core::File(_name).Destroy();
-                }
-
-                result = true;
             }
 
-            return (result);
+            if (_name.back() != '/') {
+                Core::File(_name).Destroy();
+            }
+
+            return (true);
         }
 
 
