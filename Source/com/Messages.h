@@ -330,16 +330,15 @@ namespace RPC {
             {
                 _data.Clear();
             }
-            void Set(instance_id implementation, const uint32_t sequenceNumber, const string& proxyStubPath, const string& traceCategories, const string& warningCategories)
+            void Set(instance_id implementation, const uint32_t sequenceNumber, const string& proxyStubPath, const string& messagingSettings, const string& warningReportingSettings)
             {
                 uint16_t length = 0;
                 _data.SetNumber<instance_id>(0, implementation);
                 _data.SetNumber<uint32_t>(sizeof(instance_id), sequenceNumber);
                 
                 length = _data.SetText(sizeof(instance_id) + sizeof(uint32_t), proxyStubPath);
-                length += _data.SetText(sizeof(instance_id)+ sizeof(uint32_t) + length, traceCategories);
-                
-                _data.SetText(sizeof(instance_id)+ sizeof(uint32_t) + length, warningCategories);
+                length += _data.SetText(sizeof(instance_id)+ sizeof(uint32_t) + length, messagingSettings);
+                _data.SetText(sizeof(instance_id)+ sizeof(uint32_t) + length, warningReportingSettings);
             }
             inline bool IsSet() const {
                 return (_data.Size() > 0);
@@ -360,7 +359,7 @@ namespace RPC {
                 
                 return (value);
             }
-            string TraceCategories() const
+            string MessagingCategories() const
             {
                 string value;
 
@@ -372,13 +371,13 @@ namespace RPC {
                 return (value);
             }
 
-            string WarningCategories() const
+            string WarningReportingCategories() const
             {
                 string value;
 
                 uint16_t length = sizeof(instance_id) + sizeof(uint32_t) ;   // skip implentation and sequencenumber 
                 length += _data.GetText(length, value);  // skip proxyStub path
-                length += _data.GetText(length, value);  // skip TraceCategories
+                length += _data.GetText(length, value);  // skip messagingcategories 
 
                 _data.GetText(length, value); 
 
