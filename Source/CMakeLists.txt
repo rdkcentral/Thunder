@@ -54,6 +54,7 @@ option(WCHAR_SUPPORT
         "Enable support for WCHAR." OFF)
 option(DISABLE_TRACING
         "Disable tracing in debug" OFF)
+set(ENABLED_TRACING_LEVEL 0 CACHE STRING "If tracing is enabled, this sets its default level.")
 option(HIDE_NON_EXTERNAL_SYMBOLS
         "Hide all non EXTERNAL tagged symbols" ON)
 
