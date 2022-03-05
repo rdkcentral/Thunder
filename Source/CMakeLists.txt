@@ -38,8 +38,6 @@ option(PROXY_STUB
         "Include proxy/stubs." ON)
 option(PLUGINS
         "Include plugins library." ON)
-option(THUNDER_CONNECTOR
-        "Include Connector Library in the build." ON)
 option(EXECUTABLE
         "Include the hosting executable." ON)
 option(VIRTUALINPUT
@@ -54,6 +52,7 @@ option(WCHAR_SUPPORT
         "Enable support for WCHAR." OFF)
 option(DISABLE_TRACING
         "Disable tracing in debug" OFF)
+set(ENABLED_TRACING_LEVEL 0 CACHE STRING "If tracing is enabled, this sets its default level.")
 option(HIDE_NON_EXTERNAL_SYMBOLS
         "Hide all non EXTERNAL tagged symbols" ON)
 
@@ -118,10 +117,6 @@ endif()
 
 if(PROXY_STUB)
     add_subdirectory(proxystubs)
-endif()
-
-if(THUNDER_CONNECTOR)
-    add_subdirectory(connector)
 endif()
 
 if(PLUGINS)

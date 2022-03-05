@@ -182,18 +182,22 @@ namespace Messaging {
         Core::ProxyType<Core::Messaging::IEvent> message;
 
         for (auto& client : _clients) {
-            while (client.second.PopData(size, _readBuffer) == Core::ERROR_NONE) {
+            while (client.second.PopData(size, _readBuffer) != Core::ERROR_READ_ERROR) {
                 auto length = information.Deserialize(_readBuffer, size);
 
-                if (length != 0 && length <= sizeof(_readBuffer)) {
+                if (length > sizeof(Core::Messaging::MetaData::MessageType) && length < sizeof(_readBuffer)) {
                     auto factory = _factories.find(information.MessageMetaData().Type());
                     if (factory != _factories.end()) {
                         message = factory->second->Create();
                         message->Deserialize(_readBuffer + length, size - length);
                         function(information, message);
-                        size = sizeof(_readBuffer);
                     }
                 }
+                else {
+                    client.second.FlushDataBuffer();
+                }
+                
+                size = sizeof(_readBuffer);
             }
         }
 
