@@ -469,9 +469,18 @@ namespace Plugin {
                     remainder = index.Remainder().Text();
                 }
 
-                Core::Directory((_service->PersistentPath() + remainder).c_str()).Destroy(true);
+                bool valid;
+                string normalized(Core::File::Normalize(remainder, valid));
 
-                result->Message = "OK";
+                if (valid == false) {
+                    result->Message = "incorrect path";
+                    result->ErrorCode = Web::STATUS_BAD_REQUEST;
+                }
+                else {
+                    Core::Directory((_service->PersistentPath() + normalized).c_str()).Destroy();
+                    result->Message = "OK";
+                    result->ErrorCode = Web::STATUS_OK;
+                }
             }
         }
         return (result);
