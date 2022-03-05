@@ -98,7 +98,7 @@ namespace Core {
                             else {
                                 // Seems like we are moving up a directory... execute that on the result... if we can...
                                 // there is data we can drop, drop it, drop it till the '/' is found
-                                uint32_t offset = (index <= 3 ? 0 : index - 4);
+                                uint32_t offset = index - 4;
                                 while ((offset > 0) && (result[offset] != '/')) {
                                     offset--;
                                 }
@@ -111,7 +111,8 @@ namespace Core {
                 index++;
            }
 
-            // Also do not allow .. or /.. at the beginning or at the end.. not detected by the loop
+           // It could be that the last slash is not part of the full line, check the last part, assuming there is such a slash, 
+           // normalization rules applyt than as well....
            if ((result.length() >= 1) && (result[result.length() - 1] == '.')) {
 
                if (result.length() == 1) {
@@ -127,13 +128,21 @@ namespace Core {
                    result = result.substr(0, result.length() - 2);
                }
                else if ((result.length() >= 3) && (result[result.length() - 2] == '.') && (result[result.length() - 3] == '/')) {
-                    // there is data we can drop, drop it, drop it till the '/' is found
-                    uint32_t offset = (result.length() <= 3 ? 0 : result.length() - 4);
-                    while ((offset > 0) && (result[offset] != '/')) {
-                        offset--;
-                    }
-                    result = result.substr(0, offset);
-                    valid = result.length() > 0;
+                   // How about ThisFile/.., it is valid, but /.. would not be, both end up at an empty string... but the difference
+                   // is the fact that the first, had a length > 3 and the second was exactly 3, so a length of 3 is invalid and empty..
+                   if (result.length() == 3) {
+                       valid = false;
+                       result.clear();
+                   }
+                   else {
+                       // there is data we can drop, drop it, drop it till the '/' is found
+                       uint32_t offset = result.length() - 4;
+
+                        while ((offset > 0) && (result[offset] != '/')) {
+                            offset--;
+                        }
+                        result = result.substr(0, offset);
+                   }
                }
            }
         }

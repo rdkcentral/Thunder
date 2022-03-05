@@ -599,19 +599,19 @@ namespace Core {
     public:
         static string Normalize(const string& location)
         {
+            string result;
+
             // First see if we are not empy.
             if (location.empty() == false) {
 
                 bool valid;
-                string result = File::Normalize(location, valid);
+                result = File::Normalize(location, valid);
 
                 if ((valid == true) && ((result.empty() == true) || (result[result.length() - 1] != '/'))) {
                     result += '/';
                 }
-
-                return (result);
             }
-            return (location);
+            return (result);
         }
 
         bool Create();
