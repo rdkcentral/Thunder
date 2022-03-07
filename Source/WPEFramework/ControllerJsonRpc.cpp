@@ -347,25 +347,25 @@ namespace Plugin {
     uint32_t Controller::endpoint_delete(const DeleteParamsData& params)
     {
         uint32_t result = Core::ERROR_UNKNOWN_KEY;
-        const string& path = params.Path.Value();
+        bool valid;
+        string path = Core::File::Normalize(params.Path.Value(), valid);
 
-        if (path.empty() == false) {
-            if (path.find("..") == string::npos) {
-                ASSERT(_service != nullptr);
-                Core::File file(_service->PersistentPath() +  path);
+        ASSERT(_service != nullptr);
 
-                if (file.Exists() == true) {
-                    if (file.IsDirectory() == true) {
-                        result = (Core::Directory((_service->PersistentPath() +  path).c_str()).Destroy(true) == true) ? Core::ERROR_NONE : Core::ERROR_DESTRUCTION_FAILED;
-                    } else {
-                        result = (file.Destroy() == true) ? Core::ERROR_NONE : Core::ERROR_DESTRUCTION_FAILED;
-                    }
-                } else {
-                    result = Core::ERROR_UNKNOWN_KEY;
-                }
+        if (valid == false) {
+            result = Core::ERROR_PRIVILIGED_REQUEST;
+        }
+        else {
+            Core::File file(_service->PersistentPath() + path);
+
+            if (file.Exists() == false) {
+                result = Core::ERROR_UNKNOWN_KEY;
+            }
+            else if (file.IsDirectory() == true) {
+                result = (Core::Directory((_service->PersistentPath() + path).c_str()).Destroy() == true) ? Core::ERROR_NONE : Core::ERROR_DESTRUCTION_FAILED;
             }
             else {
-                result = Core::ERROR_PRIVILIGED_REQUEST;
+                result = (file.Destroy() == true) ? Core::ERROR_NONE : Core::ERROR_DESTRUCTION_FAILED;
             }
         }
 
