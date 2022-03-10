@@ -43,12 +43,12 @@ Core::ProxyType<RPC::IIPCServer> DefaultInvokeServer()
         };
 
     protected:
-        void Acquire(Core::ProxyType<Engine>& source)
+        void Acquire(Core::ProxyType<Engine>& source VARIABLE_IS_NOT_USED)
         {
             RPC::InvokeServerType<1, 0, 8>::Run();
         }
 
-        void Relinquish(Core::ProxyType<Engine>& source)
+        void Relinquish(Core::ProxyType<Engine>& source VARIABLE_IS_NOT_USED)
         {
             RPC::InvokeServerType<1, 0, 8>::Stop();
         }
