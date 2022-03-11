@@ -44,7 +44,7 @@
 
 #include <linux/version.h>
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,15,15)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,9,0)
 #include <sys/sysinfo.h>
 #else
 #ifdef __cplusplus
