@@ -30,7 +30,7 @@ namespace Core {
         }
         /**
         * @brief Construct a new MetaData object
-        * 
+        *
         * NOTE: Category and module can be set as empty
         * @param type type of the message
         * @param category category name of the message
@@ -65,17 +65,17 @@ namespace Core {
             uint16_t deserialized = 0;
             Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
             Core::FrameType<0>::Reader frameReader(frame, 0);
-            
+
             _type = frameReader.Number<MetaData::MessageType>();
             deserialized += sizeof(_type);
-            if(_type < MessageType::INVALID){ 
+            if(_type < MessageType::INVALID){
                 _category = frameReader.NullTerminatedText();
                 deserialized += _category.size() + 1;
-                
+
                 _module = frameReader.NullTerminatedText();
                 deserialized += _module.size() + 1;
             }
-            
+
             return deserialized;
         }
 
@@ -257,9 +257,9 @@ namespace Core {
         //----------MessageList----------
         /**
         * @brief Based on metadata, update specific message. If there is no match, add entry to the list
-        * 
+        *
         * @param metaData information about the message
-        * @param isEnabled should the message be enabled 
+        * @param isEnabled should the message be enabled
         */
         void MessageList::Update(const MetaData& metaData, const bool isEnabled)
         {
@@ -320,7 +320,7 @@ namespace Core {
         }
         /**
         * @brief Check if speific message (control) should be enabled
-        * 
+        *
         * @param metaData information about the message
         * @return true should be enabled
         * @return false should not be enabled
@@ -353,7 +353,7 @@ namespace Core {
 
         /**
         * @brief Write information about the announced controls to the buffer
-        * 
+        *
         * @param buffer buffer to be written to
         * @param length max length of the buffer
         * @return uint16_t how much bytes serialized
@@ -385,8 +385,8 @@ namespace Core {
 
         /**
         * @brief Restore information about announced controls from the buffer
-        * 
-        * @param buffer serialized buffer 
+        *
+        * @param buffer serialized buffer
         * @param length max length of the buffer
         * @return uint16_t how much bytes deserialized
         */
@@ -471,7 +471,7 @@ namespace Core {
         }
         /**
          * @brief Update controls based on list of messages (eg. coming from config)
-         * 
+         *
          * @param messages message list
          */
         void ControlList::Update(const MessageList& messages)
@@ -548,11 +548,11 @@ namespace Core {
             Close();
         }
         /**
-        * @brief Open MessageUnit. This method is used on the WPEFramework side. 
-        *        This method: 
+        * @brief Open MessageUnit. This method is used on the WPEFramework side.
+        *        This method:
         *        - sets env variables, so the OOP components will get information (eg. where to place its files)
         *        - create buffer where all InProcess components will write
-        * 
+        *
         * @param pathName volatile path (/tmp/ by default)
         * @return uint32_t ERROR_NONE: opened sucessfully
         *                  ERROR_OPENING_FAILED failed to open
@@ -566,7 +566,7 @@ namespace Core {
 
             if (Core::File(basePath).IsDirectory()) {
                 //if directory exists remove it to clear data (eg. sockets) that can remain after previous run
-                Core::Directory(basePath.c_str()).Destroy(false);
+                Core::Directory(basePath.c_str()).Destroy();
             }
 
             if (!Core::Directory(basePath.c_str()).CreatePath()) {
@@ -588,11 +588,11 @@ namespace Core {
 
         /**
         * @brief Open MessageUnit. Method used in OOP components
-        * 
+        *
         * @param instanceId number of the instance
         * @return uint32_t ERROR_NONE: Opened sucesfully
         *                  ERROR_OPENING_FAILED: failed to open
-        * 
+        *
         */
         uint32_t MessageUnit::Open(const uint32_t instanceId)
         {
@@ -655,7 +655,7 @@ namespace Core {
 
         /**
         * @brief Read default settings from file
-        * 
+        *
         * @param file file containing configuraton
         */
         void MessageUnit::Defaults(Core::File& file)
@@ -678,7 +678,7 @@ namespace Core {
 
         /**
         * @brief Set defaults acording to settings
-        * 
+        *
         * @param serialized settings
         */
         void MessageUnit::SetDefaultSettings(const Settings& serialized)
@@ -692,7 +692,7 @@ namespace Core {
 
         /**
         * @brief Get defaults settings
-        * 
+        *
         * @return string json containing information about default values
         */
         string MessageUnit::Defaults() const
@@ -709,7 +709,7 @@ namespace Core {
 
         /**
          * @brief Check if message of given metaData is enabled by default configuration
-         * 
+         *
          * @param metaData message information
          * @return true is enabled by default
          * @return false not enabled by default
@@ -721,7 +721,7 @@ namespace Core {
 
         /**
         * @brief Push a message and its information to a buffer
-        * 
+        *
         * @param info contains information about the event (where it happened)
         * @param message message
         */
@@ -756,7 +756,7 @@ namespace Core {
         /**
         * @brief When IControl spawns it should announce itself to the unit, so it can be influenced from here
         *        (For example for enabling the category it controls)
-        * 
+        *
         * @param control IControl implementation
         */
         void MessageUnit::Announce(IControl* control)
@@ -769,7 +769,7 @@ namespace Core {
 
         /**
         * @brief When IControl dies it should be unregistered
-        * 
+        *
         * @param control IControl implementation
         */
         void MessageUnit::Revoke(IControl* control)
@@ -779,7 +779,7 @@ namespace Core {
 
         /**
         * @brief Notification, that there is metadata available
-        * 
+        *
         * @param size size of the buffer
         * @param data buffer containing in data
         * @param outSize size of the out buffer (initially set to the maximum one can write)
