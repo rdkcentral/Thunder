@@ -33,7 +33,7 @@ namespace Core {
         /**
         * @brief MetaData Callback. First two arguments are for data in. Two later for data out (responded to the other side).
         *        Third parameter is initially set to maximum length that can be written to the out buffer
-        * 
+        *
         */
         using MetaDataCallback = std::function<void(const uint16_t, const uint8_t*, uint16_t&, uint8_t*)>;
 
@@ -52,7 +52,7 @@ namespace Core {
 
             /**
             * @brief Signal that data is available
-            * 
+            *
             */
             void Ring()
             {
@@ -61,7 +61,7 @@ namespace Core {
 
             /**
             * @brief Wait for the doorbell and acknowledge if rang in given time
-            * 
+            *
             * @param waitTime how much should we wait for the doorbell
             * @return uint32_t ERROR_UNAVAILABLE: doorbell is not connected to its counterpart
             *                  ERROR_TIMEDOUT: ring not rang in given time
@@ -182,7 +182,7 @@ namespace Core {
         //public methods
         /**
          * @brief Construct a new Message Dispatcher object
-         * 
+         *
          * @param identifier name of the instance
          * @param instanceId number of the instance
          * @param initialize should dispatcher be initialzied. Should be done only once, on the server side
@@ -191,14 +191,14 @@ namespace Core {
         MessageDispatcherType(const string& identifier, const uint32_t instanceId, bool initialize, string baseDirectory = _T("/tmp/MessageDispatcher"))
             : _filenames(PrepareFilenames(baseDirectory, identifier, instanceId))
             // clang-format off
-            , _dataBuffer(_filenames.doorBell, _filenames.data,  Core::File::USER_READ    | 
-                                                                 Core::File::USER_WRITE   | 
-                                                                 Core::File::USER_EXECUTE | 
+            , _dataBuffer(_filenames.doorBell, _filenames.data,  Core::File::USER_READ    |
+                                                                 Core::File::USER_WRITE   |
+                                                                 Core::File::USER_EXECUTE |
                                                                  Core::File::GROUP_READ   |
                                                                  Core::File::GROUP_WRITE  |
                                                                  Core::File::OTHERS_READ  |
-                                                                 Core::File::OTHERS_WRITE | 
-                                                                 Core::File::SHAREABLE, 
+                                                                 Core::File::OTHERS_WRITE |
+                                                                 Core::File::SHAREABLE,
                                                                  initialize ? DATA_SIZE + sizeof(Core::CyclicBuffer::control) : 0, true)
             // clang-format on
             , _metaDataBuffer(initialize ? new MetaDataBuffer<METADATA_SIZE>(_filenames.metaData) : nullptr)
@@ -222,7 +222,7 @@ namespace Core {
         *        To receive this data other side needs to wait for the doorbel ring and then use PopData
         *
         * @param length length of message
-        * @param value buffer 
+        * @param value buffer
         * @return uint32_t ERROR_WRITE_ERROR: failed to reserve enough space - eg, value size is exceeding max cyclic buffer size
         *                  ERROR_NONE: OK
         */
@@ -252,11 +252,11 @@ namespace Core {
         }
 
         /**
-         * @brief Read data after doorbell ringed. If buffer is too small to fit whole message it will be partially filled. 
-         * 
-         * @param outLength ERROR_NONE - read bytes. 
+         * @brief Read data after doorbell ringed. If buffer is too small to fit whole message it will be partially filled.
+         *
+         * @param outLength ERROR_NONE - read bytes.
          *                  ERROR_GENERAL - mimimal required bytes to fit whole message.
-         *                  ERROR_READ_ERROR - the same value as passed in                       
+         *                  ERROR_READ_ERROR - the same value as passed in
          * @param outValue buffer
          * @return uint32_t ERROR_READ_ERROR - unable to read or data is corrupted
          *                  ERROR_NONE - OK
@@ -305,7 +305,7 @@ namespace Core {
         /**
          * @brief Exchanges metadata with the server. Reader needs to register for notifications to recevie this message.
          *        Passed buffer will be filled with data from thr other side
-         * 
+         *
          * @param length length of the message
          * @param value buffer
          * @param maxLength maximum size of the buffer
@@ -324,7 +324,7 @@ namespace Core {
                 metaDataFrame->Parameters().Set(length, value);
 
                 if (channel.Invoke(metaDataFrame, Core::infinite) == Core::ERROR_NONE) {
-                    auto bufferType = metaDataFrame->Response();
+                    auto const & bufferType = metaDataFrame->Response();
 
                     readLength = bufferType.Length();
                     if (readLength <= maxLength) {
@@ -375,11 +375,11 @@ namespace Core {
 
         /**
         * @brief Prepare filenames for MessageDispatcher
-        * 
+        *
         * @param baseDirectory where are those filed stored. This directory should already exist.
         * @param identifier identifer of the instance
         * @param instanceId number of instance
-        * @return std::tuple<string, string, string> 
+        * @return std::tuple<string, string, string>
         *         0 - doorBellFilename
         *         1 - dataFileName
         *         2 - metaDataFilename
