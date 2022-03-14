@@ -411,9 +411,7 @@ namespace Core {
         IPCMessageType(const IPCMessageType<IDENTIFIER, PARAMETERS, RESPONSE>&) = delete;
         IPCMessageType<IDENTIFIER, PARAMETERS, RESPONSE>& operator=(const IPCMessageType<IDENTIFIER, PARAMETERS, RESPONSE>&) = delete;
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         IPCMessageType()
             : _parameters(*this)
             , _response(*this)
@@ -424,9 +422,7 @@ namespace Core {
             , _response(*this)
         {
         }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
         ~IPCMessageType() override {
         }
@@ -862,9 +858,7 @@ namespace Core {
         IPCChannelType(const IPCChannelType<ACTUALSOURCE, EXTENSION>&) = delete;
         IPCChannelType<ACTUALSOURCE, EXTENSION>& operator=(const IPCChannelType<ACTUALSOURCE, EXTENSION>&) = delete;
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         template <typename... Args>
         IPCChannelType(Args&&... args)
             : IPCChannel()
@@ -879,9 +873,7 @@ namespace Core {
             , _extension(this)
         {
         }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
         ~IPCChannelType() override = default;
 

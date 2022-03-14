@@ -21,9 +21,7 @@
 namespace WPEFramework {
 namespace PluginHost {
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
     SystemInfo::SystemInfo(const Config& config, Core::IDispatch* callback)
         : _adminLock()
         , _config(config)
@@ -39,9 +37,7 @@ namespace PluginHost {
     {
         ASSERT(callback != nullptr);
     }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
     /* virtual */ SystemInfo::~SystemInfo()
     {

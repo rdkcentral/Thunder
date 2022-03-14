@@ -735,9 +735,7 @@ namespace PluginHost
         Close(0);
     }
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 
     Server::Server(Config& configuration, const bool background)
         : _dispatcher(configuration.StackSize())
@@ -822,9 +820,7 @@ namespace PluginHost
 #endif
     }
 
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
     Server::~Server()
     {

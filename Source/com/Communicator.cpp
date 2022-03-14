@@ -324,9 +324,7 @@ namespace RPC {
 
 #endif
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 
     Communicator::Communicator(const Core::NodeId& node, const string& proxyStubPath)
         : _connectionMap(*this)
@@ -397,9 +395,7 @@ namespace RPC {
         BaseClass::Register(RPC::InvokeMessage::Id(), handler);
         BaseClass::Register(RPC::AnnounceMessage::Id(), handler);
     }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
     CommunicatorClient::~CommunicatorClient()
     {

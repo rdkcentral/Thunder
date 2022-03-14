@@ -34,9 +34,7 @@
 // ---- Helper types and constants ----
 
 // ---- Helper functions ----
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 
 // ---- Class Definition ----
 
@@ -503,8 +501,6 @@ namespace Core {
 }
 } // namespace Core
 
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
 #endif // __TIMER_H

@@ -216,9 +216,7 @@ namespace Core {
         StreamJSONType(const StreamJSONType<SOURCE, ALLOCATOR, INTERFACE>&) = delete;
         StreamJSONType<SOURCE, ALLOCATOR, INTERFACE >& operator=(const StreamJSONType<SOURCE, ALLOCATOR, INTERFACE>&) = delete;
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         template <typename... Args>
         StreamJSONType(uint8_t slotSize, ALLOCATOR& allocator, Args... args)
             : _channel(*this, args...)
@@ -234,9 +232,7 @@ namespace Core {
             , _deserializer(*this, slotSize)
         {
         }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
         virtual ~StreamJSONType()
         {

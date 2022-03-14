@@ -463,9 +463,7 @@ namespace Core {
         SocketListner& operator=(const SocketListner& a_RHS) = delete;
 
     protected:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         SocketListner()
             : _socket(*this)
         {
@@ -478,9 +476,7 @@ namespace Core {
         {
             TRACE_L5("Constructor SocketListner <%p>", (this));
         }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
         virtual ~SocketListner()
         {
