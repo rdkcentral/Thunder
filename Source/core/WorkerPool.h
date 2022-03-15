@@ -180,6 +180,130 @@ namespace Core {
             Core::TimerType<Timer>& _timer;
         };
 
+        #ifdef __CORE_WARNING_REPORTING__
+        class DispatchedJobMonitor : public ThreadPool::IDispatchedJobMonitor {
+        /**
+        * @brief DispatchedJobMonitor monitor/maintains a list of Dispatched Jobs for analysis.
+        *        This object periodically schedule an internal worker job to walk-thru the
+        *        active/in-progress dispatched jobs, analyse and report warning messages
+        *        based on the configured bounds values.
+        *
+        */
+        private:
+            class EXTERNAL MontiorJob : public IDispatch {
+            public:
+                MontiorJob() = delete;
+                MontiorJob(const MontiorJob&) = delete;
+                MontiorJob& operator=(const MontiorJob&) = delete;
+
+                MontiorJob(DispatchedJobMonitor& parent)
+                    : _parent(parent)
+                {
+                }
+                ~MontiorJob() override = default;
+
+                void Dispatch() override
+                {
+                    _parent.AnalyseAndReportDispatchedJobs();
+                    _parent.ScheduleMonitorJob();
+                }
+
+            private:
+                DispatchedJobMonitor& _parent;
+            };
+        public:
+            static constexpr uint32_t DefaultScheduleIntervalInMilliSeconds = 10000;
+            DispatchedJobMonitor() = delete;
+            DispatchedJobMonitor(const DispatchedJobMonitor&) = delete;
+            DispatchedJobMonitor& operator=(const DispatchedJobMonitor&) = delete;
+
+            DispatchedJobMonitor(WorkerPool& parent, uint32_t intervalInMilliSeconds)
+                : _parent(parent)
+                , _lock()
+                , _dispatchedJobList()
+                , _monitorJob()
+                , _isActive(false)
+                , _intervalInMilliSeconds(intervalInMilliSeconds)
+            {
+            }
+            ~DispatchedJobMonitor() override = default;
+
+            void Start()
+            {
+                _lock.Lock();
+
+                if (!IsActive()) {
+                    _monitorJob = Core::ProxyType<IDispatch>(ProxyType<MontiorJob>::Create(*this));
+                    _isActive = true;
+                    _parent.Schedule(Core::Time::Now().Add(_intervalInMilliSeconds), _monitorJob);
+                }
+
+                _lock.Unlock();
+            }
+            void Stop()
+            {
+                _lock.Lock();
+
+                if (IsActive()) {
+                    _isActive = false;
+                    _parent.Revoke(_monitorJob);
+                    _dispatchedJobList.clear();
+                    _monitorJob.Release();
+                }
+
+                _lock.Unlock();
+            }
+            void InsertDispatchedJobMetaData(const ThreadPool::DispatchedJobMetaData& data) override
+            {
+                _lock.Lock();
+                _dispatchedJobList.emplace_back(data);
+                _lock.Unlock();
+            }
+            void RemoveDispatchedJobMetaData(const ThreadPool::DispatchedJobMetaData& data) override
+            {
+                _lock.Lock();
+                _dispatchedJobList.remove(data);
+                _lock.Unlock();
+            }
+            void AnalyseAndReportDispatchedJobs()
+            {
+                _lock.Lock();
+
+                if (_dispatchedJobList.size() > 0 && IsActive()) {
+                    for (auto &job : _dispatchedJobList) {
+                        ++job.ReportRunCount;
+                        REPORT_OUTOFBOUNDS_WARNING_EX(WarningReporting::JobActiveForTooLong, job.CallSign.c_str(),
+                        static_cast<uint32_t>((Time::Now().Ticks() - job.DispatchedTime) / Time::TicksPerMillisecond));
+                    }
+                }
+
+                _lock.Unlock();
+
+            }
+            void ScheduleMonitorJob()
+            {
+                // Submit the monitor job to the scheduler.
+                _lock.Lock();
+                if (IsActive()){
+                    _parent.Schedule(Core::Time::Now().Add(_intervalInMilliSeconds), _monitorJob);
+                }
+                _lock.Unlock();
+            }
+        private:
+            bool IsActive()
+            {
+                //DO NOT use Lock here..
+                return _isActive;
+            }
+        private:
+            WorkerPool& _parent;
+            CriticalSection _lock;
+            std::list<ThreadPool::DispatchedJobMetaData> _dispatchedJobList;
+            Core::ProxyType<IDispatch> _monitorJob;
+            bool _isActive;
+            uint32_t _intervalInMilliSeconds;
+    };
+    #endif
     public:
         WorkerPool(const WorkerPool&) = delete;
         WorkerPool& operator=(const WorkerPool&) = delete;
@@ -194,6 +318,9 @@ namespace Core {
             , _timer(1024 * 1024, _T("WorkerPoolType::Timer"))
             , _metadata()
             , _joined(0)
+            #ifdef __CORE_WARNING_REPORTING__
+            , _dispatchedJobMonitor(*this, static_cast<uint32_t>(DispatchedJobMonitor::DefaultScheduleIntervalInMilliSeconds))
+            #endif
         {
             _metadata.Slots = threadCount + 1;
             _metadata.Slot = new uint32_t[threadCount + 1];
@@ -286,9 +413,17 @@ namespace Core {
         void Run()
         {
             _threadPool.Run();
+            #ifdef __CORE_WARNING_REPORTING__
+            _threadPool.SetDispatchedJobMonitor(&_dispatchedJobMonitor);
+            _dispatchedJobMonitor.Start();
+            #endif
         }
         void Stop()
         {
+            #ifdef __CORE_WARNING_REPORTING__
+            _dispatchedJobMonitor.Stop();
+            _threadPool.ResetDispatchedJobMonitor();
+            #endif
             _threadPool.Stop();
         }
 
@@ -299,6 +434,9 @@ namespace Core {
         Core::TimerType<Timer> _timer;
         mutable Metadata _metadata;
         ::ThreadId _joined;
+        #ifdef __CORE_WARNING_REPORTING__
+        DispatchedJobMonitor _dispatchedJobMonitor;
+        #endif
     };
 }
 }
