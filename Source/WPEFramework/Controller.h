@@ -30,7 +30,7 @@ namespace Plugin {
 
     using JSONCallstack =  Web::JSONBodyType < Core::JSON::ArrayType < Core::JSON::String > >;
 
-    class Controller : public PluginHost::IPlugin, public PluginHost::IWeb, public PluginHost::JSONRPC {
+    class Controller : public PluginHost::IController, public PluginHost::IPlugin, public PluginHost::IWeb, public PluginHost::JSONRPC {
     private:
         class Sink : public PluginHost::IPlugin::INotification,
                      public PluginHost::ISubSystem::INotification {
@@ -217,29 +217,44 @@ namespace Plugin {
         // If there is an error, return a string describing the issue why the initialisation failed.
         // The Service object is *NOT* reference counted, lifetime ends if the plugin is deactivated.
         // The lifetime of the Service object is guaranteed till the deinitialize method is called.
-        virtual const string Initialize(PluginHost::IShell* service) override;
+        const string Initialize(PluginHost::IShell* service) override;
 
         // The plugin is unloaded from the webbridge. This is call allows the module to notify clients
         // or to persist information if needed. After this call the plugin will unlink from the service path
         // and be deactivated. The Service object is the same as passed in during the Initialize.
         // After theis call, the lifetime of the Service object ends.
-        virtual void Deinitialize(PluginHost::IShell* service) override;
+        void Deinitialize(PluginHost::IShell* service) override;
 
         // Returns an interface to a JSON struct that can be used to return specific metadata information with respect
         // to this plugin. This Metadata can be used by the MetData plugin to publish this information to the ouside world.
-        virtual string Information() const override;
+        string Information() const override;
 
         //  IWeb methods
         // -------------------------------------------------------------------------------------------------------
         // Whenever a request is received, it might carry some additional data in the body. This method allows
         // the plugin to attach a deserializable data object (ref counted) to be loaded with any potential found
         // in the body of the request.
-        virtual void Inbound(Web::Request& request) override;
+        void Inbound(Web::Request& request) override;
 
         // If everything is received correctly, the request is passed to us, on a thread from the thread pool, to
         // do our thing and to return the result in the response object. Here the actual specific module work,
         // based on a a request is handled.
-        virtual Core::ProxyType<Web::Response> Process(const Web::Request& request) override;
+        Core::ProxyType<Web::Response> Process(const Web::Request& request) override;
+
+        //  IController methods
+        // -------------------------------------------------------------------------------------------------------
+        uint32_t Persist() override;
+
+        uint32_t Delete(const string& path) override;
+
+        uint32_t Reboot() override;
+
+        uint32_t Environment(const string& index, string& environment) const override;
+
+        uint32_t Configuration(const string& callsign, string& configuration) const override;
+        uint32_t Configuration(const string& callsign, const string& configuration) override;
+
+        uint32_t Clone(const string& basecallsign, const string& newcallsign) override;
 
         //  IUnknown methods
         // -------------------------------------------------------------------------------------------------------
@@ -247,6 +262,7 @@ namespace Plugin {
         INTERFACE_ENTRY(PluginHost::IPlugin)
         INTERFACE_ENTRY(PluginHost::IWeb)
         INTERFACE_ENTRY(PluginHost::IDispatcher)
+        INTERFACE_ENTRY(PluginHost::IController)
         END_INTERFACE_MAP
 
     private:
