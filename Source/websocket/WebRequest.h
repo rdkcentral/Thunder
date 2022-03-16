@@ -311,9 +311,7 @@ namespace Web {
                 , _current()
             {
             }
-            ~Serializer()
-            {
-            }
+            virtual ~Serializer() = default;
 
         public:
             virtual void Serialized(const Web::Request& element) = 0;
@@ -367,10 +365,10 @@ namespace Web {
             };
             typedef Core::ParserType<Core::TerminatorCarriageReturnLineFeed, Deserializer> Parser;
 
+        public:
             Deserializer(const Deserializer&) = delete;
             Deserializer& operator=(const Deserializer&) = delete;
 
-        public:
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
@@ -387,9 +385,7 @@ namespace Web {
 #ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
-            ~Deserializer()
-            {
-            }
+            virtual ~Deserializer() = default;
 
         public:
             inline void Flush()
