@@ -34,6 +34,7 @@
 #include "IPlugin.h"
 #include "Shell.h"
 #include "IShell.h"
+#include "IController.h"
 #include "StateControl.h"
 #include "IStateControl.h"
 #include "SubSystem.h"
