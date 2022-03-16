@@ -194,6 +194,7 @@ namespace Core {
 
     class EXTERNAL AdapterIterator {
     public:
+        static uint8_t constexpr MacSize = 6;
         inline AdapterIterator()
             : _index(static_cast<uint16_t>(~0))
         {
@@ -481,6 +482,9 @@ namespace Core {
 
     class EXTERNAL AdapterIterator {
     public:
+        static uint8_t constexpr MacSize = 6;
+
+    public:
         AdapterIterator();
         AdapterIterator(const uint16_t index);
         AdapterIterator(const string& name);
@@ -523,7 +527,7 @@ namespace Core {
         }
         inline string MACAddress(const char delimiter) const
         {
-            uint8_t MAC[6];
+            uint8_t MAC[MacSize];
             string result;
 
             ASSERT(IsValid());

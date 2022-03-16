@@ -1534,7 +1534,7 @@ namespace PluginHost {
 #pragma warning(disable : 4355)
 #endif
                 SubSystems(ServiceMap* parent)
-                    : SystemInfo(this)
+                    : SystemInfo(parent->Configuration(), this)
                     , _parent(*parent)
                     , _decoupling(Core::ProxyType<Job>::Create(this))
                 {

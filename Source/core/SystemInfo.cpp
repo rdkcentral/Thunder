@@ -33,10 +33,12 @@
 #ifdef __APPLE__
 #import <mach/host_info.h>
 #import <mach/mach_host.h>
+#include <sys/utsname.h>
 #include <sys/sysctl.h>
 #elif defined(__LINUX__)
 #include <cinttypes>
 #include <cstdint>
+#include <sys/utsname.h>
 #include <sys/sysinfo.h>
 #endif
 
@@ -109,26 +111,31 @@ namespace Core {
 #endif
 
     // Use MAC address and let the framework handle the OTP ID.
-    const uint8_t* SystemInfo::RawDeviceId() const
+    const uint8_t* SystemInfo::RawDeviceId(const string& interfaceName) const
     {
         static uint8_t* MACAddress = nullptr;
-        static uint8_t MACAddressBuffer[7];
+        static uint8_t MACAddressBuffer[Core::AdapterIterator::MacSize + 1];
 
         if (MACAddress == nullptr) {
-            bool valid = false;
-            Core::AdapterIterator adapters;
+            memset(MACAddressBuffer, 0, Core::AdapterIterator::MacSize + 1);
 
-            while ((adapters.Next() == true) && (valid == false)) {
-                uint8_t check = 1;
-                adapters.MACAddress(&MACAddressBuffer[1], 6);
-                while ((check <= 4) && (MACAddressBuffer[check] == 0)) {
-                    check++;
+            if (interfaceName.empty() != true) {
+
+                Core::AdapterIterator adapter(interfaceName);
+                if ((adapter.IsValid() == true) && adapter.HasMAC() == true) {
+                    adapter.MACAddress(&MACAddressBuffer[1], Core::AdapterIterator::MacSize);
                 }
-                valid = (check <= 4);
+            } else {
+
+                Core::AdapterIterator adapters;
+                while ((adapters.Next() == true)) {
+                    if (adapters.HasMAC() == true) {
+                        adapters.MACAddress(&MACAddressBuffer[1], Core::AdapterIterator::MacSize);
+                        break;
+                    }
+                }
             }
-
-            MACAddressBuffer[0] = 6;
-
+            MACAddressBuffer[0] = Core::AdapterIterator::MacSize;
             MACAddress = &MACAddressBuffer[0];
         }
 
@@ -470,6 +477,75 @@ namespace Core {
         return (_systemInfo);
     }
 #endif
+
+    const string SystemInfo::Architecture() const
+    {
+        string result;
+#if defined(__LINUX__) || defined(__APPLE__)
+        struct utsname buf;
+        if (uname(&buf) == 0) {
+            result = buf.machine;
+        }
+#endif
+        return result;
+    }
+
+    const string SystemInfo::Chipset() const
+    {
+        string result;
+#if defined(__LINUX__)
+            string line;
+            std::ifstream file("/proc/cpuinfo");
+
+            if (file.is_open()) {
+                while (getline(file, line)) {
+                    if (line.find("Hardware") != std::string::npos) {
+                        std::size_t position = line.find(':');
+                        if (position != std::string::npos) {
+                            result.assign(line.substr(line.find_first_not_of(" ", position + 1)));
+                            break;
+                        }
+                    }
+                }
+
+                if (result.empty() == true)
+                {
+                    file.clear();
+                    file.seekg(0, file.beg);
+
+                    while (getline(file, line))
+                    {
+                        if (line.find("model name") != std::string::npos) {
+                            std::size_t position = line.find(':');
+                            if (position != std::string::npos) {
+                                result.assign(line.substr(line.find_first_not_of(" ", position + 1)));
+                                break;
+                            }
+                        }
+                    }
+                }
+                file.close();
+            }
+#elif defined(__APPLE__)
+        char buffer[128];
+        size_t bufferlen = sizeof(buffer);
+        sysctlbyname("machdep.cpu.brand_string", &buffer, &bufferlen, NULL, 0);
+        result = string(buffer, bufferlen);
+#endif
+        return result;
+    }
+
+    const string SystemInfo::FirmwareVersion() const
+    {
+        string result;
+#if defined(__LINUX__) || defined(__APPLE__)
+        struct utsname buf;
+        if (uname(&buf) == 0) {
+            result = buf.release;
+        }
+#endif
+        return result;
+    }
 
     namespace System {
 
