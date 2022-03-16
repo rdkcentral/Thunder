@@ -44,9 +44,7 @@ namespace WPEFramework {
         template<typename CONTEXT>
         class ProxyType;
 
-        #ifdef __WINDOWS__
-        #pragma warning(disable: 4584)
-        #endif
+PUSH_WARNING(DISABLE_WARNING_MULTPILE_INHERITENCE_OF_BASE_CLASS)
         template <typename CONTEXT>
         class ProxyObject final : public CONTEXT, public std::conditional<std::is_base_of<IReferenceCounted, CONTEXT>::value, Void, IReferenceCounted>::type {
         public:
@@ -310,9 +308,7 @@ namespace WPEFramework {
         protected:
             mutable std::atomic<uint32_t> _refCount;
         };
-        #ifdef __WINDOWS__
-        #pragma warning(default: 4584)
-        #endif
+POP_WARNING()
 
 
         // ------------------------------------------------------------------------------

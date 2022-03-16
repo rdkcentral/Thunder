@@ -511,9 +511,7 @@ namespace PluginHost {
         Config(const Config&) = delete;
         Config& operator=(const Config&) = delete;
 
-        #ifdef __WINDOWS__
-        #pragma warning(disable: 4355)
-        #endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         Config(Core::File& file, const bool background, Core::OptionalType<Core::JSON::Error>& error)
             : _background(background)
             , _security(nullptr)
@@ -607,9 +605,7 @@ namespace PluginHost {
                     _linkerPluginPaths.push_back(itr.Current().Value());
             }
         }
-        #ifdef __WINDOWS__
-        #pragma warning(default: 4355)
-        #endif
+POP_WARNING()
         ~Config()
         {
             ASSERT(_security != nullptr);

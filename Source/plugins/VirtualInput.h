@@ -45,9 +45,7 @@ namespace PluginHost {
             RepeatKeyTimer(const RepeatKeyTimer&) = delete;
             RepeatKeyTimer& operator=(const RepeatKeyTimer&) = delete;
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             RepeatKeyTimer(VirtualInput* parent)
                 : _parent(*parent)
                 , _adminLock()
@@ -58,9 +56,7 @@ namespace PluginHost {
                 , _job()
             {
             }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
             ~RepeatKeyTimer() override = default;
 
         public:
