@@ -50,7 +50,7 @@ namespace Core {
         string Id(const uint8_t RawDeviceId[], const uint8_t KeyLength);
 
         // First byte of the RawDeviceId is the length of the DeviceId to follow.
-        const uint8_t* RawDeviceId() const;
+        const uint8_t* RawDeviceId(const string& interfaceName = "") const;
 
         static bool GetEnvironment(const string& name, string& value);
         static bool SetEnvironment(const string& name, const TCHAR* value, const bool forced = true);
@@ -322,6 +322,11 @@ namespace Core {
 #if !defined(HAVE_TICK_COUNTER)
 #error "Come up with an implementation of a High Resolution tick counter for the compiler you are using."
 #endif
+
+    public:
+        const string Architecture() const;
+        const string Chipset() const;
+        const string FirmwareVersion() const;
 
     private:
         const string m_HostName;

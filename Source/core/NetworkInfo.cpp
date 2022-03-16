@@ -1519,7 +1519,7 @@ namespace Core {
     bool AdapterIterator::HasMAC() const
     {
         uint8_t index = 0;
-        uint8_t mac[6];
+        uint8_t mac[MacSize];
         MACAddress(mac, sizeof(mac));
 
         while ((index < sizeof(mac)) && (mac[index] == 0)) {

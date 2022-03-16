@@ -317,6 +317,7 @@ namespace PluginHost {
                 , Process()
                 , Input()
                 , Configs()
+                , EthernetCard()
                 , Environments()
                 , ExitReasons()
 #ifdef PROCESSCONTAINERS_ENABLED
@@ -348,6 +349,7 @@ namespace PluginHost {
                 Add(_T("input"), &Input);
                 Add(_T("plugins"), &Plugins);
                 Add(_T("configs"), &Configs);
+                Add(_T("ethernetcard"), &EthernetCard);
                 Add(_T("environments"), &Environments);
                 Add(_T("exitreasons"), &ExitReasons);
 #ifdef PROCESSCONTAINERS_ENABLED
@@ -381,6 +383,7 @@ namespace PluginHost {
             ProcessSet Process;
             InputConfig Input;
             Core::JSON::String Configs;
+            Core::JSON::String EthernetCard;
             Core::JSON::ArrayType<Plugin::Config> Plugins;
             Core::JSON::ArrayType<Environment> Environments;
             Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::IShell::reason>> ExitReasons;
@@ -533,6 +536,7 @@ namespace PluginHost {
                 _stackSize = config.Process.IsSet() ? config.Process.StackSize.Value() : 0;
                 _inputInfo.Set(config.Input);
                 _processInfo.Set(config.Process);
+                _ethernetCard = config.EthernetCard.Value();
 
                 _traceCategoriesFile = config.DefaultTraceCategories.IsQuoted();
                 if (_traceCategoriesFile == true) {
@@ -700,6 +704,9 @@ namespace PluginHost {
         inline uint32_t StackSize() const {
             return (_stackSize);
         }
+        inline string EthernetCard() const {
+            return _ethernetCard;
+        }
         inline const InputInfo& Input() const {
             return(_inputInfo);
         }
@@ -844,6 +851,7 @@ namespace PluginHost {
         string _binding;
         string _interface;
         string _URL;
+        string _ethernetCard;
         uint16_t _portNumber;
         bool _IPV6;
         uint16_t _idleTime;

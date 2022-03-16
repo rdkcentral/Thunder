@@ -21,6 +21,7 @@
 #define __CONTROLLER_SYSTEMINFO_H__
 
 #include "Module.h"
+#include "Config.h"
 
 namespace WPEFramework {
 namespace PluginHost {
@@ -51,12 +52,16 @@ namespace PluginHost {
             virtual uint8_t Identifier(const uint8_t length, uint8_t buffer[]) const override;
 
             bool Set(const PluginHost::ISubSystem::IIdentifier* info);
-            inline bool Set(const uint8_t length, const uint8_t buffer[])
+
+            inline bool Set(const uint8_t length, const uint8_t buffer[],
+                            const string& architecture,
+                            const string& chipset,
+                            const string& firmwareversion)
             {
                 bool result(true);
 
                 if (_identifier != nullptr) {
-                    delete (_identifier);
+                    delete [] _identifier;
                 }
 
                 _identifier = new uint8_t[length + 2];
@@ -68,6 +73,15 @@ namespace PluginHost {
                 _identifier[0] = length;
                 _identifier[length + 1] = '\0';
 
+                if ((_architecture != architecture) ||
+                    (_chipset != chipset) ||
+                    (_firmwareVersion != firmwareversion))
+                {
+                    _architecture = architecture;
+                    _chipset = chipset;
+                    _firmwareVersion = firmwareversion;
+                }
+
                 return result;
             }
 
@@ -76,8 +90,15 @@ namespace PluginHost {
                 return (_identifier != nullptr) ? Core::SystemInfo::Instance().Id(_identifier, ~0) : string();
             }
 
+            string Architecture() const override;
+            string Chipset() const override;
+            string FirmwareVersion() const override;
+
         private:
             uint8_t* _identifier;
+            string _architecture;
+            string _chipset;
+            string _firmwareVersion;
         };
 
 
@@ -245,7 +266,7 @@ namespace PluginHost {
         };
 
     public:
-        SystemInfo(Core::IDispatch* callback);
+        SystemInfo(const Config& config, Core::IDispatch* callback);
         virtual ~SystemInfo();
 
     public:
@@ -306,8 +327,12 @@ namespace PluginHost {
                     }
 
                     _identifier = Core::Service<Id>::Create<Id>();
-                    const uint8_t* id(Core::SystemInfo::Instance().RawDeviceId());
-                    _identifier->Set(id[0], &id[1]);
+                    const uint8_t* id(Core::SystemInfo::Instance().RawDeviceId(_config.EthernetCard()));
+                    _identifier->Set(id[0], &id[1],
+                            Core::SystemInfo::Instance().Architecture(),
+                            Core::SystemInfo::Instance().Chipset(),
+                            Core::SystemInfo::Instance().FirmwareVersion()
+                    );
 
                     _adminLock.Unlock();
                 } else {
@@ -327,6 +352,9 @@ namespace PluginHost {
                 }
 
                 SYSLOG(Logging::Startup, (_T("EVENT: Identifier: %s"), _identifier->Identifier().c_str()));
+                SYSLOG(Logging::Startup, (_T("EVENT: Architecture: %s"), _identifier->Architecture().c_str()));
+                SYSLOG(Logging::Startup, (_T("EVENT: Chipset: %s"), _identifier->Chipset().c_str()));
+                SYSLOG(Logging::Startup, (_T("EVENT: FirmwareVersion: %s"), _identifier->FirmwareVersion().c_str()));
                 break;
             }
             case NOT_IDENTIFIER: {
@@ -667,6 +695,7 @@ namespace PluginHost {
 
     private:
         mutable Core::CriticalSection _adminLock;
+        const Config& _config;
         std::list<PluginHost::ISubSystem::INotification*> _notificationClients;
         Core::IDispatch* _callback;
         Id* _identifier;
