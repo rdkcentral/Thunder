@@ -34,8 +34,6 @@ option(COM
         "Include the COM library." ON)
 option(PROCESS
         "Include the COM hosting process executable." ON)
-option(PROXY_STUB
-        "Include proxy/stubs." ON)
 option(PLUGINS
         "Include plugins library." ON)
 option(EXECUTABLE
@@ -113,10 +111,6 @@ endif()
 
 if(PROTOCOLS)
     add_subdirectory(protocols)
-endif()
-
-if(PROXY_STUB)
-    add_subdirectory(proxystubs)
 endif()
 
 if(PLUGINS)

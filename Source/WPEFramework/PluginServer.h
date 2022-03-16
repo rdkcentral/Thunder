@@ -1657,18 +1657,14 @@ namespace PluginHost {
                 SubSystems(const SubSystems&) = delete;
                 SubSystems& operator=(const SubSystems&) = delete;
 
-                #ifdef __WINDOWS__
-                #pragma warning(disable : 4355)
-                #endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 SubSystems(ServiceMap* parent)
                     : SystemInfo(parent->Configuration(), this)
                     , _parent(*parent)
                     , _job(*this)
                 {
                 }
-                #ifdef __WINDOWS__
-                #pragma warning(default : 4355)
-                #endif
+POP_WARNING()
                 ~SubSystems() override
                 {
                     Core::ProxyType<Core::IDispatch> job(_job.Revoke());
@@ -1714,9 +1710,7 @@ namespace PluginHost {
             ServiceMap(const ServiceMap&) = delete;
             ServiceMap& operator=(const ServiceMap&) = delete;
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             ServiceMap(Server& server, Config& config)
                 : _webbridgeConfig(config)
                 , _adminLock()
@@ -1740,9 +1734,7 @@ namespace PluginHost {
                 , _authenticationHandler(nullptr)
             {
             }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
             ~ServiceMap()
             {
                 // Make sure all services are deactivated before we are killed (call Destroy on this object);
@@ -2921,9 +2913,7 @@ namespace PluginHost {
             ChannelMap(const ChannelMap&) = delete;
             ChannelMap& operator=(const ChannelMap&) = delete;
 
-            #ifdef __WINDOWS__
-            #pragma warning(disable : 4355)
-            #endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             ChannelMap(Server& parent, const Core::NodeId& listeningNode, const uint16_t connectionCheckTimer)
                 : Core::SocketServerType<Channel>(listeningNode)
                 , _parent(parent)
@@ -2941,9 +2931,7 @@ namespace PluginHost {
                     }
                 }
             }
-            #ifdef __WINDOWS__
-            #pragma warning(default : 4355)
-            #endif
+POP_WARNING()
             ~ChannelMap()
             {
                 Core::ProxyType<Core::IDispatch> job(_job.Revoke());

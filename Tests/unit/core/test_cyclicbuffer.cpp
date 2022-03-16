@@ -952,7 +952,7 @@ namespace Tests {
                 buffer = new CyclicBufferTest(bufferName, data->mode, cyclicBufferSize, false);
             }
 
-            EXPECT_EQ(buffer->Size(), CyclicBufferSize);
+            EXPECT_EQ(buffer->Size(), cyclicBufferSize);
             testAdmin.Sync("setup server");
             EXPECT_EQ(buffer->Read(loadBuffer, buffer->Used()), 0u);
             testAdmin.Sync("setup client");

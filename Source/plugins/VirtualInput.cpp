@@ -159,9 +159,7 @@ namespace PluginHost
         }
     }
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
     VirtualInput::VirtualInput()
         : _lock()
         , _repeatKey(this)
@@ -179,9 +177,7 @@ namespace PluginHost
         _repeatKey.AddRef();
         _repeatKey.AddReference();
     }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
     VirtualInput::~VirtualInput()
     {
@@ -690,18 +686,14 @@ namespace PluginHost
 #endif
 
     // Keyboard input
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
     IPCUserInput::IPCUserInput(const Core::NodeId& sourceName, const bool defaultEnabled)
         : _service(*this, sourceName)
         , _defaultEnabled(defaultEnabled)
     {
         TRACE_L1("Constructing IPCUserInput for %s on %s", sourceName.HostAddress().c_str(), sourceName.HostName().c_str());
     }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
     /* virtual */ IPCUserInput::~IPCUserInput()
     {

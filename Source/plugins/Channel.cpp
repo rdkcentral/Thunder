@@ -24,9 +24,7 @@ namespace PluginHost {
 
     /* static */ RequestPool Channel::_requestAllocator(10);
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
     Channel::Channel(const SOCKET& connector, const Core::NodeId& remoteId)
         : BaseClass(true, false, 5, _requestAllocator, false, connector, remoteId, 1024, 1024)
         , _adminLock()
@@ -40,9 +38,7 @@ namespace PluginHost {
         , _sendQueue()
     {
     }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
     /* virtual */ Channel::~Channel()
     {

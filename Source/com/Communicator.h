@@ -1211,9 +1211,7 @@ namespace RPC {
             };
 
         public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             ChannelServer(
                 const Core::NodeId& remoteNode,
                 RemoteConnectionMap& processes,
@@ -1239,9 +1237,7 @@ namespace RPC {
                 BaseClass::Register(InvokeMessage::Id(), handler);
                 BaseClass::Register(AnnounceMessage::Id(), handler);
             }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
             ~ChannelServer()
             {

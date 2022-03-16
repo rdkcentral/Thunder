@@ -58,17 +58,13 @@ namespace Process {
             Sink(const Sink&) = delete;
             Sink& operator= (const Sink&) = delete;
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             Sink(WorkerPoolImplementation& parent) 
                 : _parent(parent)
                 , _job(*this) 
             {
             }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
             ~Sink() override
             {
             }
@@ -109,9 +105,7 @@ namespace Process {
         WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
         WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize, const string& callsign)
             : WorkerPool(threads - 1, stackSize, queueSize, &_dispatcher)
             , _dispatcher(callsign)
@@ -124,9 +118,7 @@ namespace Process {
                 SYSLOG(Logging::Notification, ("Spawned: %d additional minions.", threads - 1));
             }
         }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
         ~WorkerPoolImplementation()
         {
