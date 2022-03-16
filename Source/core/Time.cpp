@@ -818,9 +818,9 @@ namespace Core {
             Time converted(convertedTime, localTime);
             _stprintf(buffer, _T("%02d:%02d:%02d"), converted.Hours(), converted.Minutes(), converted.Seconds());
         } else
-#pragma warning(disable : 4996)
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
             _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(), Minutes(), Seconds());
-#pragma warning(default : 4996)
+POP_WARNING()
 
         string value(buffer);
         if( zone != nullptr ) {
@@ -848,10 +848,10 @@ namespace Core {
                 converted.Day(), converted.MonthName(), converted.Year(),
                 converted.Hours(), converted.Minutes(), converted.Seconds(), zone);
         } else
-#pragma warning(disable : 4996)
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
             _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(), Day(), MonthName(), Year(),
                 Hours(), Minutes(), Seconds(), zone);
-#pragma warning(default : 4996)
+POP_WARNING()
 
         return (string(buffer));
     }
@@ -870,14 +870,14 @@ namespace Core {
             SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
 
             Time converted(convertedTime, localTime);
-#pragma warning(disable : 4996)
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
             _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), converted.Year(), converted.Month(), converted.Day(), converted.Hours(),
                 converted.Minutes(), converted.Seconds(), zone);
-#pragma warning(default : 4996)
+POP_WARNING()
         } else
-#pragma warning(disable : 4996)
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
             _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(), Month(), Day(), Hours(),Minutes(), Seconds(), zone);
-#pragma warning(default : 4996)
+POP_WARNING()
 
         return (string(buffer));
     }

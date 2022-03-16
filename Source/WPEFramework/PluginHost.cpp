@@ -78,9 +78,7 @@ namespace PluginHost {
         AdapterObserver(const AdapterObserver&) = delete;
         AdapterObserver& operator=(const AdapterObserver&) = delete;
 
-        #ifdef __WINDOWS__
-        #pragma warning(disable: 4355)
-        #endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         AdapterObserver(string interface)
             : _signal(false, true)
             , _interface(interface)
@@ -94,9 +92,7 @@ namespace PluginHost {
                 _signal.SetEvent();
             }
         }
-        #ifdef __WINDOWS__
-        #pragma warning(default: 4355)
-        #endif
+POP_WARNING()
         ~AdapterObserver() override
         {
             _observer.Close();

@@ -219,9 +219,7 @@ namespace Web {
         WebLinkType(const WebLinkType<LINK, INBOUND, OUTBOUND, ALLOCATOR>&) = delete;
         WebLinkType<LINK, INBOUND, OUTBOUND, ALLOCATOR>& operator=(const WebLinkType<LINK, INBOUND, OUTBOUND, ALLOCATOR>&) = delete;
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         template <typename... Args>
         WebLinkType(const uint8_t queueSize, Args&&... args)
             : _serializerImpl(*this, queueSize)
@@ -236,9 +234,7 @@ namespace Web {
             , _channel(*this, std::forward<Args>(args)...)
         {
         }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
         virtual ~WebLinkType()
         {
             _channel.Close(Core::infinite);

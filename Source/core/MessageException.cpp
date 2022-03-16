@@ -24,10 +24,8 @@
 
 namespace WPEFramework {
 namespace Core {
-#ifdef __WINDOWS__
-#pragma warning(disable : 4996)
-#endif
 
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
     MessageException::MessageException(const string& message, bool inclSysMsg) throw()
         : m_Message(message)
     {
@@ -36,10 +34,7 @@ namespace Core {
             m_Message.append(Core::ToString(strerror(errno)));
         }
     }
-
-#ifdef __WINDOWS__
-#pragma warning(default : 4996)
-#endif
+POP_WARNING()
 
     MessageException::~MessageException() throw()
     {

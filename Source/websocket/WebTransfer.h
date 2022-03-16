@@ -162,9 +162,7 @@ namespace Web {
         ClientTransferType(const ClientTransferType<LINK, FILEBODY>& copy) = delete;
         ClientTransferType<LINK, FILEBODY>& operator=(const ClientTransferType<LINK, FILEBODY>& RHS) = delete;
 
-        #ifdef __WINDOWS__
-        #pragma warning(disable: 4355)
-        #endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         template <typename... Args>
         ClientTransferType(Args&&... args)
             : _adminLock()
@@ -176,9 +174,7 @@ namespace Web {
             _fileBody.AddRef();
             _request.AddRef();
         }
-        #ifdef __WINDOWS__
-        #pragma warning(default : 4355)
-        #endif
+POP_WARNING()
 
         virtual ~ClientTransferType()
         {

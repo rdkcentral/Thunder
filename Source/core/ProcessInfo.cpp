@@ -636,13 +636,9 @@ namespace Core {
 
     bool ProcessTree::ContainsProcess(ThreadId pid) const
     {
-#ifdef __WINDOWS__
-#pragma warning(disable : 4312)
-#endif
+PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
         auto comparator = [pid](const ProcessInfo& processInfo) { return ((ThreadId)(processInfo.Id()) == pid); };
-#ifdef __WINDOWS__
-#pragma warning(default : 4312)
-#endif
+POP_WARNING()
         std::list<ProcessInfo>::const_iterator i = std::find_if(_processes.cbegin(), _processes.cend(), comparator);
         return (i != _processes.cend());
     }
@@ -652,25 +648,17 @@ namespace Core {
         processIds.clear();
 
         for (const ProcessInfo& process : _processes) {
-#ifdef __WINDOWS__
-#pragma warning(disable : 4312)
-#endif
+PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
             processIds.push_back((ThreadId)(process.Id()));
-#ifdef __WINDOWS__
-#pragma warning(default : 4312)
-#endif
+POP_WARNING()
         }
     }
 
     ThreadId ProcessTree::RootId() const
     {
-#ifdef __WINDOWS__
-#pragma warning(disable : 4312)
-#endif
+PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
         return (ThreadId)(_processes.front().Id());
-#ifdef __WINDOWS__
-#pragma warning(default : 4312)
-#endif
+POP_WARNING()
     }
 
     ProcessInfo::Memory::Memory(const process_t pid)
