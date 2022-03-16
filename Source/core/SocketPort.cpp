@@ -60,7 +60,7 @@
 #define __ERROR_ISCONN__ WSAEISCONN
 #define __ERROR_CONNRESET__ WSAECONNRESET
 #define __ERROR_NETWORK_UNREACHABLE__ WSAENETUNREACH
-#pragma warning(disable : 4355) // 'this' used in initializer list
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 #endif
 
 namespace WPEFramework {

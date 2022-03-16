@@ -73,6 +73,12 @@ string(REGEX REPLACE "(-g[0123])" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 string(REGEX REPLACE "(-g[0123])" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 string(REGEX REPLACE "\\-\\g$" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 string(REGEX REPLACE "\\-\\g$" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+# FIX_ME: Disable fortify source.
+#         https://jira.rdkcentral.com/jira/browse/METROL-483
+#         Enabled in upstream buildroot, generates a lot of warnings, caused by missing optimalisation flags.
+#         https://www.redhat.com/en/blog/enhance-application-security-fortifysource
+string(REGEX REPLACE "-D_FORTIFY_SOURCE=[0-3]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+string(REGEX REPLACE "-D_FORTIFY_SOURCE=[0-3]" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
 # make sure others can make use of the JSON creation tools as well!!!
 configure_file( "${CMAKE_SOURCE_DIR}/cmake/project.cmake.in"
@@ -114,6 +120,6 @@ if(BUILD_TESTS)
   enable_testing()
 endif()
 
-add_subdirectory(Tests)
-
 add_subdirectory(Source)
+
+add_subdirectory(Tests)

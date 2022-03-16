@@ -30,8 +30,13 @@ namespace Core {
     template <uint16_t METADATA_SIZE, uint16_t DATA_SIZE>
     class EXTERNAL MessageDispatcherType {
     private:
-        using MetaDataCallback = std::function<void(const uint16_t, const uint8_t*)>;
-        
+        /**
+        * @brief MetaData Callback. First two arguments are for data in. Two later for data out (responded to the other side).
+        *        Third parameter is initially set to maximum length that can be written to the out buffer
+        *
+        */
+        using MetaDataCallback = std::function<void(const uint16_t, const uint8_t*, uint16_t&, uint8_t*)>;
+
         class DataBuffer : public Core::CyclicBuffer {
         public:
             DataBuffer(const string& doorBell, const string& fileName, const uint32_t mode, const uint32_t bufferSize, const bool overwrite)
@@ -47,7 +52,7 @@ namespace Core {
 
             /**
             * @brief Signal that data is available
-            * 
+            *
             */
             void Ring()
             {
@@ -56,7 +61,7 @@ namespace Core {
 
             /**
             * @brief Wait for the doorbell and acknowledge if rang in given time
-            * 
+            *
             * @param waitTime how much should we wait for the doorbell
             * @return uint32_t ERROR_UNAVAILABLE: doorbell is not connected to its counterpart
             *                  ERROR_TIMEDOUT: ring not rang in given time
@@ -93,7 +98,12 @@ namespace Core {
                 uint16_t entrySize = 0;
                 cursor.Peek(entrySize);
                 cursor.Forward(sizeof(entrySize));
-                return entrySize - sizeof(entrySize);
+                return entrySize > sizeof(entrySize) ? entrySize - sizeof(entrySize) : 0;
+            }
+
+            void DataAvailable() override
+            {
+                Ring();
             }
 
         private:
@@ -121,29 +131,24 @@ namespace Core {
                 {
                     auto message = Core::ProxyType<MetaDataFrame>(data);
 
-                    auto length = message->Parameters().Length();
-                    auto value = message->Parameters().Value();
-
                     if (_parent._notification != nullptr) {
-                        _parent._notification(length, value);
-                        message->Response() = Core::ERROR_NONE;
-
-                    } else {
-                        message->Response() = Core::ERROR_UNAVAILABLE;
+                        uint16_t outLength = sizeof(_outBuffer);
+                        _parent._notification(message->Parameters().Length(), message->Parameters().Value(), outLength, _outBuffer);
+                        message->Response().Set(outLength, _outBuffer);
                     }
-
                     source.ReportResponse(data);
                 }
 
             private:
+                uint8_t _outBuffer[SIZE];
                 MetaDataBuffer& _parent;
             };
 
         public:
-            using MetaDataFrame = Core::IPCMessageType<1, Core::IPC::BufferType<SIZE>, Core::IPC::ScalarType<uint32_t>>;
+            using MetaDataFrame = Core::IPCMessageType<1, Core::IPC::BufferType<SIZE>, Core::IPC::BufferType<SIZE>>;
 
             MetaDataBuffer() = default;
-            MetaDataBuffer(const std::string& binding)
+            MetaDataBuffer(const string& binding)
                 : BaseClass(Core::NodeId(binding.c_str()), SIZE)
             {
                 CreateFactory<MetaDataFrame>(1);
@@ -177,7 +182,7 @@ namespace Core {
         //public methods
         /**
          * @brief Construct a new Message Dispatcher object
-         * 
+         *
          * @param identifier name of the instance
          * @param instanceId number of the instance
          * @param initialize should dispatcher be initialzied. Should be done only once, on the server side
@@ -186,20 +191,18 @@ namespace Core {
         MessageDispatcherType(const string& identifier, const uint32_t instanceId, bool initialize, string baseDirectory = _T("/tmp/MessageDispatcher"))
             : _filenames(PrepareFilenames(baseDirectory, identifier, instanceId))
             // clang-format off
-            , _dataBuffer(_filenames.doorBell, _filenames.data,  Core::File::USER_READ    | 
-                                                                 Core::File::USER_WRITE   | 
-                                                                 Core::File::USER_EXECUTE | 
+            , _dataBuffer(_filenames.doorBell, _filenames.data,  Core::File::USER_READ    |
+                                                                 Core::File::USER_WRITE   |
+                                                                 Core::File::USER_EXECUTE |
                                                                  Core::File::GROUP_READ   |
                                                                  Core::File::GROUP_WRITE  |
                                                                  Core::File::OTHERS_READ  |
-                                                                 Core::File::OTHERS_WRITE | 
-                                                                 Core::File::SHAREABLE, 
+                                                                 Core::File::OTHERS_WRITE |
+                                                                 Core::File::SHAREABLE,
                                                                  initialize ? DATA_SIZE + sizeof(Core::CyclicBuffer::control) : 0, true)
             // clang-format on
             , _metaDataBuffer(initialize ? new MetaDataBuffer<METADATA_SIZE>(_filenames.metaData) : nullptr)
         {
-            ASSERT(DATA_SIZE > sizeof(Core::CyclicBuffer::control));
-
             if (!IsValid()) {
                 TRACE_L1("MessageDispatcher is not valid!");
             }
@@ -208,18 +211,18 @@ namespace Core {
         ~MessageDispatcherType()
         {
             _dataBuffer.Relinquish();
+            _metaDataBuffer.reset(nullptr);
         }
 
         MessageDispatcherType(const MessageDispatcherType&) = delete;
         MessageDispatcherType& operator=(const MessageDispatcherType&) = delete;
 
         /**
-        * @brief Writes data into cyclic buffer. If it does not fit the data already in the cyclic buffer will be flushed.
-        *        After writing everything, this side should call Ring() to notify other side.
+        * @brief Writes data into cyclic buffer. After writing everything, this side should call Ring() to notify other side.
         *        To receive this data other side needs to wait for the doorbel ring and then use PopData
         *
         * @param length length of message
-        * @param value buffer 
+        * @param value buffer
         * @return uint32_t ERROR_WRITE_ERROR: failed to reserve enough space - eg, value size is exceeding max cyclic buffer size
         *                  ERROR_NONE: OK
         */
@@ -249,11 +252,11 @@ namespace Core {
         }
 
         /**
-         * @brief Read data after doorbell ringed. If buffer is too small to fit whole message it will be partially filled. 
-         * 
-         * @param outLength ERROR_NONE - read bytes. 
+         * @brief Read data after doorbell ringed. If buffer is too small to fit whole message it will be partially filled.
+         *
+         * @param outLength ERROR_NONE - read bytes.
          *                  ERROR_GENERAL - mimimal required bytes to fit whole message.
-         *                  ERROR_READ_ERROR - the same value as passed in                       
+         *                  ERROR_READ_ERROR - the same value as passed in
          * @param outValue buffer
          * @return uint32_t ERROR_READ_ERROR - unable to read or data is corrupted
          *                  ERROR_NONE - OK
@@ -269,18 +272,15 @@ namespace Core {
             if (_dataBuffer.Validate()) {
 
                 uint32_t length = _dataBuffer.Read(outValue, outLength, true);
-
-                //did not even receive length of the full message
-                if (length == 0) {
-                    TRACE_L1("Inconsistent message\n");
-                    _dataBuffer.Flush();
-                } else if (length > outLength) {
-                    TRACE_L1("Lost part of the message\n");
-                    result = Core::ERROR_GENERAL;
-                    outLength = length;
-                } else {
-                    result = Core::ERROR_NONE;
-                    outLength = length;
+                if (length > 0) {
+                    if (length > outLength) {
+                        TRACE_L1("Lost part of the message\n");
+                        result = Core::ERROR_GENERAL;
+                        outLength = length;
+                    } else {
+                        result = Core::ERROR_NONE;
+                        outLength = length;
+                    }
                 }
             }
 
@@ -297,24 +297,24 @@ namespace Core {
             return _dataBuffer.Wait(waitTime);
         }
 
+        void FlushDataBuffer()
+        {
+            _dataBuffer.Flush();
+        }
+
         /**
-         * @brief Writes metadata. Reader needs to register for notifications to recevie this message
-         * 
-         * @param length length of message
-         * @param value vbuffer
-         * @return uint32_t ERROR_GENERAL: unable to open communication channel
-         *                  ERROR_WRITE_ERROR: unable to write
-         *                  ERROR_UNAVAILABLE: message was sent but not reported (missing Register call on the other side)
-         *                                     caller should send this message again
-         *                  ERROR_NONE: OK
+         * @brief Exchanges metadata with the server. Reader needs to register for notifications to recevie this message.
+         *        Passed buffer will be filled with data from thr other side
+         *
+         * @param length length of the message
+         * @param value buffer
+         * @param maxLength maximum size of the buffer
+         * @return uint16_t how much data was written back to the buffer
          */
-        uint32_t PushMetadata(const uint16_t length, const uint8_t* value)
+        uint16_t PushMetadata(const uint16_t length, uint8_t* value, const uint16_t maxLength)
         {
             _metaDataLock.Lock();
-
-            ASSERT(length > 0);
-
-            uint32_t result = Core::ERROR_GENERAL;
+            uint16_t readLength = 0;
 
             Core::IPCChannelClientType<Core::Void, false, true> channel(Core::NodeId(_filenames.metaData.c_str()), METADATA_SIZE);
 
@@ -324,9 +324,12 @@ namespace Core {
                 metaDataFrame->Parameters().Set(length, value);
 
                 if (channel.Invoke(metaDataFrame, Core::infinite) == Core::ERROR_NONE) {
-                    result = metaDataFrame->Response();
-                } else {
-                    result = Core::ERROR_WRITE_ERROR;
+                    auto const & bufferType = metaDataFrame->Response();
+
+                    readLength = bufferType.Length();
+                    if (readLength <= maxLength) {
+                        std::copy_n(bufferType.Value(), readLength, value);
+                    }
                 }
 
                 channel.Close(Core::infinite);
@@ -334,7 +337,7 @@ namespace Core {
 
             _metaDataLock.Unlock();
 
-            return result;
+            return readLength;
         }
 
         void RegisterDataAvailable(MetaDataCallback notification)
@@ -350,7 +353,6 @@ namespace Core {
 
         bool IsValid()
         {
-
             bool result = true;
 
             if (!_dataBuffer.IsValid()) {
@@ -373,11 +375,11 @@ namespace Core {
 
         /**
         * @brief Prepare filenames for MessageDispatcher
-        * 
+        *
         * @param baseDirectory where are those filed stored. This directory should already exist.
         * @param identifier identifer of the instance
         * @param instanceId number of instance
-        * @return std::tuple<string, string, string> 
+        * @return std::tuple<string, string, string>
         *         0 - doorBellFilename
         *         1 - dataFileName
         *         2 - metaDataFilename
@@ -399,8 +401,6 @@ namespace Core {
 
         DataBuffer _dataBuffer;
         std::unique_ptr<MetaDataBuffer<METADATA_SIZE>> _metaDataBuffer;
-
-        uint8_t _dataReadBuffer[DATA_SIZE];
     };
 }
 }

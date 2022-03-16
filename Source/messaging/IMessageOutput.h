@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2022 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,15 @@
  */
 
 #pragma once
+#include "Module.h"
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Connector
-#endif
+namespace WPEFramework {
+namespace Messaging {
 
-#include <core/core.h>
+    struct EXTERNAL IMessageOutput {
+        virtual ~IMessageOutput() = default;
+        virtual void Output(const Core::Messaging::Information& info, const Core::Messaging::IEvent* message) = 0;
+    };
 
-#if defined(__WINDOWS__) && defined(CONNECTOR_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
-#endif
-
+}
+}

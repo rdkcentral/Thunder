@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2022 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,13 @@
 #pragma once
 
 #ifndef MODULE_NAME
-#define MODULE_NAME ProxyStubs
+#define MODULE_NAME Messaging
 #endif
 
 #include <core/core.h>
-#include <com/com.h>
 
- // We require the Constructors/destructor, generated for the interfaces...
-#include <plugins/plugins.h>
+#if defined(__WINDOWS__) && defined(MESSAGING_EXPORTS)
+#undef EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
+#endif
+

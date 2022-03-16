@@ -130,10 +130,10 @@ namespace Web {
 
             const static uint16_t EOL_MARKER = 0x8000;
 
+        public:
             Serializer(const Serializer&) = delete;
             Serializer& operator=(const Serializer&) = delete;
 
-        public:
             Serializer()
                 : _state(VERSION)
                 , _offset(0)
@@ -145,9 +145,7 @@ namespace Web {
                 , _current()
             {
             }
-            ~Serializer()
-            {
-            }
+            virtual ~Serializer() = default;
 
         public:
             virtual void Serialized(const Web::Response& element) = 0;
@@ -201,13 +199,11 @@ namespace Web {
             };
             typedef Core::ParserType<Core::TerminatorCarriageReturnLineFeed, Deserializer> Parser;
 
+        public:
             Deserializer(const Deserializer&) = delete;
             Deserializer& operator=(const Deserializer&) = delete;
 
-        public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             Deserializer()
                 : _lock()
                 , _current()
@@ -218,12 +214,8 @@ namespace Web {
 				, _zlibResult(0)
             {
             }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
-            ~Deserializer()
-            {
-            }
+POP_WARNING()
+            virtual ~Deserializer() = default;
 
         public:
             inline void Flush()

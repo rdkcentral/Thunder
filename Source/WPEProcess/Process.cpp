@@ -58,17 +58,13 @@ namespace Process {
             Sink(const Sink&) = delete;
             Sink& operator= (const Sink&) = delete;
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             Sink(WorkerPoolImplementation& parent) 
                 : _parent(parent)
                 , _job(*this) 
             {
             }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
             ~Sink() override
             {
             }
@@ -109,9 +105,7 @@ namespace Process {
         WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
         WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize, const string& callsign)
             : WorkerPool(threads - 1, stackSize, queueSize, &_dispatcher)
             , _dispatcher(callsign)
@@ -124,9 +118,7 @@ namespace Process {
                 SYSLOG(Logging::Notification, ("Spawned: %d additional minions.", threads - 1));
             }
         }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
         ~WorkerPoolImplementation()
         {
@@ -187,7 +179,6 @@ namespace Process {
             , User(nullptr)
             , Group(nullptr)
             , Threads(1)
-            , EnabledLoggings(0)
         {
             Parse();
         }
@@ -213,7 +204,9 @@ namespace Process {
         const TCHAR* User;
         const TCHAR* Group;
         uint8_t Threads;
-        uint32_t EnabledLoggings;
+#ifndef __CORE_MESSAGING__
+        uint32_t EnabledLoggings{ 0 };
+#endif
 
     private:
         string Strip(const TCHAR text[]) const
@@ -273,9 +266,11 @@ namespace Process {
             case 'i':
                 InterfaceId = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
                 break;
+#ifndef __CORE_MESSAGING__
             case 'e':
                 EnabledLoggings = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
                 break;
+#endif
             case 'V':
                 Version = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
                 break;
@@ -574,7 +569,9 @@ int main(int argc, char** argv)
         printf("        [-v <volatile path>]\n");
         printf("        [-a <app path>]\n");
         printf("        [-m <proxy stub library path>]\n");
+#ifndef __CORE_MESSAGING__
         printf("        [-e <enabled SYSLOG categories>]\n");
+#endif
         printf("        [-P <post mortem path>]\n\n");
         printf("This application spawns a seperate process space for a plugin. The plugins");
         printf("are searched in the same order as they are done in process. Starting from:\n");
@@ -621,11 +618,14 @@ int main(int argc, char** argv)
         // Any remote connection that will be spawned from here, will have this ExchangeId as its parent ID.
         Core::SystemInfo::SetEnvironment(_T("COM_PARENT_EXCHANGE_ID"), Core::NumberType<uint32_t>(options.Exchange).Text());
 
-        TRACE_L1("Opening a trace file with ID: [%d].", options.Exchange);
+        TRACE_L1("Opening a message file with ID: [%d].", options.Exchange);
 
-        // Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID.
+        
+        // Due to the LXC container support all ID's get mapped. For the MessageBuffer, use the host given ID.
+#ifdef __CORE_MESSAGING__
+        Core::Messaging::MessageUnit::Instance().Open(options.Exchange);
+#else
         Trace::TraceUnit::Instance().Open(options.Exchange);
-
         // Time to open up the LOG tracings as specified by the caller.
         Logging::LoggingType<Logging::Startup>::Enable((options.EnabledLoggings & 0x00000001) != 0);
         Logging::LoggingType<Logging::Shutdown>::Enable((options.EnabledLoggings & 0x00000002) != 0);
@@ -634,6 +634,7 @@ int main(int argc, char** argv)
         Logging::LoggingType<Logging::ParsingError>::Enable((options.EnabledLoggings & 0x00000010) != 0);
         Logging::LoggingType<Logging::Error>::Enable((options.EnabledLoggings & 0x00000020) != 0);
         Logging::LoggingType<Logging::Fatal>::Enable((options.EnabledLoggings & 0x00000040) != 0);
+#endif
 
 #ifdef __CORE_WARNING_REPORTING__
         WarningReporting::WarningReportingUnit::Instance().Open(options.Exchange);
@@ -661,6 +662,11 @@ int main(int argc, char** argv)
                 process.Run(options.ProxyStubPath, options.InterfaceId, base, options.Exchange);
             }
         }
+
+#ifdef __CORE_MESSAGING__
+        //close messaging unit before singletons are cleared
+        Core::Messaging::MessageUnit::Instance().Close();
+#endif
     }
 
     TRACE_L1("End of Process!!!!");

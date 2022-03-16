@@ -318,6 +318,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
 
                     self.is_ref = type.IsReference()
                     self.is_ptr = type.IsPointer()
+                    self.is_ptr_ptr = type.IsPointerToPointer() and not type.IsConst() and not type.IsPointerToConst()
 
                     self.is_nonconstref = type.IsReference() and not type.IsConst() and not type.IsPointerToConst()
                     self.is_nonconstptr = type.IsPointer() and not type.IsConst() and not type.IsPointerToConst()
@@ -328,22 +329,25 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                     self.str = TypeStr(self.unexpanded)
                     self.str_typename = Strip(type.TypeName())
                     self.str_noptrref = TypeStr(self.unexpanded).replace("*", "").replace("&", "")
+                    self.str_noptrptrref = TypeStr(self.unexpanded).replace("**", "*").replace("&", "")
                     self.str_nocvref = self.str_typename + ("*" if self.is_ptr else "")
                     self.str_noref = TypeStr(self.unexpanded).replace("&", "")
                     self.is_interface = interface != None or (self.is_ptr and self.obj)
 
                     self.str_rpctype = None
                     self.str_rpctype_nocv = None
+                    self.str_rpctype_bare = None
                     self.is_inputptr = self.is_ptr and (input or not self.is_nonconstptr)
                     self.is_outputptr = self.is_nonconstptr and output
+                    self.is_outputptrptr = self.is_nonconstptr and self.is_ptr_ptr and output
                     self.is_inputref = self.is_ref and (input or not self.is_nonconstref)
                     self.is_outputref = self.is_nonconstref and output
-                    self.is_output = self.is_outputptr or self.is_outputref
-                    self.is_input = self.is_inputptr or self.is_inputref
+                    self.is_output = self.is_outputptr or self.is_outputref or self.is_outputptrptr
+                    self.is_input = self.is_inputptr or self.is_inputref or (self.obj and self.is_ptr and not self.is_nonconstref and not self.is_ptr_ptr)
                     self.ptr_length = length
                     self.ptr_maxlength = maxlength
                     self.ptr_interface = self.interface
-                    self.proxy = self.is_interface and (not self.is_ref or self.is_input)
+                    self.proxy = self.is_interface and ((not self.is_ref and not self.is_ptr_ptr) or self.is_input)
                     self.origname = origname
                     self.length_constant = False
                     self.maxlength_constant = False
@@ -355,7 +359,8 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                     self.is_maxlength = False
                     self.interface_expr = None
                     self.interface_type = None
-                    self.length_type = "uint16_t"
+                    self.is_property = self.oclass.parent.retval.meta.is_property if isinstance(self.oclass.parent, CppParser.Method) else False
+                    self.length_type = "void" if (((self.is_interface and self.is_ptr_ptr) or (self.is_property and (self.is_ptr and not self.is_ref))) and self.is_output) else "uint16_t"
                     self.str_nocv = TypeStr(self.type).replace("const ", "").replace("volatile ", "")
                     self.str_cv = type.CVString()
 
@@ -394,14 +399,24 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                         self.str_rpctype = self._RpcType(self.str_noref)
                     return self.str_rpctype
 
+                def RpcTypeNoRefPtr(self):
+                    if self.str_rpctype == None:
+                        self.str_rpctype = self._RpcType(self.str_noptrref)
+                    return self.str_rpctype
+
+                def RpcTypeBare(self):
+                    if self.str_rpctype == None:
+                        self.str_rpctype_bare = self._RpcType(self.str_noptrref, True)
+                    return self.str_rpctype_bare
+
                 def RpcTypeNoCV(self):
                     if self.str_rpctype_nocv == None:
                         self.str_rpctype_nocv = self._RpcType(self.str_nocvref)
                     return self.str_rpctype_nocv
 
                 # Converts a C++ type to RPC types
-                def _RpcType(self, noref):
-                    if self.is_ptr:
+                def _RpcType(self, noref, noptr = False):
+                    if self.is_ptr and not noptr:
                         if self.is_interface:
                             return "Number<%s>" % INSTANCE_ID
                         else:
@@ -429,11 +444,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                         raise TypenameError(self.oclass, "unable to serialise type '%s'" % self.CppType())
 
                 def _ExpandTypedefs(self, type):
-                    expanded = type
-                    if isinstance(type, CppParser.Type):
-                        if isinstance(type.Type(), CppParser.Typedef):
-                            expanded = self._ExpandTypedefs(type.Type().type)
-                    return expanded
+                    return type.Resolve()
 
             class EmitParam(EmitType):
                 def __init__(self, type_, name="param", cv=[]):
@@ -462,7 +473,8 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                             if p.is_input and p.is_output:
                                 acc += " /* inout */"
                             elif p.is_input:
-                                acc += " /* in */"
+                                pass
+                                # acc += " /* in */"
                             elif p.is_output:
                                 acc += " /* out */"
                     proto += TypeStr(p.unexpanded) + acc + " param%i%s%s" % (c, (" VARIABLE_IS_NOT_USED" if unused else ""),
@@ -505,7 +517,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                 params = [retval] + parameters
                 for c, p in enumerate(params):
                     if not p.is_length:
-                        if p.is_ptr and not p.is_ref and (not p.is_interface or p.interface):
+                        if p.is_ptr and (not p.is_ref and not p.is_ptr_ptr and not p.is_property) and (not p.is_interface or p.interface):
 
                             def __ParseLength(length, maxlength, target, length_name):
                                 parsed = []
@@ -689,19 +701,29 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                         (m.name, p.str_typename))
                             else:
                                 if p.is_ptr and not p.obj and not p.is_ref and p.length_type == "void":
-                                    emit.Line("%s %s = %s; // storage" % (p.str_typename, p.name, NULLPTR))
+                                    emit.Line("%s %s{}; // storage" % (p.str_typename, p.name))
                                 elif p.is_ptr and not p.obj and not p.is_ref:
                                     if p.is_input:
                                         emit.Line("const %s %s = %s;" % (p.str_nocvref, p.name, NULLPTR))
                                         emit.Line("%s %s_length = reader.Lock%s(%s);" %
                                                   (p.length_type, p.name, p.RpcTypeNoCV(), p.name))
                                         emit.Line("reader.UnlockBuffer(%s_length);" % p.name)
-                                elif p.is_ref and not p.is_input:
+                                elif p.is_ref and not p.is_input and not p.is_ptr_ptr:
                                     emit.Line("%s %s{}; // storage" % (p.str_nocvref, p.name))
                                     if p.is_length or p.is_maxlength:
                                         raise TypenameError(
                                             p.oclass,
                                             "'%s' is defined as a length variable but is write-only" % p.origname)
+                                elif p.is_ptr_ptr:
+                                    if p.is_ref:
+                                        raise TypenameError(p.oclass,
+                                            "'%s' reference to a pointer to pointer is not supported" % p.origname)
+                                    elif p.is_output and p.is_interface:
+                                        emit.Line("%s %s{}; // storage" % (p.str_nocvref, p.name))
+                                    else:
+                                        raise TypenameError(p.oclass,
+                                            "'%s' pointer to pointer must be an interface output parameter" % p.origname)
+
                                 elif not p.is_length or p.is_maxlength or not params[p.length_target].is_input:
                                     emit.Line("%s %s = reader.%s();" %
                                               (INSTANCE_ID if p.proxy else p.str_noref,
@@ -816,6 +838,8 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                             parameter = "static_cast<%s* const&>(%s)" % (p.str_typename, parameter)
                         elif (p.obj and not p.is_output and not p.is_interface and not p.proxy):
                             parameter = "static_cast<const %s>(%s)" % (p.str_typename, parameter)
+                        elif (p.obj and not p.is_output and p.type.IsPointerToConst()) :
+                            parameter = "static_cast<const %s>(%s)" % (p.str_nocvref, parameter)
                         parameter = parameter + (", " if c < len(params) - 1 else "")
                         call += parameter
                     call += ");"
@@ -860,10 +884,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                         for p in params:
                             if not p.obj and p.is_outputptr and not p.is_ref:
                                 if p.length_type == "void":
-                                    # temporarily remove the pointer
-                                    temp = p.oclass
-                                    temp.type.remove("*")
-                                    emit.Line("writer.%s(%s);" % (EmitType(temp).RpcType(), p.name))
+                                    emit.Line("writer.%s(%s);" % (EmitType(p.oclass).RpcTypeBare(), p.name))
                                 else:
                                     if p.length_var and p.length_ref and p.length_ref.is_output:
                                         emit.Line("writer.%s(%s);" % (p.length_ref.RpcType(), p.length_var))
@@ -873,7 +894,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                               (p.RpcType(), p.length_var if p.length_var else p.maxlength_var, p.name))
                                     emit.IndentDec()
                                     emit.Line("}")
-                            elif p.is_nonconstref:
+                            elif p.is_nonconstref or p.is_ptr_ptr:
                                 if p.obj and not p.is_interface:
                                     emit.Line("// (decompose %s)" % p.str_typename)
                                     if p.obj.vars:
@@ -885,7 +906,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                             (m.name, p.str_typename))
                                 elif not p.is_length:
                                     if p.is_interface:
-                                        emit.Line("writer.%s(RPC::instance_cast<%s>(%s));" % (p.RpcType(), p.CppType(), p.name))
+                                        emit.Line("writer.%s(RPC::instance_cast<%s>(%s));" % (p.RpcType(), p.str_noptrptrref, p.name))
                                     else:
                                         emit.Line("writer.%s(%s);" % (p.RpcType(), p.name))
                                 if p.is_interface and not p.type.IsConst():
@@ -1040,12 +1061,12 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                         m, "method '%s': unable to decompose parameter '%s': unknown type" %
                                         (m.name, p.str_typename))
                             else:
-                                if p.is_ptr and p.obj:
+                                if p.is_ptr and p.obj and p.is_input:
                                     proxy_params += 1
                                 if not p.obj and p.is_ptr:
                                     if p.is_input:
                                         emit.Line("writer.%s(%s, param%i);" % (p.RpcType(), p.length_expr, c))
-                                elif not p.is_input and p.is_nonconstref and p.is_nonconstptr:
+                                elif not p.is_input and ((p.is_nonconstref and p.is_nonconstptr) or p.is_ptr_ptr):
                                     pass
                                 elif (not p.is_length or not params[p.length_target].is_input
                                       or p.is_maxlength) and (p.is_input or
@@ -1060,7 +1081,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                         if not p.obj and not p.is_ptr and not p.CheckRpcType():
                             pass
                         else:
-                            if (p.is_nonconstref and p.obj) or (not p.obj and p.is_outputptr) or (p.is_nonconstref
+                            if ((p.is_nonconstref or p.is_ptr_ptr) and p.obj) or (not p.obj and p.is_outputptr) or (p.is_nonconstref
                                                                                                   and not p.is_length):
                                 output_params += 1
 
@@ -1120,17 +1141,23 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                 emit.Line("%s = reader.%s();" % (retval.name, retval.RpcTypeNoCV()))
 
                     for p in params:
-                        if p.is_nonconstref and p.is_interface:
-                            emit.Line("%s = reinterpret_cast<%s>(Interface(reader.Number<%s>(), %s::ID));" %
-                                      (p.name, p.str_nocvref, INSTANCE_ID, p.str_typename))
+                        if (p.is_nonconstref or p.is_ptr_ptr) and p.is_interface:
+                            if p.is_ptr_ptr:
+                                emit.Line("ASSERT(%s != %s);" % (p.name, NULLPTR));
+                            emit.Line("%s%s = reinterpret_cast<%s>(Interface(reader.Number<%s>(), %s::ID));" %
+                                      ("*" if p.is_ptr_ptr else "", p.name, p.str_nocvref, INSTANCE_ID, p.str_typename))
                         elif not p.obj and p.is_outputptr:
-                            if p.length_var and p.length_ref and p.length_ref.is_output:
-                                emit.Line("%s = reader.%s();" % (p.length_ref.name, p.length_ref.RpcType()))
-                            emit.Line("if ((%s != 0) && (%s != 0)) {" % (p.name, p.length_expr))
-                            emit.IndentInc()
-                            emit.Line("reader.%s(%s, %s);" % (p.RpcType(), p.length_expr, p.name))
-                            emit.IndentDec()
-                            emit.Line("}")
+                            if p.length_type != "void":
+                                if p.length_var and p.length_ref and p.length_ref.is_output:
+                                    emit.Line("%s = reader.%s();" % (p.length_ref.name, p.length_ref.RpcType()))
+                                emit.Line("if ((%s != 0) && (%s != 0)) {" % (p.name, p.length_expr))
+                                emit.IndentInc()
+                                emit.Line("reader.%s(%s, %s);" % (p.RpcType(), p.length_expr, p.name))
+                                emit.IndentDec()
+                                emit.Line("}")
+                            else:
+                                emit.Line("ASSERT(%s != %s);" % (p.name, NULLPTR));
+                                emit.Line("*%s = reader.%s();" % (p.name, p.RpcTypeBare()))
                         elif not p.obj and p.is_nonconstref and not p.is_length:
                             emit.Line("%s = reader.%s();" % (p.name, p.RpcTypeNoCV()))
                         elif p.obj and not p.is_interface and p.is_output:
@@ -1263,7 +1290,11 @@ if __name__ == "__main__":
                            action="store_true",
                            default=False,
                            help="show help on supported source code tags and exit")
-    argparser.add_argument("--version", dest="show_version", action="store_true", default=False, help="display version")
+    argparser.add_argument("--code",
+                           dest="code",
+                           action="store_true",
+                           default=True,
+                           help="Generate stub and proxy code (default)")
     argparser.add_argument("-i",
                            dest="extra_include",
                            metavar="FILE",
@@ -1337,22 +1368,40 @@ if __name__ == "__main__":
 
     if args.help_tags:
         print("The following special tags are supported:")
-        print("   @stop               - skip parsing of the rest of the file")
-        print("   @omit               - omit generating code for the next item (class or method)")
-        print("   @stub               - generate empty stub for the next item (class or method)")
-        print("   @stubgen:include \"file\"   - include another file, relative to the directory of the current file")
-        print("   @stubgen:include <file>   - include another file, relative to the defined include directories")
-        print("For non-const pointer and reference method parameters:")
-        print("   @in                 - denotes an input parameter")
-        print("   @out                - denotes an output parameter")
-        print("   @inout              - denotes an input/output parameter (equivalent to @in @out)")
-        print("   @interface:<expr>   - specifies a parameter holding interface ID value for void* interface passing")
-        print("   @length:<expr>      - specifies a buffer length value (a constant, a parameter name or a math expression)")
-        print("   @maxlength:<expr>   - specifies a maximum buffer length value (a constant, a parameter name or a math expression),")
-        print("                         if not specified @length is used as maximum length, use round parenthesis for expressions",)
-        print("                         e.g.: @length:bufferSize @length:(width*height*4)")
+        print("   @stop                 - skip parsing of the rest of the file")
+        print("   @omit                 - omit generating code for the next item (class or method)")
+        print("   @stub                 - generate empty stub for the next item (class or method)")
+        print("   @insert \"file\"        - include another file, relative to the directory of the current file")
+        print("   @insert <file>        - include another file, relative to the defined include directories")
         print("")
-        print("The tags shall be placed inside comments.")
+        print("For non-const pointer and reference method parameters:")
+        print("   @in                   - denotes an input parameter")
+        print("   @out                  - denotes an output parameter")
+        print("   @inout                - denotes an input/output parameter (equivalent to @in @out)")
+        print("   @interface:{expr}     - specifies a parameter holding interface ID value for void* interface passing")
+        print("   @length:{expr}        - specifies a buffer length value (a constant, a parameter name or a math expression)")
+        print("   @maxlength:{expr}     - specifies a maximum buffer length value (a constant, a parameter name or a math expression),")
+        print("                           if not specified @length is used as maximum length, use round parenthesis for expressions",)
+        print("                           e.g.: @length:bufferSize @length:(width*height*4)")
+        print("")
+        print("JSON-RPC-related parameters:")
+        print("   @json                 - marks a class for JSON-RPC generation")
+        print("   @extended             - marks a class to be generated using a deprecated 'extended' style (not to be used in new code!)")
+        print("   @json:omit            - unmarks a method from JSON-RPC generation")
+        print("   @event                - marks a class to be generated as an JSON-RPC event")
+        print("   @property             - marks method to be generated as a JSON-RPC property")
+        print("   @iterator             - marks a class to be generated as an JSON-RPC interator")
+        print("   @text {name}          - sets an alternative name for an enum or a variable")
+        print("   @brief {desc}         - sets a brief description for a JSON-RPC method, property or event")
+        print("   @details {desc}       - sets a detailed description for a JSON-RPC method, property or event")
+        print("   @param {name} {desc}  - sets a description for a parameter of a JSON-RPC method or event")
+        print("   @retval {desc}        - sets a description for a return value of a JSON-RPC method")
+        print("   @index                - marks a parameter in a JSON-RPC property or event to be an index")
+        print("   @deprecated           - marks a JSON-RPC method, property or event as deprecated in documentation")
+        print("   @obsolete             - marks a JSON-RPC method, property or event as osbsolete in documentation")
+        print("   @sourcelocation {lnk} - sets source location link to be used in documentation")
+        print("")
+        print("Tags shall be placed inside C++ comments.")
         sys.exit()
 
 

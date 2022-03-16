@@ -73,6 +73,7 @@ class Ref(IntEnum):
     VOLATILE = 32,
     POINTER_TO_CONST = 64,
     POINTER_TO_VOLATILE = 128,
+    POINTER_TO_POINTER = 256
 
 
 class Metadata:
@@ -216,14 +217,15 @@ class Identifier():
         skip = 0
         self.value = []
 
-        if string.count("*") > 1:
-            raise ParserError("pointers to pointers are not supported: '%s'" % (" ".join(string)))
-        elif string.count("[") > 1:
-            raise ParserError("multi-dimensional arrays are not supported: '%s'" % (" ".join(string)))
+        if string.count("*") > 2:
+            print(string)
+            raise ParserError("multi-dimensional pointers to pointers are not supported: '%s'" % (" ".join(["".join(x) for x in string])))
+        if string.count("[") > 1:
+            raise ParserError("multi-dimensional arrays are not supported: '%s'" % (" ".join(["".join(x) for x in string])))
         elif "[" in string and "*" in string:
-            raise ParserError("arrays of pointers are not supported: '%s'" % (" ".join([str(i) for i in string])))
+            raise ParserError("arrays of pointers are not supported: '%s'" % (" ".join(["".join(x) for x in string])))
         elif "&&" in string:
-            raise ParserError("rvalue references are not supported: '%s'" % (" ".join(string)))
+            raise ParserError("rvalue references are not supported: '%s'" % (" ".join(["".join(x) for x in string])))
 
         for i, token in enumerate(string):
             if not token:
@@ -462,7 +464,10 @@ class Identifier():
             ref = 0
             while self.type[typeIdx] in ["*", "&", "&&", "const", "volatile"]:
                 if self.type[typeIdx] == "*":
-                    ref |= Ref.POINTER
+                    if ref & Ref.POINTER:
+                        ref |= Ref.POINTER_TO_POINTER
+                    else:
+                        ref |= Ref.POINTER
                 elif self.type[typeIdx] == "&":
                     ref |= Ref.REFERENCE
                 elif self.type[typeIdx] == "&&":
@@ -699,6 +704,9 @@ class Type:
     def IsPointer(self):
         return self.ref & Ref.POINTER != 0
 
+    def IsPointerToPointer(self):
+        return self.ref & Ref.POINTER_TO_POINTER != 0
+
     def IsConstPointer(self):
         return self.IsPointer() and self.IsConst()
 
@@ -747,6 +755,18 @@ class Type:
     def TypeName(self):
         return self.type.Proto()
 
+    def Resolve(self, ref = 0):
+        if self.IsPointerToPointer() and ref & Ref.POINTER:
+            raise ParserError("Too many pointers %s" % self)
+        if self.IsPointer() and ref & Ref.POINTER:
+            ref |= Ref.POINTER_TO_POINTER
+        if isinstance(self.type, Typedef):
+            type = self.type.Resolve(self.ref | ref)
+        else:
+            type = copy.deepcopy(self)
+            type.ref |= ref
+        return type
+
     def CVString(self):
         str = "const" if self.IsConst() else ""
         str += " " if self.IsConst() and self.IsVolatile() else ""
@@ -758,6 +778,7 @@ class Type:
         _str += "volatile " if (self.IsVolatile() and not self.IsPointer()) or self.IsPointerToVolatile() else ""
         _str += self.TypeName()
         _str += "*" if self.IsPointer() else ""
+        _str += "*" if self.IsPointerToPointer() else ""
         _str += " const" if self.IsConstPointer() else ""
         _str += " volatile" if self.IsVolatilePointer() else ""
         _str += "&" if self.IsReference() else "&&" if self.IsRvalueReference() else ""
@@ -787,6 +808,10 @@ class Typedef(Identifier, Name):
         self.parent.typedefs.append(self)
         self.is_event = False
         self.is_iterator = self.parent.is_iterator if isinstance(self.parent, (Class, Typedef)) else False
+
+    def Resolve(self, ref = 0):
+        type = self.type.Resolve(self.type.ref | ref)
+        return type
 
     def Proto(self):
         return self.full_name
@@ -890,6 +915,11 @@ class Function(Block, Name):
         self.stub = False
         self.is_excluded = False
         self.parent.methods.append(self)
+        for method in self.parent.methods:
+            if method.name == self.name:
+                if method.retval.meta.is_property:
+                    self.retval.meta.is_property = True
+                break
 
     def Proto(self):
         _str = "static " if self.IsStatic() else ""
@@ -1094,7 +1124,7 @@ class InstantiatedTemplateClass(Class):
         self.type = self.TypeName()
 
     def TypeName(self):
-        return "%s<%s> /* instatiated template class */ " % (self.baseName.full_name, ", ".join([str("".join(p.type) if isinstance(p.type, list) else p.type) for p in self.resolvedArgs]))
+        return "%s<%s>" % (self.baseName.full_name, ", ".join([str("".join(p.type) if isinstance(p.type, list) else p.type) for p in self.resolvedArgs]))
 
     def Proto(self):
         return self.TypeName()

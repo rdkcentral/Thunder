@@ -22,7 +22,6 @@
 
 #include "IPlugin.h"
 #include "IShell.h"
-#include "connector/Connector.h"
 
 namespace WPEFramework {
 namespace PluginHost {
@@ -245,18 +244,14 @@ namespace RPC {
         SmartInterfaceType(const SmartInterfaceType<INTERFACE, ENGINE>&) = delete;
         SmartInterfaceType<INTERFACE, ENGINE>& operator=(const SmartInterfaceType<INTERFACE, ENGINE>&) = delete;
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         SmartInterfaceType()
             : _controller(nullptr)
             , _administrator()
             , _monitor(*this)
         {
         }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
         virtual ~SmartInterfaceType()
         {
             ASSERT(_controller == nullptr);
@@ -269,9 +264,15 @@ namespace RPC {
         }
         uint32_t Open(const uint32_t waitTime, const Core::NodeId& node, const string& callsign)
         {
+            Core::IUnknown* controller = RPC::ConnectorController::Instance().Controller();
+
             ASSERT(_controller == nullptr);
 
-            _controller = connector_controller();
+            if (controller != nullptr) {
+                // Seems like we already have a connection to the IShell of the Controller plugin, reuse it.
+                _controller = controller->QueryInterface<PluginHost::IShell>();
+                controller->Release();
+            }
             if (_controller == nullptr) {
                 _controller = _administrator.template Aquire<PluginHost::IShell>(waitTime, node, _T(""), ~0);
             }

@@ -326,16 +326,7 @@ namespace Plugin {
     //  - ERROR_GENERAL: Failed to store the configuration
     uint32_t Controller::endpoint_storeconfig()
     {
-        ASSERT(_pluginServer != nullptr);
-
-        uint32_t result = _pluginServer->Persist();
-
-        // Normalise return code
-        if (result != Core::ERROR_NONE) {
-            result = Core::ERROR_GENERAL;
-        }
-
-        return result;
+        return Persist();
     }
 
     // Method: delete - Removes contents of a directory from the persistent storage
@@ -346,32 +337,8 @@ namespace Plugin {
     //  - ERROR_PRIVILEGED_REQUEST: The path points outside of persistent directory or some files/directories couldn't have been deleted
     uint32_t Controller::endpoint_delete(const DeleteParamsData& params)
     {
-        uint32_t result = Core::ERROR_UNKNOWN_KEY;
-        const string& path = params.Path.Value();
-
-        if (path.empty() == false) {
-            if (path.find("..") == string::npos) {
-                ASSERT(_service != nullptr);
-                Core::File file(_service->PersistentPath() +  path);
-
-                if (file.Exists() == true) {
-                    if (file.IsDirectory() == true) {
-                        result = (Core::Directory((_service->PersistentPath() +  path).c_str()).Destroy(true) == true) ? Core::ERROR_NONE : Core::ERROR_DESTRUCTION_FAILED;
-                    } else {
-                        result = (file.Destroy() == true) ? Core::ERROR_NONE : Core::ERROR_DESTRUCTION_FAILED;
-                    }
-                } else {
-                    result = Core::ERROR_UNKNOWN_KEY;
-                }
-            }
-            else {
-                result = Core::ERROR_PRIVILIGED_REQUEST;
-            }
-        }
-
-        return result;
+        return Delete(params.Path.Value());
     }
-
 
     // Method: harakiri - Reboots the device
     // Return codes:
@@ -381,13 +348,7 @@ namespace Plugin {
     //  - ERROR_GENERAL: Failed to reboot the device
     uint32_t Controller::endpoint_harakiri()
     {
-        uint32_t result =  Core::System::Reboot();
-
-        if ((result != Core::ERROR_NONE) && (result != Core::ERROR_UNAVAILABLE) && (result != Core::ERROR_PRIVILIGED_REQUEST) && (result != Core::ERROR_GENERAL)) {
-            result = Core::ERROR_GENERAL;
-        }
-
-        return result;
+        return Reboot();
     }
 
 
@@ -399,32 +360,9 @@ namespace Plugin {
     //  - ERROR_UNAVAILABLE: Failed to clone plugin configuration
     uint32_t Controller::endpoint_clone(const CloneParamsInfo& params, Core::JSON::String& response)
     {
-        uint32_t result = Core::ERROR_NONE;
-        const string& baseCallsign = params.Callsign.Value();
-        const string& newCallsign = params.NewCallsign.Value();
-        const string controllerName = _pluginServer->Controller()->Callsign();
-
-        ASSERT(_pluginServer != nullptr);
-
-        if ((baseCallsign.empty() == false) && (baseCallsign.empty() == false) && (baseCallsign != controllerName) && (newCallsign != controllerName)) {
-            Core::ProxyType<PluginHost::Server::Service> baseService, newService;
-
-            if (_pluginServer->Services().FromIdentifier(baseCallsign, baseService) != Core::ERROR_NONE) {
-                result = Core::ERROR_UNKNOWN_KEY;
-            }
-            else if (_pluginServer->Services().FromIdentifier(newCallsign, newService) != Core::ERROR_NONE) {
-                result = _pluginServer->Services().Clone(baseService, newCallsign, newService);
-            }
-            else if (baseService->ClassName() != newService->ClassName()) {
-                result = Core::ERROR_GENERAL;
-            }
-
-            if (result == Core::ERROR_NONE) {
-                response = newService->Callsign();
-            }
-        }
-        else {
-            result = Core::ERROR_PRIVILIGED_REQUEST;
+        uint32_t result = Clone(params.Callsign.Value(), params.NewCallsign.Value());
+        if (result == Core::ERROR_NONE) {
+            response = params.NewCallsign.Value();
         }
 
         return result;
@@ -530,12 +468,11 @@ namespace Plugin {
     //  - ERROR_UNKNOWN_KEY: The variable does not exist
     uint32_t Controller::get_environment(const string& index, Core::JSON::String& response) const
     {
-        uint32_t result = Core::ERROR_UNKNOWN_KEY;
         string value;
+        uint32_t result = Environment(index, value);
 
-        if (Core::SystemInfo::GetEnvironment(index, value) == true) {
+        if( result == Core::ERROR_NONE ) {
             response = value;
-            result = Core::ERROR_NONE;
         }
 
         return result;
@@ -547,15 +484,11 @@ namespace Plugin {
     //  - ERROR_UNKNOWN_KEY: The service does not exist
     uint32_t Controller::get_configuration(const string& index, Core::JSON::String& response) const
     {
-        uint32_t result = Core::ERROR_UNKNOWN_KEY;
-        Core::ProxyType<PluginHost::Server::Service> service;
-
-        ASSERT(_pluginServer != nullptr);
-
-        if (_pluginServer->Services().FromIdentifier(index, service) == Core::ERROR_NONE) {
+        string value;
+        uint32_t result = Configuration(index, value);
+        if( result == Core::ERROR_NONE ) {
             response.SetQuoted(false);
-            response = service->ConfigLine();
-            result = Core::ERROR_NONE;
+            response = value;
         }
 
         return result;
@@ -568,23 +501,7 @@ namespace Plugin {
     //  - ERROR_GENERAL: Failed to update the configuration
     uint32_t Controller::set_configuration(const string& index, const Core::JSON::String& params)
     {
-        uint32_t result = Core::ERROR_UNKNOWN_KEY;
-        Core::ProxyType<PluginHost::Server::Service> service;
-
-        ASSERT(_pluginServer != nullptr);
-
-        if (_pluginServer->Services().FromIdentifier(index, service) == Core::ERROR_NONE) {
-            const string& configuration = params.Value();
-
-            result = service->ConfigLine(configuration);
-
-            // Normalise return code
-            if (result != Core::ERROR_NONE) {
-                result = Core::ERROR_GENERAL;
-            }
-        }
-
-        return result;
+        return Configuration(index, params.Value());
     }
 
     // Event: statechange - Signals a plugin state change

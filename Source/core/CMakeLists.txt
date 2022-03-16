@@ -144,6 +144,7 @@ set(PUBLIC_HEADERS
         CallsignTLS.h
         TokenizedStringList.h
         MessageDispatcher.h
+        MessageUnit.h
         )
 
 # non-buildable interface target to carry the definitions
@@ -153,6 +154,15 @@ set(PUBLIC_HEADERS
 if(DISABLE_TRACING)
     target_compile_definitions(${TARGET} PUBLIC _TRACE_LEVEL=0)
     message(STATUS "Force trace level to 0")
+else()
+    target_compile_definitions(${TARGET} PUBLIC _TRACE_LEVEL=${ENABLED_TRACING_LEVEL})
+    message(STATUS "Force trace level to ${ENABLED_TRACING_LEVEL}")
+endif()
+
+if(MESSAGING)
+    target_compile_definitions(${TARGET} PUBLIC __CORE_MESSAGING__)
+    target_sources(${TARGET} PRIVATE MessageUnit.cpp)
+    message(STATUS "Messaging enabled")
 endif()
 
 if(WARNING_REPORTING)

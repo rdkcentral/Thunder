@@ -342,9 +342,7 @@ namespace Core {
         SocketServerType<CLIENT>& operator=(const SocketServerType<CLIENT>&) = delete;
 
     public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         SocketServerType()
             : _handler(this)
         {
@@ -353,9 +351,7 @@ namespace Core {
             : _handler(listeningNode, this)
         {
         }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
         ~SocketServerType()
         {
         }

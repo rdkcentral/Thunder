@@ -365,9 +365,7 @@ namespace Web {
             HandlerType<ACTUALLINK>& operator=(const HandlerType<ACTUALLINK>&) = delete;
 
         public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             template <typename Arg1>
             HandlerType(ParentClass& parent, const bool binary, const bool masking, const uint8_t queueSize, Arg1 arg1)
                 : ACTUALLINK(arg1)
@@ -606,10 +604,7 @@ namespace Web {
                 , _pingFireTime(0)
             {
             }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
-
+POP_WARNING()
             virtual ~HandlerType()
             {
             }
@@ -1117,9 +1112,7 @@ namespace Web {
         };
 
     public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         template <typename Arg1>
         WebSocketLinkType(const bool binary, const bool masking, const uint8_t queueSize, Arg1 arg1)
             : _channel(*this, binary, masking, queueSize, arg1)
@@ -1190,11 +1183,7 @@ namespace Web {
             : _channel(*this, binary, masking, queueSize, allocator, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
         {
         }
-
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
-
+POP_WARNING()
         virtual ~WebSocketLinkType()
         {
         }
@@ -1481,9 +1470,7 @@ namespace Web {
         WebSocketClientType<LINK>& operator=(const WebSocketClientType<LINK>& RHS) = delete;
 
     public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         WebSocketClientType(const string& path, const string& protocol, const string& query, const string& origin, const bool binary, const bool masking)
             : _channel(*this, path, protocol, query, origin, binary, masking)
         {
@@ -1523,9 +1510,7 @@ namespace Web {
             : _channel(*this, path, protocol, query, origin, binary, masking, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
         {
         }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
         virtual ~WebSocketClientType()
         {
         }

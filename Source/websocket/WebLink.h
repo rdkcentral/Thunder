@@ -31,17 +31,17 @@ namespace Web {
     template <typename LINK, typename INBOUND, typename OUTBOUND, typename ALLOCATOR, typename TRANSFORM = NoTransform>
     class WebLinkType {
     private:
-        typedef typename INBOUND::Deserializer BaseDeserializer;
-        typedef typename OUTBOUND::Serializer BaseSerializer;
-        typedef WebLinkType<LINK, INBOUND, OUTBOUND, ALLOCATOR, TRANSFORM> ThisClass;
+        using BaseDeserializer = typename INBOUND::Deserializer;
+        using BaseSerializer = typename OUTBOUND::Serializer;
+        using ThisClass = WebLinkType<LINK, INBOUND, OUTBOUND, ALLOCATOR, TRANSFORM>;
+        using AllocatorType = typename std::remove_reference<ALLOCATOR>::type;
 
         class SerializerImpl : public BaseSerializer {
-        private:
-            SerializerImpl();
-            SerializerImpl(const SerializerImpl&);
-            SerializerImpl& operator=(const SerializerImpl&);
-
         public:
+            SerializerImpl() = delete;
+            SerializerImpl(const SerializerImpl&) = delete;
+            SerializerImpl& operator=(const SerializerImpl&) = delete;
+
             SerializerImpl(ThisClass& parent, const uint8_t queueSize)
                 : OUTBOUND::Serializer()
                 , _parent(parent)
@@ -49,9 +49,7 @@ namespace Web {
                 , _queue(queueSize)
             {
             }
-            virtual ~SerializerImpl()
-            {
-            }
+            ~SerializerImpl() override = default;
 
         public:
             void Submit(const Core::ProxyType<OUTBOUND>& element)
@@ -72,7 +70,7 @@ namespace Web {
             }
 
         private:
-            virtual void Serialized(const typename OUTBOUND::BaseElement& element)
+            void Serialized(const typename OUTBOUND::BaseElement& element) override
             {
                 _lock.Lock();
 
@@ -103,12 +101,11 @@ namespace Web {
         };
 
         class DeserializerImpl : public BaseDeserializer {
-        private:
-            DeserializerImpl();
-            DeserializerImpl(const DeserializerImpl&);
-            DeserializerImpl& operator=(const DeserializerImpl&);
-
         public:
+            DeserializerImpl() = delete;
+            DeserializerImpl(const DeserializerImpl&) = delete;
+            DeserializerImpl& operator=(const DeserializerImpl&) = delete;
+
             DeserializerImpl(ThisClass& parent, const uint8_t queueSize)
                 : INBOUND::Deserializer()
                 , _parent(parent)
@@ -121,12 +118,10 @@ namespace Web {
                 , _pool(allocator)
             {
             }
-            virtual ~DeserializerImpl()
-            {
-            }
+            ~DeserializerImpl() override = default;
 
         public:
-            virtual void Deserialized(typename INBOUND::BaseElement& element)
+            void Deserialized(typename INBOUND::BaseElement& element)
             {
                 ASSERT(&element == static_cast<typename INBOUND::BaseElement*>(&(*(_current))));
                 DEBUG_VARIABLE(element);
@@ -135,7 +130,7 @@ namespace Web {
 
                 _current.Release();
             }
-            virtual typename INBOUND::BaseElement* Element()
+            typename INBOUND::BaseElement* Element() override
             {
                 _current = _pool.Element();
 
@@ -143,13 +138,17 @@ namespace Web {
 
                 return static_cast<typename INBOUND::BaseElement*>(&(*_current));
             }
-            virtual bool LinkBody(typename INBOUND::BaseElement& element)
+            bool LinkBody(typename INBOUND::BaseElement& element) override
             {
                 ASSERT(&element == static_cast<typename INBOUND::BaseElement*>(&(*(_current))));
 
                 _parent.LinkBody(_current);
 
                 return (element.HasBody());
+            }
+            AllocatorType& Allocator()
+            {
+                return (_pool);
             }
 
         private:
@@ -215,15 +214,12 @@ namespace Web {
             PARENTCLASS& _parent;
         };
 
-
     public:
         WebLinkType() = delete;
         WebLinkType(const WebLinkType<LINK, INBOUND, OUTBOUND, ALLOCATOR>&) = delete;
         WebLinkType<LINK, INBOUND, OUTBOUND, ALLOCATOR>& operator=(const WebLinkType<LINK, INBOUND, OUTBOUND, ALLOCATOR>&) = delete;
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         template <typename... Args>
         WebLinkType(const uint8_t queueSize, Args&&... args)
             : _serializerImpl(*this, queueSize)
@@ -238,10 +234,8 @@ namespace Web {
             , _channel(*this, std::forward<Args>(args)...)
         {
         }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
-        virtual ~WebLinkType() 
+POP_WARNING()
+        virtual ~WebLinkType()
         {
             _channel.Close(Core::infinite);
         }
@@ -314,6 +308,11 @@ namespace Web {
             return (_channel.Link());
         }
  
+    protected:
+        AllocatorType& Allocator() {
+            return (_deserialiserImpl.Allocator());
+        }
+
     private:
         inline void Trigger()
         {

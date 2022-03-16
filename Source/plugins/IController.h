@@ -19,34 +19,31 @@
 
 #pragma once
 
+#include "Module.h"
+
 namespace WPEFramework {
 namespace PluginHost {
-    struct IShell;
-}
-}
 
-extern "C" {
-/**
- * @brief Announce the availability of the Thunder Controller Plugin's Shell
- *
- * @param controller Pointer to Controller's IShell
- *
- */
-EXTERNAL void connector_announce(WPEFramework::PluginHost::IShell* controller);
+    struct EXTERNAL IController : public virtual Core::IUnknown {
 
-/**
- * @brief Revoke the  Thunder Controller Plugin's Shell that was already announced
- *
- * @param controller Pointer to Controller's IShell
- *
- */
-EXTERNAL void connector_revoke(WPEFramework::PluginHost::IShell*);
+        enum { ID = RPC::ID_CONTROLLER };
 
-/**
- * @brief Get the Thunder Controller Plugin's Shell.
- *
- * @return Reference counted Pointer to Controller's IShell. Caller must release after usage.
- *         Returns nullptr if Controller's IShell was not announced.
- */
-EXTERNAL WPEFramework::PluginHost::IShell* connector_controller();
-}
+        ~IController() override = default;
+
+        virtual uint32_t Persist() = 0;
+
+        virtual uint32_t Delete(const string& path) = 0;
+
+        virtual uint32_t Reboot() = 0;
+
+        virtual uint32_t Environment(const string& index, string& environment /* @out */ ) const = 0;
+
+        virtual uint32_t Configuration(const string& callsign, string& configuration /* @out */) const = 0;
+        virtual uint32_t Configuration(const string& callsign, const string& configuration) = 0;
+
+        virtual uint32_t Clone(const string& basecallsign, const string& newcallsign) = 0;
+    };
+
+} // namespace PluginHost
+} // namespace WPEFramework
+

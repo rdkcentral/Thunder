@@ -315,7 +315,7 @@ namespace PluginHost {
                 , Signature(_T("TestSecretKey"))
                 , IdleTime(0)
                 , IPV6(false)
-                , DefaultTraceCategories(false)
+                , DefaultMessagingCategories(false)
                 , DefaultWarningReportingCategories(false)
                 , Process()
                 , Input()
@@ -347,7 +347,11 @@ namespace PluginHost {
                 Add(_T("signature"), &Signature);
                 Add(_T("idletime"), &IdleTime);
                 Add(_T("ipv6"), &IPV6);
-                Add(_T("tracing"), &DefaultTraceCategories); 
+#ifdef __CORE_MESSAGING__
+                Add(_T("messaging"), &DefaultMessagingCategories);
+#else
+                Add(_T("tracing"), &DefaultMessagingCategories);
+#endif
                 Add(_T("warningreporting"), &DefaultWarningReportingCategories); 
                 Add(_T("redirect"), &Redirect);
                 Add(_T("process"), &Process);
@@ -385,7 +389,7 @@ namespace PluginHost {
             Core::JSON::String Signature;
             Core::JSON::DecUInt16 IdleTime;
             Core::JSON::Boolean IPV6;
-            Core::JSON::String DefaultTraceCategories;
+            Core::JSON::String DefaultMessagingCategories; 
             Core::JSON::String DefaultWarningReportingCategories; 
             ProcessSet Process;
             InputConfig Input;
@@ -507,9 +511,7 @@ namespace PluginHost {
         Config(const Config&) = delete;
         Config& operator=(const Config&) = delete;
 
-        #ifdef __WINDOWS__
-        #pragma warning(disable: 4355)
-        #endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         Config(Core::File& file, const bool background, Core::OptionalType<Core::JSON::Error>& error)
             : _background(background)
             , _security(nullptr)
@@ -555,13 +557,13 @@ namespace PluginHost {
                 _latitude = config.Latitude.Value();
                 _longitude = config.Longitude.Value();
 
-                _traceCategoriesFile = config.DefaultTraceCategories.IsQuoted();
-                if (_traceCategoriesFile == true) {
-                    config.DefaultTraceCategories.SetQuoted(true);
+                _messagingCategoriesFile = config.DefaultMessagingCategories.IsQuoted();
+                if (_messagingCategoriesFile == true) {
+                    config.DefaultMessagingCategories.SetQuoted(true);
                 }
-                _traceCategories = config.DefaultTraceCategories.Value();
-
+                _messagingCategories = config.DefaultMessagingCategories.Value();
                 _warningReportingCategories = config.DefaultWarningReportingCategories.Value();
+
 
                 if (config.Model.IsSet()) {
                     _model = config.Model.Value();
@@ -603,9 +605,7 @@ namespace PluginHost {
                     _linkerPluginPaths.push_back(itr.Current().Value());
             }
         }
-        #ifdef __WINDOWS__
-        #pragma warning(default: 4355)
-        #endif
+POP_WARNING()
         ~Config()
         {
             ASSERT(_security != nullptr);
@@ -636,13 +636,13 @@ namespace PluginHost {
         {
             return (_model);
         }
-        inline bool TraceCategoriesFile() const
+        inline bool MessagingCategoriesFile() const
         {
-            return (_traceCategoriesFile);
+            return (_messagingCategoriesFile);
         }
-        inline const string& TraceCategories() const
+        inline const string& MessagingCategories() const
         {
-            return (_traceCategories);
+            return (_messagingCategories);
         }
         inline const string& WarningReportingCategories() const
         {
@@ -917,8 +917,8 @@ namespace PluginHost {
         ISecurity* _security;
         string _version;
         string _model;
-        string _traceCategories;
-        bool _traceCategoriesFile;
+        string _messagingCategories;
+        bool _messagingCategoriesFile;
         string _warningReportingCategories;
         string _binding;
         string _interface;

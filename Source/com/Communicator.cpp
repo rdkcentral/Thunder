@@ -324,9 +324,7 @@ namespace RPC {
 
 #endif
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 
     Communicator::Communicator(const Core::NodeId& node, const string& proxyStubPath)
         : _connectionMap(*this)
@@ -397,9 +395,7 @@ namespace RPC {
         BaseClass::Register(RPC::InvokeMessage::Id(), handler);
         BaseClass::Register(RPC::AnnounceMessage::Id(), handler);
     }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
     CommunicatorClient::~CommunicatorClient()
     {
@@ -503,17 +499,17 @@ namespace RPC {
         ASSERT(dynamic_cast<RPC::AnnounceMessage*>(&element) != nullptr);
 
         if (announceMessage->Response().IsSet() == true) {
-            // Is result of an announce message, contains default trace categories in JSON format.
-            string jsonDefaultCategories(announceMessage->Response().TraceCategories());
-#if defined(WARNING_REPORTING_ENABLED)
-            string jsonDefaultWarningCategories(announceMessage->Response().WarningCategories());
+            string jsonMessagingCategories(announceMessage->Response().MessagingCategories());
+            if (!jsonMessagingCategories.empty()) {
+#if defined(__CORE_MESSAGING__)
+                Core::Messaging::MessageUnit::Instance().Defaults(jsonMessagingCategories);
+#else
+                Trace::TraceUnit::Instance().Defaults(jsonMessagingCategories);
 #endif
-            // HPL todo: we need to extend sending this info here, or just pass the complete config and have it parsed here (nothing would need to be dynamicaly changed, we will not suport that)
-
-            if (jsonDefaultCategories.empty() == false) {
-                Trace::TraceUnit::Instance().Defaults(jsonDefaultCategories);
             }
+
 #if defined(WARNING_REPORTING_ENABLED)
+            string jsonDefaultWarningCategories(announceMessage->Response().WarningReportingCategories());
             if(jsonDefaultWarningCategories.empty() == false){
                 WarningReporting::WarningReportingUnit::Instance().Defaults(jsonDefaultWarningCategories);
             }

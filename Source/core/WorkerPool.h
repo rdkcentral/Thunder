@@ -184,9 +184,7 @@ namespace Core {
         WorkerPool(const WorkerPool&) = delete;
         WorkerPool& operator=(const WorkerPool&) = delete;
 
-        #ifdef __WINDOWS__
-        #pragma warning(disable: 4355)
-        #endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, ThreadPool::IDispatcher* dispatcher)
             : _scheduler(this, _timer)
             , _threadPool(threadCount, stackSize, queueSize, dispatcher, &_scheduler)
@@ -198,9 +196,7 @@ namespace Core {
             _metadata.Slots = threadCount + 1;
             _metadata.Slot = new uint32_t[threadCount + 1];
         }
-        #ifdef __WINDOWS__
-        #pragma warning(default: 4355)
-        #endif
+POP_WARNING()
 
         ~WorkerPool()
         {
