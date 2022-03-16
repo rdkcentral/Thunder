@@ -201,7 +201,9 @@ namespace PluginHost {
         virtual bool Resumed() const = 0;
 
         virtual string HashKey() const = 0;
+        
         virtual string ConfigLine() const = 0;
+        virtual uint32_t ConfigLine(const string& config) = 0;
 
         //! Return whether the given version is supported by this IShell instance.
         virtual bool IsSupported(const uint8_t version) const = 0;

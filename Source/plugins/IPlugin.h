@@ -226,4 +226,7 @@ namespace PluginHost {
 } // namespace PluginHost
 } // namespace WPEFramework
 
+
+#include "IShell.h" // needed for the proxy/stub generation
+
 #endif
