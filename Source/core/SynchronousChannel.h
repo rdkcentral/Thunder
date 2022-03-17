@@ -28,12 +28,12 @@ namespace Core {
     struct IOutbound {
 
         struct ICallback {
-            virtual ~ICallback() {}
+            virtual ~ICallback() = default;
 
             virtual void Updated(const Core::IOutbound& data, const uint32_t error_code) = 0;
         };
 
-        virtual ~IOutbound(){};
+        virtual ~IOutbound() = default;
 
         virtual uint16_t Serialize(uint8_t stream[], const uint16_t length) const = 0;
         virtual void Reload() const = 0;
@@ -41,7 +41,7 @@ namespace Core {
 
     struct IInbound {
 
-        virtual ~IInbound(){};
+        virtual ~IInbound() = default;
 
         enum state : uint8_t {
             INPROGRESS,
@@ -176,7 +176,7 @@ namespace Core {
             , _waitCount(0)
         {
         }
-        virtual ~SynchronousChannelType()
+        ~SynchronousChannelType() override
         {
             CHANNEL::Close(Core::infinite);
         }

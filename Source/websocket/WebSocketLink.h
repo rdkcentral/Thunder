@@ -207,9 +207,7 @@ namespace Web {
                     , _queue(queueSize)
                 {
                 }
-                virtual ~SerializerImpl()
-                {
-                }
+                virtual ~SerializerImpl() = default;
 
             public:
                 inline bool IsIdle() const
@@ -315,9 +313,7 @@ namespace Web {
                     , _pool(allocator)
                 {
                 }
-                virtual ~DeserializerImpl()
-                {
-                }
+                virtual ~DeserializerImpl() = default;
 
             public:
                 inline bool IsIdle() const
@@ -605,9 +601,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             {
             }
 POP_WARNING()
-            virtual ~HandlerType()
-            {
-            }
+            ~HandlerType() override = default;
 
         public:
             inline bool IsOpen() const
@@ -1184,9 +1178,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         {
         }
 POP_WARNING()
-        virtual ~WebSocketLinkType()
-        {
-        }
+        virtual ~WebSocketLinkType() = default;
 
     public:
         inline LINK& Link()
@@ -1511,9 +1503,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         {
         }
 POP_WARNING()
-        virtual ~WebSocketClientType()
-        {
-        }
+        virtual ~WebSocketClientType() = default;
 
     public:
         inline LINK& Link()
@@ -1749,9 +1739,7 @@ POP_WARNING()
             : _channel(*this, binary, masking, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
         {
         }
-        virtual ~WebSocketServerType()
-        {
-        }
+        virtual ~WebSocketServerType() = default;
 
     public:
         inline LINK& Link()

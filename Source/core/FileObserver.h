@@ -31,7 +31,7 @@ class FileSystemMonitor : public Core::IResource {
 public:
     struct ICallback
     {
-        virtual ~ICallback() {}
+        virtual ~ICallback() = default;
         virtual void Updated() = 0;
     };
 
@@ -240,7 +240,7 @@ class FileSystemMonitor : public Core::IResource {
 public:
     struct ICallback
     {
-        virtual ~ICallback() {}
+        virtual ~ICallback() = default;
         virtual void Updated() = 0;
     };
 
@@ -290,9 +290,7 @@ public:
         static FileSystemMonitor _singleton;
         return (_singleton);
     }
-    virtual ~FileSystemMonitor()
-    {
-    }
+    virtual ~FileSystemMonitor() = default;
 
 public:
     bool IsValid() const

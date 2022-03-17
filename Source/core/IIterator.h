@@ -29,7 +29,7 @@
 namespace WPEFramework {
 namespace Core {
     struct IIterator {
-        virtual ~IIterator(){};
+        virtual ~IIterator() = default;
         virtual bool Next() = 0;
         virtual bool Previous() = 0;
         virtual void Reset(const uint32_t position) = 0;

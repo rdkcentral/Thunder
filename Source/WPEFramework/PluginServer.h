@@ -1106,9 +1106,7 @@ namespace PluginHost {
                     Add(_T("configuration"), &Configuration);
                 }
 
-                virtual ~Plugin()
-                {
-                }
+                ~Plugin() override = default;
 
             public:
                 Core::JSON::Boolean AutoStart;

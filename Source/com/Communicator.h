@@ -431,7 +431,7 @@ namespace RPC {
     struct EXTERNAL IMonitorableProcess : public virtual Core::IUnknown {
         enum { ID = ID_MONITORABLE_PROCESS };
 
-        virtual ~IMonitorableProcess() {}
+        ~IMonitorableProcess() override = default;
 
         virtual string Callsign() const = 0;
     };
@@ -466,9 +466,7 @@ namespace RPC {
             }
 
         public:
-            ~RemoteConnection()
-            {
-            }
+            ~RemoteConnection() override = default;
 
         public:
             uint32_t Id() const override;
@@ -1151,9 +1149,7 @@ namespace RPC {
                     ASSERT(parent != nullptr);
                 }
 
-                virtual ~AnnounceHandlerImplementation()
-                {
-                }
+                ~AnnounceHandlerImplementation() override = default;
 
             public:
                 virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override
@@ -1198,9 +1194,7 @@ namespace RPC {
                 InvokeHandlerImplementation()
                 {
                 }
-                virtual ~InvokeHandlerImplementation()
-                {
-                }
+                ~InvokeHandlerImplementation() override = default;
 
             public:
                 virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override
@@ -1380,9 +1374,7 @@ POP_WARNING()
             {
                 ASSERT(parent != nullptr);
             }
-            virtual ~AnnounceHandlerImplementation()
-            {
-            }
+            ~AnnounceHandlerImplementation() override = default;
 
         public:
             void Procedure(IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override
@@ -1414,9 +1406,7 @@ POP_WARNING()
             InvokeHandlerImplementation()
             {
             }
-            virtual ~InvokeHandlerImplementation()
-            {
-            }
+            ~InvokeHandlerImplementation() override = default;
 
         public:
             virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data)

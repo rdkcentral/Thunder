@@ -91,7 +91,7 @@ namespace RPC {
         typedef std::map<const Core::IPCChannel*, std::list< RecoverySet > > ReferenceMap;
 
         struct EXTERNAL IMetadata {
-            virtual ~IMetadata(){};
+            virtual ~IMetadata() = default;
 
             virtual ProxyStub::UnknownProxy* CreateProxy(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& implementation, const bool remoteRefCounted) = 0;
         };
@@ -106,9 +106,7 @@ namespace RPC {
             ProxyType()
             {
             }
-            virtual ~ProxyType()
-            {
-            }
+            ~ProxyType() override = default;
 
         private:
             virtual ProxyStub::UnknownProxy* CreateProxy(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& implementation, const bool remoteRefCounted)
@@ -287,9 +285,7 @@ namespace RPC {
             , _handler(copy._handler)
         {
         }
-        virtual ~Job()
-        {
-        }
+        ~Job() override = default;
 
         Job& operator=(const Job& rhs) {
             _message = rhs._message;

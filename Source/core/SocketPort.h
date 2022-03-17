@@ -110,7 +110,7 @@ namespace Core {
             const uint32_t socketSendBufferSize,
             const uint32_t socketReceiveBufferSize);
 
-        virtual ~SocketPort();
+        ~SocketPort() override;
 
     public:
         inline uint16_t State() const
@@ -345,9 +345,7 @@ namespace Core {
         {
         }
 
-        virtual ~SocketStream()
-        {
-        }
+        ~SocketStream() override = default;
 
     public:
         // Methods to extract and insert data into the socket buffers

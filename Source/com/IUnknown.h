@@ -79,9 +79,7 @@ namespace ProxyStub {
                 _myHandlerCount++;
             }
         }
-        virtual ~UnknownStubType()
-        {
-        }
+        ~UnknownStubType() override = default;
 
     public:
         inline uint16_t Length() const
@@ -150,9 +148,7 @@ namespace ProxyStub {
             , _remoteReferences(1)
         {
         }
-        virtual ~UnknownProxy()
-        {
-        }
+        virtual ~UnknownProxy() = default;
 
     public:
 	bool Invalidate() {
@@ -393,9 +389,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         {
         }
 POP_WARNING()
-        virtual ~UnknownProxyType()
-        {
-        }
+        ~UnknownProxyType() override = default;
 
     public:
         UnknownProxy* Administration() 

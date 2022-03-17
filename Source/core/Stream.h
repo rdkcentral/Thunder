@@ -33,7 +33,7 @@
 namespace WPEFramework {
 namespace Core {
     struct IStream {
-        virtual ~IStream(){};
+        virtual ~IStream() = default;
         virtual bool IsOpen() const = 0;
         virtual bool IsClosed() const = 0;
         virtual string LocalId() const = 0;
@@ -55,9 +55,7 @@ namespace Core {
             : BASESTREAM(args...)
         {
         }
-        virtual ~StreamType()
-        {
-        }
+        ~StreamType() override = default;
 
     public:
         virtual bool IsOpen() const

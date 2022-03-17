@@ -40,9 +40,7 @@ namespace Core {
             , _requestUsage(false)
         {
         }
-        virtual ~Options()
-        {
-        }
+        virtual ~Options() = default;
 
     public:
         inline bool HasErrors() const
