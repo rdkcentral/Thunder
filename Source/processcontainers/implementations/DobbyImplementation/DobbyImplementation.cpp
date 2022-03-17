@@ -42,10 +42,10 @@ namespace ProcessContainers {
             auto path = searchpaths.Current();
 
             Core::File configFile(path + "/Container" + CONFIG_NAME);
-            TRACE_L1("searching %s container at %s", id.c_str(), configFile.Name().c_str());
+            TRACE(ProcessContainers::ProcessContainerization, (_T("searching %s container at %s"), id.c_str(), configFile.Name().c_str()));
 
             if (configFile.Exists()) {
-                TRACE_L1("Found %s container!", id.c_str());
+                TRACE(ProcessContainers::ProcessContainerization, (_T("Found %s container!"), id.c_str()));
                 // Make sure no leftover will interfere...
                 if (ContainerNameTaken(id)) {
                     DestroyContainer(id);
@@ -59,7 +59,7 @@ namespace ProcessContainers {
             }
         }
 
-        TRACE_L1("Could not find suitable container config for %s in any search path", id.c_str());
+        TRACE(Trace::Error, (_T("Could not find suitable container config for %s in any search path"), id.c_str()));
 
         return nullptr;
     }
@@ -70,7 +70,7 @@ namespace ProcessContainers {
         mIpcService = AI_IPC::createIpcService("unix:path=/var/run/dbus/system_bus_socket", "org.rdk.dobby.processcontainers");
 
         if (!mIpcService) {
-            TRACE_L1("Failed to create IPC service");
+            TRACE(Trace::Error, (_T("Failed to create Dobby IPC service")));
             return;
         } else {
             // Start the IPCService which kicks off the event dispatcher thread
@@ -101,7 +101,7 @@ namespace ProcessContainers {
             for (const std::pair<int32_t, std::string>& c : runningContainers) {
                 if (c.second == name) {
                     // found the container, now try stopping it...
-                    TRACE_L1("destroying container: %s ", name.c_str());
+                    TRACE(ProcessContainers::ProcessContainerization, (_T("destroying container: %s "), name.c_str()));
 
                     // Dobby stop is async - block until we get the notification the container
                     // has actually stopped
@@ -118,12 +118,13 @@ namespace ProcessContainers {
                     std::future<void> future = _stopPromise.get_future();
                     bool stoppedSuccessfully = mDobbyProxy->stopContainer(c.first, true);
                     if (!stoppedSuccessfully) {
-                        TRACE_L1("Failed to destroy container, internal Dobby error. id: %s descriptor: %d", name.c_str(), c.first);
+                        TRACE(Trace::Warning, (_T("Failed to destroy container, internal Dobby error. id: %s descriptor: %d"), name.c_str(), c.first));
                     }
                     else
                     {
                         // Block here until container has stopped
                         future.wait();
+                        TRACE(ProcessContainers::ProcessContainerization, (_T("Container %s has stopped"), name.c_str()));
                     }
 
                     this->InternalUnlock();
@@ -149,7 +150,7 @@ namespace ProcessContainers {
         if (!runningContainers.empty()) {
             for (const std::pair<int32_t, std::string>& c : runningContainers) {
                 if (c.second == name) {
-                    TRACE_L1("container %s already running...", name.c_str());
+                    TRACE(ProcessContainers::ProcessContainerization, (_T("container %s already running..."), name.c_str()));
                     result = true;
                     break;
                 }
@@ -167,7 +168,6 @@ namespace ProcessContainers {
 
         // Interested in stop events only
         if (state == IDobbyProxyEvents::ContainerState::Stopped && containerId == *id) {
-            TRACE_L1("Container %s has stopped", containerId.c_str());
             this->InternalLock();
             _stopPromise.set_value();
             this->InternalUnlock();
@@ -210,13 +210,13 @@ namespace ProcessContainers {
             std::string containerInfoString = admin.mDobbyProxy->getContainerInfo(_descriptor);
 
             if (containerInfoString.empty()) {
-                TRACE_L1("Failed to get info for container %s", _name.c_str());
+                TRACE(Trace::Warning, (_T("Failed to get info for container %s"), _name.c_str()));
             } else {
                 // Dobby returns the container info as JSON, so parse it
                 JsonObject containerInfoJson;
                 WPEFramework::Core::OptionalType<WPEFramework::Core::JSON::Error> error;
                 if (!WPEFramework::Core::JSON::IElement::FromString(containerInfoString, containerInfoJson, error)) {
-                    TRACE_L1("Failed to parse Dobby Spec JSON due to: %s", WPEFramework::Core::JSON::ErrorDisplayMessage(error).c_str());
+                    TRACE(Trace::Warning, (_T("Failed to parse Dobby container info JSON due to: %s"), WPEFramework::Core::JSON::ErrorDisplayMessage(error).c_str()));
                 } else {
                     JsonArray pids = containerInfoJson["pids"].Array();
 
@@ -352,10 +352,10 @@ namespace ProcessContainers {
 
         // startContainer returns -1 on failure
         if (_descriptor <= 0) {
-            TRACE_L1("Failed to start container - internal Dobby error.");
+            TRACE(Trace::Error, (_T("Failed to start container %s - internal Dobby error."), _name.c_str()));
             result = false;
         } else {
-            TRACE_L1("started %s container! descriptor: %d", _name.c_str(), _descriptor);
+            TRACE(ProcessContainers::ProcessContainerization, (_T("started %s container! descriptor: %d"), _name.c_str(), _descriptor));
             result = true;
         }
         _adminLock.UnLock();
@@ -374,7 +374,7 @@ namespace ProcessContainers {
         bool stoppedSuccessfully = admin.mDobbyProxy->stopContainer(_descriptor, false);
 
         if (!stoppedSuccessfully) {
-            TRACE_L1("Failed to stop container, internal Dobby error. id: %s descriptor: %d", _name.c_str(), _descriptor);
+            TRACE(Trace::Error, (_T("Failed to stop container, internal Dobby error. id: %s descriptor: %d"), _name.c_str(), _descriptor));
         } else {
             result = true;
         }
