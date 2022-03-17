@@ -18,10 +18,10 @@
  */
 
 #include "DobbyImplementation.h"
-#include <thread>
-#include <Dobby/IpcService/IpcFactory.h>
 #include <Dobby/DobbyProxy.h>
+#include <Dobby/IpcService/IpcFactory.h>
 #include <fstream>
+#include <thread>
 
 namespace WPEFramework {
 
@@ -43,6 +43,7 @@ namespace ProcessContainers {
 
             Core::File configFile(path + "/Container" + CONFIG_NAME);
             TRACE_L1("searching %s container at %s", id.c_str(), configFile.Name().c_str());
+
             if (configFile.Exists()) {
                 TRACE_L1("Found %s container!", id.c_str());
                 // Make sure no leftover will interfere...
@@ -58,21 +59,20 @@ namespace ProcessContainers {
             }
         }
 
+        TRACE_L1("Could not find suitable container config for %s in any search path", id.c_str());
+
         return nullptr;
     }
 
     DobbyContainerAdministrator::DobbyContainerAdministrator()
         : BaseAdministrator()
     {
-        mIpcService = AI_IPC::createIpcService("unix:path=/var/run/dbus/system_bus_socket", "com.sky.dobby.processcontainers");
+        mIpcService = AI_IPC::createIpcService("unix:path=/var/run/dbus/system_bus_socket", "org.rdk.dobby.processcontainers");
 
-        if (!mIpcService)
-        {
+        if (!mIpcService) {
             TRACE_L1("Failed to create IPC service");
             return;
-        }
-        else
-        {
+        } else {
             // Start the IPCService which kicks off the event dispatcher thread
             mIpcService->start();
         }
@@ -97,17 +97,39 @@ namespace ProcessContainers {
         std::list<std::pair<int32_t, std::string>> runningContainers;
         runningContainers = mDobbyProxy->listContainers();
 
-        if (!runningContainers.empty())
-        {
-            for (const std::pair<int32_t, std::string>& c : runningContainers)
-            {
-                if(c.second == name){
+        if (!runningContainers.empty()) {
+            for (const std::pair<int32_t, std::string>& c : runningContainers) {
+                if (c.second == name) {
                     // found the container, now try stopping it...
                     TRACE_L1("destroying container: %s ", name.c_str());
+
+                    // Dobby stop is async - block until we get the notification the container
+                    // has actually stopped
+                    this->InternalLock();
+
+                    _stopPromise = std::promise<void>();
+                    const void* vp = static_cast<void*>(new std::string(name));
+                    int listenerId = mDobbyProxy->registerListener(std::bind(&DobbyContainerAdministrator::containerStopCallback, this,
+                                                                       std::placeholders::_1,
+                                                                       std::placeholders::_2,
+                                                                       std::placeholders::_3,
+                                                                       std::placeholders::_4), vp);
+
+                    std::future<void> future = _stopPromise.get_future();
                     bool stoppedSuccessfully = mDobbyProxy->stopContainer(c.first, true);
                     if (!stoppedSuccessfully) {
                         TRACE_L1("Failed to destroy container, internal Dobby error. id: %s descriptor: %d", name.c_str(), c.first);
                     }
+                    else
+                    {
+                        // Block here until container has stopped
+                        future.wait();
+                    }
+
+                    this->InternalUnlock();
+
+                    // Always make sure we unregister our callback
+                    mDobbyProxy->unregisterListener(listenerId);
 
                     break;
                 }
@@ -124,11 +146,9 @@ namespace ProcessContainers {
         runningContainers = mDobbyProxy->listContainers();
 
         // Build the response if containers were found
-        if (!runningContainers.empty())
-        {
-            for (const std::pair<int32_t, std::string>& c : runningContainers)
-            {
-                if(c.second == name){
+        if (!runningContainers.empty()) {
+            for (const std::pair<int32_t, std::string>& c : runningContainers) {
+                if (c.second == name) {
                     TRACE_L1("container %s already running...", name.c_str());
                     result = true;
                     break;
@@ -137,6 +157,21 @@ namespace ProcessContainers {
         }
 
         return result;
+    }
+
+    void DobbyContainerAdministrator::containerStopCallback(int32_t cd, const std::string& containerId,
+                                                            IDobbyProxyEvents::ContainerState state,
+                                                            const void* params)
+    {
+        const std::string* id = static_cast<const std::string*>(params);
+
+        // Interested in stop events only
+        if (state == IDobbyProxyEvents::ContainerState::Stopped && containerId == *id) {
+            TRACE_L1("Container %s has stopped", containerId.c_str());
+            this->InternalLock();
+            _stopPromise.set_value();
+            this->InternalUnlock();
+        }
     }
 
     // Container
@@ -255,8 +290,7 @@ namespace ProcessContainers {
         auto& admin = static_cast<DobbyContainerAdministrator&>(DobbyContainerAdministrator::Instance());
 
         // We got a state back successfully, work out what that means in English
-        switch (static_cast<IDobbyProxyEvents::ContainerState>(admin.mDobbyProxy->getContainerState(_descriptor)))
-        {
+        switch (static_cast<IDobbyProxyEvents::ContainerState>(admin.mDobbyProxy->getContainerState(_descriptor))) {
         case IDobbyProxyEvents::ContainerState::Invalid:
             result = false;
             break;
@@ -298,13 +332,11 @@ namespace ProcessContainers {
 
         _descriptor = admin.mDobbyProxy->startContainerFromBundle(_name, _path, emptyList, fullCommand);
 
-
         // startContainer returns -1 on failure
-        if (_descriptor <= 0)
-        {
+        if (_descriptor <= 0) {
             TRACE_L1("Failed to start container - internal Dobby error.");
             result = false;
-        }else{
+        } else {
             TRACE_L1("started %s container! descriptor: %d", _name.c_str(), _descriptor);
             result = true;
         }
@@ -319,10 +351,9 @@ namespace ProcessContainers {
 
         bool stoppedSuccessfully = admin.mDobbyProxy->stopContainer(_descriptor, false);
 
-        if (!stoppedSuccessfully)
-        {
+        if (!stoppedSuccessfully) {
             TRACE_L1("Failed to stop container, internal Dobby error. id: %s descriptor: %d", _name.c_str(), _descriptor);
-        }else{
+        } else {
             result = true;
         }
 
