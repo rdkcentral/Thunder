@@ -26,6 +26,8 @@
 #include "processcontainers/common/Lockable.h"
 #include "processcontainers/common/NetworkInfoUnimplemented.h"
 
+#include "Tracing.h"
+
 #include <Dobby/DobbyProtocol.h>
 #include <Dobby/Public/Dobby/IDobbyProxy.h>
 
