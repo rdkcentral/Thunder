@@ -119,12 +119,14 @@ namespace ProcessContainers {
                     bool stoppedSuccessfully = mDobbyProxy->stopContainer(c.first, true);
                     if (!stoppedSuccessfully) {
                         TRACE(Trace::Warning, (_T("Failed to destroy container, internal Dobby error. id: %s descriptor: %d"), name.c_str(), c.first));
-                    }
-                    else
-                    {
-                        // Block here until container has stopped
-                        future.wait();
-                        TRACE(ProcessContainers::ProcessContainerization, (_T("Container %s has stopped"), name.c_str()));
+                    } else {
+                        // Block here until container has stopped (max 5 seconds)
+                        std::future_status status = future.wait_for(std::chrono::seconds(5));
+                        if (status == std::future_status::ready) {
+                            TRACE(ProcessContainers::ProcessContainerization, (_T("Container %s has stopped"), name.c_str()));
+                        } else if (status == std::future_status::timeout) {
+                            TRACE(Trace::Warning, (_T("Timeout waiting for container %s to stop"), name.c_str()));
+                        }
                     }
 
                     this->InternalUnlock();
@@ -161,16 +163,14 @@ namespace ProcessContainers {
     }
 
     void DobbyContainerAdministrator::containerStopCallback(int32_t cd, const std::string& containerId,
-                                                            IDobbyProxyEvents::ContainerState state,
-                                                            const void* params)
+        IDobbyProxyEvents::ContainerState state,
+        const void* params)
     {
         const std::string* id = static_cast<const std::string*>(params);
 
         // Interested in stop events only
         if (state == IDobbyProxyEvents::ContainerState::Stopped && containerId == *id) {
-            this->InternalLock();
             _stopPromise.set_value();
-            this->InternalUnlock();
         }
     }
 
