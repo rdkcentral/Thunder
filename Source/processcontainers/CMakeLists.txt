@@ -106,37 +106,9 @@ elseif (PROCESSCONTAINERS_CRUN)
 elseif (PROCESSCONTAINERS_DOBBY)
         find_package(Dobby REQUIRED CONFIG)
 
-        # We need libsystemd since we're using their dbus library (sd-bus)
-        # There's probably a better way of doing this...
-        find_path(SYSTEMD_INCLUDE_DIRS
-                NAMES systemd/sd-bus.h
-        )
-
-        find_library(SYSTEMD_LIBRARIES
-                NAMES systemd
-        )
-
-        add_definitions( -DRDK )
-
-        include(FindPackageHandleStandardArgs)
-        find_package_handle_standard_args(
-                LIBSYSTEMD
-                SYSTEMD_LIBRARIES SYSTEMD_INCLUDE_DIRS
-        )
         target_link_libraries(${TARGET}
                 PRIVATE
-                # Dobby libraries
                 DobbyClientLib
-                IpcService
-                AppInfraCommon
-                AppInfraLogging
-
-                ${SYSTEMD_LIBRARIES}
-                )
-
-        target_include_directories( ${TARGET}
-                PRIVATE
-                ${JSONCPP_INCLUDE_DIRS}
         )
 elseif (PROCESSCONTAINERS_AWC)
         find_package(LXC REQUIRED)
