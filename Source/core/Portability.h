@@ -714,7 +714,7 @@ namespace Core {
     };
 
     struct EXTERNAL IReferenceCounted {
-        virtual ~IReferenceCounted(){};
+        virtual ~IReferenceCounted() = default;
         virtual void AddRef() const = 0;
         virtual uint32_t Release() const = 0;
     };

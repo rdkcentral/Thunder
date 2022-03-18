@@ -27,7 +27,7 @@ namespace WPEFramework {
 namespace Core {
     template <typename OBSERVING>
     struct IObserverType {
-        virtual ~IObserverType(){};
+        virtual ~IObserverType() = default;
         virtual void Handle(OBSERVING element);
     };
 }

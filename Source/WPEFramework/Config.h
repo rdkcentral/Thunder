@@ -133,9 +133,7 @@ namespace PluginHost {
                     Add(_T("value"), &Value);
                     Add(_T("override"), &Override);
                 }
-                virtual ~Environment()
-                {
-                }
+                ~Environment() override = default;
                 Environment& operator=(const Environment& RHS)
                 {
                     Key = RHS.Key;

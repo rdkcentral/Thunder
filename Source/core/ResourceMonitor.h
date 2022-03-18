@@ -32,7 +32,7 @@ namespace WPEFramework {
 namespace Core {
 
     struct EXTERNAL IResource {
-        virtual ~IResource() {}
+        virtual ~IResource() = default;
 
         typedef signed int handle;
 
@@ -63,7 +63,7 @@ namespace Core {
             {
                 Thread::Init();
             }
-            virtual ~MonitorWorker()
+            ~MonitorWorker() override
             {
                 Stop();
                 _parent.Break();

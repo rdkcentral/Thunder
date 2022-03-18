@@ -89,7 +89,7 @@ namespace Core {
             static TCHAR TrueTag[5];
             static TCHAR FalseTag[6];
 
-            virtual ~IElement() {}
+            virtual ~IElement() = default;
 
             template <typename INSTANCEOBJECT>
             static bool ToString(const INSTANCEOBJECT& realObject, string& text)
@@ -289,7 +289,7 @@ namespace Core {
         };
 
         struct EXTERNAL IMessagePack {
-            virtual ~IMessagePack() {}
+            virtual ~IMessagePack() = default;
 
             static constexpr uint8_t NullValue = 0xC0;
 
@@ -2656,9 +2656,7 @@ namespace Core {
                 {
                 }
 
-                ~ConstIteratorType()
-                {
-                }
+                virtual ~ConstIteratorType() = default;
 
                 ConstIteratorType<ARRAYELEMENT>& operator=(const ConstIteratorType<ARRAYELEMENT>& RHS)
                 {

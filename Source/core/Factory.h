@@ -34,7 +34,7 @@ namespace Core {
         FactoryType<BASEOBJECT, IDENTIFIER>& operator=(const FactoryType<BASEOBJECT, IDENTIFIER>&);
 
         struct IFactory {
-            virtual ~IFactory(){};
+            virtual ~IFactory() = default;
 
             virtual Core::ProxyType<BASEOBJECT> GetElement() = 0;
             virtual uint32_t CreatedElements() const = 0;

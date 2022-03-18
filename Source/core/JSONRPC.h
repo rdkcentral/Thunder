@@ -60,9 +60,7 @@ namespace Core {
                     Text = copy.Text;
                     Data = copy.Data;
                 }
-                virtual ~Info()
-                {
-                }
+                ~Info() override = default;
 
                 Info& operator=(const Info& RHS)
                 {

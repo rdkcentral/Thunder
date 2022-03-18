@@ -28,7 +28,7 @@ namespace PluginHost {
 
         enum { ID = RPC::IDS::ID_REMOTE_INSTANTIATION };
 
-        virtual ~IRemoteInstantiation() {}
+        ~IRemoteInstantiation() override = default;
 
         // Overview:
         //          HOST                                      TARGET
