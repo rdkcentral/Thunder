@@ -101,8 +101,7 @@ namespace Messaging {
     };
 
     template <typename CATEGORY, const char** MODULENAME, WPEFramework::Core::Messaging::MetaData::MessageType TYPE>
-    EXTERNAL typename ControlLifetime<CATEGORY, MODULENAME, TYPE>::template Control<CATEGORY, MODULENAME, TYPE> ControlLifetime<CATEGORY, MODULENAME, TYPE>::_messageControl;
-
+    typename ControlLifetime<CATEGORY, MODULENAME, TYPE>::template Control<CATEGORY, MODULENAME, TYPE> ControlLifetime<CATEGORY, MODULENAME, TYPE>::_messageControl;
 }
 
 }
