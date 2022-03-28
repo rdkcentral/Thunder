@@ -26,17 +26,18 @@
 #include <fstream>
 
 namespace WPEFramework {
+    namespace Logging {
+
+        const char* MODULE_LOGGING = _T("SysLog");
+    }
+    template <>
+    WPEFramework::Messaging::ControlLifetime<Logging::Startup, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::template Control<Logging::Startup, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING> Messaging::ControlLifetime<Logging::Startup, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::_messageControl;
+    template <>
+    WPEFramework::Messaging::ControlLifetime<Logging::Shutdown, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::template Control<Logging::Shutdown, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING> Messaging::ControlLifetime<Logging::Shutdown, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::_messageControl;
+    template <>
+    WPEFramework::Messaging::ControlLifetime<Logging::Notification, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::template Control<Logging::Notification, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING> Messaging::ControlLifetime<Logging::Notification, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::_messageControl;
+
 namespace Logging {
-
-    const char* MODULE_LOGGING = _T("SysLog");
-
-    template <>
-    WPEFramework::Messaging::ControlLifetime<Startup, &MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::template Control<Startup, &MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING> Messaging::ControlLifetime<Startup, &MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::_messageControl;
-    template <>
-    WPEFramework::Messaging::ControlLifetime<Shutdown, &MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::template Control<Shutdown, &MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING> Messaging::ControlLifetime<Shutdown, &MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::_messageControl;
-    template <>
-    WPEFramework::Messaging::ControlLifetime<Notification, &MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::template Control<Notification, &MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING> Messaging::ControlLifetime<Notification, &MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::_messageControl;
-
     static const TCHAR* UnknownCallsign = _T("NoTLSCallsign");
 
     void DumpException(const string& exceptionType)

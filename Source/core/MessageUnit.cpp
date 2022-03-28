@@ -44,7 +44,7 @@ namespace Core {
         }
         uint16_t MetaData::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
-            uint16_t length = sizeof(_type) + _category.size() + 1 + _module.size() + 1;
+            uint16_t length = static_cast<uint16_t>(sizeof(_type) + _category.size() + 1 + _module.size() + 1);
 
             if (bufferSize >= length) {
                 ASSERT(bufferSize >= length);
@@ -70,10 +70,10 @@ namespace Core {
             deserialized += sizeof(_type);
             if(_type < MessageType::INVALID){
                 _category = frameReader.NullTerminatedText();
-                deserialized += _category.size() + 1;
+                deserialized += static_cast<uint16_t>(_category.size() + 1);
 
                 _module = frameReader.NullTerminatedText();
-                deserialized += _module.size() + 1;
+                deserialized += static_cast<uint16_t>(_module.size() + 1);
             }
 
             return deserialized;
@@ -99,7 +99,7 @@ namespace Core {
                     frameWriter.NullTerminatedText(_filename);
                     frameWriter.Number(_lineNumber);
                     frameWriter.Number(_timeStamp);
-                    length += _filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp);
+                    length += static_cast<uint16_t>(_filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp));
 
                 } else {
                     length = 0;
@@ -119,7 +119,7 @@ namespace Core {
                 _lineNumber = frameReader.Number<uint16_t>();
                 _timeStamp = frameReader.Number<uint64_t>();
 
-                length += _filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp);
+                length += static_cast<uint16_t>(_filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp));
             }
 
             return length;
