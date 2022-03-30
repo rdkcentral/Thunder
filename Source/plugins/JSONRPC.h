@@ -201,17 +201,17 @@ namespace PluginHost {
         // ------------------------------------------------------------------------------------------------------------------------------
         uint32_t Notify(const string& event) const
         {
-            return (const_cast<JSONRPC*>(this)->_handlers.front().Notify(event, Core::JSON::String()));
+            return (_handlers.front().Notify(event, Core::JSON::String()));
         }
         template <typename JSONOBJECT>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters) const
         {
-            return (const_cast<JSONRPC*>(this)->_handlers.front().Notify(event, parameters));
+            return (_handlers.front().Notify(event, parameters));
         }
         template <typename JSONOBJECT, typename SENDIFMETHOD>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters, SENDIFMETHOD method) const
         {
-            return (const_cast<JSONRPC*>(this)->_handlers.front().Notify(event, parameters, method));
+            return (_handlers.front().Notify(event, parameters, method));
         }
 
         //
