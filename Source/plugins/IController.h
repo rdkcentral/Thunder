@@ -17,7 +17,8 @@
  * limitations under the License.
  */
 
-#pragma once
+#ifndef __ICONTROLLER_H
+#define __ICONTROLLER_H
 
 #include "Module.h"
 
@@ -47,3 +48,4 @@ namespace PluginHost {
 } // namespace PluginHost
 } // namespace WPEFramework
 
+#endif // __ICONTROLLER_H

@@ -56,6 +56,7 @@ namespace Core {
     {
         Close();
     }
+
     void File::LoadFileInfo()
     {
 #ifdef __WINDOWS__
@@ -100,6 +101,7 @@ namespace Core {
         }
 #endif
     }
+
     Directory::Directory()
         : _name()
         , _filter()

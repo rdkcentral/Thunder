@@ -19,6 +19,7 @@ set(TARGET ${NAMESPACE}ProxyStubs)
 string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
 
 set(PLUGIN_INCLUDES
+        plugins/IController.h
         plugins/IPlugin.h
         plugins/IShell.h
         plugins/IStateControl.h
@@ -36,6 +37,7 @@ foreach(file IN LISTS PLUGIN_INCLUDES)
 endforeach()
 
 add_library(${TARGET} SHARED
+	"${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_Controller.cpp"
         "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_Shell.cpp"
         "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_Plugin.cpp"
         "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_StateControl.cpp"

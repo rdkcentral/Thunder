@@ -213,25 +213,24 @@ namespace Plugin {
     uint32_t Controller::Delete(const string& path)
     {
         uint32_t result = Core::ERROR_UNKNOWN_KEY;
-        bool valid;
-        string normalized_path = Core::File::Normalize(path, valid);
 
-        ASSERT(_service != nullptr);
+        if (path.empty() == false) {
+            if (path.find("..") == string::npos) {
+                ASSERT(_service != nullptr);
+                Core::File file(_service->PersistentPath() +  path);
 
-        if (valid == false) {
-            result = Core::ERROR_PRIVILIGED_REQUEST;
-        }
-        else {
-            Core::File file(_service->PersistentPath() + normalized_path);
-
-            if (file.Exists() == false) {
-                result = Core::ERROR_UNKNOWN_KEY;
-            }
-            else if (file.IsDirectory() == true) {
-                result = (Core::Directory((_service->PersistentPath() + normalized_path).c_str()).Destroy() == true) ? Core::ERROR_NONE : Core::ERROR_DESTRUCTION_FAILED;
+                if (file.Exists() == true) {
+                    if (file.IsDirectory() == true) {
+                        result = (Core::Directory((_service->PersistentPath() +  path).c_str()).Destroy(true) == true) ? Core::ERROR_NONE : Core::ERROR_DESTRUCTION_FAILED;
+                    } else {
+                        result = (file.Destroy() == true) ? Core::ERROR_NONE : Core::ERROR_DESTRUCTION_FAILED;
+                    }
+                } else {
+                    result = Core::ERROR_UNKNOWN_KEY;
+                }
             }
             else {
-                result = (file.Destroy() == true) ? Core::ERROR_NONE : Core::ERROR_DESTRUCTION_FAILED;
+                result = Core::ERROR_PRIVILIGED_REQUEST;
             }
         }
 
@@ -294,21 +293,21 @@ namespace Plugin {
         return result;
     }
 
-    uint32_t Controller::Clone(const string& basecallsign, const string& newcallsign) 
+    uint32_t Controller::Clone(const string& baseCallsign, const string& newCallsign)
     {
         uint32_t result = Core::ERROR_NONE;
         const string controllerName = _pluginServer->Controller()->Callsign();
 
         ASSERT(_pluginServer != nullptr);
 
-        if ((basecallsign.empty() == false) && (basecallsign.empty() == false) && (basecallsign != controllerName) && (newcallsign != controllerName)) {
+        if ((baseCallsign.empty() == false) && (baseCallsign.empty() == false) && (baseCallsign != controllerName) && (newCallsign != controllerName)) {
             Core::ProxyType<PluginHost::Server::Service> baseService, newService;
 
-            if (_pluginServer->Services().FromIdentifier(basecallsign, baseService) != Core::ERROR_NONE) {
+            if (_pluginServer->Services().FromIdentifier(baseCallsign, baseService) != Core::ERROR_NONE) {
                 result = Core::ERROR_UNKNOWN_KEY;
             }
-            else if (_pluginServer->Services().FromIdentifier(newcallsign, newService) != Core::ERROR_NONE) {
-                result = _pluginServer->Services().Clone(baseService, newcallsign, newService);
+            else if (_pluginServer->Services().FromIdentifier(newCallsign, newService) != Core::ERROR_NONE) {
+                result = _pluginServer->Services().Clone(baseService, newCallsign, newService);
             }
             else if (baseService->ClassName() != newService->ClassName()) {
                 result = Core::ERROR_GENERAL;

@@ -1,3 +1,4 @@
+Config.json
 CMakeFiles/
 .cproject
 .project
@@ -8,9 +9,13 @@ output/
 cmake-build-*/
 CMakeCache.txt
 uninstall.cmake
+cmake_install.cmake
 */cmake_install.cmake
 */*/cmake_install.cmake
 */*/*/cmake_install.cmake
+=======
+Makefile
+*/Makefile
 */*/Makefile
 */*/*/Makefile
 */*/WPEFramework*Config.cmake
@@ -37,3 +42,13 @@ workspace/
 *.user
 /artifacts/Release
 *.pyc
+Source/WPEFramework/WPEFramework
+Source/WPEFramework/WPEFramework-1.0.0
+Source/WPEProcess/WPEProcess
+Source/WPEProcess/WPEProcess-1.0.0
+Source/WPEFramework/scripts/wpeframework
+*/*/generated/
+*/*/*Config.cmake
+*/*/*ConfigVersion.cmake
+WPEFramework.cmake
+install_manifest.txt
