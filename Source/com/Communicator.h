@@ -431,7 +431,7 @@ namespace RPC {
     struct EXTERNAL IMonitorableProcess : public virtual Core::IUnknown {
         enum { ID = ID_MONITORABLE_PROCESS };
 
-        virtual ~IMonitorableProcess() {}
+        ~IMonitorableProcess() override = default;
 
         virtual string Callsign() const = 0;
     };
@@ -466,9 +466,7 @@ namespace RPC {
             }
 
         public:
-            ~RemoteConnection()
-            {
-            }
+            ~RemoteConnection() override = default;
 
         public:
             uint32_t Id() const override;
@@ -1151,9 +1149,7 @@ namespace RPC {
                     ASSERT(parent != nullptr);
                 }
 
-                virtual ~AnnounceHandlerImplementation()
-                {
-                }
+                ~AnnounceHandlerImplementation() override = default;
 
             public:
                 virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override
@@ -1198,9 +1194,7 @@ namespace RPC {
                 InvokeHandlerImplementation()
                 {
                 }
-                virtual ~InvokeHandlerImplementation()
-                {
-                }
+                ~InvokeHandlerImplementation() override = default;
 
             public:
                 virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override
@@ -1211,9 +1205,7 @@ namespace RPC {
             };
 
         public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             ChannelServer(
                 const Core::NodeId& remoteNode,
                 RemoteConnectionMap& processes,
@@ -1239,9 +1231,7 @@ namespace RPC {
                 BaseClass::Register(InvokeMessage::Id(), handler);
                 BaseClass::Register(AnnounceMessage::Id(), handler);
             }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
             ~ChannelServer()
             {
@@ -1384,9 +1374,7 @@ namespace RPC {
             {
                 ASSERT(parent != nullptr);
             }
-            virtual ~AnnounceHandlerImplementation()
-            {
-            }
+            ~AnnounceHandlerImplementation() override = default;
 
         public:
             void Procedure(IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override
@@ -1418,9 +1406,7 @@ namespace RPC {
             InvokeHandlerImplementation()
             {
             }
-            virtual ~InvokeHandlerImplementation()
-            {
-            }
+            ~InvokeHandlerImplementation() override = default;
 
         public:
             virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data)

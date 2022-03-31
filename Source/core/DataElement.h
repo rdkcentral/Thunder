@@ -197,9 +197,7 @@ namespace Core {
 
             ASSERT(offset + size <= RHS.m_Size);
         }
-        virtual ~DataElement()
-        {
-        }
+        virtual ~DataElement() = default;
 
         inline DataElement& operator=(const DataElement& RHS)
         {

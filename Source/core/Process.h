@@ -66,13 +66,9 @@ namespace Core {
             }
             inline void Erase(const string& value)
             {
-                #ifdef __WINDOWS__
-                #pragma warning(disable : 4834)
-                #endif
+PUSH_WARNING(DISABLE_WARNING_DISCARD_RETURN_VALUE_FOR_NONDISCARD_FUNCTION)
                 std::remove(_options.begin(), _options.end(), value);
-                #ifdef __WINDOWS__
-                #pragma warning(default : 4834)
-                #endif
+POP_WARNING()
             }
             inline void Clear()
             {

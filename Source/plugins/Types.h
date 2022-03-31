@@ -244,18 +244,14 @@ namespace RPC {
         SmartInterfaceType(const SmartInterfaceType<INTERFACE, ENGINE>&) = delete;
         SmartInterfaceType<INTERFACE, ENGINE>& operator=(const SmartInterfaceType<INTERFACE, ENGINE>&) = delete;
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         SmartInterfaceType()
             : _controller(nullptr)
             , _administrator()
             , _monitor(*this)
         {
         }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
         virtual ~SmartInterfaceType()
         {
             ASSERT(_controller == nullptr);

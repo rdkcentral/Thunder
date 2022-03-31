@@ -132,9 +132,7 @@ namespace WPEFramework {
 						, _parent(*parent)
 					{
 					}
-					virtual ~ChannelImpl()
-					{
-					}
+					~ChannelImpl() override = default;
 
 				public:
 					virtual void Received(Core::ProxyType<INTERFACE>& jsonObject) override
@@ -200,9 +198,7 @@ namespace WPEFramework {
 				}
 
 			public:
-				virtual ~CommunicationChannel()
-				{
-				}
+				virtual ~CommunicationChannel() = default;
 				static Core::ProxyType<CommunicationChannel> Instance(const Core::NodeId& remoteNode, const string& callsign, const string& query)
 				{
 					static Core::ProxyMapType<string, CommunicationChannel> channelMap;
@@ -1318,17 +1314,13 @@ namespace WPEFramework {
 			};
 
 		public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 			SmartLinkType(const string& remoteCallsign, const TCHAR* localCallsign, const string& query = "")
 				: _connection(*this, remoteCallsign, localCallsign, query)
 				, _callsign(remoteCallsign)
 			{
 			}
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 			~SmartLinkType()
 			{
 			}

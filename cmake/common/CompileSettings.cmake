@@ -95,23 +95,4 @@ else()
     message(FATAL_ERROR "Invalid CMAKE_BUILD_TYPE: '${CMAKE_BUILD_TYPE}'")
 endif()
 
-
-#
-# Compiler specific options
-#
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    message(FATAL_ERROR "Compiling with Clang")
-    target_compile_options(CompileSettings INTERFACE -Weverything)
-    target_compile_options(CompileSettings INTERFACE -Werror=return-type -Werror=array-bounds)
-elseif(${CMAKE_COMPILER_IS_GNUCXX})
-    message(STATUS "Compiling with GCC")
-    target_compile_options(CompileSettings INTERFACE -Wall)
-    target_compile_options(CompileSettings INTERFACE -Werror=return-type -Werror=array-bounds)
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    message(STATUS "Compiling with MS Visual Studio")
-    target_compile_options(CompileSettings INTERFACE /W4)
-else()
-    message(STATUS "Compiler ${CMAKE_CXX_COMPILER_ID}")
-endif()
-
 # END CompileSettings

@@ -48,9 +48,7 @@ namespace Core {
         ScopedStorage()
         {
         }
-        virtual ~ScopedStorage()
-        {
-        }
+        virtual ~ScopedStorage() = default;
 
     public:
         uint8_t* Buffer()
@@ -84,9 +82,7 @@ namespace Core {
             , _buffer(BUFFER::Buffer())
         {
         }
-        virtual ~CyclicDataBuffer()
-        {
-        }
+        ~CyclicDataBuffer() override = default;
 
     public:
         inline uint32_t Filled() const

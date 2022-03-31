@@ -83,9 +83,7 @@ namespace WarningReporting {
                     Enabled = rhs.Enabled();
                     CategoryConfig = rhs.Configuration();
                 }
-                virtual ~JSON()
-                {
-                }
+                ~JSON() override = default;
 
             public:
                 Core::JSON::String Category;

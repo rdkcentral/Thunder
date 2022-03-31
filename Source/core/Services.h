@@ -37,7 +37,7 @@ namespace WPEFramework {
 namespace Core {
 
     struct EXTERNAL IServiceMetadata {
-        virtual ~IServiceMetadata(){};
+        virtual ~IServiceMetadata() = default;
 
         virtual const std::string& Name() const = 0;
         virtual const TCHAR* Module() const = 0;
@@ -53,7 +53,7 @@ namespace Core {
 
     public:
         struct EXTERNAL ICallback {
-            virtual ~ICallback(){};
+            virtual ~ICallback() = default;
 
             virtual void Destructed() = 0;
         };

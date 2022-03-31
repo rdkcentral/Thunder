@@ -98,7 +98,7 @@ namespace Trace {
                     }
                 }
             }
-            virtual ~TraceControl()
+            ~TraceControl() override
             {
                 Destroy();
             }
@@ -148,9 +148,7 @@ namespace Trace {
             : _traceInfo(category)
         {
         }
-        virtual ~TraceType()
-        {
-        }
+        ~TraceType() override = default;
 
     public:
         // No dereference etc.. 1 straight line to enabled or not... Quick method..

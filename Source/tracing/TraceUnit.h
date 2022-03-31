@@ -84,9 +84,7 @@ namespace Trace {
                     }
                     Enabled = rhs.Enabled();
                 }
-                virtual ~JSON()
-                {
-                }
+                ~JSON() override = default;
 
             public:
                 Core::JSON::String Module;

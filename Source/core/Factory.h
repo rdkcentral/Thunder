@@ -30,11 +30,8 @@ namespace Core {
     template <typename BASEOBJECT, typename IDENTIFIER>
     class FactoryType {
     private:
-        FactoryType(const FactoryType<BASEOBJECT, IDENTIFIER>&);
-        FactoryType<BASEOBJECT, IDENTIFIER>& operator=(const FactoryType<BASEOBJECT, IDENTIFIER>&);
-
         struct IFactory {
-            virtual ~IFactory(){};
+            virtual ~IFactory() = default;
 
             virtual Core::ProxyType<BASEOBJECT> GetElement() = 0;
             virtual uint32_t CreatedElements() const = 0;
@@ -73,11 +70,10 @@ namespace Core {
 
     public:
         class Iterator {
-        private:
-            Iterator();
-            Iterator& operator=(const Iterator&);
-
         public:
+            Iterator() = delete;
+            Iterator& operator=(const Iterator&) = delete;
+
             Iterator(const std::map<IDENTIFIER, IFactory*>& warehouse)
                 : _map(warehouse)
                 , _index(warehouse.begin())
@@ -90,9 +86,7 @@ namespace Core {
                 , _start(true)
             {
             }
-            ~Iterator()
-            {
-            }
+            ~Iterator() = default;
 
         public:
             bool IsValid() const
@@ -146,11 +140,11 @@ namespace Core {
         };
 
     public:
-        FactoryType()
-        {
-        }
-        FactoryType(const uint8_t /* queueuSize */)
-        {
+        FactoryType(const FactoryType<BASEOBJECT, IDENTIFIER>&) = delete;
+        FactoryType<BASEOBJECT, IDENTIFIER>& operator=(const FactoryType<BASEOBJECT, IDENTIFIER>&) = delete;
+
+        FactoryType() = default;
+        FactoryType(const uint8_t /* queueuSize */) {
         }
         ~FactoryType()
         {
@@ -161,7 +155,6 @@ namespace Core {
     public:
         void DestroyFactories()
         {
-
             // Start deleting all factories...
             while (_receptors.size() > 0) {
                 delete (_receptors.begin()->second);
