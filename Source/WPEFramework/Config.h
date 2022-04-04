@@ -312,6 +312,8 @@ namespace PluginHost {
                 , Redirect(_T("http://127.0.0.1/Service/Controller/UI"))
                 , Signature(_T("TestSecretKey"))
                 , IdleTime(0)
+                , SoftKillCheckWaitTime(10)
+                , HardKillCheckWaitTime(4)
                 , IPV6(false)
                 , DefaultMessagingCategories(false)
                 , DefaultWarningReportingCategories(false)
@@ -344,6 +346,8 @@ namespace PluginHost {
                 Add(_T("communicator"), &Communicator);
                 Add(_T("signature"), &Signature);
                 Add(_T("idletime"), &IdleTime);
+                Add(_T("softkillcheckwaittime"), &SoftKillCheckWaitTime);
+                Add(_T("hardkillcheckwaittime"), &HardKillCheckWaitTime);
                 Add(_T("ipv6"), &IPV6);
 #ifdef __CORE_MESSAGING__
                 Add(_T("messaging"), &DefaultMessagingCategories);
@@ -386,6 +390,8 @@ namespace PluginHost {
             Core::JSON::String Redirect;
             Core::JSON::String Signature;
             Core::JSON::DecUInt16 IdleTime;
+            Core::JSON::DecUInt8 SoftKillCheckWaitTime;
+            Core::JSON::DecUInt8 HardKillCheckWaitTime;
             Core::JSON::Boolean IPV6;
             Core::JSON::String DefaultMessagingCategories; 
             Core::JSON::String DefaultWarningReportingCategories; 
@@ -544,6 +550,8 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 _redirect = config.Redirect.Value();
                 _version = config.Version.Value();
                 _idleTime = config.IdleTime.Value();
+                _softKillCheckWaitTime = config.SoftKillCheckWaitTime.Value();
+                _hardKillCheckWaitTime = config.HardKillCheckWaitTime.Value();
                 _IPV6 = config.IPV6.Value();
                 _binding = config.Binding.Value();
                 _interface = config.Interface.Value();
@@ -738,6 +746,12 @@ POP_WARNING()
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             _idleTime = newValue;
         }
+        inline uint8_t SoftKillCheckWaitTime() {
+            return _softKillCheckWaitTime;
+        }
+        inline uint8_t HardKillCheckWaitTime() {
+            return _hardKillCheckWaitTime;
+        }
         inline const string& URL() const {
             return (_URL);
         }
@@ -925,6 +939,8 @@ POP_WARNING()
         uint16_t _portNumber;
         bool _IPV6;
         uint16_t _idleTime;
+        uint8_t _softKillCheckWaitTime;
+        uint8_t _hardKillCheckWaitTime;
         uint32_t _stackSize;
         int32_t _latitude;
         int32_t _longitude;

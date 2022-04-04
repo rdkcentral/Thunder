@@ -107,8 +107,10 @@ namespace RPC {
         LocalClosingInfo(const LocalClosingInfo& copy) = delete;
         LocalClosingInfo& operator=(const LocalClosingInfo& RHS) = delete;
 
-        explicit LocalClosingInfo(const uint32_t pid)
+        explicit LocalClosingInfo(const uint32_t pid, const uint8_t softKillCheckWaitTime, const uint8_t hardKillCheckWaitTime)
             : _process(false, pid)
+            , _softKillCheckWaitTime(softKillCheckWaitTime)
+            , _hardKillCheckWaitTime(hardKillCheckWaitTime)
         {
         }
         ~LocalClosingInfo() override = default;
@@ -121,11 +123,11 @@ namespace RPC {
                 switch (iteration) {
                 case 0:
                     _process.Kill(false);
-                    nextinterval = 10000;
+                    nextinterval = _softKillCheckWaitTime * 1000; // Convert to Milli Seconds
                     break;
                 case 1:
                     _process.Kill(true);
-                    nextinterval = 4000;
+                    nextinterval = _hardKillCheckWaitTime * 1000; // Convert to Milli Seconds
                     break;
                 default:
                     // This should not happen. This is a very stubbern process. Can be killed.
@@ -138,6 +140,8 @@ namespace RPC {
 
     private:
         Core::Process _process;
+        uint8_t _softKillCheckWaitTime;
+        uint8_t _hardKillCheckWaitTime;
     };
 
 #ifdef PROCESSCONTAINERS_ENABLED
@@ -148,9 +152,11 @@ namespace RPC {
         ContainerClosingInfo(const ContainerClosingInfo& copy) = delete;
         ContainerClosingInfo& operator=(const ContainerClosingInfo& RHS) = delete;
 
-        explicit ContainerClosingInfo(ProcessContainers::IContainer* container)
+        explicit ContainerClosingInfo(ProcessContainers::IContainer* container, const uint8_t softKillCheckWaitTime, const uint8_t hardKillCheckWaitTime)
             : _process(static_cast<uint32_t>(container->Pid()))
             , _container(container)
+            , _softKillCheckWaitTime(softKillCheckWaitTime)
+            , _hardKillCheckWaitTime(hardKillCheckWaitTime)
         {
             container->AddRef();
         }
@@ -174,13 +180,13 @@ namespace RPC {
                             break;
                         }
                     }
-                }
-                    nextinterval = 10000;
+                    nextinterval = _softKillCheckWaitTime * 1000; // Convert to Milli Seconds
                     break;
+                }
                 case 1: {
                     if (_process.Id() != 0) {
                         _process.Kill(true);
-                        nextinterval = 4000;
+                        nextinterval = _hardKillCheckWaitTime * 1000; // Convert to Milli Seconds
                     } else {
                         ASSERT(false);
                         nextinterval = 0;
@@ -202,6 +208,8 @@ namespace RPC {
     private:
         Core::Process _process;
         ProcessContainers::IContainer* _container;
+        uint8_t _softKillCheckWaitTime;
+        uint8_t _hardKillCheckWaitTime;
     };
 
 #endif
@@ -280,7 +288,7 @@ namespace RPC {
         // Time to shoot the application, it will trigger a close by definition of the channel, if it is still standing..
         if (_id != 0) {
             if (!_stopInvokedFlag.test_and_set()) {
-                ProcessShutdown::Start<LocalClosingInfo>(_id);
+                ProcessShutdown::Start<LocalClosingInfo>(_id, _softKillCheckWaitTime, _hardKillCheckWaitTime);
             } else {
                 TRACE_L1("Process terminate already started");
             }
@@ -307,7 +315,7 @@ namespace RPC {
     {
         ASSERT(_container != nullptr);
         if (!_stopInvokedFlag.test_and_set()) {
-            ProcessShutdown::Start<ContainerClosingInfo>(_container);
+            ProcessShutdown::Start<ContainerClosingInfo>(_container, _softKillCheckWaitTime, _hardKillCheckWaitTime);
         } else {
             TRACE_L1("Containter terminate already started");
         }
@@ -329,6 +337,8 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
     Communicator::Communicator(const Core::NodeId& node, const string& proxyStubPath)
         : _connectionMap(*this)
         , _ipcServer(node, _connectionMap, proxyStubPath)
+        , _softKillCheckWaitTime(SoftKillCheckWaitTime)
+        , _hardKillCheckWaitTime(HardKillCheckWaitTime)
     {
         if (proxyStubPath.empty() == false) {
             RPC::LoadProxyStubs(proxyStubPath);
@@ -344,6 +354,8 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         const Core::ProxyType<Core::IIPCServer>& handler)
         : _connectionMap(*this)
         , _ipcServer(node, _connectionMap, proxyStubPath, handler)
+        , _softKillCheckWaitTime(SoftKillCheckWaitTime)
+        , _hardKillCheckWaitTime(HardKillCheckWaitTime)
     {
         if (proxyStubPath.empty() == false) {
             RPC::LoadProxyStubs(proxyStubPath);

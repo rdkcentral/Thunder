@@ -437,6 +437,10 @@ namespace RPC {
     };
 
     class EXTERNAL Communicator {
+    private:
+        static constexpr uint8_t SoftKillCheckWaitTime = 10; // In seconds
+        static constexpr uint8_t HardKillCheckWaitTime = 4; // In seconds
+
     protected:
         class ChannelLink;
 
@@ -532,10 +536,12 @@ namespace RPC {
             LocalProcess(const LocalProcess&) = delete;
             LocalProcess& operator=(const LocalProcess&) = delete;
 
-            LocalProcess(const Config& config, const Object& instance)
+            LocalProcess(const Config& config, const Object& instance, const uint8_t softKillCheckWaitTime, const uint8_t hardKillCheckWaitTime)
                 : _callsign(instance.Callsign())
                 , _id(0)
                 , _process(RemoteConnection::Id(), config, instance)
+                , _softKillCheckWaitTime(softKillCheckWaitTime)
+                , _hardKillCheckWaitTime(hardKillCheckWaitTime)
             {
             }
             ~LocalProcess() override = default;
@@ -572,6 +578,8 @@ namespace RPC {
             string _callsign;
             uint32_t _id;
             Process _process;
+            uint8_t _softKillCheckWaitTime;
+            uint8_t _hardKillCheckWaitTime;
         };
 #ifdef PROCESSCONTAINERS_ENABLED
 
@@ -696,7 +704,7 @@ namespace RPC {
             RemoteConnection* result = nullptr;
 
             if (instance.Type() == Object::HostType::LOCAL) {
-                result = Core::Service<LocalProcess>::Create<RemoteConnection>(config, instance);
+                result = Core::Service<LocalProcess>::Create<RemoteConnection>(config, instance, _softKillCheckWaitTime, _hardKillCheckWaitTime);
             } else if (instance.Type() == Object::HostType::CONTAINER) {
 #ifdef PROCESSCONTAINERS_ENABLED
                 result = Core::Service<ContainerProcess>::Create<RemoteConnection>(config, instance);
@@ -776,6 +784,11 @@ namespace RPC {
             }
 
         public:
+            void ForcedDestructionTimes(const uint8_t softKillCheckWaitTime, const uint8_t hardKillCheckWaitTime)
+            {
+                _softKillCheckWaitTime = softKillCheckWaitTime;
+                _hardKillCheckWaitTime = hardKillCheckWaitTime;
+            }
             inline void Register(RPC::IRemoteConnection::INotification* sink)
             {
                 ASSERT(sink != nullptr);
@@ -1075,6 +1088,8 @@ namespace RPC {
             std::map<uint32_t, RemoteConnection*> _connections;
             std::list<RPC::IRemoteConnection::INotification*> _observers;
             Communicator& _parent;
+            uint8_t _softKillCheckWaitTime;
+            uint8_t _hardKillCheckWaitTime;
         };
 
     protected:
@@ -1310,6 +1325,11 @@ POP_WARNING()
         {
             return (_connectionMap.Connection(id));
         }
+        void ForcedDestructionTimes(const uint8_t softKillCheckWaitTime, const uint8_t hardKillCheckWaitTime)
+        {
+            _softKillCheckWaitTime = softKillCheckWaitTime;
+            _hardKillCheckWaitTime = hardKillCheckWaitTime;
+        }
         inline void* Create(uint32_t& pid, const Object& instance, const Config& config, const uint32_t waitTime)
         {
             return (_connectionMap.Create(pid, instance, config, waitTime));
@@ -1357,6 +1377,9 @@ POP_WARNING()
     private:
         RemoteConnectionMap _connectionMap;
         ChannelServer _ipcServer;
+        uint8_t _softKillCheckWaitTime;
+        uint8_t _hardKillCheckWaitTime;
+
     };
 
     class EXTERNAL CommunicatorClient : public Core::IPCChannelClientType<Core::Void, false, true>, public Core::IDispatchType<Core::IIPC> {

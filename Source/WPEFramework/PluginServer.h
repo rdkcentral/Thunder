@@ -1725,12 +1725,13 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                     config.VolatilePath(), 
                     config.AppPath(), 
                     config.ProxyStubPath(), 
-                    config.PostMortemPath(), 
+                    config.PostMortemPath(),
                     _engine)
                 , _server(server)
                 , _subSystems(this)
                 , _authenticationHandler(nullptr)
             {
+                _processAdministrator.ForcedDestructionTimes(config.SoftKillCheckWaitTime(), config.HardKillCheckWaitTime());
             }
 POP_WARNING()
             ~ServiceMap()
