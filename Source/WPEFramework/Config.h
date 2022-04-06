@@ -746,10 +746,10 @@ POP_WARNING()
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             _idleTime = newValue;
         }
-        inline uint8_t SoftKillCheckWaitTime() {
+        inline uint8_t SoftKillCheckWaitTime() const {
             return _softKillCheckWaitTime;
         }
-        inline uint8_t HardKillCheckWaitTime() {
+        inline uint8_t HardKillCheckWaitTime() const {
             return _hardKillCheckWaitTime;
         }
         inline const string& URL() const {
