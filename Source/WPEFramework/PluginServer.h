@@ -440,6 +440,7 @@ namespace PluginHost {
                 , _termination(plugin.Termination, false)
                 , _activity(0)
                 , _connection(nullptr)
+                , _lastId(0)
                 , _administrator(administrator)
             {
             }
@@ -1029,6 +1030,12 @@ namespace PluginHost {
                     _jsonrpc = nullptr;
                 }
                 if (_connection != nullptr) {
+                    // Lets record the ID associated with this connection.
+                    // If the other end of this connection (indicated by the
+                    // ID) is not destructed the next time we start this plugin
+                    // again, we will forcefully kill it !!!
+                    _lastId = _connection->Id();
+
                     _connection->Release();
                     _connection = nullptr;
                 }
@@ -1065,6 +1072,7 @@ namespace PluginHost {
             Condition _termination;
             uint32_t _activity;
             RPC::IRemoteConnection* _connection;
+            uint32_t _lastId;
 
             ServiceMap& _administrator;
             static Core::ProxyType<Web::Response> _unavailableHandler;
@@ -1886,6 +1894,9 @@ POP_WARNING()
             void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& dataPath, const string& persistentPath, const string& volatilePath)
             {
                 return (_processAdministrator.Create(sessionId, object, waitTime, dataPath, persistentPath, volatilePath));
+            }
+            void Destroy(const uint32_t id) {
+                _processAdministrator.Destroy(id);
             }
             void Register(RPC::IRemoteConnection::INotification* sink)
             {

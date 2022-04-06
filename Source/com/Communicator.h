@@ -1318,6 +1318,7 @@ POP_WARNING()
         {
             _connectionMap.Destroy();
         }
+        void Destroy(const uint32_t id);
 
     private:
         void Closed(const Core::ProxyType<Core::IPCChannel>& channel)

@@ -399,6 +399,12 @@ namespace PluginHost
 
                 Unlock();
 
+                // Before we dive into the "new" initialize lets see if this has a pending OOP running, if so forcefully kill it now, no time to wait !
+                if (_lastId != 0) {
+                    _administrator.Destroy(_lastId);
+                    _lastId = 0;
+                }
+
                 TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
                 REPORT_DURATION_WARNING( { ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
