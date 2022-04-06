@@ -784,11 +784,6 @@ namespace RPC {
             }
 
         public:
-            void ForcedDestructionTimes(const uint8_t softKillCheckWaitTime, const uint8_t hardKillCheckWaitTime)
-            {
-                _softKillCheckWaitTime = softKillCheckWaitTime;
-                _hardKillCheckWaitTime = hardKillCheckWaitTime;
-            }
             inline void Register(RPC::IRemoteConnection::INotification* sink)
             {
                 ASSERT(sink != nullptr);
@@ -1088,8 +1083,6 @@ namespace RPC {
             std::map<uint32_t, RemoteConnection*> _connections;
             std::list<RPC::IRemoteConnection::INotification*> _observers;
             Communicator& _parent;
-            uint8_t _softKillCheckWaitTime;
-            uint8_t _hardKillCheckWaitTime;
         };
 
     protected:
