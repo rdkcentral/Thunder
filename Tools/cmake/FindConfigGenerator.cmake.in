@@ -92,7 +92,6 @@ function(write_config)
     IncludeConfig()
 
     foreach(plugin ${_plugins})
-        message(STATUS "checking ${CMAKE_CURRENT_LIST_DIR}/${plugin}.conf.in")
         set(config_generated "N")
         if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/${plugin}.conf.in")
             message(STATUS "Writing configuration for ${plugin} using config_generator")
@@ -114,7 +113,6 @@ function(write_config)
             endif()
 
             list(APPEND _execute_command  ${plugin} "${CMAKE_CURRENT_BINARY_DIR}/config")
-            message(STATUS "Args: \n${_execute_command}")
 
             execute_process(COMMAND ${PYTHON_EXECUTABLE} ${_execute_command} RESULT_VARIABLE rv)
             if(NOT ${rv} EQUAL 0)
@@ -182,9 +180,12 @@ function(write_config)
 
             if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" AND
                     "${config_generated}" STREQUAL "Y")
+
                 json_write("${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}_legacy.json" ${plugin_config})
+
                 if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}_legacy.json" AND 
                         EXISTS ${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}.json)
+
                     execute_process( COMMAND ${CMAKE_COMMAND} -E compare_files ${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}_legacy.json ${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}.json
                      RESULT_VARIABLE compare_result
                     )
@@ -200,10 +201,10 @@ function(write_config)
                     else()
                         message(STATUS "Error while comparing the config json files generated using legacy method and Python ConfigGenerator")
                     endif()
+                else()
                     message(STATUS "Failed to compare the config json files generated using legacy method and Python ConfigGenerator - missing")
                 endif()
             endif()
-
         endif()
 
         install(

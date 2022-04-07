@@ -123,17 +123,17 @@ if __name__ == "__main__":
 
     args = argparser.parse_args(sys.argv[1:])
 
-    log.Print("Preparing Config JSON")
+    #  log.Print("Preparing Config JSON")
     result = JSON()
     if args.locator:
-        result.locator = args.locator
+        result.add("locator", args.locator)
     else:
-        result.locator = "libWPEFramework" + args.project + ".so"
+        result.add("locator", "libWPEFramework" + args.project + ".so")
 
     if args.classname:
-        result.classname = args.classname
+        result.add("classname", args.classname)
     else:
-        result.classname = args.project
+        result.add("classname", args.project)
 
     if not os.path.exists(args.projectdir):
         log.Error(f"Error: Config Dir path {args.projectdir} doesnt exit\n")
