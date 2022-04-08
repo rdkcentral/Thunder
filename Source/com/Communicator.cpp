@@ -221,11 +221,11 @@ namespace RPC {
                 switch (Cycle()) {
                 case 0:
                     _process.Kill(false);
-                    nextinterval = 10;
+                    nextinterval = Communicator::SoftKillCheckWaitTime();
                     break;
                 default:
                     _process.Kill(true);
-                    nextinterval = 2; // Recheck in 2 Seconds..
+                    nextinterval = Communicator::HardKillCheckWaitTime();
                     break;
                 }
             }
@@ -270,11 +270,11 @@ namespace RPC {
                                 break;
                             }
                         }
-                        nextinterval = 10;
+                        nextinterval = Communicator::SoftKillCheckWaitTime();
                         break;
                 case 1: if (_process.Id() != 0) {
                             _process.Kill(true);
-                            nextinterval = 4;
+                            nextinterval = Communicator::HardKillCheckWaitTime();
                         } else {
                             ASSERT(false);
                             nextinterval = 0;
@@ -407,6 +407,9 @@ namespace RPC {
     }
 
 #endif
+    // Definitions of static members
+    uint8_t Communicator::_softKillCheckWaitTime = 10;
+    uint8_t Communicator::_hardKillCheckWaitTime = 4;;
 
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 
