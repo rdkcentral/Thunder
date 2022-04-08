@@ -96,8 +96,10 @@ namespace RPC {
         proxy->Complete(response);
     }
 
-    void Administrator::UnregisterProxyLocked(const ProxyStub::UnknownProxy& proxy)
+    void Administrator::UnregisterProxy(const ProxyStub::UnknownProxy& proxy)
     {
+        _adminLock.Lock();
+
         ChannelMap::iterator index(_channelProxyMap.find(proxy.Channel().operator->()));
 
         if (index != _channelProxyMap.end()) {
@@ -116,6 +118,8 @@ namespace RPC {
         } else {
             TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
         }
+
+        _adminLock.Unlock();
     }
 
     void Administrator::Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message)

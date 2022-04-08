@@ -189,7 +189,7 @@ namespace ProxyStub {
         }
         uint32_t Release() const {
             uint32_t result = Core::ERROR_NONE;
-            RPC::Administrator::Instance().Lock();
+
             _adminLock.Lock();
             _refCount--;
 
@@ -209,24 +209,23 @@ namespace ProxyStub {
                     message->Parameters().Writer().Number<uint32_t>(_remoteReferences);
 
                     // Just try the destruction for few Seconds...
-                    result = Invoke(message, 2000);
-                    if (result == Core::ERROR_TIMEDOUT)
-                        TRACE_L1("Communication timeout");
+                    result = Invoke(message, RPC::CommunicationTimeOut);
+
                     if (result != Core::ERROR_NONE) {
-                        TRACE_L1("Could not remote release the Proxy result=%d", result);
+                        TRACE_L1("Could not remote release the Proxy.");
                     } else {
                         // Pass the remote release return value through
                         result = message->Response().Reader().Number<uint32_t>();
                     }
                 }
 
-                // Remove our selves from the Administration, we are done..
-                RPC::Administrator::Instance().UnregisterProxyLocked(*this);
                 _adminLock.Unlock();
 
-                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
+                // Remove our selves from the Administration, we are done..
+                RPC::Administrator::Instance().UnregisterProxy(*this);
+
+                result = (result == Core::ERROR_NONE ? Core::ERROR_DESTRUCTION_SUCCEEDED : result);
             }
-            RPC::Administrator::Instance().UnLock();
             return (result);
         }
         inline void* RemoteInterface(const uint32_t id) const
