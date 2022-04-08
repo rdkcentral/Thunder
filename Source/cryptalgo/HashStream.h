@@ -35,7 +35,7 @@
 namespace WPEFramework {
 namespace Crypto {
     struct IHashStream {
-        virtual ~IHashStream(){};
+        virtual ~IHashStream() = default;
 
         virtual EnumHashType Type() const = 0;
         virtual void Reset() = 0;

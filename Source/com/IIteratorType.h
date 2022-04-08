@@ -32,7 +32,7 @@ namespace RPC {
 
         enum { ID = INTERFACE_ID };
 
-        virtual ~IIteratorType(){};
+        ~IIteratorType() override = default;
 
         virtual bool Next(ELEMENT& info /* @out */) = 0;
         virtual bool Previous(ELEMENT& info /* @out */) = 0;

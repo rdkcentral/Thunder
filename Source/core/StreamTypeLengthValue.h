@@ -330,9 +330,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         {
         }
 POP_WARNING()
-        virtual ~MessageExchangeType()
-        {
-        }
+        virtual ~MessageExchangeType() = default;
 
     public:
         inline SOURCE& Link()

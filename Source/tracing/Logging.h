@@ -313,7 +313,7 @@ namespace Logging {
                 // Logs, by default, are enabled.
                 m_Enabled |= 0x01;
             }
-            virtual ~LoggingControl()
+            ~LoggingControl() override
             {
                 Destroy();
             }
@@ -363,9 +363,7 @@ namespace Logging {
             : _traceInfo(args...)
         {
         }
-        virtual ~LoggingType()
-        {
-        }
+        virtual ~LoggingType() = default;
 
     public:
         // No dereference etc.. 1 straight line to enabled or not... Quick method..

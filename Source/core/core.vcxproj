@@ -48,7 +48,9 @@
     <ClInclude Include="LockableContainer.h" />
     <ClInclude Include="Measurement.h" />
     <ClInclude Include="Media.h" />
+    <ClInclude Include="MessageDispatcher.h" />
     <ClInclude Include="MessageException.h" />
+    <ClInclude Include="MessageUnit.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="Netlink.h" />
     <ClInclude Include="NetworkInfo.h" />
@@ -109,6 +111,7 @@
     <ClCompile Include="JSONRPC.cpp" />
     <ClCompile Include="Library.cpp" />
     <ClCompile Include="MessageException.cpp" />
+    <ClCompile Include="MessageUnit.cpp" />
     <ClCompile Include="NetworkInfo.cpp" />
     <ClCompile Include="NodeId.cpp" />
     <ClCompile Include="Number.cpp" />
@@ -213,6 +216,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>
       </AdditionalIncludeDirectories>
+      <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -230,6 +234,7 @@
       <PreprocessorDefinitions>CORE_EXPORTS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(WindowsPath)</AdditionalIncludeDirectories>
+      <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -250,6 +255,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>
       </AdditionalIncludeDirectories>
+      <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -272,6 +278,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>
       </AdditionalIncludeDirectories>
+      <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

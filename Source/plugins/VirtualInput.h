@@ -176,9 +176,7 @@ POP_WARNING()
                     Add(_T("key"), &Key);
                     Add(_T("modifiers"), &Modifiers);
                 }
-                virtual ~KeyMapEntry()
-                {
-                }
+                ~KeyMapEntry() override = default;
 
             public:
                 Core::JSON::HexUInt32 Code;
@@ -365,7 +363,7 @@ POP_WARNING()
 
     public:
         struct EXTERNAL INotifier {
-            virtual ~INotifier() {}
+            virtual ~INotifier() = default;
             virtual void Dispatch(const IVirtualInput::KeyData::type type, const uint32_t code) = 0;
         };
         typedef std::map<const uint32_t, const uint32_t> PostLookupEntries;
@@ -399,9 +397,7 @@ POP_WARNING()
                         Add(_T("code"), &Code);
                         Add(_T("mods"), &Mods);
                     }
-                    virtual ~KeyCode()
-                    {
-                    }
+                    virtual ~KeyCode() = default;
 
                 public:
                     Core::JSON::DecUInt16 Code;
@@ -425,9 +421,7 @@ POP_WARNING()
                     Add(_T("in"), &In);
                     Add(_T("out"), &Out);
                 }
-                virtual ~Conversion()
-                {
-                }
+                virtual ~Conversion() = default;
 
             public:
                 KeyCode In;
@@ -702,9 +696,7 @@ POP_WARNING()
                 , _replacement(Core::ProxyType<IVirtualInput::KeyMessage>::Create())
             {
             }
-            virtual ~InputDataLink()
-            {
-            }
+            virtual ~InputDataLink() = default;
 
         public:
             inline bool Enable() const

@@ -132,9 +132,7 @@ namespace WPEFramework {
 						, _parent(*parent)
 					{
 					}
-					virtual ~ChannelImpl()
-					{
-					}
+					~ChannelImpl() override = default;
 
 				public:
 					virtual void Received(Core::ProxyType<INTERFACE>& jsonObject) override
@@ -200,9 +198,7 @@ namespace WPEFramework {
 				}
 
 			public:
-				virtual ~CommunicationChannel()
-				{
-				}
+				virtual ~CommunicationChannel() = default;
 				static Core::ProxyType<CommunicationChannel> Instance(const Core::NodeId& remoteNode, const string& callsign, const string& query)
 				{
 					static Core::ProxyMapType<string, CommunicationChannel> channelMap;

@@ -40,7 +40,7 @@ namespace Tests {
         {
             //if directory exists remove it to clear data (eg. sockets) that can remain after previous run
             if (Core::File(_basePath).IsDirectory()) {
-                Core::Directory(_basePath.c_str()).Destroy(false);
+                Core::Directory(_basePath.c_str()).Destroy();
             }
             //create directory
             if (!Core::Directory(_basePath.c_str()).CreatePath()) {
@@ -51,7 +51,7 @@ namespace Tests {
         ~Core_MessageDispatcher()
         {
             if (Core::File(_basePath).IsDirectory()) {
-                Core::Directory(_basePath.c_str()).Destroy(false);
+                Core::Directory(_basePath.c_str()).Destroy();
             }
         }
 

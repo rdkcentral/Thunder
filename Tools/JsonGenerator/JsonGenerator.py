@@ -1473,7 +1473,7 @@ def EmitEvent(emit, root, event, static=False):
     if not static:
         line = "void %s::%s(%s)" % (root.JsonName(), event.MethodName(), par)
     else:
-        line = "static void %s(PluginHost::JSONRPC& module%s%s)" % (event.TrueName(), ", " if par else "", par)
+        line = "static void %s(const PluginHost::JSONRPC& module%s%s)" % (event.TrueName(), ", " if par else "", par)
     if event.included_from:
         line += " /* %s */" % event.included_from
     emit.Line(line)

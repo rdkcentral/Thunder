@@ -440,6 +440,7 @@ namespace PluginHost {
                 , _termination(plugin.Termination, false)
                 , _activity(0)
                 , _connection(nullptr)
+                , _lastId(0)
                 , _administrator(administrator)
             {
             }
@@ -1029,6 +1030,12 @@ namespace PluginHost {
                     _jsonrpc = nullptr;
                 }
                 if (_connection != nullptr) {
+                    // Lets record the ID associated with this connection.
+                    // If the other end of this connection (indicated by the
+                    // ID) is not destructed the next time we start this plugin
+                    // again, we will forcefully kill it !!!
+                    _lastId = _connection->Id();
+
                     _connection->Release();
                     _connection = nullptr;
                 }
@@ -1065,6 +1072,7 @@ namespace PluginHost {
             Condition _termination;
             uint32_t _activity;
             RPC::IRemoteConnection* _connection;
+            uint32_t _lastId;
 
             ServiceMap& _administrator;
             static Core::ProxyType<Web::Response> _unavailableHandler;
@@ -1106,9 +1114,7 @@ namespace PluginHost {
                     Add(_T("configuration"), &Configuration);
                 }
 
-                virtual ~Plugin()
-                {
-                }
+                ~Plugin() override = default;
 
             public:
                 Core::JSON::Boolean AutoStart;
@@ -1358,6 +1364,8 @@ namespace PluginHost {
                     const string& appPath,
                     const string& proxyStubPath,
                     const string& postMortemPath,
+                    const uint8_t softKillCheckWaitTime,
+                    const uint8_t hardKillCheckWaitTime,
                     const Core::ProxyType<RPC::InvokeServer>& handler)
                     : RPC::Communicator(node, proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath, Core::ProxyType<Core::IIPCServer>(handler))
                     , _parent(parent)
@@ -1384,6 +1392,7 @@ namespace PluginHost {
                         // We need to pass the communication channel NodeId via an environment variable, for process,
                         // not being started by the rpcprocess...
                         Core::SystemInfo::SetEnvironment(string(CommunicatorConnector), RPC::Communicator::Connector());
+                        RPC::Communicator::ForcedDestructionTimes(softKillCheckWaitTime, hardKillCheckWaitTime);
                     }
                 }
                 virtual ~CommunicatorServer()
@@ -1727,7 +1736,9 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                     config.VolatilePath(), 
                     config.AppPath(), 
                     config.ProxyStubPath(), 
-                    config.PostMortemPath(), 
+                    config.PostMortemPath(),
+                    config.SoftKillCheckWaitTime(),
+                    config.HardKillCheckWaitTime(),
                     _engine)
                 , _server(server)
                 , _subSystems(this)
@@ -1888,6 +1899,9 @@ POP_WARNING()
             void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& dataPath, const string& persistentPath, const string& volatilePath)
             {
                 return (_processAdministrator.Create(sessionId, object, waitTime, dataPath, persistentPath, volatilePath));
+            }
+            void Destroy(const uint32_t id) {
+                _processAdministrator.Destroy(id);
             }
             void Register(RPC::IRemoteConnection::INotification* sink)
             {

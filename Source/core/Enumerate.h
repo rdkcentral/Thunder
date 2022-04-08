@@ -106,9 +106,7 @@ namespace Core { template<> EXTERNAL const typename Core::EnumerateConversion<EN
             operator=(Value);
         }
 
-        virtual ~EnumerateType()
-        {
-        }
+        virtual ~EnumerateType() = default;
 
         EnumerateType<ENUMERATE>& operator=(const EnumerateType<ENUMERATE>& RHS)
         {
