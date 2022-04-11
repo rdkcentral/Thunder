@@ -258,6 +258,32 @@ namespace PluginHost {
     ExitHandler* ExitHandler::_instance = nullptr;
     Core::CriticalSection ExitHandler::_adminLock;
 
+    static string GetDeviceId(PluginHost::Server* dispatcher)
+    {
+        string deviceId;
+
+        PluginHost::ISubSystem* subSystems = dispatcher->Services().SubSystemsInterface();
+        if (subSystems != nullptr) {
+            if (subSystems->IsActive(PluginHost::ISubSystem::IDENTIFIER) == true) {
+                const PluginHost::ISubSystem::IIdentifier* id(subSystems->Get<PluginHost::ISubSystem::IIdentifier>());
+                if (id != nullptr) {
+                    uint8_t buffer[64];
+
+                    buffer[0] = static_cast<const PluginHost::ISubSystem::IIdentifier*>(id)
+                                ->Identifier(sizeof(buffer) - 1, &(buffer[1]));
+
+                    if (buffer[0] != 0) {
+                        deviceId = Core::SystemInfo::Instance().Id(buffer, ~0);
+                    }
+
+                    id->Release();
+                }
+            }
+            subSystems->Release();
+        }
+        return deviceId;
+    }
+
     extern "C" {
 
 #ifndef __WINDOWS__
@@ -338,32 +364,6 @@ namespace PluginHost {
         }
     }
 #endif
-
-    static string GetDeviceId(PluginHost::Server* dispatcher)
-    {
-        string deviceId;
-
-        PluginHost::ISubSystem* subSystems = dispatcher->Services().SubSystemsInterface();
-        if (subSystems != nullptr) {
-            if (subSystems->IsActive(PluginHost::ISubSystem::IDENTIFIER) == true) {
-                const PluginHost::ISubSystem::IIdentifier* id(subSystems->Get<PluginHost::ISubSystem::IIdentifier>());
-                if (id != nullptr) {
-                    uint8_t buffer[64];
-
-                    buffer[0] = static_cast<const PluginHost::ISubSystem::IIdentifier*>(id)
-                                ->Identifier(sizeof(buffer) - 1, &(buffer[1]));
-
-                    if (buffer[0] != 0) {
-                        deviceId = Core::SystemInfo::Instance().Id(buffer, ~0);
-                    }
-
-                    id->Release();
-                }
-            }
-            subSystems->Release();
-        }
-        return deviceId;
-    }
 
     static void ForcedExit() {
         if (_atExitActive == true) {

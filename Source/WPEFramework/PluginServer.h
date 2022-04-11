@@ -873,6 +873,14 @@ namespace PluginHost {
             {
                 return (_administrator.RemoteConnection(connectionId));
             }
+            void Closed(const uint32_t id) {
+                IDispatcher* dispatcher = _handler->QueryInterface<IDispatcher>();
+
+                if (dispatcher != nullptr) {
+                    dispatcher->Close(id);
+                    dispatcher->Release();
+                }
+            }
 
             // Methods to Activate and Deactivate the aggregated Plugin to this shell.
             // These are Blocking calls!!!!!
@@ -1917,6 +1925,18 @@ namespace PluginHost {
             {
                 return (connectionId != 0 ? _processAdministrator.Connection(connectionId) : nullptr);
             }
+            void Closed(const uint32_t id) {
+                _adminLock.Lock();
+
+                // First stop all services running ...
+                std::map<const string, Core::ProxyType<Service>>::iterator index(_services.begin());
+
+                while (index != _services.end()) {
+                    index->second->Closed(id);
+                }
+
+                _adminLock.Unlock();
+            }
             inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration)
             {
                 // Whatever plugin is needse, we at least have our MetaData plugin available (as the first entry :-).
@@ -2822,6 +2842,7 @@ namespace PluginHost {
                     }
 
                     State(CLOSED, false);
+                    _parent.Closed(Id());
                     _parent.Dispatcher().TriggerCleanup();
 
                 } else if (IsUpgrading() == true) {
@@ -3109,7 +3130,7 @@ namespace PluginHost {
         }
 
     private:
-        inline Core::ProxyType<Service> Controller()
+        Core::ProxyType<Service> Controller()
         {
             return (_controller);
         }
@@ -3117,9 +3138,12 @@ namespace PluginHost {
         {
             return (_services.Officer(token));
         }
-        inline ISecurity* Officer()
+        ISecurity* Officer()
         {
             return (_config.Security());
+        }
+        void Closed(const uint32_t id) {
+            _services.Closed(id);
         }
 
     private:
