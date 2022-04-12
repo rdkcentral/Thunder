@@ -1298,6 +1298,20 @@ POP_WARNING()
         {
             return (_ipcServer.Connector());
         }
+        void ForcedDestructionTimes(const uint8_t softKillCheckWaitTime, const uint8_t hardKillCheckWaitTime)
+        {
+            _softKillCheckWaitTime = softKillCheckWaitTime;
+            _hardKillCheckWaitTime = hardKillCheckWaitTime;
+        }
+        static uint8_t SoftKillCheckWaitTime()
+        {
+            return _softKillCheckWaitTime;
+        }
+        static uint8_t HardKillCheckWaitTime()
+        {
+            return _hardKillCheckWaitTime;
+        }
+
         inline void Register(RPC::IRemoteConnection::INotification* sink)
         {
             _connectionMap.Register(sink);
@@ -1358,6 +1372,8 @@ POP_WARNING()
     private:
         RemoteConnectionMap _connectionMap;
         ChannelServer _ipcServer;
+        static uint8_t _softKillCheckWaitTime;
+        static uint8_t _hardKillCheckWaitTime;
     };
 
     class EXTERNAL CommunicatorClient : public Core::IPCChannelClientType<Core::Void, false, true>, public Core::IDispatchType<Core::IIPC> {

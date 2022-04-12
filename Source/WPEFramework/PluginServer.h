@@ -1364,6 +1364,8 @@ namespace PluginHost {
                     const string& appPath,
                     const string& proxyStubPath,
                     const string& postMortemPath,
+                    const uint8_t softKillCheckWaitTime,
+                    const uint8_t hardKillCheckWaitTime,
                     const Core::ProxyType<RPC::InvokeServer>& handler)
                     : RPC::Communicator(node, proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath, Core::ProxyType<Core::IIPCServer>(handler))
                     , _parent(parent)
@@ -1390,6 +1392,7 @@ namespace PluginHost {
                         // We need to pass the communication channel NodeId via an environment variable, for process,
                         // not being started by the rpcprocess...
                         Core::SystemInfo::SetEnvironment(string(CommunicatorConnector), RPC::Communicator::Connector());
+                        RPC::Communicator::ForcedDestructionTimes(softKillCheckWaitTime, hardKillCheckWaitTime);
                     }
                 }
                 virtual ~CommunicatorServer()
@@ -1733,7 +1736,9 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                     config.VolatilePath(), 
                     config.AppPath(), 
                     config.ProxyStubPath(), 
-                    config.PostMortemPath(), 
+                    config.PostMortemPath(),
+                    config.SoftKillCheckWaitTime(),
+                    config.HardKillCheckWaitTime(),
                     _engine)
                 , _server(server)
                 , _subSystems(this)
