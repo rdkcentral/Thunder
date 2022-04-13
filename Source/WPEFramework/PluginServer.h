@@ -873,12 +873,22 @@ namespace PluginHost {
             {
                 return (_administrator.RemoteConnection(connectionId));
             }
-            void Closed(const uint32_t id) {
-                IDispatcher* dispatcher = _handler->QueryInterface<IDispatcher>();
+
+            void Closed(const uint32_t id)
+            {
+                IDispatcher* dispatcher = nullptr;
+
+                _pluginHandling.Lock();
+                if (_handler != nullptr) {
+                    dispatcher = _handler->QueryInterface<IDispatcher>();
+                }
+                _pluginHandling.Unlock();
 
                 if (dispatcher != nullptr) {
                     dispatcher->Close(id);
                     dispatcher->Release();
+                    // Could be that we can now drop the dynamic library...
+                    Core::ServiceAdministrator::Instance().FlushLibraries();
                 }
             }
 
@@ -1933,6 +1943,7 @@ namespace PluginHost {
 
                 while (index != _services.end()) {
                     index->second->Closed(id);
+                    ++index;
                 }
 
                 _adminLock.Unlock();
