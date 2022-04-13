@@ -258,5 +258,73 @@ namespace Core {
         mutable Metadata _metadata;
         ::ThreadId _joined;
     };
+
+    class DecoupledJob : private Core::ThreadPool::JobType<DecoupledJob&> {
+    public:
+        using Job = std::function<void()>;
+
+        DecoupledJob(const DecoupledJob&) = delete;
+        DecoupledJob& operator=(const DecoupledJob&) = delete;
+
+        DecoupledJob()
+            : Core::ThreadPool::JobType<DecoupledJob&>(*this)
+            , _lock()
+            , _job(nullptr)
+        {
+        }
+
+        ~DecoupledJob()
+        {
+            Revoke();
+        }
+
+    public:
+        bool Submit(const Job& job, const uint32_t defer = 0)
+        {
+            bool submitted = false;
+            Core::ProxyType<Core::IDispatch> handler(Aquire());
+
+            _lock.Lock();
+            if (handler.IsValid() == true) {
+
+                _job = job;
+
+                if (defer == 0) {
+                    Core::WorkerPool::Instance().Submit(handler);
+                } else {
+                    Core::WorkerPool::Instance().Schedule(Core::Time::Now().Add(defer), handler);
+                }
+
+                submitted = true;
+            }
+            _lock.Unlock();
+
+            return submitted;
+        }
+
+        void Revoke()
+        {
+            _lock.Lock();
+            Core::WorkerPool::Instance().Revoke(Reset());
+            _job = nullptr;
+            _lock.Unlock();
+        }
+
+    private:
+        friend class Core::ThreadPool::JobType<DecoupledJob&>;
+        void Dispatch()
+        {
+            _lock.Lock();
+            ASSERT(_job != nullptr);
+            Job job = _job;
+            _job = nullptr;
+            _lock.Unlock();
+            job();
+        }
+
+    private:
+        Core::CriticalSection _lock;
+        Job _job;
+    };
 }
 }

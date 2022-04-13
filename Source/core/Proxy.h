@@ -119,15 +119,18 @@ namespace Core {
 
         virtual uint32_t Release() const
         {
-            uint32_t Result;
-
-            if ((Result = Core::InterlockedDecrement(m_RefCount)) == 0) {
+            if (InternalRelease() == 0) {
                 delete this;
 
                 return (Core::ERROR_DESTRUCTION_SUCCEEDED);
             }
 
             return (Core::ERROR_NONE);
+        }
+
+        uint32_t InternalRelease() const
+        {
+            return (Core::InterlockedDecrement(m_RefCount));
         }
 
         inline operator CONTEXT&()
@@ -588,6 +591,7 @@ namespace Core {
         {
             ASSERT(a_Index < m_Current);
             ASSERT(m_List != nullptr);
+            ASSERT(m_List[a_Index] != nullptr);
 
             // Remember the item on the location, It should be a relaes and an add for
             // the new one, To optimize for speed, just copy the count.
@@ -595,6 +599,7 @@ namespace Core {
 
             // If it is taken out, release the reference that we took during the add
             m_List[a_Index]->Release();
+            m_List[a_Index] = nullptr;
 
             // Delete one element.
             Core::InterlockedDecrement(m_Current);
@@ -614,9 +619,11 @@ namespace Core {
         {
             ASSERT(a_Index < m_Current);
             ASSERT(m_List != nullptr);
+            ASSERT(m_List[a_Index] != nullptr);
 
             // If it is taken out, release the reference that we took during the add
             m_List[a_Index]->Release();
+            m_List[a_Index] = nullptr;
 
             // Delete one element.
             Core::InterlockedDecrement(m_Current);
@@ -1079,15 +1086,18 @@ namespace Core {
         }
         uint32_t Release() const override
         {
-            if (ProxyService<ELEMENT>::LastRef() == true) {
+            uint32_t result = Core::ERROR_NONE;
+            uint32_t newCount = ProxyService<ELEMENT>::InternalRelease();
+
+            if (newCount == 0) {
                 // This can only happen of the parent has unlinked us, other wise 
                 // the last release is always in the Unlink..
                 ASSERT(_parent == nullptr);
                 const_cast<ThisClass*>(this)->__Relinquish<CONTAINER, ELEMENT, EXPOSED>();
-            }
-            uint32_t result = ProxyService<ELEMENT>::Release();
+                delete this;
 
-            if ((result != Core::ERROR_DESTRUCTION_SUCCEEDED) && (ProxyService<ELEMENT>::LastRef() == true)) {
+                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
+            } else if (newCount == 1) {
                 const_cast<ThisClass*>(this)->Notify();
 
                 result = Core::ERROR_DESTRUCTION_SUCCEEDED;
@@ -1099,17 +1109,11 @@ namespace Core {
         {
             ASSERT(_parent != nullptr);
 
-            if (ProxyService<ELEMENT>::LastRef() == false) {
-                // This can only happen if the parent has unlinked us, while we are still being used somewhere..
-                const_cast<ThisClass*>(this)->__Unlink<CONTAINER, ELEMENT, EXPOSED>();
-            }
+            // This can only happen if the parent has unlinked us, while we are still being used somewhere..
+            const_cast<ThisClass*>(this)->__Unlink<CONTAINER, ELEMENT, EXPOSED>();
 
-            // By incrementing this refcount the last reference count is definitily not reached, so safe to remove the parent as we are sure
-            // that it will not be used while we clear it... 
-            ProxyService<ELEMENT>::AddRef();
+
             _parent = nullptr;
-            ProxyService<ELEMENT>::Release();
-            ProxyService<ELEMENT>::Release();
         }
  
     private:
@@ -1134,7 +1138,7 @@ namespace Core {
         inline typename Core::TypeTraits::enable_if<ProxyContainerType<A, B, C>::TraitIsInitialized::value, bool>::type
             __IsInitialized() const
         {
-            reurn (ELEMENT::IsInitialized());
+            return (ELEMENT::IsInitialized());
         }
 
         template <typename A, typename B, typename C>
@@ -1245,6 +1249,7 @@ namespace Core {
                     _lock.Lock();
 
                     _queue.front().first->Unlink();
+                    _queue.front().first->Release();
                     _queue.pop_front();
                     _createdElements--;
 
@@ -1409,6 +1414,7 @@ namespace Core {
             _lock.Lock();
             for (const std::pair< PROXYKEY, std::pair<IProxyContainerElement*, PROXYELEMENT*> >& entry : _map) {
                 entry.second.first->Unlink();
+                entry.second.first->Release();
             }
             _map.clear();
             _lock.Unlock();
@@ -1428,6 +1434,7 @@ namespace Core {
 
             if (index != _map.end()) {
                 refCount->Unlink();
+                refCount->Release();
                 _map.erase(index);
             }
 
@@ -1491,6 +1498,7 @@ namespace Core {
             _lock.Lock();
             for (const std::pair< IProxyContainerElement*, PROXYELEMENT*>& entry : _list) {
                 entry.first->Unlink();
+                entry.first->Release();
             }
             _list.clear();
             _lock.Unlock();
@@ -1509,6 +1517,7 @@ namespace Core {
 
             if (index != _list.end()) {
                 refCount->Unlink();
+                refCount->Release();
                 _list.erase(index);
             }
 

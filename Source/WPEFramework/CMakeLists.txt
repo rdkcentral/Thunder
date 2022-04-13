@@ -17,7 +17,8 @@
 
 get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
-set(THREADPOOL_COUNT 4 CACHE STRING "The number of threads in the thread pool")
+set(THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool")
+set(ENABLE_INITSCRIPT_SUPPORT ON CACHE STRING "Enable init script(systemd/initd) install support from the thunder source tree")
 
 # JsonGenerator(CODE INPUT ${CMAKE_CURRENT_SOURCE_DIR}/json/Controller.json OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/json")
 
@@ -45,7 +46,7 @@ if (TREE_REFERENCE)
             )
 endif()
 
-if(EXCEPTION_CATCHING) 
+if (EXCEPTION_CATCHING)
     set_source_files_properties( PluginServer.cpp PROPERTIES COMPILE_FLAGS "-fexceptions" )
 endif()
 
@@ -61,7 +62,7 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
         )
         
-if(PROCESSCONTAINERS)
+if (PROCESSCONTAINERS)
     target_link_libraries(${TARGET}
         PUBLIC
             ${NAMESPACE}ProcessContainers::${NAMESPACE}ProcessContainers)
@@ -98,5 +99,8 @@ install(
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
 )
 
+if (ENABLE_INITSCRIPT_SUPPORT)
+    add_subdirectory(scripts)
+endif()
 include(GenericConfig.cmake)
 
