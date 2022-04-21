@@ -2,7 +2,9 @@ if(NOT PYTHON_EXECUTABLE)
     find_package(PythonInterp 3.5 REQUIRED QUIET)
 endif()
 
-set(CONFIG_GENERATOR "@GENERATOR_INSTALL_PATH@/ConfigGenerator/config_generator.py")
+set(CONFIG_GENERATOR_PATH "@GENERATOR_INSTALL_PATH@/ConfigGenerator")
+set(CONFIG_GENERATOR "${CONFIG_GENERATOR_PATH}/config_generator.py")
+set(CONFIG_GENERATOR_PARAMS_WHITELIST "${CONFIG_GENERATOR_PATH}/params.config")
 
 macro(IncludeConfig)
     if(NOT COMMAND map)
@@ -101,6 +103,7 @@ function(write_config)
             list(APPEND _execute_command  "-l" "${_locator}")
             list(APPEND _execute_command  "-c" "${_classname}")
             list(APPEND _execute_command  "-o" "${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}.json")
+            list(APPEND _execute_command  "-p" "${CONFIG_GENERATOR_PARAMS_WHITELIST}")
             list(APPEND _execute_command  "--indent" 1)
 
             file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/config")
@@ -123,7 +126,7 @@ function(write_config)
         endif()
 
         if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR
-                "${config_generated}" STREQUAL "Y")
+                "${config_generated}" STREQUAL "N")
 
             message(STATUS "Writing configuration for ${plugin} using Legacy Config writer")
 

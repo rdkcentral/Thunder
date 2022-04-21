@@ -18,15 +18,20 @@
 # limitations under the License.
 
 import argparse
+import inspect
 import sys
 import os
 import json
 import posixpath
 import importlib
+import types
+
 from json_helper import JSON
 import traceback
 
 INDENT_SIZE = 2
+PARAM_CONFIG = "params.config"
+DEFAULT_PARAMS = ["autostart", "precondition", "configuration"]
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
 
@@ -57,11 +62,44 @@ def load_module(name, path):
         try:
             loader.exec_module(mod)
         except Exception as exception:
-            log.Error(exception.__class__.__name__ + ": " )
+            log.Error(exception.__class__.__name__ + ": ")
             traceback.print_exc()
             sys.exit(1)
         return mod
     return None
+
+
+boiler_plate = "from json_helper import *"
+
+
+def prepend_file(file, line):
+    with open(file, 'r+') as f:
+        content = f.read()
+        f.seek(0, 0)
+        f.write(line.rstrip('\r\n') + '\n' + content)
+
+
+def get_config_params(file):
+    lines = []
+    if os.path.exists(file):
+        with open(file) as f:
+            lines = [line.rstrip() for line in f]
+    else:
+        log.Error("!!!!Whitelisted Config Params file not available. Using Default!!!")
+        lines = DEFAULT_PARAMS
+
+    return lines
+
+def check_assignment(file, var):
+    res = False
+    if os.path.exists(file):
+        with open(file) as f:
+            for line in f:
+                if "=" in line:
+                    if line.find(var, line.index("=")):
+                        res = True
+
+    return res
 
 
 if __name__ == "__main__":
@@ -109,6 +147,15 @@ if __name__ == "__main__":
                            default=INDENT_SIZE,
                            help="code indentation in spaces (default: %i)" % INDENT_SIZE)
 
+    argparser.add_argument("-p",
+                           "--paramconfig",
+                           dest="params_config",
+                           metavar="ParamConfig",
+                           action="store",
+                           type=str,
+                           default=PARAM_CONFIG,
+                           help="Full path of File containing Whitelisted params in config file")
+
     argparser.add_argument("project",
                            metavar="Name",
                            action="store",
@@ -148,11 +195,25 @@ if __name__ == "__main__":
     cf = args.projectdir + "/" + cf
 
     if os.path.exists(cf):
+        prepend_file(cf, boiler_plate)
         iconfig = load_module(file_name(cf), cf)
+
         if iconfig:
-            if hasattr(iconfig, 'config'):
-                result.update(iconfig.config)
-            else:
+            params = get_config_params(args.params_config)
+            isEmpty = True
+            for param in iconfig.__dict__:
+                if param in params:
+                    result.add(param, iconfig.__dict__[param])
+                    isEmpty = False
+                else:
+                    if not param.startswith('__') \
+                            and not isinstance(iconfig.__dict__[param], types.ModuleType)\
+                            and not isinstance(iconfig.__dict__[param], types.FunctionType)\
+                            and not inspect.isclass(iconfig.__dict__[param]):  # Skip the Dunders, Modules
+                        if not check_assignment(cf, param):
+                            log.Error(f"Unrecognized parameter {param}.")
+                            sys.exit(1)
+            if isEmpty:
                 log.Print("Empty Config File")
         else:
             log.Error(f"Config File {cf} exists but couldn't load")
