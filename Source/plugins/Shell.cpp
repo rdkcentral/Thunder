@@ -73,7 +73,7 @@ namespace PluginHost
             {
                 Add(_T("root"), &Config);
             }
-            virtual ~RootObject() {}
+            ~RootObject() override = default;
 
         public:
             Core::JSON::String Config;

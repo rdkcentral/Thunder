@@ -51,9 +51,6 @@ option(WCHAR_SUPPORT
 option(DISABLE_TRACING
         "Disable tracing in debug" OFF)
 set(ENABLED_TRACING_LEVEL 0 CACHE STRING "If tracing is enabled, this sets its default level.")
-option(HIDE_NON_EXTERNAL_SYMBOLS
-        "Hide all non EXTERNAL tagged symbols" ON)
-
 option(EXCEPTION_CATCHING
         "Enable unhandled exception handling catching." OFF)
 option(DEADLOCK_DETECTION
@@ -61,9 +58,28 @@ option(DEADLOCK_DETECTION
 option(WARNING_REPORTING
         "Include warning reporting in the build." OFF)
 
-if (HIDE_NON_EXTERNAL_SYMBOLS)
+if(HIDE_NON_EXTERNAL_SYMBOLS)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
     set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+endif()
+
+if(ENABLE_STRICT_COMPILER_SETTINGS)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        message(FATAL_ERROR "Compiling with Clang")
+        set(CMAKE_STRICT_COMPILER_SETTINGS "-Weverything -Wextra -Werror=return-type -Werror=array-bounds")
+        set(CMAKE_STRICT_CXX_COMPILER_SETTINGS "${CMAKE_STRICT_COMPILER_SETTINGS} -Wnon-virtual-dtor")
+    elseif(${CMAKE_COMPILER_IS_GNUCXX})
+        message(STATUS "Compiling with GCC")
+        set(CMAKE_STRICT_COMPILER_SETTINGS "-Wall -Wextra -Werror=return-type -Werror=array-bounds")
+        set(CMAKE_STRICT_CXX_COMPILER_SETTINGS "${CMAKE_STRICT_COMPILER_SETTINGS} -Wnon-virtual-dtor")
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        message(STATUS "Compiling with MS Visual Studio")
+        set(CMAKE_STRICT_COMPILER_SETTINGS "/W4")
+    else()
+        message(STATUS "Compiler ${CMAKE_CXX_COMPILER_ID}")
+    endif()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_STRICT_CXX_COMPILER_SETTINGS}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_STRICT_COMPILER_SETTINGS}")
 endif()
 
 set(EXTERN_EVENTS ${EXTERN_EVENTS} CACHE INTERNAL

@@ -48,7 +48,7 @@ namespace PluginHost {
                 virtual void Revoked(const Core::IUnknown* remote, const uint32_t interfaceId) = 0;
             };
 
-            virtual ~ICOMLink() {}
+            virtual ~ICOMLink() = default;
             virtual void Register(RPC::IRemoteConnection::INotification* sink) = 0;
             virtual void Unregister(RPC::IRemoteConnection::INotification* sink) = 0;
 

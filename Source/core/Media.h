@@ -26,7 +26,7 @@
 namespace WPEFramework {
 namespace Core {
     struct IMedia {
-        virtual ~IMedia() {}
+        virtual ~IMedia() = default;
 
         virtual string RemoteId() const = 0;
         virtual uint32_t Open(const uint32_t waitTime) = 0;
@@ -218,9 +218,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         {
         }
 POP_WARNING()
-        virtual ~Media()
-        {
-        }
+        ~Media() override = default;
 
     public:
         SOURCE& Source()

@@ -18,17 +18,18 @@
  */
 
 #pragma once
+
+#include "Module.h"
 #include "CyclicBuffer.h"
 #include "DoorBell.h"
 #include "IPCChannel.h"
 #include "IPCMessage.h"
-#include "Module.h"
 
 namespace WPEFramework {
 namespace Core {
 
     template <uint16_t METADATA_SIZE, uint16_t DATA_SIZE>
-    class EXTERNAL MessageDispatcherType {
+    class MessageDispatcherType {
     private:
         /**
         * @brief MetaData Callback. First two arguments are for data in. Two later for data out (responded to the other side).

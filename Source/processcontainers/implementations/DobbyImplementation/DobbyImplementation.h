@@ -24,8 +24,12 @@
 #include "processcontainers/common/BaseRefCount.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
 
-#include <Dobby/Public/Dobby/IDobbyProxy.h>
+#include "Tracing.h"
+
 #include <Dobby/DobbyProtocol.h>
+#include <Dobby/Public/Dobby/IDobbyProxy.h>
+
+#include <future>
 
 namespace WPEFramework {
 namespace ProcessContainers {
@@ -59,7 +63,7 @@ namespace ProcessContainers {
         string _name;
         string _path;
         string _logPath;
-        int    _descriptor;
+        int _descriptor;
         mutable Core::OptionalType<uint32_t> _pid;
     };
 
@@ -71,7 +75,6 @@ namespace ProcessContainers {
         DobbyContainerAdministrator();
         DobbyContainerAdministrator(const DobbyContainerAdministrator&) = delete;
         DobbyContainerAdministrator& operator=(const DobbyContainerAdministrator&) = delete;
-
 
         std::shared_ptr<AI_IPC::IIpcService> mIpcService; // Ipc Service instance
         std::shared_ptr<IDobbyProxy> mDobbyProxy; // DobbyProxy instance
@@ -87,9 +90,14 @@ namespace ProcessContainers {
         void Logging(const string& logDir, const string& loggingOptions) override;
 
     protected:
-
         void DestroyContainer(const string& name); // make sure that no leftovers from previous launch will cause crash
         bool ContainerNameTaken(const string& name);
+        void containerStopCallback(int32_t cd, const std::string& containerId,
+            IDobbyProxyEvents::ContainerState state,
+            const void* params);
+
+    private:
+        std::promise<void> _stopPromise;
     };
 }
 }

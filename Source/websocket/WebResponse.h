@@ -297,9 +297,7 @@ POP_WARNING()
                     , _ready(readyFlag)
                 {
                 }
-                virtual ~SerializerImpl()
-                {
-                }
+                ~SerializerImpl() override = default;
 
             public:
                 virtual void Serialized(const Response& /* element */)
@@ -340,9 +338,7 @@ POP_WARNING()
                     , _destination(destination)
                 {
                 }
-                virtual ~DeserializerImpl()
-                {
-                }
+                ~DeserializerImpl() override = default;
 
             public:
                 // The whole request object is deserialised..

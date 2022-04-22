@@ -82,7 +82,7 @@ namespace Web {
     };
 
     struct EXTERNAL IBody {
-        virtual ~IBody(){};
+        virtual ~IBody() = default;
 
         // The Serialize/Deserialize methods mark the start of an upcoming serialization/deserialization
         // of the object. These methods allow for preparation of content to be Serialised or Deserialized.
@@ -477,9 +477,7 @@ POP_WARNING()
                     , _ready(readyFlag)
                 {
                 }
-                virtual ~SerializerImpl()
-                {
-                }
+                ~SerializerImpl() override = default;
 
             public:
                 virtual void Serialized(const Request& /* element */)
@@ -520,9 +518,7 @@ POP_WARNING()
                     , _destination(destination)
                 {
                 }
-                virtual ~DeserializerImpl()
-                {
-                }
+                virtual ~DeserializerImpl() override = default;
 
             public:
                 // The whole request object is deserialised..

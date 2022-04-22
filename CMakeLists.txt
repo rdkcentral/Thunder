@@ -27,6 +27,11 @@ set(VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 
 message(STATUS "Setting up ${PROJECT_NAME} v${VERSION}")
 
+option(HIDE_NON_EXTERNAL_SYMBOLS
+    "Hide all non EXTERNAL tagged symbols" ON)
+option(ENABLE_STRICT_COMPILER_SETTINGS
+    "Enable compiler flags to get the warnings/errors due to improper condition in the code" OFF) 
+
 if (BUILD_REFERENCE)
     add_definitions (-DBUILD_REFERENCE=${BUILD_REFERENCE})
 endif()
