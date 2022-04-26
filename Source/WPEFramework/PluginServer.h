@@ -2283,33 +2283,39 @@ POP_WARNING()
                     Core::ProxyType<Web::Response> response;
 
                     if (_jsonrpc == true) {
-                        Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
+                        if(_request->Verb == Request::HTTP_POST){
+                            Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
 
-                        if (message->IsSet()) {
-                            Core::ProxyType<Core::JSONRPC::Message> body = Job::Process(_token, message);
+                            if (message->IsSet()) {
+                                Core::ProxyType<Core::JSONRPC::Message> body = Job::Process(_token, message);
 
-                            // If we have no response body, it looks like an async-call...
-                            if (body.IsValid() == false) {
-                                // It's a a-synchronous call, seems we should just queue this request, it will be answered later on..
-                                if (_request->Connection.Value() == Web::Request::CONNECTION_CLOSE) {
-                                    Job::RequestClose();
+                                // If we have no response body, it looks like an async-call...
+                                if (body.IsValid() == false) {
+                                    // It's a a-synchronous call, seems we should just queue this request, it will be answered later on..
+                                    if (_request->Connection.Value() == Web::Request::CONNECTION_CLOSE) {
+                                        Job::RequestClose();
+                                    }
                                 }
-                            }
-                            else {
+                                else {
+                                    response = IFactories::Instance().Response();
+                                    response->Body(body);
+                                    if (body->Error.IsSet() == false) {
+                                        response->ErrorCode = Web::STATUS_OK;
+                                        response->Message = _T("JSONRPC executed succesfully");
+                                    } else {
+                                        response->ErrorCode = Web::STATUS_ACCEPTED;
+                                        response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(body->Error.Code).Text();
+                                    }
+                                }
+                            } else {
                                 response = IFactories::Instance().Response();
-                                response->Body(body);
-                                if (body->Error.IsSet() == false) {
-                                    response->ErrorCode = Web::STATUS_OK;
-                                    response->Message = _T("JSONRPC executed succesfully");
-                                } else {
-                                    response->ErrorCode = Web::STATUS_ACCEPTED;
-                                    response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(body->Error.Code).Text();
-                                }
+                                response->ErrorCode = Web::STATUS_ACCEPTED;
+                                response->Message = _T("Failed to parse JSONRPC message");
                             }
                         } else {
                             response = IFactories::Instance().Response();
-                            response->ErrorCode = Web::STATUS_ACCEPTED;
-                            response->Message = _T("Failed to parse JSONRPC message");
+                            response->ErrorCode = Web::STATUS_METHOD_NOT_ALLOWED;
+                            response->Message = _T("JSON-RPC only supported via POST request");
                         }
                     } else {
                         response = Job::Process(_request);

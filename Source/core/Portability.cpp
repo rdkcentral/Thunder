@@ -211,7 +211,7 @@ void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
 
 extern "C" {
 
-void DumpCallStack(const ThreadId threadId, std::list<string>& stackList)
+void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<string>& stackList VARIABLE_IS_NOT_USED)
 {
 #ifdef __DEBUG__
 #ifdef __LINUX__
