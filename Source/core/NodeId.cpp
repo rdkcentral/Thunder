@@ -590,9 +590,7 @@ namespace Core {
 
                 TCHAR identifier[16];
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4996)
-#endif
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
 
                 // Lets resolve it four digits.
                 _stprintf(identifier, _T("%d.%d.%d.%d"), ((nAddress & 0x000000FF) >> 0),
@@ -600,9 +598,7 @@ namespace Core {
                     ((nAddress & 0x00FF0000) >> 16),
                     ((nAddress & 0xFF000000) >> 24));
 
-#ifdef __WINDOWS__
-#pragma warning(default : 4996)
-#endif
+POP_WARNING()
 
                 result = string(identifier);
             } else if (m_structInfo.IPV6Socket.sin6_family == AF_INET6) {

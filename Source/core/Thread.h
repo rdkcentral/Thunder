@@ -216,9 +216,9 @@ namespace Core {
         inline ::ThreadId Id() const
         {
 #if defined(__WINDOWS__) || defined(__APPLE__)
-#pragma warning(disable : 4312)
+PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
             return (reinterpret_cast<const ::ThreadId>(m_ThreadId));
-#pragma warning(default : 4312)
+POP_WARNING()
 #else
             return (static_cast<::ThreadId>(m_ThreadId));
 #endif

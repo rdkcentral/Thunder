@@ -56,9 +56,9 @@ namespace Core {
         mbstate_t result;
         return (::wcsrtombs(converted, &character, wcwidth(*character), &result));
 #else
-#pragma warning(disable : 4996)
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
         return (::wctomb(converted, character[0]));
-#pragma warning(default : 4996)
+POP_WARNING()
 #endif
 #endif
     }

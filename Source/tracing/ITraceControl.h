@@ -30,7 +30,7 @@ namespace Trace {
     const uint16_t TRACINGBUFFERSIZE = 1024;
 
     struct ITraceControl {
-        virtual ~ITraceControl() {}
+        virtual ~ITraceControl() = default;
         virtual void Destroy() = 0;
         virtual const char* Category() const = 0;
         virtual const char* Module() const = 0;
@@ -39,6 +39,7 @@ namespace Trace {
     };
 
     struct ITrace {
+        virtual ~ITrace() = default;
         virtual const char* Category() const = 0;
         virtual const char* Module() const = 0;
         virtual const char* Data() const = 0;

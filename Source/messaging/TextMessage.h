@@ -47,7 +47,7 @@ namespace Messaging {
 
             } else {
                 writer.NullTerminatedText(_text);
-                length = _text.size() + 1;
+                length = static_cast<uint32_t>(_text.size() + 1);
             }
 
             return length;
@@ -59,7 +59,7 @@ namespace Messaging {
 
             _text = reader.NullTerminatedText();
 
-            return _text.size() + 1;
+            return (static_cast<uint32_t>(_text.size() + 1));
         }
 
         void ToString(string& text) const override

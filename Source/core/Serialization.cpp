@@ -21,9 +21,7 @@
 
 namespace WPEFramework {
 namespace Core {
-#ifdef __WINDOWS__
-#pragma warning(disable : 4996)
-#endif
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
 
 #ifndef __CORE_NO_WCHAR_SUPPORT__
     void ToString(const wchar_t realString[], std::string& result)
@@ -156,9 +154,7 @@ namespace Core {
 #endif // _UNICODE
     }
 
-#ifdef __WINDOWS__
-#pragma warning(default : 4996)
-#endif
+POP_WARNING()
 
     static const TCHAR hex_chars[] = "0123456789abcdef";
 

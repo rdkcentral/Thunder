@@ -136,7 +136,7 @@ namespace Core {
                    }
                    else {
                        // there is data we can drop, drop it, drop it till the '/' is found
-                       uint32_t offset = result.length() - 4;
+                       uint32_t offset = static_cast<uint32_t>(result.length() - 4);
 
                         while ((offset > 0) && (result[offset] != '/')) {
                             offset--;

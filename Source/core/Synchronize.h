@@ -36,9 +36,7 @@ namespace Core {
             , _signal(false, true)
         {
         }
-        virtual ~SynchronizeType()
-        {
-        }
+        virtual ~SynchronizeType() = default;
 
     public:
         template <typename INBOUND>

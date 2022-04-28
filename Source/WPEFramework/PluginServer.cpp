@@ -254,7 +254,7 @@ namespace PluginHost
         _adminLock.Unlock();
 
         TRACE_L1("Pending notifiers are %lu", _notifiers.size());
-        for (auto notifier : _notifiers) {
+        for (VARIABLE_IS_NOT_USED auto notifier : _notifiers) {
             TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier).name()).Text().c_str());
         }
 
@@ -398,6 +398,12 @@ namespace PluginHost
                 State(ACTIVATION);
 
                 Unlock();
+
+                // Before we dive into the "new" initialize lets see if this has a pending OOP running, if so forcefully kill it now, no time to wait !
+                if (_lastId != 0) {
+                    _administrator.Destroy(_lastId);
+                    _lastId = 0;
+                }
 
                 TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
@@ -735,9 +741,7 @@ namespace PluginHost
         Close(0);
     }
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 
     Server::Server(Config& configuration, const bool background)
         : _dispatcher(configuration.StackSize())
@@ -822,9 +826,7 @@ namespace PluginHost
 #endif
     }
 
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
     Server::~Server()
     {

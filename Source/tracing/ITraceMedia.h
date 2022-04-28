@@ -26,7 +26,7 @@
 namespace WPEFramework {
 namespace Trace {
     struct EXTERNAL ITraceMedia {
-        virtual ~ITraceMedia(){};
+        virtual ~ITraceMedia() = default;
         virtual void Output(const char fileName[], const uint32_t lineNumber, const char className[], const ITrace* information) = 0;
     };
 }

@@ -187,7 +187,28 @@ namespace PluginHost {
         }
         string ConfigLine() const override
         {
+            Core::SafeSyncType<Core::CriticalSection> sync(_adminLock);
             return (_config.Configuration().Configuration.Value());
+        }
+        uint32_t ConfigLine(const string& newConfiguration) override
+        {
+            uint32_t result = Core::ERROR_ILLEGAL_STATE;
+
+            Lock();
+
+            if (State() == PluginHost::IShell::DEACTIVATED || 
+                State() == PluginHost::IShell::DEACTIVATION ||
+                State() == PluginHost::IShell::UNAVAILABLE ) {
+
+                // Time to update the config line...
+                _config.Configuration(newConfiguration);
+
+                result = Core::ERROR_NONE;
+            }
+
+            Unlock();
+
+            return (result);
         }
         string PersistentPath() const override
         {
@@ -301,24 +322,6 @@ namespace PluginHost {
             metaData.ProcessedRequests = _processedRequests;
             metaData.ProcessedObjects = _processedObjects;
             #endif
-        }
-        inline uint32_t ConfigLine(const string& newConfiguration)
-        {
-            uint32_t result = Core::ERROR_ILLEGAL_STATE;
-
-            Lock();
-
-            if (State() == PluginHost::IShell::DEACTIVATED) {
-
-                // Time to update the config line...
-                _config.Configuration(newConfiguration);
-
-                result = Core::ERROR_NONE;
-            }
-
-            Unlock();
-
-            return (result);
         }
         inline uint32_t AutoStart(const bool autoStart)
         {

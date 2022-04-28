@@ -127,9 +127,9 @@ namespace Core {
     ::ThreadId Thread::ThreadId()
     {
 #ifdef __WINDOWS__
-        #pragma warning (disable:4312)
+PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
         return (reinterpret_cast<::ThreadId>(::GetCurrentThreadId()));
-        #pragma warning (default:4312)
+POP_WARNING()
 #else
         return static_cast<::ThreadId>(pthread_self());
 #endif

@@ -32,19 +32,14 @@ namespace Trace {
     // [C] => Command
     // [R] => Response
 
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 
     TraceMedia::TraceMedia(const Core::NodeId& nodeId)
         : m_Output(*this, nodeId)
     {
         m_Output.Open(0);
     }
-
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+POP_WARNING()
 
     TraceMedia::~TraceMedia()
     {

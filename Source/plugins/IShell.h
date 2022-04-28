@@ -48,7 +48,7 @@ namespace PluginHost {
                 virtual void Revoked(const Core::IUnknown* remote, const uint32_t interfaceId) = 0;
             };
 
-            virtual ~ICOMLink() {}
+            virtual ~ICOMLink() = default;
             virtual void Register(RPC::IRemoteConnection::INotification* sink) = 0;
             virtual void Unregister(RPC::IRemoteConnection::INotification* sink) = 0;
 
@@ -201,7 +201,9 @@ namespace PluginHost {
         virtual bool Resumed() const = 0;
 
         virtual string HashKey() const = 0;
+        
         virtual string ConfigLine() const = 0;
+        virtual uint32_t ConfigLine(const string& config) = 0;
 
         //! Return whether the given version is supported by this IShell instance.
         virtual bool IsSupported(const uint8_t version) const = 0;

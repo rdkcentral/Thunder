@@ -318,9 +318,7 @@ namespace Core {
         using Response = typename DATAEXCHANGE::Response;
 
     public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         template <typename... Args>
         MessageExchangeType(Args... args)
             : _channel(*this, args...)
@@ -331,12 +329,8 @@ namespace Core {
 
         {
         }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
-        virtual ~MessageExchangeType()
-        {
-        }
+POP_WARNING()
+        virtual ~MessageExchangeType() = default;
 
     public:
         inline SOURCE& Link()
