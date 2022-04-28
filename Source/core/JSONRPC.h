@@ -795,19 +795,19 @@ namespace Core {
 
                 _adminLock.Unlock();
             }
-            uint32_t Notify(const string& event)
+            uint32_t Notify(const string& event) const
             {
                 return (InternalNotify(event, _T("")));
             }
             template <typename JSONOBJECT>
-            uint32_t Notify(const string& event, const JSONOBJECT& parameters)
+            uint32_t Notify(const string& event, const JSONOBJECT& parameters) const
             {
                 string subject;
                 parameters.ToString(subject);
                 return (InternalNotify(event, subject));
             }
             template <typename JSONOBJECT, typename SENDIFMETHOD>
-            uint32_t Notify(const string& event, const JSONOBJECT& parameters, SENDIFMETHOD method)
+            uint32_t Notify(const string& event, const JSONOBJECT& parameters, SENDIFMETHOD method) const
             {
                 string subject;
                 parameters.ToString(subject);
@@ -1316,17 +1316,17 @@ namespace Core {
                 };
                 Register(methodName, implementation);
             }
-            uint32_t InternalNotify(const string& event, const string& parameters, std::function<bool(const string&)>&& sendifmethod = std::function<bool(const string&)>())
+            uint32_t InternalNotify(const string& event, const string& parameters, std::function<bool(const string&)>&& sendifmethod = std::function<bool(const string&)>()) const
             {
                 uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
                 _adminLock.Lock();
 
-                ObserverMap::iterator index = _observers.find(event);
+                ObserverMap::const_iterator index = _observers.find(event);
 
                 if (index != _observers.end()) {
-                    ObserverList& clients = index->second;
-                    ObserverList::iterator loop = clients.begin();
+                    const ObserverList& clients = index->second;
+                    ObserverList::const_iterator loop = clients.begin();
 
                     result = Core::ERROR_NONE;
 
@@ -1348,7 +1348,7 @@ namespace Core {
             }
 
         private:
-            Core::CriticalSection _adminLock;
+            mutable Core::CriticalSection _adminLock;
             HandlerMap _handlers;
             ObserverMap _observers;
             NotificationFunction _notificationFunction;
