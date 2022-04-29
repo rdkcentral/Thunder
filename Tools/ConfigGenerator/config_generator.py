@@ -25,6 +25,7 @@ import json
 import posixpath
 import importlib
 import types
+import re
 
 from json_helper import JSON
 import traceback
@@ -80,7 +81,6 @@ def prepend_file(file, line):
 
 
 def get_config_params(file):
-    lines = []
     if os.path.exists(file):
         with open(file) as f:
             lines = [line.rstrip() for line in f]
@@ -90,15 +90,19 @@ def get_config_params(file):
 
     return lines
 
+
 def check_assignment(file, var):
     res = False
     if os.path.exists(file):
         with open(file) as f:
             for line in f:
-                if "=" in line:
-                    if line.find(var, line.index("=")):
+                result = re.findall(r'\(.*?\)', line)
+                for s in result:
+                    if var in s:
                         res = True
-
+                        break;
+                if res:
+                    break
     return res
 
 
@@ -203,12 +207,12 @@ if __name__ == "__main__":
             isEmpty = True
             for param in iconfig.__dict__:
                 if param in params:
-                    result.add(param, iconfig.__dict__[param])
+                    result.add_non_empty(param, iconfig.__dict__[param])
                     isEmpty = False
                 else:
                     if not param.startswith('__') \
-                            and not isinstance(iconfig.__dict__[param], types.ModuleType)\
-                            and not isinstance(iconfig.__dict__[param], types.FunctionType)\
+                            and not isinstance(iconfig.__dict__[param], types.ModuleType) \
+                            and not isinstance(iconfig.__dict__[param], types.FunctionType) \
                             and not inspect.isclass(iconfig.__dict__[param]):  # Skip the Dunders, Modules
                         if not check_assignment(cf, param):
                             log.Error(f"Unrecognized parameter {param}.")

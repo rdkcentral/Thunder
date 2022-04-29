@@ -5,6 +5,7 @@ endif()
 set(CONFIG_GENERATOR_PATH "@GENERATOR_INSTALL_PATH@/ConfigGenerator")
 set(CONFIG_GENERATOR "${CONFIG_GENERATOR_PATH}/config_generator.py")
 set(CONFIG_GENERATOR_PARAMS_WHITELIST "${CONFIG_GENERATOR_PATH}/params.config")
+set(CONFIG_COMPARE "${CONFIG_GENERATOR_PATH}/config_compare.py")
 
 macro(IncludeConfig)
     if(NOT COMMAND map)
@@ -189,9 +190,11 @@ function(write_config)
                 if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}_legacy.json" AND 
                         EXISTS ${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}.json)
 
-                    execute_process( COMMAND ${CMAKE_COMMAND} -E compare_files ${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}_legacy.json ${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}.json
-                     RESULT_VARIABLE compare_result
-                    )
+                    set(_execute_command "${CONFIG_COMPARE}")
+                    list(APPEND _execute_command  "-i")
+                    list(APPEND _execute_command  "${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}_legacy.json" "${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}.json")
+
+                    execute_process(COMMAND ${PYTHON_EXECUTABLE} ${_execute_command} RESULT_VARIABLE compare_result)
 
                     if(compare_result EQUAL 0)
                         message(STATUS "config json files generated using legacy method and Python ConfigGenerator are identical") 
@@ -200,7 +203,7 @@ function(write_config)
                                             " ${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}_legacy.json and ${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}.json are not identical \n"
                                             " This could mean one of the following: \n"
                                             "    1. Parameters are out of order \n"
-                                            "    2. Parameters are wrong. e.g, \"true\" intead of true \n")
+                                            "    2. Parameters are spelled incorrectly  \n")
                     else()
                         message(STATUS "Error while comparing the config json files generated using legacy method and Python ConfigGenerator")
                     endif()

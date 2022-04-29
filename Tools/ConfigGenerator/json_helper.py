@@ -27,12 +27,26 @@ def convert_string(s):
         return s
 
 
+def to_bool(val):
+    if val.casefold() == "on" or val.casefold() == "true":
+        return True
+    return False
+
+
 class JSON:
     def __init__(self):
         self.__dict = {}  # Private variable
 
     def to_json(self, ind=2):
-        return json.dumps(self, default=lambda o: o.__dict, indent=ind, separators=(",", ":"))
+        json_string = json.dumps(self, default=lambda o: o.__dict, indent=ind, separators=(",", ":"))
+        out = ""
+        for line in json_string.splitlines():
+            spaces = len(line) - len(line.lstrip(' '))
+            if "{}" in line:
+                out += line.format("{" + "\n" + " " * spaces + "}\n")
+            else:
+                out += line + "\n"
+        return out
 
     def add_non_empty(self, key, val):
         if val is not None:
@@ -41,12 +55,6 @@ class JSON:
                     self.add(key, val)
             else:
                 self.add(key, val)
-
-    @classmethod
-    def to_bool(cls, val):
-        if val == "ON" or val == "true":
-            return True
-        return False
 
     def add(self, key, val):
         self.__dict.__setitem__(key, convert_string(val))
