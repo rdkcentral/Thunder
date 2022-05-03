@@ -24,15 +24,18 @@
 #include "TextMessage.h"
 #include <inttypes.h>
 
+#define TRACE_ENABLED(CATEGORY)                                                                                                                                                             \
+        WPEFramework::Messaging::ControlLifetime<CATEGORY, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::Messaging::MetaData::MessageType::TRACING>::IsEnabled()
+
 #define TRACE(CATEGORY, PARAMETERS)                                                                                                                                                         \
     if (WPEFramework::Messaging::ControlLifetime<CATEGORY, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::Messaging::MetaData::MessageType::TRACING>::IsEnabled() == true) { \
         CATEGORY __data__ PARAMETERS;                                                                                                                                                       \
         WPEFramework::Core::Messaging::Information __info__(WPEFramework::Core::Messaging::MetaData::MessageType::TRACING,                                                                  \
-            WPEFramework::Core::ClassNameOnly(typeid(CATEGORY).name()).Text(),                                                                                                                            \
+            WPEFramework::Core::ClassNameOnly(typeid(CATEGORY).name()).Text(),                                                                                                              \
             WPEFramework::Core::System::MODULE_NAME,                                                                                                                                        \
             __FILE__,                                                                                                                                                                       \
             __LINE__,                                                                                                                                                                       \
-            WPEFramework::Core::Time::Now().Ticks());                                                                                                                                                     \
+            WPEFramework::Core::Time::Now().Ticks());                                                                                                                                       \
         WPEFramework::Messaging::TextMessage __message__(__data__.Data());                                                                                                                  \
         WPEFramework::Core::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                                                                                                \
     }
