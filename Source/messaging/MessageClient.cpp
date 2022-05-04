@@ -27,9 +27,10 @@ namespace Messaging {
      * @param identifer identifier of the buffers
      * @param basePath where are those buffers located
      */
-    MessageClient::MessageClient(const string& identifer, const string& basePath)
+    MessageClient::MessageClient(const string& identifer, const string& basePath, const uint16_t socketPort)
         : _identifier(identifer)
         , _basePath(basePath)
+        , _socketPort(socketPort)
     {
     }
 
@@ -44,7 +45,7 @@ namespace Messaging {
 
         _clients.emplace(std::piecewise_construct,
             std::forward_as_tuple(id),
-            std::forward_as_tuple(_identifier, id, false, _basePath));
+            std::forward_as_tuple(_identifier, id, false, _basePath, _socketPort));
 
         _adminLock.Unlock();
     }

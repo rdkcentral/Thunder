@@ -189,8 +189,8 @@ namespace Core {
          * @param initialize should dispatcher be initialzied. Should be done only once, on the server side
          * @param baseDirectory where to place all the necessary files. This directory should exist before creating this class.
          */
-        MessageDispatcherType(const string& identifier, const uint32_t instanceId, bool initialize, string baseDirectory = _T("/tmp/MessageDispatcher"))
-            : _filenames(PrepareFilenames(baseDirectory, identifier, instanceId))
+        MessageDispatcherType(const string& identifier, const uint32_t instanceId, bool initialize, const string& baseDirectory, const uint16_t socketPort)
+            : _filenames(PrepareFilenames(baseDirectory, identifier, instanceId, socketPort))
             // clang-format off
             , _dataBuffer(_filenames.doorBell, _filenames.data,  Core::File::USER_READ    |
                                                                  Core::File::USER_WRITE   |
@@ -385,13 +385,24 @@ namespace Core {
         *         1 - dataFileName
         *         2 - metaDataFilename
         */
-        static Filenames PrepareFilenames(const string& baseDirectory, const string& identifier, const uint32_t instanceId)
+        static Filenames PrepareFilenames(const string& baseDirectory, const string& identifier, const uint32_t instanceId, const uint16_t socketPort)
         {
             ASSERT(Core::File(baseDirectory).IsDirectory() && "Directory for message files does not exist");
 
-            string doorBellFilename = Core::Format("%s/%s.doorbell", baseDirectory.c_str(), identifier.c_str());
-            string dataFilename = Core::Format("%s/%s.%d.data", baseDirectory.c_str(), identifier.c_str(), instanceId);
-            string metaDataFilename = Core::Format("%s/%s.%d.metadata", baseDirectory.c_str(), identifier.c_str(), instanceId);
+            string doorBellFilename;
+            string metaDataFilename;
+            string basePath = Directory::Normalize(baseDirectory) + identifier;
+
+            if (socketPort != 0) {
+                doorBellFilename = _T("127.0.0.1:") + Core::NumberType<uint16_t>(socketPort).Text();
+                metaDataFilename = _T("127.0.0.1:") + Core::NumberType<uint16_t>(socketPort + instanceId + 1).Text();
+            }
+            else {
+                doorBellFilename = basePath + _T(".doorbell");
+                metaDataFilename = basePath + '.' + Core::NumberType<uint32_t>(instanceId).Text() + _T(".metadata");
+            }
+
+            string dataFilename = basePath + '.' + Core::NumberType<uint32_t>(instanceId).Text() + _T(".data");
 
             return { doorBellFilename, metaDataFilename, dataFilename };
         }
