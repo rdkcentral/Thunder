@@ -28,7 +28,7 @@ def convert_string(s):
 
 
 def to_bool(val):
-    if val.casefold() == "on" or val.casefold() == "true":
+    if val.casefold() in ["on", "true"]:
         return True
     return False
 

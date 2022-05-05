@@ -26,7 +26,7 @@ def ordered(obj):
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(
-        description='JSON Config Builder',
+        description='JSON Config Compare',
         formatter_class=argparse.RawTextHelpFormatter)
 
     argparser.add_argument("json1",

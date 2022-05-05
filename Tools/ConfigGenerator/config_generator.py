@@ -21,9 +21,7 @@ import argparse
 import inspect
 import sys
 import os
-import json
-import posixpath
-import importlib
+from importlib import machinery, util
 import types
 import re
 
@@ -32,7 +30,7 @@ import traceback
 
 INDENT_SIZE = 2
 PARAM_CONFIG = "params.config"
-DEFAULT_PARAMS = ["autostart", "precondition", "configuration"]
+boiler_plate = "from json_helper import *"
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
 
@@ -54,23 +52,20 @@ def file_name(path):
 
 
 def load_module(name, path):
-    import importlib.machinery
-    import importlib.util
-    loader = importlib.machinery.SourceFileLoader(name, path)
-    spec = importlib.util.spec_from_loader(loader.name, loader)
+    out = False
+    mod = None
+    loader = machinery.SourceFileLoader(name, path)
+    spec = util.spec_from_loader(loader.name, loader)
     if spec is not None:
-        mod = importlib.util.module_from_spec(spec)
+        mod = util.module_from_spec(spec)
         try:
             loader.exec_module(mod)
+            out = True
         except Exception as exception:
             log.Error(exception.__class__.__name__ + ": ")
             traceback.print_exc()
-            sys.exit(1)
-        return mod
-    return None
 
-
-boiler_plate = "from json_helper import *"
+    return out, mod
 
 
 def prepend_file(file, line):
@@ -86,24 +81,24 @@ def get_config_params(file):
             lines = [line.rstrip() for line in f]
     else:
         log.Error("!!!!Whitelisted Config Params file not available. Using Default!!!")
-        lines = DEFAULT_PARAMS
+        lines = []
 
     return lines
 
 
 def check_assignment(file, var):
-    res = False
+    out = False
     if os.path.exists(file):
         with open(file) as f:
             for line in f:
-                result = re.findall(r'\(.*?\)', line)
-                for s in result:
+                slist = re.findall(r'\(.*?\)', line)
+                for s in slist:
                     if var in s:
-                        res = True
+                        out = True
                         break;
-                if res:
+                if out:
                     break
-    return res
+    return out
 
 
 if __name__ == "__main__":
@@ -200,10 +195,15 @@ if __name__ == "__main__":
 
     if os.path.exists(cf):
         prepend_file(cf, boiler_plate)
-        iconfig = load_module(file_name(cf), cf)
+        res, iconfig = load_module(file_name(cf), cf)
+        if not res:
+            sys.exit(1)
 
         if iconfig:
             params = get_config_params(args.params_config)
+            if not params:
+                log.Error(f"Whitelisted Params not available")
+                sys.exit(1)
             isEmpty = True
             for param in iconfig.__dict__:
                 if param in params:
