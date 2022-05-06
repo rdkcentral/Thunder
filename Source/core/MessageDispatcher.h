@@ -190,7 +190,7 @@ namespace Core {
          * @param baseDirectory where to place all the necessary files. This directory should exist before creating this class.
          * @param socketPort triggers the use of using a IP socket in stead of a domain socket if the port value is not 0.
          */
-        MessageDispatcherType(const string& identifier, const uint32_t instanceId, bool initialize, const string& baseDirectory, const uint16_t socketPort)
+        MessageDispatcherType(const string& identifier, const uint32_t instanceId, bool initialize, const string& baseDirectory, const uint16_t socketPort = 0)
             : _filenames(PrepareFilenames(baseDirectory, identifier, instanceId, socketPort))
             // clang-format off
             , _dataBuffer(_filenames.doorBell, _filenames.data,  Core::File::USER_READ    |
