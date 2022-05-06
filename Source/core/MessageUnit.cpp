@@ -554,6 +554,7 @@ namespace Core {
         *        - create buffer where all InProcess components will write
         *
         * @param pathName volatile path (/tmp/ by default)
+        * @param socketPort triggers the use of using a IP socket in stead of a domain socket (in pathName) if the port value is not 0.
         * @return uint32_t ERROR_NONE: opened sucessfully
         *                  ERROR_OPENING_FAILED failed to open
         */
