@@ -26,6 +26,7 @@ namespace Messaging {
      * 
      * @param identifer identifier of the buffers
      * @param basePath where are those buffers located
+     * @param socketPort triggers the use of using a IP socket in stead of a domain socket if the port value is not 0.
      */
     MessageClient::MessageClient(const string& identifer, const string& basePath, const uint16_t socketPort)
         : _identifier(identifer)
