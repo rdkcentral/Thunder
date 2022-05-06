@@ -312,7 +312,7 @@ namespace Core {
 
         public:
             static MessageUnit& Instance();
-            uint32_t Open(const string& pathName, const uint16_t doorbell);
+            uint32_t Open(const string& pathName, const uint16_t doorbell = 0);
             uint32_t Open(const uint32_t instanceId);
             void Close();
             void IsBackground(bool background);
