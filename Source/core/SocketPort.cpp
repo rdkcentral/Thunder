@@ -1035,6 +1035,9 @@ namespace Core {
                 }
                 if ((flagsSet & POLLIN) != 0) {
                     Read();
+                    if (HasError() == true) {
+                        Closed();
+                    }
                 }
             } else if ((IsConnecting() == true) && ((flagsSet & POLLOUT) != 0)) {
                 Opened();
