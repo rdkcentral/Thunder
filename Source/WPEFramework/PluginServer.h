@@ -875,6 +875,24 @@ namespace PluginHost {
                 return (_administrator.RemoteConnection(connectionId));
             }
 
+            void Closed(const uint32_t id)
+            {
+                IDispatcher* dispatcher = nullptr;
+
+                _pluginHandling.Lock();
+                if (_handler != nullptr) {
+                    dispatcher = _handler->QueryInterface<IDispatcher>();
+                }
+                _pluginHandling.Unlock();
+
+                if (dispatcher != nullptr) {
+                    dispatcher->Close(id);
+                    dispatcher->Release();
+                    // Could be that we can now drop the dynamic library...
+                    Core::ServiceAdministrator::Instance().FlushLibraries();
+                }
+            }
+
             // Methods to Activate and Deactivate the aggregated Plugin to this shell.
             // These are Blocking calls!!!!!
             uint32_t Activate(const reason) override;
@@ -1923,6 +1941,19 @@ POP_WARNING()
             {
                 return (connectionId != 0 ? _processAdministrator.Connection(connectionId) : nullptr);
             }
+            void Closed(const uint32_t id) {
+                _adminLock.Lock();
+
+                // First stop all services running ...
+                std::map<const string, Core::ProxyType<Service>>::iterator index(_services.begin());
+
+                while (index != _services.end()) {
+                    index->second->Closed(id);
+                    ++index;
+                }
+
+                _adminLock.Unlock();
+            }
             inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration)
             {
                 // Whatever plugin is needse, we at least have our MetaData plugin available (as the first entry :-).
@@ -2834,6 +2865,7 @@ POP_WARNING()
                     }
 
                     State(CLOSED, false);
+                    _parent.Closed(Id());
                     _parent.Dispatcher().TriggerCleanup();
 
                 } else if (IsUpgrading() == true) {
@@ -3117,7 +3149,7 @@ POP_WARNING()
         }
 
     private:
-        inline Core::ProxyType<Service> Controller()
+        Core::ProxyType<Service> Controller()
         {
             return (_controller);
         }
@@ -3125,9 +3157,12 @@ POP_WARNING()
         {
             return (_services.Officer(token));
         }
-        inline ISecurity* Officer()
+        ISecurity* Officer()
         {
             return (_config.Security());
+        }
+        void Closed(const uint32_t id) {
+            _services.Closed(id);
         }
 
     private:
