@@ -15,7 +15,7 @@ def convert_string(s):
     if isinstance(s, str):
         try:
             val = ast.literal_eval(s)
-        except ValueError as ex:
+        except :
             # Let's try if it is JSON Bool values
             bool_lits = {"true": True, "false": False}
             if s in bool_lits:
