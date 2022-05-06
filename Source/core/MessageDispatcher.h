@@ -188,6 +188,7 @@ namespace Core {
          * @param instanceId number of the instance
          * @param initialize should dispatcher be initialzied. Should be done only once, on the server side
          * @param baseDirectory where to place all the necessary files. This directory should exist before creating this class.
+         * @param socketPort triggers the use of using a IP socket in stead of a domain socket if the port value is not 0.
          */
         MessageDispatcherType(const string& identifier, const uint32_t instanceId, bool initialize, const string& baseDirectory, const uint16_t socketPort)
             : _filenames(PrepareFilenames(baseDirectory, identifier, instanceId, socketPort))
@@ -380,6 +381,7 @@ namespace Core {
         * @param baseDirectory where are those filed stored. This directory should already exist.
         * @param identifier identifer of the instance
         * @param instanceId number of instance
+        * @param socketPort triggers the use of using a IP socket in stead of a domain socket if the port value is not 0.
         * @return std::tuple<string, string, string>
         *         0 - doorBellFilename
         *         1 - dataFileName
