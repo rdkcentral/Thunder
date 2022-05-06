@@ -39,6 +39,7 @@ namespace PluginHost {
         // There should be no need to call these methods from the implementation directly.
         virtual void Activate(IShell* service) = 0;
         virtual void Deactivate() = 0;
+        virtual void Close(const uint32_t id) = 0;
     };
 
     class EXTERNAL JSONRPC : public IDispatcher {
@@ -409,8 +410,16 @@ namespace PluginHost {
                 index++;
             }
 
-            _handlers.front().Close();
             _service = nullptr;
+        }
+        void Close(const uint32_t id) override
+        {
+            HandlerList::iterator index(_handlers.begin());
+
+            while (index != _handlers.end()) {
+                index->Close(id);
+                index++;
+            }
         }
 
     private:
