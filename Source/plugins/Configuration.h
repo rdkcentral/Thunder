@@ -53,6 +53,7 @@ namespace Plugin {
             , VolatilePathPostfix()
             , StartupOrder(50)
             , Startup(startup::DEACTIVATED)
+            , ServiceVersion()
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -68,6 +69,7 @@ namespace Plugin {
             Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
             Add(_T("startuporder"), &StartupOrder);
             Add(_T("startmode"), &Startup);
+            Add(_T("version"), &ServiceVersion);
         }
         Config(const Config& copy)
             : Core::JSON::Container()
@@ -85,6 +87,7 @@ namespace Plugin {
             , VolatilePathPostfix(copy.VolatilePathPostfix)
             , StartupOrder(copy.StartupOrder)
             , Startup(copy.Startup)
+            , ServiceVersion(copy.ServiceVersion)
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -100,6 +103,7 @@ namespace Plugin {
             Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
             Add(_T("startuporder"), &StartupOrder);
             Add(_T("startmode"), &Startup);
+            Add(_T("version"), &ServiceVersion);
         }
         ~Config() override = default;
 
@@ -119,6 +123,7 @@ namespace Plugin {
             VolatilePathPostfix = RHS.VolatilePathPostfix;
             StartupOrder = RHS.StartupOrder;
             Startup = RHS.Startup;
+            ServiceVersion = RHS.ServiceVersion;
 
             return (*this);
         }
@@ -150,6 +155,7 @@ namespace Plugin {
         Core::JSON::String VolatilePathPostfix;
         Core::JSON::DecUInt32 StartupOrder;
         Core::JSON::EnumType<startup> Startup;
+        Core::JSON::String ServiceVersion;
 
         static Core::NodeId IPV4UnicastNode(const string& ifname);
 

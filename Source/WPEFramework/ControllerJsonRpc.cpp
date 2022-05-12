@@ -41,6 +41,7 @@ namespace Plugin {
         Register<DeleteParamsData,void>(_T("delete"), &Controller::endpoint_delete, this);
         Register<void,void>(_T("harakiri"), &Controller::endpoint_harakiri, this);
         Property<Core::JSON::ArrayType<PluginHost::MetaData::Service>>(_T("status"), &Controller::get_status, nullptr, this);
+        Property<Core::JSON::String>(_T("serviceversion"), &Controller::service_version, nullptr, this);
         Property<Core::JSON::ArrayType<PluginHost::MetaData::Channel>>(_T("links"), &Controller::get_links, nullptr, this);
         Property<PluginHost::MetaData::Server>(_T("processinfo"), &Controller::get_processinfo, nullptr, this);
         Property<Core::JSON::ArrayType<SubsystemsParamsData>>(_T("subsystems"), &Controller::get_subsystems, nullptr, this);
@@ -335,6 +336,29 @@ namespace Plugin {
 
                 result = Core::ERROR_NONE;
             }
+        }
+
+        return result;
+    }
+
+    // Property: serviceversion - Information about plugin version
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_UNKNOWN_KEY: The service does not exist
+    uint32_t Controller::service_version(const string& index, Core::JSON::String& response) const {
+        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+        Core::ProxyType<PluginHost::Server::Service> service;
+
+        ASSERT(_pluginServer != nullptr);
+
+        if (index.empty() != true && _pluginServer->Services().FromIdentifier(index, service) == Core::ERROR_NONE) {
+            ASSERT(service.IsValid());
+            PluginHost::MetaData::Service status;
+            service->GetMetaData(status);
+            std::string version;
+            status.ServiceVersion.ToString(version);
+            response.FromString(std::string("{version:" + version + "}"));
+            result = Core::ERROR_NONE;
         }
 
         return result;

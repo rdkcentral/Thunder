@@ -125,6 +125,13 @@ macro(write_config)
                 endforeach()
             endif()
 
+            if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/${plugin}Plugin.json")
+                file(READ "${CMAKE_CURRENT_LIST_DIR}/${plugin}Plugin.json" MY_JSON_STRING)
+                string(REGEX MATCH "\"version\": \"[^ $]+" VERSION_STRING ${MY_JSON_STRING})
+                string(SUBSTRING ${VERSION_STRING} 12 5 API_VERSION)
+                map_append(${plugin_config} version ${API_VERSION})
+            endif()
+
             if (NOT ${callsign} STREQUAL "")
                 map_append(${plugin_config} callsign ${callsign})
             endif()
