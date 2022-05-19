@@ -188,8 +188,14 @@ namespace PluginHost {
         //! DataPath: <config:datapath>/<plugin:classname>/
         virtual string DataPath() const = 0;
 
-        //! VolatilePath: <config:volatilepath>/<plugin:callsign>/
+        //! ProxyStubPath: <config:proxystubpath>/
         virtual string ProxyStubPath() const = 0;
+
+        //! SystemPath: <config:systempath>/
+        virtual string SystemPath() const = 0;
+
+        //! SystemPath: <config:apppath>/Plugins/
+        virtual string PluginPath() const = 0;
 
         //! Substituted Config value
         virtual string Substitute(const string& input) const = 0;
