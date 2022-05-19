@@ -1129,6 +1129,7 @@ namespace Core {
             result = false;
         } else {
             DestroySocket(m_Socket);
+	    ResourceMonitor::Instance().Unregister(*this);
             // Remove socket descriptor for UNIX domain datagram socket.
             if ((m_LocalNode.Type() == NodeId::TYPE_DOMAIN) && 
                 ((m_SocketType == SocketPort::LISTEN) || (SocketMode() != SOCK_STREAM)) &&
