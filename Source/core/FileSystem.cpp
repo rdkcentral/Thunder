@@ -302,9 +302,11 @@ namespace Core {
                 if (stat(tmp, &sb) != 0) {
 /* path does not exist - create directory */
 #ifdef __WINDOWS__
-                    if (CreateDirectory(tmp, nullptr) == FALSE) {
-                        return false;
-                    };
+                    if (!((tmp[1] == ':') && (tmp[2] == '\0'))) {
+                        if (CreateDirectory(tmp, nullptr) == FALSE) {
+                            return false;
+                        }
+                    }
 #else
                     if (mkdir(tmp, 0775) < 0) {
                         return false;

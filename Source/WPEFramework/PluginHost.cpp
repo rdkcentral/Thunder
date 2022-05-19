@@ -530,7 +530,7 @@ POP_WARNING()
             // Define the environment variable for Messaging files, if it is not already set.
             uint32_t messagingErrorCode = Core::ERROR_GENERAL;
 #if defined(__CORE_MESSAGING__)
-            messagingErrorCode = Core::Messaging::MessageUnit::Instance().Open(_config->VolatilePath());
+            messagingErrorCode = Core::Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), _config->MessagingPort());
 #else
             messagingErrorCode = Trace::TraceUnit::Instance().Open(_config->VolatilePath());
 #endif
