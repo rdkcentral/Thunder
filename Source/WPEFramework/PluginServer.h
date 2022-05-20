@@ -830,6 +830,12 @@ namespace PluginHost {
             string ProxyStubPath () const override {
                 return (_administrator.Configuration().ProxyStubPath());
             }
+            string SystemPath() const override {
+                return (_administrator.Configuration().SystemPath());
+            }
+            string PluginPath() const override {
+                return (_administrator.Configuration().AppPath() + _T("Plugins/"));
+            }
             string HashKey() const override {
                 return (_administrator.Configuration().HashKey());
             }
@@ -927,10 +933,10 @@ namespace PluginHost {
                 {
                     string className = PluginHost::Service::Configuration().ClassName.Value() + _T("/");
                     // system configured paths
-                    all_paths.push_back(_administrator.Configuration().DataPath() + className + locator);
-                    all_paths.push_back(_administrator.Configuration().PersistentPath() + className + locator);
-                    all_paths.push_back(_administrator.Configuration().SystemPath() + locator);
-                    all_paths.push_back(_administrator.Configuration().AppPath() + _T("Plugins/") + locator);
+                    all_paths.push_back(DataPath() + locator);
+                    all_paths.push_back(PersistentPath() + locator);
+                    all_paths.push_back(SystemPath() + locator);
+                    all_paths.push_back(PluginPath() + locator);
                 }
 
                 return all_paths;
