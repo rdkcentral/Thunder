@@ -1077,6 +1077,8 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
 
                     retval_has_proxy = retval.has_output and retval.is_interface
 
+                    invoke_method = "ProxyStub::UnknownProxyType<%s>::Invoke" % iface_name
+
                     emit.Line("// invoke the method handler")
                     if retval.has_output:
                         default = "{}"
@@ -1086,15 +1088,15 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                   (retval.str_nocvref, retval.name, "_proxy" if retval_has_proxy else "", default))
                         # assume it's a status code
                         if isinstance(retval.typename, CppParser.Integer) and retval.typename.type == "uint32_t":
-                            emit.Line("if ((%s = Invoke(newMessage)) == Core::ERROR_NONE) {" % retval.name)
+                            emit.Line("if ((%s = %s(newMessage)) == Core::ERROR_NONE) {" % (retval.name, invoke_method))
                         else:
-                            emit.Line("if (Invoke(newMessage) == Core::ERROR_NONE) {")
+                            emit.Line("if (%s(newMessage) == Core::ERROR_NONE) {" % invoke_method)
                         emit.IndentInc()
                     elif proxy_params + output_params > 0:
-                        emit.Line("if (Invoke(newMessage) == Core::ERROR_NONE) {")
+                        emit.Line("if (%s(newMessage) == Core::ERROR_NONE) {" % invoke_method)
                         emit.IndentInc()
                     else:
-                        emit.Line("Invoke(newMessage);")
+                        emit.Line("%s(newMessage);" % invoke_method)
 
                     if retval.has_output or (output_params > 0) or (proxy_params > 0):
                         emit.Line("// read return value%s" % ("s" if
