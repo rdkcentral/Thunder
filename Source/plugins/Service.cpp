@@ -86,9 +86,8 @@ namespace PluginHost {
     }
 #endif
 
-    void Service::FileToServe(const string& webServiceRequest, Web::Response& response)
+    void Service::FileToServe(const string& webServiceRequest, Web::Response& response, bool allowUnsafePath)
     {
-        bool safePath = true;
         Web::MIMETypes result;
         Web::EncodingTypes encoding = Web::ENCODING_UNKNOWN;
         uint16_t offset = static_cast<uint16_t>(_config.WebPrefix().length()) + (_webURLPath.empty() ? 1 : static_cast<uint16_t>(_webURLPath.length()) + 2);
@@ -102,9 +101,10 @@ namespace PluginHost {
             response.Body<Web::FileBody>(fileBody);
         } else {
             ASSERT(fileToService.length() >= _webServerFilePath.length());
+            bool safePath = true;
             string normalizedPath = Core::File::Normalize(fileToService.substr(_webServerFilePath.length()), safePath);
 
-            if (safePath){
+            if (allowUnsafePath || safePath ) {
                 Core::ProxyType<Web::FileBody> fileBody(IFactories::Instance().FileBody());
                 *fileBody = fileToService;
                 response.ContentType = result;
