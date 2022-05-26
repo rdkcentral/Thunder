@@ -3198,13 +3198,7 @@ namespace Core {
 
             void Reset()
             {
-                JSONElementList::const_iterator index = _data.begin();
-
-                // As long as we did not find a set element, continue..
-                while (index != _data.end()) {
-                    index->second->Clear();
-                    index = _data.erase(index);
-                }
+                _data.clear();
             }
 
             void Add(const TCHAR label[], IElement* element)
@@ -4182,6 +4176,7 @@ namespace Core {
             void Clear()
             {
                 Reset();
+                _elements.clear();
             }
             string GetDebugString(int indent = 0) const;
 
