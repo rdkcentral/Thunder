@@ -692,6 +692,14 @@ POP_WARNING()
                 return ((_state & ACTIVITY) != 0);
             }
 
+            void Lock() const {
+                _adminLock.Lock();
+            }
+
+            void Unlock() const {
+                _adminLock.Unlock();
+            }
+
         private:
             uint32_t CheckForClose(uint32_t waitTime)
             {
@@ -1052,6 +1060,14 @@ POP_WARNING()
         virtual uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) = 0;
         virtual void StateChange() = 0;
         virtual bool IsIdle() const = 0;
+
+    protected:
+        void Lock() const {
+            _channel.Lock();
+        }
+        void Unlock() const {
+            _channel.Unlock();
+        }
 
     private:
         HandlerType<LINK> _channel;

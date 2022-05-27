@@ -246,9 +246,13 @@ namespace PluginHost {
         }
         ChannelState State() const
         {
-            Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
+            Lock();
 
-            return static_cast<ChannelState>(_state & 0x0FFF);
+            ChannelState result =  static_cast<ChannelState>(_state & 0x0FFF);
+
+            Unlock();
+
+            return (result);
         }
         bool IsNotified() const
         {
@@ -258,13 +262,13 @@ namespace PluginHost {
         {
             if (IsOpen() == true) {
 
-                _adminLock.Lock();
+                BaseClass::Lock();
 
                 _sendQueue.emplace_back(text);
 
                 bool trigger = (_sendQueue.size() == 1);
 
-                _adminLock.Unlock();
+                BaseClass::Unlock();
 
                 if (trigger == true) {
                     BaseClass::Trigger();
@@ -275,13 +279,13 @@ namespace PluginHost {
         {
             if (IsOpen() == true) {
 
-                _adminLock.Lock();
+                BaseClass::Lock();
 
                 _sendQueue.emplace_back(entry);
 
                 bool trigger = (_sendQueue.size() == 1);
 
-                _adminLock.Unlock();
+                BaseClass::Unlock();
 
                 if (trigger == true) {
                     BaseClass::Trigger();
@@ -302,13 +306,13 @@ namespace PluginHost {
         {
             _ID = id;
         }
-        void Lock() const
-        {
-            _adminLock.Lock();
+        void Lock() const 
+		{
+            BaseClass::Lock();
         }
-        void Unlock() const
-        {
-            _adminLock.Unlock();
+        void Unlock() const 
+		{
+            BaseClass::Unlock();
         }
         void Properties(const uint32_t offset)
         {
@@ -316,13 +320,13 @@ namespace PluginHost {
         }
         void State(const ChannelState state, const bool notification)
         {
-            _adminLock.Lock();
+            BaseClass::Lock();
 
             Binary(state == RAW);
 
             _state = state | (notification ? NOTIFIED : 0x0000);
 
-            _adminLock.Unlock();
+            BaseClass::Unlock();
         }
         uint16_t Serialize(uint8_t* dataFrame, const uint16_t maxSendSize)
         {
@@ -341,14 +345,14 @@ namespace PluginHost {
                     bool trigger = false;
 
                     // See if there is more to do..
-                    _adminLock.Lock();
+                    BaseClass::Lock();
 
                     if (_sendQueue.size() != 0) {
                         _sendQueue.pop_front();
                         trigger = (_sendQueue.size() > 0);
                     }
 
-                    _adminLock.Unlock();
+                    BaseClass::Unlock();
 
                     if (trigger == true) {
                         BaseClass::Trigger();
@@ -359,7 +363,7 @@ namespace PluginHost {
             }
             case TEXT: {
                 // Seems we need to send plain strings...
-                _adminLock.Lock();
+                BaseClass::Lock();
 
                 if (_sendQueue.size() != 0) {
                     Package& data(_sendQueue.front());
@@ -383,7 +387,7 @@ namespace PluginHost {
                     ASSERT(size != 0);
                 }
 
-                _adminLock.Unlock();
+                BaseClass::Unlock();
 
                 break;
             }
@@ -468,19 +472,18 @@ namespace PluginHost {
         Core::ProxyType<Core::JSON::IElement> Element() {
             Core::ProxyType<Core::JSON::IElement> result;
 
-            _adminLock.Lock();
+            BaseClass::Lock();
 
             if (_sendQueue.size() > 0) {
                 result = _sendQueue.front().JSON();
 
             }
-            _adminLock.Unlock();
+            BaseClass::Unlock();
 
             return (result);
         }
 
     private:
-        mutable Core::CriticalSection _adminLock;
         uint32_t _ID;
         uint32_t _nameOffset;
         mutable uint16_t _state;
