@@ -606,7 +606,7 @@ namespace PluginHost {
                     result = _unavailableHandler;
                 } else if (IsWebServerRequest(request.Path) == true) {
                     result = IFactories::Instance().Response();
-                    FileToServe(request.Path, *result);
+                    FileToServe(request.Path, *result, false);
                 } else if (request.Verb == Web::Request::HTTP_OPTIONS) {
 
                     result = IFactories::Instance().Response();
