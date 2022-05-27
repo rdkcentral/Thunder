@@ -376,6 +376,7 @@ namespace Core {
         ASSERT(m_Socket == INVALID_SOCKET);
 
         ::free(m_SendBuffer);
+	m_SendBuffer = nullptr;
     }
 
     //////////////////////////////////////////////////////////////////////
