@@ -86,7 +86,7 @@ namespace PluginHost {
     }
 #endif
 
-    void Service::FileToServe(const string& webServiceRequest, Web::Response& response)
+    void Service::FileToServe(const string& webServiceRequest, Web::Response& response, bool allowUnsafePath)
     {
         Web::MIMETypes result;
         Web::EncodingTypes encoding = Web::ENCODING_UNKNOWN;
@@ -100,13 +100,22 @@ namespace PluginHost {
             response.ContentType = Web::MIME_HTML;
             response.Body<Web::FileBody>(fileBody);
         } else {
-            Core::ProxyType<Web::FileBody> fileBody(IFactories::Instance().FileBody());
-            *fileBody = fileToService;
-            response.ContentType = result;
-            if (encoding != Web::ENCODING_UNKNOWN) {
-                response.ContentEncoding = encoding;
+            ASSERT(fileToService.length() >= _webServerFilePath.length());
+            bool safePath = true;
+            string normalizedPath = Core::File::Normalize(fileToService.substr(_webServerFilePath.length()), safePath);
+
+            if (allowUnsafePath || safePath ) {
+                Core::ProxyType<Web::FileBody> fileBody(IFactories::Instance().FileBody());
+                *fileBody = fileToService;
+                response.ContentType = result;
+                if (encoding != Web::ENCODING_UNKNOWN) {
+                    response.ContentEncoding = encoding;
+                }
+                response.Body<Web::FileBody>(fileBody);
+            } else {
+                response.ErrorCode = Web::STATUS_BAD_REQUEST;
+                response.Message = "Invalid Request";
             }
-            response.Body<Web::FileBody>(fileBody);
         }
     }
 
