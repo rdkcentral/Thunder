@@ -1836,6 +1836,11 @@ namespace Core {
                 } else {
                     offset = 0;
                     _scopeCount |= ((_scopeCount & QuoteFoundBit) ? SetBit : (_value == NullTag ? NullBit : SetBit));
+                    if ((_scopeCount & QuoteFoundBit) == 0) {
+                         // Right-trim the non-string value, it's always left-trimmed already
+                        _value.erase(std::find_if(_value.rbegin(), _value.rend(), [](const unsigned char ch) { return (!std::isspace(ch)); }).base
+(), _value.end());
+                    }
                 }
 
                 return (result);
