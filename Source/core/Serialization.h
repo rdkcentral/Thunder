@@ -265,6 +265,20 @@ namespace Core {
 
     uint16_t EXTERNAL FromString(const string& newValue, uint8_t object[], uint16_t& length, const TCHAR* ignoreList = nullptr);
 
+    //------------------------------------------------------------------------
+    // Codepoint: Operations to extract and convert code points.
+    //------------------------------------------------------------------------
+
+    // If false is returned, the conversion could not take place, in stead the result will indicate the codepoint 
+    // of SPACE.
+    bool EXTERNAL CodePointToUTF16(const uint32_t codePoint, uint16_t& lowPart, uint16_t& highPart);
+    bool EXTERNAL UTF16ToCodePoint(const uint16_t lowPart, const uint16_t highPart, uint32_t& codePoint);
+
+    // Negative return value indicates the length added but during the conversion something failed. It s not a
+    // valid code point or UTF8/16 sata stream.
+    int8_t EXTERNAL ToCodePoint(const TCHAR* data, const uint8_t length, uint32_t& codePoint);
+    int8_t EXTERNAL FromCodePoint(uint32_t codePoint, TCHAR* data, const uint8_t length);
+
     namespace Serialize {
         template <typename TEXTTERMINATOR, typename HANDLER>
         class ParserType {
