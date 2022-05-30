@@ -247,7 +247,7 @@ namespace PluginHost
 
         Core::ServiceAdministrator::Instance().FlushLibraries();
 
-        TRACE_L1("Pending notifiers are %zu", _notifiers.size());
+        TRACE_L1("Pending notifiers are %lu", _notifiers.size());
         for (VARIABLE_IS_NOT_USED auto notifier : _notifiers) {
             TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier).name()).Text().c_str());
         }
@@ -906,12 +906,14 @@ POP_WARNING()
     {
         Plugin::Controller* destructor(_controller->ClassType<Plugin::Controller>());
         destructor->AddRef();
-        _connections.Close(Core::infinite);
+        _connections.Close(100);
         destructor->Stopped();
         _services.Destroy();
         _dispatcher.Stop();
         destructor->Release();
         _inputHandler.Deinitialize();
+        _connections.Close(Core::infinite);
+
     }
 }
 }
