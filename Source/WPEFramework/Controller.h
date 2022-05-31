@@ -28,9 +28,75 @@
 namespace WPEFramework {
 namespace Plugin {
 
-    using JSONCallstack =  Web::JSONBodyType < Core::JSON::ArrayType < Core::JSON::String > >;
-
     class Controller : public PluginHost::IController, public PluginHost::IPlugin, public PluginHost::IWeb, public PluginHost::JSONRPC {
+    public:
+        class CallstackData : public Core::JSON::Container {
+        public:
+            CallstackData()
+                : Core::JSON::Container()
+                , Address()
+                , Function()
+                , Module()
+                , Line()
+            {
+                Add(_T("address"), &Address);
+                Add(_T("function"), &Function);
+                Add(_T("module"), &Module);
+                Add(_T("line"), &Line);
+            }
+            CallstackData(const Core::callstack_info source)
+                : Core::JSON::Container()
+                , Address()
+                , Function()
+                , Module()
+                , Line()
+            {
+                Add(_T("address"), &Address);
+                Add(_T("function"), &Function);
+                Add(_T("module"), &Module);
+                Add(_T("line"), &Line);
+
+                Address = reinterpret_cast<uint32_t>(source.address);
+                Function = source.function;
+                if (source.module.empty() == false) {
+                    Module = source.module;
+                }
+                if (source.line != static_cast<uint32_t>(~0)) {
+                    Line = source.line;
+                }
+            }
+            CallstackData(const CallstackData& copy)
+                : Core::JSON::Container()
+                , Address(copy.Address)
+                , Function(copy.Function)
+                , Module(copy.Module)
+                , Line(copy.Line)
+            {
+                Add(_T("address"), &Address);
+                Add(_T("function"), &Function);
+                Add(_T("module"), &Module);
+                Add(_T("line"), &Line);
+            }
+
+            ~CallstackData() = default;
+
+            CallstackData& operator=(const CallstackData& RHS)  {
+
+                Address = RHS.Address;
+                Function = RHS.Function;
+                Module = RHS.Module;
+                Line = RHS.Line;
+
+                return (*this);
+            }
+
+        public:
+            Core::JSON::DecUInt32 Address;
+            Core::JSON::String    Function;
+            Core::JSON::String    Module;
+            Core::JSON::DecUInt32 Line;
+        };
+
     private:
         class Sink : public PluginHost::IPlugin::INotification,
                      public PluginHost::ISubSystem::INotification {
@@ -274,8 +340,8 @@ POP_WARNING()
 
             return (service);
         }
-		void WorkerPoolMetaData(PluginHost::MetaData::Server& data) const
-		{
+	void WorkerPoolMetaData(PluginHost::MetaData::Server& data) const
+	{
             const Core::WorkerPool::Metadata& snapshot = Core::WorkerPool::Instance().Snapshot();
 
             data.PendingRequests = snapshot.Pending;
@@ -287,7 +353,8 @@ POP_WARNING()
                 newElement = snapshot.Slot[teller];
                 data.ThreadPoolRuns.Add(newElement);
             }
-		}
+	}
+        void Callstack(const ThreadId id, Core::JSON::ArrayType<CallstackData>& response) const;
         void SubSystems();
         void SubSystems(Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator& index);
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;
@@ -309,7 +376,7 @@ POP_WARNING()
         uint32_t endpoint_storeconfig();
         uint32_t endpoint_delete(const JsonData::Controller::DeleteParamsData& params);
         uint32_t endpoint_harakiri();
-        uint32_t get_callstack(const string& index, Core::JSON::ArrayType<Core::JSON::String>& response) const;
+        uint32_t get_callstack(const string& index, Core::JSON::ArrayType<CallstackData>& response) const;
         uint32_t get_status(const string& index, Core::JSON::ArrayType<PluginHost::MetaData::Service>& response) const;
         uint32_t get_links(Core::JSON::ArrayType<PluginHost::MetaData::Channel>& response) const;
         uint32_t get_processinfo(PluginHost::MetaData::Server& response) const;
