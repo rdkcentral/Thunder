@@ -32,8 +32,18 @@ namespace Plugin {
     // Signing will be done on BackOffice level. The Controller I/F will never be exposed to the outside world.
     static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData>> jsonBodyMetaDataFactory(1);
     static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData::Service>> jsonBodyServiceFactory(1);
-    static Core::ProxyPoolType<JSONCallstack> jsonBodyCallstackFactory(1);
+    static Core::ProxyPoolType<Web::JSONBodyType<Core::JSON::ArrayType<Controller::CallstackData>>> jsonBodyCallstackFactory(1);
     static Core::ProxyPoolType<Web::TextBody> jsonBodyTextFactory(2);
+
+    void Controller::Callstack(const ThreadId id, Core::JSON::ArrayType<CallstackData>& response) const {
+        std::list<Core::callstack_info> stackList;
+
+        ::DumpCallStack(id, stackList);
+
+        for (const Core::callstack_info& entry : stackList) {
+            response.Add() = entry;
+        }
+    }
 
     void Controller::SubSystems(Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator& index)
     {
@@ -393,20 +403,16 @@ namespace Plugin {
             }
             else {
                 Core::NumberType<uint8_t> threadIndex(index.Current());
-                Core::ProxyType<JSONCallstack> response = jsonBodyCallstackFactory.Element();
-
-                std::list<string> stackList;
-
-                ThreadId threadId = _pluginServer->WorkerPool().Id(threadIndex.Value());
-
-                DumpCallStack(threadId, stackList);
-
-                for (const string& entry : stackList) {
-                    response->Add() = entry;
-                }
-
+                
+                Core::ProxyType<Web::JSONBodyType<Core::JSON::ArrayType<CallstackData>>> response = jsonBodyCallstackFactory.Element();
+                Callstack(_pluginServer->WorkerPool().Id(threadIndex.Value()), *response);
                 result->Body(Core::ProxyType<Web::IBody>(response));
             }
+        } else if (index.Current() == _T ("Monitor")) {
+            Core::NumberType<uint8_t> threadIndex(index.Current());
+            Core::ProxyType<Web::JSONBodyType<Core::JSON::ArrayType<CallstackData>>> response = jsonBodyCallstackFactory.Element();
+            Callstack(Core::ResourceMonitor::Instance().Id(), *response);
+            result->Body(Core::ProxyType<Web::IBody>(response));
         } else if (index.Current() == _T("Discovery")) {
 
             if (_probe == nullptr) {

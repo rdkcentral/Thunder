@@ -50,7 +50,7 @@ namespace Plugin {
         Property<Core::JSON::String>(_T("environment"), &Controller::get_environment, nullptr, this);
         Property<Core::JSON::String>(_T("configuration"), &Controller::get_configuration, &Controller::set_configuration, this);
         Register<CloneParamsInfo,Core::JSON::String>(_T("clone"), &Controller::endpoint_clone, this);
-        Property<Core::JSON::ArrayType<Core::JSON::String>>(_T("callstack"), &Controller::get_callstack, nullptr, this);
+        Property<Core::JSON::ArrayType<CallstackData>>(_T("callstack"), &Controller::get_callstack, nullptr, this);
         Property<Core::JSON::String>(_T("version"), &Controller::get_version, &Controller::set_version, this);
         Property<Core::JSON::String>(_T("prefix"), &Controller::get_prefix, &Controller::set_prefix, this);
         Property<Core::JSON::DecUInt16>(_T("idletime"), &Controller::get_idletime, &Controller::set_idletime, this);
@@ -284,7 +284,7 @@ namespace Plugin {
     // Return codes:
     //  - ERROR_NONE: Success
     //  - ERROR_UNKNOWN_KEY: The index (uint8_t) is not supplied
-    uint32_t Controller::get_callstack(const string& index, Core::JSON::ArrayType<Core::JSON::String>& response) const
+    uint32_t Controller::get_callstack(const string& index, Core::JSON::ArrayType<CallstackData>& response) const
     {
         uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
@@ -292,15 +292,8 @@ namespace Plugin {
             uint8_t indexValue = Core::NumberType<uint8_t>(Core::TextFragment(index)).Value();
 
             result = Core::ERROR_NONE;
-            std::list<string> stackList;
 
-            ThreadId threadId = _pluginServer->WorkerPool().Id(indexValue);
-
-            DumpCallStack(threadId, stackList);
-
-            for (const string& entry : stackList) {
-                response.Add() = entry;
-            }
+            Callstack(_pluginServer->WorkerPool().Id(indexValue), response);
         }
 
         return result;

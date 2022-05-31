@@ -29,6 +29,7 @@
 #ifdef __LINUX__
 #include <atomic>
 #include <signal.h>
+#include <elf.h>
 #endif
 
 using namespace WPEFramework;
@@ -79,7 +80,7 @@ int clock_gettime(int, struct timespec*)
 }
 #endif
 
-#if defined(__LINUX__) && defined(THUNDER_BACKTRACE)
+#if defined(THUNDER_BACKTRACE)
 
 static std::atomic<bool> g_lock(false);
 static pthread_t g_targetThread;
@@ -183,18 +184,7 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
     return result;
 }
 
-#else
-
-uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize)
-{
-    #ifdef __WINDOWS__
-    __debugbreak();
-    #endif
-
-    return (0);
-}
-
-#endif // __LINUX__
+#endif // BACKTRACE
 
 void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
 {
@@ -211,40 +201,63 @@ void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
 
 extern "C" {
 
-void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<string>& stackList VARIABLE_IS_NOT_USED)
+void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<WPEFramework::Core::callstack_info>& stackList VARIABLE_IS_NOT_USED)
 {
-#ifdef __DEBUG__
-#ifdef __LINUX__
+#if defined(THUNDER_BACKTRACE)
     void* callstack[32];
 
     uint32_t entries = GetCallStack(threadId, callstack, (sizeof(callstack) / sizeof(callstack[0])));
 
-    char** symbols = backtrace_symbols(callstack, entries);
-
     for (uint32_t i = 0; i < entries; i++) {
-        char  buffer[1024];
         Dl_info info;
-        if (dladdr(callstack[i], &info) && info.dli_sname) {
-            char* demangled = NULL;
-            int status = -1;
-            if (info.dli_sname[0] == '_') {
-                demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
-            }
-            snprintf(buffer, sizeof(buffer), "%-3d %*p %s + %zd", i, int(2 + sizeof(void*) * 2), callstack[i],
-                status == 0 ? demangled : info.dli_sname == 0 ? symbols[i] : info.dli_sname,
-                (char*)callstack[i] - (char*)info.dli_saddr);
+        const Elf32_Sym* additionalInfo;
+        Core::callstack_info entry;
 
-            free(demangled);
-        } else {
-            snprintf(buffer, sizeof(buffer), "%-3d %*p %s\n",
-            i, int(2 + sizeof(void*) * 2), callstack[i], symbols[i]);
+        entry.address = callstack[i];
+
+        if (dladdr1(callstack[i], &info, (void**) &additionalInfo, RTLD_DL_SYMENT) == 0) {
+            entry.line = ~0;
+            entry.module = EMPTY_STRING;
+            entry.function = EMPTY_STRING;
         }
-        stackList.push_back(Core::ToString(buffer));
+        else {
+            if (info.dli_fname != nullptr) {
+                entry.module = string(info.dli_fname);
+            }
+            
+            if (info.dli_sname == nullptr) {
+                entry.line = ~0;
+            }
+            else {
+                char* demangled;
+                int status = -1;
+
+                demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
+
+                if ( (demangled == nullptr) || (status != 0) || (demangled[0] == '\0') ) {
+                    entry.function = string(info.dli_sname);
+                }
+                else {
+                    entry.function = string(demangled);
+                }
+                
+                entry.line = (char*)callstack[i] - (char*)info.dli_saddr;
+
+                if (demangled != nullptr) {
+                    free(demangled);
+                }
+            }
+        }
+
+        stackList.push_back(entry);
     }
-    free(symbols);
+
 #else
+
+    #ifdef __WINDOWS__
     __debugbreak();
-#endif
+    #endif
+
 #endif
 }
 }

@@ -510,7 +510,7 @@ inline void EXTERNAL SleepS(unsigned int a_Time)
 #endif
 
 #ifdef __LINUX__
-#if !defined(OS_ANDROID) && !defined(OS_NACL) && defined(__GLIBC__)
+#if !defined(OS_ANDROID) && !defined(OS_NACL) && defined(__GLIBC__) && defined(_THUNDER_CALLSTACK_INFO)
 #define THUNDER_BACKTRACE 1
 #include <execinfo.h>
 #endif
@@ -624,20 +624,6 @@ typedef HANDLE ThreadId;
 #define QUOTE(str) #str
 #define EXPAND_AND_QUOTE(str) QUOTE(str)
 
-extern "C" {
-
-#ifdef __WINDOWS__
-extern int EXTERNAL inet_aton(const char* cp, struct in_addr* inp);
-extern void EXTERNAL usleep(const uint32_t value);
-#endif
-
-
-
-void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<string>& stack);
-uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
-
-}
-
 #if !defined(__DEBUG)
 #define DEBUG_VARIABLE(X) (void)(X)
 #else
@@ -647,6 +633,14 @@ uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const
 namespace WPEFramework {
 
 namespace Core {
+
+    struct callstack_info {
+        void*    address;
+        string   module;
+        string   function;
+        uint32_t line;
+    };
+
 
     inline void* Alignment(size_t alignment, void* incoming)
     {
@@ -865,6 +859,19 @@ namespace Core {
     #undef ERROR_CODE
 }
 }
+
+extern "C" {
+
+#ifdef __WINDOWS__
+extern int EXTERNAL inet_aton(const char* cp, struct in_addr* inp);
+extern void EXTERNAL usleep(const uint32_t value);
+#endif
+
+void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<WPEFramework::Core::callstack_info>& stack);
+uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
+
+}
+
 
 #ifndef BUILD_REFERENCE
 #define BUILD_REFERENCE engineering_build_for_debug_purpose_only
