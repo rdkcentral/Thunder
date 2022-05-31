@@ -219,7 +219,6 @@ void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<WPEFr
             entry.line = ~0;
             entry.module = EMPTY_STRING;
             entry.function = EMPTY_STRING;
-            printf ("FAILING call to DLADDR !!!!\n");
         }
         else {
             if (info.dli_fname != nullptr) {
