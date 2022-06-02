@@ -151,7 +151,13 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
 
     if ((threadId == 0) || (pthread_self() == threadId)) {
         result = backtrace(addresses, bufferSize);
-    } else {
+        if (result > 1) {
+            for (uint32_t index = 0; index < result; index++) {
+                address[index] = address[index + 1];
+            }
+            --result;
+        }
+    } else if (threadId != (::ThreadId)(~0)) {
         while (std::atomic_exchange_explicit(&g_lock, true, std::memory_order_acquire))
             ; // spin until acquired
 
