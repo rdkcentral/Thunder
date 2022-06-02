@@ -134,9 +134,22 @@ namespace WPEFramework {
 
 #define VERIFY(x, y) assert(x == y)
 #else
-#define ASSERT(x)
+
+#define ASSERT(expr)                                                                                            \
+    do {                                                                                                        \
+        if (!(expr)) {                                                                                          \
+            ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
+        }                                                                                                       \
+    } while(0)
+
 #define VERIFY(x, y) x
-#define ASSERT_VERBOSE(x, y, ...)
+#define ASSERT_VERBOSE(expr, format, ...)                                                                                                            \
+    do {                                                                                                                                             \
+        if (!(expr)) {                                                                                                                               \
+            ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n         " #format "\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr, ##__VA_ARGS__); \
+        }                                                                                                                                            \
+    } while(0)
+
 #endif
 
 #define LOG(LEVEL, MESSAGE)                                                         \

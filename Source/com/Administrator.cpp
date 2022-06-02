@@ -294,7 +294,9 @@ namespace RPC {
                     }
                 } while ((loop->Decrement()) && (result == Core::ERROR_NONE));
 
+#ifdef __DEBUG__
                 ASSERT (loop->Flushed() == true);
+#endif
 
                 loop++;
             }
