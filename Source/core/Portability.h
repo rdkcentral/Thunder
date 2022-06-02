@@ -396,7 +396,6 @@ inline void EXTERNAL SleepS(unsigned int a_Time)
 #endif
 
 #if defined(_THUNDER_DEBUG) || !defined(_THUNDER_NDEBUG)
-#define __DEBUG__
 #ifdef _THUNDER_PRODUCTION
 #error "Production and Debug is not a good match. Select Production or Debug, not both !!"
 #endif

@@ -69,11 +69,13 @@ target_compile_options(CompileSettings INTERFACE -std=c++11 -Wno-psabi)
 #
 if("${BUILD_TYPE}" STREQUAL "Debug")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_DEBUG)
+    target_compile_definitions(CompileSettings INTERFACE __DEBUG__)
     target_compile_options(CompileSettings INTERFACE -funwind-tables)
     set(CONFIG_DIR "Debug" CACHE STRING "Build config directory" FORCE)
 
 elseif("${BUILD_TYPE}" STREQUAL "DebugOptimized")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_DEBUG)
+    target_compile_definitions(CompileSettings INTERFACE __DEBUG__)
     target_compile_options(CompileSettings INTERFACE -funwind-tables)
     set(CONFIG_DIR "DebugOptimized" CACHE STRING "Build config directory" FORCE)
 
