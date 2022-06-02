@@ -153,7 +153,7 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
         result = backtrace(addresses, bufferSize);
         if (result > 1) {
             for (uint32_t index = 0; index < result; index++) {
-                address[index] = address[index + 1];
+                addresses[index] = addresses[index + 1];
             }
             --result;
         }
