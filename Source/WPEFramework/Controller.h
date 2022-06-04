@@ -56,7 +56,7 @@ namespace Plugin {
                 Add(_T("module"), &Module);
                 Add(_T("line"), &Line);
 
-                Address = reinterpret_cast<uint32_t>(source.address);
+                Address = reinterpret_cast<uint64_t>(source.address);
                 Function = source.function;
                 if (source.module.empty() == false) {
                     Module = source.module;
@@ -91,7 +91,7 @@ namespace Plugin {
             }
 
         public:
-            Core::JSON::DecUInt32 Address;
+            Core::JSON::DecUInt64 Address;
             Core::JSON::String    Function;
             Core::JSON::String    Module;
             Core::JSON::DecUInt32 Line;
