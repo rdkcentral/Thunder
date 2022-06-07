@@ -52,7 +52,7 @@ CLASS_IUNKNOWN = "::WPEFramework::Core::IUnknown"
 PROXYSTUB_CPP_NAME = "ProxyStubs_%s.cpp"
 
 MIN_INTERFACE_ID = 64
-INSTANCE_ID = "RPC::instance_id"
+INSTANCE_ID = "Core::instance_id"
 
 DEFAULT_DEFINITIONS_FILE = "default.h"
 IDS_DEFINITIONS_FILE = "Ids.h"
