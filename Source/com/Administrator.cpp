@@ -143,7 +143,7 @@ namespace RPC {
             TRACE_L1("Unknown interface. %d", interfaceId);
         }
     }
-    ProxyStub::UnknownProxy* Administrator::ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& impl, const uint32_t id, void*& interface)
+    ProxyStub::UnknownProxy* Administrator::ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& impl, const uint32_t id, void*& interface)
     {
         ProxyStub::UnknownProxy* result = nullptr;
 
@@ -169,7 +169,7 @@ namespace RPC {
         return (result);
     }
 
-    ProxyStub::UnknownProxy* Administrator::ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& impl, const bool outbound, const uint32_t id, void*& interface)
+    ProxyStub::UnknownProxy* Administrator::ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& impl, const bool outbound, const uint32_t id, void*& interface)
     {
         ProxyStub::UnknownProxy* result = nullptr;
 

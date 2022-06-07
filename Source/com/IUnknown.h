@@ -137,7 +137,7 @@ namespace ProxyStub {
         };
 
     public:
-        UnknownProxy(const Core::ProxyType<Core::IPCChannel>& channel, const RPC::instance_id& implementation, const uint32_t interfaceId, const bool outbound, Core::IUnknown& parent)
+        UnknownProxy(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const uint32_t interfaceId, const bool outbound, Core::IUnknown& parent)
             : _adminLock()
             , _refCount(0)
             , _mode(outbound ? 0 : CACHING_ADDREF)
@@ -247,7 +247,7 @@ namespace ProxyStub {
             parameters.Number<uint32_t>(id);
             if (Invoke(message, RPC::CommunicationTimeOut) == Core::ERROR_NONE) {
                 RPC::Data::Frame::Reader response(message->Response().Reader());
-                RPC::instance_id impl = response.Number<RPC::instance_id>();
+                Core::instance_id impl = response.Number<Core::instance_id>();
                 // From what is returned, we need to create a proxy
                 RPC::Administrator::Instance().ProxyInstance(_channel, impl, true, id, result);
             }
@@ -265,7 +265,7 @@ namespace ProxyStub {
         {
             return (_interfaceId);
         }
-        inline const RPC::instance_id& Implementation() const
+        inline const Core::instance_id& Implementation() const
         {
             return (_implementation);
         }
@@ -297,8 +297,8 @@ namespace ProxyStub {
         inline void Complete(RPC::Data::Frame::Reader& reader) const
         {
             while (reader.HasData() == true) {
-                ASSERT(reader.Length() >= (sizeof(RPC::instance_id)));  // IMPLEMENTATION SIZE !!!!
-                void* impl = reinterpret_cast<void*>(reader.Number<RPC::instance_id>());
+                ASSERT(reader.Length() >= (sizeof(Core::instance_id)));  // IMPLEMENTATION SIZE !!!!
+                void* impl = reinterpret_cast<void*>(reader.Number<Core::instance_id>());
                 uint32_t id = reader.Number<uint32_t>();
 
                 if ((id & 0x80000000) == 0) {
@@ -366,7 +366,7 @@ namespace ProxyStub {
         mutable uint32_t _refCount;
         uint8_t _mode;
         const uint32_t _interfaceId;
-        RPC::instance_id _implementation;
+        Core::instance_id _implementation;
         Core::IUnknown& _parent;
         mutable Core::ProxyType<Core::IPCChannel> _channel;
         uint32_t _remoteReferences;
@@ -384,7 +384,7 @@ namespace ProxyStub {
 
     public:
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-        UnknownProxyType(const Core::ProxyType<Core::IPCChannel>& channel, const RPC::instance_id& implementation, const bool outbound)
+        UnknownProxyType(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const bool outbound)
             : _unknown(channel, implementation, INTERFACE::ID, outbound, *this)
         {
         }
@@ -408,7 +408,7 @@ POP_WARNING()
         {
             return (_unknown.Invoke(message, waitTime));
         }
-        inline void* Interface(const RPC::instance_id& implementation, const uint32_t id) const
+        inline void* Interface(const Core::instance_id& implementation, const uint32_t id) const
         {
             void* result = nullptr;
             RPC::Administrator::Instance().ProxyInstance(_unknown.Channel(),implementation,true,id,result);
