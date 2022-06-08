@@ -227,6 +227,132 @@ namespace PluginHost {
         Core::JSON::String Value;
     };
 }
+
+namespace Plugin {
+
+    using subsystem = PluginHost::ISubSystem::subsystem;
+
+    struct EXTERNAL IMetadata : public Core::IServiceMetadata {
+        virtual ~IMetadata() = default;
+
+        virtual const std::vector<subsystem>& Precondition() const = 0;
+        virtual const std::vector<subsystem>& Termination() const = 0;
+        virtual const std::vector<subsystem>& Control() const = 0;
+    };
+
+    // Baseclass to turn objects into services
+    template <typename ACTUALSERVICE>
+    class Metadata : public IMetadata {
+    private:
+        template <typename SERVICE>
+        class PluginImplementation : public Core::Service<SERVICE>, public IMetadata {
+        public:
+            PluginImplementation() = delete;
+            PluginImplementation(const PluginImplementation<SERVICE>&) = delete;
+            PluginImplementation<SERVICE>& operator=(const PluginImplementation<SERVICE>&) = delete;
+
+            explicit PluginImplementation(const Core::Library& library, const IServiceMetadata* metadata)
+                : Core::Service<SERVICE>()
+                , _referenceLib(library)
+                , _info(static_cast<const IMetadata*>(metadata)) {
+
+                ASSERT(dynamic_cast<const IMetadata*>(metadata) != nullptr);
+            }
+            ~PluginImplementation() override {
+                Core::ServiceAdministrator::Instance().ReleaseLibrary(_referenceLib);
+            }
+
+        public:
+            uint8_t Major() const override {
+                return (_info->Major());
+            }
+            uint8_t Minor() const override {
+                return (_info->Minor());
+            }
+            uint8_t Patch() const override {
+                return (_info->Patch());
+            }
+            const std::string& Name() const override {
+                return (_info->Name());
+            }
+            const TCHAR* Module() const override {
+                return (_info->Module());
+            }
+            const std::vector<subsystem>& Precondition() const override {
+                return (_info->Precondition());
+            }
+            const std::vector<subsystem>& Termination() const override {
+                return (_info->Termination());
+            }
+            const std::vector<subsystem>& Control() const override {
+                return (_info->Control());
+            }
+
+        private:
+            Core::Library _referenceLib;
+            const IMetadata* _info;
+        };
+
+    public:
+        Metadata() = delete;
+        Metadata(const Metadata&) = delete;
+        Metadata& operator=(const Metadata&) = delete;
+
+        Metadata(
+            const uint8_t major,
+            const uint8_t minor,
+            const uint8_t patch,
+            const std::initializer_list<subsystem>& precondition,
+            const std::initializer_list<subsystem>& termination,
+            const std::initializer_list<subsystem>& control)
+            : _version((major << 16) | (minor << 8) | patch)
+            , _Id(Core::ClassNameOnly(typeid(ACTUALSERVICE).name()).Text())
+            , _precondition(precondition)
+            , _termination(termination)
+            , _control(control) {
+
+            Core::ServiceAdministrator::Instance().Register(this, &_factory);
+        }
+        ~Metadata() {
+            Core::ServiceAdministrator::Instance().Unregister(this, &_factory);
+        }
+
+    public:
+        uint8_t Major() const override {
+            return (static_cast<uint8_t> ((_version >> 16) & 0xFF));
+        }
+        uint8_t Minor() const override {
+            return (static_cast<uint8_t>((_version >> 8) & 0xFF));
+        }
+        uint8_t Patch() const override {
+            return (static_cast<uint8_t>(_version & 0xFF));
+        }
+        const std::string& Name() const override {
+            return (_Id);
+        }
+        const TCHAR* Module() const override {
+            return (Core::System::ModuleName());
+        }
+        const std::vector<subsystem>& Precondition() const override {
+            return (_precondition);
+        }
+        const std::vector<subsystem>& Termination() const override {
+            return (_termination);
+        }
+        const std::vector<subsystem>& Control() const override {
+            return (_control);
+        }
+
+    private:
+        uint32_t _version;
+        string _Id;
+        std::vector<subsystem> _precondition;
+        std::vector<subsystem> _termination;
+        std::vector<subsystem> _control;
+        Core::ServiceAdministrator::ServiceFactoryType< PluginImplementation <ACTUALSERVICE> > _factory;
+    };
+}
+
 }
 
 #endif // __WEBBRIDGESUPPORT_METADATA_H

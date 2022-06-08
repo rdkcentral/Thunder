@@ -386,7 +386,6 @@ POP_WARNING()
         uint32_t get_configuration(const string& index, Core::JSON::String& response) const;
         uint32_t set_configuration(const string& index, const Core::JSON::String& params);
         uint32_t get_version(Core::JSON::String& response) const;
-        uint32_t set_version(const Core::JSON::String& params);
         uint32_t get_prefix(Core::JSON::String& response) const;
         uint32_t set_prefix(const Core::JSON::String& params);
         uint32_t get_idletime(Core::JSON::DecUInt16& response) const;

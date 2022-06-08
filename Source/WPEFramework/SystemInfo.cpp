@@ -263,5 +263,37 @@ POP_WARNING()
     {
         return (_T(EXPAND_AND_QUOTE(TREE_REFERENCE)));
     }
+
+    static uint8_t VersionParser(const uint8_t index, const string& version) {
+        uint8_t result = 0;
+        uint8_t count = 0;
+        Core::TextSegmentIterator iterator(Core::TextFragment(version.c_str(), version.length()), false, '.');
+
+        while ((count < index) && (iterator.Next() == true)) {
+            count++;
+        }
+
+        if (iterator.Next() == true) {
+            result = Core::NumberType<uint8_t>(iterator.Current()).Value();
+        }
+
+        return (result);
+    }
+
+    uint8_t SystemInfo::Major() const /* override */
+    {
+        return (VersionParser(0, _config.Version()));
+    }
+
+    uint8_t SystemInfo::Minor() const /* override */
+    {
+        return (VersionParser(1, _config.Version()));
+    }
+
+    uint8_t SystemInfo::Patch() const /* override */
+    {
+        return (VersionParser(2, _config.Version()));
+    }
+
 } //namspace Plugin
 } // namespace WPEFramework

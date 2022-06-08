@@ -257,6 +257,21 @@ namespace PluginHost
         _processAdministrator.Destroy();
     }
 
+    uint8_t Server::Service::Major() const /* override */ {
+        Core::SafeSyncType<Core::CriticalSection> lock(_pluginHandling);
+        return (_metadata != nullptr ? _metadata->Major() : ~0);
+    }
+
+    uint8_t Server::Service::Minor() const /* override */ {
+        Core::SafeSyncType<Core::CriticalSection> lock(_pluginHandling);
+        return (_metadata != nullptr ? _metadata->Minor() : ~0);
+    }
+
+    uint8_t Server::Service::Patch() const /* override */ {
+        Core::SafeSyncType<Core::CriticalSection> lock(_pluginHandling);
+        return (_metadata != nullptr ? _metadata->Patch() : ~0);
+    }
+
     /* virtual */ void* Server::Service::QueryInterface(const uint32_t id)
     {
         void* result = nullptr;
@@ -485,7 +500,6 @@ namespace PluginHost
 
         return (result);
     }
-
 
     uint32_t Server::Service::Deactivate(const reason why)
     {

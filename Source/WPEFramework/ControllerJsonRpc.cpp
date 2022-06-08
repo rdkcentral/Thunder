@@ -51,7 +51,7 @@ namespace Plugin {
         Property<Core::JSON::String>(_T("configuration"), &Controller::get_configuration, &Controller::set_configuration, this);
         Register<CloneParamsInfo,Core::JSON::String>(_T("clone"), &Controller::endpoint_clone, this);
         Property<Core::JSON::ArrayType<CallstackData>>(_T("callstack"), &Controller::get_callstack, nullptr, this);
-        Property<Core::JSON::String>(_T("version"), &Controller::get_version, &Controller::set_version, this);
+        Property<Core::JSON::String>(_T("version"), &Controller::get_version, nullptr, this);
         Property<Core::JSON::String>(_T("prefix"), &Controller::get_prefix, &Controller::set_prefix, this);
         Property<Core::JSON::DecUInt16>(_T("idletime"), &Controller::get_idletime, &Controller::set_idletime, this);
         Property<Core::JSON::DecSInt32>(_T("latitude"), &Controller::get_latitude, &Controller::set_latitude, this);
@@ -523,26 +523,6 @@ namespace Plugin {
         } else {
             result = Core::ERROR_GENERAL;
         }
-        return  result ;
-    }
-
-    // Property: version of the controller
-    // Return codes:
-    //  - ERROR_NONE: Success
-    //  - ERROR_GENERAL: Failed to set the version
-    uint32_t Controller::set_version(const Core::JSON::String& params)
-    {
-        uint32_t result = Core::ERROR_NONE;
-        
-        ASSERT(_pluginServer != nullptr);
-        
-        if (_pluginServer !=nullptr)  {
-            const string& version = params.Value();
-            _pluginServer->Configuration().SetVersion(version);
-        } else {
-            result = Core::ERROR_GENERAL;
-        }
-    
         return  result ;
     }
 

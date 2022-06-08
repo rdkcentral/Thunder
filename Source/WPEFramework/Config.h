@@ -638,10 +638,6 @@ POP_WARNING()
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_version);
         }
-        inline void SetVersion(const string& newValue) {
-            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            _version = newValue;
-        }
         inline const string& Model() const
         {
             return (_model);
