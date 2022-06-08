@@ -437,7 +437,11 @@ POP_WARNING()
 #ifdef __DEBUG__
     int Thread::GetCallstack(void** buffer, int size)
     {
+#if defined(THUNDER_BACKTRACE)
         return GetCallStack(m_hThreadInstance, buffer, size);
+#else
+        return(0);
+#endif
     }
 #endif // __DEBUG
 }

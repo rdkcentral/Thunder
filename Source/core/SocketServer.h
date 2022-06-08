@@ -146,8 +146,8 @@ namespace Core {
             }
             ~SocketHandler()
             {
-                Close(Core::infinite);
-                CloseClients();
+                SocketListner::Close(Core::infinite);
+                CloseClients(0);
 
                 _lock.Lock();
 
@@ -238,7 +238,7 @@ namespace Core {
 
                 _lock.Unlock();
             }
-            inline void CloseClients()
+            inline void CloseClients(const uint32_t waiTime)
             {
                 _lock.Lock();
 
@@ -246,7 +246,7 @@ namespace Core {
 
                 while (index != _clients.end()) {
                     // Oke connection still exists, send the message..
-                    index->second->Close(0);
+                    index->second->Close(waiTime);
                     ++index;
                 }
 
@@ -364,7 +364,7 @@ POP_WARNING()
         inline uint32_t Close(const uint32_t waitTime)
         {
             uint32_t result = _handler.Close(waitTime);
-            _handler.CloseClients();
+            _handler.CloseClients(waitTime);
             return (result);
         }
         inline void Cleanup()

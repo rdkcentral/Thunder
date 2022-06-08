@@ -304,6 +304,7 @@ namespace Core {
             static constexpr uint32_t MetaDataSize = 10 * 1024;
             static constexpr uint32_t DataSize = 20 * 1024;
             static constexpr const char* MESSAGE_DISPATCHER_PATH_ENV = _T("MESSAGE_DISPATCHER_PATH");
+            static constexpr const char* MESSAGE_DISPATCHER_SOCKETPORT_ENV = _T("MESSAGE_SOCKETPORT");
             static constexpr const char* MESSAGE_DISPACTHER_IDENTIFIER_ENV = _T("MESSAGE_DISPACTHER_IDENTIFIER");
             static constexpr const char* MESSAGE_UNIT_LOGGING_SYSLOG_ENV = _T("MESSAGE_UNIT_LOGGING_SYSLOG");
 
@@ -311,7 +312,7 @@ namespace Core {
 
         public:
             static MessageUnit& Instance();
-            uint32_t Open(const string& pathName);
+            uint32_t Open(const string& pathName, const uint16_t doorbell = 0);
             uint32_t Open(const uint32_t instanceId);
             void Close();
             void IsBackground(bool background);
