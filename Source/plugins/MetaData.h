@@ -89,6 +89,10 @@ namespace PluginHost {
 #endif
             Core::JSON::String Module;
             Core::JSON::String Hash;
+            Core::JSON::DecUInt8 Major;
+            Core::JSON::DecUInt8 Minor;
+            Core::JSON::DecUInt8 Patch;
+            Core::JSON::ArrayType<Core::JSON::String> InterfaceVersion;
         };
 
         class EXTERNAL Channel : public Core::JSON::Container {

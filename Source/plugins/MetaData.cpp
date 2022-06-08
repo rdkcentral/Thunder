@@ -123,6 +123,10 @@ namespace PluginHost
 #endif
         , Module(copy.Module)
         , Hash(copy.Hash)
+        , Major(0)
+        , Minor(0)
+        , Patch(0)
+        , InterfaceVersion()
     {
         Add(_T("state"), &JSONState);
 #if THUNDER_RUNTIME_STATISTICS
@@ -134,6 +138,10 @@ namespace PluginHost
 #endif
         Add(_T("module"), &Module);
         Add(_T("hash"), &Hash);
+        Add(_T("major"), &Major);
+        Add(_T("minor"), &Minor);
+        Add(_T("patch"), &Patch);
+        Add(_T("interface"), &InterfaceVersion);
     }
     MetaData::Service::~Service()
     {
