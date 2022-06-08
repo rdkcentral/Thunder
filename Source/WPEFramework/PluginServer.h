@@ -440,6 +440,7 @@ namespace PluginHost {
                 , _termination(plugin.Termination, false)
                 , _activity(0)
                 , _connection(nullptr)
+                , _lastId(0)
                 , _administrator(administrator)
             {
             }
@@ -605,7 +606,7 @@ namespace PluginHost {
                     result = _unavailableHandler;
                 } else if (IsWebServerRequest(request.Path) == true) {
                     result = IFactories::Instance().Response();
-                    FileToServe(request.Path, *result);
+                    FileToServe(request.Path, *result, false);
                 } else if (request.Verb == Web::Request::HTTP_OPTIONS) {
 
                     result = IFactories::Instance().Response();
@@ -829,6 +830,12 @@ namespace PluginHost {
             string ProxyStubPath () const override {
                 return (_administrator.Configuration().ProxyStubPath());
             }
+            string SystemPath() const override {
+                return (_administrator.Configuration().SystemPath());
+            }
+            string PluginPath() const override {
+                return (_administrator.Configuration().AppPath() + _T("Plugins/"));
+            }
             string HashKey() const override {
                 return (_administrator.Configuration().HashKey());
             }
@@ -874,6 +881,24 @@ namespace PluginHost {
                 return (_administrator.RemoteConnection(connectionId));
             }
 
+            void Closed(const uint32_t id)
+            {
+                IDispatcher* dispatcher = nullptr;
+
+                _pluginHandling.Lock();
+                if (_handler != nullptr) {
+                    dispatcher = _handler->QueryInterface<IDispatcher>();
+                }
+                _pluginHandling.Unlock();
+
+                if (dispatcher != nullptr) {
+                    dispatcher->Close(id);
+                    dispatcher->Release();
+                    // Could be that we can now drop the dynamic library...
+                    Core::ServiceAdministrator::Instance().FlushLibraries();
+                }
+            }
+
             // Methods to Activate and Deactivate the aggregated Plugin to this shell.
             // These are Blocking calls!!!!!
             uint32_t Activate(const reason) override;
@@ -908,10 +933,10 @@ namespace PluginHost {
                 {
                     string className = PluginHost::Service::Configuration().ClassName.Value() + _T("/");
                     // system configured paths
-                    all_paths.push_back(_administrator.Configuration().DataPath() + className + locator);
-                    all_paths.push_back(_administrator.Configuration().PersistentPath() + className + locator);
-                    all_paths.push_back(_administrator.Configuration().SystemPath() + locator);
-                    all_paths.push_back(_administrator.Configuration().AppPath() + _T("Plugins/") + locator);
+                    all_paths.push_back(DataPath() + locator);
+                    all_paths.push_back(PersistentPath() + locator);
+                    all_paths.push_back(SystemPath() + locator);
+                    all_paths.push_back(PluginPath() + locator);
                 }
 
                 return all_paths;
@@ -1029,6 +1054,12 @@ namespace PluginHost {
                     _jsonrpc = nullptr;
                 }
                 if (_connection != nullptr) {
+                    // Lets record the ID associated with this connection.
+                    // If the other end of this connection (indicated by the
+                    // ID) is not destructed the next time we start this plugin
+                    // again, we will forcefully kill it !!!
+                    _lastId = _connection->Id();
+
                     _connection->Release();
                     _connection = nullptr;
                 }
@@ -1065,6 +1096,7 @@ namespace PluginHost {
             Condition _termination;
             uint32_t _activity;
             RPC::IRemoteConnection* _connection;
+            uint32_t _lastId;
 
             ServiceMap& _administrator;
             static Core::ProxyType<Web::Response> _unavailableHandler;
@@ -1356,6 +1388,8 @@ namespace PluginHost {
                     const string& appPath,
                     const string& proxyStubPath,
                     const string& postMortemPath,
+                    const uint8_t softKillCheckWaitTime,
+                    const uint8_t hardKillCheckWaitTime,
                     const Core::ProxyType<RPC::InvokeServer>& handler)
                     : RPC::Communicator(node, proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath, Core::ProxyType<Core::IIPCServer>(handler))
                     , _parent(parent)
@@ -1382,6 +1416,7 @@ namespace PluginHost {
                         // We need to pass the communication channel NodeId via an environment variable, for process,
                         // not being started by the rpcprocess...
                         Core::SystemInfo::SetEnvironment(string(CommunicatorConnector), RPC::Communicator::Connector());
+                        RPC::Communicator::ForcedDestructionTimes(softKillCheckWaitTime, hardKillCheckWaitTime);
                     }
                 }
                 virtual ~CommunicatorServer()
@@ -1725,7 +1760,9 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                     config.VolatilePath(), 
                     config.AppPath(), 
                     config.ProxyStubPath(), 
-                    config.PostMortemPath(), 
+                    config.PostMortemPath(),
+                    config.SoftKillCheckWaitTime(),
+                    config.HardKillCheckWaitTime(),
                     _engine)
                 , _server(server)
                 , _subSystems(this)
@@ -1887,6 +1924,9 @@ POP_WARNING()
             {
                 return (_processAdministrator.Create(sessionId, object, waitTime, dataPath, persistentPath, volatilePath));
             }
+            void Destroy(const uint32_t id) {
+                _processAdministrator.Destroy(id);
+            }
             void Register(RPC::IRemoteConnection::INotification* sink)
             {
                 _processAdministrator.Register(sink);
@@ -1906,6 +1946,19 @@ POP_WARNING()
             RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId)
             {
                 return (connectionId != 0 ? _processAdministrator.Connection(connectionId) : nullptr);
+            }
+            void Closed(const uint32_t id) {
+                _adminLock.Lock();
+
+                // First stop all services running ...
+                std::map<const string, Core::ProxyType<Service>>::iterator index(_services.begin());
+
+                while (index != _services.end()) {
+                    index->second->Closed(id);
+                    ++index;
+                }
+
+                _adminLock.Unlock();
             }
             inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration)
             {
@@ -2267,33 +2320,39 @@ POP_WARNING()
                     Core::ProxyType<Web::Response> response;
 
                     if (_jsonrpc == true) {
-                        Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
+                        if(_request->Verb == Request::HTTP_POST){
+                            Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
 
-                        if (message->IsSet()) {
-                            Core::ProxyType<Core::JSONRPC::Message> body = Job::Process(_token, message);
+                            if (message->IsSet()) {
+                                Core::ProxyType<Core::JSONRPC::Message> body = Job::Process(_token, message);
 
-                            // If we have no response body, it looks like an async-call...
-                            if (body.IsValid() == false) {
-                                // It's a a-synchronous call, seems we should just queue this request, it will be answered later on..
-                                if (_request->Connection.Value() == Web::Request::CONNECTION_CLOSE) {
-                                    Job::RequestClose();
+                                // If we have no response body, it looks like an async-call...
+                                if (body.IsValid() == false) {
+                                    // It's a a-synchronous call, seems we should just queue this request, it will be answered later on..
+                                    if (_request->Connection.Value() == Web::Request::CONNECTION_CLOSE) {
+                                        Job::RequestClose();
+                                    }
                                 }
-                            }
-                            else {
+                                else {
+                                    response = IFactories::Instance().Response();
+                                    response->Body(body);
+                                    if (body->Error.IsSet() == false) {
+                                        response->ErrorCode = Web::STATUS_OK;
+                                        response->Message = _T("JSONRPC executed succesfully");
+                                    } else {
+                                        response->ErrorCode = Web::STATUS_ACCEPTED;
+                                        response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(body->Error.Code).Text();
+                                    }
+                                }
+                            } else {
                                 response = IFactories::Instance().Response();
-                                response->Body(body);
-                                if (body->Error.IsSet() == false) {
-                                    response->ErrorCode = Web::STATUS_OK;
-                                    response->Message = _T("JSONRPC executed succesfully");
-                                } else {
-                                    response->ErrorCode = Web::STATUS_ACCEPTED;
-                                    response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(body->Error.Code).Text();
-                                }
+                                response->ErrorCode = Web::STATUS_ACCEPTED;
+                                response->Message = _T("Failed to parse JSONRPC message");
                             }
                         } else {
                             response = IFactories::Instance().Response();
-                            response->ErrorCode = Web::STATUS_ACCEPTED;
-                            response->Message = _T("Failed to parse JSONRPC message");
+                            response->ErrorCode = Web::STATUS_METHOD_NOT_ALLOWED;
+                            response->Message = _T("JSON-RPC only supported via POST request");
                         }
                     } else {
                         response = Job::Process(_request);
@@ -2812,6 +2871,7 @@ POP_WARNING()
                     }
 
                     State(CLOSED, false);
+                    _parent.Closed(Id());
                     _parent.Dispatcher().TriggerCleanup();
 
                 } else if (IsUpgrading() == true) {
@@ -3095,7 +3155,7 @@ POP_WARNING()
         }
 
     private:
-        inline Core::ProxyType<Service> Controller()
+        Core::ProxyType<Service> Controller()
         {
             return (_controller);
         }
@@ -3103,9 +3163,12 @@ POP_WARNING()
         {
             return (_services.Officer(token));
         }
-        inline ISecurity* Officer()
+        ISecurity* Officer()
         {
             return (_config.Security());
+        }
+        void Closed(const uint32_t id) {
+            _services.Closed(id);
         }
 
     private:

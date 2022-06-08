@@ -729,7 +729,7 @@ namespace RPC {
                 }
 
             public:
-                inline void Implementation(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& implementation)
+                inline void Implementation(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation)
                 {
 
                     ASSERT(_interface == nullptr);
@@ -1027,7 +1027,7 @@ namespace RPC {
             {
                 Core::ProxyType<Core::IPCChannel> baseChannel(channel);
 
-                instance_id implementation = info.Implementation();
+                Core::instance_id implementation = info.Implementation();
                 void* realIF = nullptr;
                 void* result = nullptr;
 
@@ -1298,6 +1298,20 @@ POP_WARNING()
         {
             return (_ipcServer.Connector());
         }
+        void ForcedDestructionTimes(const uint8_t softKillCheckWaitTime, const uint8_t hardKillCheckWaitTime)
+        {
+            _softKillCheckWaitTime = softKillCheckWaitTime;
+            _hardKillCheckWaitTime = hardKillCheckWaitTime;
+        }
+        static uint8_t SoftKillCheckWaitTime()
+        {
+            return _softKillCheckWaitTime;
+        }
+        static uint8_t HardKillCheckWaitTime()
+        {
+            return _hardKillCheckWaitTime;
+        }
+
         inline void Register(RPC::IRemoteConnection::INotification* sink)
         {
             _connectionMap.Register(sink);
@@ -1318,6 +1332,7 @@ POP_WARNING()
         {
             _connectionMap.Destroy();
         }
+        void Destroy(const uint32_t id);
 
     private:
         void Closed(const Core::ProxyType<Core::IPCChannel>& channel)
@@ -1357,6 +1372,8 @@ POP_WARNING()
     private:
         RemoteConnectionMap _connectionMap;
         ChannelServer _ipcServer;
+        static uint8_t _softKillCheckWaitTime;
+        static uint8_t _hardKillCheckWaitTime;
     };
 
     class EXTERNAL CommunicatorClient : public Core::IPCChannelClientType<Core::Void, false, true>, public Core::IDispatchType<Core::IIPC> {
@@ -1389,7 +1406,7 @@ POP_WARNING()
                 const uint32_t interfaceId(message->Parameters().InterfaceId());
                 const uint32_t versionId(message->Parameters().VersionId());
 
-                instance_id implementation = instance_cast<void*>(_parent.Aquire(className, interfaceId, versionId));
+                Core::instance_id implementation = instance_cast<void*>(_parent.Aquire(className, interfaceId, versionId));
                 message->Response().Implementation(implementation);
 
                 channel.ReportResponse(data);
@@ -1473,7 +1490,7 @@ POP_WARNING()
                     ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
                     ASSERT(_announceMessage->Parameters().Implementation() == 0);
 
-                    instance_id implementation(_announceMessage->Response().Implementation());
+                    Core::instance_id implementation(_announceMessage->Response().Implementation());
 
                     if (implementation) {
                         Core::ProxyType<Core::IPCChannel> baseChannel(*this);
@@ -1567,7 +1584,7 @@ POP_WARNING()
             // Lock event until Dispatch() sets it.
             if (_announceEvent.Lock(waitTime) == Core::ERROR_NONE) {
 
-                instance_id implementation(_announceMessage->Response().Implementation());
+                Core::instance_id implementation(_announceMessage->Response().Implementation());
 
                 if (implementation) {
                     Core::ProxyType<Core::IPCChannel> baseChannel(*this);

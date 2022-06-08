@@ -18,9 +18,6 @@
     <ClCompile Include="IUnknown.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ITracing.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Communicator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

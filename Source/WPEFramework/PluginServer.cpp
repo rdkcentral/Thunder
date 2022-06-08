@@ -187,7 +187,6 @@ namespace PluginHost
 
     void Server::ChannelMap::GetMetaData(Core::JSON::ArrayType<MetaData::Channel> & metaData) const
     {
-
         Core::SocketServerType<Channel>::Iterator index(Core::SocketServerType<Channel>::Clients());
 
         while (index.Next() == true) {
@@ -216,44 +215,39 @@ namespace PluginHost
     {
         _adminLock.Lock();
 
-        std::map<const string, Core::ProxyType<Service>>::iterator index(_services.end());
-
-        TRACE_L1("Deactivating %d plugins.", static_cast<uint32_t>(_services.size()));
+        std::map<const string, Core::ProxyType<Service>>::iterator index(_services.begin());
+        std::list< Core::ProxyType<Service> > deactivationList;
 
         // First, move them all to deactivated except Controller
         Core::ProxyType<Service> controller (_server.Controller());
-        do {
-            index--;
-
-            ASSERT(index->second.IsValid());
-
-            if (index->first.c_str() != controller->Callsign()) {
-                index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
-            }
-        } while (index != _services.begin());
-
-        TRACE_L1("Destructing %d plugins.", static_cast<uint32_t>(_services.size()));
-        // Now deactivate controller plugin, once other plugins are deactivated
-        controller->Deactivate(PluginHost::IShell::SHUTDOWN);
-
-        // Now release them all
-        index = _services.begin();
 
         while (index != _services.end()) {
+
             Core::ProxyType<Service> service(index->second);
 
             ASSERT(service.IsValid());
 
+            if (index->first.c_str() != controller->Callsign()) {
+                deactivationList.push_back(service);
+            }
+
             index = _services.erase(index);
-
-            service.Release();
         }
-
-        Core::ServiceAdministrator::Instance().FlushLibraries();
 
         _adminLock.Unlock();
 
-        TRACE_L1("Pending notifiers are %lu", _notifiers.size());
+        TRACE_L1("Destructing %d plugins.", static_cast<uint32_t>(_services.size()));
+
+        for (Core::ProxyType<Service>& entry : deactivationList) {
+            entry->Deactivate(PluginHost::IShell::SHUTDOWN);
+        }
+
+        // Now deactivate controller plugin, once other plugins are deactivated
+        controller->Deactivate(PluginHost::IShell::SHUTDOWN);
+
+        Core::ServiceAdministrator::Instance().FlushLibraries();
+
+        TRACE_L1("Pending notifiers are %zu", _notifiers.size());
         for (VARIABLE_IS_NOT_USED auto notifier : _notifiers) {
             TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier).name()).Text().c_str());
         }
@@ -265,7 +259,6 @@ namespace PluginHost
 
     /* virtual */ void* Server::Service::QueryInterface(const uint32_t id)
     {
-
         void* result = nullptr;
         if (id == Core::IUnknown::ID) {
             AddRef();
@@ -398,6 +391,12 @@ namespace PluginHost
                 State(ACTIVATION);
 
                 Unlock();
+
+                // Before we dive into the "new" initialize lets see if this has a pending OOP running, if so forcefully kill it now, no time to wait !
+                if (_lastId != 0) {
+                    _administrator.Destroy(_lastId);
+                    _lastId = 0;
+                }
 
                 TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
@@ -907,12 +906,14 @@ POP_WARNING()
     {
         Plugin::Controller* destructor(_controller->ClassType<Plugin::Controller>());
         destructor->AddRef();
-        _connections.Close(Core::infinite);
+        _connections.Close(100);
         destructor->Stopped();
         _services.Destroy();
         _dispatcher.Stop();
         destructor->Release();
         _inputHandler.Deinitialize();
+        _connections.Close(Core::infinite);
+
     }
 }
 }

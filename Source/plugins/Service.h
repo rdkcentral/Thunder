@@ -409,7 +409,7 @@ namespace PluginHost {
         }
         #endif
 
-        void FileToServe(const string& webServiceRequest, Web::Response& response);
+        void FileToServe(const string& webServiceRequest, Web::Response& response, bool allowUnsafePath);
 
     private:
         mutable Core::CriticalSection _adminLock;

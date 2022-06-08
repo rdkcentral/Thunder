@@ -164,6 +164,9 @@
 // W3 -- Code uses a function, class member, variable, or typedef that's marked deprecated
 #define DISABLE_WARNING_DEPRECATED_USE PUSH_WARNING_ARG_(4996)
 #define DISABLE_WARNING_MISSING_FIELD_INITIALIZERS
+#define DISABLE_WARNING_UNUSED_VARIABLES
+#define DISABLE_WARNING_DEPRECATED_COPY
+#define DISABLE_WARNING_NON_VIRTUAL_DESTRUCTOR
 
 #else
 #define DISABLE_WARNING_CONDITIONAL_EXPRESSION_IS_CONSTANT
@@ -183,6 +186,7 @@
 #define DISABLE_WARNING_UNUSED_VARIABLES PUSH_WARNING_ARG_("-Wunused-variable")
 #define DISABLE_WARNING_DEPRECATED_USE PUSH_WARNING_ARG_("-Wdeprecated-declarations")
 #define DISABLE_WARNING_DEPRECATED_COPY PUSH_WARNING_ARG_("-Wdeprecated-copy")
+#define DISABLE_WARNING_NON_VIRTUAL_DESTRUCTOR PUSH_WARNING_ARG_("-Wnon-virtual-dtor")
 #endif
 #endif
 
@@ -506,7 +510,7 @@ inline void EXTERNAL SleepS(unsigned int a_Time)
 #endif
 
 #ifdef __LINUX__
-#if !defined(OS_ANDROID) && !defined(OS_NACL) && defined(__GLIBC__)
+#if !defined(OS_ANDROID) && !defined(OS_NACL) && defined(__GLIBC__) && defined(_THUNDER_CALLSTACK_INFO)
 #define THUNDER_BACKTRACE 1
 #include <execinfo.h>
 #endif
@@ -620,20 +624,6 @@ typedef HANDLE ThreadId;
 #define QUOTE(str) #str
 #define EXPAND_AND_QUOTE(str) QUOTE(str)
 
-extern "C" {
-
-#ifdef __WINDOWS__
-extern int EXTERNAL inet_aton(const char* cp, struct in_addr* inp);
-extern void EXTERNAL usleep(const uint32_t value);
-#endif
-
-
-
-void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<string>& stack);
-uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
-
-}
-
 #if !defined(__DEBUG)
 #define DEBUG_VARIABLE(X) (void)(X)
 #else
@@ -643,6 +633,19 @@ uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const
 namespace WPEFramework {
 
 namespace Core {
+    #if defined(__SIZEOF_POINTER__) && (__SIZEOF_POINTER__ == 8) 
+    typedef uint64_t instance_id;
+    #else
+    typedef uint32_t instance_id;
+    #endif
+
+    struct callstack_info {
+        void*    address;
+        string   module;
+        string   function;
+        uint32_t line;
+    };
+
 
     inline void* Alignment(size_t alignment, void* incoming)
     {
@@ -753,6 +756,23 @@ namespace Core {
         }
     };
 
+    namespace memory_order {
+    #ifdef __WINDOWS__
+        static constexpr std::memory_order memory_order_relaxed = std::memory_order::memory_order_relaxed;
+        static constexpr std::memory_order memory_order_consume = std::memory_order::memory_order_seq_cst;
+        static constexpr std::memory_order memory_order_acquire = std::memory_order::memory_order_seq_cst;
+        static constexpr std::memory_order memory_order_release = std::memory_order::memory_order_release;
+        static constexpr std::memory_order memory_order_acq_rel = std::memory_order::memory_order_seq_cst;
+        static constexpr std::memory_order memory_order_seq_cst = std::memory_order::memory_order_seq_cst;
+    #else
+        static constexpr std::memory_order memory_order_relaxed = std::memory_order::memory_order_relaxed;
+        static constexpr std::memory_order memory_order_consume = std::memory_order::memory_order_consume;
+        static constexpr std::memory_order memory_order_acquire = std::memory_order::memory_order_acquire;
+        static constexpr std::memory_order memory_order_release = std::memory_order::memory_order_release;
+        static constexpr std::memory_order memory_order_acq_rel = std::memory_order::memory_order_acq_rel;
+        static constexpr std::memory_order memory_order_seq_cst = std::memory_order::memory_order_seq_cst;
+    #endif
+    }
 
     #define ERROR_CODES \
         ERROR_CODE(ERROR_NONE, 0) \
@@ -844,6 +864,19 @@ namespace Core {
     #undef ERROR_CODE
 }
 }
+
+extern "C" {
+
+#ifdef __WINDOWS__
+extern int EXTERNAL inet_aton(const char* cp, struct in_addr* inp);
+extern void EXTERNAL usleep(const uint32_t value);
+#endif
+
+void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<WPEFramework::Core::callstack_info>& stack);
+uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
+
+}
+
 
 #ifndef BUILD_REFERENCE
 #define BUILD_REFERENCE engineering_build_for_debug_purpose_only

@@ -35,101 +35,197 @@ namespace RPC {
 
     /* static */ Core::CriticalSection Process::_ldLibLock ;
 
-    class ProcessShutdown {
+    class ProcessShutdown : public Core::Thread {
     public:
         static constexpr uint32_t DestructionStackSize = 64 * 1024;
 
-        class IClosingInfo {
-        public:
-            virtual ~IClosingInfo() = default;
+        class Destructor {
+        private:
 
+        public:
+            Destructor(const Destructor&) = delete;
+            Destructor& operator= (const Destructor&) = delete;
+
+            Destructor()
+                : _cycle(0)
+                , _time(0) {
+            }
+            virtual ~Destructor() = default;
+
+        public:
+            uint8_t Cycle() const {
+                return (_cycle);
+            }
+            const uint64_t& Time() const {
+                return (_time);
+            }
+            void Destruct() {
+                // Unconditionally KILL !!!
+                while (Terminate() != 0) {
+                    ++_cycle;
+                    ::SleepMs(1);
+                }
+            }
+            bool Destruct(uint64_t& timeSlot) {
+                bool destructed = false;
+
+                if (_time <= timeSlot) {
+                    uint32_t delay = Terminate();
+
+                    if (delay == 0) {
+                        destructed = true;
+                    }
+                    else {
+                        timeSlot = Core::Time::Now().Ticks();
+                        _time = timeSlot + (delay * 1000 * Core::Time::TicksPerMillisecond);
+                        ++_cycle;
+                    }
+                }
+
+                return (destructed);
+            }
+
+        private:
             // Should return 0 if no more iterations are needed.
-            virtual uint32_t AttemptClose(const uint8_t iteration) = 0;
+            virtual uint32_t Terminate() = 0;
+
+        private:
+            uint8_t _cycle;
+            uint64_t _time; // in Seconds
         };
 
+        using DestructorMap = std::unordered_map<uint32_t, Destructor* >;
+
     public:
-        ProcessShutdown() = delete;
-        ProcessShutdown& operator=(const ProcessShutdown& RHS) = delete;
         ProcessShutdown(const ProcessShutdown& copy) = delete;
+        ProcessShutdown& operator=(const ProcessShutdown& RHS) = delete;
 
-        ProcessShutdown(ProcessShutdown&& rhs)
-            : _handler(std::move(rhs._handler))
-            , _cycle(rhs._cycle)
-        {
-        }
-
-        explicit ProcessShutdown(std::unique_ptr<IClosingInfo>&& handler)
-            : _handler(std::move(handler))
-            , _cycle(1)
-        {
+        ProcessShutdown()
+            : Core::Thread(ProcessShutdown::DestructionStackSize, "COMRPCTerminator")
+            , _adminLock()
+            , _destructors() {
         }
         ~ProcessShutdown() = default;
 
     public:
-        template <class IMPLEMENTATION, typename... Args>
-        static void Start(Args... args)
-        {
+        void ForceDestruct(const uint32_t id) {
 
-            std::unique_ptr<IMPLEMENTATION> handler(new IMPLEMENTATION(args...));
+            Destructor* handler = nullptr;
 
-            uint32_t nextinterval = handler->AttemptClose(0);
+            _adminLock.Lock();
 
-            if (nextinterval != 0) {
-                _destructor.Schedule(Core::Time::Now().Add(nextinterval), ProcessShutdown(std::move(handler)));
+            DestructorMap::iterator index(_destructors.find(id));
+
+            if (index != _destructors.end()) {
+                handler = index->second;
+                _destructors.erase(index);
             }
+
+            _adminLock.Unlock();
+
+            if (handler != nullptr) {
+
+                // Forcefully kill this ID.
+                handler->Destruct();
+
+                delete handler;
+            }
+
         }
-        uint64_t Timed(const uint64_t scheduledTime)
+        template <class IMPLEMENTATION, typename... Args>
+        void Destruct(const uint32_t id, Args... args)
         {
-            uint64_t result = 0;
+            _adminLock.Lock();
 
-            uint32_t nextinterval = _handler->AttemptClose(_cycle++);
+            if (_destructors.find(id) == _destructors.end()) {
 
-            if (nextinterval != 0) {
-                result = Core::Time(scheduledTime).Add(nextinterval).Ticks();
-            } else {
-                ASSERT(_cycle != std::numeric_limits<uint8_t>::max()); //too many attempts trying to kill the process
+                Destructor* handler = new IMPLEMENTATION(std::forward<Args>(args)...);
+
+                _destructors.emplace(std::piecewise_construct,
+                    std::forward_as_tuple(id),
+                    std::forward_as_tuple(handler));
+
+                Run();
             }
 
-            return (result);
+            _adminLock.Unlock();
         }
 
     private:
-        std::unique_ptr<IClosingInfo> _handler;
-        uint8_t _cycle;
-        static Core::TimerType<ProcessShutdown>& _destructor;
+        uint32_t Worker() override {
+            uint32_t delay(Core::infinite);
+            uint64_t now(Core::Time::Now().Ticks());
+            uint64_t nextSlot(~0);
+
+            _adminLock.Lock();
+
+            DestructorMap::iterator index = _destructors.begin();
+
+            while (index != _destructors.end()) {
+                if (index->second->Destruct(now) == false) {
+                    uint64_t newTime = index->second->Time();
+                    if (nextSlot > newTime) {
+                        nextSlot = newTime;
+                    }
+                    index++;
+                }
+                else {
+                    delete index->second;
+                    index = _destructors.erase(index);
+                }
+            }
+
+            _adminLock.Unlock();
+
+            if (nextSlot != static_cast<uint64_t>(~0)) {
+                if (now > nextSlot) {
+                    delay = 0;
+                }
+                else {
+                    delay = static_cast<uint32_t>((nextSlot - now) / Core::Time::TicksPerMillisecond);
+                }
+            }
+
+            if (delay > 0) {
+                Core::Thread::Block();
+            }
+
+            return (delay);
+        }
+
+    private:
+        Core::CriticalSection _adminLock;
+        DestructorMap _destructors;
     };
 
-    /* static */ Core::TimerType<ProcessShutdown>& ProcessShutdown::_destructor(Core::SingletonType<Core::TimerType<ProcessShutdown>>::Instance(ProcessShutdown::DestructionStackSize, "ProcessDestructor"));
+    static ProcessShutdown& g_destructor = Core::SingletonType<ProcessShutdown>::Instance();
 
-    class LocalClosingInfo : public ProcessShutdown::IClosingInfo {
+    class LocalClosingInfo : public ProcessShutdown::Destructor {
     public:
         LocalClosingInfo() = delete;
         LocalClosingInfo(const LocalClosingInfo& copy) = delete;
         LocalClosingInfo& operator=(const LocalClosingInfo& RHS) = delete;
 
         explicit LocalClosingInfo(const uint32_t pid)
-            : _process(false, pid)
+            : ProcessShutdown::Destructor()
+            , _process(false, pid)
         {
         }
         ~LocalClosingInfo() override = default;
 
-    public:
-        uint32_t AttemptClose(const uint8_t iteration) override
+    private:
+        uint32_t Terminate() override
         {
             uint32_t nextinterval = 0;
             if (_process.IsActive() != false) {
-                switch (iteration) {
+                switch (Cycle()) {
                 case 0:
                     _process.Kill(false);
-                    nextinterval = 10000;
-                    break;
-                case 1:
-                    _process.Kill(true);
-                    nextinterval = 4000;
+                    nextinterval = Communicator::SoftKillCheckWaitTime();
                     break;
                 default:
-                    // This should not happen. This is a very stubbern process. Can be killed.
-                    ASSERT(false);
+                    _process.Kill(true);
+                    nextinterval = Communicator::HardKillCheckWaitTime();
                     break;
                 }
             }
@@ -142,14 +238,15 @@ namespace RPC {
 
 #ifdef PROCESSCONTAINERS_ENABLED
 
-    class ContainerClosingInfo : public ProcessShutdown::IClosingInfo {
+    class ContainerClosingInfo : public ProcessShutdown::Destructor {
     public:
         ContainerClosingInfo() = delete;
         ContainerClosingInfo(const ContainerClosingInfo& copy) = delete;
         ContainerClosingInfo& operator=(const ContainerClosingInfo& RHS) = delete;
 
         explicit ContainerClosingInfo(ProcessContainers::IContainer* container)
-            : _process(static_cast<uint32_t>(container->Pid()))
+            : ProcessShutdown::Destructor()
+            , _process(static_cast<uint32_t>(container->Pid()))
             , _container(container)
         {
             container->AddRef();
@@ -159,37 +256,33 @@ namespace RPC {
             _container->Release();
         }
 
-    public:
-        uint32_t AttemptClose(const uint8_t iteration) override
+    private:
+        uint32_t Terminate() override
         {
             uint32_t nextinterval = 0;
-            if ((_process.Id() != 0 && _process.IsActive() == true) || (_process.Id() == 0 && _container->IsRunning() == true)) {
-                switch (iteration) {
-                case 0: {
-                    if (_process.Id() != 0) {
-                        _process.Kill(false);
-                    } else {
-                        if(_container->Stop(0)) {
-                            nextinterval = 0;
-                            break;
+            if (((_process.Id() != 0) && (_process.IsActive() == true)) || ((_process.Id() == 0) && (_container->IsRunning() == true))) {
+                switch (Cycle()) {
+                case 0: if (_process.Id() != 0) {
+                            _process.Kill(false);
+                        } else {
+                            if(_container->Stop(0)) {
+                                nextinterval = 0;
+                                break;
+                            }
                         }
-                    }
-                }
-                    nextinterval = 10000;
-                    break;
-                case 1: {
-                    if (_process.Id() != 0) {
-                        _process.Kill(true);
-                        nextinterval = 4000;
-                    } else {
-                        ASSERT(false);
-                        nextinterval = 0;
-                    }
-                } break;
-                case 2:
-                    _container->Stop(0);
-                    nextinterval = 5000;
-                    break;
+                        nextinterval = Communicator::SoftKillCheckWaitTime();
+                        break;
+                case 1: if (_process.Id() != 0) {
+                            _process.Kill(true);
+                            nextinterval = Communicator::HardKillCheckWaitTime();
+                        } else {
+                            ASSERT(false);
+                            nextinterval = 0;
+                        }
+                        break;
+                case 2: _container->Stop(0);
+                        nextinterval = 5;
+                        break;
                 default:
                     // This should not happen. This is a very stubbern process. Can not be killed.
                     ASSERT(false);
@@ -250,7 +343,7 @@ namespace RPC {
             uint32_t feedback = _channel->Invoke(message, waitTime);
 
             if (feedback == Core::ERROR_NONE) {
-                instance_id implementation = message->Response().Implementation();
+                Core::instance_id implementation = message->Response().Implementation();
 
                 if (implementation) {
                     // From what is returned, we need to create a proxy
@@ -278,13 +371,8 @@ namespace RPC {
         // Just submit our selves for destruction !!!!
 
         // Time to shoot the application, it will trigger a close by definition of the channel, if it is still standing..
-        if (_id != 0) {
-            if (!_stopInvokedFlag.test_and_set()) {
-                ProcessShutdown::Start<LocalClosingInfo>(_id);
-            } else {
-                TRACE_L1("Process terminate already started");
-            }
-        }
+        ASSERT(_id != 0);
+        g_destructor.Destruct<LocalClosingInfo>(Id(), _id);
     }
 
     uint32_t Communicator::LocalProcess::RemoteId() const
@@ -306,11 +394,7 @@ namespace RPC {
     void Communicator::ContainerProcess::Terminate() /* override */
     {
         ASSERT(_container != nullptr);
-        if (!_stopInvokedFlag.test_and_set()) {
-            ProcessShutdown::Start<ContainerClosingInfo>(_container);
-        } else {
-            TRACE_L1("Containter terminate already started");
-        }
+        g_destructor.Destruct<ContainerClosingInfo>(Id(), _container);
     }
 
     void Communicator::ContainerProcess::PostMortem() /* override */
@@ -323,6 +407,9 @@ namespace RPC {
     }
 
 #endif
+    // Definitions of static members
+    uint8_t Communicator::_softKillCheckWaitTime = 10;
+    uint8_t Communicator::_hardKillCheckWaitTime = 4;;
 
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 
@@ -363,6 +450,11 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 
         // Warn but we need to clos up existing connections..
         _connectionMap.Destroy();
+    }
+
+    void Communicator::Destroy(const uint32_t id) {
+        // This is a forceull call, blocking, to kill that specific connection
+        g_destructor.ForceDestruct(id);
     }
 
     CommunicatorClient::CommunicatorClient(
@@ -446,7 +538,7 @@ POP_WARNING()
         ASSERT(BaseClass::IsOpen() == false);
         _announceEvent.ResetEvent();
 
-        instance_id impl = instance_cast<void*>(implementation);
+        Core::instance_id impl = instance_cast<void*>(implementation);
 
         _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), interfaceId, impl, exchangeId);
 

@@ -35,12 +35,13 @@ namespace WPEFramework {
 namespace ProcessContainers {
 
     const string CONFIG_NAME = "/config.json";
+    const string CONFIG_NAME_SPEC = "/spec.json";
 
     class DobbyContainer : public BaseRefCount<IContainer> {
     private:
         friend class DobbyContainerAdministrator;
 
-        DobbyContainer(const string& name, const string& path, const string& logPath);
+        DobbyContainer(const string& name, const string& path, const string& logPath, bool useSpecFile = false);
 
     public:
         DobbyContainer(const DobbyContainer&) = delete;
@@ -65,6 +66,7 @@ namespace ProcessContainers {
         string _logPath;
         int _descriptor;
         mutable Core::OptionalType<uint32_t> _pid;
+        bool _useSpecFile;
     };
 
     class DobbyContainerAdministrator : public BaseContainerAdministrator<DobbyContainer> {

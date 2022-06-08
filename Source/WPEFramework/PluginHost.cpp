@@ -254,6 +254,32 @@ POP_WARNING()
     ExitHandler* ExitHandler::_instance = nullptr;
     Core::CriticalSection ExitHandler::_adminLock;
 
+    static string GetDeviceId(PluginHost::Server* dispatcher)
+    {
+        string deviceId;
+
+        PluginHost::ISubSystem* subSystems = dispatcher->Services().SubSystemsInterface();
+        if (subSystems != nullptr) {
+            if (subSystems->IsActive(PluginHost::ISubSystem::IDENTIFIER) == true) {
+                const PluginHost::ISubSystem::IIdentifier* id(subSystems->Get<PluginHost::ISubSystem::IIdentifier>());
+                if (id != nullptr) {
+                    uint8_t buffer[64];
+
+                    buffer[0] = static_cast<const PluginHost::ISubSystem::IIdentifier*>(id)
+                                ->Identifier(sizeof(buffer) - 1, &(buffer[1]));
+
+                    if (buffer[0] != 0) {
+                        deviceId = Core::SystemInfo::Instance().Id(buffer, ~0);
+                    }
+
+                    id->Release();
+                }
+            }
+            subSystems->Release();
+        }
+        return deviceId;
+    }
+
     extern "C" {
 
 #ifndef __WINDOWS__
@@ -334,32 +360,6 @@ POP_WARNING()
         }
     }
 #endif
-
-    static string GetDeviceId(PluginHost::Server* dispatcher)
-    {
-        string deviceId;
-
-        PluginHost::ISubSystem* subSystems = dispatcher->Services().SubSystemsInterface();
-        if (subSystems != nullptr) {
-            if (subSystems->IsActive(PluginHost::ISubSystem::IDENTIFIER) == true) {
-                const PluginHost::ISubSystem::IIdentifier* id(subSystems->Get<PluginHost::ISubSystem::IIdentifier>());
-                if (id != nullptr) {
-                    uint8_t buffer[64];
-
-                    buffer[0] = static_cast<const PluginHost::ISubSystem::IIdentifier*>(id)
-                                ->Identifier(sizeof(buffer) - 1, &(buffer[1]));
-
-                    if (buffer[0] != 0) {
-                        deviceId = Core::SystemInfo::Instance().Id(buffer, ~0);
-                    }
-
-                    id->Release();
-                }
-            }
-            subSystems->Release();
-        }
-        return deviceId;
-    }
 
     static void ForcedExit() {
         if (_atExitActive == true) {
@@ -530,7 +530,7 @@ POP_WARNING()
             // Define the environment variable for Messaging files, if it is not already set.
             uint32_t messagingErrorCode = Core::ERROR_GENERAL;
 #if defined(__CORE_MESSAGING__)
-            messagingErrorCode = Core::Messaging::MessageUnit::Instance().Open(_config->VolatilePath());
+            messagingErrorCode = Core::Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), _config->MessagingPort());
 #else
             messagingErrorCode = Trace::TraceUnit::Instance().Open(_config->VolatilePath());
 #endif
@@ -854,10 +854,18 @@ POP_WARNING()
                     case 'R': {
                         printf("\nMonitor callstack:\n");
                         printf("============================================================\n");
-                        std::list<string> stackList;
+                        uint8_t counter = 0;
+                        std::list<Core::callstack_info> stackList;
                         ::DumpCallStack(Core::ResourceMonitor::Instance().Id(), stackList);
-                        for (const string& entry : stackList) {
-                            printf("%s\n", entry.c_str());
+                        for (const Core::callstack_info& entry : stackList) {
+                            printf("[%03d] [%p] %.30s %s", counter, entry.address, entry.module.c_str(), entry.function.c_str());
+                            if (entry.line != static_cast<uint32_t>(~0)) {
+                                    printf(" [%d]\n", entry.line);
+                            }
+                            else {
+                                    printf("\n");
+                            }
+                            counter++;
                         }
                         break;
                     }
@@ -875,10 +883,18 @@ POP_WARNING()
                         printf("\nThreadPool thread[%c] callstack:\n", keyPress);
                         printf("============================================================\n");
                         if (threadId != (ThreadId)(~0)) {
-                            std::list<string> stackList;
+                            uint8_t counter = 0;
+                            std::list<Core::callstack_info> stackList;
                             ::DumpCallStack(threadId, stackList);
-                            for (const string& entry : stackList) {
-                                printf("%s\n", entry.c_str());
+                            for (const Core::callstack_info& entry : stackList) {
+                                printf("[%03d] [%p] %.30s %s", counter, entry.address, entry.module.c_str(), entry.function.c_str());
+                                if (entry.line != static_cast<uint32_t>(~0)) {
+                                    printf(" [%d]\n", entry.line);
+                                }
+                                else {
+                                    printf("\n");
+                                }
+                                counter++;
                             }
                         } else {
                            printf("The given Thread ID is not in a valid range, please give thread id between 0 and %d\n", THREADPOOL_COUNT);
