@@ -15,7 +15,7 @@ def convert_string(s):
     if isinstance(s, str):
         try:
             val = ast.literal_eval(s)
-        except :
+        except:
             # Let's try if it is JSON Bool values
             bool_lits = {"true": True, "false": False}
             if s in bool_lits:
@@ -27,7 +27,7 @@ def convert_string(s):
         return s
 
 
-def to_bool(val):
+def boolean(val):
     if val.casefold() in ["on", "true"]:
         return True
     return False
@@ -37,7 +37,7 @@ class JSON:
     def __init__(self):
         self.__dict = {}  # Private variable
 
-    def to_json(self, ind=2):
+    def serialize(self, ind=2):
         json_string = json.dumps(self, default=lambda o: o.__dict, indent=ind, separators=(",", ":"))
         out = ""
         for line in json_string.splitlines():
@@ -48,16 +48,19 @@ class JSON:
                 out += line + "\n"
         return out
 
-    def add_non_empty(self, key, val):
-        if val is not None:
-            if isinstance(val, str):
-                if val != "":
-                    self.add(key, val)
-            else:
-                self.add(key, val)
+    def __bool__(self):
+        """
+        Override the __bool__ to return True or False based on JSON class private var __dict is empty.
+        """
+        return bool(self.__dict)
 
     def add(self, key, val):
-        self.__dict.__setitem__(key, convert_string(val))
+        if val is not None:
+            if isinstance(val, str) and val:
+                self.__dict.__setitem__(key, convert_string(val))
+            else:
+                if val:
+                    self.__dict.__setitem__(key, val)
 
     def update(self, other):
         self.__dict.update(other.__dict)

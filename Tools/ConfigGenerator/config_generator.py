@@ -69,27 +69,40 @@ def load_module(name, path):
 
 
 def prepend_file(file, line):
-    with open(file, 'r+') as f:
-        content = f.read()
-        f.seek(0, 0)
-        f.write(line.rstrip('\r\n') + '\n' + content)
+    try:
+        f = open(file, 'r+')
+    except IOError:
+        log.Error(f"Error opening File {file}")
+    else:
+        with f:
+            content = f.read()
+            f.seek(0, 0)
+            f.write(line.rstrip('\r\n') + '\n' + content)
 
 
 def get_config_params(file):
-    if os.path.exists(file):
-        with open(file) as f:
-            lines = [line.rstrip() for line in f]
-    else:
-        log.Error("!!!!Whitelisted Config Params file not available. Using Default!!!")
+    try:
+        f = open(file)
+    except IOError:
+        log.Error(f"Error opening File {file}")
         lines = []
+    else:
+        with f:
+            lines = [line.rstrip() for line in f]
 
     return lines
 
-
+# Routine to find if a given variable is copied to another variable
+# Basically we are finding out if a var is found within brackets as the only way to add
+# any variable is by add() method.
 def check_assignment(file, var):
     out = False
-    if os.path.exists(file):
-        with open(file) as f:
+    try:
+        f = open(file)
+    except IOError:
+        log.Error(f"Error opening File {file}")
+    else:
+        with f:
             for line in f:
                 slist = re.findall(r'\(.*?\)', line)
                 for s in slist:
@@ -207,7 +220,7 @@ if __name__ == "__main__":
             isEmpty = True
             for param in iconfig.__dict__:
                 if param in params:
-                    result.add_non_empty(param, iconfig.__dict__[param])
+                    result.add(param, iconfig.__dict__[param])
                     isEmpty = False
                 else:
                     if not param.startswith('__') \
@@ -232,6 +245,11 @@ if __name__ == "__main__":
 
     log.Print("Writing Config JSON")
 
-    # Writing JSON file
-    with open(of, "w") as outfile:
-        outfile.write(result.to_json(args.indent_size))
+    try:
+        outfile = open(of, "w")
+    except IOError:
+        log.Error(f"Error opening Output File {of}")
+        sys.exit(1)
+    else:
+        with outfile:
+            outfile.write(result.serialize(args.indent_size))
