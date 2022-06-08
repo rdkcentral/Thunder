@@ -25,6 +25,18 @@
 namespace WPEFramework {
 namespace PluginHost {
 
+    struct EXTERNAL IMetadata : virtual public Core::IUnknown {
+        enum {
+            ID = RPC::ID_SYSTEM_METADATA
+        };
+        
+        // Software information
+        virtual string BuildTreeHash() const = 0;
+        virtual uint8_t Major() const = 0;
+        virtual uint8_t Minor() const = 0;
+        virtual uint8_t Patch() const = 0;
+    };
+
     // This interface gives direct access to a switchboard
     struct EXTERNAL ISubSystem : virtual public Core::IUnknown {
         enum {
