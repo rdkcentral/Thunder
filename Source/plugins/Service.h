@@ -302,9 +302,16 @@ namespace PluginHost {
             metaData.ProcessedObjects = _processedObjects;
             #endif
 
-            metaData.Major = Major();
-            metaData.Minor = Minor();
-            metaData.Patch = Patch();
+            uint8_t value;
+            if ((value = Major()) != static_cast<uint8_t>(~0)) {
+                metaData.Major = value;
+            }
+            if ((value = Minor()) != static_cast<uint8_t>(~0)) {
+                metaData.Minor = value;
+            }
+            if ((value = Patch()) != static_cast<uint8_t>(~0)) {
+                metaData.Patch = value;
+            }
         }
         inline uint32_t ConfigLine(const string& newConfiguration)
         {

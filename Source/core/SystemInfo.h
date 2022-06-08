@@ -32,10 +32,17 @@
 
 namespace WPEFramework {
 namespace Core {
-    namespace System {
 
+    struct IServiceMetadata;
+
+    namespace System {
         extern "C" const char* MODULE_NAME;
+
         extern "C" EXTERNAL uint32_t Reboot();
+        extern "C" EXTERNAL_EXPORT const char* ModuleName();
+        extern "C" EXTERNAL_EXPORT const char* ModuleBuildRef();
+        extern "C" EXTERNAL_EXPORT const IServiceMetadata* ModuleServiceMetadata();
+        extern "C" EXTERNAL_EXPORT void SetModuleServiceMetadata(const IServiceMetadata*);
     }
 
     class EXTERNAL SystemInfo {
@@ -361,17 +368,33 @@ namespace Core {
 
 #define MODULE_BUILDREF MODULE_NAME##Version
 
-#define MODULE_NAME_DECLARATION(buildref)                                                                              \
-    extern "C" {                                                                                                       \
-    namespace WPEFramework {                                                                                           \
-        namespace Core {                                                                                               \
-            namespace System {                                                                                         \
+#define MODULE_NAME_DECLARATION(buildref)                                                                     \
+    extern "C" {                                                                                              \
+    namespace {                                                                                               \
+        const WPEFramework::Core::IServiceMetadata* g_ServiceMetadata = nullptr;                              \
+    }                                                                                                         \
+    namespace WPEFramework {                                                                                  \
+        namespace Core {                                                                                      \
+            namespace System {                                                                                \
                 const char* MODULE_NAME = SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(MODULE_NAME);              \
                 const char* ModuleName() { return (MODULE_NAME); }                                            \
                 const char* ModuleBuildRef() { return (SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(buildref)); } \
-            }                                                                                                          \
-        }                                                                                                              \
-    }                                                                                                                  \
+                const IServiceMetadata* ModuleServiceMetadata() { return (g_ServiceMetadata); }               \
+                void SetModuleServiceMetadata(const IServiceMetadata* value) { g_ServiceMetadata = value; }   \
+            }                                                                                                 \
+        }                                                                                                     \
+    }                                                                                                         \
+    } // extern "C" Core::System
+
+#define MODULE_NAME_ARCHIVE_DECLARATION                                                          \
+    extern "C" {                                                                                 \
+    namespace WPEFramework {                                                                     \
+        namespace Core {                                                                         \
+            namespace System {                                                                   \
+                const char* MODULE_NAME = SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(MODULE_NAME); \
+            }                                                                                    \
+        }                                                                                        \
+    }                                                                                            \
     } // extern "C" Core::System
 
 #endif // __SYSTEMINFO_H

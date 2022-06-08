@@ -313,10 +313,13 @@ namespace Plugin {
             , _termination(termination)
             , _control(control) {
 
+            ASSERT(Core::System::ModuleServiceMetadata() == nullptr);
+            Core::System::SetModuleServiceMetadata(this);
             Core::ServiceAdministrator::Instance().Register(this, &_factory);
         }
         ~Metadata() {
             Core::ServiceAdministrator::Instance().Unregister(this, &_factory);
+            Core::System::SetModuleServiceMetadata(nullptr);
         }
 
     public:
