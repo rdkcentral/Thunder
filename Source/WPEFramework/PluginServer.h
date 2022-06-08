@@ -497,10 +497,6 @@ namespace PluginHost {
             }
 
         public:
-            inline const string& ModuleName() const
-            {
-                return (_moduleName);
-            }
             inline const string& VersionHash() const
             {
                 return (_versionHash);
@@ -792,10 +788,15 @@ namespace PluginHost {
             }
             inline void GetMetaData(MetaData::Service& metaData) const
             {
-                if (_moduleName.empty() == false)
-                    metaData.Module = _moduleName;
                 if (_versionHash.empty() == false)
                     metaData.Hash = _versionHash;
+                
+                _pluginHandling.Lock();
+
+                if (_metadata != nullptr) {
+                    metaData.Module = string(_metadata->Module());
+                }
+                _pluginHandling.Unlock();
 
                 PluginHost::Service::GetMetaData(metaData);
             }
@@ -836,6 +837,7 @@ namespace PluginHost {
             virtual uint8_t Major() const override;
             virtual uint8_t Minor() const override;
             virtual uint8_t Patch() const override;
+
             uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
             ISubSystem* SubSystems() override;
             void Notify(const string& message) override;
@@ -991,12 +993,8 @@ namespace PluginHost {
                     } else if ((newIF = admin.Instantiate<IPlugin>(myLib, className, version)) == nullptr) {
                         ErrorMessage(_T("class definitions does not exist"));
                     } else {
-                        Core::System::ModuleNameImpl moduleName = reinterpret_cast<Core::System::ModuleNameImpl>(myLib.LoadFunction(_T("ModuleName")));
                         Core::System::ModuleBuildRefImpl moduleBuildRef = reinterpret_cast<Core::System::ModuleBuildRefImpl>(myLib.LoadFunction(_T("ModuleBuildRef")));
 
-                        if (moduleName != nullptr) {
-                            _moduleName = moduleName();
-                        }
                         if (moduleBuildRef != nullptr) {
                             _versionHash = moduleBuildRef();
                         }
@@ -1015,7 +1013,6 @@ namespace PluginHost {
                 const TCHAR* className(classNameString.c_str());
                 uint32_t version(static_cast<uint32_t>(~0));
 
-                _moduleName.clear();
                 _versionHash.clear();
 
                 if (locator.empty() == true) {
@@ -1129,7 +1126,6 @@ namespace PluginHost {
             Core::IServiceMetadata* _metadata;
             IDispatcher* _jsonrpc;
             reason _reason;
-            string _moduleName;
             string _versionHash;
             Condition _precondition;
             Condition _termination;

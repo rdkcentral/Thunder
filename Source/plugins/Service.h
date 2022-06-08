@@ -322,6 +322,10 @@ namespace PluginHost {
             metaData.ProcessedRequests = _processedRequests;
             metaData.ProcessedObjects = _processedObjects;
             #endif
+
+            metaData.Major = Major();
+            metaData.Minor = Minor();
+            metaData.Patch = Patch();
         }
         inline uint32_t AutoStart(const bool autoStart)
         {
