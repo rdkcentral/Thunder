@@ -386,6 +386,30 @@ namespace PluginHost {
                 }
 
             public:
+                void Load(const std::vector<Plugin::subsystem>& input, const bool defaultValue) {
+                    _events = 0;
+                    _value = 0;
+
+                    for (const Plugin::subsystem& entry : input) {
+                        uint32_t bitNr = static_cast<uint32_t>(entry);
+
+                        if (bitNr >= ISubSystem::NEGATIVE_START) {
+                            bitNr -= ISubSystem::NEGATIVE_START;
+                        }
+                        else {
+                            _value |= (1 << bitNr);
+                        }
+
+                        // Make sure the event is only set once (POSITIVE or NEGATIVE)
+                        ASSERT((_events & (1 << bitNr)) == 0);
+                        _events |= 1 << bitNr;
+                    }
+
+                    if (_events == 0) {
+                        _events = (defaultValue ? 0 : ~0);
+                        _value = (defaultValue ? 0 : ~0);
+                    }
+                }
                 inline bool IsMet() const
                 {
                     return ((_events == 0) || ((_value != static_cast<uint32_t>(~0)) && ((_events & (1 << ISubSystem::END_LIST)) != 0)));
@@ -429,11 +453,13 @@ namespace PluginHost {
                 , _textSocket(nullptr)
                 , _rawSocket(nullptr)
                 , _webSecurity(nullptr)
+                , _metadata(nullptr)
                 , _jsonrpc(nullptr)
                 , _precondition(plugin.Precondition, true)
                 , _termination(plugin.Termination, false)
                 , _activity(0)
                 , _connection(nullptr)
+                , _controls()
                 , _administrator(administrator)
             {
             }
@@ -801,6 +827,9 @@ namespace PluginHost {
                 Unlock();
             }
 
+            virtual uint8_t Major() const override;
+            virtual uint8_t Minor() const override;
+            virtual uint8_t Patch() const override;
             uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
             ISubSystem* SubSystems() override;
             void Notify(const string& message) override;
@@ -973,6 +1002,14 @@ namespace PluginHost {
 
                     _pluginHandling.Lock();
                     _handler = newIF;
+                    _metadata = dynamic_cast<Core::IServiceMetadata*>(newIF);
+                    if (_metadata != nullptr) {
+                        Plugin::IMetadata* extended = dynamic_cast<Plugin::IMetadata*>(_metadata);
+                        if (extended != nullptr) {
+                            _precondition.Load(extended->Precondition(), true);
+                            _termination.Load(extended->Termination(), false);
+                        }
+                    }
                     _pluginHandling.Unlock();
                 }
             }
@@ -1014,6 +1051,7 @@ namespace PluginHost {
                 }
 
                 _handler = nullptr;
+                _metadata = nullptr;
 
                 _pluginHandling.Unlock();
 
@@ -1027,7 +1065,7 @@ namespace PluginHost {
             }
 
         private:
-            Core::CriticalSection _pluginHandling;
+            mutable Core::CriticalSection _pluginHandling;
 
             // The handlers that implement the actual logic behind the service
             IPlugin* _handler;
@@ -1037,6 +1075,7 @@ namespace PluginHost {
             ITextSocket* _textSocket;
             IChannel* _rawSocket;
             ISecurity* _webSecurity;
+            Core::IServiceMetadata* _metadata;
             IDispatcher* _jsonrpc;
             reason _reason;
             string _moduleName;
@@ -1045,11 +1084,13 @@ namespace PluginHost {
             Condition _termination;
             uint32_t _activity;
             RPC::IRemoteConnection* _connection;
+            std::list<Plugin::subsystem> _controls;
 
             ServiceMap& _administrator;
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;
         };
+
         class ServiceMap {
         public:
             typedef Core::IteratorMapType<std::map<const string, Core::ProxyType<Service>>, Core::ProxyType<Service>, const string&> Iterator;

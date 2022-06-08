@@ -26,8 +26,8 @@
 namespace WPEFramework {
 namespace PluginHost {
 
-    class SystemInfo : public PluginHost::ISubSystem {
-    private:
+    class SystemInfo : public PluginHost::ISubSystem, public PluginHost::IMetadata {
+    public:
         SystemInfo() = delete;
         SystemInfo(const SystemInfo&) = delete;
         SystemInfo& operator=(const SystemInfo&) = delete;
@@ -289,7 +289,10 @@ namespace PluginHost {
         }
 
         // Software information
-        virtual string BuildTreeHash() const override;
+        uint8_t Major() const override;
+        uint8_t Minor() const override;
+        uint8_t Patch() const override;
+        string BuildTreeHash() const override;
 
         // Event methods
         virtual void Set(const subsystem type, Core::IUnknown* information) override
@@ -684,6 +687,7 @@ namespace PluginHost {
 
         BEGIN_INTERFACE_MAP(SystemInfo)
         INTERFACE_ENTRY(PluginHost::ISubSystem)
+        INTERFACE_ENTRY(PluginHost::IMetadata)
         END_INTERFACE_MAP
 
     private:

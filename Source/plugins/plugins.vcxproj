@@ -45,6 +45,7 @@
     <ClInclude Include="plugins.h" />
     <ClInclude Include="Request.h" />
     <ClInclude Include="Service.h" />
+    <ClInclude Include="SubSystem.h" />
     <ClInclude Include="System.h" />
     <ClInclude Include="VirtualInput.h" />
   </ItemGroup>

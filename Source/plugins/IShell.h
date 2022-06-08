@@ -138,8 +138,17 @@ namespace PluginHost {
         virtual void EnableWebServer(const string& URLPath, const string& fileSystemPath) = 0;
         virtual void DisableWebServer() = 0;
 
-        //! Versions: Returns the version of the application hosting the plugin
+        //! Version: Returns the version of the application hosting the plugin
         virtual string Version() const = 0;
+
+        //! Version: Returns the Major version of the plugin
+        virtual uint8_t Major() const = 0;
+
+        //! Version: Returns the Minor version of the plugin
+        virtual uint8_t Minor() const = 0;
+
+        //! Version: Returns the Patch version of the plugin
+        virtual uint8_t Patch() const = 0;
 
         //! Model: Returns a Human Readable name for the platform it is running on.
         virtual string Model() const = 0;
@@ -159,7 +168,7 @@ namespace PluginHost {
         //! ClassName: Name of the class to be instantiated for this IShell
         virtual string ClassName() const = 0;
 
-        //! Versions: Returns a JSON Array of versions supported by this plugin.
+        //! Versions: Returns a JSON Array of versions (JSONRPC interfaces) supported by this plugin.
         virtual string Versions() const = 0;
 
         //! Callsign: Instantiation name of this specific plugin. It is the name given in the config for the classname.

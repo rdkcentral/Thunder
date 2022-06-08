@@ -36,17 +36,17 @@ namespace Core {
     {
     }
 
-    void ServiceAdministrator::Register(IServiceMetadata* service)
+    void ServiceAdministrator::Register(IServiceMetadata* metadata, IServiceFactory* factory)
     {
         // Only register a service once !!!
-        ASSERT(std::find(_services.begin(), _services.end(), service) == _services.end());
+        ASSERT(std::find(_services.begin(), _services.end(), ServiceBlock(metadata, factory)) == _services.end());
 
-        _services.push_back(service);
+        _services.emplace_back(metadata, factory);
     }
 
-    void ServiceAdministrator::Unregister(IServiceMetadata* service)
+    void ServiceAdministrator::Unregister(IServiceMetadata* metadata, IServiceFactory* factory)
     {
-        std::list<IServiceMetadata*>::iterator index = std::find(_services.begin(), _services.end(), service);
+        ServiceList::iterator index = std::find(_services.begin(), _services.end(), ServiceBlock(metadata, factory));
 
         // Only unregister a service once !!!
         ASSERT(index != _services.end());
@@ -62,11 +62,11 @@ namespace Core {
     void* ServiceAdministrator::Instantiate(const Library& library, const char name[], const uint32_t version, const uint32_t interfaceNumber)
     {
         bool found = false;
-        std::list<IServiceMetadata*>::iterator index = _services.begin();
+        ServiceList::iterator index = _services.begin();
 
         while ((index != _services.end()) && (found == false)) {
-            const char* thisName = (*index)->Name().c_str();
-            found = ((strcmp(thisName, name) == 0) && ((version == static_cast<uint32_t>(~0)) || (version == (*index)->Version())));
+            const char* thisName = index->first->Name().c_str();
+            found = ((strcmp(thisName, name) == 0) && ((version == static_cast<uint32_t>(~0)) || (version == ((index->first->Major() << 8) | index->first->Minor()))));
 
             if (found == false) {
                 index++;
@@ -77,13 +77,13 @@ namespace Core {
             TRACE_L1("Missing implementation classname %s in library %s\n", name, library.Name().c_str());
         }
 
-        return (found == true ? (*index)->Create(library, interfaceNumber) : nullptr);
+        return (found == true ? index->second->Create(index->first, library, interfaceNumber) : nullptr);
     }
 
     void ServiceAdministrator::ReleaseLibrary(Library& reference)
     {
         _adminLock.Lock();
-            _unreferencedLibraries.push_back(reference);
+        _unreferencedLibraries.push_back(reference);
         reference.Release();
         _adminLock.Unlock();
     }
