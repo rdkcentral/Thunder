@@ -267,7 +267,7 @@ POP_WARNING()
     static uint8_t VersionParser(const uint8_t index, const string& version) {
         uint8_t result = 0;
         uint8_t count = 0;
-        Core::TextSegmentIterator iterator(Core::TextFragment(version.c_str(), version.length()), false, '.');
+        Core::TextSegmentIterator iterator(Core::TextFragment(version.c_str(), static_cast<uint32_t>(version.length())), false, '.');
 
         while ((count < index) && (iterator.Next() == true)) {
             count++;
