@@ -183,8 +183,11 @@ namespace PluginHost {
         virtual uint32_t Worker() override
         {
 	    _adminLock.Lock();
-            CloseDown(_destructor);
+	    PluginHost::Server* destructor = _destructor;
+	    _destructor = nullptr;
 	    _adminLock.Unlock();
+		
+            CloseDown(destructor);
             Block();
             return (Core::infinite);
         }
