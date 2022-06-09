@@ -182,7 +182,9 @@ namespace PluginHost {
     private:
         virtual uint32_t Worker() override
         {
+	    _adminLock.Lock();
             CloseDown(_destructor);
+	    _adminLock.Unlock();
             Block();
             return (Core::infinite);
         }
@@ -198,11 +200,18 @@ namespace PluginHost {
                 fflush(stderr);
             }
 
-            destructor->Close();
-            delete destructor;
-            delete _config;
-            _config = nullptr;
+	    if(destructor != nullptr)
+	    {
+            	destructor->Close();
+		delete destructor;
+		destructor = nullptr;
+	    }
 
+	    if(_config != nullptr)
+	    {
+            	delete _config;
+		_config = nullptr;
+	    }
 
 #ifndef __WINDOWS__
             closelog();
