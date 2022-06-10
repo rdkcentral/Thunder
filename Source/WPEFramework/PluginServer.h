@@ -395,9 +395,6 @@ namespace PluginHost {
 
             public:
                 void Load(const std::vector<Plugin::subsystem>& input, const bool defaultValue) {
-                    _events = 0;
-                    _value = 0;
-
                     for (const Plugin::subsystem& entry : input) {
                         uint32_t bitNr = static_cast<uint32_t>(entry);
 
