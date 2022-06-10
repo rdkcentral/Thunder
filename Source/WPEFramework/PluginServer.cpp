@@ -257,6 +257,18 @@ namespace PluginHost
         _processAdministrator.Destroy();
     }
 
+    uint8_t Server::Service::Major() const /* override */ {
+        return (_metadata.Major());
+    }
+
+    uint8_t Server::Service::Minor() const /* override */ {
+        return (_metadata.Minor());
+    }
+
+    uint8_t Server::Service::Patch() const /* override */ {
+        return (_metadata.Patch());
+    }
+
     /* virtual */ void* Server::Service::QueryInterface(const uint32_t id)
     {
         void* result = nullptr;
@@ -485,7 +497,6 @@ namespace PluginHost
 
         return (result);
     }
-
 
     uint32_t Server::Service::Deactivate(const reason why)
     {
@@ -891,13 +902,17 @@ POP_WARNING()
 
         for (auto service : configured_services)
         {
-            if (service->AutoStart() == true) {
-                SYSLOG(Logging::Startup, (_T("Activating plugin [%s]:[%s]"),
-                  service->ClassName().c_str(), service->Callsign().c_str()));
-                service->Activate(PluginHost::IShell::STARTUP);
-            } else {
-                SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] delayed, autostart is false"),
-                  service->ClassName().c_str(), service->Callsign().c_str()));
+            if (service->State() != PluginHost::Service::state::UNAVAILABLE) {
+                if (service->AutoStart() == true) {
+                    SYSLOG(Logging::Startup, (_T("Activating plugin [%s]:[%s]"),
+                        service->ClassName().c_str(), service->Callsign().c_str()));
+                    service->Activate(PluginHost::IShell::STARTUP);
+                }
+                else {
+                    service->LoadMetadata();
+                    SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] delayed, autostart is false"),
+                        service->ClassName().c_str(), service->Callsign().c_str()));
+                }
             }
         }
     }

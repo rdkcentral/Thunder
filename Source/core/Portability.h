@@ -118,7 +118,7 @@
     #endif
 #endif
 
-#define JOIN_WARNING_STR(ARG1, ARG2)  ARG1##ARG2
+#define CONCAT_STRINGS(ARG1, ARG2)  ARG1##ARG2
 #define PUSH_WARNING_ROLL_1(WARNING, ...) WARNING
 #define PUSH_WARNING_ROLL_2(WARNING, ...) WARNING PUSH_WARNING_ROLL_1(__VA_ARGS__)
 #define PUSH_WARNING_ROLL_3(WARNING, ...) WARNING PUSH_WARNING_ROLL_2(__VA_ARGS__)
@@ -126,11 +126,11 @@
 #define PUSH_WARNING_ROLL_5(WARNING, ...) WARNING PUSH_WARNING_ROLL_4(__VA_ARGS__)
 
 // Seems to be a MSVC issue, see: https://stackoverflow.com/questions/9183993/msvc-variadic-macro-expansion
-#define PUSH_RETURN_ARG_COUNT(_1_, _2_, _3_, _4_, _5_, count, ...) count
+#define PUSH_RETURN_ARG_COUNT(_1_, _2_, _3_, _4_, _5_, _6_, _7_, _8_, count, ...) count
 #define PUSH_EXPAND_ARGS(args) PUSH_RETURN_ARG_COUNT args
-#define PUSH_COUNT_ARGS(...) PUSH_EXPAND_ARGS((__VA_ARGS__, 5, 4, 3, 2, 1, 0))
+#define PUSH_COUNT_ARGS(...) PUSH_EXPAND_ARGS((__VA_ARGS__, 8, 7, 6, 5, 4, 3, 2, 1, 0))
 
-#define PUSH_WARNING_ARG(N, ...) JOIN_WARNING_STR(PUSH_WARNING_ROLL_, N)(__VA_ARGS__)
+#define PUSH_WARNING_ARG(N, ...) CONCAT_STRINGS(PUSH_WARNING_ROLL_, N)(__VA_ARGS__)
 #define PUSH_WARNING(...) \
     PUSH_WARNING_ PUSH_WARNING_ARG(PUSH_COUNT_ARGS(__VA_ARGS__), __VA_ARGS__)
 
@@ -633,11 +633,13 @@ typedef HANDLE ThreadId;
 namespace WPEFramework {
 
 namespace Core {
+
     #if defined(__SIZEOF_POINTER__) && (__SIZEOF_POINTER__ == 8) 
     typedef uint64_t instance_id;
     #else
     typedef uint32_t instance_id;
     #endif
+
 
     struct callstack_info {
         void*    address;
