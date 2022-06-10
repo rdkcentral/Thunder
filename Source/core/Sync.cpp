@@ -179,7 +179,6 @@ namespace Core {
         clock_gettime(CLOCK_REALTIME, &structTime);
         structTime.tv_sec += nTimeSecs;
 
-
         // MF2018 please note: sem_timedwait is not compatible with CLOCK_MONOTONIC.
         int result = pthread_mutex_timedlock(&m_syncMutex, &structTime);
         if (result != 0) {
@@ -206,9 +205,11 @@ namespace Core {
             fprintf(stderr, "\nLocked location:\n");
             backtrace_symbols_fd(_LockingStack[stackArrayIndex], _UsedStackEntries[stackArrayIndex], fileno(stderr));
 
+            #if defined(THUNDER_BACKTRACE)
             fprintf(stderr, "\nCurrent stack of locking thread:\n");
             addressCount = ::GetCallStack(_LockingThread, addresses, _AllocatedStackEntries);
             backtrace_symbols_fd(addresses, _AllocatedStackEntries, fileno(stderr));
+            #endif
 
             _StdErrDumpMutex.Unlock();
 

@@ -99,11 +99,11 @@ namespace PluginHost {
             }
 
         public:
-            inline bool IsIdle() const
+            bool IsIdle() const
             {
                 return (_current.IsValid() == false);
             }
-            inline uint16_t Serialize(char* stream, const uint16_t length) const {
+            uint16_t Serialize(char* stream, const uint16_t length) const {
                 uint16_t loaded = 0;
 
                 if (_current.IsValid() == false) {
@@ -149,11 +149,11 @@ namespace PluginHost {
             }
 
         public:
-            inline bool IsIdle() const
+            bool IsIdle() const
             {
                 return (_current.IsValid() == false);
             }
-            inline uint16_t Deserialize(const char* stream, const uint16_t length)
+            uint16_t Deserialize(const char* stream, const uint16_t length)
             {
                 uint16_t loaded = 0;
 
@@ -207,10 +207,10 @@ namespace PluginHost {
         Channel(const Channel& copy) = delete;
         Channel& operator=(const Channel&) = delete;
         Channel(const SOCKET& connector, const Core::NodeId& remoteId);
-        virtual ~Channel();
+        ~Channel() override;
 
     public:
-        inline bool HasActivity() const
+        bool HasActivity() const
         {
             Lock();
 
@@ -236,119 +236,136 @@ namespace PluginHost {
 
             return (result);
         }
-        const string Name() const
+        string Name() const
         {
             return string(_nameOffset != static_cast<uint32_t>(~0) ? &(BaseClass::Path().c_str()[_nameOffset]) : BaseClass::Path().c_str());
         }
-        inline uint32_t Id() const
+        uint32_t Id() const
         {
             return (_ID);
         }
-        inline ChannelState State() const
+        ChannelState State() const
         {
-            return static_cast<ChannelState>(_state & 0x0FFF);
+            Lock();
+
+            ChannelState result =  static_cast<ChannelState>(_state & 0x0FFF);
+
+            Unlock();
+
+            return (result);
         }
-        inline bool IsNotified() const
+        bool IsNotified() const
         {
             return ((_state & NOTIFIED) != 0);
         }
-        inline void Submit(const string& text)
+        void Submit(const string& text)
         {
             if (IsOpen() == true) {
 
-                _adminLock.Lock();
+                BaseClass::Lock();
 
                 _sendQueue.emplace_back(text);
 
                 bool trigger = (_sendQueue.size() == 1);
 
-                _adminLock.Unlock();
+                BaseClass::Unlock();
 
                 if (trigger == true) {
                     BaseClass::Trigger();
                 }
             }
         }
-        inline void Submit(const Core::ProxyType<Core::JSON::IElement>& entry)
+        void Submit(const Core::ProxyType<Core::JSON::IElement>& entry)
         {
             if (IsOpen() == true) {
 
-                _adminLock.Lock();
+                BaseClass::Lock();
 
                 _sendQueue.emplace_back(entry);
 
                 bool trigger = (_sendQueue.size() == 1);
 
-                _adminLock.Unlock();
+                BaseClass::Unlock();
 
                 if (trigger == true) {
                     BaseClass::Trigger();
                 }
             }
         }
-        inline void Submit(const Core::ProxyType<Web::Response>& entry)
+        void Submit(const Core::ProxyType<Web::Response>& entry)
         {
             BaseClass::Submit(entry);
         }
-        inline void RequestOutbound()
+        void RequestOutbound()
         {
             BaseClass::Trigger();
         }
 
     protected:
-        inline void SetId(const uint32_t id)
+        void SetId(const uint32_t id)
         {
             _ID = id;
         }
-        inline void Lock() const
-        {
-            _adminLock.Lock();
+        void Lock() const 
+		{
+            BaseClass::Lock();
         }
-        inline void Unlock() const
-        {
-            _adminLock.Unlock();
+        void Unlock() const 
+		{
+            BaseClass::Unlock();
         }
-        inline void Properties(const uint32_t offset)
+        void Properties(const uint32_t offset)
         {
             _nameOffset = offset;
         }
-        inline void State(const ChannelState state, const bool notification)
+        void State(const ChannelState state, const bool notification)
         {
+            BaseClass::Lock();
+
             Binary(state == RAW);
+
             _state = state | (notification ? NOTIFIED : 0x0000);
+
+            BaseClass::Unlock();
         }
-        inline uint16_t Serialize(uint8_t* dataFrame, const uint16_t maxSendSize)
+        uint16_t Serialize(uint8_t* dataFrame, const uint16_t maxSendSize)
         {
             uint16_t size = 0;
 
-            if (_sendQueue.size() != 0) {
+            switch (State()) {
+            case JSON:
+            case JSONRPC: {
+                // Seems we are sending JSON structs
+                size = _serializer.Serialize(reinterpret_cast<char*>(dataFrame), maxSendSize);
 
-                switch (State()) {
-                case JSON:
-                case JSONRPC: {
-                    // Seems we are sending JSON structs
-                    size = _serializer.Serialize(reinterpret_cast<char*>(dataFrame), maxSendSize);
+                if (_serializer.IsIdle() == false) {
+                    ASSERT(size != 0);
+                }
+                else {
+                    bool trigger = false;
 
-                    if (_serializer.IsIdle() == true) {
+                    // See if there is more to do..
+                    BaseClass::Lock();
 
-                        // See if there is more to do..
-                        _adminLock.Lock();
+                    if (_sendQueue.size() != 0) {
                         _sendQueue.pop_front();
-                        bool trigger(_sendQueue.size() > 0);
-                        _adminLock.Unlock();
-
-                        if (trigger == true) {
-                            BaseClass::Trigger();
-                        }
-                    } else {
-                        ASSERT(size != 0);
+                        trigger = (_sendQueue.size() > 0);
                     }
 
-                    break;
+                    BaseClass::Unlock();
+
+                    if (trigger == true) {
+                        BaseClass::Trigger();
+                    }
                 }
-                case TEXT: {
-                    // Seems we need to send plain strings...
-                    _adminLock.Lock();
+
+                break;
+            }
+            case TEXT: {
+                // Seems we need to send plain strings...
+                BaseClass::Lock();
+
+                if (_sendQueue.size() != 0) {
                     Package& data(_sendQueue.front());
                     uint16_t neededBytes(static_cast<uint16_t>(data.Text().length() - _offset));
 
@@ -359,35 +376,37 @@ namespace PluginHost {
 
                         // See if there is more to do..
                         _sendQueue.pop_front();
-                    } else {
+                    }
+                    else {
                         uint16_t addedBytes = maxSendSize - size;
                         ::memcpy(dataFrame, &(data.Text().c_str()[_offset]), addedBytes);
                         _offset += addedBytes;
                         size = addedBytes;
                     }
-                    _adminLock.Unlock();
 
                     ASSERT(size != 0);
+                }
 
-                    break;
-                }
-                case CLOSED:
-                    break;
-                case RAW:
-                    ASSERT(false);
-                    break;
-                case WEB:
-                    ASSERT(false);
-                    break;
-                default:
-                    ASSERT(false);
-                    break;
-                }
+                BaseClass::Unlock();
+
+                break;
+            }
+            case CLOSED:
+                break;
+            case RAW:
+                ASSERT(false);
+                break;
+            case WEB:
+                ASSERT(false);
+                break;
+            default:
+                ASSERT(false);
+                break;
             }
 
             return (size);
         }
-        inline uint16_t Deserialize(const uint8_t* dataFrame, const uint16_t receivedSize)
+        uint16_t Deserialize(const uint8_t* dataFrame, const uint16_t receivedSize)
         {
             uint16_t handled = receivedSize;
 
@@ -453,19 +472,18 @@ namespace PluginHost {
         Core::ProxyType<Core::JSON::IElement> Element() {
             Core::ProxyType<Core::JSON::IElement> result;
 
-            _adminLock.Lock();
+            BaseClass::Lock();
 
             if (_sendQueue.size() > 0) {
                 result = _sendQueue.front().JSON();
 
             }
-            _adminLock.Unlock();
+            BaseClass::Unlock();
 
             return (result);
         }
 
     private:
-        mutable Core::CriticalSection _adminLock;
         uint32_t _ID;
         uint32_t _nameOffset;
         mutable uint16_t _state;

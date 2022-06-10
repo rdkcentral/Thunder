@@ -43,6 +43,8 @@ namespace std {
 namespace WPEFramework {
 
   namespace Core {
+    typedef __stubgen_integer instance_id;
+    
     class IUnknown;
   }
 
@@ -55,8 +57,6 @@ namespace WPEFramework {
   }
 
   namespace RPC {
-    typedef __stubgen_integer instance_id;
-
     class IStringIterator;
     class IValueIterator;
   }

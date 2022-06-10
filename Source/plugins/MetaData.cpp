@@ -113,6 +113,20 @@ namespace PluginHost
 
     MetaData::Service::Service()
         : Plugin::Config()
+        , JSONState()
+#if THUNDER_RUNTIME_STATISTICS
+        , ProcessedRequests(0)
+        , ProcessedObjects(0)
+#endif
+#if THUNDER_RESTFULL_API
+        , Observers(0)
+#endif
+        , Module()
+        , Hash()
+        , Major(0)
+        , Minor(0)
+        , Patch(0)
+        , InterfaceVersion()
     {
         Add(_T("state"), &JSONState);
 #if THUNDER_RUNTIME_STATISTICS
@@ -124,6 +138,10 @@ namespace PluginHost
 #endif
         Add(_T("module"), &Module);
         Add(_T("hash"), &Hash);
+        Add(_T("major"), &Major);
+        Add(_T("minor"), &Minor);
+        Add(_T("patch"), &Patch);
+        Add(_T("interface"), &InterfaceVersion);
     }
     MetaData::Service::Service(const MetaData::Service& copy)
         : Plugin::Config(copy)
@@ -137,6 +155,10 @@ namespace PluginHost
 #endif
         , Module(copy.Module)
         , Hash(copy.Hash)
+        , Major(copy.Major)
+        , Minor(copy.Minor)
+        , Patch(copy.Patch)
+        , InterfaceVersion(copy.InterfaceVersion)
     {
         Add(_T("state"), &JSONState);
 #if THUNDER_RUNTIME_STATISTICS
@@ -148,6 +170,10 @@ namespace PluginHost
 #endif
         Add(_T("module"), &Module);
         Add(_T("hash"), &Hash);
+        Add(_T("major"), &Major);
+        Add(_T("minor"), &Minor);
+        Add(_T("patch"), &Patch);
+        Add(_T("interface"), &InterfaceVersion);
     }
     MetaData::Service::~Service()
     {

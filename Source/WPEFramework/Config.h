@@ -521,13 +521,51 @@ namespace PluginHost {
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         Config(Core::File& file, const bool background, Core::OptionalType<Core::JSON::Error>& error)
             : _background(background)
+            , _prefix()
+            , _webPrefix()
+            , _JSONRPCPrefix()
+            , _volatilePath()
+            , _persistentPath()
+            , _dataPath()
+            , _hashKey()
+            , _appPath()
+            , _systemPath()
+            , _configsPath()
+            , _proxyStubPath()
+            , _postMortemPath()
+            , _accessor()
+            , _communicator()
+            , _binder()
+            , _redirect()
             , _security(nullptr)
+            , _version()
+            , _model()
+            , _messagingCategories()
+            , _messagingCategoriesFile()
+            , _warningReportingCategories()
+            , _binding()
+            , _interface()
+            , _URL()
+            , _ethernetCard()
+            , _portNumber(0)
+            , _IPV6()
+            , _idleTime(180)
+            , _softKillCheckWaitTime(3)
+            , _hardKillCheckWaitTime(10)
+            , _stackSize(0)
+            , _latitude()
+            , _longitude()
+            , _messagingPort()
             , _inputInfo()
             , _processInfo()
             , _plugins()
             , _reasons()
             , _substituter(*this)
             , _configLock()
+            #ifdef PROCESSCONTAINERS_ENABLED
+            , _ProcessContainersLogging()
+            #endif
+            , _linkerPluginPaths()
         {
             JSONConfig config;
 
@@ -637,10 +675,6 @@ POP_WARNING()
         {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_version);
-        }
-        inline void SetVersion(const string& newValue) {
-            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            _version = newValue;
         }
         inline const string& Model() const
         {
