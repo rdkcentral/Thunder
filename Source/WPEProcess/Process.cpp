@@ -434,13 +434,13 @@ public:
             _server.Release();
         }
 
-        if (_engine.IsValid() == true) {
-            _engine.Release();
-        }
-
         // We are going to tear down the stugg. Unregistere the Worker Pool
         Core::IWorkerPool::Assign(nullptr);
         PluginHost::IFactories::Assign(nullptr);
+
+        if (_engine.IsValid() == true) {
+            _engine.Release();
+        }
 
         Core::Singleton::Dispose();
         std::set_terminate(nullptr);
