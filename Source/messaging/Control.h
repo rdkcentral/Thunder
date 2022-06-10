@@ -95,6 +95,10 @@ namespace Messaging {
         {
             return (_messageControl.IsEnabled());
         }
+        inline static void Enable(const bool enable)
+        {
+            _messageControl.Enable(enable);
+        }
 
     private:
         static Control<CATEGORY, MODULENAME, TYPE> _messageControl;

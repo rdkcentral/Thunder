@@ -1,452 +1,478 @@
 {
-    "port": 25555,
-    "interface": "wifi",
-    "idletime": 60,
-    "ipv6": false,
-    "persistentpath": "D:/Domotica/artifacts/Persistent",
-    "volatilepath": "D:/Domotica/artifacts/temp",
-    "datapath": "D:/Domotica/artifacts/Debug/Plugins",
-    "systempath": "D:/Domotica/artifacts/Debug",
-    "proxystubpath": "D:/Domotica/artifacts/ProxyStubs/Debug",
-    "communicator": "127.0.0.1:62000",
-    "redirect": "Service/Controller/UI",
-    "tracing": [
-        {
-            "module": "Plugin_ZigbeeControl",
-            "enabled": true
-        },
-        {
-            "module": "Plugin_DIALServer",
-            "category": "Protocol",
-            "enabled": true
+  "port": 25555,
+  "binding": "127.0.0.1",
+  "idletime": 60,
+  "ipv6": false,
+  "persistentpath": "D:/Domotica/artifacts/Persistent",
+  "volatilepath": "D:/Domotica/artifacts/temp",
+  "datapath": "D:/Domotica/artifacts/Debug/Plugins",
+  "systempath": "D:/Domotica/artifacts/Debug",
+  "proxystubpath": "D:/Domotica/artifacts/ProxyStubs/Debug",
+  "communicator": "127.0.0.1:62000",
+  "redirect": "Service/Controller/UI",
+  "messagingport": 63000,
+  "messaging": [
+    {
+      "module": "Plugin_ZigbeeControl",
+      "enabled": false
+    },
+    {
+      "module": "Zigbee",
+      "enabled": true
+    },
+    {
+      "module": "Plugin_ScriptEngine",
+      "category": "Log",
+      "enabled": true
+    },
+    {
+      "module": "Plugin_CloudRelay",
+      "enabled": true
+    }
+  ],
+  "plugins": [
+    {
+      "callsign": "Controller",
+      "configuration": {
+        "subsystems": []
+      }
+    },
+    {
+      "callsign": "Cobalt",
+      "locator": "liboutofprocessplugin.so",
+      "classname": "OutOfProcessPlugin",
+      "autostart": false,
+      "configuration": {
+        "outofprocess": true,
+        "url": "http://netflix.com/tv",
+        "sleep": "1",
+        "single": false,
+        "crash": false
+      }
+    },
+    {
+      "callsign": "calculator",
+      "locator": "librustbridge.so",
+      "classname": "RustBridge",
+      "autostart": true,
+      "configuration": {
+        "module": "calculator.so",
+        "root": {
+          "mode": "Local"
         }
-    ],
-    "plugins": [
-        {
-            "callsign": "Controller",
-            "configuration": {
-                "subsystems": []
-            }
-        },
-        {
-            "callsign": "Cobalt",
-            "locator": "liboutofprocessplugin.so",
-            "classname": "OutOfProcessPlugin",
-            "autostart": false,
-            "configuration": {
-                "outofprocess": true,
-                "url": "http://netflix.com/tv",
-                "sleep": "1",
-                "single": false,
-                "crash": false
-            }
-        },
-        {
-            "callsign": "Provisioning",
-            "locator": "libProvisioning.so",
-            "classname": "Provisioning",
-            "autostart": false,
-            "configuration": {
-                "provisionpath": "127.0.0.1:7777"
-            }
-        },
-        {
-            "callsign": "Butler",
-            "locator": "libButler.so",
-            "classname": "Butler",
-            "autostart": true
-        },
-        {
-            "callsign": "ZigbeeControl",
-            "locator": "libZigbeeControl.so",
-            "classname": "ZigbeeControl",
-            "autostart": false,
-            "configuration": {
-                "port": "\\\\.\\COM6"
-            }
-        },
-        {
-            "callsign": "WebBridge",
-            "locator": "libWebBridge.so",
-            "classname": "WebBridge",
-            "autostart": false
-        },
-        {
-            "callsign": "QuizzMaster",
-            "locator": "libQuizzMaster.so",
-            "classname": "QuizzMaster",
-            "autostart": false
-        },
-        {
-            "callsign": "StateController",
-            "locator": "libStateController.so",
-            "classname": "StateController",
-            "autostart": false
-        },
-        {
-            "autostart": true,
-            "callsign": "VirtualControl",
-            "classname": "VirtualControl",
-            "locator": "libVirtualControl.so",
-            "configuration": {
-                "sunriseset": 365,
-                "virtuals": [
-                    {
-                        "id":1,
-                        "passive":false,
-                        "min":0,
-                        "max":1
-                    },
-                    {
-                        "id":2,
-                        "passive":false,
-                        "min":0,
-                        "max":100
-                    },
-                    {
-                        "id":11,
-                        "passive":false,
-                        "min":0,
-                        "max":1
-                    },
-                    {
-                        "id": 12,
-                        "source": "/KleineSchuur/DagLichtSensor",
-                        "min": 30,
-                        "max": 5000
-                    },
-                  {
-                    "id": 20,
-                    "period": "Hour",
-                    "frequency": 30,
-                    "dutycycle": 25,
-                    "destination": "/PiwiBoard/Led2"
-                  },
-                    {
-                        "id":100,
-                        "schedules":[
-                            {
-                                "start": {
-                                    "time":"23:35",
-                                    "day":"Saterday"
-                                },
-                                "end":"3:21"
-                            },
-                            {
-                                "start":"20:25",
-                                "end":"20:30"
-                            },
-                            {
-                                "start":"16:35",
-                                "end":"17:40",
-                                "days":"Workdays"
-                            }
-                        ]
-                    }
-                ]
-            }
-        },
-        {
-            "autostart": false,
-            "callsign": "ScriptEngine",
-            "classname": "ScriptEngine",
-            "locator": "libScriptEngine.so"
-        },
-        {
-            "callsign": "IOControl",
-            "locator": "libIOControl.so",
-            "classname": "IOControl",
-            "autostart": true,
-            "configuration": {
-                "port": "\\\\.\\COM9",
-                "pins": [
-                    {
-                        "id": 1,
-                        "comment": "A1",
-                        "mode": "Input",
-                        "min": 0,
-                        "max":  "1023"
-                    },
-                    {
-                        "id": 10,
-                        "comment": "B2",
-                        "mode": "Output"
-                    },
-                    {
-                        "id": 17,
-                        "comment": "C1",
-                        "mode": "Output"
-                    },
-                    {
-                        "id": 16,
-                        "comment": "C0",
-                        "mode": "Both"
-                    }
-                ]
-            }
-        },
-        {
-            "callsign": "OneWireControl",
-            "locator": "libOneWireControl.so",
-            "classname": "OneWireControl",
-            "autostart": true,
-            "configuration": {
-              "port": "\\\\.\\COM9",
-              "devices": [
-                {
-                  "address": "0x28-FF0E8B701404-FE",
-                  "type": "DS1621",
-                  "bvariant": true
-                }
-              ]
-            }
-        },
-        {
-            "callsign": "I2CControl",
-            "locator": "libI2CControl.so",
-            "classname": "I2CControl",
-            "autostart": true,
-            "configuration": {
-                "port": "\\\\.\\COM9",
-                "devices": [
-                    {
-                      "address": 35,
-                      "type": "BH1750",
-                      "maxwait": true,
-                      "period": 5
-                    }
-                ]
-            }
-        },
-        {
-            "callsign": "OutOfProcessPlugin",
-            "locator": "libOutOfProcessPlugin.so",
-            "classname": "OutOfProcessPlugin",
-            "autostart": false,
-            "configuration": {
-                "outofprocess": true,
-                "url": "http://netflix.com/tv",
-                "sleep": "5",
-                "single": false,
-                "crash": true
-            }
-        },
-        {
-            "callsign": "SecurityAgent",
-            "locator": "libSecurityAgent.so",
-            "classname": "SecurityAgent",
-            "precondition": [
-                "Platform"
-            ],
-            "autostart": false,
-            "configuration": {
-                "acl": "data.json",
-                "connector": "127.0.0.1:63000"
-            }
-        },
-        {
-            "callsign": "JSONRPCPlugin",
-            "locator": "libJSONRPCPlugin.so",
-            "classname": "JSONRPCPlugin",
-            "autostart": false
-        },
-        {
-            "callsign": "OpenCDMi",
-            "locator": "libOpenCDMi.so",
-            "classname": "OCDM",
-            "autostart": false,
-            "configuration": {
-                "connector": "127.0.0.1:7912",
-                "root": {
-                    "outofprocess": true
-                }
-            }
-        },
-        {
-            "callsign": "Monitor",
-            "locator": "libMonitor.so",
-            "classname": "Monitor",
-            "autostart": false,
-            "configuration": {
-                "observables": [
-                    {
-                        "callsign": "WebKitBrowser",
-                        "memory": 5,
-                        "memorylimit": 850000,
-                        "operational": 1,
-                        "restart": {
-                            "memory": {
-                                "window": 0,
-                                "limit": 0
-                            },
-                            "operational": {
-                                "window": 60,
-                                "limit": 3
-                            }
-                        }
-                    }
-                ]
-            }
-        },
-        {
-            "callsign": "WebServer",
-            "locator": "libWebServer.so",
-            "classname": "WebServer",
-            "autostart": false,
-            "configuration": {
-
-                "root": {
-                    "outofprocess": true
-                }
-            }
-        },
-        {
-            "callsign": "DeviceInfo",
-            "locator": "libdeviceinfo.so",
-            "classname": "DeviceInfo",
-            "autostart": true,
-            "configuration": {
-              "location": "external",
-              "identifier": "internal",
-              "time": "external",
-              "root": {
-                "mode":  "Off"
+      }
+    },
+    {
+      "callsign": "Provisioning",
+      "locator": "libProvisioning.so",
+      "classname": "Provisioning",
+      "autostart": false,
+      "configuration": {
+        "provisionpath": "127.0.0.1:7777"
+      }
+    },
+    {
+      "callsign": "Butler",
+      "locator": "libButler.so",
+      "classname": "Butler",
+      "autostart": true
+    },
+    {
+      "callsign": "ZigbeeControl",
+      "locator": "libZigbeeControl.so",
+      "classname": "ZigbeeControl",
+      "autostart": false,
+      "configuration": {
+        "port": "\\\\.\\COM6",
+        "watchdog": 1442,
+        "pan": 65200
+      }
+    },
+    {
+      "callsign": "WebBridge",
+      "locator": "libWebBridge.so",
+      "classname": "WebBridge",
+      "autostart": false,
+      "configuration": {
+        "context": "added"
+      }
+    },
+    {
+      "callsign": "QuizzMaster",
+      "locator": "libQuizzMaster.so",
+      "classname": "QuizzMaster",
+      "autostart": false
+    },
+    {
+      "callsign": "StateController",
+      "locator": "libStateController.so",
+      "classname": "StateController",
+      "autostart": false
+    },
+    {
+      "callsign": "SimpleCOMRPCPluginServer",
+      "locator": "libSimpleCOMRPCPluginServer.so",
+      "classname": "SimpleCOMRPCPluginServer",
+      "autostart": false
+    },
+    {
+      "autostart": true,
+      "callsign": "VirtualControl",
+      "classname": "VirtualControl",
+      "locator": "libVirtualControl.so",
+      "configuration": {
+        "sunriseset": 365,
+        "virtuals": [
+        ]
+      }
+    },
+    {
+      "autostart": true,
+      "callsign": "ScriptEngine",
+      "classname": "ScriptEngine",
+      "locator": "libScriptEngine.so"
+    },
+    {
+      "autostart": false,
+      "callsign": "CloudRelay",
+      "classname": "CloudRelay",
+      "locator": "libCloudRelay.so",
+      "configuration": {
+        "server": "iot-loadbalancer-1209314597.eu-central-1.elb.amazonaws.com:80",
+        "reports": [
+          {
+            "period": 10,
+            "name": "new",
+            "layout": [
+              {
+                "name": "voltage",
+                "point": "/PiWiBoard/Voltage"
+              },
+              {
+                "name": "amperage",
+                "point": "/PiWiBoard/Current"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "callsign": "IOControl",
+      "locator": "libIOControl.so",
+      "classname": "IOControl",
+      "autostart": true,
+      "configuration": {
+        "port": "\\\\.\\COM8",
+        "pins": [
+          {
+            "id": 0,
+            "comment": "A0/PotMeter",
+            "mode": "Input",
+            "min": -20,
+            "max": 20,
+            "bits": 10
+          },
+          {
+            "id": 1,
+            "comment": "A1/LDR",
+            "mode": "Input",
+            "min": 100,
+            "max": 200,
+            "bits": 10
+          },
+          {
+            "id": 10,
+            "comment": "B2",
+            "mode": "Output"
+          },
+          {
+            "id": 14,
+            "comment": "B6 Control pin of the PotMeter)",
+            "mode": "Output"
+          },
+          {
+            "id": 17,
+            "comment": "C1",
+            "mode": "Output"
+          },
+          {
+            "id": 16,
+            "comment": "C0",
+            "mode": "Both"
+          }
+        ]
+      }
+    },
+    {
+      "callsign": "OneWireControl",
+      "locator": "libOneWireControl.so",
+      "classname": "OneWireControl",
+      "autostart": true,
+      "configuration": {
+        "port": "\\\\.\\COM8",
+        "devices": [
+          {
+            "address": "0x28-0414708B0EFF-FE",
+            "type": "DS1621",
+            "bvariant": true
+          }
+        ]
+      }
+    },
+    {
+      "callsign": "I2CControl",
+      "locator": "libI2CControl.so",
+      "classname": "I2CControl",
+      "autostart": true,
+      "configuration": {
+        "port": "\\\\.\\COM8",
+        "devices": [
+          {
+            "address": 35,
+            "type": "BH1750",
+            "maxwait": true,
+            "period": 60
+          }
+        ]
+      }
+    },
+    {
+      "callsign": "OutOfProcessPlugin",
+      "locator": "libOutOfProcessPlugin.so",
+      "classname": "OutOfProcessPlugin",
+      "autostart": false,
+      "configuration": {
+        "outofprocess": true,
+        "url": "http://netflix.com/tv",
+        "sleep": "5",
+        "single": false,
+        "crash": true
+      }
+    },
+    {
+      "callsign": "SecurityAgent",
+      "locator": "libSecurityAgent.so",
+      "classname": "SecurityAgent",
+      "precondition": [
+        "Platform"
+      ],
+      "autostart": false,
+      "configuration": {
+        "acl": "data.json",
+        "connector": "127.0.0.1:63000"
+      }
+    },
+    {
+      "callsign": "JSONRPCPlugin",
+      "locator": "libJSONRPCPlugin.so",
+      "classname": "JSONRPCPlugin",
+      "autostart": false
+    },
+    {
+      "callsign": "OpenCDMi",
+      "locator": "libOpenCDMi.so",
+      "classname": "OCDM",
+      "autostart": false,
+      "configuration": {
+        "connector": "127.0.0.1:7912",
+        "root": {
+          "outofprocess": true
+        }
+      }
+    },
+    {
+      "callsign": "Monitor",
+      "locator": "libMonitor.so",
+      "classname": "Monitor",
+      "autostart": false,
+      "configuration": {
+        "observables": [
+          {
+            "callsign": "WebKitBrowser",
+            "memory": 5,
+            "memorylimit": 850000,
+            "operational": 1,
+            "restart": {
+              "memory": {
+                "window": 0,
+                "limit": 0
+              },
+              "operational": {
+                "window": 60,
+                "limit": 3
               }
             }
-        },
-        {
-            "callsign": "TimeSync",
-            "locator": "libtimesync.so",
-            "classname": "TimeSync",
-            "autostart": false,
-            "configuration": {
-                "interval": 30,
-                "retries": 20,
-                "periodicity": 24,
-                "sources": [
-                    "ntp://0.pool.ntp.org",
-                    "ntp://1.pool.ntp.org",
-                    "ntp://2.pool.ntp.org",
-                    "ntp://3.pool.ntp.org"
-                ]
-            }
-        },
-        {
-            "callsign": "LocationSync",
-            "locator": "liblocationsync.so",
-            "classname": "LocationSync",
-            "autostart": false,
-            "configuration": {
-                "interval": 30,
-                "retries": 20,
-                "source": "http://jsonip.metrological.com/?maf=true"
-            }
-        },
-        {
-            "callsign": "BackOffice",
-            "locator": "libbackoffice.so",
-            "classname": "BackOffice",
-            "autostart": false,
-            "configuration": {
-                "server": "ws.metrological.com",
-                "port": 80,
-                "components": "",
-                "profiler": {
-                    "testdata": "Hello world",
-                    "moretest": 45
-                }
-            }
-        },
-        {
-            "callsign": "Dictionary",
-            "locator": "libdictionary.so",
-            "classname": "Dictionary",
-            "autostart": false,
-            "configuration": {
-            }
-        },
-        {
-            "callsign": "DIALServer",
-            "locator": "libdialserver.so",
-            "classname": "DIALServer",
-            "autostart": false,
-            "configuration": {
-                "name": "ExploraUltra",
-                "model": "Generic Platform",
-                "manufacturer": "Metrological",
-                "description": "Metrological DIAL reference server.",
-                "interface": "192.168.1.129",
-                "deprecatedapi": false,
-                "apps": [
-                    {
-                        "name": "YouTube",
-                        "hide": false,
-                        "runtimechange": true,
-                        "url": "https://www.youtube.com/tv",
-                        "origin": "youtube.com"
-                    },
-                    {
-                        "name": "Netflix",
-                        "hide": true,
-                        "url": "https://www.netflix.com"
-                    },
-                    {
-                        "name": "AmazonInstantVideo",
-                        "hide": true,
-                        "url": "https://www.primevideo.com"
-                    }
-                ]
-            }
-        },
-        {
-            "callsign": "TraceControl",
-            "locator": "libtracecontrol.so",
-            "classname": "TraceControl",
-            "autostart": true
-        },
-        {
-            "callsign": "RemoteControl",
-            "locator": "libremotecontrol.so",
-            "classname": "RemoteControl",
-            "autostart": false,
-            "configuration": {
-                "mapfile": "ir-remote.json"
-            }
-        },
-        {
-            "autostart": false,
-            "callsign": "WebKitBrowser",
-            "classname": "OutOfProcessTest",
-            "locator": "liboutofprocesstest.so",
-            "configuration": {
-                "outofprocess": true,
-                "url": "http://webkit.org/tveee",
-                "sleep": "720",
-                "compositor": "noaa",
-                "inspector": "0.0.0.0:9998"
-            }
-        },
-        {
-            "autostart": false,
-            "callsign": "Netflix",
-            "classname": "OutOfProcessTest",
-            "locator": "liboutofprocesstest.so",
-            "configuration": {
-                "outofprocess": true,
-                "url": "http://netflix.com/tv",
-                "sleep": "720"
-            }
-        },
-        {
-            "callsign": "YouTube",
-            "locator": "liboutofprocesstest.so",
-            "classname": "OutOfProcessTest",
-            "autostart": false,
-            "configuration": {
-                "outofprocess": false,
-                "url": "http://youtube.com/tv",
-                "sleep": "720"
-            }
+          }
+        ]
+      }
+    },
+    {
+      "callsign": "WebServer",
+      "locator": "libWebServer.so",
+      "classname": "WebServer",
+      "autostart": false,
+      "configuration": {
+        "port": 8080,
+        "binding": "0.0.0.0",
+        "root": {
+          "mode": "Local"
         }
-    ]
+      }
+    },
+    {
+      "callsign": "DeviceInfo",
+      "locator": "libdeviceinfo.so",
+      "classname": "DeviceInfo",
+      "autostart": true,
+      "configuration": {
+        "location": "external",
+        "identifier": "internal",
+        "time": "external",
+        "root": {
+          "mode": "Off"
+        }
+      }
+    },
+    {
+      "callsign": "TimeSync",
+      "locator": "libtimesync.so",
+      "classname": "TimeSync",
+      "autostart": false,
+      "configuration": {
+        "interval": 30,
+        "retries": 20,
+        "periodicity": 24,
+        "sources": [
+          "ntp://0.pool.ntp.org",
+          "ntp://1.pool.ntp.org",
+          "ntp://2.pool.ntp.org",
+          "ntp://3.pool.ntp.org"
+        ]
+      }
+    },
+    {
+      "callsign": "LocationSync",
+      "locator": "liblocationsync.so",
+      "classname": "LocationSync",
+      "autostart": false,
+      "configuration": {
+        "interval": 30,
+        "retries": 20,
+        "source": "http://jsonip.metrological.com/?maf=true"
+      }
+    },
+    {
+      "callsign": "BackOffice",
+      "locator": "libbackoffice.so",
+      "classname": "BackOffice",
+      "autostart": false,
+      "configuration": {
+        "server": "ws.metrological.com",
+        "port": 80,
+        "components": "",
+        "profiler": {
+          "testdata": "Hello world",
+          "moretest": 45
+        }
+      }
+    },
+    {
+      "callsign": "Dictionary",
+      "locator": "libdictionary.so",
+      "classname": "Dictionary",
+      "autostart": false,
+      "configuration": {
+      }
+    },
+    {
+      "callsign": "DIALServer",
+      "locator": "libdialserver.so",
+      "classname": "DIALServer",
+      "autostart": false,
+      "configuration": {
+        "name": "ExploraUltra",
+        "model": "Generic Platform",
+        "manufacturer": "Metrological",
+        "description": "Metrological DIAL reference server.",
+        "interface": "192.168.1.129",
+        "deprecatedapi": false,
+        "apps": [
+          {
+            "name": "YouTube",
+            "hide": false,
+            "runtimechange": true,
+            "url": "https://www.youtube.com/tv",
+            "origin": "youtube.com"
+          },
+          {
+            "name": "Netflix",
+            "hide": true,
+            "url": "https://www.netflix.com"
+          },
+          {
+            "name": "AmazonInstantVideo",
+            "hide": true,
+            "url": "https://www.primevideo.com"
+          }
+        ]
+      }
+    },
+    {
+      "callsign": "MessageControl",
+      "locator": "libmessagecontrol.so",
+      "classname": "MessageControl",
+      "autostart": true
+    },
+    {
+      "callsign": "TraceControl",
+      "locator": "libtracecontrol.so",
+      "classname": "TraceControl",
+      "autostart": false
+    },
+    {
+      "callsign": "RemoteControl",
+      "locator": "libremotecontrol.so",
+      "classname": "RemoteControl",
+      "autostart": false,
+      "configuration": {
+        "mapfile": "ir-remote.json"
+      }
+    },
+    {
+      "autostart": false,
+      "callsign": "WebKitBrowser",
+      "classname": "OutOfProcessTest",
+      "locator": "liboutofprocesstest.so",
+      "configuration": {
+        "outofprocess": true,
+        "url": "http://webkit.org/tveee",
+        "sleep": "720",
+        "compositor": "noaa",
+        "inspector": "0.0.0.0:9998"
+      }
+    },
+    {
+      "autostart": false,
+      "callsign": "Netflix",
+      "classname": "OutOfProcessTest",
+      "locator": "liboutofprocesstest.so",
+      "configuration": {
+        "outofprocess": true,
+        "url": "http://netflix.com/tv",
+        "sleep": "720"
+      }
+    },
+    {
+      "callsign": "YouTube",
+      "locator": "liboutofprocesstest.so",
+      "classname": "OutOfProcessTest",
+      "autostart": false,
+      "configuration": {
+        "outofprocess": false,
+        "url": "http://youtube.com/tv",
+        "sleep": "720"
+      }
+    }
+  ]
 }

@@ -25,15 +25,9 @@ namespace WPEFramework {
 namespace RPC {
 
     // As COMRPC might run between a 32 bit and 64 bit system, the largest must be accommodated.
-    #if defined(__SIZEOF_POINTER__) && (__SIZEOF_POINTER__ == 8) 
-    typedef uint64_t instance_id;
-    #else
-    typedef uint32_t instance_id;
-    #endif
-
     template<typename INCOMING>
-    RPC::instance_id instance_cast(INCOMING value) {
-        return ((RPC::instance_id) value);
+    Core::instance_id instance_cast(INCOMING value) {
+        return ((Core::instance_id) value);
     }
 
     namespace Data {
@@ -88,17 +82,17 @@ namespace RPC {
             {
                 _data.Clear();
             }
-            void Set(instance_id implementation, const uint32_t interfaceId, const uint8_t methodId)
+            void Set(Core::instance_id implementation, const uint32_t interfaceId, const uint8_t methodId)
             {
-                uint16_t result = _data.SetNumber<instance_id>(0, implementation);
+                uint16_t result = _data.SetNumber<Core::instance_id>(0, implementation);
                 result += _data.SetNumber<uint32_t>(result, interfaceId);
                 _data.SetNumber(result, methodId);
             }
-            instance_id Implementation()
+            Core::instance_id Implementation()
             {
-                instance_id result = 0;
+                Core::instance_id result = 0;
 
-                _data.GetNumber<instance_id>(0, result);
+                _data.GetNumber<Core::instance_id>(0, result);
 
                 return (result);
             }
@@ -106,7 +100,7 @@ namespace RPC {
             {
                 uint32_t result = 0;
 
-                _data.GetNumber<uint32_t>(sizeof(instance_id), result);
+                _data.GetNumber<uint32_t>(sizeof(Core::instance_id), result);
 
                 return (result);
             }
@@ -114,7 +108,7 @@ namespace RPC {
             {
                 uint8_t result = 0;
 
-                _data.GetNumber(sizeof(instance_id) + sizeof(uint32_t), result);
+                _data.GetNumber(sizeof(Core::instance_id) + sizeof(uint32_t), result);
 
                 return (result);
             }
@@ -124,11 +118,11 @@ namespace RPC {
             }
             inline Frame::Writer Writer()
             {
-                return (Frame::Writer(_data, (sizeof(instance_id) + sizeof(uint32_t) + sizeof(uint8_t))));
+                return (Frame::Writer(_data, (sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(uint8_t))));
             }
             inline const Frame::Reader Reader() const
             {
-                return (Frame::Reader(_data, (sizeof(instance_id) + sizeof(uint32_t) + sizeof(uint8_t))));
+                return (Frame::Reader(_data, (sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(uint8_t))));
             }
             uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
             {
@@ -165,9 +159,9 @@ namespace RPC {
             {
                 return (Frame::Reader(_data, 0));
             }
-            inline void AddImplementation(instance_id implementation, const uint32_t id)
+            inline void AddImplementation(Core::instance_id implementation, const uint32_t id)
             {
-                _data.SetNumber<instance_id>(_data.Size(), implementation);
+                _data.SetNumber<Core::instance_id>(_data.Size(), implementation);
                 _data.SetNumber<uint32_t>(_data.Size(), id);
             }
             inline uint32_t Length() const
@@ -250,7 +244,7 @@ namespace RPC {
                 _className[0] = '\0';
                 _className[1] = AQUIRE;
             }
-            void Set(const uint32_t myId, const uint32_t interfaceId, instance_id implementation, const uint32_t exchangeId)
+            void Set(const uint32_t myId, const uint32_t interfaceId, Core::instance_id implementation, const uint32_t exchangeId)
             {
                 _exchangeId = exchangeId;
                 _implementation = implementation;
@@ -260,7 +254,7 @@ namespace RPC {
                 _className[0] = '\0';
                 _className[1] = REQUEST;
             }
-            void Set(const uint32_t myId, const uint32_t interfaceId, instance_id implementation, const type whatKind)
+            void Set(const uint32_t myId, const uint32_t interfaceId, Core::instance_id implementation, const type whatKind)
             {
                 ASSERT((whatKind != AQUIRE) && (whatKind != REQUEST));
 
@@ -286,7 +280,7 @@ namespace RPC {
             {
                 return (_id);
             }
-            instance_id Implementation() const
+            Core::instance_id Implementation() const
             {
                 return (_implementation);
             }
@@ -309,7 +303,7 @@ namespace RPC {
 
         private:
             uint32_t _id;
-            instance_id _implementation;
+            Core::instance_id _implementation;
             uint32_t _interfaceId;
             uint32_t _exchangeId;
             uint32_t _versionId;
@@ -330,15 +324,15 @@ namespace RPC {
             {
                 _data.Clear();
             }
-            void Set(instance_id implementation, const uint32_t sequenceNumber, const string& proxyStubPath, const string& messagingSettings, const string& warningReportingSettings)
+            void Set(Core::instance_id implementation, const uint32_t sequenceNumber, const string& proxyStubPath, const string& messagingSettings, const string& warningReportingSettings)
             {
                 uint16_t length = 0;
-                _data.SetNumber<instance_id>(0, implementation);
-                _data.SetNumber<uint32_t>(sizeof(instance_id), sequenceNumber);
+                _data.SetNumber<Core::instance_id>(0, implementation);
+                _data.SetNumber<uint32_t>(sizeof(Core::instance_id), sequenceNumber);
                 
-                length = _data.SetText(sizeof(instance_id) + sizeof(uint32_t), proxyStubPath);
-                length += _data.SetText(sizeof(instance_id)+ sizeof(uint32_t) + length, messagingSettings);
-                _data.SetText(sizeof(instance_id)+ sizeof(uint32_t) + length, warningReportingSettings);
+                length = _data.SetText(sizeof(Core::instance_id) + sizeof(uint32_t), proxyStubPath);
+                length += _data.SetText(sizeof(Core::instance_id)+ sizeof(uint32_t) + length, messagingSettings);
+                _data.SetText(sizeof(Core::instance_id)+ sizeof(uint32_t) + length, warningReportingSettings);
             }
             inline bool IsSet() const {
                 return (_data.Size() > 0);
@@ -346,14 +340,14 @@ namespace RPC {
             uint32_t SequenceNumber() const
             {
                 uint32_t result;
-                _data.GetNumber<uint32_t>(sizeof(instance_id), result);
+                _data.GetNumber<uint32_t>(sizeof(Core::instance_id), result);
                 return (result);
             }
             string ProxyStubPath() const
             {
                 string value;
 
-                uint16_t length = sizeof(instance_id) + sizeof(uint32_t) ;   // skip implentation and sequencenumber
+                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) ;   // skip implentation and sequencenumber
 
                 _data.GetText(length, value); 
                 
@@ -363,7 +357,7 @@ namespace RPC {
             {
                 string value;
 
-                uint16_t length = sizeof(instance_id) + sizeof(uint32_t) ;   // skip implentation and sequencenumber 
+                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) ;   // skip implentation and sequencenumber 
                 length += _data.GetText(length, value);  // skip proxyStub path
 
                 _data.GetText(length, value); 
@@ -375,7 +369,7 @@ namespace RPC {
             {
                 string value;
 
-                uint16_t length = sizeof(instance_id) + sizeof(uint32_t) ;   // skip implentation and sequencenumber 
+                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) ;   // skip implentation and sequencenumber 
                 length += _data.GetText(length, value);  // skip proxyStub path
                 length += _data.GetText(length, value);  // skip messagingcategories 
 
@@ -384,15 +378,15 @@ namespace RPC {
                 return (value);
             }
 
-            instance_id Implementation() const
+            Core::instance_id Implementation() const
             {
-                instance_id result = 0;
-                _data.GetNumber<instance_id>(0, result);
+                Core::instance_id result = 0;
+                _data.GetNumber<Core::instance_id>(0, result);
                 return (result);
             }
-            void Implementation(instance_id implementation)
+            void Implementation(Core::instance_id implementation)
             {
-                _data.SetNumber<instance_id>(0, implementation);
+                _data.SetNumber<Core::instance_id>(0, implementation);
             }
             uint32_t Length() const
             {

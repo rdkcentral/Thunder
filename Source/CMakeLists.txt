@@ -50,7 +50,7 @@ option(WCHAR_SUPPORT
         "Enable support for WCHAR." OFF)
 option(DISABLE_TRACING
         "Disable tracing in debug" OFF)
-set(ENABLED_TRACING_LEVEL 0 CACHE STRING "If tracing is enabled, this sets its default level.")
+set(ENABLED_TRACING_LEVEL 2 CACHE STRING "If tracing is enabled, this sets its default level.")
 option(EXCEPTION_CATCHING
         "Enable unhandled exception handling catching." OFF)
 option(DEADLOCK_DETECTION
@@ -86,6 +86,11 @@ set(EXTERN_EVENTS ${EXTERN_EVENTS} CACHE INTERNAL
         "List of events assumed to be provided by other plugins.")
 string(REPLACE " " ";" EXTERN_EVENT_LIST "${EXTERN_EVENTS}")
 message(STATUS "Assuming external events: ${EXTERN_EVENT_LIST}")
+
+if(TRACING AND MESSAGING)
+    message(WARNING "Disabled Tracing, because Messaging and Tracing are mutually exclusive.")
+    set(TRACING OFF)
+endif()
 
 if(CORE)
     add_subdirectory(core)

@@ -554,29 +554,32 @@ namespace Core {
         *        - create buffer where all InProcess components will write
         *
         * @param pathName volatile path (/tmp/ by default)
+        * @param socketPort triggers the use of using a IP socket in stead of a domain socket (in pathName) if the port value is not 0.
         * @return uint32_t ERROR_NONE: opened sucessfully
         *                  ERROR_OPENING_FAILED failed to open
         */
-        uint32_t MessageUnit::Open(const string& pathName)
+        uint32_t MessageUnit::Open(const string& pathName, const uint16_t socketPort)
         {
             uint32_t result = Core::ERROR_OPENING_FAILED;
 
-            string basePath = Core::Format("%s%s", pathName.c_str(), _T("MessageDispatcher"));
+            string basePath = Directory::Normalize(pathName) + _T("MessageDispatcher");
             string identifier = _T("md");
 
             if (Core::File(basePath).IsDirectory()) {
                 //if directory exists remove it to clear data (eg. sockets) that can remain after previous run
                 Core::Directory(basePath.c_str()).Destroy();
             }
-
-            if (!Core::Directory(basePath.c_str()).CreatePath()) {
+            else if (!Core::Directory(basePath.c_str()).CreatePath()) {
                 TRACE_L1(_T("Unable to create MessageDispatcher directory"));
             }
 
             Core::SystemInfo::SetEnvironment(MESSAGE_DISPATCHER_PATH_ENV, basePath);
             Core::SystemInfo::SetEnvironment(MESSAGE_DISPACTHER_IDENTIFIER_ENV, identifier);
+            if (socketPort != 0) {
+                Core::SystemInfo::SetEnvironment(MESSAGE_DISPATCHER_SOCKETPORT_ENV, Core::NumberType<uint16_t>(socketPort).Text());
+            }
 
-            _dispatcher.reset(new MessageDispatcher(identifier, 0, true, basePath));
+            _dispatcher.reset(new MessageDispatcher(identifier, 0, true, basePath, socketPort));
             if (_dispatcher != nullptr) {
                 if (_dispatcher->IsValid()) {
                     _dispatcher->RegisterDataAvailable(std::bind(&MessageUnit::ReceiveMetaData, this, _1, _2, _3, _4));
@@ -601,12 +604,17 @@ namespace Core {
             string basePath;
             string identifier;
             string isBackground;
+            string socketPortText;
+            uint16_t socketPort = 0;
 
             Core::SystemInfo::GetEnvironment(MESSAGE_DISPATCHER_PATH_ENV, basePath);
+            if (Core::SystemInfo::GetEnvironment(MESSAGE_DISPATCHER_SOCKETPORT_ENV, socketPortText) == true) {
+                socketPort = Core::NumberType<uint16_t>(socketPortText.c_str(), static_cast<uint32_t>(socketPortText.length()), NumberBase::BASE_DECIMAL).Value();
+            }
             Core::SystemInfo::GetEnvironment(MESSAGE_DISPACTHER_IDENTIFIER_ENV, identifier);
             Core::SystemInfo::GetEnvironment(MESSAGE_UNIT_LOGGING_SYSLOG_ENV, isBackground);
 
-            _dispatcher.reset(new MessageDispatcher(identifier, instanceId, true, basePath));
+            _dispatcher.reset(new MessageDispatcher(identifier, instanceId, true, basePath, socketPort));
             std::istringstream(isBackground) >> _isBackground;
             if (_dispatcher != nullptr) {
                 if (_dispatcher->IsValid()) {

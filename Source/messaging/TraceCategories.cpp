@@ -19,6 +19,11 @@
 
 #include "TraceCategories.h"
 
+#ifdef __WINDOWS__
+#include "IMessageOutput.h"
+#include "TraceFactory.h"
+#endif // __WINDOWS__
+
 // ---- Class Definition ----
 namespace WPEFramework {
 namespace Trace {
