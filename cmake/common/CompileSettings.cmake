@@ -69,21 +69,25 @@ target_compile_options(CompileSettings INTERFACE -std=c++11 -Wno-psabi)
 #
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_DEBUG)
+    target_compile_definitions(CompileSettings INTERFACE _THUNDER_CALLSTACK_INFO)
     target_compile_options(CompileSettings INTERFACE -funwind-tables)
     set(CONFIG_DIR "Debug" CACHE STRING "Build config directory" FORCE)
 
 elseif("${CMAKE_BUILD_TYPE}" STREQUAL "DebugOptimized")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_DEBUG)
+    target_compile_definitions(CompileSettings INTERFACE _THUNDER_CALLSTACK_INFO)
     target_compile_options(CompileSettings INTERFACE -funwind-tables)
     set(CONFIG_DIR "DebugOptimized" CACHE STRING "Build config directory" FORCE)
 
 elseif("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_NDEBUG)
+    target_compile_definitions(CompileSettings INTERFACE _THUNDER_CALLSTACK_INFO)
     target_compile_options(CompileSettings INTERFACE -funwind-tables)
     set(CONFIG_DIR "RelWithDebInfo" CACHE STRING "Build config directory" FORCE)
 
 elseif("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_NDEBUG)
+    target_compile_definitions(CompileSettings INTERFACE _THUNDER_CALLSTACK_INFO)
     target_compile_options(CompileSettings INTERFACE -funwind-tables)
     set(CONFIG_DIR "Release" CACHE STRING "Build config directory" FORCE)
 

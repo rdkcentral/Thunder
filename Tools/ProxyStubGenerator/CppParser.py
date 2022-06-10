@@ -837,6 +837,7 @@ class Class(Identifier, Block):
         self.omit = False
         self.stub = False
         self.is_json = False
+        self.json_version = ""
         self.is_event = False
         self.is_extended = False
         self.is_iterator = False
@@ -1256,6 +1257,8 @@ def __Tokenize(contents,log = None):
     global current_file
     global current_line
 
+    defines = []
+
     tokens = [s.strip() for s in re.split(r"([\r\n])", contents, flags=re.MULTILINE) if s]
     eoltokens = []
     line = 1
@@ -1303,47 +1306,48 @@ def __Tokenize(contents,log = None):
                 else:
                     continue
 
-            def __ParseParameterValue(string, tag):
+            def __ParseParameterValue(string, tag, append = True):
                 formula = (r"(\"[^\"]+\")"
                            r"|(\'[^\']+\')"
                            r"|(\*/)|(::)|(==)|(!=)|(>=)|(<=)|(&&)|(\|\|)"
                            r"|(\+\+)|(--)|(\+=)|(-=)|(/=)|(\*=)|(%=)|(^=)|(&=)|(\|=)|(~=)"
                            r"|([,:;~!?=^/*%-\+&<>\{\}\(\)\[\]])"
                            r"|([\r\n\t ])")
-                tagtokens.append(tag.upper())
+
+                if append:
+                    tagtokens.append(tag.upper())
                 length_str = string[string.index(tag) + len(tag):]
                 length_tokens = [
                     s.strip() for s in re.split(formula, length_str, flags=re.MULTILINE)
                     if isinstance(s, str) and len(s.strip())
                 ]
-                if length_tokens[0] == ':':
-                    length_tokens = length_tokens[1:]
-                no_close_last = (length_tokens[0] == '(')
                 tokens = []
-                par_count = 0
-                for t in length_tokens:
-                    if t == '(':
-                        if tokens:
-                            tokens.append(t)
-                        par_count += 1
-                    elif t == ')':
-                        par_count -= 1
-                        if par_count == 0:
-                            if not no_close_last:
+                if len(length_tokens) > 0:
+                    if length_tokens[0] == ':':
+                        length_tokens = length_tokens[1:]
+                    no_close_last = (length_tokens[0] == '(')
+                    par_count = 0
+                    for t in length_tokens:
+                        if t == '(':
+                            if tokens:
                                 tokens.append(t)
+                            par_count += 1
+                        elif t == ')':
+                            par_count -= 1
+                            if par_count == 0:
+                                if not no_close_last:
+                                    tokens.append(t)
+                                break
+                            else:
+                                tokens.append(t)
+                        elif t == '*/' or t == "," or t[0] == '@':
                             break
                         else:
                             tokens.append(t)
-                    elif t == '*/' or t == "," or t[0] == '@':
-                        break
-                    else:
-                        tokens.append(t)
-                        if par_count == 0:
-                            break
-                if par_count != 0:
-                    raise ParserError("unmatched parenthesis in %s expression" % tag)
-                if len(tokens) == 0:
-                    raise ParserError("invalid %s value" % tag)
+                            if par_count == 0:
+                                break
+                    if par_count != 0:
+                        raise ParserError("unmatched parenthesis in %s expression" % tag)
                 return tokens
 
             if ((token[:2] == "/*") and (token.count("/*") != token.count("*/"))):
@@ -1388,7 +1392,7 @@ def __Tokenize(contents,log = None):
                 if _find("@obsolete", token):
                     tagtokens.append("@OBSOLETE")
                 if _find("@json", token):
-                    tagtokens.append("@JSON")
+                    tagtokens.append(__ParseParameterValue(token, "@json"))
                 if _find("@json:omit", token):
                     tagtokens.append("@JSON_OMIT")
                 if _find("@event", token):
@@ -1407,6 +1411,8 @@ def __Tokenize(contents,log = None):
                     tagtokens.append(__ParseParameterValue(token, "@maxlength"))
                 if _find("@interface", token):
                     tagtokens.append(__ParseParameterValue(token, "@interface"))
+                if _find("@define", token):
+                    defines.append(__ParseParameterValue(token, "@define", False))
 
                 def FindDoxyString(tag, hasParam, string, tagtokens):
                     def EndOfTag(string, start):
@@ -1451,8 +1457,13 @@ def __Tokenize(contents,log = None):
                     current_line = int(token[idx:].split()[0])
                     tagtokens.append("@LINE:" + token[idx:])
 
-            elif len(token) > 0 and token[0] != '#' and token != "EXTERNAL":
-                tagtokens.append(token)
+            elif len(token) > 0 and token[0] != '#':
+                for d in defines:
+                    if d[0] == token:
+                        token = " ".join(d[1:]) if len(d) > 1 else ""
+                        break
+                if token:
+                    tagtokens.append(token)
 
     tagtokens.append(";") # prevent potential out-of-range errors
 
@@ -1532,6 +1543,7 @@ def Parse(contents,log = None):
     omit_next = False
     stub_next = False
     json_next = False
+    json_version = ""
     exclude_next = False
     event_next = False
     extended_next = False
@@ -1557,8 +1569,9 @@ def Parse(contents,log = None):
             i += 1
         elif tokens[i] == "@JSON":
             json_next = True
+            json_version = " ".join(tokens[i+1])
             tokens[i] = ";"
-            i += 1
+            i += 2
         elif tokens[i] == "@JSON_OMIT":
             exclude_next = True
             tokens[i] = ';'
@@ -1700,6 +1713,7 @@ def Parse(contents,log = None):
                 stub_next = False
             if json_next:
                 new_class.is_json = True
+                new_class.json_version = json_version
                 new_class.is_extended = extended_next
                 json_next = False
                 extended_next = False

@@ -322,6 +322,17 @@ namespace PluginHost {
             metaData.ProcessedRequests = _processedRequests;
             metaData.ProcessedObjects = _processedObjects;
             #endif
+
+            uint8_t value;
+            if ((value = Major()) != static_cast<uint8_t>(~0)) {
+                metaData.Major = value;
+            }
+            if ((value = Minor()) != static_cast<uint8_t>(~0)) {
+                metaData.Minor = value;
+            }
+            if ((value = Patch()) != static_cast<uint8_t>(~0)) {
+                metaData.Patch = value;
+            }
         }
         inline uint32_t AutoStart(const bool autoStart)
         {
@@ -409,7 +420,7 @@ namespace PluginHost {
         }
         #endif
 
-        void FileToServe(const string& webServiceRequest, Web::Response& response);
+        void FileToServe(const string& webServiceRequest, Web::Response& response, bool allowUnsafePath);
 
     private:
         mutable Core::CriticalSection _adminLock;

@@ -57,7 +57,7 @@ namespace RPC {
                 _controller->AddRef();
             }
         }
-        void Revoke(Core::IUnknown* controller)
+        void Revoke(Core::IUnknown* controller VARIABLE_IS_NOT_USED)
         {
             ASSERT(_controller == controller);
 

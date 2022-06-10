@@ -51,9 +51,6 @@
     <ClInclude Include="messaging.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MessageClient.cpp">
-      <Filter>Source Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Logging.cpp">
@@ -63,6 +60,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TraceCategories.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MessageClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
