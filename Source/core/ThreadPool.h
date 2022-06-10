@@ -122,6 +122,9 @@ namespace Core {
                 REPORT_OUTOFBOUNDS_WARNING(WarningReporting::JobTooLongWaitingInQueue, static_cast<uint32_t>((Time::Now().Ticks() - _time) / Time::TicksPerMillisecond));
                 REPORT_DURATION_WARNING({ dispatcher->Dispatch(request); }, WarningReporting::JobTooLongToFinish);
 
+                if (_job.IsValid() == true) {
+                    _job.Release();
+                }
                 return (dynamic_cast<IJob*>(request));
             }
             bool IsValid() const
