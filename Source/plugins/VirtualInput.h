@@ -626,6 +626,20 @@ POP_WARNING()
 
             return (result);
         }
+        inline bool Modifier(uint16_t code)
+        {
+            switch (code) {
+                case KEY_LEFTSHIFT:
+                case KEY_RIGHTSHIFT:
+                case KEY_LEFTALT:
+                case KEY_RIGHTALT:
+                case KEY_LEFTCTRL:
+                case KEY_RIGHTCTRL: {
+                    return true;
+                }
+            }
+            return false;
+        }
 
     protected:
         Core::CriticalSection _lock;
