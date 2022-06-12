@@ -40,7 +40,7 @@ namespace Core {
     struct EXTERNAL IServiceMetadata {
         virtual ~IServiceMetadata() = default;
 
-        virtual const std::string& Name() const = 0;
+        virtual const std::string& ServiceName() const = 0;
         virtual const TCHAR* Module() const = 0;
         virtual uint8_t Major() const = 0;
         virtual uint8_t Minor() const = 0;
@@ -266,8 +266,8 @@ namespace Core {
             uint8_t Patch() const override {
                 return (_info->Patch());
             }
-            const std::string& Name() const override {
-                return (_info->Name());
+            const std::string& ServiceName() const override {
+                return (_info->ServiceName());
             }
             const TCHAR* Module() const override {
                 return (_info->Module());
@@ -300,7 +300,7 @@ namespace Core {
         uint8_t Patch() const override {
             return (static_cast<uint8_t>(_version & 0xFF));
         }
-        const std::string& Name() const override
+        const std::string& ServiceName() const override
         {
             return (_Id);
         }
