@@ -274,8 +274,8 @@ namespace Plugin {
             uint8_t Patch() const override {
                 return (_info->Patch());
             }
-            const std::string& Name() const override {
-                return (_info->Name());
+            const std::string& ServiceName() const override {
+                return (_info->ServiceName());
             }
             const TCHAR* Module() const override {
                 return (_info->Module());
@@ -332,7 +332,7 @@ namespace Plugin {
         uint8_t Patch() const override {
             return (static_cast<uint8_t>(_version & 0xFF));
         }
-        const std::string& Name() const override {
+        const std::string& ServiceName() const override {
             return (_Id);
         }
         const TCHAR* Module() const override {

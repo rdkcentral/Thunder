@@ -65,7 +65,7 @@ namespace Core {
         ServiceList::iterator index = _services.begin();
 
         while ((index != _services.end()) && (found == false)) {
-            const char* thisName = index->first->Name().c_str();
+            const char* thisName = index->first->ServiceName().c_str();
             found = ((strcmp(thisName, name) == 0) && ((version == static_cast<uint32_t>(~0)) || (version == ((index->first->Major() << 8) | index->first->Minor()))));
 
             if (found == false) {
