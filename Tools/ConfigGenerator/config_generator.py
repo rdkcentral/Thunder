@@ -228,7 +228,16 @@ if __name__ == "__main__":
                             and not isinstance(iconfig.__dict__[param], types.FunctionType) \
                             and not inspect.isclass(iconfig.__dict__[param]):  # Skip the Dunders, Modules
                         if not check_assignment(cf, param):
-                            log.Error(f"Unrecognized parameter {param}.")
+                            log.Error(f"Unrecognized parameter \"{param}\". \n"
+                                      f"*****************************************************************\n"
+                                      f"If you are defining a private variable, one way to use it is to\n"
+                                      f"prefix it with Double Underscores.\n"
+                                      f"e.g, __conf = line.split(',') \n\n"
+                                      f"Another way is to define a function and isolate functionality\n"
+                                      f"def func():\n"
+                                      f"    do_stuff\n"
+                                      f"    return result\n"
+                                      f"******************************************************************")
                             sys.exit(1)
             if isEmpty:
                 log.Print("Empty Config File")
