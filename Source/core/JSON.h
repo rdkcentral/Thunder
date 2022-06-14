@@ -469,7 +469,7 @@ namespace Core {
         template <class TYPE, bool SIGNED, const NumberBase BASETYPE>
         class NumberType : public IElement, public IMessagePack {
         private:
-            enum modes {
+            enum modes : uint16_t {
                 OCTAL = 0x008,
                 DECIMAL = 0x00A,
                 HEXADECIMAL = 0x010,
@@ -488,28 +488,26 @@ namespace Core {
             {
             }
 
-            NumberType(const TYPE Value, const bool set = false)
+            NumberType(const TYPE value, const bool set = false)
                 : _set(set ? SET : 0)
-                , _value(Value)
-                , _default(Value)
+                , _value(value)
+                , _default(value)
             {
             }
 
             NumberType(const NumberType<TYPE, SIGNED, BASETYPE>& copy)
-                : _set(copy._set)
+                : _set(copy._set.load(Core::memory_order::memory_order_relaxed))
                 , _value(copy._value)
                 , _default(copy._default)
             {
             }
 
-            ~NumberType() override
-            {
-            }
+            ~NumberType() override = default;
 
             NumberType<TYPE, SIGNED, BASETYPE>& operator=(const NumberType<TYPE, SIGNED, BASETYPE>& RHS)
             {
                 _value = RHS._value;
-                _set = RHS._set;
+                _set.store(RHS._set.load(Core::memory_order::memory_order_relaxed), Core::memory_order::memory_order_relaxed);
 
                 return (*this);
             }
@@ -517,7 +515,7 @@ namespace Core {
             NumberType<TYPE, SIGNED, BASETYPE>& operator=(const TYPE& RHS)
             {
                 _value = RHS;
-                _set = SET;
+                _set.store(SET, Core::memory_order::memory_order_relaxed);
 
                 return (*this);
             }
@@ -529,7 +527,7 @@ namespace Core {
 
             inline TYPE Value() const
             {
-                return ((_set & SET) != 0 ? _value : _default);
+                return (IsSet() ? _value : _default);
             }
 
             inline operator TYPE() const
@@ -540,26 +538,25 @@ namespace Core {
             void Null(const bool enabled)
             {
                 if (enabled == true)
-                    _set |= (SET | UNDEFINED);
+                    _set.fetch_or((SET | UNDEFINED), Core::memory_order::memory_order_relaxed);
                 else
-                    _set &= ~(SET | UNDEFINED);
+                    _set.fetch_and((SET | UNDEFINED), Core::memory_order::memory_order_relaxed);
             }
 
             // IElement and IMessagePack iface:
             bool IsSet() const override
             {
-                return ((_set & SET) != 0);
+                return ((_set.load(Core::memory_order::memory_order_relaxed) & SET) != 0);
             }
 
             bool IsNull() const override
             {
-                return ((_set & UNDEFINED) != 0);
+                return ((_set.load(Core::memory_order::memory_order_relaxed) & UNDEFINED) != 0);
             }
 
             void Clear() override
             {
-                _set = 0;
-                _value = 0;
+                _set.store(0, Core::memory_order::memory_order_relaxed);
             }
 
         private:
@@ -573,7 +570,7 @@ namespace Core {
 
                 while ((offset < 4) && (loaded < maxLength)) {
 
-                    if ((_set & UNDEFINED) != 0) {
+                    if (IsNull() == true) {
                         stream[loaded++] = IElement::NullTag[offset++];
                         if (offset == 4) {
                             offset = 0;
@@ -616,7 +613,7 @@ namespace Core {
                     }
                 }
 
-                if (((_set & UNDEFINED) == 0) && (loaded < maxLength)) {
+                if ((IsNull() == false) && (loaded < maxLength)) {
                     loaded += Convert(&(stream[loaded]), (maxLength - loaded), offset, TemplateIntToType<SIGNED>());
                 }
                    
@@ -636,25 +633,24 @@ namespace Core {
                 while ((offset < 4) && (loaded < maxLength)) {
                     if (offset == 0) {
                         _value = 0;
-                        _set = 0;
 
                         if (stream[loaded] == '\"') {
-                            _set = QUOTED;
+                            _set.store(QUOTED, Core::memory_order::memory_order_relaxed);
                             offset++;
                         } else if (stream[loaded] == '-') {
-                            _set = NEGATIVE | DECIMAL;
+                            _set.store(NEGATIVE | DECIMAL, Core::memory_order::memory_order_relaxed);
                             offset = 4;
                         } else if (isdigit(stream[loaded])) {
-                            _set = DECIMAL;
+                            _set.store(DECIMAL, Core::memory_order::memory_order_relaxed);
                             _value = (stream[loaded] - '0');
                             offset = 4;
                         } else if (stream[loaded] == 'n') {
-                            _set = UNDEFINED;
+                            _set.store(UNDEFINED, Core::memory_order::memory_order_relaxed);
                             offset = 1;
                         } else {
                             error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
                             ++loaded;
-                            _set = ERROR;
+                            _set.store(ERROR, Core::memory_order::memory_order_relaxed);
                             offset = 4;
                         }
                     } else if (offset == 1) {
@@ -662,21 +658,21 @@ namespace Core {
                         if (stream[loaded] == '0') {
                             offset = 2;
                         } else if (stream[loaded] == '-') {
-                            _set |= NEGATIVE;
+                            _set.fetch_or(NEGATIVE, Core::memory_order::memory_order_relaxed);
                             offset = 2;
                         } else if (isdigit(stream[loaded])) {
                             _value = (stream[loaded] - '0');
-                            _set |= DECIMAL;
+                            _set.fetch_or(DECIMAL, Core::memory_order::memory_order_relaxed);
                             offset = 4;
-                        } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'u')) {
+                        } else if ((IsNull() == true) && (stream[loaded] == 'u')) {
                             offset = 2;
-                        } else if ((stream[loaded] == '\"') && ((_set & QUOTED) != 0)) {
+                        } else if ((stream[loaded] == '\"') && ((_set.load(Core::memory_order::memory_order_relaxed) & QUOTED) != 0)) {
                             offset = 4;
                             --loaded;
                         } else {
                             error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
                             ++loaded;
-                            _set = ERROR;
+                            _set.store(ERROR, Core::memory_order::memory_order_relaxed);
                             offset = 4;
                         }
                     } else if (offset == 2) {
@@ -684,81 +680,81 @@ namespace Core {
                             offset = 3;
                         } else if (::toupper(stream[loaded]) == 'X') {
                             offset = 4;
-                            _set |= HEXADECIMAL;
+                            _set.fetch_or(HEXADECIMAL, Core::memory_order::memory_order_relaxed);
                         } else if (isdigit(stream[loaded])) {
                             _value = (stream[loaded] - '0');
-                            _set |= (_set & NEGATIVE ? DECIMAL : OCTAL);
+                            _set.fetch_or(_set.load(Core::memory_order::memory_order_relaxed) & NEGATIVE ? DECIMAL : OCTAL, Core::memory_order::memory_order_relaxed);
                             offset = 4;
-                        } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'l')) {
+                        } else if ((IsNull() == true) && (stream[loaded] == 'l')) {
                             offset = 3;
-                        } else if (stream[loaded] == '\"' && ((_set & QUOTED) != 0)) {
+                        } else if (stream[loaded] == '\"' && ((_set.load(Core::memory_order::memory_order_relaxed) & QUOTED) != 0)) {
                             offset = 4;
                             --loaded;
                         } else {
                             error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
                             ++loaded;
-                            _set = ERROR;
+                            _set.store(ERROR, Core::memory_order::memory_order_relaxed);
                             offset = 4;
                         }
                     } else if (offset == 3) {
                         if (::toupper(stream[loaded]) == 'X') {
                             offset = 4;
-                            _set |= HEXADECIMAL;
+                            _set.fetch_or(HEXADECIMAL, Core::memory_order::memory_order_relaxed);
                         } else if (isdigit(stream[loaded])) {
                             _value = (stream[loaded] - '0');
-                            _set |= OCTAL;
+                            _set.fetch_or(OCTAL, Core::memory_order::memory_order_relaxed);
                             offset = 4;
-                        } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'l')) {
+                        } else if ((IsNull() == true) && (stream[loaded] == 'l')) {
                             offset = 4;
-                        } else if (stream[loaded] == '\"' && ((_set & QUOTED) != 0)) {
+                        } else if (stream[loaded] == '\"' && ((_set.load(Core::memory_order::memory_order_relaxed) & QUOTED) != 0)) {
                             offset = 4;
                             --loaded;
                         } else {
                             error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
                             ++loaded;
-                            _set = ERROR;
+                            _set.store(ERROR, Core::memory_order::memory_order_relaxed);
                             offset = 4;
                         }
                     }
                     loaded++;
                 }
 
-                bool completed = ((_set & (ERROR|UNDEFINED)) != 0);
+                bool completed = ((_set.load(Core::memory_order::memory_order_relaxed) & (ERROR|UNDEFINED)) != 0);
 
                 while ((loaded < maxLength) && (completed == false)) {
                     if (isdigit(stream[loaded])) {
-                        _value *= (_set & 0x1F);
+                        _value *= (_set.load(Core::memory_order::memory_order_relaxed) & 0x1F);
                         _value += (stream[loaded] - '0');
                         loaded++;
                     } else if (isxdigit(stream[loaded])) {
                         _value *= 16;
                         _value += (::toupper(stream[loaded]) - 'A') + 10;
                         loaded++;
-                    } else if (((_set & QUOTED) != 0) && (stream[loaded] == '\"')) {
+                    } else if (((_set.load(Core::memory_order::memory_order_relaxed) & QUOTED) != 0) && (stream[loaded] == '\"')) {
                         completed = true;
                         loaded++;
-                    } else if (((_set & QUOTED) == 0) && (::isspace(stream[loaded]) || (stream[loaded] == '\0') || (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']'))) {
+                    } else if (((_set.load(Core::memory_order::memory_order_relaxed) & QUOTED) == 0) && (::isspace(stream[loaded]) || (stream[loaded] == '\0') || (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']'))) {
                         completed = true;
                     } else {
                         // Oopsie daisy, error, computer says *NO*
                         error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
                         ++loaded;
-                        _set |= ERROR;
+                        _set.fetch_or(ERROR, Core::memory_order::memory_order_relaxed);
                         completed = true;
                     }
                 }
 
-                if ((_set & (ERROR | QUOTED)) == (ERROR | QUOTED)) {
+                if ((_set.load(Core::memory_order::memory_order_relaxed) & (ERROR | QUOTED)) == (ERROR | QUOTED)) {
                     while ((loaded < maxLength) && (offset != 0)) {
                         if (stream[loaded++] == '\"') {
                             offset = 0;
                         }
                     }
                 } else if ( (completed == true) && (offset >= 4) ) {
-                    if (_set & NEGATIVE) {
+                    if (_set.load(Core::memory_order::memory_order_relaxed) & NEGATIVE) {
                         _value *= -1;
                     }
-                    _set |= SET;
+                    _set.fetch_or(SET, Core::memory_order::memory_order_relaxed);
                     offset = 0;
                 }
 
@@ -768,7 +764,7 @@ namespace Core {
             // IMessagePack iface:
             uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                if ((_set & UNDEFINED) != 0) {
+                if (IsNull() == true) {
                     stream[0] = IMessagePack::NullValue;
                     return (1);
                 }
@@ -784,31 +780,31 @@ namespace Core {
                     uint8_t header = stream[loaded++];
 
                     if (header == IMessagePack::NullValue) {
-                        _set = UNDEFINED;
+                        _set.store(UNDEFINED, Core::memory_order::memory_order_relaxed);
                     } else if ((header >= 0xCC) && (header <= 0xCF)) {
-                        _set = (1 << (header - 0xCC)) << 12;
+                        _set.store((1 << (header - 0xCC)) << 12, Core::memory_order::memory_order_relaxed);
                         offset = 1;
                     } else if ((header >= 0xD0) && (header <= 0xD3)) {
-                        _set = (1 << (header - 0xD0)) << 12;
+                        _set.store((1 << (header - 0xD0)) << 12, Core::memory_order::memory_order_relaxed);
                         offset = 1;
                     } else if ((header & 0x80) == 0) {
                         _value = (header & 0x7F);
                     } else if ((header & 0xE0) == 0xE0) {
                         _value = (header & 0x0F);
-                        _set = NEGATIVE;
+                        _set.store(NEGATIVE, Core::memory_order::memory_order_relaxed);
                     } else {
-                        _set = ERROR;
+                        _set.store(ERROR, Core::memory_order::memory_order_relaxed);
                     }
                 }
 
                 while ((loaded < maxLength) && (offset != 0)) {
                     _value = _value << 8;
                     _value += stream[loaded++];
-                    offset = (offset == ((_set >> 12) & 0xF) ? 0 : offset + 1);
+                    offset = (offset == ((_set.load(Core::memory_order::memory_order_relaxed) >> 12) & 0xF) ? 0 : offset + 1);
                 }
 
                 if (_value != 0) {
-                    _set |= SET;
+                    _set.fetch_or(SET, Core::memory_order::memory_order_relaxed);
                 }
                 return (loaded);
             }
@@ -941,9 +937,9 @@ namespace Core {
             }
 
         private:
-            uint16_t _set;
+            std::atomic<uint16_t> _set;
             TYPE _value;
-            TYPE _default;
+            const TYPE _default;
         };
 
         typedef NumberType<uint8_t, false, BASE_DECIMAL> DecUInt8;
@@ -977,12 +973,12 @@ namespace Core {
         template <class TYPE>
         class FloatType : public IElement, public IMessagePack {
         private:
-            enum modes {
-                QUOTED = 0x020,
-                SET = 0x040,
-                ERROR = 0x080,
-                NEGATIVE = 0x100,
-                UNDEFINED = 0x200
+            enum modes : uint8_t {
+                QUOTED = 0x01,
+                SET = 0x02,
+                NEGATIVE = 0x04,
+                UNDEFINED = 0x08,
+                ERROR = 0x80
             };
 
         public:
@@ -1003,21 +999,19 @@ namespace Core {
             }
 
             FloatType(const FloatType<TYPE>& copy)
-                : _set(copy._set)
+                : _set(copy._set.load(Core::memory_order::memory_order_relaxed))
                 , _value(copy._value)
                 , _default(copy._default)
                 , _strValue()
             {
             }
 
-            ~FloatType() override
-            {
-            }
+            ~FloatType() override = default;
 
             FloatType<TYPE>& operator=(const FloatType<TYPE>& RHS)
             {
                 _value = RHS._value;
-                _set = RHS._set;
+                _set.store(RHS._set.load(Core::memory_order::memory_order_relaxed), Core::memory_order::memory_order_relaxed);
 
                 return (*this);
             }
@@ -1025,7 +1019,7 @@ namespace Core {
             FloatType<TYPE>& operator=(const TYPE& RHS)
             {
                 _value = RHS;
-                _set = SET;
+                _set.store(SET, Core::memory_order::memory_order_relaxed);
 
                 return (*this);
             }
@@ -1037,7 +1031,7 @@ namespace Core {
 
             inline TYPE Value() const
             {
-                return ((_set & SET) != 0 ? _value : _default);
+                return (IsSet() ? _value : _default);
             }
 
             inline operator TYPE() const
@@ -1048,26 +1042,25 @@ namespace Core {
             void Null(const bool enabled)
             {
                 if (enabled == true)
-                    _set |= (UNDEFINED|SET);
+                    _set.fetch_or((UNDEFINED|SET), Core::memory_order::memory_order_relaxed);
                 else
-                    _set &= ~(UNDEFINED|SET);
+                    _set.fetch_and(~(UNDEFINED|SET), Core::memory_order::memory_order_relaxed);
             }
 
             // IElement and IMessagePack iface:
             bool IsSet() const override
             {
-                return ((_set & SET) != 0);
+                return ((_set.load(Core::memory_order::memory_order_relaxed) & SET) != 0);
             }
 
             bool IsNull() const override
             {
-                return ((_set & UNDEFINED) != 0);
+                return ((_set.load(Core::memory_order::memory_order_relaxed) & UNDEFINED) != 0);
             }
 
             void Clear() override
             {
-                _set = 0;
-                _value = 0;
+                _set.store(0, Core::memory_order::memory_order_relaxed);
             }
 
         private:
@@ -1102,7 +1095,7 @@ namespace Core {
 
                 ASSERT(maxLength > 0);
 
-                if ((_set & UNDEFINED) != 0 || 
+                if ((IsNull() == true) || 
                     std::isinf(_value) ||
                     std::isnan(_value)) 
                 {
@@ -1125,12 +1118,12 @@ namespace Core {
 
                 if (offset == 0) {
                     _value = 0;
-                    _set = 0;
+                    _set.store(0, Core::memory_order::memory_order_relaxed);
                     _strValue.clear();
                 }
 
-                if ((stream[loaded] == '\"') && ((_set & QUOTED) == 0)) {
-                    _set = QUOTED;
+                if ((stream[loaded] == '\"') && ((_set.load(Core::memory_order::memory_order_relaxed) & QUOTED) == 0)) {
+                    _set.fetch_or(QUOTED, Core::memory_order::memory_order_relaxed);
                     offset++;
                     loaded++;
                 }
@@ -1139,12 +1132,12 @@ namespace Core {
 
                 while ((loaded < maxLength) && (completed == false)) {
 
-                    if (((_set & QUOTED) != 0) && (stream[loaded] == '\"')) {
+                    if (((_set.load(Core::memory_order::memory_order_relaxed) & QUOTED) != 0) && (stream[loaded] == '\"')) {
                         completed = true;
                         loaded++;
                         offset++;
-                        _set &= ~QUOTED;
-                    } else if ( (((_set & QUOTED) == 0) && (::isspace(stream[loaded]))) || (stream[loaded] == '\0') ||
+                        _set.fetch_and(~QUOTED, Core::memory_order::memory_order_relaxed);
+                    } else if ( (((_set.load(Core::memory_order::memory_order_relaxed) & QUOTED) == 0) && (::isspace(stream[loaded]))) || (stream[loaded] == '\0') ||
                                (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']') ) {
                         completed = true;
                     } else {
@@ -1156,7 +1149,7 @@ namespace Core {
                 if (completed == true) {
 
                     if (_strValue == IElement::NullTag) {
-                        _set |= (SET|UNDEFINED);
+                        _set.fetch_or((SET|UNDEFINED), Core::memory_order::memory_order_relaxed);
 
                     } else {
                         TYPE val;
@@ -1169,10 +1162,10 @@ namespace Core {
 
                         if (end == _strValue.c_str()) {
                             error = Error{ "Error converting \"" + _strValue + "\" to a float/double" };
-                            _set = ERROR;
+                            _set.store(ERROR, Core::memory_order::memory_order_relaxed);
                         } else {
                             _value = val;
-                            _set |= SET;
+                            _set.fetch_or(SET, Core::memory_order::memory_order_relaxed);
                         }
 
                         _strValue.clear();
@@ -1188,7 +1181,7 @@ namespace Core {
             // for MessagePack format for float.
             uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                if ((_set & UNDEFINED) != 0 || 
+                if ((IsNull() == true) || 
                     std::isinf(_value) ||
                     std::isnan(_value))  
                 {
@@ -1232,13 +1225,13 @@ namespace Core {
                     uint8_t header = stream[loaded++];
 
                     if (header == IMessagePack::NullValue) {
-                        _set = UNDEFINED;
+                        _set.store(UNDEFINED, Core::memory_order::memory_order_relaxed);
                     } else if (header == 0xCA) {
                         bytes = 4;
                     } else if (header == 0xCB) {
                         bytes = 8;
                     } else {
-                        _set = ERROR;
+                        _set.store(ERROR, Core::memory_order::memory_order_relaxed);
                     }
                 }
 
@@ -1250,15 +1243,15 @@ namespace Core {
                 }
 
                 if (_value != 0) {
-                    _set |= SET;
+                    _set.fetch_or(SET, Core::memory_order::memory_order_relaxed);
                 }
                 return loaded;
             }
 
         private:
-            uint16_t _set;
+            std::atomic<uint8_t> _set;
             TYPE _value;
-            TYPE _default;
+            const TYPE _default;
             std::string _strValue;
         };
 
@@ -1277,28 +1270,26 @@ namespace Core {
 
         public:
             Boolean()
-                : _value(None)
+                : _set(None)
             {
             }
 
-            Boolean(const bool Value)
-                : _value(Value ? DefaultBit : None)
+            Boolean(const bool value)
+                : _set(value ? DefaultBit : None)
             {
             }
 
             Boolean(const Boolean& copy)
-                : _value(copy._value)
+                : _set(copy._set.load(Core::memory_order::memory_order_relaxed))
             {
             }
 
-            ~Boolean()
-            {
-            }
+            ~Boolean() override = default;
 
             Boolean& operator=(const Boolean& RHS)
             {
                 // Do not overwrite the default, if not set...copy if set
-                _value = (RHS._value & (SetBit | ValueBit)) | ((RHS._value & (SetBit)) ? (RHS._value & DefaultBit) : (_value & DefaultBit));
+                _set.store (RHS._set.load(Core::memory_order::memory_order_relaxed) & (SetBit | ValueBit | NullBit | ErrorBit), Core::memory_order::memory_order_relaxed);
 
                 return (*this);
             }
@@ -1306,19 +1297,20 @@ namespace Core {
             Boolean& operator=(const bool& RHS)
             {
                 // Do not overwrite the default
-                _value = (RHS ? (SetBit | ValueBit) : SetBit) | (_value & DefaultBit);
+                _set.store (((RHS ? (SetBit | ValueBit) : SetBit) | (_set.load(Core::memory_order::memory_order_relaxed) & DefaultBit)), Core::memory_order::memory_order_relaxed);
 
                 return (*this);
             }
 
             inline bool Value() const
             {
-                return ((_value & SetBit) != 0 ? (_value & ValueBit) != 0 : (_value & DefaultBit) != 0);
+                uint8_t value = _set.load(Core::memory_order::memory_order_relaxed);
+                return ((value & SetBit) != 0 ? (value & ValueBit) != 0 : (value & DefaultBit) != 0);
             }
 
             inline bool Default() const
             {
-                return (_value & DefaultBit) != 0;
+                return ((_set.load(Core::memory_order::memory_order_relaxed) & DefaultBit) != 0);
             }
 
             inline operator bool() const
@@ -1329,25 +1321,25 @@ namespace Core {
             void Null(const bool enabled)
             {
                 if (enabled == true)
-                    _value |= (SetBit|NullBit);
+                    _set.fetch_or((SetBit|NullBit), Core::memory_order::memory_order_relaxed);
                 else
-                    _value &= ~(SetBit|NullBit);
+                    _set.fetch_and(~(SetBit|NullBit), Core::memory_order::memory_order_relaxed);
             }
 
             // IElement and IMessagePack iface:
             bool IsSet() const override
             {
-                return ((_value & SetBit) != 0);
+                return ((_set.load(Core::memory_order::memory_order_relaxed) & SetBit) != 0);
             }
 
             bool IsNull() const override
             {
-                return ((_value & NullBit) != 0);
+                return ((_set.load(Core::memory_order::memory_order_relaxed) & NullBit) != 0);
             }
 
             void Clear() override
             {
-                _value = (_value & DefaultBit);
+                _set.store(_set.load(Core::memory_order::memory_order_relaxed) & DefaultBit, Core::memory_order::memory_order_relaxed);
             }
 
         private:
@@ -1355,7 +1347,7 @@ namespace Core {
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 uint16_t loaded = 0;
-                if ((_value & NullBit) != 0) {
+                if (IsNull() == true) {
                     while ((loaded < maxLength) && (offset < 4)) {
                         stream[loaded++] = NullTag[offset++];
                     }
@@ -1388,45 +1380,45 @@ namespace Core {
 
                 if (offset == 0) {
                     if (stream[0] == trueBuffer[0]) {
-                        _value = DeserializeBit | (_value & DefaultBit);
+                        _set.store(DeserializeBit | (_set.load(Core::memory_order::memory_order_relaxed) & DefaultBit), Core::memory_order::memory_order_relaxed);
                         offset = 1;
                         loaded = 1;
                     } else if (stream[0] == falseBuffer[0]) {
-                        _value = (_value & DefaultBit);
+                        _set.store (_set.load(Core::memory_order::memory_order_relaxed) & DefaultBit, Core::memory_order::memory_order_relaxed);
                         offset = 1;
                         loaded = 1;
                     } else if (stream[0] == IElement::NullTag[0]) {
                         offset = 1;
-                        _value = NullBit | (_value & DefaultBit);
+                        _set.store ((_set.load(Core::memory_order::memory_order_relaxed) & DefaultBit) | NullBit, Core::memory_order::memory_order_relaxed);
                         loaded = 1;
                     } else if (stream[0] == '0') {
-                        _value = SetBit | (_value & DefaultBit);
+                        _set.store ((_set.load(Core::memory_order::memory_order_relaxed) & DefaultBit) | SetBit, Core::memory_order::memory_order_relaxed);
                         loaded = 1;
                     } else if (stream[0] == '1') {
-                        _value = SetBit | ValueBit | (_value & DefaultBit);
+                        _set.store ((_set.load(Core::memory_order::memory_order_relaxed) & DefaultBit) | SetBit | ValueBit, Core::memory_order::memory_order_relaxed);
                         loaded = 1;
                     } else {
-                        _value = ErrorBit | (_value & DefaultBit);
+                        _set.store ((_set.load(Core::memory_order::memory_order_relaxed) & DefaultBit) | ErrorBit, Core::memory_order::memory_order_relaxed);
                         offset = 0;
                     }
                 }
 
                 if (offset > 0) {
-                    uint8_t length = (_value & NullBit ? sizeof(IElement::NullTag) : _value & DeserializeBit ? sizeof(IElement::TrueTag) : sizeof(IElement::FalseTag)) - 1;
-                    const char* buffer = (_value & NullBit ? IElement::NullTag : _value & DeserializeBit ? IElement::TrueTag : IElement::FalseTag);
+                    uint8_t length = (IsNull() ? sizeof(IElement::NullTag) : _set.load(Core::memory_order::memory_order_relaxed) & DeserializeBit ? sizeof(IElement::TrueTag) : sizeof(IElement::FalseTag)) - 1;
+                    const char* buffer = (IsNull() ? IElement::NullTag : _set.load(Core::memory_order::memory_order_relaxed) & DeserializeBit ? IElement::TrueTag : IElement::FalseTag);
 
-                    while ((loaded < maxLength) && (offset < length) && ((_value & ErrorBit) == 0)) {
+                    while ((loaded < maxLength) && (offset < length) && ((_set.load(Core::memory_order::memory_order_relaxed) & ErrorBit) == 0)) {
                         if (stream[loaded] != buffer[offset]) {
-                            _value = ErrorBit | (_value & DefaultBit);
+                            _set.store((_set.load(Core::memory_order::memory_order_relaxed) & DefaultBit) | ErrorBit, Core::memory_order::memory_order_relaxed);
                         } else {
                             offset++;
                             loaded++;
                         }
                     }
 
-                    if ((offset == length) || ((_value & ErrorBit) != 0)) {
+                    if ((offset == length) || ((_set.load(Core::memory_order::memory_order_relaxed) & ErrorBit) != 0)) {
                         offset = 0;
-                        _value |= SetBit | ((_value & (ErrorBit | DeserializeBit | NullBit)) == DeserializeBit ? ValueBit : 0);
+                        _set.fetch_or(SetBit | ((_set.load(Core::memory_order::memory_order_relaxed) & (ErrorBit | DeserializeBit | NullBit)) == DeserializeBit ? ValueBit : 0), Core::memory_order::memory_order_relaxed);
                     }
                 }
                 return (loaded);
@@ -1437,9 +1429,9 @@ namespace Core {
             {
                 ASSERT (maxLength >= 1);
 
-                if ((_value & NullBit) != 0) {
+                if (IsNull() == true) {
                     stream[offset] = IMessagePack::NullValue;
-                } else if ((_value & ValueBit) != 0) {
+                } else if ((_set.load(Core::memory_order::memory_order_relaxed) & ValueBit) != 0) {
                     stream[offset] = 0xC3;
                 } else {
                     stream[offset] = 0xC2;
@@ -1452,20 +1444,20 @@ namespace Core {
                 ASSERT (maxLength >= 1);
 
                 if ((stream[0] == IMessagePack::NullValue) != 0) {
-                    _value = NullBit;
+                    _set.store((_set.load(Core::memory_order::memory_order_relaxed) & DefaultBit) |  NullBit, Core::memory_order::memory_order_relaxed);
                 } else if ((stream[offset] == 0xC3) != 0) {
-                    _value = ValueBit | SetBit;
+                    _set.store((_set.load(Core::memory_order::memory_order_relaxed) & DefaultBit) |  SetBit | ValueBit, Core::memory_order::memory_order_relaxed);
                 } else if ((stream[offset] == 0xC2) != 0) {
-                    _value = SetBit;
+                    _set.store((_set.load(Core::memory_order::memory_order_relaxed) & DefaultBit) |  SetBit, Core::memory_order::memory_order_relaxed);
                 } else {
-                    _value = ErrorBit;
+                    _set.store((_set.load(Core::memory_order::memory_order_relaxed) & DefaultBit) |  ErrorBit, Core::memory_order::memory_order_relaxed);
                 }
 
                 return (1);
             }
 
         private:
-            uint8_t _value;
+            std::atomic<uint8_t> _set;
         };
 
         class EXTERNAL String : public IElement, public IMessagePack {
@@ -1492,32 +1484,29 @@ namespace Core {
             {
             }
 
-            explicit String(const string& Value, const bool quoted = true)
-                : _default()
+            explicit String(const string& value, const bool quoted = true)
+                : _default(Core::ToString(value))
                 , _value()
                 , _storage(0)
                 , _flagsAndCounters(quoted ? QuotedSerializeBit : 0)
             {
-                Core::ToString(Value.c_str(), _default);
             }
 
-            explicit String(const char Value[], const bool quoted = true)
-                : _default()
+            explicit String(const char value[], const bool quoted = true)
+                : _default(Core::ToString(value))
                 , _value()
                 , _storage(0)
                 , _flagsAndCounters(quoted ? QuotedSerializeBit : 0)
             {
-                Core::ToString(Value, _default);
             }
 
 #ifndef __CORE_NO_WCHAR_SUPPORT__
-            explicit String(const wchar_t Value[], const bool quoted = true)
-                : _default()
+            explicit String(const wchar_t value[], const bool quoted = true)
+                : _default(Core::ToString(value))
                 , _value()
                 , _storage(0)
                 , _flagsAndCounters(quoted ? QuotedSerializeBit : 0)
             {
-                Core::ToString(Value, _default);
             }
 #endif // __CORE_NO_WCHAR_SUPPORT__
 
@@ -1525,7 +1514,7 @@ namespace Core {
                 : _default(copy._default)
                 , _value(copy._value)
                 , _storage(copy._storage)
-                , _flagsAndCounters(copy._flagsAndCounters)
+                , _flagsAndCounters(copy._flagsAndCounters.load(Core::memory_order::memory_order_relaxed))
             {
             }
 
@@ -1534,7 +1523,7 @@ namespace Core {
             String& operator=(const string& RHS)
             {
                 Core::ToString(RHS.c_str(), _value);
-                _flagsAndCounters |= SetBit;
+                _flagsAndCounters.fetch_or(SetBit, Core::memory_order::memory_order_relaxed);
 
                 return (*this);
             }
@@ -1542,7 +1531,7 @@ namespace Core {
             String& operator=(const char RHS[])
             {
                 Core::ToString(RHS, _value);
-                _flagsAndCounters |= SetBit;
+                _flagsAndCounters.fetch_or(SetBit, Core::memory_order::memory_order_relaxed);
 
                 return (*this);
             }
@@ -1551,7 +1540,7 @@ namespace Core {
             String& operator=(const wchar_t RHS[])
             {
                 Core::ToString(RHS, _value);
-                _flagsAndCounters |= SetBit;
+                _flagsAndCounters.fetch_or(SetBit, Core::memory_order::memory_order_relaxed);
 
                 return (*this);
             }
@@ -1559,9 +1548,8 @@ namespace Core {
 
             String& operator=(const String& RHS)
             {
-                _default = RHS._default;
                 _value = RHS._value;
-                _flagsAndCounters = RHS._flagsAndCounters;
+                _flagsAndCounters = RHS._flagsAndCounters.load(Core::memory_order::memory_order_relaxed);
 
                 return (*this);
             }
@@ -1622,10 +1610,10 @@ namespace Core {
 
             inline const string Value() const
             {
-                if ((_flagsAndCounters & (SetBit | QuoteFoundBit | QuotedSerializeBit)) == (SetBit | QuoteFoundBit)) {
+                if ((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & (SetBit | QuoteFoundBit | QuotedSerializeBit)) == (SetBit | QuoteFoundBit)) {
                     return ('\"' + Core::ToString(_value.c_str()) + '\"');
                 }
-                return (((_flagsAndCounters & (SetBit | NullBit)) == SetBit) ? Core::ToString(_value.c_str()) : Core::ToString(_default.c_str()));
+                return (((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & (SetBit | NullBit)) == SetBit) ? Core::ToString(_value) : Core::ToString(_default));
             }
 
             inline const string& Default() const
@@ -1636,11 +1624,11 @@ namespace Core {
             void Null(const bool enabled)
             {
                 if (enabled == true) {
-                    _flagsAndCounters |= (NullBit | SetBit);
+                    _flagsAndCounters.fetch_or((NullBit | SetBit), Core::memory_order::memory_order_relaxed);
                     _value = IElement::NullTag;
                 }
                 else {
-                    _flagsAndCounters &= ~(NullBit | SetBit);
+                    _flagsAndCounters.fetch_and(static_cast<uint16_t>(~(NullBit | SetBit)), Core::memory_order::memory_order_relaxed);
                     _value.clear();
                 }
             }
@@ -1648,32 +1636,32 @@ namespace Core {
             // IElement iface:
             bool IsNull() const override
             {
-                return (_flagsAndCounters & NullBit) != 0;
+                return (_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & NullBit) != 0;
             }
 
             bool IsSet() const override
             {
-                return ((_flagsAndCounters & SetBit) != 0);
+                return ((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & SetBit) != 0);
             }
 
             void Clear() override
             {
-                _flagsAndCounters = (_flagsAndCounters & QuotedSerializeBit);
+                _flagsAndCounters.store(_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & QuotedSerializeBit, Core::memory_order::memory_order_relaxed);
                 _value.clear();
             }
 
             inline bool IsQuoted() const
             {
-                return (((_flagsAndCounters & NullBit) == 0) && ((_flagsAndCounters & (QuotedSerializeBit | QuoteFoundBit)) != 0));
+                return ((IsNull() == false) && ((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & (QuotedSerializeBit | QuoteFoundBit)) != 0));
             }
 
             inline void SetQuoted(const bool enable)
             {
                 if (enable == true) {
-                    _flagsAndCounters |= QuotedSerializeBit;
+                    _flagsAndCounters.fetch_or(QuotedSerializeBit, Core::memory_order::memory_order_relaxed);
                 }
                 else {
-                    _flagsAndCounters &= (~QuotedSerializeBit);
+                    _flagsAndCounters.fetch_and(~QuotedSerializeBit, Core::memory_order::memory_order_relaxed);
                 }
             }
 
@@ -1685,7 +1673,7 @@ namespace Core {
 
                 ASSERT(maxLength > 0);
 
-                if ((_flagsAndCounters & SetBit) != 0) {
+                if (IsSet() == true) {
                     bool isQuoted = IsQuoted();
                     if (offset == 0)  {
                         if (isQuoted == true) {
@@ -1693,7 +1681,7 @@ namespace Core {
                             stream[result++] = '\"';
                         }
                         offset = 1;
-                        _flagsAndCounters &= (FlagMask ^ (SpecialSequenceBit|EscapeFoundBit));
+                        _flagsAndCounters.fetch_and(FlagMask ^ (SpecialSequenceBit|EscapeFoundBit), Core::memory_order::memory_order_relaxed);
                     }
 
                     uint32_t length = static_cast<uint32_t>(_value.length()) - (offset - 1);
@@ -1707,12 +1695,12 @@ namespace Core {
                             length--;
                             offset++;
                         }
-                        else if ((_flagsAndCounters & SpecialSequenceBit) == 0) {
+                        else if ((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & SpecialSequenceBit) == 0) {
                             // We need to escape these..
                             stream[result++] = '\\';
-                            _flagsAndCounters |= SpecialSequenceBit;
+                            _flagsAndCounters.fetch_or(SpecialSequenceBit, Core::memory_order::memory_order_relaxed);
                         }
-                        else if ((_flagsAndCounters & 0xFF) == 0x00) {
+                        else if ((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & 0xFF) == 0x00) {
                             // Check if it is a single character drop or a \u
                             switch (current) {
                             case 0x08: stream[result++] = 'b'; break;
@@ -1744,7 +1732,7 @@ namespace Core {
 
                                 // Oke start processing an escape squence and remember how many bytes we jump if
                                 // we are completed, start at 2 index now as we already wrote /u 
-                                _flagsAndCounters |= ((codeSize & 0x07) << 3) | 0x02;
+                                _flagsAndCounters.fetch_or(((codeSize & 0x07) << 3) | 0x02, Core::memory_order::memory_order_relaxed);
 
                                 stream[result++] = 'u';
                                 break;
@@ -1752,15 +1740,15 @@ namespace Core {
                             }
 
                             // If all has been writeen it is time to move back to the "copying situation...
-                            if ((_flagsAndCounters & 0xFF) == 0x00) {
-                                _flagsAndCounters ^= SpecialSequenceBit;
+                            if ((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & 0xFF) == 0x00) {
+                                _flagsAndCounters.fetch_xor(SpecialSequenceBit, Core::memory_order::memory_order_relaxed);
                                 length--;
                                 offset++;
                             }
                         }
                         else {
-                            if ((_flagsAndCounters & 0x7) < 0x2) {
-                                stream[result++] = ((_flagsAndCounters & 0x07) == 0 ? '\\' : 'u');
+                            if ((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & 0x7) < 0x2) {
+                                stream[result++] = ((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & 0x07) == 0 ? '\\' : 'u');
                             }
                             else {
                                 uint8_t part;
@@ -1768,29 +1756,29 @@ namespace Core {
                                 // Write out the CodePoint....
                                 if (_storage > 0xFFFF) {
                                     // First write the Most Significant part
-                                    part = (_storage >> (16 + ((5 - (_flagsAndCounters & 0x07)) * 4))) & 0x0F;
+                                    part = (_storage >> (16 + ((5 - (_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & 0x07)) * 4))) & 0x0F;
                                 }
                                 else {
-                                    part = (_storage >> ((5 - (_flagsAndCounters & 0x07)) * 4)) & 0x0F;
+                                    part = (_storage >> ((5 - (_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & 0x07)) * 4)) & 0x0F;
                                 }
                                 stream[result++] = (part > 9 ? 'A' + (part - 10) : '0' + part);
                             }
 
-                            _flagsAndCounters += 1;
+                            _flagsAndCounters.fetch_add(1, Core::memory_order::memory_order_relaxed);
 
-                            if ((_flagsAndCounters & 0x7) == 6) {
+                            if ((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & 0x7) == 6) {
                                 // Oke we flushed a HEX value of 4 digits, lets determine the next step..
                                 if (_storage > 0xFFFF) {
                                     _storage = (_storage & 0xFFFF);
-                                    _flagsAndCounters &= (FlagMask | 0xF8);
+                                    _flagsAndCounters.fetch_and((FlagMask | 0xF8), Core::memory_order::memory_order_relaxed);
                                 }
                                 else {
                                     // We are done ! Move on, strange character has been handled and converted
-                                    uint8_t skip = ((_flagsAndCounters >> 3) & 0x07);
+                                    uint8_t skip = ((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) >> 3) & 0x07);
                                     length -= skip;
                                     offset += skip;
 
-                                    _flagsAndCounters &= (FlagMask ^ SpecialSequenceBit);
+                                    _flagsAndCounters.fetch_and(FlagMask ^ SpecialSequenceBit, Core::memory_order::memory_order_relaxed);
                                 }
                             }
                         }
@@ -1812,12 +1800,12 @@ namespace Core {
             }
             bool InScope(const ScopeBracket mode) {
                 bool added = false;
-                uint8_t depth = (_flagsAndCounters & 0x1F);
+                uint8_t depth = (_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & 0x1F);
 
                 if ( ((depth != 0) || (_value.empty() == true)) && ((depth + 1) <= 31) ) {
                     _storage <<= 1;
                     _storage |= static_cast<uint8_t>(mode);
-                    _flagsAndCounters++;
+                    _flagsAndCounters.fetch_add(1, Core::memory_order::memory_order_relaxed);
                     added = true;
                 }
                 return (added);
@@ -1825,10 +1813,10 @@ namespace Core {
             bool OutScope(const ScopeBracket mode) {
                 bool succcesfull = false;
                 ScopeBracket bracket = static_cast<ScopeBracket>(_storage & 0x1);
-                uint8_t depth = (_flagsAndCounters & 0x1F);
+                uint8_t depth = (_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & 0x1F);
                 if ((depth > 0) && (bracket == mode)) {
                     _storage >>= 1;
-                    _flagsAndCounters--;
+                    _flagsAndCounters.fetch_sub(1, Core::memory_order::memory_order_relaxed);
                     succcesfull = true;
                 }
                 return (succcesfull);
@@ -1842,11 +1830,11 @@ namespace Core {
 
                 if (offset == 0) {
                     _value.clear();
-                    _flagsAndCounters &= (FlagMask ^ (SpecialSequenceBit|EscapeFoundBit|QuoteFoundBit));
+                    _flagsAndCounters.fetch_and(FlagMask ^ (SpecialSequenceBit|EscapeFoundBit|QuoteFoundBit), Core::memory_order::memory_order_relaxed);
                     _storage = 0;
                     if (stream[result] == '\"') {
                         result++;
-                        _flagsAndCounters |= QuoteFoundBit;
+                        _flagsAndCounters.fetch_or(QuoteFoundBit, Core::memory_order::memory_order_relaxed);
                     }
                     offset = 1;
                 }
@@ -1857,7 +1845,7 @@ namespace Core {
                     TCHAR current = stream[result];
 
                     // What are we deserializing a string, or an opaque JSON object!!!
-                    if ((_flagsAndCounters & QuoteFoundBit) == 0) {
+                    if ((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & QuoteFoundBit) == 0) {
                         // It's an opaque structure, so *no* decoding required. Leave as is !
                         if (current == '{') {
                             if (InScope(ScopeBracket::CURLY_BRACKET) == false) {
@@ -1869,10 +1857,10 @@ namespace Core {
                                 error = Error{ "Opaque object nesting too deep" };
                             }
                         }
-                        else if ((_flagsAndCounters & 0x1F) == 0) {
+                        else if ((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & 0x1F) == 0) {
                             // If we did not open an object, the only thing we allow are whitespaces as they can 
                             // always be dropped!
-                            finished = (((_flagsAndCounters & EscapeFoundBit) == 0) && ((current == ',') || (current == '}') || (current == ']')));
+                            finished = (((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & EscapeFoundBit) == 0) && ((current == ',') || (current == '}') || (current == ']')));
                         }
                         else if (current == '}') {
                             if (OutScope(ScopeBracket::CURLY_BRACKET) == false) {
@@ -1891,18 +1879,18 @@ namespace Core {
 
                             if ((current == '\"') && ((_value.empty() == true) || (_value[_value.length() - 1] != '\\'))) {
                                 // Oke we are going to enetr a Serialized thingy... lets be opaque from here on
-                                _flagsAndCounters ^= EscapeFoundBit;
+                                _flagsAndCounters.fetch_xor(EscapeFoundBit, Core::memory_order::memory_order_relaxed);
                             }
 
                             result++;
                         }
                     }
                     // Since it is a "real" string translate back all escaped stuff.. are we in an unescaping mode?
-                    else if ((_flagsAndCounters & SpecialSequenceBit) == 0x00) {
+                    else if ((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & SpecialSequenceBit) == 0x00) {
                         // Nope we are not, so see if we need to start it and otherwise, just copy...
                         if (current == '\\') {
                             // And we need to start it.
-                            _flagsAndCounters |= SpecialSequenceBit;
+                            _flagsAndCounters.fetch_or(SpecialSequenceBit, Core::memory_order::memory_order_relaxed);
                         }
                         else if (current == '\"') {
                             // We are done! leave this element.
@@ -1914,10 +1902,10 @@ namespace Core {
                         }
                         result++;
                     }
-                    else if ((_flagsAndCounters & 0xFF) == 0x00) {
+                    else if ((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & 0xFF) == 0x00) {
 
                         if (current == 'u') {
-                            _flagsAndCounters |= 0x4;
+                            _flagsAndCounters.fetch_or(0x4, Core::memory_order::memory_order_relaxed);
                         }
                         else {
                             // We are in a string mode, so we need to decode. Decode what we receive..
@@ -1934,13 +1922,13 @@ namespace Core {
                                 error = Error{ "unknown escaping code." };
                                 break;
                             }
-                            _flagsAndCounters ^= SpecialSequenceBit;
+                            _flagsAndCounters.fetch_xor(SpecialSequenceBit, Core::memory_order::memory_order_relaxed);
                         }
                         result++;
                     }
                     else {
                         // If we end up here, we are actually gathering unicode values to be decoded.
-                        _flagsAndCounters--;
+                        _flagsAndCounters.fetch_sub(1, Core::memory_order::memory_order_relaxed);
 
                         if (::isxdigit(current) == false) {
                             error = Error{ "the unescaping of the u requires hexadecimal characters" };
@@ -1948,8 +1936,8 @@ namespace Core {
                         else {
                             _storage = (_storage << 4) | ((::isdigit(current) ? current - '0' : 10 + (::toupper(current) - 'A')) & 0xF);
                             result++;
-                            if ((_flagsAndCounters & 0xFF) == 0x00) {
-                                _flagsAndCounters ^= SpecialSequenceBit;
+                            if ((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & 0xFF) == 0x00) {
+                                _flagsAndCounters.fetch_xor(SpecialSequenceBit, Core::memory_order::memory_order_relaxed);
 
                                 // Examine the codePoint, if ot is a pair ot not..
                                 if ( (_storage >= 0xFFFF) || ((_storage & 0xFC00) != 0xD800) ) {
@@ -1980,9 +1968,9 @@ namespace Core {
                     offset += static_cast<uint32_t>(_value.length()) ;
                 } else {
                     offset = 0;
-                    _flagsAndCounters |= (_value == IElement::NullTag ? NullBit|SetBit : SetBit);
+                    _flagsAndCounters.fetch_or((_value == IElement::NullTag ? NullBit|SetBit : SetBit), Core::memory_order::memory_order_relaxed);
 
-                    if ((_flagsAndCounters & QuoteFoundBit) == 0) {
+                    if ((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & QuoteFoundBit) == 0) {
                         // Right-trim the non-string value, it's always left-trimmed already
                         _value.erase(std::find_if(_value.rbegin(), _value.rend(), [](const unsigned char ch) { return (!std::isspace(ch)); }).base(), _value.end());
                     }
@@ -1996,7 +1984,7 @@ namespace Core {
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
-                    if ((_flagsAndCounters & NullBit) != 0) {
+                    if ((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & NullBit) != 0) {
                         stream[loaded++] = IMessagePack::NullValue;
                     } else if (_value.length() <= 31) {
                         _storage = 1;
@@ -2046,7 +2034,7 @@ namespace Core {
                 if (offset == 0) {
                     _value.clear();
                     if (stream[loaded] == IMessagePack::NullValue) {
-                        _flagsAndCounters |= NullBit;
+                        _flagsAndCounters.fetch_or(NullBit, Core::memory_order::memory_order_relaxed);
                         loaded++;
                     } else if ((stream[loaded] & 0xA0) == 0xA0) {
                         _storage = stream[loaded] & 0x1F;
@@ -2078,7 +2066,7 @@ namespace Core {
 
                     if ((offset >= 3) && (static_cast<uint16_t>(offset - 3) == _storage)) {
                         offset = 0;
-                        _flagsAndCounters |= ((_flagsAndCounters & QuoteFoundBit) ? SetBit : (_value == NullTag ? NullBit : SetBit));
+                        _flagsAndCounters.fetch_or(((_flagsAndCounters.load(Core::memory_order::memory_order_relaxed) & QuoteFoundBit) ? SetBit : (_value == NullTag ? NullBit : SetBit)), Core::memory_order::memory_order_relaxed);
                     }
                 }
 
@@ -2086,7 +2074,7 @@ namespace Core {
             }
 
         private:
-            std::string _default;
+            const std::string _default;
             std::string _value;
 
             mutable uint32_t _storage;
@@ -2099,12 +2087,12 @@ namespace Core {
             // U is unused
             // L Length of the bytes under process (8)
             // I Index to the written bytes (8).
-            mutable uint16_t _flagsAndCounters;
+            mutable std::atomic<uint16_t> _flagsAndCounters;
         };
 
         class EXTERNAL Buffer : public IElement, public IMessagePack {
         private:
-            enum modus {
+            enum modus : uint8_t {
                 SET = 0x20,
                 ERROR = 0x40,
                 UNDEFINED = 0x80
@@ -2112,7 +2100,7 @@ namespace Core {
 
         public:
             Buffer()
-                : _state(0)
+                : _set(0)
                 , _lastStuff(0)
                 , _index(0)
                 , _length(0)
@@ -2131,26 +2119,26 @@ namespace Core {
             void Null(const bool enabled)
             {
                 if (enabled == true)
-                    _state |= UNDEFINED;
+                    _set.fetch_or(UNDEFINED, Core::memory_order::memory_order_relaxed);
                 else
-                    _state &= ~UNDEFINED;
+                    _set.fetch_and(static_cast<uint8_t>(~UNDEFINED), Core::memory_order::memory_order_relaxed);
             }
 
             // IElement and IMessagePack iface:
             bool IsSet() const override
             {
-                return ((_length > 0) && ((_state & SET) != 0));
+                return ((_length.load(Core::memory_order::memory_order_relaxed) > 0) && ((_set.load(Core::memory_order::memory_order_relaxed) & SET) != 0));
             }
 
             bool IsNull() const
             {
-                return ((_state & UNDEFINED) != 0);
+                return ((_set.load(Core::memory_order::memory_order_relaxed) & UNDEFINED) != 0);
             }
 
             void Clear() override
             {
-                _state = 0;
-                _length = 0;
+                _set.store(0, Core::memory_order::memory_order_relaxed);
+                _length.store(0, Core::memory_order::memory_order_relaxed);
             }
 
         protected:
@@ -2164,14 +2152,14 @@ namespace Core {
                 uint16_t loaded = 0;
 
                 if (offset == 0) {
-                    _state = 0;
+                    _set.store(0, Core::memory_order::memory_order_relaxed);
                     _index = 0;
                     _lastStuff = 0;
                     offset = 1;
-                    stream[loaded++] = ((_state & UNDEFINED) == 0 ? '\"' : 'n');
+                    stream[loaded++] = ((_set.load(Core::memory_order::memory_order_relaxed) & UNDEFINED) == 0 ? '\"' : 'n');
                 }
 
-                if ((_state & UNDEFINED) == 0) {
+                if ((_set.load(Core::memory_order::memory_order_relaxed) & UNDEFINED) == 0) {
                     while ((loaded < maxLength) && (offset < 4)) {
                         stream[loaded++] = IElement::NullTag[offset++];
                     }
@@ -2179,32 +2167,32 @@ namespace Core {
                         offset = 0;
                     }
                 } else {
-                    while ((loaded < maxLength) && (_index < _length)) {
-                        if (_state == 0) {
+                    while ((loaded < maxLength) && (_index < _length.load(Core::memory_order::memory_order_relaxed))) {
+                        if (_set.load(Core::memory_order::memory_order_relaxed) == 0) {
                             stream[loaded++] = base64_chars[((_buffer[_index] & 0xFC) >> 2)];
                             _lastStuff = ((_buffer[_index] & 0x03) << 4);
-                            _state = 1;
+                            _set.store(1, Core::memory_order::memory_order_relaxed);
                             _index++;
-                        } else if (_state == 1) {
+                        } else if (_set.load(Core::memory_order::memory_order_relaxed) == 1) {
                             stream[loaded++] += base64_chars[(((_buffer[_index] & 0xF0) >> 4) | _lastStuff)];
                             _lastStuff = ((_buffer[_index] & 0x0F) << 2);
                             _index++;
-                            _state = 2;
-                        } else if (_state == 2) {
+                            _set.store(2, Core::memory_order::memory_order_relaxed);
+                        } else if (_set.load(Core::memory_order::memory_order_relaxed) == 2) {
                             stream[loaded++] += base64_chars[(((_buffer[_index] & 0xC0) >> 6) | _lastStuff)];
-                            _state = 3;
+                            _set.store(3, Core::memory_order::memory_order_relaxed);
                         } else {
-                            ASSERT(_state == 3);
+                            ASSERT(_set.load(Core::memory_order::memory_order_relaxed) == 3);
                             stream[loaded++] += base64_chars[(_buffer[_index] & 0x3F)];
-                            _state = 0;
+                            _set.store(0, Core::memory_order::memory_order_relaxed);
                             _index++;
                         }
                     }
 
-                    if ((loaded < maxLength) && (_index == _length)) {
-                        if (_state != 0) {
+                    if ((loaded < maxLength) && (_index == _length.load(Core::memory_order::memory_order_relaxed))) {
+                        if (_set.load(Core::memory_order::memory_order_relaxed) != 0) {
                             stream[loaded++] = base64_chars[_lastStuff];
-                            _state = 0;
+                            _set.store(0, Core::memory_order::memory_order_relaxed);
                         }
                         if (loaded < maxLength) {
                             stream[loaded++] = '\"';
@@ -2220,14 +2208,14 @@ namespace Core {
                 uint16_t loaded = 0;
 
                 if (offset == 0) {
-                    _state = 0xFF;
+                    _set.store(0xFF, Core::memory_order::memory_order_relaxed);
                     _index = 0;
                     _lastStuff = 0;
-                    _length = 0;
+                    _length.store(0, Core::memory_order::memory_order_relaxed);
                     offset = 1;
                 }
 
-                if (_state == 0xFF) {
+                if (_set.load(Core::memory_order::memory_order_relaxed) == 0xFF) {
 
                     while ((loaded < maxLength) && ((stream[loaded] != '\"') && (stream[loaded] != 'n'))) {
                         loaded++;
@@ -2236,23 +2224,23 @@ namespace Core {
                     if (loaded < maxLength) {
 
                         loaded++;
-                        _state = (stream[loaded] == 'n' ? UNDEFINED : 0);
+                        _set.store(stream[loaded] == 'n' ? UNDEFINED : 0, Core::memory_order::memory_order_relaxed);
                     }
                 }
 
-                if (_state != 0xFF) {
-                    if ((_state & UNDEFINED) != 0) {
+                if (_set.load(Core::memory_order::memory_order_relaxed) != 0xFF) {
+                    if ((_set.load(Core::memory_order::memory_order_relaxed) & UNDEFINED) != 0) {
                         while ((loaded < maxLength) && (offset != 0) && (offset < 4)) {
                             if (stream[loaded] != IElement::NullTag[offset]) {
                                 error = Error{ "Only base64 characters or null supported." };
-                                _state = ERROR;
+                                _set.store(ERROR, Core::memory_order::memory_order_relaxed);
                                 offset = 0;
                             } else {
                                 offset++;
                                 loaded++;
                             }
                         }
-                    } else if ((_state & SET) == 0) {
+                    } else if ((_set.load(Core::memory_order::memory_order_relaxed) & SET) == 0) {
                         while (loaded < maxLength) {
                             uint8_t converted;
                             TCHAR current = stream[loaded++];
@@ -2270,11 +2258,11 @@ namespace Core {
                             } else if (::isspace(current)) {
                                 continue;
                             } else if (current == '\"') {
-                                _state |= SET;
+                                _set.fetch_or(SET, Core::memory_order::memory_order_relaxed);
                                 break;
                             } else {
                                 error = Error{ "Only base64 characters or null supported." };
-                                _state = ERROR;
+                                _set.store(ERROR, Core::memory_order::memory_order_relaxed);
                                 offset = 0;
                                 break;
                             }
@@ -2293,29 +2281,29 @@ namespace Core {
                                 TRACE_L1("Out of memory !!!!");
                             }
                             else {
-                                if (_state == 0) {
+                                if (_set.load(Core::memory_order::memory_order_relaxed) == 0) {
                                     _lastStuff = converted << 2;
-                                    _state = 1;
+                                    _set.store(1, Core::memory_order::memory_order_relaxed);
                                 }
-                                else if (_state == 1) {
+                                else if (_set.load(Core::memory_order::memory_order_relaxed) == 1) {
                                     _buffer[_index++] = (((converted & 0x30) >> 4) | _lastStuff);
                                     _lastStuff = ((converted & 0x0F) << 4);
-                                    _state = 2;
+                                    _set.store(2, Core::memory_order::memory_order_relaxed);
                                 }
-                                else if (_state == 2) {
+                                else if (_set.load(Core::memory_order::memory_order_relaxed) == 2) {
                                     _buffer[_index++] = (((converted & 0x3C) >> 2) | _lastStuff);
                                     _lastStuff = ((converted & 0x03) << 6);
-                                    _state = 3;
+                                    _set.store(3, Core::memory_order::memory_order_relaxed);
                                 }
-                                else if (_state == 3) {
+                                else if (_set.load(Core::memory_order::memory_order_relaxed) == 3) {
                                     _buffer[_index++] = ((converted & 0x3F) | _lastStuff);
-                                    _state = 0;
+                                    _set.store(0, Core::memory_order::memory_order_relaxed);
                                 }
 
                             }
                         }
 
-                        if (((_state & SET) == SET) && ((_state & 0xF) != 0)) {
+                        if (((_set.load(Core::memory_order::memory_order_relaxed) & SET) == SET) && ((_set.load(Core::memory_order::memory_order_relaxed) & 0xF) != 0)) {
 
                             if (_index == _maxLength) {
                                 uint16_t maxLength = (_maxLength + 0xFF);
@@ -2343,9 +2331,9 @@ namespace Core {
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
-                    if ((_state & UNDEFINED) != 0) {
+                    if ((_set.load(Core::memory_order::memory_order_relaxed) & UNDEFINED) != 0) {
                         stream[loaded++] = IMessagePack::NullValue;
-                    } else if (_length <= 0xFF) {
+                    } else if (_length.load(Core::memory_order::memory_order_relaxed) <= 0xFF) {
                         _index = 0;
                         stream[loaded++] = 0xC4;
                         offset = 2;
@@ -2358,14 +2346,14 @@ namespace Core {
 
                 if (offset != 0) {
                     while ((loaded < maxLength) && (offset < 3)) {
-                        stream[loaded++] = static_cast<uint8_t>((_length >> (8 * (2 - offset))) & 0xFF);
+                        stream[loaded++] = static_cast<uint8_t>((_length.load(Core::memory_order::memory_order_relaxed) >> (8 * (2 - offset))) & 0xFF);
                         offset++;
                     }
 
-                    while ((loaded < maxLength) && (_index < _length)) {
+                    while ((loaded < maxLength) && (_index < _length.load(Core::memory_order::memory_order_relaxed))) {
                         stream[loaded++] = _buffer[_index++];
                     }
-                    offset = (_index == _length);
+                    offset = (_index == _length.load(Core::memory_order::memory_order_relaxed));
                 }
 
                 return (loaded);
@@ -2375,12 +2363,12 @@ namespace Core {
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
-                    _state = 0;
-                    _length = 0;
+                    _set.store(0, Core::memory_order::memory_order_relaxed);
+                    _length.store(0, Core::memory_order::memory_order_relaxed);
                     _index = 0;
 
                     if (stream[loaded] == IMessagePack::NullValue) {
-                        _state = UNDEFINED;
+                        _set.store(UNDEFINED, Core::memory_order::memory_order_relaxed);
                         loaded++;
                     } else if (stream[loaded] == 0xC4) {
                         offset = 2;
@@ -2389,30 +2377,30 @@ namespace Core {
                         offset = 1;
                         loaded++;
                     } else {
-                        _state = ERROR;
+                        _set.store(ERROR, Core::memory_order::memory_order_relaxed);
                     }
                 }
 
                 if (offset != 0) {
                     while ((loaded < maxLength) && (offset < 3)) {
-                        _length = (_length << 8) + stream[loaded++];
+                        _length.store((_length.load(Core::memory_order::memory_order_relaxed) << 8) + stream[loaded++], Core::memory_order::memory_order_relaxed);
                         offset++;
                     }
 
                     if (offset == 3) {
-                        if (_length > _maxLength) {
-                            _maxLength = _length;
+                        if (_length.load(Core::memory_order::memory_order_relaxed) > _maxLength) {
+                            _maxLength = _length.load(Core::memory_order::memory_order_relaxed);
                             ::free(_buffer);
                             _buffer = reinterpret_cast<uint8_t*>(::malloc(_maxLength));
                         }
                         offset = 4;
                     }
 
-                    while ((loaded < maxLength) && (_index < _length)) {
+                    while ((loaded < maxLength) && (_index < _length.load(Core::memory_order::memory_order_relaxed))) {
                         _buffer[_index++] = stream[loaded++];
                     }
 
-                    if (_index == _length) {
+                    if (_index == _length.load(Core::memory_order::memory_order_relaxed)) {
                         offset = 0;
                     }
                 }
@@ -2421,10 +2409,10 @@ namespace Core {
             }
 
         private:
-            mutable uint8_t _state;
+            mutable std::atomic<uint8_t> _set;
             mutable uint8_t _lastStuff;
             mutable uint16_t _index;
-            uint16_t _length;
+            std::atomic<uint16_t> _length;
             uint16_t _maxLength;
             uint8_t* _buffer;
         };
@@ -2432,7 +2420,7 @@ namespace Core {
         template <typename ENUMERATE>
         class EnumType : public IElement, public IMessagePack {
         private:
-            enum status {
+            enum status : uint8_t {
                 SET = 0x01,
                 ERROR = 0x02,
                 UNDEFINED = 0x04
@@ -2440,21 +2428,21 @@ namespace Core {
 
         public:
             EnumType()
-                : _state(0)
+                : _set(0)
                 , _value()
                 , _default(static_cast<ENUMERATE>(0))
             {
             }
 
             EnumType(const ENUMERATE Value)
-                : _state(0)
+                : _set(0)
                 , _value()
                 , _default(Value)
             {
             }
 
             EnumType(const EnumType<ENUMERATE>& copy)
-                : _state(copy._state)
+                : _set(copy._set.load(Core::memory_order::memory_order_relaxed))
                 , _value(copy._value)
                 , _default(copy._default)
             {
@@ -2467,14 +2455,14 @@ namespace Core {
             EnumType<ENUMERATE>& operator=(const EnumType<ENUMERATE>& RHS)
             {
                 _value = RHS._value;
-                _state = RHS._state;
+                _set.store(RHS._set.load(Core::memory_order::memory_order_relaxed), Core::memory_order::memory_order_relaxed);
                 return (*this);
             }
 
             EnumType<ENUMERATE>& operator=(const ENUMERATE& RHS)
             {
                 _value = RHS;
-                _state = SET;
+                _set.store(SET, Core::memory_order::memory_order_relaxed);
 
                 return (*this);
             }
@@ -2486,7 +2474,7 @@ namespace Core {
 
             inline const ENUMERATE Value() const
             {
-                return (((_state & (SET | UNDEFINED)) == SET) ? _value : _default);
+                return (((_set.load(Core::memory_order::memory_order_relaxed) & (SET | UNDEFINED)) == SET) ? _value : _default);
             }
 
             inline operator const ENUMERATE() const
@@ -2502,24 +2490,24 @@ namespace Core {
             void Null(const bool enabled)
             {
                 if (enabled == true)
-                    _state |= (UNDEFINED|SET);
+                    _set.fetch_or(UNDEFINED|SET, Core::memory_order::memory_order_relaxed);
                 else
-                    _state &= ~(UNDEFINED|SET);
+                    _set.fetch_and(~(UNDEFINED|SET), Core::memory_order::memory_order_relaxed);
             }
 
             bool IsSet() const override
             {
-                return ((_state & SET) != 0);
+                return ((_set.load(Core::memory_order::memory_order_relaxed) & SET) != 0);
             }
 
             bool IsNull() const override
             {
-                return ((_state & UNDEFINED) != 0);
+                return ((_set.load(Core::memory_order::memory_order_relaxed) & UNDEFINED) != 0);
             }
 
             void Clear() override
             {
-                _state = 0;
+                _set.store(0, Core::memory_order::memory_order_relaxed);
             }
 
         private:
@@ -2527,7 +2515,7 @@ namespace Core {
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 if (offset == 0) {
-                    if ((_state & UNDEFINED) != 0) {
+                    if ((_set.load(Core::memory_order::memory_order_relaxed) & UNDEFINED) != 0) {
                         _parser.Null(true);
                     } else {
                         _parser = Core::EnumerateType<ENUMERATE>(Value()).Data();
@@ -2543,22 +2531,22 @@ namespace Core {
                 if (offset == 0) {
 
                     if (_parser.IsNull() == true) {
-                        _state = (UNDEFINED|SET);
+                        _set.store(UNDEFINED|SET, Core::memory_order::memory_order_relaxed);
                     } else if (_parser.IsSet() == true) {
                         // Looks like we parsed the value. Lets see if we can find it..
                         Core::EnumerateType<ENUMERATE> converted(_parser.Value().c_str(), false);
 
                         if (converted.IsSet() == true) {
                             _value = converted.Value();
-                            _state = SET;
+                            _set.store(SET, Core::memory_order::memory_order_relaxed);
                         } else {
-                            _state = (SET|UNDEFINED);
+                            _set.store(SET|UNDEFINED, Core::memory_order::memory_order_relaxed);
                             TRACE_L1(_T("Unknown enum value: %s"), _parser.Value().c_str());
                             error = Error{ "Unknown enum value: " +  _parser.Value()};
                         }
                     } else {
                         error = Error{ "Invalid enum" };
-                        _state = ERROR;
+                        _set.store(ERROR, Core::memory_order::memory_order_relaxed);
                     }
                 }
 
@@ -2571,7 +2559,7 @@ namespace Core {
                 uint16_t loaded = 0;
 
                 if (offset == 0) {
-                    if ((_state & UNDEFINED) != 0) {
+                    if ((_set.load(Core::memory_order::memory_order_relaxed) & UNDEFINED) != 0) {
                         stream[loaded++] = IMessagePack::NullValue;
                     } else {
                         _package = static_cast<uint32_t>(Value());
@@ -2586,17 +2574,17 @@ namespace Core {
                 uint16_t result = 0;
 
                 if ((offset == 0) && (stream[0] == IMessagePack::NullValue)) {
-                    _state = UNDEFINED;
+                    _set.store(UNDEFINED, Core::memory_order::memory_order_relaxed);
                     result = 1;
                 } else {
                     result = static_cast<IMessagePack&>(_package).Deserialize(stream, maxLength, offset);
                 }
 
-                if ((offset == 0) && (_state != UNDEFINED)) {
+                if ((offset == 0) && (_set.load(Core::memory_order::memory_order_relaxed) != UNDEFINED)) {
                     if (_package.IsSet() == true) {
                         _value = static_cast<ENUMERATE>(_package.Value());
                     } else {
-                        _state = ERROR;
+                        _set.store(ERROR, Core::memory_order::memory_order_relaxed);
                     }
                 }
 
@@ -2604,7 +2592,7 @@ namespace Core {
             }
 
         private:
-            uint8_t _state;
+            std::atomic<uint8_t> _set;
             ENUMERATE _value;
             ENUMERATE _default;
             mutable String _parser;
@@ -2870,7 +2858,7 @@ namespace Core {
 
         public:
             ArrayType()
-                : _state(0)
+                : _set(0)
                 , _count(0)
                 , _data()
                 , _iterator(_data)
@@ -2878,7 +2866,7 @@ namespace Core {
             }
 
             ArrayType(const ArrayType<ELEMENT>& copy)
-                : _state(copy._state)
+                : _set(copy._set.load(Core::memory_order::memory_order_relaxed))
                 , _count(copy._count)
                 , _data(copy._data)
                 , _iterator(_data)
@@ -2899,12 +2887,12 @@ namespace Core {
             bool IsNull() const override
             {
                 //TODO: Implement null for Arrays
-                return ((_state & UNDEFINED) != 0);
+                return ((_set.load(Core::memory_order::memory_order_relaxed) & UNDEFINED) != 0);
             }
 
             void Clear() override
             {
-                _state = 0;
+                _set.store(0, Core::memory_order::memory_order_relaxed);
                 _data.clear();
             }
 
@@ -2978,7 +2966,7 @@ namespace Core {
 
             ArrayType<ELEMENT>& operator=(const ArrayType<ELEMENT>& RHS)
             {
-                _state = RHS._state;
+                _set.store(RHS._set.load(Core::memory_order::memory_order_relaxed), Core::memory_order::memory_order_relaxed);
                 _data = RHS._data;
                 _iterator = IteratorType<ELEMENT>(_data);
 
@@ -3054,7 +3042,7 @@ namespace Core {
                     case ValueValidity::UNKNOWN:
                         break;
                     case ValueValidity::IS_NULL:
-                        _state = UNDEFINED;
+                        _set.store(UNDEFINED, Core::memory_order::memory_order_relaxed);
                         break;
                     case ValueValidity::INVALID:
                         error = Error{ "Invalid value.\"null\" or \"[\" expected." };
@@ -3081,7 +3069,7 @@ namespace Core {
                                 break;
                             case ',':
                                 if (offset == SKIP_BEFORE) {
-                                    _state = ERROR;
+                                    _set.store(ERROR, Core::memory_order::memory_order_relaxed);
                                     error = Error{ "Expected new element, \",\" found." };
                                     offset = FIND_MARKER;
                                 } else {
@@ -3161,7 +3149,7 @@ namespace Core {
 
                 if (offset == 0) {
                     if (stream[0] == IMessagePack::NullValue) {
-                        _state = UNDEFINED;
+                        _set.store(UNDEFINED, Core::memory_order::memory_order_relaxed);
                         loaded = 1;
                     } else if ((stream[0] & 0xF0) == 0x90) {
                         _count = (stream[0] & 0x0F);
@@ -3202,7 +3190,7 @@ namespace Core {
             }
 
         private:
-            uint8_t _state;
+            std::atomic<uint8_t> _set;
             uint16_t _count;
             std::list<ELEMENT> _data;
             mutable IteratorType<ELEMENT> _iterator;

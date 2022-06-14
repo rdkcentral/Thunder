@@ -108,7 +108,7 @@ namespace Core {
             }
 
         private:
-            SIZETYPE _bufferSize;
+            std::atomic<SIZETYPE> _bufferSize;
             uint8_t* _data;
         };
 
@@ -706,7 +706,7 @@ namespace Core {
         }
 
     private:
-        mutable SIZE_CONTEXT _size;
+        mutable std::atomic<SIZE_CONTEXT> _size;
         AllocatorType<BLOCKSIZE,SIZE_CONTEXT> _data;
     };
 }

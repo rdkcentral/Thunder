@@ -45,7 +45,8 @@ namespace Core {
             Serializer& operator=(const Serializer&) = delete;
 
             Serializer()
-                : _length(0)
+                : _adminLock()
+                , _length(0)
                 , _offset(0)
                 , _current(nullptr)
             {
@@ -58,19 +59,12 @@ namespace Core {
         public:
             bool Submit(const IMessage& element)
             {
-
                 ASSERT(_current == nullptr);
 
-                // TODO: Make sure it is thread safe. The _current needs to
-                // be written as the last parameter so in case the
-                // serialize gets triggered due to another read/write cycle,
-                // Serialize will not start processing until the current (and
-                // thius all other parameters) are set correctly.
-                _length = element.Length();
+                _adminLock.Lock();
                 _offset = 0;
                 _current = &element;
-
-                ASSERT(_length <= 0x1FFFFFFF);
+                _adminLock.Unlock();
 
                 return (true);
             }
@@ -80,10 +74,17 @@ namespace Core {
             {
                 uint16_t result = 0;
 
-                while ((_current != nullptr) && (result < maxLength)) {
-                    if (_offset < 4) {
-                        uint32_t length = _length + CommandSize();
+                _adminLock.Lock();
+                const IMessage* current = _current;
+                _adminLock.Unlock();
 
+                while ((current != nullptr) && (result < maxLength)) {
+                    if (_offset == 0) {
+                        _length = current->Length();
+                        ASSERT(_length <= 0x1FFFFFFF);
+                    }
+                    if (_offset < 4) {
+                        uint32_t length = _length + (current->Label() > 0x1FFFFF ? 4 : (current->Label() > 0xCFFF ? 3 : (current->Label() > 0x7F ? 2 : 1)));
                         // Write the length. Continue as long as the top bt is active..
                         while ((_offset < 4) && (result < maxLength)) {
                             uint32_t value = length >> (7 * _offset);
@@ -100,7 +101,7 @@ namespace Core {
 
                     // Write the command, Same structure as length..
                     while ((_offset < 8) && (result < maxLength)) {
-                        uint32_t value = _current->Label() >> (7 * (_offset - 4));
+                        uint32_t value = current->Label() >> (7 * (_offset - 4));
                         stream[result] = ((value & 0x7F) | (value >= 0x80 ? 0x80 : 0x00));
                         result++;
 
@@ -113,7 +114,7 @@ namespace Core {
 
                     if (result < maxLength) {
                         // Write the command, Same structure as length..
-                        uint16_t handled = _current->Serialize(&stream[result], maxLength - result, _offset - 8);
+                        uint16_t handled = current->Serialize(&stream[result], maxLength - result, _offset - 8);
 
                         result += handled;
                         _offset += handled;
@@ -121,11 +122,13 @@ namespace Core {
                         ASSERT_VERBOSE((_offset - 8) <= _length, "%d <= %d", (_offset - 8), _length);
 
                         if ((_offset - 8) == _length) {
-                            const IMessage* ready = _current;
+                            _adminLock.Lock();
                             _current = nullptr;
+                            _adminLock.Unlock();
 
                             // we are done, send out that we copied it all
-                            Serialized(*ready);
+                            Serialized(*current);
+                            current = nullptr;
                         }
                     }
                 }
@@ -134,13 +137,9 @@ namespace Core {
             }
             virtual void Serialized(const IMessage& element) = 0;
 
-        private:
-            inline uint32_t CommandSize() const
-            {
-                return (_current->Label() > 0x1FFFFF ? 4 : (_current->Label() > 0xCFFF ? 3 : (_current->Label() > 0x7F ? 2 : 1)));
-            }
 
         private:
+            Core::CriticalSection _adminLock;
             uint32_t _length;
             uint32_t _offset;
             const IMessage* _current;
