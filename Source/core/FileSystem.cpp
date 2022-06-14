@@ -64,6 +64,23 @@ namespace Core {
 #endif
             return result;
         }
+    
+        uint32_t Permission(const string& node, const uint32_t modeFlags){
+            uint32_t result(Core::ERROR_NONE);
+
+#ifdef __POSIX__
+            // Lucky us we mapped File::Mode 1:1 to POSIX mode, 
+            // so we only have to filter some values :-). 
+            mode_t mode = modeFlags & 0x0FFFFF;
+
+            if (::chmod(node.c_str(), mode) != 0) {
+                result = Core::ERROR_GENERAL;
+            }
+#else
+            result = Core::ERROR_NOT_SUPPORTED
+#endif
+            return result;
+        }
     };
 
     File::File()
@@ -249,6 +266,12 @@ namespace Core {
         return AccessContol::OwnerShip(_name, "", groupName);
     }
 
+    uint32_t File::Permission(uint32_t flags) const
+    {
+        return AccessContol::Permission(_name, flags);
+    }
+
+
     Directory::Directory()
         : _name()
         , _filter()
@@ -403,6 +426,12 @@ namespace Core {
     {
         return AccessContol::OwnerShip(_name, "", groupName);
     }
+
+    uint32_t Directory::Permission(uint32_t flags) const
+    {
+        return AccessContol::Permission(_name, flags);
+    }
+
 
     string Partition::RemoveRepeatedPathSeparator(const string& path)
     {
