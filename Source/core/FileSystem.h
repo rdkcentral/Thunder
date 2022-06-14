@@ -546,6 +546,9 @@ POP_WARNING()
 
         void LoadFileInfo();
 
+        uint32_t User(const string& userName) const;
+        uint32_t Group(const string& groupName) const;
+
     private:
         inline static uint32_t ExtensionOffset(const string& name)
         {
@@ -749,6 +752,8 @@ POP_WARNING()
             return (true);
         }
 
+        uint32_t User(const string& userName) const;
+        uint32_t Group(const string& groupName) const;
 
     private:
         string _name;
