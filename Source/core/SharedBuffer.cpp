@@ -35,6 +35,7 @@ namespace Core {
     SharedBuffer::Semaphore::Semaphore(sem_t* storage)
         : _semaphore(storage)
     {
+        ASSERT(storage != nullptr);
     }
 #endif
     SharedBuffer::Semaphore::~Semaphore()
