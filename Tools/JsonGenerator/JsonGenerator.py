@@ -1465,6 +1465,8 @@ def EmitEnumRegs(root, emit, header_file, if_file):
 # JSON-RPC CODE GENERATOR
 #
 
+module = "_module"
+
 def EmitEvent(emit, root, event, static=False):
     emit.Line("// Event: %s" % event.Headline())
     params = event.Properties()[0].CppType()
@@ -1479,7 +1481,7 @@ def EmitEvent(emit, root, event, static=False):
     if not static:
         line = "void %s::%s(%s)" % (root.JsonName(), event.MethodName(), par)
     else:
-        line = "static void %s(const PluginHost::JSONRPC& module%s%s)" % (event.TrueName(), ", " if par else "", par)
+        line = "static void %s(const PluginHost::JSONRPC& %s%s%s)" % (event.TrueName(), module, ", " if par else "", par)
     if event.included_from:
         line += " /* %s */" % event.included_from
     emit.Line(line)
@@ -1500,7 +1502,7 @@ def EmitEvent(emit, root, event, static=False):
     if event.HasSendif():
         index_var = "designatorId"
         emit.Line('%sNotify(_T("%s")%s, [&id](const string& designator) -> bool {' %
-                  ("module." if static else "", event.JsonName(), ", params" if params != "void" else ""))
+                  (("%s." % module) if static else "", event.JsonName(), ", params" if params != "void" else ""))
         emit.Indent()
         emit.Line("const string %s = designator.substr(0, designator.find('.'));" % index_var)
         if isinstance(event.sendif, JsonInteger):
@@ -1532,7 +1534,7 @@ def EmitEvent(emit, root, event, static=False):
         emit.Line("});")
     else:
         emit.Line('%sNotify(_T("%s")%s);' %
-                  ("module." if static else "", event.JsonName(), ", params" if params != "void" else ""))
+                  (("%s." % module) if static else "", event.JsonName(), ", params" if params != "void" else ""))
     emit.Unindent()
     emit.Line("}")
     emit.Line()
@@ -1572,7 +1574,7 @@ def _EmitVersionCode(emit, version):
     emit.Line()
     emit.Line("constexpr uint8_t Major = %u;" % version[0])
     emit.Line("constexpr uint8_t Minor = %u;" % version[1])
-    emit.Line("constexpr uint8_t Parch = %u;" % version[2])
+    emit.Line("constexpr uint8_t Patch = %u;" % version[2])
     emit.Line()
     emit.Unindent()
     emit.Line("} // namespace Version")
@@ -1600,11 +1602,13 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
     if data_emitted:
         emit.Line("using namespace %s;" % namespace)
         emit.Line()
-    emit.Line("static void Register(PluginHost::JSONRPC& module, %s* %s)" % (face, destination_var))
+    emit.Line("static void Register(PluginHost::JSONRPC& %s, %s* %s)" % (module, face, destination_var))
     emit.Line("{")
     emit.Indent()
     emit.Line("ASSERT(%s != nullptr);" % destination_var)
     emit.Line()
+    emit.Line("%s.RegisterInterface<%s>();" % (module, struct))
+    emit.Line();
 
     events = []
 
@@ -1628,7 +1632,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                 params = m.Properties()[0]
                 response = m.Properties()[1]
                 emit.Line("// Method: %s" % m.Headline())
-            line = 'module.Register<%s, %s%s>(_T("%s"),' % (params.CppType(), response.CppType(), ", std::function<uint32_t(const std::string&, %s%s)>" % ("" if params.CppType() == "void" else ("const " + params.CppType() + "&"), "" if response.CppType() == "void" else (("" if params.CppType() == "void" else ", ") + response.CppType() + "&")) if indexed else "", m.JsonName())
+            line = '%s.Register<%s, %s%s>(_T("%s"),' % (module, params.CppType(), response.CppType(), ", std::function<uint32_t(const std::string&, %s%s)>" % ("" if params.CppType() == "void" else ("const " + params.CppType() + "&"), "" if response.CppType() == "void" else (("" if params.CppType() == "void" else ", ") + response.CppType() + "&")) if indexed else "", m.JsonName())
             emit.Line(line)
             emit.Indent()
             line = '[%s](' % destination_var
@@ -1917,13 +1921,13 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
     emit.Line("}")
     emit.Line()
 
-    emit.Line("static void Unregister(PluginHost::JSONRPC& module)")
+    emit.Line("static void Unregister(PluginHost::JSONRPC& %s)" % module)
     emit.Line("{")
     emit.Indent()
 
     for m in root.Properties():
         if isinstance(m, JsonMethod) and not isinstance(m, JsonNotification):
-            emit.Line("module.Unregister(_T(\"%s\"));" % (m.JsonName()))
+            emit.Line("%s.Unregister(_T(\"%s\"));" % (module, m.JsonName()))
 
     emit.Unindent()
     emit.Line("}")
