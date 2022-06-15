@@ -53,9 +53,7 @@ namespace Tests {
                 Core::File::USER_WRITE   |
                 Core::File::USER_EXECUTE |
                 Core::File::GROUP_READ   |
-                Core::File::GROUP_WRITE  |
-                Core::File::OTHERS_READ  |
-                Core::File::OTHERS_WRITE,
+                Core::File::GROUP_WRITE  ,
                 bufferSize,
                 administrationSize);
             result = buff01.RequestProduce(Core::infinite);
@@ -161,9 +159,7 @@ namespace Tests {
                 Core::File::USER_WRITE   |
                 Core::File::USER_EXECUTE |
                 Core::File::GROUP_READ   |
-                Core::File::GROUP_WRITE  |
-                Core::File::OTHERS_READ  |
-                Core::File::OTHERS_WRITE,
+                Core::File::GROUP_WRITE  ,
                 bufferSize,
                 administrationSize);
             result = buff01.RequestProduce(Core::infinite);
