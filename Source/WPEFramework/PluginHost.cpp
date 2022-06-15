@@ -500,8 +500,8 @@ POP_WARNING()
                 }
 
 #ifndef __WINDOWS__
-                if (_config->Process().UMask() != 0) {
-                    ::umask(_config->Process().UMask());
+                if (_config->Process().UMask().IsSet() == true) {
+                    ::umask(_config->Process().UMask().Value());
                 }
 #endif
                 myself.Policy(_config->Process().Policy());

@@ -471,7 +471,10 @@ namespace PluginHost {
                 _priority = input.Priority.Value();
                 _OOMAdjust = input.OOMAdjust.Value();
                 _policy = input.Policy.Value();
-                _umask = input.Umask.Value();
+                if(input.Umask.IsSet() == true)
+                {
+                    _umask = input.Umask.Value();
+                }
             } 
 
         public:
@@ -499,7 +502,7 @@ namespace PluginHost {
             inline Core::ProcessInfo::scheduler Policy() const {
                 return(_policy);
             }
-            inline uint16_t UMask() const {
+            inline const Core::OptionalType<uint16_t>& UMask() const {
                 return(_umask);
             }
  
@@ -510,7 +513,7 @@ namespace PluginHost {
             int8_t _priority;
             int8_t _OOMAdjust;
             Core::ProcessInfo::scheduler _policy;
-            uint16_t _umask;
+            Core::OptionalType<uint16_t> _umask;
         };
 
     public:
