@@ -77,8 +77,35 @@ map()
     kv(stacksize ${STACKSIZE})
 
     if(NOT "${UMASK}" STREQUAL "")
-        math(EXPR UMASKDEC "0x${UMASK}" OUTPUT_FORMAT DECIMAL)
-        kv(umask ${UMASKDEC})
+        set(UMASK_LENGTH 0)
+        set(UMASK_POS 0)
+        set(UMASK_RESULT 0)
+        
+        string(LENGTH ${UMASK} UMASK_LENGTH)
+
+        if(NOT ${UMASK_LENGTH} EQUAL 3)
+            message(FATAL_ERROR "Invalid umask lenght provided, expected was 3 (0-7)(0-7)(0-7)")
+        endif()
+
+        while(${UMASK_POS} LESS ${UMASK_LENGTH})
+            math(EXPR UMASK_READ_POS "${UMASK_LENGTH}-${UMASK_POS}-1" OUTPUT_FORMAT DECIMAL)
+
+            string(SUBSTRING ${UMASK} ${UMASK_READ_POS} 1 OCTAL_CHAR)
+
+            math(EXPR UMASK_DEC  "0x${OCTAL_CHAR}" OUTPUT_FORMAT DECIMAL)
+
+            if(${UMASK_DEC} GREATER_EQUAL 8)
+                message(FATAL_ERROR "Value ${OCTAL_CHAR} is an invalid input for umask")
+            endif()
+
+            math(EXPR UMASK_RESULT  "${UMASK_RESULT} | (${UMASK_DEC} << (${UMASK_POS} * 3))" OUTPUT_FORMAT DECIMAL)
+
+            message(TRACE "UMASK_RESULT: ${UMASK_RESULT}, UMASK_READ_POS: ${UMASK_READ_POS} UMASK_POS: ${UMASK_POS}, OCTAL_CHAR: ${OCTAL_CHAR}, UMASK_DEC: ${UMASK_DEC}")
+    
+            math(EXPR UMASK_POS "${UMASK_POS} +1")
+        endwhile()
+
+        kv(umask ${UMASK_RESULT})
     endif()
 
     if(NOT "${GROUP}" STREQUAL "")
