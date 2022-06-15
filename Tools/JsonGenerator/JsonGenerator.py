@@ -1574,7 +1574,7 @@ def _EmitVersionCode(emit, version):
     emit.Line()
     emit.Line("constexpr uint8_t Major = %u;" % version[0])
     emit.Line("constexpr uint8_t Minor = %u;" % version[1])
-    emit.Line("constexpr uint8_t Parch = %u;" % version[2])
+    emit.Line("constexpr uint8_t Patch = %u;" % version[2])
     emit.Line()
     emit.Unindent()
     emit.Line("} // namespace Version")
