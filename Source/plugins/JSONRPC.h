@@ -44,14 +44,50 @@ namespace PluginHost {
 
     class EXTERNAL JSONRPC : public IDispatcher {
     private:
-        typedef std::list<Core::JSONRPC::Handler> HandlerList;
+        using HandlerList = std::list<Core::JSONRPC::Handler>;
 
-        class EXTERNAL Registration : public Core::JSON::Container {
+        class VersionInfo {
+        public:
+            VersionInfo() = delete;
+            VersionInfo(const VersionInfo&) = delete;
+            VersionInfo& operator= (const VersionInfo&) = delete;
+
+            VersionInfo(const string& interfaceName, const uint8_t major, const uint8_t minor, const uint8_t patch)
+                : _name(interfaceName)
+                , _major(major)
+                , _minor(minor)
+                , _patch(patch) {
+            }
+            ~VersionInfo() = default;
+
+        public:
+            const string& Name() const {
+                return(_name);
+            }
+            uint8_t Major() const {
+                return(_major);
+            }
+            uint8_t Minor() const {
+                return(_minor);
+            }
+            uint8_t Patch() const {
+                return(_patch);
+            }
+
         private:
+            const string  _name;
+            const uint8_t _major;
+            const uint8_t _minor;
+            const uint8_t _patch;
+        };
+
+        using VersionList = std::list<VersionInfo>;
+
+        class Registration : public Core::JSON::Container {
+        public:
             Registration(const Registration&) = delete;
             Registration& operator=(const Registration&) = delete;
 
-        public:
             Registration()
                 : Core::JSON::Container()
                 , Event()
@@ -60,9 +96,7 @@ namespace PluginHost {
                 Add(_T("event"), &Event);
                 Add(_T("id"), &Callsign);
             }
-            ~Registration()
-            {
-            }
+            ~Registration() override = default;
 
         public:
             Core::JSON::String Event;
@@ -90,6 +124,7 @@ namespace PluginHost {
 
         JSONRPC(const JSONRPC&) = delete;
         JSONRPC& operator=(const JSONRPC&) = delete;
+
         JSONRPC();
         JSONRPC(const TokenCheckFunction& validation);
         JSONRPC(const std::vector<uint8_t>& versions);
@@ -117,9 +152,9 @@ namespace PluginHost {
         // Methods to enable versioning, where interfaces are *changed* in stead of *extended*. Usage of these methods is not preferred,
         // methods are here for backwards compatibility with functionality out there in the field !!! Use these methods with caution!!!!
         // ------------------------------------------------------------------------------------------------------------------------------
-		operator Core::JSONRPC::Handler& () {
+        operator Core::JSONRPC::Handler& () {
             return (_handlers.front());
-		}
+        }
         operator const Core::JSONRPC::Handler&() const
         {
             return (_handlers.front());
@@ -195,6 +230,13 @@ namespace PluginHost {
         void Unregister(const string& methodName)
         {
             _handlers.front().Unregister(methodName);
+        }
+
+        //
+        // Register/Unregister methods for interface versioning..
+        // ------------------------------------------------------------------------------------------------------------------------------
+        void RegisterVersion(const string& name, const uint8_t major, const uint8_t minor, const uint8_t patch) {
+            _versions.emplace_back(name, major, minor, patch);
         }
 
         //
@@ -428,6 +470,7 @@ namespace PluginHost {
         IShell* _service;
         string _callsign;
         TokenCheckFunction _validate;
+        VersionList _versions;
     };
 
     class EXTERNAL JSONRPCSupportsEventStatus : public JSONRPC {
