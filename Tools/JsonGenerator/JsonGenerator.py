@@ -1607,7 +1607,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
     emit.Indent()
     emit.Line("ASSERT(%s != nullptr);" % destination_var)
     emit.Line()
-    emit.Line("%s.RegisterInterface<%s>();" % (module, struct))
+    emit.Line("%s.RegisterVersion(_T(\"%s\"), %s::Version::Major, %s::Version::Minor, %s::Version::Patch);" % (module, struct, struct, struct, struct))
     emit.Line();
 
     events = []
