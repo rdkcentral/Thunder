@@ -1080,7 +1080,7 @@ namespace PluginHost {
                         if (progressedState == 0) {
                             progressedState = 1;
                         }
-                        Core::Library newLib = Core::Library(name.c_str());
+                        Core::Library newLib = Core::Library(iter->c_str());
 
                         if (newLib.IsLoaded() == true) {
                             if (progressedState == 1) {
