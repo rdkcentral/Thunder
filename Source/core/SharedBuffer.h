@@ -181,6 +181,37 @@ namespace Core {
             return (_administration->_bytesWritten);
         }
 
+        uint32_t User(const string& userName) const
+        {
+            uint32_t result = _administrationBuffer.User(userName);
+
+            if (result == Core::ERROR_NONE){
+                result = DataElementFile::User(userName);
+            }
+
+            return result;
+        }
+        uint32_t Group(const string& groupName) const
+        {
+            uint32_t result = _administrationBuffer.Group(groupName);
+
+            if (result == Core::ERROR_NONE){
+                result = DataElementFile::Group(groupName);
+            }
+
+            return result;
+        }
+        uint32_t Permission(uint32_t mode) const
+        {
+            uint32_t result = _administrationBuffer.Permission(mode);
+
+            if (result == Core::ERROR_NONE){
+                result = DataElementFile::Permission(mode);
+            }
+
+            return result;
+        }
+
     private:
         DataElementFile _administrationBuffer;
         Administration* _administration;
