@@ -385,17 +385,7 @@ POP_WARNING()
         uint32_t get_environment(const string& index, Core::JSON::String& response) const;
         uint32_t get_configuration(const string& index, Core::JSON::String& response) const;
         uint32_t set_configuration(const string& index, const Core::JSON::String& params);
-        uint32_t get_version(Core::JSON::String& response) const;
-        uint32_t set_version(const Core::JSON::String& params);
-        uint32_t get_prefix(Core::JSON::String& response) const;
-        uint32_t set_prefix(const Core::JSON::String& params);
-        uint32_t get_idletime(Core::JSON::DecUInt16& response) const;
-        uint32_t set_idletime(const Core::JSON::DecUInt16& params);
-        uint32_t get_latitude(Core::JSON::DecSInt32& response) const;
-        uint32_t set_latitude(const Core::JSON::DecSInt32& params);
-        uint32_t get_longitude(Core::JSON::DecSInt32& response) const;
-        uint32_t set_longitude(const Core::JSON::DecSInt32& params);
-        void event_all(const string& callsign, const Core::JSON::String& data);
+
         void event_statechange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
 
     private:

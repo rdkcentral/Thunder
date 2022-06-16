@@ -44,8 +44,6 @@ namespace Trace {
                                 Core::File::USER_EXECUTE | 
                                 Core::File::GROUP_READ   |
                                 Core::File::GROUP_WRITE  |
-                                Core::File::OTHERS_READ  |
-                                Core::File::OTHERS_WRITE | 
                                 Core::File::SHAREABLE,
                              CyclicBufferSize, true)
         , _doorBell(doorBell.c_str())

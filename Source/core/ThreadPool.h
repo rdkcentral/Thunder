@@ -47,6 +47,28 @@ namespace Core {
             virtual void Dispatch(IDispatch*) = 0;
         };
 
+        #ifdef __CORE_WARNING_REPORTING__
+        struct EXTERNAL DispatchedJobMetaData {
+            ::ThreadId WorkerId;
+            string     CallSign;
+            uint64_t   DispatchedTime;
+            uint32_t   ReportRunCount;
+
+            bool operator==(const DispatchedJobMetaData& other) const
+            {
+                //return std::tie(Id, DispatchedTime) == std::tie(other.Id, other.DispatchedTime);
+                return (WorkerId == other.WorkerId && DispatchedTime == other.DispatchedTime);
+            }
+        };
+
+        struct EXTERNAL IDispatchedJobMonitor {
+            virtual ~IDispatchedJobMonitor() = default;
+
+            virtual void InsertDispatchedJobMetaData(const DispatchedJobMetaData& data) = 0;
+            virtual void RemoveDispatchedJobMetaData(const DispatchedJobMetaData& data) = 0;
+        };
+        #endif
+
     private:
         #ifdef __CORE_WARNING_REPORTING__
         class MeasurableJob {
@@ -100,6 +122,9 @@ namespace Core {
                 REPORT_OUTOFBOUNDS_WARNING(WarningReporting::JobTooLongWaitingInQueue, static_cast<uint32_t>((Time::Now().Ticks() - _time) / Time::TicksPerMillisecond));
                 REPORT_DURATION_WARNING({ dispatcher->Dispatch(request); }, WarningReporting::JobTooLongToFinish);
 
+                if (_job.IsValid() == true) {
+                    _job.Release();
+                }
                 return (dynamic_cast<IJob*>(request));
             }
             bool IsValid() const
@@ -312,7 +337,7 @@ POP_WARNING()
                 , _currentRequest()
                 , _runs(0)
             {
-		ASSERT(dispatcher != nullptr);
+                ASSERT(dispatcher != nullptr);
             }
             ~Minion() = default;
 
@@ -342,7 +367,7 @@ POP_WARNING()
             }
             void Process()
             {
-		_dispatcher->Initialize();
+                _dispatcher->Initialize();
 
                 while (_parent._queue.Extract(_currentRequest, infinite) == true) {
 
@@ -351,7 +376,16 @@ POP_WARNING()
                     _runs++;
 
                     #ifdef __CORE_WARNING_REPORTING__
+                    // Add an entry into the JobMonitor list
+                    DispatchedJobMetaData data{Thread::ThreadId(),
+                        string(WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign()),
+                        Time::Now().Ticks(), 0};
+
+                    _parent.SaveDispatchedJobContext(data);
+
                     IJob* job = _currentRequest.Process(_dispatcher);
+
+                    _parent.RemoveDispatchedJobContext(data);
 
                     if (job != nullptr) {
                         // Maybe we need to reschedule this request....
@@ -388,7 +422,7 @@ POP_WARNING()
                     _adminLock.Unlock();
                 }
 
-		_dispatcher->Deinitialize();
+                _dispatcher->Deinitialize();
             }
 
         private:
@@ -459,6 +493,9 @@ POP_WARNING()
         ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, IScheduler* scheduler) 
             : _queue(queueSize)
             , _scheduler(scheduler)
+            #ifdef __CORE_WARNING_REPORTING__
+            , _dispatchedJobMonitor(nullptr)
+            #endif
         {
             const TCHAR* name = _T("WorkerPool::Thread");
             for (uint8_t index = 0; index < count; index++) {
@@ -576,6 +613,26 @@ POP_WARNING()
             }
         }
 
+        #ifdef __CORE_WARNING_REPORTING__
+        void SetDispatchedJobMonitor(IDispatchedJobMonitor* dispatchedJobMonitor)
+        {
+            _dispatchedJobMonitor = dispatchedJobMonitor;
+        }
+        void ResetDispatchedJobMonitor()
+        {
+            _dispatchedJobMonitor = nullptr;
+        }
+        void SaveDispatchedJobContext(const DispatchedJobMetaData& data)
+        {
+            if (_dispatchedJobMonitor)
+                _dispatchedJobMonitor->InsertDispatchedJobMetaData(data);
+        }
+        void RemoveDispatchedJobContext(const DispatchedJobMetaData& data)
+        {
+            if (_dispatchedJobMonitor)
+                _dispatchedJobMonitor->RemoveDispatchedJobMetaData(data);
+        }
+        #endif
     private:
         void Closure(IJob& job) {
             Time scheduleTime;
@@ -597,6 +654,9 @@ POP_WARNING()
         MessageQueue _queue;
         std::list<Executor> _units;
         IScheduler* _scheduler;
+        #ifdef __CORE_WARNING_REPORTING__
+        IDispatchedJobMonitor* _dispatchedJobMonitor;
+        #endif
     };
 
 }

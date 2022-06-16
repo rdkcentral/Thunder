@@ -39,6 +39,8 @@ set(STACKSIZE 0 CACHE STRING "Default stack size per thread")
 set(KEY_OUTPUT_DISABLED false CACHE STRING "New outputs on the VirtualInput will be disabled by default")
 set(EXIT_REASONS "Failure;MemoryExceeded;WatchdogExpired" CACHE STRING "Process exit reason list for which the postmortem is required")
 set(ETHERNETCARD_NAME "eth0" CACHE STRING "Ethernet Card name which has to be associated for the Raw Device Id creation")
+set(GROUP "" CACHE STRING "Define which system group will be used")
+set(UMASK "" CACHE STRING "Set the permission mask for the creation of new files. e.g. 0760")
 
 map()
   key(plugins)
@@ -69,14 +71,45 @@ map_set(${CONFIG} ethernetcard ${ETHERNETCARD_NAME})
 map_set(${CONFIG} communicator ${COMMUNICATOR})
 
 map()
-    kv(umask ${LINUXUMASK})
-    kv(group ${LINUXGROUP})
     kv(priority ${PRIORITY})
     kv(policy ${POLICY})
     kv(oomadjust ${OOMADJUST})
     kv(stacksize ${STACKSIZE})
-    if(DEFINED UMASK)
-        kv(umask ${UMASK})
+
+    if(NOT "${UMASK}" STREQUAL "")
+        set(UMASK_LENGTH 0)
+        set(UMASK_POS 0)
+        set(UMASK_RESULT 0)
+        
+        string(LENGTH ${UMASK} UMASK_LENGTH)
+
+        if(NOT ${UMASK_LENGTH} EQUAL 3)
+            message(FATAL_ERROR "Invalid umask lenght provided, expected was 3 (0-7)(0-7)(0-7)")
+        endif()
+
+        while(${UMASK_POS} LESS ${UMASK_LENGTH})
+            math(EXPR UMASK_READ_POS "${UMASK_LENGTH}-${UMASK_POS}-1" OUTPUT_FORMAT DECIMAL)
+
+            string(SUBSTRING ${UMASK} ${UMASK_READ_POS} 1 OCTAL_CHAR)
+
+            math(EXPR UMASK_DEC  "0x${OCTAL_CHAR}" OUTPUT_FORMAT DECIMAL)
+
+            if(${UMASK_DEC} GREATER_EQUAL 8)
+                message(FATAL_ERROR "Value ${OCTAL_CHAR} is an invalid input for umask")
+            endif()
+
+            math(EXPR UMASK_RESULT  "${UMASK_RESULT} | (${UMASK_DEC} << (${UMASK_POS} * 3))" OUTPUT_FORMAT DECIMAL)
+
+            message(TRACE "UMASK_RESULT: ${UMASK_RESULT}, UMASK_READ_POS: ${UMASK_READ_POS} UMASK_POS: ${UMASK_POS}, OCTAL_CHAR: ${OCTAL_CHAR}, UMASK_DEC: ${UMASK_DEC}")
+    
+            math(EXPR UMASK_POS "${UMASK_POS} +1")
+        endwhile()
+
+        kv(umask ${UMASK_RESULT})
+    endif()
+
+    if(NOT "${GROUP}" STREQUAL "")
+        kv(group ${GROUP})
     endif()
 end()
 ans(PROCESS_CONFIG)

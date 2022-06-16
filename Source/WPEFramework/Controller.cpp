@@ -22,9 +22,21 @@
 
 namespace WPEFramework {
 
-namespace Plugin {
+    namespace {
 
-    SERVICE_REGISTRATION(Controller, 1, 0);
+        static Plugin::Metadata<Plugin::Controller> metadata(
+            // Version (Major, Minor, Patch)
+            1, 0, 0,
+            // Preconditions
+            {},
+            // Terminations
+            {},
+            // Controls
+            {}
+        );
+    }
+
+namespace Plugin {
 
     // Signing will be done on BackOffice level. The Controller I/F will never be exposed to the outside world.
     // Access to this interface will be through the BackOffice Plugin, if external exposure is required !!!

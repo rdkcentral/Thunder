@@ -343,11 +343,12 @@ POP_WARNING()
                 sendCode = element->Code | (element->Modifiers << 16);
             }
 
-            if ((pressed == false) && (_pressedCode != sendCode)) {
+            // Modifiers can be pressed when there is a new press for another key.
+            if ((pressed == false) && (_pressedCode != sendCode) && !Modifier(sendCode)) {
                 result = Core::ERROR_ALREADY_RELEASED;
             }
             else if (sendCode != static_cast<uint32_t>(~0)) {
-                if ( (pressed == true) && (_pressedCode != static_cast<uint32_t>(~0)) ) {
+                if ( (pressed == true) && (_pressedCode != static_cast<uint32_t>(~0)) && !Modifier(_pressedCode)) {
                     DispatchRegisteredKey(IVirtualInput::KeyData::RELEASED, _pressedCode);
                 }
 

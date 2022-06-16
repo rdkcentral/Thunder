@@ -43,12 +43,14 @@ namespace Core {
         extern "C" {
         typedef const char* (*ModuleNameImpl)();
         typedef const char* (*ModuleBuildRefImpl)();
+        typedef const IServiceMetadata* (*ModuleServiceMetadataImpl)();
         }
     }
 }
 
 namespace Plugin {
     class Controller;
+
 }
 
 namespace PluginHost {
@@ -392,6 +394,27 @@ namespace PluginHost {
                 }
 
             public:
+                void Load(const std::vector<Plugin::subsystem>& input, const bool defaultValue) {
+                    for (const Plugin::subsystem& entry : input) {
+                        uint32_t bitNr = static_cast<uint32_t>(entry);
+
+                        if (bitNr >= ISubSystem::NEGATIVE_START) {
+                            bitNr -= ISubSystem::NEGATIVE_START;
+                        }
+                        else {
+                            _value |= (1 << bitNr);
+                        }
+
+                        // Make sure the event is only set once (POSITIVE or NEGATIVE)
+                        ASSERT((_events & (1 << bitNr)) == 0);
+                        _events |= 1 << bitNr;
+                    }
+
+                    if (_events == 0) {
+                        _events = (defaultValue ? 0 : ~0);
+                        _value = (defaultValue ? 0 : ~0);
+                    }
+                }
                 inline bool IsMet() const
                 {
                     return ((_events == 0) || ((_value != static_cast<uint32_t>(~0)) && ((_events & (1 << ISubSystem::END_LIST)) != 0)));
@@ -423,6 +446,94 @@ namespace PluginHost {
                 uint32_t _events;
                 uint32_t _value;
             };
+            class Metadata {
+            public:
+                Metadata(const Metadata&) = delete;
+                Metadata& operator=(const Metadata&) = delete;
+                Metadata()
+                    : _isExtended(false)
+                    , _major(~0)
+                    , _minor(~0)
+                    , _patch(~0)
+                    , _module()
+                    , _precondition()
+                    , _termination()
+                    , _control()
+                    , _versionHash() {
+                }
+                ~Metadata() = default;
+
+                Metadata& operator= (const Core::IServiceMetadata* info) {
+                    if (info != nullptr) {
+                        const Plugin::IMetadata* extended = dynamic_cast<const Plugin::IMetadata*>(info);
+
+                        _major = info->Major();
+                        _minor = info->Minor();
+                        _patch = info->Patch();
+                        _module = info->Module();
+
+                        if (extended == nullptr) {
+                            _precondition.clear();
+                            _termination.clear();
+                            _control.clear();
+                        }
+                        else {
+                            _isExtended = true;
+                            _precondition = extended->Precondition();
+                            _termination = extended->Termination();
+                            _control = extended->Control();
+                        }
+                    }
+                    return (*this);
+                }
+
+            public:
+                bool IsExtended() const {
+                    return (_isExtended);
+                }
+                bool IsValid() const {
+                    return ((_major != static_cast<uint8_t>(~0)) && (_minor != static_cast<uint8_t>(~0)) && (_patch != static_cast<uint8_t>(~0)));
+                }
+                uint8_t Major() const {
+                    return (_major);
+                }
+                uint8_t Minor() const {
+                    return (_minor);
+                }
+                uint8_t Patch() const {
+                    return (_patch);
+                }
+                const string&  Module() const {
+                    return (_module);
+                }
+                const std::vector<PluginHost::ISubSystem::subsystem>& Precondition() const {
+                    return (_precondition);
+                }
+                const std::vector<PluginHost::ISubSystem::subsystem>& Termination() const {
+                    return (_termination);
+                }
+                const std::vector<PluginHost::ISubSystem::subsystem>& Control() const {
+                    return (_control);
+                }
+                const string& Hash() const {
+                    return (_versionHash);
+                }
+                void Hash(const string& hash) {
+                    _versionHash = hash;
+                }
+
+            private:
+                bool _isExtended;
+                uint8_t _state;
+                uint8_t _major;
+                uint8_t _minor;
+                uint8_t _patch;
+                string _module;
+                std::vector<PluginHost::ISubSystem::subsystem> _precondition;
+                std::vector<PluginHost::ISubSystem::subsystem> _termination;
+                std::vector<PluginHost::ISubSystem::subsystem> _control;
+                string _versionHash;
+            };
 
         public:
             Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator)
@@ -441,6 +552,7 @@ namespace PluginHost {
                 , _activity(0)
                 , _connection(nullptr)
                 , _lastId(0)
+                , _metadata()
                 , _administrator(administrator)
             {
             }
@@ -471,13 +583,9 @@ namespace PluginHost {
             }
 
         public:
-            inline const string& ModuleName() const
-            {
-                return (_moduleName);
-            }
             inline const string& VersionHash() const
             {
-                return (_versionHash);
+                return (_metadata.Hash());
             }
             template <typename CLASSTYPE>
             inline CLASSTYPE* ClassType()
@@ -766,10 +874,15 @@ namespace PluginHost {
             }
             inline void GetMetaData(MetaData::Service& metaData) const
             {
-                if (_moduleName.empty() == false)
-                    metaData.Module = _moduleName;
-                if (_versionHash.empty() == false)
-                    metaData.Hash = _versionHash;
+                if (_metadata.Hash().empty() == false)
+                    metaData.Hash = _metadata.Hash();
+                
+                _pluginHandling.Lock();
+
+                if (_metadata.IsValid() == true) {
+                    metaData.Module = string(_metadata.Module());
+                }
+                _pluginHandling.Unlock();
 
                 PluginHost::Service::GetMetaData(metaData);
             }
@@ -806,6 +919,10 @@ namespace PluginHost {
 
                 Unlock();
             }
+
+            virtual uint8_t Major() const override;
+            virtual uint8_t Minor() const override;
+            virtual uint8_t Patch() const override;
 
             uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
             ISubSystem* SubSystems() override;
@@ -917,6 +1034,13 @@ namespace PluginHost {
                 return (number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR item) { return std::isdigit(item); })) && (Service::IsSupported(static_cast<uint8_t>(atoi(number.c_str()))));
             }
 
+            void LoadMetadata() {
+                const string locator(PluginHost::Service::Configuration().Locator.Value());
+                if (locator.empty() == false) {
+                    LoadLibrary(locator);
+                }
+            }
+
         private:
             virtual std::vector<string> GetLibrarySearchPaths(const string& locator) const override
             {
@@ -942,40 +1066,56 @@ namespace PluginHost {
                 return all_paths;
             }
 
-            inline IPlugin* CheckLibrary(const string& name, const TCHAR* className, const uint32_t version)
-            {
-                IPlugin* newIF = nullptr;
-                Core::File libraryToLoad(name);
+            Core::Library LoadLibrary(const string& name) {
+                uint8_t progressedState = 0;
+                Core::Library result;
 
-                if (libraryToLoad.Exists() != true) {
-                    if (HasError() == false) {
+                std::vector<string> all_paths = GetLibrarySearchPaths(name);
+                std::vector<string>::const_iterator iter = std::begin(all_paths);
+
+                while ( (iter != std::end(all_paths)) && (progressedState <= 2) ) {
+                    Core::File libraryToLoad(*iter);
+
+                    if (libraryToLoad.Exists() == true) {
+                        if (progressedState == 0) {
+                            progressedState = 1;
+                        }
+                        Core::Library newLib = Core::Library(iter->c_str());
+
+                        if (newLib.IsLoaded() == true) {
+                            if (progressedState == 1) {
+                                progressedState = 2;
+                            }
+
+                            Core::System::ModuleBuildRefImpl moduleBuildRef = reinterpret_cast<Core::System::ModuleBuildRefImpl>(newLib.LoadFunction(_T("ModuleBuildRef")));
+                            Core::System::ModuleServiceMetadataImpl moduleServiceMetadata = reinterpret_cast<Core::System::ModuleServiceMetadataImpl>(newLib.LoadFunction(_T("ModuleServiceMetadata")));
+                            if ((moduleBuildRef != nullptr) && (moduleServiceMetadata != nullptr)) {
+                                result = newLib;
+                                progressedState = 3;
+                                if (_metadata.IsValid() == false) {
+                                    _metadata = moduleServiceMetadata();
+                                    _metadata.Hash(moduleBuildRef());
+                                }
+                            }
+                        }
+                    }
+                    ++iter;
+                }
+
+                if (HasError() == false) {
+                    if (progressedState == 0) {
                         ErrorMessage(_T("library does not exist"));
                     }
-                } else {
-                    Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
-                    Core::Library myLib(name.c_str());
-
-                    if (myLib.IsLoaded() == false) {
-                        if ((HasError() == false) || (ErrorMessage().substr(0, 7) == _T("library"))) {
-                            ErrorMessage(myLib.Error());
-                        }
-                    } else if ((newIF = admin.Instantiate<IPlugin>(myLib, className, version)) == nullptr) {
-                        ErrorMessage(_T("class definitions does not exist"));
-                    } else {
-                        Core::System::ModuleNameImpl moduleName = reinterpret_cast<Core::System::ModuleNameImpl>(myLib.LoadFunction(_T("ModuleName")));
-                        Core::System::ModuleBuildRefImpl moduleBuildRef = reinterpret_cast<Core::System::ModuleBuildRefImpl>(myLib.LoadFunction(_T("ModuleBuildRef")));
-
-                        if (moduleName != nullptr) {
-                            _moduleName = moduleName();
-                        }
-                        if (moduleBuildRef != nullptr) {
-                            _versionHash = moduleBuildRef();
-                        }
+                    else if (progressedState == 2) {
+                        ErrorMessage(_T("library could not be loaded"));
+                    }
+                    else if (progressedState == 3) {
+                        ErrorMessage(_T("library does not contain the right methods"));
                     }
                 }
-                return (newIF);
-            }
 
+                return (result);
+            }
             void AquireInterfaces()
             {
                 ASSERT((State() == DEACTIVATED) || (State() == PRECONDITION));
@@ -986,17 +1126,16 @@ namespace PluginHost {
                 const TCHAR* className(classNameString.c_str());
                 uint32_t version(static_cast<uint32_t>(~0));
 
-                _moduleName.clear();
-                _versionHash.clear();
-
                 if (locator.empty() == true) {
                     Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
                     newIF = admin.Instantiate<IPlugin>(Core::Library(), className, version);
                 } else {
-                    std::vector<string> all_paths = GetLibrarySearchPaths(locator);
-                    std::vector<string>::const_iterator iter = std::begin(all_paths);
-                    while ((iter != std::end(all_paths)) && ((newIF = CheckLibrary(*iter, className, version)) == nullptr))
-                        ++iter;
+                    Core::Library myLib = LoadLibrary(locator);
+                    if (myLib.IsLoaded() == true) {
+                        if ((newIF = Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(myLib, className, version)) == nullptr) {
+                            ErrorMessage(_T("class definitions does not exist"));
+                        }
+                    }
                 }
 
                 if (newIF != nullptr) {
@@ -1014,6 +1153,20 @@ namespace PluginHost {
 
                     _pluginHandling.Lock();
                     _handler = newIF;
+
+                    if (_metadata.IsValid() == false) {
+                        _metadata = dynamic_cast<Core::IServiceMetadata*>(newIF);
+                        if (_metadata.IsExtended()) {
+                            _precondition.Load(_metadata.Precondition(), true);
+                            _termination.Load(_metadata.Termination(), false);
+
+                            uint32_t events = _administrator.SubSystemInfo();
+
+                            _precondition.Evaluate(events);
+                            _termination.Evaluate(events);
+                        }
+                    }
+
                     _pluginHandling.Unlock();
                 }
             }
@@ -1078,7 +1231,7 @@ namespace PluginHost {
             }
 
         private:
-            Core::CriticalSection _pluginHandling;
+            mutable Core::CriticalSection _pluginHandling;
 
             // The handlers that implement the actual logic behind the service
             IPlugin* _handler;
@@ -1090,13 +1243,12 @@ namespace PluginHost {
             ISecurity* _webSecurity;
             IDispatcher* _jsonrpc;
             reason _reason;
-            string _moduleName;
-            string _versionHash;
             Condition _precondition;
             Condition _termination;
             uint32_t _activity;
             RPC::IRemoteConnection* _connection;
             uint32_t _lastId;
+            Metadata _metadata;
 
             ServiceMap& _administrator;
             static Core::ProxyType<Web::Response> _unavailableHandler;
@@ -1150,7 +1302,6 @@ namespace PluginHost {
         public:
             Override(PluginHost::Config& serverconfig, ServiceMap& services, const string& persitentFile)
                 : Services()
-                , Version(serverconfig.Version())
                 , Prefix(serverconfig.Prefix())
                 , IdleTime(serverconfig.IdleTime())
                 , Latitude(serverconfig.Latitude())
@@ -1175,7 +1326,6 @@ namespace PluginHost {
                     Services.Add(index.first->first.c_str(), &(index.first->second));
                 }
 
-                Add(_T("version"), &Version);
                 Add(_T("prefix"), &Prefix);
                 Add(_T("idletime"), &IdleTime);
                 Add(_T("latitude"), &Latitude);
@@ -1204,7 +1354,6 @@ namespace PluginHost {
                     // Red the file and parse it into this object.
                     IElement::FromFile(storage);
 
-                    _serverconfig.SetVersion(Version.Value());
                     _serverconfig.SetPrefix(Prefix.Value());
                     _serverconfig.SetIdleTime(IdleTime.Value());
                     _serverconfig.SetLatitude(Latitude.Value());
@@ -1249,7 +1398,6 @@ namespace PluginHost {
                     // Clear all currently set values, they might be from the precious run.
                     Clear();
 
-                    Version   = _serverconfig.Version();
                     Prefix    = _serverconfig.Prefix();
                     IdleTime  = _serverconfig.IdleTime();
                     Latitude  = _serverconfig.Latitude();
@@ -1288,7 +1436,6 @@ namespace PluginHost {
 
             Core::JSON::Container Services;
 
-            Core::JSON::String Version;
             Core::JSON::String Prefix;
             Core::JSON::DecUInt16 IdleTime;
             Core::JSON::DecSInt32 Latitude;
