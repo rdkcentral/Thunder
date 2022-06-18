@@ -29,6 +29,7 @@
 #include "TextFragment.h"
 #include "Trace.h"
 #include "Proxy.h"
+#include "SystemInfo.h"
 
 #include "WarningReportingControl.h"
 #include "WarningReportingCategories.h"
@@ -39,26 +40,57 @@ namespace Core {
     struct EXTERNAL IServiceMetadata {
         virtual ~IServiceMetadata() = default;
 
-        virtual const std::string& Name() const = 0;
+        virtual const std::string& ServiceName() const = 0;
         virtual const TCHAR* Module() const = 0;
-        virtual uint32_t Version() const = 0;
-        virtual void* Create(const Library& library, const uint32_t interfaceNumber) = 0;
+        virtual uint8_t Major() const = 0;
+        virtual uint8_t Minor() const = 0;
+        virtual uint8_t Patch() const = 0;
     };
 
     class EXTERNAL ServiceAdministrator {
     private:
         ServiceAdministrator();
-        ServiceAdministrator(const ServiceAdministrator&) = delete;
-        ServiceAdministrator& operator=(const ServiceAdministrator&) = delete;
 
     public:
+        struct EXTERNAL IServiceFactory {
+            virtual ~IServiceFactory() = default;
+
+            virtual void* Create(const IServiceMetadata* info, const Library& library, const uint32_t interfaceNumber) = 0;
+        };
+        template<typename SERVICE>
+        class ServiceFactoryType : public IServiceFactory {
+        public:
+            ServiceFactoryType(const ServiceFactoryType<SERVICE>&) = delete;
+            ServiceFactoryType<SERVICE>& operator= (const ServiceFactoryType<SERVICE>&) = delete;
+
+            ServiceFactoryType() = default;
+            virtual ~ServiceFactoryType() = default;
+
+        public:
+            void* Create(const IServiceMetadata* info, const Library& library, const uint32_t interfaceNumber) override {
+                void* result = nullptr;
+                Core::ProxyType< SERVICE > object = Core::ProxyType< SERVICE >::Create(library, info);
+
+                if (object.IsValid() == true) {
+                    // This query interface will increment the refcount of the Service at least to 1.
+                    result = object->QueryInterface(interfaceNumber);
+                }
+                return (result);
+            }
+        };
         struct EXTERNAL ICallback {
             virtual ~ICallback() = default;
 
             virtual void Destructed() = 0;
         };
 
+    private:
+        using ServiceBlock = std::pair<IServiceMetadata*, IServiceFactory*>;
+        using ServiceList = std::list<ServiceBlock>;
+
     public:
+        ServiceAdministrator(const ServiceAdministrator&) = delete;
+        ServiceAdministrator& operator=(const ServiceAdministrator&) = delete;
         virtual ~ServiceAdministrator();
 
         static ServiceAdministrator& Instance();
@@ -93,8 +125,8 @@ namespace Core {
         }
         void FlushLibraries();
         void ReleaseLibrary(Library& reference);
-        void Register(IServiceMetadata* service);
-        void Unregister(IServiceMetadata* service);
+        void Register(IServiceMetadata* metadata, IServiceFactory* factory);
+        void Unregister(IServiceMetadata* metadata, IServiceFactory* factory);
         void* Instantiate(const Library& library, const char name[], const uint32_t version, const uint32_t interfaceNumber);
 
         template <typename REQUESTEDINTERFACE>
@@ -111,7 +143,7 @@ namespace Core {
 
     private:
         Core::CriticalSection _adminLock;
-        std::list<IServiceMetadata*> _services;
+        ServiceList _services;
         mutable uint32_t _instanceCount;
         ICallback* _callback;
         std::list<Library> _unreferencedLibraries;
@@ -120,7 +152,6 @@ namespace Core {
 
     template <typename ACTUALSERVICE>
     class Service : public ACTUALSERVICE {
-    private:
     protected:
         template<typename... Args>
         Service(Args&&... args)
@@ -201,7 +232,7 @@ namespace Core {
     };
 
     // Baseclass to turn objects into services
-    template <typename ACTUALSERVICE, const TCHAR** MODULENAME>
+    template <typename ACTUALSERVICE>
     class ServiceMetadata : public IServiceMetadata {
     private:
         ServiceMetadata() = delete;
@@ -209,70 +240,90 @@ namespace Core {
         ServiceMetadata& operator=(const ServiceMetadata&) = delete;
 
         template <typename SERVICE>
-        class ServiceImplementation : public Service<SERVICE> {
+        class ServiceImplementation : public Service<SERVICE>, public IServiceMetadata {
         public:
             ServiceImplementation() = delete;
             ServiceImplementation(const ServiceImplementation<SERVICE>&) = delete;
             ServiceImplementation<SERVICE>& operator=(const ServiceImplementation<SERVICE>&) = delete;
 
-            explicit ServiceImplementation(const Library& library)
+            explicit ServiceImplementation(const Library& library, const IServiceMetadata* info)
                 : Service<SERVICE>()
                 , _referenceLib(library)
-            {
+                , _info(info) {
             }
             ~ServiceImplementation() override
             {
                 ServiceAdministrator::Instance().ReleaseLibrary(_referenceLib);
             }
 
+        public:
+            uint8_t Major() const override {
+                return (_info->Major());
+            }
+            uint8_t Minor() const override {
+                return (_info->Minor());
+            }
+            uint8_t Patch() const override {
+                return (_info->Patch());
+            }
+            const std::string& ServiceName() const override {
+                return (_info->ServiceName());
+            }
+            const TCHAR* Module() const override {
+                return (_info->Module());
+            }
+
         private:
             Library _referenceLib;
+            const IServiceMetadata* _info;
         };
 
     public:
-        ServiceMetadata(const uint16_t major, uint16_t minor)
-            : _version(((major & 0xFFFF) << 16) + minor)
+        ServiceMetadata(const uint8_t major, const uint8_t minor, const uint8_t patch)
+            : _version((major << 16) | (minor << 8) | patch)
             , _Id(Core::ClassNameOnly(typeid(ACTUALSERVICE).name()).Text())
         {
-            Core::ServiceAdministrator::Instance().Register(this);
+            Core::ServiceAdministrator::Instance().Register(this, &_factory);
         }
         ~ServiceMetadata()
         {
-            Core::ServiceAdministrator::Instance().Unregister(this);
+            Core::ServiceAdministrator::Instance().Unregister(this, &_factory);
         }
 
     public:
-        virtual uint32_t Version() const
-        {
-            return (_version);
+        uint8_t Major() const override {
+            return (static_cast<uint8_t>((_version >> 16) & 0xFF));
         }
-        virtual const std::string& Name() const
+        uint8_t Minor() const override {
+            return (static_cast<uint8_t>((_version >> 8) & 0xFF));
+        }
+        uint8_t Patch() const override {
+            return (static_cast<uint8_t>(_version & 0xFF));
+        }
+        const std::string& ServiceName() const override
         {
             return (_Id);
         }
-        virtual const TCHAR* Module() const
+        const TCHAR* Module() const override
         {
-            return (*MODULENAME);
-        }
-        virtual void* Create(const Library& library, const uint32_t interfaceNumber)
-        {
-            void* result = nullptr;
-            Core::ProxyType< ServiceImplementation<ACTUALSERVICE> > object = Core::ProxyType< ServiceImplementation<ACTUALSERVICE> >::Create(library);
-
-            if (object.IsValid() == true) {
-                // This query interface will increment the refcount of the Service at least to 1.
-                result = object->QueryInterface(interfaceNumber);
-            }
-            return (result);
+            return (System::ModuleName());
         }
 
     private:
         uint32_t _version;
         string _Id;
+        ServiceAdministrator::ServiceFactoryType< ServiceImplementation <ACTUALSERVICE> > _factory;
     };
 
-#define SERVICE_REGISTRATION(ACTUALCLASS, MAJOR, MINOR) \
-    static WPEFramework::Core::ServiceMetadata<ACTUALCLASS, &WPEFramework::Core::System::MODULE_NAME> ServiceMetadata_##ACTUALCLASS(MAJOR, MINOR);
+#define SERVICE_REGISTRATION_NAME(N, ...) CONCAT_STRINGS(SERVICE_REGISTRATION_, N)(__VA_ARGS__)
+#define SERVICE_REGISTRATION(...) SERVICE_REGISTRATION_NAME(PUSH_COUNT_ARGS(__VA_ARGS__), __VA_ARGS__)
+
+#define SERVICE_REGISTRATION_3(ACTUALCLASS, MAJOR, MINOR) \
+static WPEFramework::Core::ServiceMetadata<ACTUALCLASS> ServiceMetadata_##ACTUALCLASS(MAJOR, MINOR, 0);
+
+#define SERVICE_REGISTRATION_4(ACTUALCLASS, MAJOR, MINOR, PATCH) \
+static WPEFramework::Core::ServiceMetadata<ACTUALCLASS> ServiceMetadata_##ACTUALCLASS(MAJOR, MINOR, PATCH);
+
 
 #ifdef BEGIN_INTERFACE_MAP
 #undef BEGIN_INTERFACE_MAP

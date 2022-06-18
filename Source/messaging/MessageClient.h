@@ -39,7 +39,7 @@ namespace Messaging {
         MessageClient& operator=(const MessageClient&) = delete;
 
     public:
-        MessageClient(const string& identifer, const string& basePath);
+        MessageClient(const string& identifer, const string& basePath, const uint16_t socketPort = 0);
 
         void AddInstance(uint32_t id);
         void RemoveInstance(uint32_t id);
@@ -60,8 +60,10 @@ namespace Messaging {
     private:
         using Clients = std::unordered_map<uint32_t, Core::Messaging::MessageUnit::MessageDispatcher>;
         mutable Core::CriticalSection _adminLock;
-        string _identifier;
-        string _basePath;
+        const string _identifier;
+        const string _basePath;
+        const uint16_t _socketPort;
+
         uint8_t _readBuffer[Core::Messaging::MessageUnit::DataSize];
         uint8_t _writeBuffer[Core::Messaging::MessageUnit::MetaDataSize];
 

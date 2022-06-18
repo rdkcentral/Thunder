@@ -343,7 +343,7 @@ namespace RPC {
             uint32_t feedback = _channel->Invoke(message, waitTime);
 
             if (feedback == Core::ERROR_NONE) {
-                instance_id implementation = message->Response().Implementation();
+                Core::instance_id implementation = message->Response().Implementation();
 
                 if (implementation) {
                     // From what is returned, we need to create a proxy
@@ -538,7 +538,7 @@ POP_WARNING()
         ASSERT(BaseClass::IsOpen() == false);
         _announceEvent.ResetEvent();
 
-        instance_id impl = instance_cast<void*>(implementation);
+        Core::instance_id impl = instance_cast<void*>(implementation);
 
         _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), interfaceId, impl, exchangeId);
 

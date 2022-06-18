@@ -93,7 +93,7 @@ namespace RPC {
         struct EXTERNAL IMetadata {
             virtual ~IMetadata() = default;
 
-            virtual ProxyStub::UnknownProxy* CreateProxy(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& implementation, const bool remoteRefCounted) = 0;
+            virtual ProxyStub::UnknownProxy* CreateProxy(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const bool remoteRefCounted) = 0;
         };
 
         template <typename PROXY>
@@ -109,7 +109,7 @@ namespace RPC {
             ~ProxyType() override = default;
 
         private:
-            virtual ProxyStub::UnknownProxy* CreateProxy(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& implementation, const bool remoteRefCounted)
+            virtual ProxyStub::UnknownProxy* CreateProxy(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const bool remoteRefCounted)
             {
                 return (new PROXY(channel, implementation, remoteRefCounted))->Administration();
             }
@@ -172,23 +172,23 @@ namespace RPC {
         void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies);
 
         template <typename ACTUALINTERFACE>
-        ACTUALINTERFACE* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& impl)
+        ACTUALINTERFACE* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& impl)
         {
             ACTUALINTERFACE* result = nullptr;
             ProxyFind(channel, impl, ACTUALINTERFACE::ID, result);
             return (result);
         }
-        ProxyStub::UnknownProxy* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& impl, const uint32_t id, void*& interface);
+        ProxyStub::UnknownProxy* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& impl, const uint32_t id, void*& interface);
 
         template <typename ACTUALINTERFACE>
-        ProxyStub::UnknownProxy* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& impl, const bool outbound, ACTUALINTERFACE*& base)
+        ProxyStub::UnknownProxy* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& impl, const bool outbound, ACTUALINTERFACE*& base)
         {
             void* proxyInterface;
             ProxyStub::UnknownProxy* result = ProxyInstance(channel, impl, outbound, ACTUALINTERFACE::ID, proxyInterface);
             base = reinterpret_cast<ACTUALINTERFACE*>(proxyInterface);
             return (result);
         }
-        ProxyStub::UnknownProxy* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& impl, const bool outbound, const uint32_t id, void*& interface);
+        ProxyStub::UnknownProxy* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& impl, const bool outbound, const uint32_t id, void*& interface);
 
         // ----------------------------------------------------------------------------------------------------
         // Methods for the Proxy Environment

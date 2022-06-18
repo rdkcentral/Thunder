@@ -32,13 +32,17 @@
 
 namespace WPEFramework {
 namespace Core {
+
+    struct IServiceMetadata;
+
     namespace System {
-
         extern "C" const char* MODULE_NAME;
-        extern "C" EXTERNAL uint32_t Reboot();
 
+        extern "C" EXTERNAL uint32_t Reboot();
         extern "C" EXTERNAL_EXPORT const char* ModuleName();
         extern "C" EXTERNAL_EXPORT const char* ModuleBuildRef();
+        extern "C" EXTERNAL_EXPORT const IServiceMetadata* ModuleServiceMetadata();
+        extern "C" EXTERNAL_EXPORT void SetModuleServiceMetadata(const IServiceMetadata*);
     }
 
     class EXTERNAL SystemInfo {
@@ -237,12 +241,17 @@ namespace Core {
 
 #define MODULE_NAME_DECLARATION(buildref)                                                                     \
     extern "C" {                                                                                              \
+    namespace {                                                                                               \
+        const WPEFramework::Core::IServiceMetadata* g_ServiceMetadata = nullptr;                              \
+    }                                                                                                         \
     namespace WPEFramework {                                                                                  \
         namespace Core {                                                                                      \
             namespace System {                                                                                \
                 const char* MODULE_NAME = SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(MODULE_NAME);              \
                 const char* ModuleName() { return (MODULE_NAME); }                                            \
                 const char* ModuleBuildRef() { return (SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(buildref)); } \
+                const IServiceMetadata* ModuleServiceMetadata() { return (g_ServiceMetadata); }               \
+                void SetModuleServiceMetadata(const IServiceMetadata* value) { g_ServiceMetadata = value; }   \
             }                                                                                                 \
         }                                                                                                     \
     }                                                                                                         \

@@ -776,6 +776,12 @@ def LoadInterface(file, includePaths = []):
         info["sourcefile"] = os.path.basename(file)
         if face.obj.sourcelocation:
             info["sourcelocation"] = face.obj.sourcelocation
+        if face.obj.json_version:
+            try:
+                info["version"] = [int(x) for x in face.obj.json_version.split(".")]
+            except:
+                raise CppParseError(face.obj, "Interface version must be provided in major[.minor[.patch]] format")
+
         info["title"] = info["class"] + " API"
         info["description"] = info["class"] + " JSON-RPC interface"
         schema["info"] = info
@@ -1459,6 +1465,8 @@ def EmitEnumRegs(root, emit, header_file, if_file):
 # JSON-RPC CODE GENERATOR
 #
 
+module = "_module"
+
 def EmitEvent(emit, root, event, static=False):
     emit.Line("// Event: %s" % event.Headline())
     params = event.Properties()[0].CppType()
@@ -1473,7 +1481,7 @@ def EmitEvent(emit, root, event, static=False):
     if not static:
         line = "void %s::%s(%s)" % (root.JsonName(), event.MethodName(), par)
     else:
-        line = "static void %s(const PluginHost::JSONRPC& module%s%s)" % (event.TrueName(), ", " if par else "", par)
+        line = "static void %s(const PluginHost::JSONRPC& %s%s%s)" % (event.TrueName(), module, ", " if par else "", par)
     if event.included_from:
         line += " /* %s */" % event.included_from
     emit.Line(line)
@@ -1494,7 +1502,7 @@ def EmitEvent(emit, root, event, static=False):
     if event.HasSendif():
         index_var = "designatorId"
         emit.Line('%sNotify(_T("%s")%s, [&id](const string& designator) -> bool {' %
-                  ("module." if static else "", event.JsonName(), ", params" if params != "void" else ""))
+                  (("%s." % module) if static else "", event.JsonName(), ", params" if params != "void" else ""))
         emit.Indent()
         emit.Line("const string %s = designator.substr(0, designator.find('.'));" % index_var)
         if isinstance(event.sendif, JsonInteger):
@@ -1526,16 +1534,13 @@ def EmitEvent(emit, root, event, static=False):
         emit.Line("});")
     else:
         emit.Line('%sNotify(_T("%s")%s);' %
-                  ("module." if static else "", event.JsonName(), ", params" if params != "void" else ""))
+                  (("%s." % module) if static else "", event.JsonName(), ", params" if params != "void" else ""))
     emit.Unindent()
     emit.Line("}")
     emit.Line()
 
-def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
-
+def _EmitRpcPrologue(root, emit, header_file, source_file, data_emitted, cpp = False):
     struct = "J" + root.JsonName()
-    face = "I" + root.JsonName()
-
     emit.Line("// Generated automatically from '%s'. DO NOT EDIT." % os.path.basename(source_file))
     emit.Line()
     emit.Line("#pragma once")
@@ -1543,14 +1548,14 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
     emit.Line("#include \"Module.h\"")
     if data_emitted:
         emit.Line("#include \"%s_%s.h\"" % (DATA_NAMESPACE, header_file))
-    emit.Line("#include <%s%s>" % (CPP_IF_PATH, source_file))
+    if cpp:
+        emit.Line("#include <%s%s>" % (CPP_IF_PATH, source_file))
     emit.Line()
     emit.Line("namespace %s {" % FRAMEWORK_NAMESPACE)
     emit.Line()
     emit.Line("namespace %s {" % "Exchange")
     emit.Indent()
     emit.Line()
-    destination_var = "_destination"
     namespace = root.JsonName()
     if "info" in root.schema and "namespace" in root.schema["info"]:
         namespace = root.schema["info"]["namespace"] + "::" + namespace
@@ -1561,14 +1566,49 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
     emit.Line("namespace %s {" % struct)
     emit.Indent()
     emit.Line()
+    return namespace
+
+def _EmitVersionCode(emit, version):
+    emit.Line("namespace Version {")
+    emit.Indent()
+    emit.Line()
+    emit.Line("constexpr uint8_t Major = %u;" % version[0])
+    emit.Line("constexpr uint8_t Minor = %u;" % version[1])
+    emit.Line("constexpr uint8_t Patch = %u;" % version[2])
+    emit.Line()
+    emit.Unindent()
+    emit.Line("} // namespace Version")
+
+def EmitVersionCode(root, emit, header_file, source_file, data_emitted):
+    struct = "J" + root.JsonName()
+    _EmitRpcPrologue(root, emit, header_file, source_file, data_emitted)
+    _EmitVersionCode(emit, GetVersion(root.schema["info"] if "info" in root.schema else dict()))
+    emit.Line()
+    emit.Unindent()
+    emit.Line("} // namspace %s" % struct)
+    emit.Unindent()
+    emit.Line()
+    emit.Line("} // namespace Exchange")
+    emit.Line()
+    emit.Line("}")
+
+def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
+    namespace = _EmitRpcPrologue(root, emit, header_file, source_file, data_emitted, True)
+    _EmitVersionCode(emit, GetVersion(root.schema["info"] if "info" in root.schema else dict()))
+    struct = "J" + root.JsonName()
+    face = "I" + root.JsonName()
+    destination_var = "_destination"
+    emit.Line()
     if data_emitted:
         emit.Line("using namespace %s;" % namespace)
         emit.Line()
-    emit.Line("static void Register(PluginHost::JSONRPC& module, %s* %s)" % (face, destination_var))
+    emit.Line("static void Register(PluginHost::JSONRPC& %s, %s* %s)" % (module, face, destination_var))
     emit.Line("{")
     emit.Indent()
     emit.Line("ASSERT(%s != nullptr);" % destination_var)
     emit.Line()
+    emit.Line("%s.RegisterVersion(_T(\"%s\"), %s::Version::Major, %s::Version::Minor, %s::Version::Patch);" % (module, struct, struct, struct, struct))
+    emit.Line();
 
     events = []
 
@@ -1592,7 +1632,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                 params = m.Properties()[0]
                 response = m.Properties()[1]
                 emit.Line("// Method: %s" % m.Headline())
-            line = 'module.Register<%s, %s%s>(_T("%s"),' % (params.CppType(), response.CppType(), ", std::function<uint32_t(const std::string&, %s%s)>" % ("" if params.CppType() == "void" else ("const " + params.CppType() + "&"), "" if response.CppType() == "void" else (("" if params.CppType() == "void" else ", ") + response.CppType() + "&")) if indexed else "", m.JsonName())
+            line = '%s.Register<%s, %s%s>(_T("%s"),' % (module, params.CppType(), response.CppType(), ", std::function<uint32_t(const std::string&, %s%s)>" % ("" if params.CppType() == "void" else ("const " + params.CppType() + "&"), "" if response.CppType() == "void" else (("" if params.CppType() == "void" else ", ") + response.CppType() + "&")) if indexed else "", m.JsonName())
             emit.Line(line)
             emit.Indent()
             line = '[%s](' % destination_var
@@ -1881,13 +1921,13 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
     emit.Line("}")
     emit.Line()
 
-    emit.Line("static void Unregister(PluginHost::JSONRPC& module)")
+    emit.Line("static void Unregister(PluginHost::JSONRPC& %s)" % module)
     emit.Line("{")
     emit.Indent()
 
     for m in root.Properties():
         if isinstance(m, JsonMethod) and not isinstance(m, JsonNotification):
-            emit.Line("module.Unregister(_T(\"%s\"));" % (m.JsonName()))
+            emit.Line("%s.Unregister(_T(\"%s\"));" % (module, m.JsonName()))
 
     emit.Unindent()
     emit.Line("}")
@@ -2423,6 +2463,27 @@ def EmitObjects(root, emit, if_file, emitCommon=False):
 # DOCUMENTATION GENERATOR
 #
 
+def GetVersion(info):
+    if "version" in info:
+        if isinstance(info["version"], list):
+            version = info["version"]
+            if len(version) == 0:
+                version.apend(1)
+            if len(version) == 1:
+                version.append(0)
+            if len(version) == 2:
+                version.append(0)
+        else:
+            raise RuntimeError("version needs to be a [major, minor, patch] list of integers")
+    else:
+        log.Warn("No version provided for %s interface, using 1.0.0" % info["class"])
+        version = [1, 0, 0]
+
+    return version
+
+def GetVersionString(info):
+    return ".".join(str(x) for x in GetVersion(info))
+
 def CreateDocument(schema, path):
     input_basename = os.path.basename(path)
     output_path = os.path.dirname(path) + "/" + input_basename.replace(".json", "") + ".md"
@@ -2722,11 +2783,12 @@ def CreateDocument(schema, path):
                     for face in interface["include"]:
                         interfaces.append(interface["include"][face])
 
+        version = "1.0" # Plugin version, not interface version
+
         if "info" in schema:
             info = schema["info"]
-        elif interfaces and "info" in interfaces[0]:
-            # as a fallback try the first interface
-            info = interfaces[0]["info"]
+        else:
+            info = dict()
 
         # Count the total number of methods, properties and events.
         method_count = 0
@@ -2739,8 +2801,6 @@ def CreateDocument(schema, path):
                 property_count += len(interface["properties"])
             if "events" in interface:
                 event_count += len(interface["events"])
-
-        version = info["version"] if "version" in info else "1.0"
 
         status = info["status"] if "status" in info else "alpha"
 
@@ -2800,13 +2860,14 @@ def CreateDocument(schema, path):
         document_type = "plugin"
         if ("interfaceonly" in schema and schema["interfaceonly"]) or ("$schema" in schema and schema["$schema"] == "interface.schema.json"):
             document_type = "interface"
+            version = GetVersionString(info)
 
         # Emit title bar
         if "title" in info:
             MdHeader(info["title"])
         MdParagraph(bold("Version: " + version))
         MdParagraph(bold("Status: " + rating * ":black_circle:" + (3 - rating) * ":white_circle:"))
-        MdParagraph("A %s %s for Thunder framework." % (plugin_class, document_type))
+        MdParagraph("%s %s for Thunder framework." % (plugin_class, document_type))
 
         if document_type == "interface":
             face = interfaces[0]
@@ -2886,7 +2947,7 @@ def CreateDocument(schema, path):
                 extra += "notifications sent"
             if extra:
                 extra = " It includes detailed specification about its " + extra + "."
-            MdParagraph("This document describes purpose and functionality of the %s %s.%s" % (plugin_class, document_type, extra))
+            MdParagraph("This document describes purpose and functionality of the %s %s%s.%s" % (plugin_class, document_type, (" (version %s)" % version if document_type == "interface" else ""), extra))
 
         MdHeader("Case Sensitivity", 2)
         MdParagraph((
@@ -2971,7 +3032,7 @@ def CreateDocument(schema, path):
                             wl = weblink(iface, sourcelocation)
                     else:
                         wl = iface
-                    MdBody("- " + wl)
+                    MdBody("- %s (version %s)" % (wl, GetVersionString(face["info"])))
                 MdBr()
 
         def SectionDump(section_name, section, header, description=None, description2=None, event=False, prop=False):
@@ -3122,6 +3183,12 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
                     os.remove(enum_file)
                 except:
                     pass
+
+            if not generateRpc or "dorpc" not in rpcObj.schema:
+                with open(os.path.join(directory, "J" + filename + ".h"), "w") as output_file:
+                    emitter = Emitter(output_file, INDENT_SIZE)
+                    EmitVersionCode(rpcObj, emitter, filename, os.path.basename(path), data_emitted)
+                    log.Success("JSON-RPC version information generated in '%s'." % os.path.basename(output_file.name))
 
         if generateStubs:
             with open(os.path.join(directory, filename + "JsonRpc.cpp"), "w") as output_file:

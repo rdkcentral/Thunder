@@ -325,6 +325,7 @@ namespace PluginHost {
                 , ExitReasons()
                 , Latitude(51832547) // Divider 1.000.000
                 , Longitude(5674899) // Divider 1.000.000
+                , MessagingPort(0)
 #ifdef PROCESSCONTAINERS_ENABLED
                 , ProcessContainers()
 #endif
@@ -365,6 +366,7 @@ namespace PluginHost {
                 Add(_T("exitreasons"), &ExitReasons);
                 Add(_T("latitude"), &Latitude);
                 Add(_T("longitude"), &Longitude);
+                Add(_T("messagingport"), &MessagingPort);
 #ifdef PROCESSCONTAINERS_ENABLED
                 Add(_T("processcontainers"), &ProcessContainers);
 #endif
@@ -404,6 +406,7 @@ namespace PluginHost {
             Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::IShell::reason>> ExitReasons;
             Core::JSON::DecSInt32 Latitude;
             Core::JSON::DecSInt32 Longitude;
+            Core::JSON::DecUInt16 MessagingPort;
 #ifdef PROCESSCONTAINERS_ENABLED
             ProcessContainerConfig ProcessContainers;
 #endif
@@ -468,7 +471,10 @@ namespace PluginHost {
                 _priority = input.Priority.Value();
                 _OOMAdjust = input.OOMAdjust.Value();
                 _policy = input.Policy.Value();
-                _umask = input.Umask.Value();
+                if(input.Umask.IsSet() == true)
+                {
+                    _umask = input.Umask.Value();
+                }
             } 
 
         public:
@@ -496,7 +502,7 @@ namespace PluginHost {
             inline Core::ProcessInfo::scheduler Policy() const {
                 return(_policy);
             }
-            inline uint16_t UMask() const {
+            inline const Core::OptionalType<uint16_t>& UMask() const {
                 return(_umask);
             }
  
@@ -507,7 +513,7 @@ namespace PluginHost {
             int8_t _priority;
             int8_t _OOMAdjust;
             Core::ProcessInfo::scheduler _policy;
-            uint16_t _umask;
+            Core::OptionalType<uint16_t> _umask;
         };
 
     public:
@@ -518,13 +524,51 @@ namespace PluginHost {
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         Config(Core::File& file, const bool background, Core::OptionalType<Core::JSON::Error>& error)
             : _background(background)
+            , _prefix()
+            , _webPrefix()
+            , _JSONRPCPrefix()
+            , _volatilePath()
+            , _persistentPath()
+            , _dataPath()
+            , _hashKey()
+            , _appPath()
+            , _systemPath()
+            , _configsPath()
+            , _proxyStubPath()
+            , _postMortemPath()
+            , _accessor()
+            , _communicator()
+            , _binder()
+            , _redirect()
             , _security(nullptr)
+            , _version()
+            , _model()
+            , _messagingCategories()
+            , _messagingCategoriesFile()
+            , _warningReportingCategories()
+            , _binding()
+            , _interface()
+            , _URL()
+            , _ethernetCard()
+            , _portNumber(0)
+            , _IPV6()
+            , _idleTime(180)
+            , _softKillCheckWaitTime(3)
+            , _hardKillCheckWaitTime(10)
+            , _stackSize(0)
+            , _latitude()
+            , _longitude()
+            , _messagingPort()
             , _inputInfo()
             , _processInfo()
             , _plugins()
             , _reasons()
             , _substituter(*this)
             , _configLock()
+            #ifdef PROCESSCONTAINERS_ENABLED
+            , _ProcessContainersLogging()
+            #endif
+            , _linkerPluginPaths()
         {
             JSONConfig config;
 
@@ -562,6 +606,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 _ethernetCard = config.EthernetCard.Value();
                 _latitude = config.Latitude.Value();
                 _longitude = config.Longitude.Value();
+                _messagingPort = config.MessagingPort.Value();
 
                 _messagingCategoriesFile = config.DefaultMessagingCategories.IsQuoted();
                 if (_messagingCategoriesFile == true) {
@@ -633,10 +678,6 @@ POP_WARNING()
         {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_version);
-        }
-        inline void SetVersion(const string& newValue) {
-            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            _version = newValue;
         }
         inline const string& Model() const
         {
@@ -772,6 +813,9 @@ POP_WARNING()
         inline int32_t Longitude() const {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             return (_longitude);
+        }
+        inline uint16_t MessagingPort() const {
+            return (_messagingPort);
         }
         inline void SetLongitude(const int32_t newValue){
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
@@ -944,6 +988,7 @@ POP_WARNING()
         uint32_t _stackSize;
         int32_t _latitude;
         int32_t _longitude;
+        uint16_t _messagingPort;
         InputInfo _inputInfo;
         ProcessInfo _processInfo;
         Core::JSON::ArrayType<Plugin::Config> _plugins;
