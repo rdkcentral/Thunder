@@ -91,6 +91,8 @@
 
 #if defined WIN32 || defined _WINDOWS
 
+#define DEFINE_STRING_1(parameter) #parameter
+#define DEFINE_STRING(parameter) DEFINE_STRING_1(parameter)
 #define CONCAT_STRINGS(ARG1, ARG2)  ARG1##ARG2
 
 // Seems to be a MSVC issue, see: https://stackoverflow.com/questions/9183993/msvc-variadic-macro-expansion

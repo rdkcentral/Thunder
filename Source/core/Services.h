@@ -314,7 +314,7 @@ namespace Core {
         }
         const TCHAR* Module() const override
         {
-            return (System::ModuleName());
+            return (Core::System::MODULE_NAME);
         }
 
     private:
