@@ -60,7 +60,7 @@ namespace Core {
                 result = Core::ERROR_GENERAL;
             }
 #else
-            result = Core::ERROR_NOT_SUPPORTED
+            result = Core::ERROR_NOT_SUPPORTED;
 #endif
             return result;
         }
@@ -77,7 +77,7 @@ namespace Core {
                 result = Core::ERROR_GENERAL;
             }
 #else
-            result = Core::ERROR_NOT_SUPPORTED
+            result = Core::ERROR_NOT_SUPPORTED;
 #endif
             return result;
         }
