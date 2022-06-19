@@ -313,15 +313,15 @@ namespace Plugin {
             , _Id(Core::ClassNameOnly(typeid(ACTUALSERVICE).name()).Text())
             , _precondition(precondition)
             , _termination(termination)
-            , _control(control) {      
-            // TODO: figure out why this assert is triggered on gcc linux
-            //ASSERT(Core::System::ModuleServiceMetadata() == nullptr);
-            Core::System::SetModuleServiceMetadata(this);
+            , _control(control) {
+
+            ASSERT(Core::System::NS_MODULE_NAME::RootMetadata == nullptr);
+            Core::System::NS_MODULE_NAME::RootMetadata = this;
             Core::ServiceAdministrator::Instance().Register(this, &_factory);
         }
         ~Metadata() {
             Core::ServiceAdministrator::Instance().Unregister(this, &_factory);
-            Core::System::SetModuleServiceMetadata(nullptr);
+            Core::System::NS_MODULE_NAME::RootMetadata = nullptr;
         }
 
     public:
@@ -338,7 +338,7 @@ namespace Plugin {
             return (_Id);
         }
         const TCHAR* Module() const override {
-            return (Core::System::ModuleName());
+            return (Core::System::MODULE_NAME);
         }
         const std::vector<subsystem>& Precondition() const override {
             return (_precondition);
