@@ -118,6 +118,8 @@
     #endif
 #endif
 
+#define DEFINE_STRING_1(parameter) #parameter
+#define DEFINE_STRING(parameter) DEFINE_STRING_1(parameter)
 #define CONCAT_STRINGS(ARG1, ARG2)  ARG1##ARG2
 #define PUSH_WARNING_ROLL_1(WARNING, ...) WARNING
 #define PUSH_WARNING_ROLL_2(WARNING, ...) WARNING PUSH_WARNING_ROLL_1(__VA_ARGS__)
