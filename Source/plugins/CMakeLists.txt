@@ -16,6 +16,8 @@
 # limitations under the License.
 
 set(TARGET ${NAMESPACE}Plugins)
+set(TARGET_PROXYSTUBS ${NAMESPACE}ProxyStubs)
+string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
 
 option(VIRTUALINPUT_TOOLS "Build VirtualInput tools" OFF)
 
@@ -36,11 +38,15 @@ add_library(${TARGET} SHARED
         SubSystem.cpp
         VirtualInput.cpp
         System.cpp
+        )
+
+add_library(${TARGET_PROXYSTUBS} SHARED
         ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Plugin.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Shell.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Controller.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_StateControl.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_SubSystem.cpp
+        Module.cpp
         )
 
 set(PUBLIC_HEADERS
@@ -84,6 +90,12 @@ if (WARNING_REPORTING)
             )
 endif()
 
+target_link_libraries(${TARGET_PROXYSTUBS}
+        PRIVATE
+          CompileSettingsDebug::CompileSettingsDebug
+          ${NAMESPACE}COM::${NAMESPACE}COM
+        )
+
 target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -91,11 +103,25 @@ target_include_directories( ${TARGET}
           $<INSTALL_INTERFACE:include/${NAMESPACE}>
         )
 
+target_include_directories( ${TARGET_PROXYSTUBS}
+        PRIVATE
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
+        )
+
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
+        VERSION ${VERSION}
+        SOVERSION ${VERSION_MAJOR}
+        )
+
+set_target_properties(${TARGET_PROXYSTUBS} PROPERTIES
+        CXX_STANDARD 11
+        CXX_STANDARD_REQUIRED YES
+        FRAMEWORK FALSE
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
         )
@@ -113,6 +139,16 @@ install(
         INCLUDES DESTINATION include/${NAMESPACE}   # default include path
 )
 
+install(
+        TARGETS ${TARGET_PROXYSTUBS}  EXPORT ${TARGET_PROXYSTUBS}Targets        # for downstream dependencies
+        ARCHIVE DESTINATION lib/${NAMESPACE_LIB}/proxystubs COMPONENT libs      # static lib
+        LIBRARY DESTINATION lib/${NAMESPACE_LIB}/proxystubs COMPONENT libs      # shared lib
+        RUNTIME DESTINATION bin COMPONENT libs                                  # binaries
+        FRAMEWORK DESTINATION bin/${NAMESPACE_LIB}/proxystubs COMPONENT libs    # for mac
+        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/proxystubs COMPONENT devel # for mac
+        INCLUDES DESTINATION include/${NAMESPACE}/proxystubs                    # headers
+)
+
 # ===========================================================================================
 # Install METADATA:
 # ===========================================================================================
@@ -122,3 +158,5 @@ InstallPackageConfig(
 
 InstallCMakeConfig(
         TARGETS ${TARGET})
+
+InstallCMakeConfig(TARGETS ${TARGET_PROXYSTUBS})
