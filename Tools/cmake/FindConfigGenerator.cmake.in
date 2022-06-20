@@ -2,11 +2,6 @@ if(NOT PYTHON_EXECUTABLE)
     find_package(PythonInterp 3.5 REQUIRED QUIET)
 endif()
 
-set(CONFIG_GENERATOR_PATH "@GENERATOR_INSTALL_PATH@/ConfigGenerator")
-set(CONFIG_GENERATOR "${CONFIG_GENERATOR_PATH}/config_generator.py")
-set(CONFIG_GENERATOR_PARAMS_WHITELIST "${CONFIG_GENERATOR_PATH}/params.config")
-set(CONFIG_COMPARE "${CONFIG_GENERATOR_PATH}/config_compare.py")
-
 macro(IncludeConfig)
     if(NOT COMMAND map)
         ## includes all cmake files of cmakepp to write json files
@@ -35,6 +30,12 @@ function(write_config)
     set(optionsArgs )
     set(oneValueArgs CLASSNAME LOCATOR COMPONENT)
     set(multiValueArgs PLUGINS)
+
+    set(CONFIG_GENERATOR_PATH "@GENERATOR_INSTALL_PATH@/ConfigGenerator")
+    set(CONFIG_GENERATOR "${CONFIG_GENERATOR_PATH}/config_generator.py")
+    set(CONFIG_GENERATOR_PARAMS_WHITELIST "${CONFIG_GENERATOR_PATH}/params.config")
+    set(CONFIG_COMPARE "${CONFIG_GENERATOR_PATH}/config_compare.py")
+
 
     if (NOT CONFIG_GENERATOR)
         message(FATAL_ERROR "The path CONFIG_GENERATOR is not set!")
