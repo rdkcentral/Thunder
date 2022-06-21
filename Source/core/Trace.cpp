@@ -77,6 +77,11 @@ namespace Core {
 
         inline TextFragment ClassName(const char name[])
         {
+            return(Demangled(name));
+        }
+
+        inline TextFragment ClassNameOnly(const char name[])
+        {
             TextFragment result(Demangled(name));
             uint16_t index = 0;
             uint16_t lastIndex = static_cast<uint16_t>(~0);
@@ -90,13 +95,19 @@ namespace Core {
 
             return (lastIndex < (index - 1) ? TextFragment(result, lastIndex + 1, result.Length() - (lastIndex + 1)) : result);
         }
+  
     };
 
     static Demangling demangleClassNames;
 
-    TextFragment ClassNameOnly(const char className[])
+    TextFragment ClassName(const char className[])
     {
         return (demangleClassNames.ClassName(className));
+    }
+
+    TextFragment ClassNameOnly(const char className[])
+    {
+        return (demangleClassNames.ClassNameOnly(className));
     }
 
     const char* FileNameOnly(const char fileName[])

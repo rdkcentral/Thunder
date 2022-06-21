@@ -142,10 +142,9 @@ namespace PluginHost {
         };
 
         class EXTERNAL Bridge : public Core::JSON::Container {
-        private:
+        public:
             Bridge& operator=(const Bridge&) = delete;
 
-        public:
             Bridge();
             Bridge(const string& text, const uint32_t latency, const string& model, const bool secure);
             Bridge(const Bridge& copy);
@@ -159,11 +158,27 @@ namespace PluginHost {
         };
 
         class EXTERNAL Server : public Core::JSON::Container {
-        private:
+        public:
+            class EXTERNAL Minion : public Core::JSON::Container {
+            public:
+                Minion& operator=(const Minion&) = delete;
+
+                Minion();
+                Minion(const Minion& copy);
+                ~Minion();
+
+                Minion& operator= (const Core::ThreadPool::Metadata&);
+
+            public:
+                Core::JSON::InstanceId Id;
+                Core::JSON::String Job;
+                Core::JSON::DecUInt32 Runs;
+            };
+
+        public:
             Server(const Server& copy) = delete;
             Server& operator=(const Server&) = delete;
 
-        public:
             Server();
             ~Server();
 
@@ -173,9 +188,8 @@ namespace PluginHost {
             }
 
         public:
-            Core::JSON::ArrayType<Core::JSON::DecUInt32> ThreadPoolRuns;
+            Core::JSON::ArrayType<Minion> ThreadPoolRuns;
             Core::JSON::DecUInt32 PendingRequests;
-            Core::JSON::DecUInt32 PoolOccupation;
         };
 
         class EXTERNAL SubSystem : public Core::JSON::Container {

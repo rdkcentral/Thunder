@@ -21,6 +21,8 @@
 #define __IACTION_H
 
 #include "Module.h"
+#include "Trace.h"
+#include "TextFragment.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -36,7 +38,13 @@ namespace Core {
         virtual void Dispatch() = 0;
     };
 
-    typedef IDispatchType<void> IDispatch;
+    struct IDispatch : public IDispatchType<void> {
+        ~IDispatch() override = default;
+
+        virtual string Identifier() const {
+            return (ClassName(typeid(*this).name()).Text());
+        }
+    };
 }
 } // namespace Core
 

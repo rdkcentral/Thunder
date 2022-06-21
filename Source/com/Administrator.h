@@ -312,6 +312,17 @@ namespace RPC {
             _channel = Core::ProxyType<Core::IPCChannel>(channel);
             _handler = handler;
         }
+        string Identifier() const override {
+            string identifier;
+            Core::ProxyType<InvokeMessage> message(_message);
+            if (message.IsValid() == true) {
+                identifier = _T("COMRPC::Unknown::Request");
+            }
+            else {
+                identifier = Core::Format(_T("COMRPC::Interface[%d]::Method[%d]"), message->Parameters().InterfaceId(), message->Parameters().MethodId());
+            }
+            return (identifier);
+        }
         void Dispatch() override
         {
             if (_message->Label() == InvokeMessage::Id()) {
@@ -324,14 +335,14 @@ namespace RPC {
             }
         }
 
-		static void Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<Core::IIPC>& data)
-		{
+        static void Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<Core::IIPC>& data)
+        {
             Core::ProxyType<InvokeMessage> message(data);
             ASSERT(message.IsValid() == true);
             _administrator.Invoke(channel, message);
             channel->ReportResponse(data);
 
-		}
+        }
 
     private:
         Core::ProxyType<Core::IIPC> _message;

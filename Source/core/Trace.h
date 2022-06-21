@@ -167,6 +167,7 @@ namespace WPEFramework {
 namespace Core {
     class TextFragment;
 
+    EXTERNAL TextFragment ClassName(const char className[]);
     EXTERNAL TextFragment ClassNameOnly(const char className[]);
     EXTERNAL const char* FileNameOnly(const char fileName[]);
     EXTERNAL string LogMessage(const TCHAR filename[], const uint32_t LineNumber, const TCHAR* message);
