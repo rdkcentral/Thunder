@@ -42,7 +42,8 @@ namespace Logging {
 
     void DumpException(const string& exceptionType)
     {
-        std::list<string> stack;
+        uint8_t counter = 0;
+        std::list<Core::callstack_info> stack;
         DumpCallStack(Core::Thread::ThreadId(), stack);
 #if defined(__CORE_EXCEPTION_CATCHING__) || defined(__CORE_WARNING_REPORTING__)
         const TCHAR* callsign = Core::CallsignTLS::CallsignAccess<&UnknownCallsign>::Callsign();
@@ -50,8 +51,14 @@ namespace Logging {
         const TCHAR* callsign = UnknownCallsign;
 #endif
         SYSLOG(Logging::Crash, (_T("-== Unhandled exception in: %s [%s] ==-\n"), callsign, exceptionType.c_str()));
-        for (const string& line : stack) {
-            SYSLOG(Logging::Crash, (line));
+        for (const Core::callstack_info& entry : stack) {
+            if (entry.line != static_cast<uint32_t>(~0)) {
+                SYSLOG(Logging::Crash, (Core::Format(_T("[%03d] [%p] %.30s %s [%d]"), counter, entry.address, entry.module.c_str(), entry.function.c_str(), entry.line)));
+            }
+            else {
+                SYSLOG(Logging::Crash, (Core::Format(_T("[%03d] [%p] %.30s %s"), counter, entry.address, entry.module.c_str(), entry.function.c_str())));
+            }
+            counter++;
         }
     }
 

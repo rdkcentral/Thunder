@@ -500,8 +500,8 @@ POP_WARNING()
                 }
 
 #ifndef __WINDOWS__
-                if (_config->Process().UMask() != 0) {
-                    ::umask(_config->Process().UMask());
+                if (_config->Process().UMask().IsSet() == true) {
+                    ::umask(_config->Process().UMask().Value());
                 }
 #endif
                 myself.Policy(_config->Process().Policy());
@@ -854,10 +854,18 @@ POP_WARNING()
                     case 'R': {
                         printf("\nMonitor callstack:\n");
                         printf("============================================================\n");
-                        std::list<string> stackList;
+                        uint8_t counter = 0;
+                        std::list<Core::callstack_info> stackList;
                         ::DumpCallStack(Core::ResourceMonitor::Instance().Id(), stackList);
-                        for (const string& entry : stackList) {
-                            printf("%s\n", entry.c_str());
+                        for (const Core::callstack_info& entry : stackList) {
+                            printf("[%03d] [%p] %.30s %s", counter, entry.address, entry.module.c_str(), entry.function.c_str());
+                            if (entry.line != static_cast<uint32_t>(~0)) {
+                                    printf(" [%d]\n", entry.line);
+                            }
+                            else {
+                                    printf("\n");
+                            }
+                            counter++;
                         }
                         break;
                     }
@@ -875,10 +883,18 @@ POP_WARNING()
                         printf("\nThreadPool thread[%c] callstack:\n", keyPress);
                         printf("============================================================\n");
                         if (threadId != (ThreadId)(~0)) {
-                            std::list<string> stackList;
+                            uint8_t counter = 0;
+                            std::list<Core::callstack_info> stackList;
                             ::DumpCallStack(threadId, stackList);
-                            for (const string& entry : stackList) {
-                                printf("%s\n", entry.c_str());
+                            for (const Core::callstack_info& entry : stackList) {
+                                printf("[%03d] [%p] %.30s %s", counter, entry.address, entry.module.c_str(), entry.function.c_str());
+                                if (entry.line != static_cast<uint32_t>(~0)) {
+                                    printf(" [%d]\n", entry.line);
+                                }
+                                else {
+                                    printf("\n");
+                                }
+                                counter++;
                             }
                         } else {
                            printf("The given Thread ID is not in a valid range, please give thread id between 0 and %d\n", THREADPOOL_COUNT);

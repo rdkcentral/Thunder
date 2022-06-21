@@ -68,7 +68,7 @@ namespace Core {
                     allocationName[moveTo++] = name[index++];
                 }
             }
-            allocationName[moveTo++] = '\0';
+            allocationName[moveTo] = '\0';
             std::string newName(allocationName, moveTo);
 #endif
 

@@ -149,7 +149,7 @@ function(get_if_link_libraries libs dirs target)
             else()
                 if ("${_library}" MATCHES "^.*\\:\\:.*$")
                      # detecting one or more "::" this is normally a cmake target 
-                    message(SEND_ERROR "${_library} is assumed to be known cmake Target, but it's not known in this scope, maybe you forgot a find_package")
+                    message(SEND_ERROR "${target} wants ${_library} is assumed to be known cmake Target, but it's not known in this scope, maybe you forgot a find_package")
                 else()
                     # set(_link_libraries ${_link_libraries} ${_library})
                     add_element(_link_libraries  ${_library})
@@ -399,7 +399,7 @@ function(InstallCMakeConfig)
                         endif()
 
                         get_target_property(_is_imported ${_dependency} IMPORTED)
-                    
+
                         if(_type_is_ok)
                             if(_is_imported)
                                 get_target_property(_configurations ${_dependency} IMPORTED_CONFIGURATIONS)
@@ -415,9 +415,9 @@ function(InstallCMakeConfig)
                                     endif()
                                 endif()
                             
-                                get_target_property(_dep_loc ${_dependency} IMPORTED_LOCATION${config})
-                            
-                                _get_default_link_name(${_dep_loc} _dep_name _dep_dir)
+                                    get_target_property(_dep_loc ${_dependency} IMPORTED_LOCATION${config})
+
+                                    _get_default_link_name(${_dep_loc} _dep_name _dep_dir)
                             else()
                                 get_target_property(_dep_name ${_dependency} OUTPUT_NAME)
 
@@ -428,9 +428,19 @@ function(InstallCMakeConfig)
                         
                             if(_dep_name)
                                 list(APPEND dependencies  ${_dep_name})
+                                unset(_dep_name)
                             endif()
                         endif()
-                   endif()
+                        get_target_property(_comp_iface ${_dependency} COMPATIBLE_INTERFACE_STRING)
+                   
+                        if(_comp_iface)
+                            foreach(_target ${_comp_iface})
+                                if("${_target}" MATCHES "${NAMESPACE}")
+                                    list(APPEND dependencies  ${_target})
+                                endif()  
+                            endforeach()
+                        endif()
+                    endif()
                 endforeach()
             endif()
         endif()
@@ -670,3 +680,58 @@ function(semicolon_safe_string StringVar)
   set(${StringVar} "${SafeString}" PARENT_SCOPE) 
 endfunction(semicolon_safe_string)
 
+function(InstallCompatibleCMakeConfig)
+    set(optionsArgs SKIP_PUBLIC_HEADERS)
+    set(oneValueArgs TARGET LEGACY_TARGET LEGACY_PUBLIC_HEADER_LOCATION LEGACY_INCLUDE_DIR)
+    set(multiValueArgs)
+
+    cmake_parse_arguments(Arg "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+
+    if(Argument_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "Unknown keywords given to InstallCMakeConfig(): \"${Arg_UNPARSED_ARGUMENTS}\".")
+    endif()
+
+    if(NOT Arg_LEGACY_TARGET OR NOT Arg_TARGET)
+        message(FATAL_ERROR "Missing keywords LEGACY_TARGET OR TARGET.")
+    endif()
+
+    if(NOT TARGET ${Arg_TARGET})
+        message(FATAL_ERROR "Target ${Arg_TARGET} is not a defined cmake target in this scope.")
+    endif()
+
+    if("${Arg_LEGACY_PUBLIC_HEADER_LOCATION}" STREQUAL "")
+        set(Arg_LEGACY_PUBLIC_HEADER_LOCATION "include")
+        message(STATUS "LEGACY_PUBLIC_HEADER_LOCATION was set to default '${Arg_LEGACY_PUBLIC_HEADER_LOCATION}'.")
+    endif()
+
+    if("${Arg_LEGACY_INCLUDE_DIR}" STREQUAL "")
+       set(Arg_LEGACY_INCLUDE_DIR "include")
+        message(STATUS "LEGACY_INCLUDE_DIR was set to default '${Arg_LEGACY_INCLUDE_DIR}'.")
+    endif()
+
+    add_library(${Arg_LEGACY_TARGET} INTERFACE)
+    add_library(${Arg_LEGACY_TARGET}::${Arg_LEGACY_TARGET} ALIAS ${Arg_LEGACY_TARGET})
+
+    target_link_libraries(${Arg_LEGACY_TARGET}
+                        INTERFACE ${Arg_TARGET}::${Arg_TARGET})
+
+    if(NOT Arg_SKIP_PUBLIC_HEADERS)
+        get_target_property(_headers ${Arg_TARGET} PUBLIC_HEADER)
+    
+        set_target_properties(${Arg_LEGACY_TARGET} PROPERTIES
+                        PUBLIC_HEADER "${_headers}" # specify the public headers
+                        )
+    endif()
+
+    set_target_properties(${Arg_LEGACY_TARGET} PROPERTIES
+                        COMPATIBLE_INTERFACE_STRING "${Arg_LEGACY_TARGET}"
+                        )
+    install(
+            TARGETS ${Arg_LEGACY_TARGET}
+            EXPORT ${Arg_LEGACY_TARGET}Targets
+            PUBLIC_HEADER DESTINATION ${Arg_LEGACY_PUBLIC_HEADER_LOCATION} COMPONENT devel
+            INCLUDES DESTINATION  ${Arg_LEGACY_INCLUDE_DIR} # default include path
+    )
+
+    installcmakeconfig(TARGETS ${Arg_LEGACY_TARGET} EXTRA_DEPENDENCIES  ${Arg_TARGET})
+endfunction(InstallCompatibleCMakeConfig)

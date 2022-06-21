@@ -22,6 +22,7 @@
 #include <Dobby/IpcService/IpcFactory.h>
 #include <fstream>
 #include <thread>
+#include <json/value.h>
 
 namespace WPEFramework {
 
@@ -41,21 +42,31 @@ namespace ProcessContainers {
         while (searchpaths.Next()) {
             auto path = searchpaths.Current();
 
-            Core::File configFile(path + "/Container" + CONFIG_NAME);
-            TRACE(ProcessContainers::ProcessContainerization, (_T("searching %s container at %s"), id.c_str(), configFile.Name().c_str()));
-
-            if (configFile.Exists()) {
-                TRACE(ProcessContainers::ProcessContainerization, (_T("Found %s container!"), id.c_str()));
+            auto createContainer = [&](bool useSpecFile, const string &path) -> IContainer* {
                 // Make sure no leftover will interfere...
                 if (ContainerNameTaken(id)) {
                     DestroyContainer(id);
                 }
                 this->InternalLock();
-                DobbyContainer* container = new DobbyContainer(id, path + "/Container", logpath);
+                DobbyContainer* container = new DobbyContainer(id, path, logpath, useSpecFile);
                 InsertContainer(container);
                 this->InternalUnlock();
 
                 return container;
+            };
+
+            Core::File configBundleFile(path + "/Container" + CONFIG_NAME);
+            TRACE(ProcessContainers::ProcessContainerization, (_T("searching %s container at %s, %s"), id.c_str(), configBundleFile.Name().c_str(), configBundleFile.PathName().c_str()));
+            if (configBundleFile.Exists()) {
+                TRACE(ProcessContainers::ProcessContainerization, (_T("Found %s container!"), id.c_str()));
+                return createContainer(false, configBundleFile.PathName());
+            }
+
+            Core::File configSpecFile(path + CONFIG_NAME_SPEC);
+            TRACE(ProcessContainers::ProcessContainerization, (_T("searching %s container at %s"), id.c_str(), configSpecFile.Name().c_str(), configSpecFile.Name().c_str()));
+            if (configSpecFile.Exists()) {
+                TRACE(ProcessContainers::ProcessContainerization, (_T("Found %s container!"), id.c_str()));
+                return createContainer(true, configSpecFile.Name());
             }
         }
 
@@ -176,12 +187,13 @@ namespace ProcessContainers {
 
     // Container
     // ------------------------------------
-    DobbyContainer::DobbyContainer(const string& name, const string& path, const string& logPath)
+    DobbyContainer::DobbyContainer(const string& name, const string& path, const string& logPath, bool useSpecFile)
         : _adminLock()
         , _name(name)
         , _path(path)
         , _logPath(logPath)
         , _pid()
+        , _useSpecFile(useSpecFile)
     {
     }
 
@@ -348,8 +360,22 @@ namespace ProcessContainers {
             fullCommand += " " + parameters.Current();
         }
 
-        _descriptor = admin.mDobbyProxy->startContainerFromBundle(_name, _path, emptyList, fullCommand);
+        if (_useSpecFile) {
+            TRACE(ProcessContainers::ProcessContainerization, (_T("path set to %s for name %s"), _path.c_str(), _name.c_str()));
 
+            std::ifstream jsonSpecFile(_path);
+
+            std::ostringstream specFileStream;
+            specFileStream << jsonSpecFile.rdbuf();
+
+            // convert ostringstream to std::string
+            std::string containerSpecString = specFileStream.str();
+            TRACE(ProcessContainers::ProcessContainerization, (_T("container spec string: %s"), containerSpecString.c_str()));
+
+            _descriptor = admin.mDobbyProxy->startContainerFromSpec(_name, containerSpecString , emptyList, fullCommand);
+        } else {
+            _descriptor = admin.mDobbyProxy->startContainerFromBundle(_name, _path, emptyList, fullCommand);
+        }
         // startContainer returns -1 on failure
         if (_descriptor <= 0) {
             TRACE(Trace::Error, (_T("Failed to start container %s - internal Dobby error."), _name.c_str()));

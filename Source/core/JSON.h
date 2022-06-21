@@ -971,6 +971,9 @@ namespace Core {
         typedef NumberType<uint64_t, false, BASE_OCTAL> OctUInt64;
         typedef NumberType<int64_t, true, BASE_OCTAL> OctSInt64;
 
+        typedef NumberType<Core::instance_id, false, BASE_HEXADECIMAL> InstanceId;
+        typedef InstanceId Pointer;
+
         template <class TYPE>
         class FloatType : public IElement, public IMessagePack {
         private:
@@ -3347,17 +3350,6 @@ namespace Core {
                 }
             }
 
-            void Reset()
-            {
-                JSONElementList::const_iterator index = _data.begin();
-
-                // As long as we did not find a set element, continue..
-                while (index != _data.end()) {
-                    index->second->Clear();
-                    index = _data.erase(index);
-                }
-            }
-
             void Add(const TCHAR label[], IElement* element)
             {
                 _data.push_back(JSONLabelValue(label, element));
@@ -3374,6 +3366,12 @@ namespace Core {
                 if (index != _data.end()) {
                     _data.erase(index);
                 }
+            }
+
+        protected:
+            void Reset()
+            {
+                _data.clear();
             }
 
         private:
@@ -4333,6 +4331,7 @@ namespace Core {
             void Clear()
             {
                 Reset();
+                _elements.clear();
             }
             string GetDebugString(int indent = 0) const;
 

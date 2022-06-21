@@ -19,8 +19,70 @@
 
 #include "FileSystem.h"
 
+#ifdef __POSIX__
+#include <grp.h>
+#include <pwd.h>
+#endif
+
 namespace WPEFramework {
 namespace Core {
+
+    namespace AccessContol{
+        uint32_t OwnerShip(const string& node, const string& userName, const string& groupName)
+        {
+            uint32_t result(Core::ERROR_NONE);
+
+#ifdef __POSIX__
+            int uid(-1);
+            int gid(-1);
+
+            if (userName.empty() == false) {
+                struct passwd* pwd = ::getpwnam(userName.c_str());
+
+                if (pwd != nullptr) {
+                    uid = pwd->pw_uid;
+                } else {
+                    result = Core::ERROR_NOT_EXIST;
+                }
+            }
+
+            if (groupName.empty() == false) {
+                struct group* grp = ::getgrnam(groupName.c_str());
+
+                if (grp != nullptr) {
+                    gid = grp->gr_gid;
+                } else {
+                    result = Core::ERROR_NOT_EXIST;
+                }
+            }
+
+            if (::chown(node.c_str(), uid, gid) != 0) {
+                result = Core::ERROR_GENERAL;
+            }
+#else
+            result = Core::ERROR_NOT_SUPPORTED;
+#endif
+            return result;
+        }
+    
+        uint32_t Permission(const string& node, const uint32_t modeFlags){
+            uint32_t result(Core::ERROR_NONE);
+
+#ifdef __POSIX__
+            // Lucky us we mapped File::Mode 1:1 to POSIX mode, 
+            // so we only have to filter some values :-). 
+            mode_t mode = modeFlags & 0x0FFFFF;
+
+            if (::chmod(node.c_str(), mode) != 0) {
+                result = Core::ERROR_GENERAL;
+            }
+#else
+            result = Core::ERROR_NOT_SUPPORTED;
+#endif
+            return result;
+        }
+    };
+
     File::File()
         : _name()
         , _size(0)
@@ -193,6 +255,23 @@ namespace Core {
         }
 #endif
     }
+
+    uint32_t File::User(const string& userName) const
+    {
+        return AccessContol::OwnerShip(_name, userName, "");
+    }
+
+    uint32_t File::Group(const string& groupName) const
+    {
+        return AccessContol::OwnerShip(_name, "", groupName);
+    }
+
+    uint32_t File::Permission(uint32_t flags) const
+    {
+        return AccessContol::Permission(_name, flags);
+    }
+
+
     Directory::Directory()
         : _name()
         , _filter()
@@ -337,6 +416,22 @@ namespace Core {
         }
         return true;
     }
+
+    uint32_t Directory::User(const string& userName) const
+    {
+        return AccessContol::OwnerShip(_name, userName, "");
+    }
+
+    uint32_t Directory::Group(const string& groupName) const
+    {
+        return AccessContol::OwnerShip(_name, "", groupName);
+    }
+
+    uint32_t Directory::Permission(uint32_t flags) const
+    {
+        return AccessContol::Permission(_name, flags);
+    }
+
 
     string Partition::RemoveRepeatedPathSeparator(const string& path)
     {

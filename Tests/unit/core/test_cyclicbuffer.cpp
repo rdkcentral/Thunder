@@ -213,8 +213,7 @@ namespace Tests {
     {
         const uint32_t mode =
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE   |
             Core::File::CREATE | Core::File::SHAREABLE;
 
         {
@@ -269,8 +268,7 @@ namespace Tests {
     {
         const uint32_t mode =
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE   |
             Core::File::CREATE | Core::File::SHAREABLE;
 
         std::string bufferName {"cyclicbuffer01"};
@@ -383,8 +381,7 @@ namespace Tests {
         const uint8_t cyclicBufferSize = 50;
         const uint32_t mode =
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE;
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE  ;
         CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
         EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
         EXPECT_EQ(buffer.Size(), cyclicBufferSize);
@@ -407,8 +404,7 @@ namespace Tests {
         const uint8_t cyclicBufferSize = 20;
         const uint32_t mode =
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
             Core::File::SHAREABLE;
 
         CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
@@ -450,8 +446,7 @@ namespace Tests {
         const uint8_t cyclicBufferSize = 50;
         const uint32_t mode =
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE;
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE  ;
         CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
         EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
         EXPECT_EQ(buffer.Size(), cyclicBufferSize);
@@ -496,8 +491,7 @@ namespace Tests {
         const uint8_t cyclicBufferSize = 50;
         const uint32_t mode =
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE;
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE  ;
         CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
         EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
         EXPECT_EQ(buffer.Size(), cyclicBufferSize);
@@ -549,8 +543,7 @@ namespace Tests {
         const uint8_t cyclicBufferSize = 10;
         const uint32_t mode =
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE;
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE  ;
         CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
         EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
         EXPECT_EQ(buffer.Size(), cyclicBufferSize);
@@ -582,8 +575,7 @@ namespace Tests {
         const uint8_t cyclicBufferSize = 50;
         const uint32_t mode =
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE;
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE  ;
         CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
         EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
         EXPECT_EQ(buffer.Size(), cyclicBufferSize);
@@ -603,8 +595,7 @@ namespace Tests {
     {
         const uint32_t mode =
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE   |
             Core::File::CREATE | Core::File::SHAREABLE;
 
         {
@@ -634,8 +625,7 @@ namespace Tests {
     {
         const uint32_t mode =
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE   |
             Core::File::CREATE | Core::File::SHAREABLE;
 
         {
@@ -666,8 +656,7 @@ namespace Tests {
     {
         const uint32_t mode =
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE   |
             Core::File::CREATE | Core::File::SHAREABLE;
 
         {
@@ -699,8 +688,7 @@ namespace Tests {
         const uint8_t cyclicBufferSize = 10;
         const uint32_t mode =
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE;
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE  ;
 
         CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
@@ -742,8 +730,7 @@ namespace Tests {
         const uint8_t cyclicBufferSize = 100;
         const uint32_t mode =
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
             Core::File::SHAREABLE;
 
         CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
@@ -846,8 +833,7 @@ namespace Tests {
 
         CyclicBuffer buffer(data->bufferName.c_str(),
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | shareableFlag,
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE  | shareableFlag,
             cyclicBufferSize, false);
 
         buffer.Write(reinterpret_cast<const uint8_t*>(SampleData), sizeof(SampleData));
@@ -889,8 +875,7 @@ namespace Tests {
 
         CyclicBuffer buffer(bufferName.c_str(),
             Core::File::USER_READ | Core::File::USER_WRITE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE   |
             shareableFlag, cyclicBufferSize, false);
 
         EXPECT_EQ(buffer.Used(), ((shareable == true) ? sizeof(SampleData) : 0));
@@ -925,8 +910,7 @@ namespace Tests {
         uint32_t shareableFlag = (shareable == true) ? Core::File::SHAREABLE : 0;
         const uint32_t mode =
             (Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
             shareableFlag);
 
         struct Data data;
@@ -1083,7 +1067,7 @@ namespace Tests {
             const uint32_t mode =
                 Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
                 Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | Core::File::SHAREABLE;
+                Core::File::SHAREABLE;
 
             CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
@@ -1131,7 +1115,7 @@ namespace Tests {
             const uint32_t mode =
                 Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
                 Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | Core::File::SHAREABLE;
+                Core::File::SHAREABLE;
 
             CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
@@ -1178,7 +1162,7 @@ namespace Tests {
             const uint32_t mode =
                 Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
                 Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | Core::File::SHAREABLE;
+                Core::File::SHAREABLE;
 
             CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
  
@@ -1223,7 +1207,7 @@ namespace Tests {
             const uint32_t mode =
                 Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
                 Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | Core::File::SHAREABLE;
+                Core::File::SHAREABLE;
 
             CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
 
@@ -1262,7 +1246,7 @@ namespace Tests {
             const uint32_t mode =
                 Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
                 Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | Core::File::SHAREABLE;
+                Core::File::SHAREABLE;
 
             CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
             EXPECT_TRUE(buffer.IsOverwrite());
@@ -1314,7 +1298,7 @@ namespace Tests {
             const uint32_t mode =
                 Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
                 Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | Core::File::SHAREABLE;
+                Core::File::SHAREABLE;
 
             CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
             EXPECT_TRUE(buffer.IsOverwrite());
@@ -1373,8 +1357,7 @@ namespace Tests {
 
         CyclicBuffer buffer(bufferName.c_str(),
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
             Core::File::SHAREABLE, cyclicBufferSize, false);
 
         buffer.Lock();
@@ -1390,8 +1373,7 @@ namespace Tests {
 
         CyclicBuffer buffer(bufferName.c_str(),
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
             Core::File::SHAREABLE, cyclicBufferSize, false);
 
         buffer.Lock();
@@ -1412,7 +1394,7 @@ namespace Tests {
             const uint32_t mode =
                 Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
                 Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | Core::File::SHAREABLE;
+                Core::File::SHAREABLE;
 
             CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
@@ -1464,7 +1446,7 @@ namespace Tests {
             const uint32_t mode =
                 Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
                 Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | Core::File::SHAREABLE;
+                Core::File::SHAREABLE;
 
             CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
 
@@ -1519,7 +1501,7 @@ namespace Tests {
             const uint32_t mode =
                 Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
                 Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | Core::File::SHAREABLE;
+                Core::File::SHAREABLE;
 
             CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
@@ -1615,7 +1597,7 @@ namespace Tests {
             const uint32_t mode =
                 Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
                 Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | Core::File::SHAREABLE;
+                Core::File::SHAREABLE;
 
             CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
             testAdmin.Sync("setup client");
@@ -1676,8 +1658,7 @@ namespace Tests {
 
         CyclicBuffer buffer(bufferName.c_str(),
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE |
-            Core::File::OTHERS_READ | Core::File::OTHERS_WRITE |
+            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
             Core::File::SHAREABLE, cyclicBufferSize, false);
 
         Event event(false, false);
@@ -1712,7 +1693,7 @@ namespace Tests {
             const uint32_t mode =
                 Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
                 Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | Core::File::SHAREABLE;
+                Core::File::SHAREABLE;
 
             CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
@@ -1760,7 +1741,7 @@ namespace Tests {
             const uint32_t mode =
                 Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
                 Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | Core::File::SHAREABLE;
+                Core::File::SHAREABLE;
 
             CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
 

@@ -161,6 +161,18 @@ namespace Core {
         {
             return (_buffer.Storage().Name());
         }
+        inline uint32_t User(const string& userName) const
+        {
+            return (_buffer.User(userName));
+        }
+        inline uint32_t Group(const string& groupName) const
+        {
+            return (_buffer.Group(groupName));
+        }
+        inline uint32_t Permission(uint32_t mode) const
+        {
+            return (_buffer.Permission(mode));
+        }
         inline bool IsLocked() const
         {
             return ((std::atomic_load(&(_administration->_state)) & LOCKED) == LOCKED);

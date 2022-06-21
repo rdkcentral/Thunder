@@ -41,6 +41,8 @@
 
 #define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...)
 
+#define REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...)
+
 #define REPORT_DURATION_WARNING(CODE, CATEGORY, ...) \
     CODE
 
@@ -113,6 +115,23 @@
                 __message__);                                                                                                                                                   \
         }                                                                                                                                                                       \
     }
+
+#define REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...)                                                                                                                  \
+    if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) {                  \
+        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;                             \
+        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, CALLSIGN, \
+                ACTUALVALUE,                                                                                                                                                    \
+                ##__VA_ARGS__)                                                                                                                                                  \
+            == true) {                                                                                                                                                          \
+            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                                           \
+                CALLSIGN,                                                          \
+                __FILE__,                                                                                                                                                       \
+                __LINE__,                                                                                                                                                       \
+                typeid(*this).name(),                                                                                                                                           \
+                __message__);                                                                                                                                                   \
+        }                                                                                                                                                                       \
+    }
+
 
 #define REPORT_DURATION_WARNING(CODE, CATEGORY, ...)                                                                                                           \
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) { \

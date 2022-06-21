@@ -71,6 +71,18 @@ namespace Core {
         {
             m_File.LoadFileInfo();
         }
+        inline uint32_t User(const string& userName) const
+        {
+            return (m_File.User(userName));
+        }
+        inline uint32_t Group(const string& groupName) const
+        {
+            return (m_File.Group(groupName));
+        }
+        inline uint32_t Permission(uint32_t mode) const
+        {
+            return (m_File.Permission(mode));
+        }
         bool Load();
         void Sync();
 

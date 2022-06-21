@@ -38,7 +38,7 @@ namespace WarningReporting {
 
     WarningReportingUnit::ReportingBuffer::ReportingBuffer(const string& doorBell, const string& name)
         : Core::CyclicBuffer(name,
-              Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE | Core::File::GROUP_READ | Core::File::GROUP_WRITE | Core::File::OTHERS_READ | Core::File::OTHERS_WRITE | Core::File::SHAREABLE,
+              Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE | Core::File::GROUP_READ | Core::File::GROUP_WRITE | Core::File::SHAREABLE,
               CyclicBufferSize, true)
         , _doorBell(doorBell.c_str())
     {
