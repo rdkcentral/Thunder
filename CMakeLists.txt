@@ -51,6 +51,7 @@ set(NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")
 
 find_package(ProxyStubGenerator REQUIRED)
 find_package(JsonGenerator REQUIRED)
+find_package(ConfigGenerator REQUIRED)
 
 #
 # Build type specific options
