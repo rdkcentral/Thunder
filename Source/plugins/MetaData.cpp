@@ -262,11 +262,42 @@ namespace PluginHost
     {
     }
 
+    MetaData::Server::Minion::Minion() 
+        : Core::JSON::Container()
+        , Id(0)
+        , Job()
+        , Runs(0) {
+        Add(_T("id"), &Id);
+        Add(_T("job"), &Job);
+        Add(_T("runs"), &Runs);
+    }
+    MetaData::Server::Minion& MetaData::Server::Minion::operator=(const Core::ThreadPool::Metadata& info) {
+        Id = info.WorkerId;
+        Runs = info.Runs;
+        if (info.Job.IsSet() == false) {
+            Job.Clear();
+        }
+        else {
+            Job = info.Job.Value();
+        }
+        return (*this);
+    }
+    MetaData::Server::Minion::Minion(const Minion& copy)
+        : Core::JSON::Container()
+        , Id(copy.Id)
+        , Job(copy.Job)
+        , Runs(copy.Runs) {
+        Add(_T("id"), &Id);
+        Add(_T("job"), &Job);
+        Add(_T("runs"), &Runs);
+    }
+    MetaData::Server::Minion::~Minion() {
+    }
+
     MetaData::Server::Server()
     {
         Core::JSON::Container::Add(_T("threads"), &ThreadPoolRuns);
         Core::JSON::Container::Add(_T("pending"), &PendingRequests);
-        Core::JSON::Container::Add(_T("occupation"), &PoolOccupation);
     }
     MetaData::Server::~Server()
     {

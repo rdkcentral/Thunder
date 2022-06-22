@@ -1827,6 +1827,9 @@ namespace PluginHost {
                     void Dispatch() {
                         _parent.Evaluate();
                     }
+                    string JobIdentifier() const {
+                        return(_T("PluginServer::SubSystems::Notification"));
+                    }
 
                 private:
                     SubSystems& _parent;
@@ -2416,7 +2419,6 @@ POP_WARNING()
                     ASSERT(_service.IsValid() == true);
                     return _service->Callsign();
                 }
-
             private:
                 uint32_t _ID;
                 Server* _server;
@@ -2529,6 +2531,9 @@ POP_WARNING()
                     Job::Clear();
                     
                 }
+                string Identifier() const override {
+                    return(_T("PluginServer::Channel::WebRequestJob::") + Callsign());
+                }
 
             private:
                 Core::ProxyType<Web::Request> _request;
@@ -2600,6 +2605,9 @@ POP_WARNING()
 
                     Job::Clear();
                 }
+                string Identifier() const override {
+                    return(_T("PluginServer::Channel::JSONElementJob::") + Callsign());
+                }
 
             private:
                 Core::ProxyType<Core::JSON::IElement> _element;
@@ -2639,6 +2647,9 @@ POP_WARNING()
                     }
 
                     Job::Clear();
+                }
+                string Identifier() const override {
+                    return(_T("PluginServer::Channel::TextJob::") + Callsign());
                 }
 
             private:
@@ -3203,6 +3214,9 @@ POP_WARNING()
         private:
             friend class Core::ThreadPool::JobType<ChannelMap&>;
 
+            string JobIdentifier() const {
+                return (_T("PluginServer::ChannelMap::Cleanup"));
+            }
             void Dispatch()
             {
                 TRACE(Activity, (string(_T("Cleanup job running..\n"))));

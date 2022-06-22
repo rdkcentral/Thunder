@@ -94,9 +94,8 @@ namespace Core {
 
         struct Metadata {
             uint32_t Pending;
-            uint32_t Occupation;
             uint8_t Slots;
-            uint32_t* Slot;
+            ThreadPool::Metadata* Slot;
         };
 
         static void Assign(IWorkerPool* instance);
@@ -321,7 +320,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             #endif
         {
             _metadata.Slots = threadCount + 1;
-            _metadata.Slot = new uint32_t[threadCount + 1];
+            _metadata.Slot = new Core::ThreadPool::Metadata[threadCount + 1];
         }
 POP_WARNING()
 
@@ -397,12 +396,11 @@ POP_WARNING()
         }
         virtual const Metadata& Snapshot() const
         {
-
             _metadata.Pending = _threadPool.Pending();
-            _metadata.Occupation = _threadPool.Active() + _external.IsActive();
-            _metadata.Slot[0] = _external.Runs();
+            _external.Info(_metadata.Slot[0]);
+            _metadata.Slot[0].WorkerId = _joined;
 
-            _threadPool.Runs(_threadPool.Count(), &(_metadata.Slot[1]));
+            _threadPool.Info(_threadPool.Count(), &(_metadata.Slot[1]));
 
             return (_metadata);
         }
