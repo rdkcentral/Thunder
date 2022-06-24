@@ -897,25 +897,31 @@ namespace Core {
 
             // We are not busy Setting the flag, so we can check it.
             if (m_blCondition == false) {
-                struct timespec structTime;
+                struct timespec structTime = {0};
 
-                clock_gettime(CLOCK_MONOTONIC, &structTime);
-                structTime.tv_nsec += ((nTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
-                structTime.tv_sec += (nTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
-                structTime.tv_nsec = structTime.tv_nsec % 1000000000;
+                if (clock_gettime(CLOCK_MONOTONIC, &structTime) == 0)
+                {
+                    structTime.tv_nsec += ((nTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
+                    structTime.tv_sec += (nTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
+                    structTime.tv_nsec = structTime.tv_nsec % 1000000000;
 
-                do {
-                    // Oops it seems that we are not allowed to pass.
-                    nResult = (pthread_cond_timedwait(&m_syncCondition, &m_syncAdminLock, &structTime) != 0 ? Core::ERROR_TIMEDOUT : Core::ERROR_NONE);
+                    do {
+                        // Oops it seems that we are not allowed to pass.
+                        nResult = (pthread_cond_timedwait(&m_syncCondition, &m_syncAdminLock, &structTime) != 0 ? Core::ERROR_TIMEDOUT : Core::ERROR_NONE);
 
-                    // For some reason the documentation says that we have to double check on
-                    // the condition variable to see if we are allowed to fall through, so we
-                    // do (Guide to DEC threads, March 1996 ,page pthread-56, paragraph 4)
-                } while ((m_blCondition == false) && (nResult == Core::ERROR_NONE));
+                        // For some reason the documentation says that we have to double check on
+                        // the condition variable to see if we are allowed to fall through, so we
+                        // do (Guide to DEC threads, March 1996 ,page pthread-56, paragraph 4)
+                    } while ((m_blCondition == false) && (nResult == Core::ERROR_NONE));
 
-                if (nResult != 0) {
-                    // Something went wrong, so assume...
-                    TRACE_L5("Timed out waiting for event <%d>!", nResult);
+                    if (nResult != 0) {
+                        // Something went wrong, so assume...
+                        TRACE_L5("Timed out waiting for event <%d>!", nResult);
+                    }
+                }
+                else
+                {
+                    printf("THUNDER_CLOCK_GETTIME_FAILED\n");
                 }
             }
 
