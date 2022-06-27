@@ -137,6 +137,25 @@ namespace Core {
                 return _job.IsValid();
             }
 
+            uint32_t Release() const 
+            {
+                return _job.Release();
+            }
+
+            IDispatch* operator->() const
+            {
+                ASSERT( IsValid() == true );
+
+                return (_job.operator->());
+            }
+
+            IDispatch& operator*() const
+            {
+                ASSERT( IsValid() == true );
+
+                return (_job.operator*());
+            }
+
         private:
             ProxyType<IDispatch> _job;
             uint64_t _time;
