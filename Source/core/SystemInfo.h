@@ -46,8 +46,8 @@ namespace Core {
         extern "C" const char* MODULE_NAME;
 
         extern "C" EXTERNAL uint32_t Reboot();
-        extern "C" EXTERNAL_EXPORT const char* ModuleBuildRef();
-        extern "C" EXTERNAL_EXPORT const IServiceMetadata* ModuleServiceMetadata();
+        extern "C" EXTERNAL const char* ModuleBuildRef();
+        extern "C" EXTERNAL const IServiceMetadata* ModuleServiceMetadata();
     }
 
     class EXTERNAL SystemInfo {

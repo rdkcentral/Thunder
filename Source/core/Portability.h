@@ -89,8 +89,6 @@
   #endif
 #endif
 
-#if defined WIN32 || defined _WINDOWS
-
 #define DEFINE_STRING_1(parameter) #parameter
 #define DEFINE_STRING(parameter) DEFINE_STRING_1(parameter)
 #define CONCAT_STRINGS(ARG1, ARG2)  ARG1##ARG2
@@ -99,6 +97,8 @@
 #define PUSH_RETURN_ARG_COUNT(_1_, _2_, _3_, _4_, _5_, _6_, _7_, _8_, count, ...) count
 #define PUSH_EXPAND_ARGS(args) PUSH_RETURN_ARG_COUNT args
 #define PUSH_COUNT_ARGS(...) PUSH_EXPAND_ARGS((__VA_ARGS__, 8, 7, 6, 5, 4, 3, 2, 1, 0))
+
+#if defined WIN32 || defined _WINDOWS
 
 // W3 -- warning C4290: C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
 #pragma warning(disable : 4290)

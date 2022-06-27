@@ -84,6 +84,7 @@ namespace Core {
 
     template <>
     EXTERNAL /* static */ const EnumerateConversion<PluginHost::IStateControl::state>*
+    /* @stubgen:omit */
     EnumerateType<PluginHost::IStateControl::state>::Table(const uint16_t);
 
 } // namespace PluginHost

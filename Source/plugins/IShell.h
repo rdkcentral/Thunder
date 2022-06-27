@@ -324,6 +324,7 @@ namespace Core {
 
     template <>
     EXTERNAL /* static */ const EnumerateConversion<PluginHost::IShell::reason>*
+    /* @stubgen:omit */
     EnumerateType<PluginHost::IShell::reason>::Table(const uint16_t);
 
 } // namespace Core
