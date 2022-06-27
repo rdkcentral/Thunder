@@ -58,8 +58,9 @@ namespace Messaging {
      */
     void MessageClient::RemoveInstance(uint32_t id)
     {
-        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+        _adminLock.Lock();
         _clients.erase(id);
+        _adminLock.Unlock();
     }
 
     /**
@@ -214,8 +215,9 @@ namespace Messaging {
      */
     void MessageClient::AddFactory(Core::Messaging::MetaData::MessageType type, Core::Messaging::IEventFactory* factory)
     {
-        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+        _adminLock.Lock();
         _factories.emplace(type, factory);
+        _adminLock.Unlock();
     }
 
     /**
@@ -225,8 +227,9 @@ namespace Messaging {
      */
     void MessageClient::RemoveFactory(Core::Messaging::MetaData::MessageType type)
     {
-        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+        _adminLock.Lock();
         _factories.erase(type);
+        _adminLock.Unlock();
     }
 }
 }

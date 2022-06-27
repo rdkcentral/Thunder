@@ -46,6 +46,11 @@ namespace Core {
             virtual void Deinitialize() = 0;
             virtual void Dispatch(IDispatch*) = 0;
         };
+        struct EXTERNAL Metadata {
+            ::ThreadId                  WorkerId;
+            uint32_t                    Runs;
+            Core::OptionalType<string>  Job;
+        };
 
         #ifdef __CORE_WARNING_REPORTING__
         struct EXTERNAL DispatchedJobMetaData {
@@ -130,6 +135,25 @@ namespace Core {
             bool IsValid() const
             {
                 return _job.IsValid();
+            }
+
+            uint32_t Release() const 
+            {
+                return _job.Release();
+            }
+
+            IDispatch* operator->() const
+            {
+                ASSERT( IsValid() == true );
+
+                return (_job.operator->());
+            }
+
+            IDispatch& operator*() const
+            {
+                ASSERT( IsValid() == true );
+
+                return (_job.operator*());
             }
 
         private:
@@ -315,6 +339,24 @@ POP_WARNING()
                     _implementation.Dispatch();
                 }
             }
+            // -----------------------------------------------------
+            // Check for Clear method on Object
+            // -----------------------------------------------------
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(JobIdentifier, hasJobIdentifier);
+
+            template <typename TYPE = IMPLEMENTATION>
+            inline typename Core::TypeTraits::enable_if<hasJobIdentifier<const TYPE, string>::value, string>::type
+                Identifier() const
+            {
+                return (_implementation.JobIdentifier());
+            }
+            template <typename TYPE = IMPLEMENTATION>
+            inline typename Core::TypeTraits::enable_if<!hasJobIdentifier<const TYPE, string>::value, string>::type
+                Identifier() const
+            {
+                return("UnknownJob");
+            }
+
 
         private:
             IMPLEMENTATION _implementation;
@@ -342,11 +384,18 @@ POP_WARNING()
             ~Minion() = default;
 
         public:
-            uint32_t Runs() const {
-                return (_runs);
-            }
-            bool IsActive() const {
-                return (_currentRequest.IsValid());
+            void Info(Metadata& info) const {
+                info.Runs = _runs;
+
+		_adminLock.Lock();
+                if (_currentRequest.IsValid() == false) {
+		    _adminLock.Unlock();
+                    info.Job.Clear();
+                }
+                else {
+                    info.Job = _currentRequest->Identifier();
+		    _adminLock.Unlock();
+                }
             }
             uint32_t Completed (const ProxyType<IDispatch>& job, const uint32_t waitTime) {
                 uint32_t result = ERROR_UNKNOWN_KEY;
@@ -403,12 +452,14 @@ POP_WARNING()
                         _parent.Closure(*job);
                     }
 
-                    _currentRequest.Release();
                     #endif
 
                     // if someone is observing this run, (WaitForCompletion) make sure that
                     // thread, sees that his object was running and is now completed.
                     _adminLock.Lock();
+
+                    _currentRequest.Release();
+
                     if (_interestCount > 0) {
 
                         _signal.SetEvent();
@@ -428,7 +479,7 @@ POP_WARNING()
         private:
             ThreadPool& _parent;
             IDispatcher* _dispatcher;
-            CriticalSection _adminLock;
+            mutable CriticalSection _adminLock;
             Event _signal;
             std::atomic<uint32_t> _interestCount;
             #ifdef __CORE_WARNING_REPORTING__
@@ -458,11 +509,9 @@ POP_WARNING()
             }
 
         public:
-            uint32_t Runs() const {
-                return (_minion.Runs());
-            }
-            bool IsActive() const {
-                return (_minion.IsActive());
+            void Info(Metadata& info) const {
+                _minion.Info(info);
+                info.WorkerId = Id();
             }
             void Run () {
                 Thread::Run();
@@ -516,29 +565,15 @@ POP_WARNING()
         {
             return (_queue.Length());
         }
-        void Runs(const uint8_t length, uint32_t* counters) const 
+        void Info(const uint8_t length, Metadata* entries) const 
         {
             uint8_t count = 0;
             std::list<Executor>::const_iterator ptr = _units.cbegin();
             while ((count < length) && (ptr != _units.cend())) { 
-                counters[count] = ptr->Runs();
+                ptr->Info(entries[count]);
                 ptr++; 
                 count++; 
             }
-        }
-        uint8_t Active() const
-        {
-            uint8_t count = 0;
-            std::list<Executor>::const_iterator ptr = _units.cbegin();
-            while (ptr != _units.cend()) 
-            { 
-                if (ptr->IsActive() == true) {
-                    count++;
-                }
-                ptr++; 
-            }
-
-            return (count);
         }
         ::ThreadId Id(const uint8_t index) const
         {

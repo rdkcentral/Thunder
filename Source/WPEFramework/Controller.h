@@ -345,13 +345,11 @@ POP_WARNING()
             const Core::WorkerPool::Metadata& snapshot = Core::WorkerPool::Instance().Snapshot();
 
             data.PendingRequests = snapshot.Pending;
-            data.PoolOccupation = snapshot.Occupation;
 
             for (uint8_t teller = 0; teller < snapshot.Slots; teller++) {
                 // Example of why copy-constructor and assignment constructor should be equal...
                 Core::JSON::DecUInt32 newElement;
-                newElement = snapshot.Slot[teller];
-                data.ThreadPoolRuns.Add(newElement);
+                data.ThreadPoolRuns.Add() = snapshot.Slot[teller];
             }
 	}
         void Callstack(const ThreadId id, Core::JSON::ArrayType<CallstackData>& response) const;
