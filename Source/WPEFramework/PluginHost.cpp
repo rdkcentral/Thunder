@@ -793,7 +793,7 @@ POP_WARNING()
                         printf("Pending:     %d\n", metaData.Pending);
                         printf("Poolruns:\n");
                         for (uint8_t index = 0; index < metaData.Slots; index++) {
-                           printf("  Thread%02d|0x%08X: %10d", (index + 1), metaData.Slot[index].WorkerId, metaData.Slot[index].Runs);
+                           printf("  Thread%02d|0x%08X: %10d", (index + 1), static_cast<uint32_t>(metaData.Slot[index].WorkerId), metaData.Slot[index].Runs);
                             if (metaData.Slot[index].Job.IsSet() == false) {
                                 printf("\n");
                             }
