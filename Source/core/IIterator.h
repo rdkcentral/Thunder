@@ -174,7 +174,7 @@ namespace Core {
 
         inline ELEMENT operator->()
         {
-            ASSERT(((m_Index > 0) && (m_Index <= Count())));
+            ASSERT(IsValid());
 
             return (*m_Iterator);
         }
