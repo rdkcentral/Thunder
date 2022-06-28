@@ -261,7 +261,7 @@ namespace Core {
         enumType m_SocketType;
         SOCKET m_Socket;
         mutable CriticalSection m_syncAdmin;
-        volatile uint16_t m_State;
+	std::atomic<uint16_t> m_State;
         NodeId m_ReceivedNode;
         uint8_t* m_SendBuffer;
         uint8_t* m_ReceiveBuffer;
