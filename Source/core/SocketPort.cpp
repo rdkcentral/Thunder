@@ -373,7 +373,11 @@ namespace Core {
 
         // Make sure the socket is closed before you destruct. Otherwise
         // the virtuals might be called, which are destructed at this point !!!!
-        ASSERT(m_Socket == INVALID_SOCKET);
+        ASSERT((m_Socket == INVALID_SOCKET) || (IsClosed()));
+
+        if (m_Socket != INVALID_SOCKET) {
+	    DestroySocket(m_Socket);
+        }
 
         ::free(m_SendBuffer);
 	m_SendBuffer = nullptr;
