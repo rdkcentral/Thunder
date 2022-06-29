@@ -99,7 +99,7 @@ namespace Core {
     public:
         inline uint16_t State() const
         {
-            return (m_State);
+            return (m_State.load(Core::memory_order::memory_order_relaxed));
         }
         inline void RemoteNode(const NodeId& remote)
         {
@@ -115,31 +115,32 @@ namespace Core {
         }
         inline bool IsListening() const
         {
-            return ((m_State & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION | SocketPort::OPEN | SocketPort::LINK | SocketPort::ACCEPT)) == (SocketPort::OPEN | SocketPort::ACCEPT));
+            return ((State() & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION | SocketPort::OPEN | SocketPort::LINK | SocketPort::ACCEPT)) == (SocketPort::OPEN | SocketPort::ACCEPT));
         }
         inline bool IsConnecting() const
         {
-            return ((m_State & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION | SocketPort::OPEN | SocketPort::LINK | SocketPort::ACCEPT)) == SocketPort::LINK);
+            return ((State() & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION | SocketPort::OPEN | SocketPort::LINK | SocketPort::ACCEPT)) == SocketPort::LINK);
         }
         inline bool IsSuspended() const
         {
-            return ((m_State & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION)) == SocketPort::SHUTDOWN);
+            return ((State() & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION)) == SocketPort::SHUTDOWN);
         }
         inline bool IsForcedClosing() const
         {
-            return (((m_State & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION)) == (SocketPort::SHUTDOWN | SocketPort::EXCEPTION)) || ((m_State & (SocketPort::OPEN | SocketPort::EXCEPTION)) == (SocketPort::EXCEPTION)));
+            uint16_t state = State();		
+            return (((state & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION)) == (SocketPort::SHUTDOWN | SocketPort::EXCEPTION)) || ((state & (SocketPort::OPEN | SocketPort::EXCEPTION)) == (SocketPort::EXCEPTION)));
         }
         inline bool IsOpen() const
         {
-            return ((m_State & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION | SocketPort::OPEN)) == SocketPort::OPEN);
+            return ((State() & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION | SocketPort::OPEN)) == SocketPort::OPEN);
         }
         inline bool IsClosed() const
         {
-            return (m_State == 0);
+            return (State() == 0);
         }
         inline bool HasError() const
         {
-            return ((m_State & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION)) == SocketPort::EXCEPTION);
+            return ((State() & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION)) == SocketPort::EXCEPTION);
         }
         inline bool operator==(const SocketPort& RHS) const
         {
