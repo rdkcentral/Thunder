@@ -502,8 +502,8 @@ namespace Core {
         }
 
         if ((nStatus == Core::ERROR_NONE) || (nStatus == Core::ERROR_INPROGRESS)) {
-            m_State |= SocketPort::UPDATE;
-            ResourceMonitor::Instance().Register(*this);
+            
+	    ResourceMonitor::Instance().Register(*this);
 
             if (nStatus == Core::ERROR_INPROGRESS) {
                 if (waitTime > 0) {
