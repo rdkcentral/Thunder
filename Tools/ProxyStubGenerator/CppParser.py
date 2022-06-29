@@ -21,10 +21,9 @@
 # C++ header parser
 #
 
-import re, uuid, sys, copy, hashlib, os
+import re, uuid, sys, copy, hashlib, random, os
 from collections import OrderedDict
 from enum import IntEnum
-
 
 class ParserError(RuntimeError):
     def __init__(self, msg):
@@ -74,10 +73,12 @@ class Ref(IntEnum):
     VOLATILE = 32,
     POINTER_TO_CONST = 64,
     POINTER_TO_VOLATILE = 128,
+    POINTER_TO_POINTER = 256
 
 
 class Metadata:
     def __init__(self):
+        self.sourcelocation = ""
         self.brief = ""
         self.details = ""
         self.input = False
@@ -85,6 +86,8 @@ class Metadata:
         self.is_property = False
         self.is_deprecated = False
         self.is_obsolete = False
+        self.is_index = False
+        self.is_listener = False
         self.length = None
         self.maxlength = None
         self.interface = None
@@ -214,14 +217,15 @@ class Identifier():
         skip = 0
         self.value = []
 
-        if string.count("*") > 1:
-            raise ParserError("pointers to pointers are not supported: '%s'" % (" ".join(string)))
-        elif string.count("[") > 1:
-            raise ParserError("multi-dimensional arrays are not supported: '%s'" % (" ".join(string)))
+        if string.count("*") > 2:
+            print(string)
+            raise ParserError("multi-dimensional pointers to pointers are not supported: '%s'" % (" ".join(["".join(x) for x in string])))
+        if string.count("[") > 1:
+            raise ParserError("multi-dimensional arrays are not supported: '%s'" % (" ".join(["".join(x) for x in string])))
         elif "[" in string and "*" in string:
-            raise ParserError("arrays of pointers are not supported: '%s'" % (" ".join(string)))
+            raise ParserError("arrays of pointers are not supported: '%s'" % (" ".join(["".join(x) for x in string])))
         elif "&&" in string:
-            raise ParserError("rvalue references are not supported: '%s'" % (" ".join(string)))
+            raise ParserError("rvalue references are not supported: '%s'" % (" ".join(["".join(x) for x in string])))
 
         for i, token in enumerate(string):
             if not token:
@@ -276,6 +280,11 @@ class Identifier():
                         self.meta.output = True
                     else:
                         raise ParserError("in/out tags not allowed on return value")
+                elif token[1:] == "INDEX":
+                    if tags_allowed:
+                        self.meta.is_index = True
+                    else:
+                        raise ParserError("@index tag not allowed on return value")
                 elif token[1:] == "LENGTH":
                     self.meta.length = string[i + 1]
                     skip = 1
@@ -284,7 +293,7 @@ class Identifier():
                     if tags_allowed:
                         self.meta.maxlength = string[i + 1]
                     else:
-                        raise ParserError("maxlength tag not allowed on return value")
+                        raise ParserError("@maxlength tag not allowed on return value")
                     skip = 1
                     continue
                 elif token[1:] == "INTERFACE":
@@ -455,7 +464,10 @@ class Identifier():
             ref = 0
             while self.type[typeIdx] in ["*", "&", "&&", "const", "volatile"]:
                 if self.type[typeIdx] == "*":
-                    ref |= Ref.POINTER
+                    if ref & Ref.POINTER:
+                        ref |= Ref.POINTER_TO_POINTER
+                    else:
+                        ref |= Ref.POINTER
                 elif self.type[typeIdx] == "&":
                     ref |= Ref.REFERENCE
                 elif self.type[typeIdx] == "&&":
@@ -616,6 +628,21 @@ class Name:
         self.full_name = parentName + ("" if not self.name else "::" + self.name)
         self.parser_file = CurrentFile()
         self.parser_line = CurrentLine()
+        exists = []
+        if isinstance(parent_block, Function):
+            exists = exists + [x for x in self.parent.vars if x.name == self.name]
+        if isinstance(parent_block, Class) or isinstance(parent_block, Union) or isinstance(parent_block, Namespace):
+            exists = exists + [x for x in self.parent.vars if x.name == self.name]
+            exists = exists + [x for x in self.parent.unions if x.name == self.name]
+            exists = exists + [x for x in self.parent.enums if x.name == self.name]
+            exists = exists + [x for x in self.parent.typedefs if x.name == self.name]
+            if not isinstance(self, Function):
+                exists = exists + [x for x in self.parent.methods if x.name == self.name]
+            #exists = exists + [x for x in self.parent.classes if x.name == self.name]
+        if isinstance(parent_block, Namespace) and not isinstance(self, Namespace):
+            exists = exists + [x for x in self.parent.namespaces if x.name == self.name]
+        if exists:
+            raise ParserError("duplicate indentifier: %s" % self.name)
 
     def Name(self):
         return self.full_name
@@ -677,6 +704,9 @@ class Type:
     def IsPointer(self):
         return self.ref & Ref.POINTER != 0
 
+    def IsPointerToPointer(self):
+        return self.ref & Ref.POINTER_TO_POINTER != 0
+
     def IsConstPointer(self):
         return self.IsPointer() and self.IsConst()
 
@@ -725,6 +755,18 @@ class Type:
     def TypeName(self):
         return self.type.Proto()
 
+    def Resolve(self, ref = 0):
+        if self.IsPointerToPointer() and ref & Ref.POINTER:
+            raise ParserError("Too many pointers %s" % self)
+        if self.IsPointer() and ref & Ref.POINTER:
+            ref |= Ref.POINTER_TO_POINTER
+        if isinstance(self.type, Typedef):
+            type = self.type.Resolve(self.ref | ref)
+        else:
+            type = copy.deepcopy(self)
+            type.ref |= ref
+        return type
+
     def CVString(self):
         str = "const" if self.IsConst() else ""
         str += " " if self.IsConst() and self.IsVolatile() else ""
@@ -736,6 +778,7 @@ class Type:
         _str += "volatile " if (self.IsVolatile() and not self.IsPointer()) or self.IsPointerToVolatile() else ""
         _str += self.TypeName()
         _str += "*" if self.IsPointer() else ""
+        _str += "*" if self.IsPointerToPointer() else ""
         _str += " const" if self.IsConstPointer() else ""
         _str += " volatile" if self.IsVolatilePointer() else ""
         _str += "&" if self.IsReference() else "&&" if self.IsRvalueReference() else ""
@@ -753,7 +796,7 @@ def TypeStr(s):
 
 
 def ValueStr(s):
-    return str(s) if isinstance(s, int) else str(Undefined(s, "/* unparsable */ ")) if not isinstance(s, str) else s
+    return str(s) if isinstance(s, int) else str(Undefined(s, "/* unparsable expression */ ")) if not isinstance(s, str) else s
 
 
 # Holds typedef definition
@@ -765,6 +808,10 @@ class Typedef(Identifier, Name):
         self.parent.typedefs.append(self)
         self.is_event = False
         self.is_iterator = self.parent.is_iterator if isinstance(self.parent, (Class, Typedef)) else False
+
+    def Resolve(self, ref = 0):
+        type = self.type.Resolve(self.type.ref | ref)
+        return type
 
     def Proto(self):
         return self.full_name
@@ -790,9 +837,11 @@ class Class(Identifier, Block):
         self.omit = False
         self.stub = False
         self.is_json = False
+        self.json_version = ""
         self.is_event = False
         self.is_extended = False
         self.is_iterator = False
+        self.sourcelocation = None
         self.type_name = name
         self.parent.classes.append(self)
 
@@ -867,6 +916,11 @@ class Function(Block, Name):
         self.stub = False
         self.is_excluded = False
         self.parent.methods.append(self)
+        for method in self.parent.methods:
+            if method.name == self.name:
+                if method.retval.meta.is_property:
+                    self.retval.meta.is_property = True
+                break
 
     def Proto(self):
         _str = "static " if self.IsStatic() else ""
@@ -891,6 +945,7 @@ class Variable(Identifier, Name):
         Identifier.__init__(self, parent_block, self, string, valid_specifiers)
         Name.__init__(self, parent_block, self.name)
         self.value = Evaluate(value) if value else None
+        self.parent.vars
         self.parent.vars.append(self)
 
     def Proto(self):
@@ -1061,7 +1116,7 @@ class TemplateTypeParameter(Name):
 
 class InstantiatedTemplateClass(Class):
     def __init__(self, parent_block, name, params, args):
-        hash = hashlib.sha1("_".join(args).encode('utf-8')).hexdigest()[:8].upper()
+        hash = hashlib.sha1("_".join(args+[str(random.random())]).encode('utf-8')).hexdigest()[:8].upper()
         Class.__init__(self, parent_block, name + "Instance" + hash)
         self.baseName = Name(parent_block, name)
         self.params = params
@@ -1198,9 +1253,11 @@ class TemplateClass(Class):
 
 
 # Source file test into a list of tokens, removing comments and preprocessor directives.
-def __Tokenize(contents):
+def __Tokenize(contents,log = None):
     global current_file
     global current_line
+
+    defines = []
 
     tokens = [s.strip() for s in re.split(r"([\r\n])", contents, flags=re.MULTILINE) if s]
     eoltokens = []
@@ -1249,60 +1306,62 @@ def __Tokenize(contents):
                 else:
                     continue
 
-            def __ParseLength(string, tag):
+            def __ParseParameterValue(string, tag, append = True):
                 formula = (r"(\"[^\"]+\")"
                            r"|(\'[^\']+\')"
                            r"|(\*/)|(::)|(==)|(!=)|(>=)|(<=)|(&&)|(\|\|)"
                            r"|(\+\+)|(--)|(\+=)|(-=)|(/=)|(\*=)|(%=)|(^=)|(&=)|(\|=)|(~=)"
                            r"|([,:;~!?=^/*%-\+&<>\{\}\(\)\[\]])"
                            r"|([\r\n\t ])")
-                tagtokens.append(tag.upper())
+
+                if append:
+                    tagtokens.append(tag.upper())
                 length_str = string[string.index(tag) + len(tag):]
                 length_tokens = [
                     s.strip() for s in re.split(formula, length_str, flags=re.MULTILINE)
                     if isinstance(s, str) and len(s.strip())
                 ]
-                if length_tokens[0] == ':':
-                    length_tokens = length_tokens[1:]
-                no_close_last = (length_tokens[0] == '(')
                 tokens = []
-                par_count = 0
-                for t in length_tokens:
-                    if t == '(':
-                        if tokens:
-                            tokens.append(t)
-                        par_count += 1
-                    elif t == ')':
-                        par_count -= 1
-                        if par_count == 0:
-                            if not no_close_last:
+                if len(length_tokens) > 0:
+                    if length_tokens[0] == ':':
+                        length_tokens = length_tokens[1:]
+                    no_close_last = (length_tokens[0] == '(')
+                    par_count = 0
+                    for t in length_tokens:
+                        if t == '(':
+                            if tokens:
                                 tokens.append(t)
+                            par_count += 1
+                        elif t == ')':
+                            par_count -= 1
+                            if par_count == 0:
+                                if not no_close_last:
+                                    tokens.append(t)
+                                break
+                            else:
+                                tokens.append(t)
+                        elif t == '*/' or t == "," or t[0] == '@':
                             break
                         else:
                             tokens.append(t)
-                    elif t == '*/' or t == "," or t[0] == '@':
-                        break
-                    else:
-                        tokens.append(t)
-                        if par_count == 0:
-                            break
-                if par_count != 0:
-                    raise ParserError("unmatched parenthesis in %s expression" % tag)
-                if len(tokens) == 0:
-                    raise ParserError("invalid %s value" % tag)
+                            if par_count == 0:
+                                break
+                    if par_count != 0:
+                        raise ParserError("unmatched parenthesis in %s expression" % tag)
                 return tokens
 
             if ((token[:2] == "/*") and (token.count("/*") != token.count("*/"))):
                 raise ParserError("multi-line comment not closed")
 
             if ((token[:2] == "/*") or (token[:2] == "//")):
-
                 def _find(word, string):
                     return re.compile(r"[ \r\n/\*]({0})([: \r\n\*]|$)".format(word)).search(string) != None
 
                 if _find("@stubgen", token):
                     if "@stubgen:skip" in token:
                         skipmode = True
+                        if log:
+                            log.Warn("The Use of @stubgen:skip is deprecated, use @stubgen:omit instead", ("%s(%i): " % (CurrentFile(), CurrentLine())))
                     elif "@stubgen:omit" in token:
                         tagtokens.append("@OMIT")
                     elif "@stubgen:stub" in token:
@@ -1312,7 +1371,7 @@ def __Tokenize(contents):
                     else:
                         raise ParserError("invalid @stubgen tag")
                 if _find("@stop", token):
-                    skipMode = True
+                    skipmode = True
                 if _find("@omit", token):
                     tagtokens.append("@OMIT")
                 if _find("@stub", token):
@@ -1324,6 +1383,8 @@ def __Tokenize(contents):
                 if _find("@inout", token):
                     tagtokens.append("@IN")
                     tagtokens.append("@OUT")
+                if _find("@index", token):
+                    tagtokens.append("@INDEX")
                 if _find("@property", token):
                     tagtokens.append("@PROPERTY")
                 if _find("@deprecated", token):
@@ -1331,7 +1392,7 @@ def __Tokenize(contents):
                 if _find("@obsolete", token):
                     tagtokens.append("@OBSOLETE")
                 if _find("@json", token):
-                    tagtokens.append("@JSON")
+                    tagtokens.append(__ParseParameterValue(token, "@json"))
                 if _find("@json:omit", token):
                     tagtokens.append("@JSON_OMIT")
                 if _find("@event", token):
@@ -1340,14 +1401,18 @@ def __Tokenize(contents):
                     tagtokens.append("@EXTENDED")
                 if _find("@iterator", token):
                     tagtokens.append("@ITERATOR")
+                if _find("@sourcelocation", token):
+                    tagtokens.append(__ParseParameterValue(token, "@sourcelocation"))
                 if _find("@text", token):
-                    tagtokens.append(__ParseLength(token, "@text"))
+                    tagtokens.append(__ParseParameterValue(token, "@text"))
                 if _find("@length", token):
-                    tagtokens.append(__ParseLength(token, "@length"))
+                    tagtokens.append(__ParseParameterValue(token, "@length"))
                 if _find("@maxlength", token):
-                    tagtokens.append(__ParseLength(token, "@maxlength"))
+                    tagtokens.append(__ParseParameterValue(token, "@maxlength"))
                 if _find("@interface", token):
-                    tagtokens.append(__ParseLength(token, "@interface"))
+                    tagtokens.append(__ParseParameterValue(token, "@interface"))
+                if _find("@define", token):
+                    defines.append(__ParseParameterValue(token, "@define", False))
 
                 def FindDoxyString(tag, hasParam, string, tagtokens):
                     def EndOfTag(string, start):
@@ -1364,7 +1429,8 @@ def __Tokenize(contents):
                     start = string.find(tag)
                     if (start != -1):
                         start += len(tag) + 1
-                        desc = string[start:EndOfTag(token, start)].strip(" *\n")
+                        end = EndOfTag(token, start)
+                        desc = string[start:end].strip(" *\n")
                         if desc:
                             tagtokens.append(tag.upper())
                             if hasParam:
@@ -1372,7 +1438,8 @@ def __Tokenize(contents):
                                 tagtokens.append(desc.split(" ",1)[1])
                             else:
                                 tagtokens.append(desc)
-                            FindDoxyString(tag, hasParam, string[start+1], tagtokens)
+                            if end != None:
+                                FindDoxyString(tag, hasParam, string[end:], tagtokens)
 
                 FindDoxyString("@brief", False, token, tagtokens)
                 FindDoxyString("@details", False, token, tagtokens)
@@ -1390,8 +1457,13 @@ def __Tokenize(contents):
                     current_line = int(token[idx:].split()[0])
                     tagtokens.append("@LINE:" + token[idx:])
 
-            elif len(token) > 0 and token[0] != '#' and token != "EXTERNAL":
-                tagtokens.append(token)
+            elif len(token) > 0 and token[0] != '#':
+                for d in defines:
+                    if d[0] == token:
+                        token = " ".join(d[1:]) if len(d) > 1 else ""
+                        break
+                if token:
+                    tagtokens.append(token)
 
     tagtokens.append(";") # prevent potential out-of-range errors
 
@@ -1429,7 +1501,7 @@ def CurrentLine():
 
 
 # Builds a syntax tree (data structures only) of C++ source code
-def Parse(contents):
+def Parse(contents,log = None):
     # Start in global namespace.
     global global_namespace
     global current_file
@@ -1447,7 +1519,7 @@ def Parse(contents):
     current_file = "undefined"
 
     # Split into tokens first
-    line_tokens = __Tokenize(contents)
+    line_tokens = __Tokenize(contents,log)
 
     for token in line_tokens:
         if isinstance(token, str) and token.startswith("@LINE:"):
@@ -1471,10 +1543,12 @@ def Parse(contents):
     omit_next = False
     stub_next = False
     json_next = False
+    json_version = ""
     exclude_next = False
     event_next = False
     extended_next = False
     iterator_next = False
+    sourcelocation_next = False
     in_typedef = False
 
 
@@ -1495,8 +1569,9 @@ def Parse(contents):
             i += 1
         elif tokens[i] == "@JSON":
             json_next = True
+            json_version = " ".join(tokens[i+1])
             tokens[i] = ";"
-            i += 1
+            i += 2
         elif tokens[i] == "@JSON_OMIT":
             exclude_next = True
             tokens[i] = ';'
@@ -1509,6 +1584,9 @@ def Parse(contents):
             extended_next = True
             tokens[i] = ";"
             i += 1
+        elif tokens[i] == "@SOURCELOCATION":
+            sourcelocation_next = tokens[i + 1][0]
+            i += 2
         elif tokens[i] == "@ITERATOR":
             iterator_next = True
             tokens[i] = ";"
@@ -1524,6 +1602,7 @@ def Parse(contents):
             event_next = False
             extended_next = False
             iterator_next = False
+            sourcelocation_next = False
             in_typedef = False
             tokens[i] = ";"
             i += 1
@@ -1564,8 +1643,13 @@ def Parse(contents):
                 typedef.is_event = True
                 event_next = False
             if not isinstance(typedef.type, Type) and typedef.type[0] == "enum":
+                # To be removed
+                if log:
+                    log.Warn("Support for typedefs to anonymous enums is deprecated, (%s(%i): " % (CurrentFile(), CurrentLine()))
                 in_typedef = True
                 i += 1
+            elif not isinstance(typedef.type, Type) and (not isinstance(typedef.type, list) or typedef.type[0] in ["struct", "class", "union"]):
+                raise ParserError("typedef to anonymous struct, class or union is not supported")
             else:
                 i = j + 1
 
@@ -1629,6 +1713,7 @@ def Parse(contents):
                 stub_next = False
             if json_next:
                 new_class.is_json = True
+                new_class.json_version = json_version
                 new_class.is_extended = extended_next
                 json_next = False
                 extended_next = False
@@ -1640,6 +1725,13 @@ def Parse(contents):
             if iterator_next:
                 new_class.is_iterator = True
                 event_next = False
+            if sourcelocation_next:
+                new_class.sourcelocation = sourcelocation_next
+                sourcelocation_next = False
+
+            if new_class.parent.omit:
+                # Inherit omiting...
+                new_class.omit = True
 
             if last_template_def:
                 new_class.specifiers.append(" ".join(last_template_def))
@@ -1723,10 +1815,7 @@ def Parse(contents):
             # locate return value
             while j >= min_index and tokens[j] not in ['{', '}', ';', ':']:
                 j -= 1
-            if not current_block[-1].omit and not omit_next:
-                ret_type = tokens[j + 1:k]
-            else:
-                ret_type = []
+            ret_type = tokens[j + 1:k]
 
             if isinstance(current_block[-1], Class):
                 if name[0] == "~":
@@ -1843,16 +1932,16 @@ def Parse(contents):
             next_block = Block(current_block[-1]) # new anonymous scope
 
         # Parse variables and member attributes
-        elif isinstance(current_block[-1],
-                        (Namespace, Class)) and tokens[i] == ';' and (is_valid(tokens[i - 1]) or tokens[i - 1] == "]"):
+        elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == ';':
             j = i - 1
             while j >= min_index and tokens[j] not in ['{', '}', ';', ":"]:
                 j -= 1
-            if not current_block[-1].omit:
+            identifier = tokens[j + 1:i]
+            if len(identifier) != 0 and not current_block[-1].omit:
                 if isinstance(current_block[-1], Class):
-                    Attribute(current_block[-1], tokens[j + 1:i])
+                    Attribute(current_block[-1], identifier)
                 else:
-                    Variable(current_block[-1], tokens[j + 1:i])
+                    Variable(current_block[-1], identifier)
             i += 1
 
         # Parse constants and member constants
@@ -1863,12 +1952,14 @@ def Parse(contents):
                 j -= 1
             while tokens[k] != ';':
                 k += 1
-            if not current_block[-1].omit:
+            identifier = tokens[j + 1:i]
+            value = tokens[i + 1:k]
+            if len(identifier) != 0 and not current_block[-1].omit:
                 if isinstance(current_block[-1], Class):
-                    Attribute(current_block[-1], tokens[j + 1:i], tokens[i + 1:k])
+                    Attribute(current_block[-1], identifier, value)
                 else:
-                    Variable(current_block[-1], tokens[j + 1:i], tokens[i + 1:k])
-            i = k
+                    Variable(current_block[-1], identifier, value)
+            i = k + 1
 
         # Parse an enum block...
         elif isinstance(current_block[-1], Enum):
@@ -1971,13 +2062,13 @@ def ParseFile(source_file, includePaths = []):
     return Parse(contents)
 
 
-def ParseFiles(source_files, includePaths = []):
+def ParseFiles(source_files, includePaths = [], log = None):
     contents = ""
     for source_file in source_files:
         if source_file:
             quiet = (source_file[0] == "@")
             contents += ReadFile((source_file[1:] if quiet else source_file), includePaths, quiet, "")
-    return Parse(contents)
+    return Parse(contents,log)
 
 
 # -------------------------------------------------------------------------

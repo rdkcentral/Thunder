@@ -30,12 +30,24 @@
 #include <time.h>
 #endif
 
+#define NS_MODULE_NAME_1 NS
+#define NS_MODULE_NAME CONCAT_STRINGS(NS_MODULE_NAME_1,MODULE_NAME)
+
 namespace WPEFramework {
 namespace Core {
+
+    struct IServiceMetadata;
+
     namespace System {
+        namespace NS_MODULE_NAME {
+            extern "C" const WPEFramework::Core::IServiceMetadata * RootMetadata;
+        }
 
         extern "C" const char* MODULE_NAME;
+
         extern "C" EXTERNAL uint32_t Reboot();
+        extern "C" EXTERNAL const char* ModuleBuildRef();
+        extern "C" EXTERNAL const IServiceMetadata* ModuleServiceMetadata();
     }
 
     class EXTERNAL SystemInfo {
@@ -356,22 +368,32 @@ namespace Core {
 } // namespace Core
 } // namespace WPEFramework
 
-#define SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_1(parameter) #parameter
-#define SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(parameter) SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_1(parameter)
 
-#define MODULE_BUILDREF MODULE_NAME##Version
+#define MODULE_NAME_DECLARATION(buildref)                                                                     \
+    extern "C" {                                                                                              \
+    namespace WPEFramework {                                                                                  \
+        namespace Core {                                                                                      \
+            namespace System {                                                                                \
+                namespace NS_MODULE_NAME {                                                                    \
+                    const WPEFramework::Core::IServiceMetadata* RootMetadata = nullptr;                       \
+                }                                                                                             \
+                const char* MODULE_NAME = DEFINE_STRING(MODULE_NAME);                                         \
+                const char* ModuleBuildRef() { return (DEFINE_STRING(buildref)); }                            \
+                const IServiceMetadata* ModuleServiceMetadata() { return (NS_MODULE_NAME::RootMetadata); }    \
+            }                                                                                                 \
+        }                                                                                                     \
+    }                                                                                                         \
+    } // extern "C" Core::System
 
-#define MODULE_NAME_DECLARATION(buildref)                                                                              \
-    extern "C" {                                                                                                       \
-    namespace WPEFramework {                                                                                           \
-        namespace Core {                                                                                               \
-            namespace System {                                                                                         \
-                const char* MODULE_NAME = SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(MODULE_NAME);              \
-                const char* ModuleName() { return (MODULE_NAME); }                                            \
-                const char* ModuleBuildRef() { return (SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(buildref)); } \
-            }                                                                                                          \
-        }                                                                                                              \
-    }                                                                                                                  \
+#define MODULE_NAME_ARCHIVE_DECLARATION                                                          \
+    extern "C" {                                                                                 \
+    namespace WPEFramework {                                                                     \
+        namespace Core {                                                                         \
+            namespace System {                                                                   \
+                const char* MODULE_NAME = DEFINE_STRING(MODULE_NAME);                            \
+            }                                                                                    \
+        }                                                                                        \
+    }                                                                                            \
     } // extern "C" Core::System
 
 #endif // __SYSTEMINFO_H
