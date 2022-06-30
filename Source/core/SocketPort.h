@@ -99,7 +99,7 @@ namespace Core {
     public:
         inline uint16_t State() const
         {
-            return (m_State.load(Core::memory_order::memory_order_relaxed));
+            return (m_State.load(std::memory_order::memory_order_relaxed));
         }
         inline void RemoteNode(const NodeId& remote)
         {
