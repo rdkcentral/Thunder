@@ -363,7 +363,7 @@ namespace Core {
 
             BufferAlignment(m_Socket);
 
-            m_State = SocketPort::LINK | SocketPort::OPEN | SocketPort::READ;
+            m_State.store(SocketPort::LINK | SocketPort::OPEN | SocketPort::READ, Core::memory_order::memory_order_relaxed);
         }
     }
 
@@ -373,7 +373,11 @@ namespace Core {
 
         // Make sure the socket is closed before you destruct. Otherwise
         // the virtuals might be called, which are destructed at this point !!!!
-        ASSERT(m_Socket == INVALID_SOCKET);
+        ASSERT((m_Socket == INVALID_SOCKET) || (IsClosed()));
+
+        if (m_Socket != INVALID_SOCKET) {
+	    DestroySocket(m_Socket);
+        }
 
         ::free(m_SendBuffer);
 	m_SendBuffer = nullptr;
@@ -440,11 +444,12 @@ namespace Core {
         m_SendBytes = 0;
         m_SendOffset = 0;
 
-        if ((m_State & (SocketPort::LINK | SocketPort::OPEN | SocketPort::MONITOR)) == (SocketPort::LINK | SocketPort::OPEN)) {
+        if ((m_State.load(Core::memory_order::memory_order_relaxed) & (SocketPort::LINK | SocketPort::OPEN | SocketPort::MONITOR)) == (SocketPort::LINK | SocketPort::OPEN)) {
             // Open up an accepted socket, but not yet added to the monitor.
+            m_State.fetch_or(SocketPort::UPDATE, Core::memory_order::memory_order_relaxed);	    
             nStatus = Core::ERROR_NONE;
         } else {
-            ASSERT((m_Socket == INVALID_SOCKET) && (m_State == 0));
+            ASSERT((m_Socket == INVALID_SOCKET) && (m_State.load(Core::memory_order::memory_order_relaxed) == 0));
 
             if ((m_SocketType == SocketPort::STREAM) || (m_SocketType == SocketPort::SEQUENCED) || (m_SocketType == SocketPort::RAW)) {
                 if (m_LocalNode.IsValid() == false) {
@@ -459,7 +464,7 @@ namespace Core {
             if ((m_Socket != INVALID_SOCKET) && (Initialize() == true)) {
 
                 if ((m_SocketType == DATAGRAM) || ((m_SocketType == RAW) && (m_RemoteNode.IsValid() == false))) {
-                    m_State = SocketPort::OPEN | SocketPort::READ;
+		    m_State.store(SocketPort::UPDATE | SocketPort::OPEN | SocketPort::READ, Core::memory_order::memory_order_relaxed);
 
                     nStatus = Core::ERROR_NONE;
                 } else if (m_SocketType == LISTEN) {
@@ -467,19 +472,19 @@ namespace Core {
                         TRACE_L5("Error on port socket LISTEN. Error %d", __ERRORRESULT__);
                     } else {
                         // Trigger state to Open
-                        m_State = SocketPort::OPEN | SocketPort::ACCEPT;
+			m_State.store(SocketPort::UPDATE | SocketPort::OPEN | SocketPort::ACCEPT, Core::memory_order::memory_order_relaxed);
 
                         nStatus = Core::ERROR_NONE;
                     }
                 } else {
                     if (::connect(m_Socket, static_cast<const NodeId&>(m_RemoteNode), m_RemoteNode.Size()) != SOCKET_ERROR) {
-                        m_State = SocketPort::LINK | SocketPort::OPEN | SocketPort::READ;
+			m_State.store(SocketPort::UPDATE | SocketPort::LINK | SocketPort::OPEN | SocketPort::READ, Core::memory_order::memory_order_relaxed);
                         nStatus = Core::ERROR_NONE;
                     } else {
                         int l_Result = __ERRORRESULT__;
 
                         if ((l_Result == __ERROR_WOULDBLOCK__) || (l_Result == __ERROR_AGAIN__) || (l_Result == __ERROR_INPROGRESS__)) {
-                            m_State = SocketPort::LINK | SocketPort::WRITE;
+			    m_State.store(SocketPort::UPDATE | SocketPort::LINK | SocketPort::WRITE, Core::memory_order::memory_order_relaxed);
                             nStatus = Core::ERROR_INPROGRESS;
                         } else if (l_Result == __ERROR_ISCONN__) {
                             nStatus = Core::ERROR_ALREADY_CONNECTED;
@@ -497,8 +502,8 @@ namespace Core {
         }
 
         if ((nStatus == Core::ERROR_NONE) || (nStatus == Core::ERROR_INPROGRESS)) {
-            m_State |= SocketPort::UPDATE;
-            ResourceMonitor::Instance().Register(*this);
+            
+	    ResourceMonitor::Instance().Register(*this);
 
             if (nStatus == Core::ERROR_INPROGRESS) {
                 if (waitTime > 0) {
@@ -875,7 +880,7 @@ namespace Core {
 
 #ifdef __DEBUG__
             if ((++reportSlot & 0x1F) == 0) {
-                TRACE_L1("Currently waiting for Socket Closure. Current State [0x%X]", m_State);
+                TRACE_L1("Currently waiting for Socket Closure. Current State [0x%X]", m_State.load(Core::memory_order::memory_order_relaxed));
             }
             waiting -= (waiting == Core::infinite ? 0 : sleepSlot);
 #else
