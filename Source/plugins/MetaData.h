@@ -328,14 +328,13 @@ namespace Plugin {
             , _precondition(precondition)
             , _termination(termination)
             , _control(control) {
-
-            ASSERT(Core::System::NS_MODULE_NAME::RootMetadata == nullptr);
-            Core::System::NS_MODULE_NAME::RootMetadata = this;
+            ASSERT(Core::System::ROOT_META_DATA == nullptr);
+            Core::System::ROOT_META_DATA = this;
             Core::ServiceAdministrator::Instance().Register(this, &_factory);
         }
         ~Metadata() {
             Core::ServiceAdministrator::Instance().Unregister(this, &_factory);
-            Core::System::NS_MODULE_NAME::RootMetadata = nullptr;
+            Core::System::ROOT_META_DATA = nullptr;
         }
 
     public:
