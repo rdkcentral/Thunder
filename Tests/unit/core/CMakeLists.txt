@@ -21,7 +21,7 @@ add_executable(${TEST_RUNNER_NAME}
    ../IPTestAdministrator.cpp
    test_ipcclient.cpp
    #test_rpc.cpp
-   test_jsonparser.cpp
+   #test_jsonparser.cpp
    test_hex2strserialization.cpp
    test_sharedbuffer.cpp
 )
@@ -36,3 +36,7 @@ target_link_libraries(${TEST_RUNNER_NAME}
 )
 
 gtest_discover_tests(${TEST_RUNNER_NAME})
+
+install(
+    TARGETS ${TEST_RUNNER_NAME}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
