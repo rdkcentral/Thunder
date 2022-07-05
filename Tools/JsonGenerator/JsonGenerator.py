@@ -749,7 +749,7 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
 #
 
 def LoadInterface(file, includePaths = []):
-    tree = ProxyStubGenerator.CppParser.ParseFiles([os.path.join(os.path.dirname(os.path.realpath(__file__)), posixpath.normpath(DEFAULT_DEFINITIONS_FILE)), file], includePaths)
+    tree = ProxyStubGenerator.CppParser.ParseFiles([os.path.join(os.path.dirname(os.path.realpath(__file__)), posixpath.normpath(DEFAULT_DEFINITIONS_FILE)), file], includePaths, log)
     interfaces = [i for i in ProxyStubGenerator.Interface.FindInterfaceClasses(tree, INTERFACE_NAMESPACE, file) if i.obj.is_json]
 
     def Build(face):
@@ -935,7 +935,7 @@ def LoadInterface(file, includePaths = []):
                     events = ResolveTypedef(resolved, events, var.type)
                 return events
 
-            def BuildParameters(vars, json_extended, prop=False, test=False):
+            def BuildParameters(vars, json_collapsed, prop=False, test=False):
                 params = {"type": "object"}
                 properties = OrderedDict()
                 required = []
@@ -970,8 +970,8 @@ def LoadInterface(file, includePaths = []):
                 else:
                     if (len(properties) == 0):
                         return {}
-                    elif (len(properties) == 1) and not json_extended:
-                        # New way of things: if only one parameter present then omit the outer object
+                    elif (len(properties) == 1) and json_collapsed:
+                        # collapsed format: if only one parameter present then omit the outer object
                         return list(properties.values())[0]
                     else:
                         return params
@@ -1108,7 +1108,7 @@ def LoadInterface(file, includePaths = []):
             elif method.IsPureVirtual() and not event_params:
                 if method.retval.type and (isinstance(method.retval.type.Type(), ProxyStubGenerator.CppParser.Integer) and method.retval.type.Type().size == "long"):
                     obj = OrderedDict()
-                    params = BuildParameters(method.vars, face.obj.is_extended)
+                    params = BuildParameters(method.vars, face.obj.is_collapsed)
                     if "properties" in params and params["properties"]:
                         if method.name.lower() in [x.lower() for x in params["required"]]:
                             raise CppParseError(method, "parameters must not use the same name as the method")
@@ -1165,7 +1165,7 @@ def LoadInterface(file, includePaths = []):
                             varsidx = 1
                     if method.retval.meta.is_listener:
                         obj["statuslistener"] = True
-                    params = BuildParameters(method.vars[varsidx:], f.obj.is_extended)
+                    params = BuildParameters(method.vars[varsidx:], f.obj.is_collapsed)
                     if method.retval.meta.is_deprecated:
                         obj["deprecated"] = True
                     elif method.retval.meta.is_obsolete:

@@ -839,6 +839,7 @@ class Class(Identifier, Block):
         self.is_json = False
         self.json_version = ""
         self.is_event = False
+        self.is_collapsed = False
         self.is_extended = False
         self.is_iterator = False
         self.sourcelocation = None
@@ -1191,6 +1192,7 @@ class TemplateClass(Class):
         instance.specifiers = self.specifiers
         instance.is_json = self.is_json
         instance.is_extended = self.is_extended
+        instance.is_collapsed = self.is_collapsed
         instance.is_event = self.is_event
         instance.is_iterator = self.is_iterator
 
@@ -1360,8 +1362,7 @@ def __Tokenize(contents,log = None):
                 if _find("@stubgen", token):
                     if "@stubgen:skip" in token:
                         skipmode = True
-                        if log:
-                            log.Warn("The Use of @stubgen:skip is deprecated, use @stubgen:omit instead", ("%s(%i): " % (CurrentFile(), CurrentLine())))
+                        log.Warn("The Use of @stubgen:skip is deprecated, use @stubgen:omit instead", ("%s(%i): " % (CurrentFile(), CurrentLine())))
                     elif "@stubgen:omit" in token:
                         tagtokens.append("@OMIT")
                     elif "@stubgen:stub" in token:
@@ -1399,6 +1400,8 @@ def __Tokenize(contents,log = None):
                     tagtokens.append("@EVENT")
                 if _find("@extended", token):
                     tagtokens.append("@EXTENDED")
+                if _find("@collapsed", token):
+                    tagtokens.append("@COLLAPSED")
                 if _find("@iterator", token):
                     tagtokens.append("@ITERATOR")
                 if _find("@sourcelocation", token):
@@ -1547,6 +1550,7 @@ def Parse(contents,log = None):
     exclude_next = False
     event_next = False
     extended_next = False
+    collapsed_next = False
     iterator_next = False
     sourcelocation_next = False
     in_typedef = False
@@ -1584,6 +1588,10 @@ def Parse(contents,log = None):
             extended_next = True
             tokens[i] = ";"
             i += 1
+        elif tokens[i] == "@COLLAPSED":
+            collapsed_next = True
+            tokens[i] = ";"
+            i += 1
         elif tokens[i] == "@SOURCELOCATION":
             sourcelocation_next = tokens[i + 1][0]
             i += 2
@@ -1601,6 +1609,7 @@ def Parse(contents,log = None):
             json_next = False
             event_next = False
             extended_next = False
+            collapsed_next = False
             iterator_next = False
             sourcelocation_next = False
             in_typedef = False
@@ -1644,8 +1653,7 @@ def Parse(contents,log = None):
                 event_next = False
             if not isinstance(typedef.type, Type) and typedef.type[0] == "enum":
                 # To be removed
-                if log:
-                    log.Warn("Support for typedefs to anonymous enums is deprecated, (%s(%i): " % (CurrentFile(), CurrentLine()))
+                log.Warn("Support for typedefs to anonymous enums is deprecated, (%s(%i): " % (CurrentFile(), CurrentLine()))
                 in_typedef = True
                 i += 1
             elif not isinstance(typedef.type, Type) and (not isinstance(typedef.type, list) or typedef.type[0] in ["struct", "class", "union"]):
@@ -1711,23 +1719,31 @@ def Parse(contents,log = None):
             elif stub_next:
                 new_class.stub = True
                 stub_next = False
+            if event_next or json_next:
+                new_class.is_collapsed = collapsed_next
+                new_class.is_extended = extended_next
             if json_next:
                 new_class.is_json = True
                 new_class.json_version = json_version
-                new_class.is_extended = extended_next
-                json_next = False
-                extended_next = False
             if event_next:
                 new_class.is_event = True
-                new_class.is_extended = extended_next
-                event_next = False
-                extended_next = False
             if iterator_next:
                 new_class.is_iterator = True
-                event_next = False
             if sourcelocation_next:
                 new_class.sourcelocation = sourcelocation_next
-                sourcelocation_next = False
+                sourcelocation_next = None
+            if extended_next:
+                if not json_next and not event_next:
+                    raise ParserError("@extended used without @json")
+                if collapsed_next:
+                    raise ParserError("@extended and @collapsed used together");
+            if collapsed_next and not json_next and not event_next:
+                raise ParserError("@collapsed used without @json")
+            json_next = False
+            event_next = False
+            iterator_next = False
+            extended_next = False
+            collapsed_next = False
 
             if new_class.parent.omit:
                 # Inherit omiting...
