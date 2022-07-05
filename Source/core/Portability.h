@@ -762,4 +762,6 @@ namespace Core {
 #define BUILD_REFERENCE engineering_build_for_debug_purpose_only
 #endif
 
+#define THUNDER_VERSION 2
+
 #endif // __PORTABILITY_H
