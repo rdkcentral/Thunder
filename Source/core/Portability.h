@@ -901,4 +901,6 @@ namespace std {
 #endif
 #endif
 
+#define THUNDER_VERSION 3
+
 #endif // __PORTABILITY_H
