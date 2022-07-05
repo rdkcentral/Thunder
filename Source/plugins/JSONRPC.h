@@ -29,11 +29,11 @@ namespace WPEFramework {
 namespace PluginHost {
 
     struct EXTERNAL IDispatcher : public virtual Core::IUnknown {
-        virtual ~IDispatcher() override = default;
+        virtual ~IDispatcher() {}
 
         enum { ID = RPC::ID_DISPATCHER };
 
-        virtual Core::ProxyType<Core::JSONRPC::Message> Invoke(const Core::JSONRPC::Context& context, const Core::JSONRPC::Message& message) = 0;
+        virtual Core::ProxyType<Core::JSONRPC::Message> Invoke(const string& token, const uint32_t channelId, const Core::JSONRPC::Message& message) = 0;
 
         // Methods used directly by the Framework to handle MetaData requirements.
         // There should be no need to call these methods from the implementation directly.
@@ -113,13 +113,7 @@ namespace PluginHost {
         };
 
     public:
-        enum classification {
-            INVALID  = 0,
-            VALID    = 1,
-            DEFERRED = 3
-        };
-
-        typedef std::function<classification(const string& token, const string& method, const string& parameters)> TokenCheckFunction;
+        typedef std::function<bool(const string& token, const string& method, const string& parameters)> TokenCheckFunction;
 
         JSONRPC(const JSONRPC&) = delete;
         JSONRPC& operator=(const JSONRPC&) = delete;
@@ -260,13 +254,13 @@ namespace PluginHost {
         // Methods to send responses to inbound invokaction methods (a-synchronous callbacks)
         // ------------------------------------------------------------------------------------------------------------------------------
         template <typename JSONOBJECT>
-        uint32_t Response(const Core::JSONRPC::Context& channel, const JSONOBJECT& parameters)
+        uint32_t Response(const Core::JSONRPC::Connection& channel, const JSONOBJECT& parameters)
         {
             string subject;
             parameters.ToString(subject);
             return (Response(channel, subject));
         }
-        uint32_t Response(const Core::JSONRPC::Context& channel, const string& result)
+        uint32_t Response(const Core::JSONRPC::Connection& channel, const string& result)
         {
             Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = IFactories::Instance().JSONRPC();
 
@@ -278,7 +272,7 @@ namespace PluginHost {
 
             return (_service->Submit(channel.ChannelId(), Core::ProxyType<Core::JSON::IElement>(message)));
         }
-        uint32_t Response(const Core::JSONRPC::Context& channel, const Core::JSONRPC::Error& result)
+        uint32_t Response(const Core::JSONRPC::Connection& channel, const Core::JSONRPC::Error& result)
         {
             Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = IFactories::Instance().JSONRPC();
 
@@ -304,9 +298,8 @@ namespace PluginHost {
         {
             handler.Unsubscribe(channelId, eventName, callsign, response);
         }
-        Core::ProxyType<Core::JSONRPC::Message> Invoke(const Core::JSONRPC::Context& context, const Core::JSONRPC::Message& inbound) override
+        Core::ProxyType<Core::JSONRPC::Message> Invoke(const string& token, const uint32_t channelId, const Core::JSONRPC::Message& inbound) override
         {
-            classification result = classification::VALID;
             Registration info;
             Core::ProxyType<Core::JSONRPC::Message> response(Message());
             Core::JSONRPC::Handler* source = nullptr;
@@ -317,14 +310,10 @@ namespace PluginHost {
                 response->Id = inbound.Id.Value();
             }
 
-            if ((_validate != nullptr) && ( (result = _validate(context.Token(), Core::JSONRPC::Message::Method(method), inbound.Parameters.Value())) == classification::INVALID)) {
+            if ((_validate != nullptr) && (_validate(token, Core::JSONRPC::Message::Method(method), inbound.Parameters.Value()) == false)) {
                 response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
                 response->Error.Text = _T("method invokation not allowed.");
             } 
-            else if (result == classification::DEFERRED) {
-                response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
-                response->Error.Text = _T("method invokation is deferred, Currently nit allowed.");
-            }
             else {
                 switch (Destination(method, source)) {
                 case STATE_INCORRECT_HANDLER:
@@ -341,11 +330,11 @@ namespace PluginHost {
                     break;
                 case STATE_REGISTRATION:
                     info.FromString(inbound.Parameters.Value());
-                    Subscribe(*source, context.ChannelId(), info.Event.Value(), info.Callsign.Value(), *response);
+                    Subscribe(*source, channelId, info.Event.Value(), info.Callsign.Value(), *response);
                     break;
                 case STATE_UNREGISTRATION:
                     info.FromString(inbound.Parameters.Value());
-                    Unsubscribe(*source, context.ChannelId(), info.Event.Value(), info.Callsign.Value(), *response);
+                    Unsubscribe(*source, channelId, info.Event.Value(), info.Callsign.Value(), *response);
                     break;
                 case STATE_EXISTS:
                     if (Exists(*source, inbound.Parameters.Value()) == true) {
@@ -356,7 +345,7 @@ namespace PluginHost {
                     break;
                 case STATE_CUSTOM:
                     string result;
-                    uint32_t code = source->Invoke(context, inbound.FullMethod(), inbound.Parameters.Value(), result);
+                    uint32_t code = source->Invoke(Core::JSONRPC::Connection(channelId, inbound.Id.Value()), inbound.FullMethod(), inbound.Parameters.Value(), result);
                     if (response.IsValid() == true) {
                         if (code == static_cast<uint32_t>(~0)) {
                             response.Release();
