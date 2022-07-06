@@ -113,7 +113,7 @@ namespace Core {
                     {
                         printf("!!!!!! WSARecvMsg is not available !!!!!\n ");
                     }
-		    ::closesocket(sckt);
+                    ::closesocket(sckt);
                 }
             }
 
@@ -373,14 +373,17 @@ namespace Core {
 
         // Make sure the socket is closed before you destruct. Otherwise
         // the virtuals might be called, which are destructed at this point !!!!
+        m_syncAdmin.Lock();
         ASSERT((m_Socket == INVALID_SOCKET) || (IsClosed()));
 
         if (m_Socket != INVALID_SOCKET) {
-	    DestroySocket(m_Socket);
+            DestroySocket(m_Socket);
+            ResourceMonitor::Instance().Unregister(*this);
         }
 
         ::free(m_SendBuffer);
-	m_SendBuffer = nullptr;
+        m_SendBuffer = nullptr;
+        m_syncAdmin.Unlock();
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -464,7 +467,7 @@ namespace Core {
             if ((m_Socket != INVALID_SOCKET) && (Initialize() == true)) {
 
                 if ((m_SocketType == DATAGRAM) || ((m_SocketType == RAW) && (m_RemoteNode.IsValid() == false))) {
-		    m_State.store(SocketPort::UPDATE | SocketPort::OPEN | SocketPort::READ, std::memory_order::memory_order_relaxed);
+                    m_State.store(SocketPort::UPDATE | SocketPort::OPEN | SocketPort::READ, std::memory_order::memory_order_relaxed);
 
                     nStatus = Core::ERROR_NONE;
                 } else if (m_SocketType == LISTEN) {
@@ -472,19 +475,19 @@ namespace Core {
                         TRACE_L5("Error on port socket LISTEN. Error %d", __ERRORRESULT__);
                     } else {
                         // Trigger state to Open
-			m_State.store(SocketPort::UPDATE | SocketPort::OPEN | SocketPort::ACCEPT, std::memory_order::memory_order_relaxed);
+                        m_State.store(SocketPort::UPDATE | SocketPort::OPEN | SocketPort::ACCEPT, std::memory_order::memory_order_relaxed);
 
                         nStatus = Core::ERROR_NONE;
                     }
                 } else {
                     if (::connect(m_Socket, static_cast<const NodeId&>(m_RemoteNode), m_RemoteNode.Size()) != SOCKET_ERROR) {
-			m_State.store(SocketPort::UPDATE | SocketPort::LINK | SocketPort::OPEN | SocketPort::READ, std::memory_order::memory_order_relaxed);
+                        m_State.store(SocketPort::UPDATE | SocketPort::LINK | SocketPort::OPEN | SocketPort::READ, std::memory_order::memory_order_relaxed);
                         nStatus = Core::ERROR_NONE;
                     } else {
                         int l_Result = __ERRORRESULT__;
 
                         if ((l_Result == __ERROR_WOULDBLOCK__) || (l_Result == __ERROR_AGAIN__) || (l_Result == __ERROR_INPROGRESS__)) {
-			    m_State.store(SocketPort::UPDATE | SocketPort::LINK | SocketPort::WRITE, std::memory_order::memory_order_relaxed);
+                            m_State.store(SocketPort::UPDATE | SocketPort::LINK | SocketPort::WRITE, std::memory_order::memory_order_relaxed);
                             nStatus = Core::ERROR_INPROGRESS;
                         } else if (l_Result == __ERROR_ISCONN__) {
                             nStatus = Core::ERROR_ALREADY_CONNECTED;
@@ -503,7 +506,7 @@ namespace Core {
 
         if ((nStatus == Core::ERROR_NONE) || (nStatus == Core::ERROR_INPROGRESS)) {
             
-	    ResourceMonitor::Instance().Register(*this);
+            ResourceMonitor::Instance().Register(*this);
 
             if (nStatus == Core::ERROR_INPROGRESS) {
                 if (waitTime > 0) {
@@ -544,7 +547,7 @@ namespace Core {
                 } else {
                     m_State |= SHUTDOWN;
 
-					// Block new data from coming in, signal the other side that we close !!
+                    // Block new data from coming in, signal the other side that we close !!
 #ifdef __WINDOWS__
                     shutdown(m_Socket, SD_BOTH);
 #else
@@ -1130,7 +1133,7 @@ namespace Core {
             result = false;
         } else {
             DestroySocket(m_Socket);
-	    ResourceMonitor::Instance().Unregister(*this);
+            ResourceMonitor::Instance().Unregister(*this);
             // Remove socket descriptor for UNIX domain datagram socket.
             if ((m_LocalNode.Type() == NodeId::TYPE_DOMAIN) && 
                 ((m_SocketType == SocketPort::LISTEN) || (SocketMode() != SOCK_STREAM)) &&
