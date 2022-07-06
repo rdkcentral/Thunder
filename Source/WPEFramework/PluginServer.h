@@ -359,92 +359,109 @@ namespace PluginHost {
 
             class Condition {
             private:
+                enum state : uint8_t {
+                    STATE_AND   = 0x00,
+                    STATE_OR    = 0x01,
+                    STATE_ERROR = 0x02,
+                    STATE_OK    = 0x80
+                };
+
+            public:
                 Condition() = delete;
                 Condition(const Condition&) = delete;
                 Condition& operator=(const Condition&) = delete;
 
-            public:
-                Condition(const Core::JSON::ArrayType<Core::JSON::EnumType<ISubSystem::subsystem>>& input, const bool defaultValue)
+                Condition(const bool ANDOperation, const Core::JSON::ArrayType<Core::JSON::EnumType<ISubSystem::subsystem>>& input)
                     : _events(0)
-                    , _value(0)
+                    , _mask(0)
+                    , _state(ANDOperation ? state::STATE_AND : state::STATE_OR)
                 {
                     Core::JSON::ArrayType<Core::JSON::EnumType<ISubSystem::subsystem>>::ConstIterator index(input.Elements());
 
                     while (index.Next() == true) {
-                        uint32_t bitNr = static_cast<uint32_t>(index.Current());
-
-                        if (bitNr >= ISubSystem::NEGATIVE_START) {
-                            bitNr -= ISubSystem::NEGATIVE_START;
-                        } else {
-                            _value |= (1 << bitNr);
-                        }
-
-                        // Make sure the event is only set once (POSITIVE or NEGATIVE)
-                        ASSERT((_events & (1 << bitNr)) == 0);
-                        _events |= 1 << bitNr;
+                        AddBit(static_cast<uint32_t>(index.Current()));
                     }
 
-                    if (_events == 0) {
-                        _events = (defaultValue ? 0 : ~0);
-                        _value = (defaultValue ? 0 : ~0);
+                    if (_mask == 0) {
+                        _state = static_cast<state>(_state | state::STATE_OK);
                     }
                 }
-                ~Condition()
-                {
-                }
+                ~Condition() = default;
 
             public:
-                void Load(const std::vector<Plugin::subsystem>& input, const bool defaultValue) {
-                    for (const Plugin::subsystem& entry : input) {
-                        uint32_t bitNr = static_cast<uint32_t>(entry);
-
-                        if (bitNr >= ISubSystem::NEGATIVE_START) {
-                            bitNr -= ISubSystem::NEGATIVE_START;
-                        }
-                        else {
-                            _value |= (1 << bitNr);
-                        }
-
-                        // Make sure the event is only set once (POSITIVE or NEGATIVE)
-                        ASSERT((_events & (1 << bitNr)) == 0);
-                        _events |= 1 << bitNr;
-                    }
-
-                    if (_events == 0) {
-                        _events = (defaultValue ? 0 : ~0);
-                        _value = (defaultValue ? 0 : ~0);
-                    }
+                bool IsValid() const {
+                    return (_state != state::STATE_ERROR);
                 }
-                inline bool IsMet() const
+                bool IsMet() const
                 {
-                    return ((_events == 0) || ((_value != static_cast<uint32_t>(~0)) && ((_events & (1 << ISubSystem::END_LIST)) != 0)));
+                    return ((_state & state::STATE_OK) != 0);
+                }
+                bool Load(const std::vector<Plugin::subsystem>& input) {
+                    for (const Plugin::subsystem& entry : input) {
+                        AddBit(static_cast<uint32_t>(entry));
+                    }
+
+                    _state = static_cast<state>(_mask == 0 ? (_state | state::STATE_OK) : (_state & (~state::STATE_OK)));
+
+                    return (IsValid());
                 }
                 inline bool Evaluate(const uint32_t subsystems)
                 {
-                    bool result = (subsystems & _events) == _value;
+                    bool changed = false;
 
-                    if (result ^ IsMet()) {
-                        // We changed from setup, signal it...
-                        if (result == true) {
-                            _events |= (1 << ISubSystem::END_LIST);
-                        } else {
-                            _events &= ~(1 << ISubSystem::END_LIST);
+                    if (_mask != 0) {
+                        bool compliant;
+
+                        switch (_state & 0x03) {
+                        case state::STATE_AND: compliant = (((subsystems & _mask) ^ _events) == 0);       break;
+                        case state::STATE_OR:  compliant = (((subsystems & _mask) ^ _events) != _events); break;
+                        default: compliant = false; break;
                         }
-                        result = true;
-                    } else {
-                        result = false;
+
+                        if (compliant ^ IsMet()) {
+                            changed = true;
+                            _state = static_cast<state>(_state ^ state::STATE_OK);
+                        }
                     }
 
-                    return (result);
+                    return (changed);
                 }
                 inline uint32_t Delta(const uint32_t currentSet)
                 {
-                    return ((currentSet & _events) ^ _value);
+                    return ((currentSet & _mask) ^ _events);
+                }
+            private:
+                void AddBit(const uint32_t input) {
+
+                    uint32_t bitNr = input;
+
+                    if (bitNr >= ISubSystem::NEGATIVE_START) {
+                        // Its a NOT value, so this bit should *not* be set and this 0
+                        bitNr -= ISubSystem::NEGATIVE_START;
+
+                        // Make sure the event is only set once (POSITIVE or NEGATIVE)
+                        if (((_mask & (1 << bitNr)) != 0) && ((_events & (1 << bitNr)) != 0)) {
+                            _state = STATE_ERROR;
+                        }
+                    }
+                    else {
+                        // Make sure the event is only set once (POSITIVE or NEGATIVE)
+                        if (((_mask & (1 << bitNr)) != 0) && ((_events & (1 << bitNr)) == 0)) {
+                            _state = STATE_ERROR;
+                        }
+                        else {
+                            _events |= (1 << bitNr);
+                        }
+                    }
+
+                    // This bit should be taken into account if we check the condition
+                    _mask |= 1 << bitNr;
                 }
 
             private:
                 uint32_t _events;
-                uint32_t _value;
+                uint32_t _mask;
+                state _state;
             };
             class Metadata {
             public:
@@ -547,8 +564,8 @@ namespace PluginHost {
                 , _rawSocket(nullptr)
                 , _webSecurity(nullptr)
                 , _jsonrpc(nullptr)
-                , _precondition(plugin.Precondition, true)
-                , _termination(plugin.Termination, false)
+                , _precondition(true, plugin.Precondition)
+                , _termination(false, plugin.Termination)
                 , _activity(0)
                 , _connection(nullptr)
                 , _lastId(0)
@@ -583,6 +600,9 @@ namespace PluginHost {
             }
 
         public:
+            inline const std::vector<PluginHost::ISubSystem::subsystem>& SubSystemControl() const {
+                return (_metadata.Control());
+            }
             inline const string& VersionHash() const
             {
                 return (_metadata.Hash());
@@ -874,8 +894,9 @@ namespace PluginHost {
             }
             inline void GetMetaData(MetaData::Service& metaData) const
             {
-                if (_metadata.Hash().empty() == false)
+                if (_metadata.Hash().empty() == false) {
                     metaData.Hash = _metadata.Hash();
+                }
                 
                 _pluginHandling.Lock();
 
@@ -907,7 +928,7 @@ namespace PluginHost {
                 }
 
                 if ((_termination.Evaluate(subsystems) == true) && (current == IShell::ACTIVATED)) {
-                    if (_termination.IsMet() == true) {
+                    if (_termination.IsMet() == false) {
 
                         Unlock();
 
@@ -1094,6 +1115,10 @@ namespace PluginHost {
                                 progressedState = 3;
                                 if (_metadata.IsValid() == false) {
                                     _metadata = moduleServiceMetadata();
+                                    if (_metadata.IsValid() == true) {
+                                        _precondition.Load(_metadata.Precondition());
+                                        _termination.Load(_metadata.Termination());
+                                    }
                                     _metadata.Hash(moduleBuildRef());
                                 }
                             }
@@ -1156,16 +1181,12 @@ namespace PluginHost {
 
                     if (_metadata.IsValid() == false) {
                         _metadata = dynamic_cast<Core::IServiceMetadata*>(newIF);
-                        if (_metadata.IsExtended()) {
-                            _precondition.Load(_metadata.Precondition(), true);
-                            _termination.Load(_metadata.Termination(), false);
-
-                            uint32_t events = _administrator.SubSystemInfo();
-
-                            _precondition.Evaluate(events);
-                            _termination.Evaluate(events);
-                        }
                     }
+
+                    uint32_t events = _administrator.SubSystemInfo();
+
+                    _precondition.Evaluate(events);
+                    _termination.Evaluate(events);
 
                     _pluginHandling.Unlock();
                 }

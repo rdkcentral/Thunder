@@ -57,36 +57,9 @@ namespace Plugin {
         }
     }
 
-    void Controller::SubSystems(Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator& index)
-    {
-        PluginHost::ISubSystem* subSystem = _service->SubSystems();
-
-        if (subSystem != nullptr) {
-            uint32_t entries = ((1 << PluginHost::ISubSystem::END_LIST) - 1);
-
-            while (index.Next() == true) {
-                if (index.Current() < PluginHost::ISubSystem::END_LIST) {
-                    entries &= ~(1 << index.Current());
-                }
-            }
-
-            uint8_t setFlag = 0;
-            while (setFlag < PluginHost::ISubSystem::END_LIST) {
-                if ((entries & (1 << setFlag)) != 0) {
-                    TRACE_L1("Setting the default SubSystem: %d", setFlag);
-                    subSystem->Set(static_cast<PluginHost::ISubSystem::subsystem>(setFlag), nullptr);
-                }
-                setFlag++;
-            }
-
-            subSystem->Release();
-        }
-    }
-
    // Access to this interface will be through the BackOffice Plugin, if external exposure is required !!!
     /* virtual */ const string Controller::Initialize(PluginHost::IShell* service)
     {
-
         ASSERT(_service == nullptr);
         ASSERT(_probe == nullptr);
 
@@ -113,7 +86,19 @@ namespace Plugin {
         }
 
         Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator eventListIterator(static_cast<const Config&>(config).SubSystems.Elements());
-        SubSystems(eventListIterator);
+
+        // Insert the subsystems found in the config..
+        while (eventListIterator.Next() == true) {
+            PluginHost::ISubSystem::subsystem current = eventListIterator.Current().Value();
+
+            if (current >= PluginHost::ISubSystem::END_LIST) {
+                Core::EnumerateType<PluginHost::ISubSystem::subsystem> name(current);
+                SYSLOG(Logging::Startup, (Core::Format(_T("Subsystem [%s] can not be used as a control value in controller config!!!"), name.Data())));
+            }
+            else {
+                _externalSubsystems.emplace_back(current);
+            }
+        }
 
         if ((config.Resumes.IsSet() == true) && (config.Resumes.Length() > 0)) {
             Core::JSON::ArrayType<Core::JSON::String>::Iterator index(config.Resumes.Elements());
@@ -124,7 +109,6 @@ namespace Plugin {
         }
 
         _service->Register(&_systemInfoReport);
-
         _service->EnableWebServer(_T("UI"), EMPTY_STRING);
 
         // On succes return a name as a Callsign to be used in the URL, after the "service"prefix
