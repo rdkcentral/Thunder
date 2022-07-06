@@ -1,0 +1,103 @@
+name: unit-test
+on:
+  push:
+     branches: 
+        - R2
+  
+  pull_request:
+     branches: 
+        - R2
+env:
+  BUILD_TYPE: Debug
+  THUNDER_BINDING: "127.0.0.1"
+  THUNDER_PORT: "55555"
+
+jobs:
+  all:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up cache
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            build
+            install
+          key: ${{ runner.os }}-${{ github.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.x'
+      - run: pip install jsonref
+      
+      - name: Set up CMake
+        # 3.16.x To support flow control commands to be overridden.
+        # Installs in: find /opt -ipath *bin/cmake
+        uses: jwlawson/actions-setup-cmake@v1.12
+        with:
+          cmake-version: '3.16.x'
+
+      - name: Install packages
+        run: >
+          sudo apt update && sudo apt install -y libcurl4-openssl-dev libgtest-dev
+
+      - name: Checkout Thunder
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v3
+        with:
+          path: Thunder
+
+      - name: Configure ThunderTools
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: >
+          cmake
+          -S "${{github.workspace}}/Thunder/Tools"
+          -B build/ThunderTools
+          -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/install/usr"
+          -DCMAKE_MODULE_PATH="${{github.workspace}}/install/tools/cmake"
+          -DGENERIC_CMAKE_MODULE_PATH="${{github.workspace}}/install/tools/cmake"
+
+      - name: Build ThunderTools
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: >
+          cmake
+          --build build/ThunderTools
+
+      - name: Install ThunderTools
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: >
+          cmake
+          --install build/ThunderTools
+
+      - name: Configure Thunder
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: >
+          cmake
+          -S "${{github.workspace}}/Thunder"
+          -B build/Thunder
+          -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/install/usr"
+          -DCMAKE_MODULE_PATH="${{github.workspace}}/install/tools/cmake"
+          -DBUILD_TYPE=${{env.BUILD_TYPE}}
+          -DBINDING=${{env.THUNDER_BINDING}}
+          -DPORT=${{env.THUNDER_PORT}}
+          -DBUILD_TESTS=ON
+
+      - name: Build Thunder
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: >
+          cmake
+          --build build/Thunder
+
+      - name: Install Thunder
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: >
+          cmake
+          --install build/Thunder
+
+      - name: Run unit tests
+        run: >
+          PATH=${{github.workspace}}/install/usr/bin:${PATH}
+          LD_LIBRARY_PATH=${{github.workspace}}/install/usr/lib:${LD_LIBRARY_PATH}
+          WPEFramework_test_core
+
