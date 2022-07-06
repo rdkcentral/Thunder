@@ -38,7 +38,7 @@ namespace Core {
         virtual void Dispatch() = 0;
     };
 
-    struct IDispatch : public IDispatchType<void> {
+    struct EXTERNAL IDispatch : public IDispatchType<void> {
         ~IDispatch() override = default;
 
         virtual string Identifier() const {
