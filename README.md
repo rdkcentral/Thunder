@@ -63,3 +63,6 @@ or not. There is 1 Symbolic link in the Thuder repository (Thunder/Source/tools
 errors (error 2, GenrateProxyStub.py not found). 
 or create a copy of the Tools directory in Source/tools (xcopy /d ..\Tools tools)
 or create the symlink manually (mklink /D tools "..\Tools")
+
+
+TEST
