@@ -272,7 +272,7 @@ namespace PluginHost
         Add(_T("runs"), &Runs);
     }
     MetaData::Server::Minion& MetaData::Server::Minion::operator=(const Core::ThreadPool::Metadata& info) {
-        Id = reinterpret_cast<Core::instance_id>(info.WorkerId);
+        Id = (Core::instance_id) info.WorkerId;
 
         Runs = info.Runs;
         if (info.Job.IsSet() == false) {
