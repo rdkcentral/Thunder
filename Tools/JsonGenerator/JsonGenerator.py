@@ -47,7 +47,8 @@ VERBOSE = False
 GENERATED_JSON = False
 SHOW_WARNINGS = True
 DOC_ISSUES = True
-
+FORMAT = "compliant"
+FORMAT_FORCED = False
 
 log = Log.Log(NAME, VERBOSE, SHOW_WARNINGS, DOC_ISSUES)
 
@@ -117,27 +118,32 @@ def MakeEnum(type):
 
 class JsonType():
     def __init__(self, name, parent, schema, included=None):
-        self.name = schema["original"] if "original" in schema else name
+        is_generated = name.startswith("_generated_")
+        if is_generated:
+            name = name.replace("_generated_", "")
+        self.name = schema["original"].lower() if "original" in schema else name
+        self.original_name = schema["original"] if "original" in schema else None
         if parent:
             if not self.name.replace("_","").isalnum():
                 raise JsonParseError("'%s': invalid characters in identifier name" % self.name)
-            if self.name[0] == "_":
-                raise JsonParseError("'%s': identifiers must not start with an underscore (reserved by the generator)" % self.name)
-            if not self.name.islower():
-                log.Warn("'%s': mixed case identifiers are supported, however all-lowercase names are recommended " % self.name)
-            elif "_" in self.name and not GENERATED_JSON:
-                log.Warn("'%s': snake_case identifiers are supported, however flat case names are recommended " % self.name)
-        self.true_name = name
+            if not is_generated:
+                if self.name[0] == "_":
+                    raise JsonParseError("'%s': identifiers must not start with an underscore (reserved by the generator)" % self.name)
+                if not self.name.islower():
+                    log.Warn("'%s': mixed case identifiers are supported, however all-lowercase names are recommended " % self.name)
+                elif "_" in self.name:
+                    log.Warn("'%s': snake_case identifiers are supported, however flatcase names are recommended " % self.name)
+        self.new_name = None
         self.schema = schema
         self.duplicate = False
         self.parent = parent
         self.description = None
         self.default = None
         self.included_from = included
-        self.create = "typename" not in schema
+        self.create = "originaltype" not in schema
         if not self.create:
-            self.cpptype = schema["typename"]
-            self.enumName = schema["typename"]
+            self.cpptype = schema["originaltype"]
+            self.enum_name = schema["originaltype"]
 
         if "description" in schema:
             self.description = schema["description"]
@@ -161,14 +167,14 @@ class JsonType():
     def IsDuplicate(self): # Whether this object is a duplicate of another
         return self.duplicate
 
+    def IsIterator(self):
+        return False
+
     def Schema(self): # Get the original schema
         return self.schema
 
     def Description(self): # Item description
         return self.description
-
-    def JsonName(self): # Name as in JSON
-        return self.name
 
     def Properties(self): # Class attributes
         return []
@@ -182,8 +188,31 @@ class JsonType():
     def CppClass(self): # C++ class type of the object
         raise RuntimeError("can't instantiate %s" % self.name)
 
+    def JsonName(self): # Name as in JSON
+        if self.new_name:
+            return self.new_name
+        else:
+            return self.name
+
+    def LocalName(self, prefix = ""):
+        return "_" + prefix + self.JsonName()
+
     def CppName(self): # C++ name of the object
-        return self.true_name[0].upper() + self.true_name[1:]
+        if self.new_name:
+            return self.new_name[0].upper() + self.new_name[1:]
+        elif self.original_name:
+            return self.original_name[0].upper() + self.original_name[1:]
+        else:
+            return self.name[0].upper() + self.name[1:]
+
+    def Rename(self, new_name):
+        self.new_name = new_name.lower()
+
+    def IsRenamed(self):
+        return self.new_name != None
+
+    def IsVoid(self):
+        return self.CppType() == "void"
 
     def CppDefValue(self): # Value to instantiate with in C++
         return ""
@@ -191,9 +220,6 @@ class JsonType():
     # Whether a copy constructor would be needed if this type is a member of a class
     def NeedsCopyCtor(self):
         return False
-
-    def TrueName(self):
-        return self.true_name
 
 
 class JsonNull(JsonType):
@@ -213,10 +239,10 @@ class JsonBoolean(JsonType):
 
 
 class JsonNumber(JsonType):
-    def __init__(self, name, parent, schema):
+    def __init__(self, name, parent, schema, size = DEFAULT_INT_SIZE, signed = False):
         JsonType.__init__(self, name, parent, schema)
-        self.size = DEFAULT_INT_SIZE
-        self.signed = False
+        self.size = size
+        self.signed = signed
         # NOTE: Take a hint on the size and signedness of the number/integer
         if "size" in schema:
             self.size = schema["size"]
@@ -231,7 +257,12 @@ class JsonNumber(JsonType):
 
 
 class JsonInteger(JsonNumber):
-    pass      # Identical as Number
+    # Identical as Number
+    pass
+
+class AuxJsonInteger(JsonInteger):
+    def __init__(self, name, size = DEFAULT_INT_SIZE, signed = False):
+        JsonInteger.__init__(self, "_generated_" + name, None, {}, size, signed)
 
 class JsonFloat(JsonType):
     def CppClass(self):
@@ -264,7 +295,7 @@ class JsonEnum(JsonType):
             raise JsonParseError("Only strings are supported in enums")
         self.type = enumType
         if self.Create():
-            self.enumName = MakeEnum(self.name.capitalize())
+            self.enum_name = MakeEnum(self.name.capitalize())
         self.enumerators = schema["enum"]
         self.values = schema["enumvalues"] if "enumvalues" in schema else []
         if self.values and (len(self.enumerators) != len(self.values)):
@@ -303,7 +334,7 @@ class JsonEnum(JsonType):
             elif isinstance(self.parent, JsonProperty):
                 classname = MakeEnum(self.parent.name.capitalize())
             else:
-                classname = self.enumName
+                classname = self.enum_name
             return classname
 
     def CppEnumerators(self):
@@ -378,7 +409,9 @@ class JsonObject(JsonType):
 
     def CppName(self):
         # NOTE: Special cases for names for Methods and Arrays
-        if isinstance(self.parent, JsonMethod):
+        if self.IsRenamed():
+            return JsonType.CppName(self)
+        elif isinstance(self.parent, JsonMethod):
             return self.parent.CppName() + JsonType.CppName(self)
         elif isinstance(self.parent, JsonArray):
             return self.parent.CppName()
@@ -408,8 +441,8 @@ class JsonObject(JsonType):
                         classname = MakeObject(self.parent.CppName())
                     elif self.parent.parent and isinstance(self.parent.parent, JsonProperty):
                         classname = MakeObject(self.parent.parent.CppName())
-                    elif "typename" in self.schema:
-                        classname = self.schema["typename"].split("::")[-1]
+                    elif "originaltype" in self.schema:
+                        classname = self.schema["originaltype"].split("::")[-1]
                         return classname[0].upper() + classname[1:]
                     else:
                         classname = MakeObject(self.CppName())
@@ -455,28 +488,40 @@ class JsonObject(JsonType):
 class JsonArray(JsonType):
     def __init__(self, name, parent, schema, origName=None, included=None):
         JsonType.__init__(self, name, parent, schema, included)
-        self.items = None
+        self._items = None
         if "items" in schema:
-            self.items = JsonItem("element" if name == "params" else name , self, schema["items"], origName, included)
+            if "class" in schema["items"]:
+                name = "_generated_" + schema["items"]["class"] + "Element"
+            self._items = JsonItem(name, self, schema["items"], origName, included)
         else:
             raise JsonParseError("no items in array '%s'" % name)
 
     def CppName(self):
+        if self.IsRenamed():
+            return JsonType.CppName(self)
         # Take the name of the array from the method if this array is result type
-        if isinstance(self.parent, JsonMethod):
+        elif isinstance(self.parent, JsonMethod):
             return self.parent.CppName() + JsonType.CppName(self)
         else:
             return JsonType.CppName(self)
 
+    def IsIterator(self):
+        return "iterator" in self.schema
+
+    def Iterator(self):
+        if not self.IsIterator():
+            raise RuntimeError("internal error: not an iterator")
+        return self.schema["iterator"]
+
     def CppType(self):
-        return TypePrefix("ArrayType<%s>" % self.items.CppType())
+        return TypePrefix("ArrayType<%s>" % self._items.CppType())
 
     def NeedsCopyCtor(self):
         # Important, blame it on the arrays!
         return True
 
     def Items(self):
-        return self.items
+        return self._items
 
     # Delegate all other methods to the underlying type
 
@@ -506,24 +551,28 @@ class JsonMethod(JsonObject):
     def __init__(self, name, parent, schema, included=None):
         if '.' in name:
             log.Warn("'%s': method names containing full designator are deprecated (include name only)" % name)
-            objName = name.rsplit(".", 1)[1]
-        else:
-            objName = name
+            name = name.rsplit(".", 1)[1]
+        elif "original" in schema:
+            # In case of a method always take the original name if available
+            name = schema["original"].lower()
+
         # Mimic a JSON object to fit rest of the parsing...
         self.errors = schema["errors"] if "errors" in schema else OrderedDict()
-        newschema = {"type": "object"}
         props = OrderedDict()
         props["params"] = schema["params"] if "params" in schema else {"type": "null"}
         props["result"] = schema["result"] if "result" in schema else {"type": "null"}
-        newschema["properties"] = props
-        JsonObject.__init__(self, objName, parent, newschema, included=included)
-        self.true_name = schema["cppname"] if "cppname" in schema else objName
+        method_schema = {"type": "object", "properties": props}
+        if "original" in schema:
+            method_schema["original"] = schema["original"]
+
+        JsonObject.__init__(self, name, parent, method_schema, included=included)
         self.summary = None
         self.tags = []
         if "summary" in schema:
             self.summary = schema["summary"]
         if "tags" in schema:
             self.tags = schema["tags"]
+
         self.deprecated = "deprecated" in schema and schema["deprecated"];
         self.obsolete = "obsolete" in schema and schema["obsolete"];
 
@@ -788,7 +837,11 @@ def LoadInterface(file, includePaths = []):
 
         event_interfaces = set()
 
+        collapsed = (face.obj.is_collapsed and not FORMAT_FORCED) or (FORMAT == "collapsed" and not face.obj.is_compliant and not face.obj.is_extended)
+        extended = (face.obj.is_extended and not FORMAT_FORCED) or (FORMAT == "extended" and not face.obj.is_compliant and not face.obj.is_collapsed)
+
         for method in face.obj.methods:
+
             def ResolveTypedef(type):
                 return type.Resolve()
 
@@ -869,12 +922,12 @@ def LoadInterface(file, includePaths = []):
                                 name = p.name.lower()
                                 if isinstance(ResolveTypedef(p.type).Type(), ProxyStubGenerator.CppParser.Class):
                                     _, props = GenerateObject(ResolveTypedef(p.type).Type())
-                                    properties[p.name] = props
-                                    properties[p.name]["type"] = "object"
-                                    properties[p.name]["typename"] = StripFrameworkNamespace(p.type.Type().full_name)
+                                    properties[name] = props
+                                    properties[name]["type"] = "object"
+                                    properties[name]["originaltype"] = StripFrameworkNamespace(p.type.Type().full_name)
                                 else:
-                                    properties[p.name] = ConvertParameter(p)
-                                properties[p.name]["original"] = p.name.lower()
+                                    properties[name] = ConvertParameter(p)
+                                properties[name]["original"] = p.name
                             return "object", { "properties": properties, "required": list(properties.keys()) }
                         result = GenerateObject(cppType)
                     # All other types are not supported
@@ -901,7 +954,7 @@ def LoadInterface(file, includePaths = []):
                 if args != None:
                     properties.update(args)
                     try:
-                        properties["typename"] = StripFrameworkNamespace(var.type.Type().full_name)
+                        properties["originaltype"] = StripFrameworkNamespace(var.type.Type().full_name)
                     except:
                         pass
                 if var.meta.brief:
@@ -935,7 +988,7 @@ def LoadInterface(file, includePaths = []):
                     events = ResolveTypedef(resolved, events, var.type)
                 return events
 
-            def BuildParameters(vars, json_collapsed, prop=False, test=False):
+            def BuildParameters(vars, json_collapsed, json_extended, prop=False, test=False):
                 params = {"type": "object"}
                 properties = OrderedDict()
                 required = []
@@ -946,11 +999,12 @@ def LoadInterface(file, includePaths = []):
                                 log.WarnLine(var, "'%s': non-const parameter assumed to be input (forgot 'const'?)" % var.name)
                             elif not var.meta.output:
                                 log.WarnLine(var, "'%s': non-const parameter marked with @in tag (forgot 'const'?)" % var.name)
-                        var_name = var.meta.text if var.meta.text else var.name.lower()
+                        var_name = "value" if prop else (var.meta.text if var.meta.text else var.name.lower())
                         if var_name.startswith("__unnamed") and not test:
                             raise CppParseError(var, "unnamed parameter, can't deduce parameter name")
                         properties[var_name] = ConvertParameter(var)
-                        properties[var_name]["original"] = var.name.lower()
+                        if not var.name.startswith("_"):
+                            properties[var_name]["original"] = var.name.lower()
                         properties[var_name]["position"] = vars.index(var)
                         if not prop and "description" not in properties[var_name]:
                             log.DocIssue("'%s': parameter is missing description" % var_name)
@@ -959,7 +1013,7 @@ def LoadInterface(file, includePaths = []):
                             log.WarnLine(var, "'%s': passing string by value (forgot &?)" % var.name)
                 params["properties"] = properties
                 params["required"] = required
-                if prop:
+                if prop and (json_extended or json_collapsed):
                     if len(properties) == 1:
                         return list(properties.values())[0]
                     elif len(properties) > 1:
@@ -976,7 +1030,10 @@ def LoadInterface(file, includePaths = []):
                     else:
                         return params
 
-            def BuildResult(vars, prop = False):
+            def BuildIndex(var, test=False):
+                return BuildParameters([var], True, True, True, test)
+
+            def BuildResult(vars):
                 params = {"type": "object"}
                 properties = OrderedDict()
                 required = []
@@ -988,10 +1045,11 @@ def LoadInterface(file, includePaths = []):
                         if var_type.IsConst():
                             raise CppParseError(var, "parameter marked with @out tag must not be const")
                         var_name = var.meta.text if var.meta.text else var.name.lower()
-                        if var_name.startswith("__unnamed") and len(vars) > 1:
+                        if var_name.startswith("__unnamed"):
                             raise CppParseError(var, "unnamed parameter, can't deduce parameter name")
                         properties[var_name] = ConvertParameter(var)
-                        properties[var_name]["original"] = var.name.lower()
+                        if not var.name.startswith("_"):
+                           properties[var_name]["original"] = var.name.lower()
                         properties[var_name]["position"] = vars.index(var)
                         required.append(var_name)
                 params["properties"] = properties
@@ -1000,12 +1058,10 @@ def LoadInterface(file, includePaths = []):
                 elif len(properties) > 1:
                     params["required"] = required
                     return params
-                elif not prop:
+                else:
                     void = {"type": "null"}
                     void["description"] = "Always null"
                     return void
-                else:
-                    return None
 
             if method.is_excluded:
                 continue
@@ -1025,10 +1081,10 @@ def LoadInterface(file, includePaths = []):
             if method.retval.meta.is_property or (prefix + method_name_lower) in properties:
                 try:
                     obj = properties[prefix + method_name_lower]
-                    obj["cppname"] = method.name
+                    obj["original"] = method.name
                 except:
                     obj = OrderedDict()
-                    obj["cppname"] = method.name
+                    obj["original"] = method.name
                     properties[prefix + method_name_lower] = obj
 
                 indexed_property = (len(method.vars) == 2 and method.vars[0].meta.is_index)
@@ -1040,7 +1096,7 @@ def LoadInterface(file, includePaths = []):
                         if not method.vars[0].type.IsConst() and method.vars[0].type.IsReference():
                             raise CppParseError(method.vars[0], "index to a property must be an input parameter")
                         if "index" not in obj:
-                            obj["index"] = BuildParameters([method.vars[0]], False, True)
+                            obj["index"] = BuildIndex(method.vars[0])
                             obj["index"]["name"] = method.vars[0].name
                             if "enum" in obj["index"]:
                                 obj["index"]["example"] = obj["index"]["enum"][0]
@@ -1050,7 +1106,7 @@ def LoadInterface(file, includePaths = []):
                             if obj["index"]["type"] not in ["integer", "string"]:
                                 raise CppParseError(method.vars[0], "index to a property must be integer, enum or string type")
                         else:
-                            test = BuildParameters([method.vars[0]], False, True, True)
+                            test = BuildIndex(method.vars[0], True)
                             if not test:
                                 raise CppParseError(method.vars[value], "property index must be an input parameter")
                             if obj["index"]["type"] != test["type"]:
@@ -1060,29 +1116,35 @@ def LoadInterface(file, includePaths = []):
 
                         value = 1
                     else:
-                        value = 0
+                        value = 0 # no index
 
                     if "const" in method.qualifiers:
+                        # getter
                         if method.vars[value].type.IsConst():
                             raise CppParseError(method.vars[value], "property getter method must not use const parameter")
                         else:
+                            if collapsed:
+                                result_name = "params"
+                            else:
+                                result_name = "result"
                             if "writeonly" in obj:
                                 del obj["writeonly"]
                             else:
                                 obj["readonly"] = True
-                            if "params" not in obj:
-                                obj["params"] = BuildResult([method.vars[value]], True)
+                            if result_name not in obj:
+                                obj[result_name] = BuildResult([method.vars[value]])
                             else:
-                                test = BuildResult([method.vars[value]], True)
+                                test = BuildResult([method.vars[value]])
                                 if not test:
                                     raise CppParseError(method.vars[value], "property getter method must have one output parameter")
-                                if obj["params"]["type"] != test["type"]:
-                                    raise CppParseError(method.vars[value], "setter and getter of the same property must have same type")
+                                if obj[result_name]["type"] != test["type"]:
+                                    raise CppParseError(method.vars[value], "setter and getter of the same property must have same type (*1)")
                                 if "ptr" in test and test["ptr"]:
-                                    obj["params"]["ptr"] = True
-                            if obj["params"] == None:
+                                    obj[result_name]["ptr"] = True
+                            if obj[result_name] == None:
                                 raise CppParseError(method.vars[value], "property getter method must have one output parameter")
                     else:
+                        # setter
                         if not method.vars[value].type.IsConst():
                             raise CppParseError(method.vars[value], "property setter method must use a const parameter")
                         else:
@@ -1091,13 +1153,13 @@ def LoadInterface(file, includePaths = []):
                             else:
                                 obj["writeonly"] = True
                             if "params" not in obj:
-                                obj["params"] = BuildParameters([method.vars[value]], False, True)
+                                obj["params"] = BuildParameters([method.vars[value]], collapsed, extended, True)
                             else:
-                                test = BuildParameters([method.vars[value]], False, True, True)
+                                test = BuildParameters([method.vars[value]], collapsed, extended, True, True)
                                 if not test:
                                     raise CppParseError(method.vars[value], "property setter method must have one input parameter")
                                 if obj["params"]["type"] != test["type"]:
-                                    raise CppParseError(method.vars[value], "setter and getter of the same property must have same type")
+                                    raise CppParseError(method.vars[value], "setter and getter of the same property must have same type (*2)")
                                 if "ref" in test and test["ref"]:
                                     obj["params"]["ref"] = True
                             if obj["params"] == None:
@@ -1108,14 +1170,14 @@ def LoadInterface(file, includePaths = []):
             elif method.IsPureVirtual() and not event_params:
                 if method.retval.type and (isinstance(method.retval.type.Type(), ProxyStubGenerator.CppParser.Integer) and method.retval.type.Type().size == "long"):
                     obj = OrderedDict()
-                    params = BuildParameters(method.vars, face.obj.is_collapsed)
+                    params = BuildParameters(method.vars, collapsed, extended)
                     if "properties" in params and params["properties"]:
                         if method.name.lower() in [x.lower() for x in params["required"]]:
                             raise CppParseError(method, "parameters must not use the same name as the method")
                     if params:
                         obj["params"] = params
                     obj["result"] = BuildResult(method.vars)
-                    obj["cppname"] = method_name
+                    obj["original"] = method_name
                     methods[prefix + method_name_lower] = obj
                 else:
                     raise CppParseError(method, "method return type must be uint32_t (error code), i.e. pass other return values by a reference")
@@ -1142,10 +1204,12 @@ def LoadInterface(file, includePaths = []):
                         obj["errors"] = errors
 
         for f in event_interfaces:
+            collapsed = (f.obj.is_collapsed and not FORMAT_FORCED) or (FORMAT == "collapsed" and not f.obj.is_compliant and not f.obj.is_extended)
+            extended = (f.obj.is_extended and not FORMAT_FORCED) or (FORMAT == "extended" and not f.obj.is_compliant and not f.obj.is_extended)
             for method in f.obj.methods:
                 if method.IsPureVirtual() and method.is_excluded == False:
                     obj = OrderedDict()
-                    obj["cppname"] = method.name
+                    obj["original"] = method.name
                     varsidx = 0
                     if len(method.vars) > 0:
                         for v in method.vars[1:]:
@@ -1156,7 +1220,7 @@ def LoadInterface(file, includePaths = []):
                                 raise CppParseError(method.vars[0], "index to a notification must not be pointer")
                             if not method.vars[0].type.IsConst() and method.vars[0].type.IsReference():
                                 raise CppParseError(method.vars[0], "index to a notification must be an input parameter")
-                            obj["id"] = BuildParameters([method.vars[0]], False)
+                            obj["id"] = BuildParameters([method.vars[0]], True, True, False)
                             obj["id"]["name"] = method.vars[0].name
                             if "example" not in obj["id"]:
                                 obj["id"]["example"] = "0" if obj["id"]["type"] == "integer" else "abc"
@@ -1165,7 +1229,7 @@ def LoadInterface(file, includePaths = []):
                             varsidx = 1
                     if method.retval.meta.is_listener:
                         obj["statuslistener"] = True
-                    params = BuildParameters(method.vars[varsidx:], f.obj.is_collapsed)
+                    params = BuildParameters(method.vars[varsidx:], collapsed, extended, False)
                     if method.retval.meta.is_deprecated:
                         obj["deprecated"] = True
                     elif method.retval.meta.is_obsolete:
@@ -1424,7 +1488,7 @@ def GetNamespace(root, obj, full=True):
                 break
             e = e.parent
         if full:
-            namespace = "%s::%s::" % (DATA_NAMESPACE, root.TrueName())
+            namespace = "%s::%s::" % (DATA_NAMESPACE, root.CppName())
         namespace = namespace + "%s" % fullname
     return namespace
 
@@ -1432,7 +1496,7 @@ def GetNamespace(root, obj, full=True):
 def EmitEnumRegs(root, emit, header_file, if_file):
     def EmitEnumRegistration(root, enum, full=True):
         fullname = (GetNamespace(root, enum) if full else "%s::%s::" %
-                    (DATA_NAMESPACE, root.TrueName())) + enum.CppClass()
+                    (DATA_NAMESPACE, root.CppName())) + enum.CppClass()
         emit.Line("ENUM_CONVERSION_BEGIN(%s)" % fullname)
         emit.Indent()
         for c, item in enumerate(enum.enumerators):
@@ -1465,9 +1529,9 @@ def EmitEnumRegs(root, emit, header_file, if_file):
 # JSON-RPC CODE GENERATOR
 #
 
-module = "_module"
 
 def EmitEvent(emit, root, event, static=False):
+    module = "module"
     emit.Line("// Event: %s" % event.Headline())
     params = event.Properties()[0].CppType()
     par = ""
@@ -1481,7 +1545,7 @@ def EmitEvent(emit, root, event, static=False):
     if not static:
         line = "void %s::%s(%s)" % (root.JsonName(), event.MethodName(), par)
     else:
-        line = "static void %s(const PluginHost::JSONRPC& %s%s%s)" % (event.TrueName(), module, ", " if par else "", par)
+        line = "static void %s(const PluginHost::JSONRPC& %s%s%s)" % (event.CppName(), module, ", " if par else "", par)
     if event.included_from:
         line += " /* %s */" % event.included_from
     emit.Line(line)
@@ -1593,6 +1657,7 @@ def EmitVersionCode(root, emit, header_file, source_file, data_emitted):
     emit.Line("}")
 
 def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
+    module = "_module"
     namespace = _EmitRpcPrologue(root, emit, header_file, source_file, data_emitted, True)
     _EmitVersionCode(emit, GetVersion(root.schema["info"] if "info" in root.schema else dict()))
     struct = "J" + root.JsonName()
@@ -1607,7 +1672,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
     emit.Indent()
     emit.Line("ASSERT(%s != nullptr);" % destination_var)
     emit.Line()
-    emit.Line("%s.RegisterVersion(_T(\"%s\"), %s::Version::Major, %s::Version::Minor, %s::Version::Patch);" % (module, struct, struct, struct, struct))
+    emit.Line("%s.RegisterVersion(_T(\"%s\"), Version::Major, Version::Minor, Version::Patch);" % (module, struct))
     emit.Line();
 
     events = []
@@ -1616,37 +1681,48 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
         if not isinstance(m, JsonNotification):
 
             indexed = isinstance(m, JsonProperty) and m.HasIndex()
-            index_var = "_index"
-            index_param = index_var
+            if indexed:
+                index_converted = False
+
             # Emit method prologue
             if isinstance(m, JsonProperty):
-                void = m.Properties()[1]
-                params = m.Properties()[0] if not m.readonly else void
-                params.true_name = "params"
-                params.name = params.true_name
-                response = copy.deepcopy(m.Properties()[0]) if not m.writeonly else void
-                response.true_name = "result"
-                response.name = response.true_name
+                if m.Properties()[1].IsVoid() and not m.writeonly:
+                    # try to detect the uncompliant format
+                    params = copy.deepcopy(m.Properties()[0] if not m.readonly else m.Properties()[1])
+                    response = copy.deepcopy(m.Properties()[0] if not m.writeonly else m.Properties()[1])
+                else:
+                    params = copy.deepcopy(m.Properties()[0])
+                    response = copy.deepcopy(m.Properties()[1])
+                params.Rename("params")
+                response.Rename("result")
                 emit.Line("// %sProperty: %s%s" % ("Indexed " if indexed else "", m.Headline(), " (r/o)" if m.readonly else (" (w/o)" if m.writeonly else "")))
             else:
-                params = m.Properties()[0]
-                response = m.Properties()[1]
+                params = copy.deepcopy(m.Properties()[0])
+                response = copy.deepcopy(m.Properties()[1])
                 emit.Line("// Method: %s" % m.Headline())
-            line = '%s.Register<%s, %s%s>(_T("%s"),' % (module, params.CppType(), response.CppType(), ", std::function<uint32_t(const std::string&, %s%s)>" % ("" if params.CppType() == "void" else ("const " + params.CppType() + "&"), "" if response.CppType() == "void" else (("" if params.CppType() == "void" else ", ") + response.CppType() + "&")) if indexed else "", m.JsonName())
+
+            function_def = ""
+            if indexed:
+                function_def =", std::function<uint32_t(const std::string&, %s%s)>" % ("" if params.IsVoid() else ("const " + params.CppType() + "&"), "" if response.IsVoid() else (("" if params.IsVoid() else ", ") + response.CppType() + "&"))
+            line = '%s.Register<%s, %s%s>(_T("%s"),' % (module, params.CppType(), response.CppType(), function_def, m.JsonName())
             emit.Line(line)
             emit.Indent()
             line = '[%s](' % destination_var
             if indexed:
-                line = line + "const string& %s, " % index_param
-            line = line + (("const " + params.CppType() + "& " + params.CppName()) if params.CppType() != "void" else "") + \
-                (", " if params.CppType() != "void" and response.CppType() != "void" else "") + \
-                ((response.CppType() + "& " + response.CppName())
-                 if response.CppType() != "void" else "")
+                line = line + "const string& %s, " % m.index.CppName()
+            if not params.IsVoid():
+                line = line + ("const " + params.CppType() + "& " + params.CppName())
+            if not params.IsVoid() and not response.IsVoid():
+                line = line + ", "
+            if not response.IsVoid():
+                line = line + (response.CppType() + "& " + response.CppName())
             line = line + ') -> uint32_t {'
             emit.Line(line)
+
+            # Emit the function body
             emit.Indent()
-            errorcode_var = "_errorCode"
-            emit.Line("uint32_t %s;" % errorcode_var)
+            error_code = AuxJsonInteger("errorCode", 32)
+            emit.Line("uint32_t %s;" % error_code.LocalName())
 
             READ_ONLY = 0
             READ_WRITE = 1
@@ -1656,184 +1732,179 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                 vars = OrderedDict()
 
                 # Build param/response dictionaries (dictionaries will ensure they do not repeat)
-                if params.CppType() != "void":
+                if params and not params.IsVoid():
                     if isinstance(params, JsonObject) and params.Create():
-                        for p in params.Properties():
-                            vars[p.JsonName()] = [p, READ_ONLY]
+                        for param in params.Properties():
+                            vars[param.JsonName()] = [param, READ_ONLY]
                     else:
                         vars[params.JsonName()] = [params, READ_ONLY]
 
-                if response.CppType() != "void":
+                if response and not response.IsVoid():
                     if isinstance(response, JsonObject) and response.Create():
-                        for p in response.Properties():
-                            if p.JsonName() not in vars:
-                                vars[p.JsonName()] = [p, WRITE_ONLY]
+                        for resp in response.Properties():
+                            if resp.JsonName() not in vars:
+                                vars[resp.JsonName()] = [resp, WRITE_ONLY]
                             else:
-                               vars[p.JsonName()][1] = READ_WRITE
+                               vars[resp.JsonName()][1] = READ_WRITE
                     else:
                         if response.JsonName() not in vars:
                             vars[response.JsonName()] = [response, WRITE_ONLY]
                         else:
                             vars[response.JsonName()][1] = READ_WRITE
 
-                for _, t in vars.items():
-                    if isinstance(t[0], JsonString) and "length" in t[0].schema:
-                        for w, q in vars.items():
-                            if w == t[0].schema["length"]:
+                for _, _record in vars.items():
+                    arg = _record[0]
+                    arg_type = _record[1]
+                    if isinstance(arg, JsonString) and "length" in arg.schema:
+                        for var, q in vars.items():
+                            arg2 = q[0]
+                            arg2_type = q[1]
+                            if var == arg.schema["length"]:
                                 # Have to handle any order of lenght/buffer params
-                                q[0].schema["bufferlength"] = True
-                                if q[1] == WRITE_ONLY:
-                                    raise RuntimeError("'%s': parameter marked pointed to by @length is output only" % q[0].name)
+                                arg2.schema["bufferlength"] = True
+                                if arg2_type == WRITE_ONLY:
+                                    raise RuntimeError("'%s': parameter marked pointed to by @length is output only" % arg2.name)
 
                 # Emit temporary variables and deserializing of JSON data
-                for _, t in sorted(vars.items(), key=lambda x: x[1][0].schema["position"]):
-                    if "bufferlength" in t[0].schema:
-                        t[0].release = False
-                        t[0].cast = None
-                        t[0].prefix = ""
+                for _, _record in sorted(vars.items(), key=lambda x: x[1][0].schema["position"]):
+                    arg = _record[0]
+                    arg_type = _record[1]
+                    if "bufferlength" in arg.schema:
+                        arg.release = False
+                        arg.cast = None
+                        arg.prefix = ""
                         continue
                     # C-style buffers
-                    t[0].release = False
-                    t[0].cast = None
-                    t[0].prefix = "&" if ("ptr" in t[0].schema and t[0].schema["ptr"]) and use_prefix else ""
-                    if isinstance(t[0], JsonString) and "length" in t[0].schema:
-                        for w, q in vars.items():
-                            if w == t[0].schema["length"]:
-                                emit.Line("%s %s{%s};" % (q[0].CppStdClass(), q[0].JsonName(), "%s%s.Value()" % (parent if parent else "", q[0].CppName()) if q[1] != WRITE_ONLY else ""))
+                    arg.release = False
+                    arg.cast = None
+                    arg.prefix = "&" if ("ptr" in arg.schema and arg.schema["ptr"]) and use_prefix else ""
+                    if isinstance(arg, JsonString) and "length" in arg.schema:
+                        for var, q in vars.items():
+                            arg2 = q[0]
+                            arg2_type = q[1]
+                            if var == arg.schema["length"]:
+                                emit.Line("%s %s{%s};" % (arg2.CppStdClass(), arg2.LocalName(), "%s%s.Value()" % (parent if parent else "", arg2.CppName()) if arg2_type != WRITE_ONLY else ""))
                                 break
-                        encode = "encode" in t[0].schema and t[0].schema["encode"]
-                        if t[1] == READ_ONLY and not encode:
-                            emit.Line("const %s* %s{%s%s.Value().data()};" % (t[0].schema["cpptype"], t[0].JsonName(),  parent if parent else "", t[0].CppName()))
+                        encode = "encode" in arg.schema and arg.schema["encode"]
+                        if arg_type == READ_ONLY and not encode:
+                            emit.Line("const %s* %s{%s%s.Value().data()};" % (arg.schema["cpptype"], arg.LocalName(),  parent if parent else "", arg.CppName()))
                         else:
-                            emit.Line("%s* %s = nullptr;" % (t[0].schema["cpptype"], t[0].JsonName()))
-                            emit.Line("if (%s != 0) {" % t[0].schema["length"])
+                            emit.Line("%s* %s = nullptr;" % (arg.schema["cpptype"], arg.LocalName()))
+                            emit.Line("if (_%s != 0) {" % arg.schema["length"])
                             emit.Indent()
-                            emit.Line("%s = reinterpret_cast<%s*>(ALLOCA(%s));" % (t[0].JsonName(), t[0].schema["cpptype"], t[0].schema["length"]))
-                            emit.Line("ASSERT(%s != nullptr);" % t[0].JsonName())
-
-                        if t[1] != WRITE_ONLY:
+                            emit.Line("%s = reinterpret_cast<%s*>(ALLOCA(_%s));" % (arg.LocalName(), arg.schema["cpptype"], arg.schema["length"]))
+                            emit.Line("ASSERT(%s != nullptr);" % arg.LocalName())
+                        if arg_type != WRITE_ONLY:
                             if encode:
                                 emit.Line("// Decode base64-encoded JSON string")
-                                emit.Line("Core::FromString(%s%s.Value(), %s, %s, nullptr);" % (parent if parent else "", t[0].CppName(), t[0].JsonName(), t[0].schema["length"]))
-                            elif t[1] != READ_ONLY:
-                                emit.Line("::memcpy(%s, %s%s.Value().data(), %s);" % (t[0].JsonName(), parent if parent else "", t[0].CppName(), t[0].schema["length"]))
-                        if t[1] != READ_ONLY or encode:
+                                emit.Line("Core::FromString(%s%s.Value(), %s, %s, nullptr);" % (parent if parent else "", arg.CppName(), arg.LocalName(), arg.schema["length"]))
+                            elif arg_type != READ_ONLY:
+                                emit.Line("::memcpy(%s, %s%s.Value().data(), %s);" % (arg.LocalName(), parent if parent else "", arg.CppName(), arg.schema["length"]))
+                        if arg_type != READ_ONLY or encode:
                             emit.Unindent()
                             emit.Line("}")
                     # Iterators
-                    elif isinstance(t[0], JsonArray):
-                        if "iterator" in t[0].schema:
-                            if t[1] == READ_ONLY:
-                                emit.Line("std::list<%s> _elements;" %(t[0].items.CppStdClass()))
-                                emit.Line("auto _Iterator = %s.Elements();" % ((parent if parent else "") + t[0].CppName()))
+                    elif isinstance(arg, JsonArray):
+                        if arg.IsIterator():
+                            if arg_type == READ_ONLY:
+                                emit.Line("std::list<%s> _elements;" %(arg.Items().CppStdClass()))
+                                emit.Line("auto _Iterator = %s.Elements();" % ((parent if parent else "") + arg.CppName()))
                                 emit.Line("while (_Iterator.Next() == true) {")
                                 emit.Indent()
-                                emit.Line("_elements.push_back(_Iterator.Current()%s);" % (".Value()" if not isinstance(t[0].items, JsonObject) else ""))
+                                emit.Line("_elements.push_back(_Iterator.Current()%s);" % (".Value()" if not isinstance(arg.Items(), JsonObject) else ""))
                                 emit.Unindent()
                                 emit.Line("}")
-                                impl = t[0].schema["iterator"][:t[0].schema["iterator"].index('<')].replace("IIterator", "Iterator") + "<%s>" % t[0].schema["iterator"]
-                                initializer = "Core::Service<%s>::Create<%s>(_elements)" % (impl, t[0].schema["iterator"])
-                                emit.Line("%s* %s{%s};" % (t[0].schema["iterator"], t[0].JsonName(), initializer))
-                                t[0].release = True
-                                if "ref" in t[0].schema and t[0].schema["ref"]:
-                                    t[0].cast = "static_cast<%s* const&>(%s)" % (t[0].schema["iterator"], t[0].JsonName())
-                            elif t[1] == WRITE_ONLY:
-                                emit.Line("%s* %s{};" % (t[0].schema["iterator"], t[0].JsonName()))
+                                impl = arg.Iterator()[:arg.Iterator().index('<')].replace("IIterator", "Iterator") + "<%s>" % arg.Iterator()
+                                initializer = "Core::Service<%s>::Create<%s>(_elements)" % (impl, arg.Iterator())
+                                emit.Line("%s* %s{%s};" % (arg.Iterator(), arg.LocalName(), initializer))
+                                arg.release = True
+                                if "ref" in arg.schema and arg.schema["ref"]:
+                                    arg.cast = "static_cast<%s* const&>(%s)" % (arg.Iterator(), arg.LocalName())
+                            elif arg_type == WRITE_ONLY:
+                                emit.Line("%s* %s{};" % (arg.Iterator(), arg.LocalName()))
                             else:
-                                raise RuntimeError("Read/write arrays are not supported: %s" % t[0].JsonName())
-
-                    # PODs
-                    elif isinstance(t[0], JsonObject):
-                        emit.Line("%s%s %s%s;" % ("const " if t[1] == READ_ONLY else "", t[0].CppStdClass(), t[0].JsonName(), "(%s%s)" % (parent if parent and not isinstance(t[0].parent, JsonMethod) else "", t[0].CppName()) if t[1] != WRITE_ONLY else "{}"))
-                        """
-                        def EmitObject(obj, cpp_parent, json_parent):
-                            if t[1] != WRITE_ONLY:
-                                for e in obj.Properties():
-                                    if isinstance(e, JsonObject):
-                                        EmitObject(e, cpp_parent + e.TrueName() + ".", json_parent + e.CppName() + ".")
-                                    else:
-                                        emit.Line("%s%s = %s%s.Value();" % (cpp_parent, e.TrueName(), json_parent, e.CppName()))
-
-                        if not t[0].Create():
-                            emit.Line("%s %s%s;" % (t[0].CppStdClass(), t[0].JsonName(), "{}" if t[1] == WRITE_ONLY else ""))
-                            EmitObject(t[0], t[0].JsonName() + ".", (parent if parent and not isinstance(t[0].parent, JsonMethod) else "") + t[0].CppName() + ".");
+                                raise RuntimeError("Read/write arrays are not supported: %s" % arg.JsonName())
                         else:
-                            emit.Line("%s %s%s;" % (t[0].CppType(), t[0].JsonName(), "{}" if t[1] == WRITE_ONLY else ""))
-                        """
+                            raise RuntimeError("Arrays need to be iterators: %s" % arg.JsonName())
+                    # PODs
+                    elif isinstance(arg, JsonObject):
+                        emit.Line("%s%s %s%s;" % ("const " if (arg_type == READ_ONLY )else "", arg.CppStdClass(), arg.LocalName(), "(%s%s)" % (parent if parent and not isinstance(arg.parent, JsonMethod) else "", arg.CppName()) if arg_type != WRITE_ONLY else "{}"))
                     # All Other
                     else:
-                        emit.Line("%s%s %s{%s};" % ("const " if (t[1] == READ_ONLY) else "", t[0].CppStdClass(), t[0].JsonName(), "%s%s.Value()" % (parent if parent else "", t[0].CppName()) if t[1] != WRITE_ONLY else ""))
+                        emit.Line("%s%s %s{%s};" % ("const " if (arg_type == READ_ONLY) else "", arg.CppStdClass(), arg.LocalName(), "%s%s.Value()" % (parent if parent else "", arg.CppName()) if arg_type != WRITE_ONLY else ""))
 
                 cond = ""
-                for v, t in vars.items():
-                    if t[0].release:
-                        cond += "(%s != nullptr) &&" % t[0].JsonName()
+                for _, _record in vars.items():
+                    arg = _record[0]
+                    if arg.release:
+                        cond += "(%s != nullptr) &&" % arg.LocalName()
                 if cond:
                     emit.Line("if (%s) {" % cond[:-3])
                     emit.Indent()
 
                 # Emit call the API
                 if const_cast:
-                    line = "%s = (static_cast<const %s*>(%s))->%s(" % (errorcode_var, face, destination_var, m.TrueName())
+                    line = "%s = (static_cast<const %s*>(%s))->%s(" % (error_code.LocalName(), face, destination_var, m.CppName())
                 else:
-                    line = "%s = %s->%s(" % (errorcode_var, destination_var, m.TrueName())
+                    line = "%s = %s->%s(" % (error_code.LocalName(), destination_var, m.CppName())
                 if indexed:
-                    line = line + index_var + ", "
-                for v, t in sorted(vars.items(), key=lambda x: x[1][0].schema["position"]):
-                    line = line + ("%s%s, " % (t[0].prefix, t[0].cast if t[0].cast else t[0].JsonName()))
+                    line = line + m.index.LocalName() + ", "
+                for _, _record in sorted(vars.items(), key=lambda x: x[1][0].schema["position"]):
+                    arg = _record[0]
+                    line = line + ("%s%s, " % (arg.prefix, arg.cast if arg.cast else arg.LocalName()))
                 if line.endswith(", "):
                     line = line[:-2]
                 line = line + ");"
                 emit.Line(line)
 
                 if cond:
-                    for v, t in vars.items():
-                        if t[0].release:
-                            emit.Line("%s->Release();" % t[0].JsonName())
+                    for _, _record in vars.items():
+                        arg = _record[0]
+                        if arg.release:
+                            emit.Line("%s->Release();" % arg.LocalName())
                     emit.Unindent()
                     emit.Line("} else {")
                     emit.Indent()
-                    emit.Line("%s = Core::ERROR_GENERAL;" % errorcode_var)
+                    emit.Line("%s = Core::ERROR_GENERAL;" % error_code.LocalName())
                     emit.Unindent()
                     emit.Line("}")
 
                 # Emit result handling and serializing JSON data
-                if response.CppType() != "void":
-                    emit.Line("if (%s == Core::ERROR_NONE) {" % errorcode_var)
+                if response and not response.IsVoid():
+                    emit.Line("if (%s == Core::ERROR_NONE) {" % error_code.LocalName())
                     emit.Indent()
 
                     def EmitResponse(elem, cppParent = "", parent = ""):
-                        # C-style buffers disguised as base64-encoded strings
                         if isinstance(elem, JsonObject) and elem.Create():
                             for p in elem.Properties():
-                                EmitResponse(p, cppParent + (((elem.TrueName() if cppParent else elem.JsonName()) + ".") if not elem.Create() else ""), parent + elem.CppName() + "." )
+                                EmitResponse(p, cppParent + (((elem.CppName() if cppParent else elem.LocalName()) + ".") if not elem.Create() else ""), parent + elem.CppName() + "." )
                         # C-style buffers disguised as base64-encoded strings
                         elif isinstance(elem, JsonString) and "length" in elem.schema:
-                            emit.Line("if (%s != 0) {" % elem.schema["length"])
+                            emit.Line("if (_%s != 0) {" % elem.schema["length"])
                             emit.Indent()
                             if "encode" in elem.schema and elem.schema["encode"]:
                                 emit.Line("// Convert the C-style buffer to a base64-encoded JSON string")
-                                emit.Line("%s _%sEncoded;" % (elem.CppStdClass(), elem.JsonName()))
-                                emit.Line("Core::ToString(%s, %s, true, _%sEncoded);" % (elem.JsonName(), elem.schema["length"], elem.JsonName()))
-                                emit.Line("%s%s = _%sEncoded;" % (parent, elem.CppName(), elem.JsonName()))
+                                emit.Line("%s %s;" % (elem.CppStdClass(), elem.LocalName("Encoded")))
+                                emit.Line("Core::ToString(%s, _%s, true, %s);" % (elem.LocalName(), elem.schema["length"], elem.LocalName("Encoded")))
+                                emit.Line("%s%s = %s;" % (parent, elem.CppName(), elem.LocalName("Encoded")))
                             else:
-                                emit.Line("%s%s = string(%s, %s);" % (parent, elem.CppName(), elem.JsonName(), elem.schema["length"]))
+                                emit.Line("%s%s = string(%s, %s);" % (parent, elem.CppName(), elem.LocalName(), elem.schema["length"]))
                             emit.Unindent()
                             emit.Line("}")
                         # Iterators disguised as arrays
                         elif isinstance(elem, JsonArray):
-                            if "iterator" in elem.schema:
-                                emit.Line("if (%s != nullptr) {" % elem.JsonName())
+                            if elem.Iterator():
+                                emit.Line("if (%s != nullptr) {" % elem.LocalName())
                                 emit.Indent()
                                 emit.Line("// Convert the iterator to a JSON array")
-                                emit.Line("%s %s{};" % (elem.items.CppStdClass(), elem.items.JsonName()))
-                                emit.Line("while (%s->Next(%s) == true) {" % (elem.JsonName(), elem.items.JsonName()))
+                                emit.Line("%s %s{};" % ((elem.Items().CppStdClass(), elem.Items().LocalName())))
+                                emit.Line("while (%s->Next(%s) == true) {" % (elem.LocalName(), elem.Items().LocalName()))
                                 emit.Indent()
-                                emit.Line("%s& _Element(%s.Add());" % (elem.items.CppType(), parent + elem.CppName()))
-                                emit.Line("_Element = %s;" % elem.items.JsonName())
+                                emit.Line("%s& _Element(%s.Add());" % (elem.Items().CppType(), parent + elem.CppName()))
+                                emit.Line("_Element = %s;" % elem.Items().LocalName())
                                 emit.Unindent()
                                 emit.Line("}")
-                                emit.Line("%s->Release();" % elem.JsonName())
+                                emit.Line("%s->Release();" % elem.LocalName())
                                 emit.Unindent()
                                 emit.Line("}")
                             else:
@@ -1841,12 +1912,12 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                         # Enums
                         elif isinstance(elem, JsonEnum):
                             if elem.Create():
-                                emit.Line("%s%s = static_cast<%s>(%s%s);" % (parent, elem.CppName(), elem.CppClass(), cppParent, elem.JsonName()))
+                                emit.Line("%s%s = static_cast<%s>(%s%s);" % (parent, elem.CppName(), elem.CppClass(), cppParent, elem.LocalName()))
                             else:
-                                emit.Line("%s%s = %s%s;" % (parent, elem.CppName(), cppParent, elem.JsonName()))
+                                emit.Line("%s%s = %s%s;" % (parent, elem.CppName(), cppParent, elem.LocalName()))
                         # All other primitives and PODs
                         else:
-                            emit.Line("%s%s = %s%s;" % (parent, elem.CppName(), cppParent, elem.JsonName() if not cppParent else elem.TrueName()))
+                            emit.Line("%s%s = %s%s;" % (parent, elem.CppName(), cppParent, elem.LocalName() if not cppParent else elem.CppName()))
 
                     EmitResponse(response)
 
@@ -1855,38 +1926,38 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
 
             if isinstance(m, JsonProperty):
                 if indexed and isinstance(m.index, JsonInteger):
-                    index_var = "_indexInt"
-                    emit.Line("%s %s{};" % (m.index.CppStdClass(), index_var))
-                    emit.Line("if (Core::FromString(%s, %s) == false) {" % (index_param, index_var))
+                    index_converted = True
+                    emit.Line("%s %s{};" % (m.index.CppStdClass(), m.index.LocalName()))
+                    emit.Line("if (Core::FromString(%s, %s) == false) {" % (m.index.CppName(), m.index.LocalName()))
                     emit.Indent()
                     emit.Line("// failed to convert the index")
-                    emit.Line("%s = Core::ERROR_UNKNOWN_KEY;" % errorcode_var)
+                    emit.Line("%s = Core::ERROR_UNKNOWN_KEY;" % error_code.LocalName())
                     if not m.writeonly and not m.readonly:
                         emit.Line("%s%s.Null(true);" % ("// " if isinstance(response, (JsonArray, JsonObject)) else "", response.CppName())) # FIXME
                     emit.Unindent()
                     emit.Line("} else {")
                     emit.Indent()
                 elif indexed and isinstance(m.index, JsonEnum):
-                    index_var = "_indexEnum"
-                    emit.Line("Core::EnumerateType<%s> _value(%s.c_str());" % (m.index.CppStdClass(), index_param))
-                    emit.Line("const %s %s = _value.Value();" % (m.index.CppStdClass(), index_var))
+                    index_converted = True
+                    emit.Line("Core::EnumerateType<%s> _value(%s.c_str());" % (m.index.CppStdClass(), m.index.CppName()))
+                    emit.Line("const %s %s = _value.Value();" % (m.index.CppStdClass(), m.index.LocalName()))
                     emit.Line("if (_value.IsSet() == false) {")
                     emit.Indent()
                     emit.Line("// failed enum look-up")
-                    emit.Line("%s = Core::ERROR_UNKNOWN_KEY;" % errorcode_var)
+                    emit.Line("%s = Core::ERROR_UNKNOWN_KEY;" % error_code.LocalName())
                     if not m.writeonly and not m.readonly:
                         emit.Line("%s%s.Null(true);" % ("// " if isinstance(response, (JsonArray, JsonObject)) else "", response.CppName())) # FIXME
                     emit.Unindent()
                     emit.Line("} else {")
                     emit.Indent()
                 if not m.readonly and not m.writeonly:
-                    emit.Line("if (%s.IsSet() == false) {" % params.CppName())
+                    emit.Line("if (%s.IsSet() == false) {" % ((params.CppName() + '.' + params.properties[0].CppName()) if isinstance(params, JsonObject) else params.CppName()))
                     emit.Indent()
                     emit.Line("// property get")
                 elif m.readonly:
                     emit.Line("// read-only property get")
                 if not m.writeonly:
-                    Invoke(void, response, True, not m.readonly)
+                    Invoke(None, response, True, not m.readonly)
             else:
                 Invoke(params, response, True, False, (params.CppName() + '.') if isinstance(params, JsonObject) else None)
 
@@ -1898,18 +1969,18 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                     emit.Line("// property set")
                 if m.writeonly:
                     emit.Line("// write-only property set")
-                Invoke(params, void, False)
+                Invoke(params, None, False, False, ((params.CppName() + '.') if isinstance(params, JsonObject) else None))
                 if not m.writeonly:
                     emit.Line("%s%s.Null(true);" % ("// " if isinstance(response, (JsonArray, JsonObject)) else "", response.CppName())) # FIXME
                     emit.Unindent()
                     emit.Line("}")
 
-            if index_var != index_param:
+            if indexed and index_converted:
                 emit.Unindent()
                 emit.Line("}")
 
             # Emit method epilogue
-            emit.Line("return (%s);" % errorcode_var)
+            emit.Line("return (%s);" % error_code.LocalName())
             emit.Unindent()
             emit.Line("});")
             emit.Unindent()
@@ -2256,16 +2327,16 @@ def EmitObjects(root, emit, if_file, emitCommon=False):
 
         def EmitCtor(jsonObj, noInitCode=False, copyCtor=False, convCtor = False):
             if copyCtor:
-                emit.Line("%s(const %s& other)" % (jsonObj.CppClass(), jsonObj.CppClass()))
+                emit.Line("%s(const %s& _other)" % (jsonObj.CppClass(), jsonObj.CppClass()))
             elif convCtor:
-                emit.Line("%s(const %s& other)" % (jsonObj.CppClass(), jsonObj.CppStdClass()))
+                emit.Line("%s(const %s& _other)" % (jsonObj.CppClass(), jsonObj.CppStdClass()))
             else:
                 emit.Line("%s()" % (jsonObj.CppClass()))
             emit.Indent()
             emit.Line(": %s()" % TypePrefix("Container"))
             for prop in jsonObj.Properties():
                 if copyCtor:
-                    emit.Line(", %s(other.%s)" % (prop.CppName(), prop.CppName()))
+                    emit.Line(", %s(_other.%s)" % (prop.CppName(), prop.CppName()))
                 elif prop.CppDefValue() != '""' and prop.CppDefValue() != "":
                     emit.Line(", %s(%s)" % (prop.CppName(), prop.CppDefValue()))
             emit.Unindent()
@@ -2273,7 +2344,7 @@ def EmitObjects(root, emit, if_file, emitCommon=False):
             emit.Indent()
             if convCtor:
                 for prop in jsonObj.Properties():
-                    emit.Line("%s = other.%s;" % (prop.CppName(), prop.TrueName()))
+                    emit.Line("%s = _other.%s;" % (prop.CppName(), prop.CppName()))
             if not noInitCode:
                 EmitInit(jsonObj)
             else:
@@ -2284,16 +2355,16 @@ def EmitObjects(root, emit, if_file, emitCommon=False):
 
         def EmitAssignmentOperator(jsonObj, copyCtor = False, convCtor = False):
             if copyCtor:
-                emit.Line("%s& operator=(const %s& rhs)" % (jsonObj.CppClass(), jsonObj.CppClass()))
+                emit.Line("%s& operator=(const %s& _rhs)" % (jsonObj.CppClass(), jsonObj.CppClass()))
             elif convCtor:
-                emit.Line("%s& operator=(const %s& rhs)" % (jsonObj.CppClass(), jsonObj.CppStdClass()))
+                emit.Line("%s& operator=(const %s& _rhs)" % (jsonObj.CppClass(), jsonObj.CppStdClass()))
             emit.Line("{")
             emit.Indent()
             for prop in jsonObj.Properties():
                 if copyCtor:
-                    emit.Line("%s = rhs.%s;" % (prop.CppName(), prop.CppName()))
+                    emit.Line("%s = _rhs.%s;" % (prop.CppName(), prop.CppName()))
                 elif convCtor:
-                    emit.Line("%s = rhs.%s;" % (prop.CppName(), prop.TrueName()))
+                    emit.Line("%s = _rhs.%s;" % (prop.CppName(), prop.CppName()))
             emit.Line("return (*this);")
             emit.Unindent()
             emit.Line("}")
@@ -2302,10 +2373,10 @@ def EmitObjects(root, emit, if_file, emitCommon=False):
             emit.Line("operator %s() const" % (jsonObj.CppStdClass()))
             emit.Line("{")
             emit.Indent();
-            emit.Line("%s val;" % (jsonObj.CppStdClass()))
+            emit.Line("%s _value;" % (jsonObj.CppStdClass()))
             for prop in jsonObj.Properties():
-                emit.Line("val.%s = %s%s;" % ( prop.TrueName(), prop.CppName(), ".Value()" if not isinstance(prop, JsonObject) else ""))
-            emit.Line("return (val);")
+                emit.Line("_value.%s = %s%s;" % ( prop.CppName(), prop.CppName(), ".Value()" if not isinstance(prop, JsonObject) else ""))
+            emit.Line("return (_value);")
             emit.Unindent()
             emit.Line("}")
 
@@ -2343,14 +2414,14 @@ def EmitObjects(root, emit, if_file, emitCommon=False):
                 EmitCtor(jsonObj, True, True, False)
                 emit.Line()
                 EmitAssignmentOperator(jsonObj, True, False)
-            if "typename" in jsonObj.schema:
+            if "originaltype" in jsonObj.schema:
                 emit.Line()
                 EmitCtor(jsonObj, True, False, True)
                 emit.Line()
                 EmitAssignmentOperator(jsonObj, False, True)
                 emit.Line()
                 EmitConversionOperator(jsonObj)
-            if jsonObj.NeedsCopyCtor() or "typename" in jsonObj.schema:
+            if jsonObj.NeedsCopyCtor() or "originaltype" in jsonObj.schema:
                 emit.Unindent()
                 emit.Line()
                 emit.Line("private:")
@@ -3297,6 +3368,13 @@ if __name__ == "__main__":
             default=INTERFACE_NAMESPACE,
             help="set namespace to look for interfaces in (default: %s)" %
             INTERFACE_NAMESPACE)
+    cpp_group.add_argument("--format",
+            dest="format",
+            type=str,
+            action="store",
+            default="flexible",
+            choices=["default-compliant", "force-compliant", "default-extended", "force-extended", "default-collapsed", "force-collapsed"],
+            help="select JSON-RPC data format (default: default-compliant)")
 
     data_group = argparser.add_argument_group("C++ output arguments (optional)")
     data_group.add_argument("-p",
@@ -3396,6 +3474,15 @@ if __name__ == "__main__":
     INTERFACES_SECTION = not args.no_interfaces_section
     INTERFACE_SOURCE_LOCATION = args.source_location
     INTERFACE_SOURCE_REVISION = args.source_revision
+    if "extended" in args.format:
+        FORMAT = "extended"
+    elif "collapsed" in args.format:
+        FORMAT = "collapsed"
+    else:
+        FORMAT = "compliant"
+    if "forced" in args.format:
+        FORMAT_FORCED = True
+
     if args.if_path and args.if_path != ".":
         IF_PATH = args.if_path
     IF_PATH = posixpath.normpath(IF_PATH) + os.sep
@@ -3457,6 +3544,7 @@ if __name__ == "__main__":
                 log.Error(str(err))
             except ValueError as err:
                 log.Error(str(err))
+
         log.Info("JsonGenerator: All done, {} files parsed, {} error{}.".format(len(files), len(log.errors) if log.errors else 'no',
                                                               '' if len(log.errors) == 1 else 's'))
         if log.errors:
