@@ -1586,7 +1586,7 @@ namespace Web
             break;
         }
         case CHUNK_INIT: {
-            uint32_t chunkedSize = Core::NumberType<uint32_t>(Core::TextFragment(buffer));
+            uint32_t chunkedSize = Core::NumberType<uint32_t, false, BASE_HEXADECIMAL>(Core::TextFragment(buffer));
             if (chunkedSize == 0) {
                 _state = BODY_END;
                 _parser.FlushLine();
@@ -1668,6 +1668,9 @@ namespace Web
             _current = nullptr;
             _parser.CollectWord(Parser::UPPERCASE);
             _state = VERB;
+            break;
+        }
+        case CHUNK_INIT: {
             break;
         }
         default: {
