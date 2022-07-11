@@ -235,17 +235,17 @@ namespace PluginHost {
         //
         // Methods to send outbound event messages
         // ------------------------------------------------------------------------------------------------------------------------------
-        uint32_t Notify(const string& event)
+        uint32_t Notify(const string& event) const
         {
             return (_handlers.front().Notify(event, Core::JSON::String()));
         }
         template <typename JSONOBJECT>
-        uint32_t Notify(const string& event, const JSONOBJECT& parameters)
+        uint32_t Notify(const string& event, const JSONOBJECT& parameters) const
         {
             return (_handlers.front().Notify(event, parameters));
         }
         template <typename JSONOBJECT, typename SENDIFMETHOD>
-        uint32_t Notify(const string& event, const JSONOBJECT& parameters, SENDIFMETHOD method)
+        uint32_t Notify(const string& event, const JSONOBJECT& parameters, SENDIFMETHOD method) const
         {
             return (_handlers.front().Notify(event, parameters, method));
         }
