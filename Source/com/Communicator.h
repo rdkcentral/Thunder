@@ -56,6 +56,7 @@ namespace RPC {
             , _threads()
             , _priority()
             , _type(HostType::LOCAL)
+            , _linkLoaderPath()
             , _remoteAddress()
             , _configuration()
         {
@@ -71,6 +72,7 @@ namespace RPC {
             , _threads(copy._threads)
             , _priority(copy._priority)
             , _type(copy._type)
+            , _linkLoaderPath(copy._linkLoaderPath)
             , _remoteAddress(copy._remoteAddress)
             , _configuration(copy._configuration)
         {
@@ -85,6 +87,7 @@ namespace RPC {
             const uint8_t threads,
             const int8_t priority,
             const HostType type,
+            const string& linkLoaderPath,
             const string& remoteAddress,
             const string& configuration)
             : _locator(locator)
@@ -97,6 +100,7 @@ namespace RPC {
             , _threads(threads)
             , _priority(priority)
             , _type(type)
+            , _linkLoaderPath(linkLoaderPath)
             , _remoteAddress(remoteAddress)
             , _configuration(configuration)
         {
@@ -116,6 +120,7 @@ namespace RPC {
             _group = RHS._group;
             _threads = RHS._threads;
             _priority = RHS._priority;
+            _linkLoaderPath = RHS._linkLoaderPath;
             _type = RHS._type;
             _remoteAddress = RHS._remoteAddress;
             _configuration = RHS._configuration;
@@ -164,6 +169,10 @@ namespace RPC {
         {
             return (_type);
         }
+        inline const string& LinkLoaderPath() const
+        {
+            return (_linkLoaderPath);
+        }
         inline const Core::NodeId RemoteAddress() const
         {
             return (Core::NodeId(_remoteAddress.c_str()));
@@ -184,6 +193,7 @@ namespace RPC {
         uint8_t _threads;
         int8_t _priority;
         HostType _type;
+        string _linkLoaderPath;
         string _remoteAddress;
         string _configuration;
     };
@@ -301,6 +311,7 @@ namespace RPC {
 
         Process(const uint32_t sequenceNumber, const Config& config, const Object& instance)
             : _options(config.HostApplication())
+            , _adminLock()
         {
             ASSERT(instance.Locator().empty() == false);
             ASSERT(instance.ClassName().empty() == false);
@@ -343,6 +354,10 @@ namespace RPC {
             if (config.PostMortemPath().empty() == false) {
                 _options.Add(_T("-P")).Add('"' + config.PostMortemPath() + '"');
             }
+            if (instance.LinkLoaderPath().empty() == false) {
+                _options.Add(_T("-L")).Add('"' + instance.LinkLoaderPath() + '"');
+                _linkLoaderPath = instance.LinkLoaderPath();
+            }
             if (instance.Threads() > 1) {
                 _options.Add(_T("-t")).Add(Core::NumberType<uint8_t>(instance.Threads()).Text());
             }
@@ -369,10 +384,24 @@ namespace RPC {
                     (Logging::LoggingType<Logging::Fatal>::IsEnabled() ? 0x40 : 0);
             _options.Add(_T("-e")).Add(Core::NumberType<uint32_t>(loggingSettings).Text());
 
+            _adminLock.Lock();
+
+            string oldPath;
+            if (_linkLoaderPath.empty() == 0) {
+                Core::SystemInfo::GetEnvironment(_T("LD_LIBRARY_PATH"), oldPath);
+                string newPath = oldPath + ":" + _linkLoaderPath;
+                Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), newPath, true);
+            }
+
             // Start the external process launch..
             Core::Process fork(false);
 
             uint32_t result = fork.Launch(_options, &id);
+
+            //restore the original value
+            Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), oldPath, true);
+
+            _adminLock.Unlock();
 
             if ((result == Core::ERROR_NONE) && (_priority != 0)) {
                 Core::ProcessInfo newProcess(id);
@@ -385,6 +414,8 @@ namespace RPC {
     private:
         Core::Process::Options _options;
         int8_t _priority;
+        string _linkLoaderPath;
+        mutable Core::CriticalSection _adminLock;
     };
 
     struct EXTERNAL IMonitorableProcess : public virtual Core::IUnknown {

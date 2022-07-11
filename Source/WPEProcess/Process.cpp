@@ -170,7 +170,7 @@ namespace Process {
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:L:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , Callsign(nullptr)
@@ -185,6 +185,7 @@ namespace Process {
             , AppPath()
             , ProxyStubPath()
             , PostMortemPath()
+            , LinkLoaderPath()
             , User(nullptr)
             , Group(nullptr)
             , Threads(1)
@@ -211,6 +212,7 @@ namespace Process {
         string AppPath;
         string ProxyStubPath;
         string PostMortemPath;
+        string LinkLoaderPath;
         const TCHAR* User;
         const TCHAR* Group;
         uint8_t Threads;
@@ -264,6 +266,9 @@ namespace Process {
                 break;
             case 'm':
                 ProxyStubPath = Strip(argument);
+                break;
+            case 'L':
+                LinkLoaderPath = Strip(argument);
                 break;
             case 'u':
                 User = argument;
@@ -576,7 +581,8 @@ int main(int argc, char** argv)
         printf("        [-a <app path>]\n");
         printf("        [-m <proxy stub library path>]\n");
         printf("        [-e <enabled SYSLOG categories>]\n");
-        printf("        [-P <post mortem path>]\n\n");
+        printf("        [-P <post mortem path>]\n");
+        printf("        [-L <dynamic linker search path>]\n\n");
         printf("This application spawns a seperate process space for a plugin. The plugins");
         printf("are searched in the same order as they are done in process. Starting from:\n");
         printf(" 1) <persistent path>/<locator>\n");
@@ -614,6 +620,18 @@ int main(int argc, char** argv)
                 { return succeeded; },
             NULL, true, -1);
         #endif
+
+        if (options.LinkLoaderPath.empty() == false) {
+            string path;
+
+            // Seems like a LD_LIBRARY_PATH has been passsed to us...
+            if (Core::SystemInfo::GetEnvironment(_T("LD_LIBRARY_PATH"), path) == false) {
+                Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), options.LinkLoaderPath, true);
+            }
+            else {
+                Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), options.LinkLoaderPath + ':' + path, true);
+            }
+        }
 
         Process::ProcessFlow process;
 

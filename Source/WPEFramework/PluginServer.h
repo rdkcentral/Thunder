@@ -1107,6 +1107,7 @@ namespace PluginHost {
                                     _object.Version(),
                                     _object.User(),
                                     _object.Group(),
+                                    _object.LinkLoaderPath(),
                                     _object.Threads(),
                                     _object.Priority(),
                                     _object.Configuration());
@@ -1289,6 +1290,7 @@ namespace PluginHost {
                     const uint32_t version,
                     const string& user,
                     const string& group,
+                    const string& linkLoaderPath,
                     const uint8_t threads,
                     const int8_t priority,
                     const string configuration) override
@@ -1305,7 +1307,7 @@ namespace PluginHost {
 
                     uint32_t id;
                     RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath());
-                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, _T(""), configuration);
+                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, linkLoaderPath, _T(""), configuration);
 
                     RPC::Process process(requestId, config, instance);
 
