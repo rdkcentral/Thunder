@@ -1460,7 +1460,7 @@ namespace Core {
                 return ((N >> 1) > 0) ? 1 + MaxOpaqueObjectDepth<(N >> 1)>() : 1;
             }
             const std::map<uint8_t, uint8_t> EscapeKeyLookupTable = {
-                {'b',0x08}, {'f', 0x0c}, {'n', 0x0a}, {'r', 0x0d}, {'t', 0x09}
+                {'b',0x08}, {'f', 0x0c}, {'n', 0x0a}, {'r', 0x0d}, {'t', 0x09}, {'/', '/'}
             };
 
         public:
@@ -1695,12 +1695,14 @@ namespace Core {
                             
                             if (result < maxLength) {
 
-                                char convertedValue = IsEscapeSequenceValue(*source);
-                                if ((result+1 < maxLength) && (convertedValue != *source)) {
+                                char convertedValue;
+                                if ((result+1 < maxLength) && (IsEscapeSequenceValue(*source, convertedValue))) {
                                     stream[result++] = '\\';
+                                    stream[result++] = convertedValue;
+                                } else {
+                                    stream[result++] = *source;
                                 }
 
-                                stream[result++] = convertedValue;
                                 _unaccountedCount = 0;
                                 source++;
                                 length--;
@@ -1981,17 +1983,18 @@ namespace Core {
                 return action;
             }
 
-            char IsEscapeSequenceValue(const char current) const
+            bool IsEscapeSequenceValue(const char current, char& convertedValue) const
             {
-                char value = current;
+                bool result = false;
                 for (const auto& index : EscapeKeyLookupTable) {
                     if (index.second == current) {
-                        value = index.first;
+                        convertedValue = index.first;
+                        result = true;
                         break;
                     }
                 }
 
-                return value;
+                return result;
             }
             enum class ScopeBracket : bool {
                 CURLY_BRACKET = 0,
