@@ -26,9 +26,9 @@ class WorkerPoolTestAdministrator
 {
     public:
         struct TestJobMetaData {
-            uint32_t   JobId;
-            uint32_t   RepeatCnt;
-            bool       bIsRevoked;
+            const uint32_t   JobId;
+            uint32_t         RepeatCnt;
+            bool             bIsRevoked;
 
             bool operator==(const TestJobMetaData& other) const
             {
@@ -41,20 +41,18 @@ class WorkerPoolTestAdministrator
             TesterTask(const TesterTask&) = delete;
             TesterTask& operator=(const TesterTask&) = delete;
 
-            TesterTask(WorkerPoolTestAdministrator& parent)
+            explicit TesterTask(WorkerPoolTestAdministrator& parent)
                 : _parent(parent)
+                , _jobMetaData{_parent.getNextJobId(), _parent.getRandomValue(0, 5), false}
             {
-                _jobMetaData.JobId = _parent.getNextJobId();
-                _jobMetaData.RepeatCnt = _parent.getRandomValue(0, 5);
-                _jobMetaData.bIsRevoked = false;
             }
-            ~TesterTask() = default;
+            ~TesterTask() override = default;
 
             void Dispatch() override {
                 _parent.UpdateJobDetails(_jobMetaData.JobId);
             }
 
-            uint32_t JobId() {
+            const uint32_t JobId() {
                 return _jobMetaData.JobId;
             }
 
@@ -85,10 +83,12 @@ class WorkerPoolTestAdministrator
             MonitorTask(const MonitorTask&) = delete;
             MonitorTask& operator=(const MonitorTask&) = delete;
 
-            MonitorTask(WorkerPoolTestAdministrator& parent)
+            explicit MonitorTask(WorkerPoolTestAdministrator& parent)
                 : _parent(parent) {
 
                 }
+
+            ~MonitorTask() override = default;
 
             void Dispatch() override {
                 _parent.AnalyseTestTask();
@@ -115,6 +115,7 @@ class WorkerPoolTestAdministrator
                 void Initialize() override { }
                 void Deinitialize() override { }
                 void Dispatch(Core::IDispatch* job) override {
+                    ASSERT(job != nullptr);
                     job->Dispatch();
                 }
 
@@ -131,7 +132,6 @@ class WorkerPoolTestAdministrator
 
             ~WorkerPoolImplementation()
             {
-                printf("%s[ %d ] Called \n", __FUNCTION__, __LINE__);
                 Core::WorkerPool::Stop();
             }
 
@@ -139,7 +139,6 @@ class WorkerPoolTestAdministrator
             {
                 Core::WorkerPool::Run();
                 Core::WorkerPool::Join();
-                printf("%s[ %d ] Called \n", __FUNCTION__, __LINE__);
 
             }
 
@@ -162,13 +161,10 @@ class WorkerPoolTestAdministrator
             , _bAllJobSubmitted(false)
             , _adminEvent(false, true)
         {
-            printf("%s[ %d ] Called \n", __FUNCTION__, __LINE__);
         }
 
         ~WorkerPoolTestAdministrator()
         {
-            printf("%s[ %d ] Called \n", __FUNCTION__, __LINE__);
-
             Core::IWorkerPool::Assign(nullptr);
             if (_workerPool.IsValid() == true) {
                 _workerPool.Release();
@@ -176,8 +172,6 @@ class WorkerPoolTestAdministrator
         }
 
         void ResetAndActivateWorkerPool() {
-            printf("%s[ %d ] Called \n", __FUNCTION__, __LINE__);
-
             if (_workerPool.IsValid() == true) {
                 Core::IWorkerPool::Assign(nullptr);
                 _workerPool->Stop();
@@ -208,32 +202,26 @@ class WorkerPoolTestAdministrator
         }
 
         void Stop() {
-            printf("%s[ %d ] Called \n", __FUNCTION__, __LINE__);
-
             if (_workerPool.IsValid() == true) {
                 _workerPool->Stop();
             }
         }
 
         void Notify() {
-            printf("%s[ %d ] Called \n", __FUNCTION__, __LINE__);
             _adminEvent.SetEvent();
         }
 
         uint32_t WaitForTestCompletion(uint32_t waitTime) {
-            printf("%s[ %d ] Waiting for Test Completion \n", __FUNCTION__, __LINE__);
             return _adminEvent.Lock(waitTime);
         }
 
         void ResetEvent() {
-            printf("%s[ %d ] Called \n", __FUNCTION__, __LINE__);
             _adminEvent.ResetEvent();
         }
 
         uint32_t getRandomValue(const uint32_t min, const uint32_t max) {
             static bool once = false;
             if (!once) {
-                printf("%s[ %d ] I'm here Initializing the Seed\n", __FUNCTION__, __LINE__);
                 srand(time(0));
                 once = true;
             }
@@ -241,7 +229,7 @@ class WorkerPoolTestAdministrator
             return 1+((rand() % max) + min-1);
         }
 
-        uint32_t getNextJobId() {
+        const uint32_t getNextJobId() {
             _lock.Lock();
             _jobIdGenerator = (_jobIdGenerator+1)%std::numeric_limits<unsigned int>::max();
             _lock.Unlock();
