@@ -865,10 +865,38 @@ POP_WARNING()
 
         _config.Security(securityProvider);
 
+        std::vector<PluginHost::ISubSystem::subsystem> externallyControlled;
+        ServiceMap::Iterator iterator(_services.Services());
+
+        // Load the metadata for the subsystem information..
+        while (iterator.Next() == true)
+        {
+            iterator->LoadMetadata();
+            for (const PluginHost::ISubSystem::subsystem& entry : iterator->SubSystemControl()) {
+                Core::EnumerateType<PluginHost::ISubSystem::subsystem> name(entry);
+                if (std::find(externallyControlled.begin(), externallyControlled.end(), entry) != externallyControlled.end()) {
+                    SYSLOG(Logging::Startup, (Core::Format(_T("Subsystem [%s] controlled by multiple plugins. Second: [%s]. Configuration error!!!"), name.Data(), iterator->Callsign().c_str())));
+                }
+                else if (entry >= PluginHost::ISubSystem::END_LIST) {
+                    SYSLOG(Logging::Startup, (Core::Format(_T("Subsystem [%s] can not be used as a control value in [%s]!!!"), name.Data(), iterator->Callsign().c_str())));
+                }
+                else {
+                    SYSLOG(Logging::Startup, (Core::Format(_T("Subsytem [%s] controlled by plugin [%s]"), name.Data(), iterator->Callsign().c_str())));
+                    externallyControlled.emplace_back(entry);
+                }
+            }
+        }
+
         _controller->Activate(PluginHost::IShell::STARTUP);
 
+        Plugin::Controller* controller = _controller->ClassType<Plugin::Controller>();
+
+        ASSERT(controller != nullptr);
+
+        controller->SetServer(this, std::move(externallyControlled));
+
         if ((_services.SubSystemInfo() & (1 << ISubSystem::SECURITY)) != 0) {
-            // The controller is on control of the security, so I guess all systems green
+            // The controller is in control of the security, so I guess all systems green
             // as the controller does not know anything about security :-)
             securityProvider->Security(false);
         } else {
@@ -877,17 +905,11 @@ POP_WARNING()
 
         securityProvider->Release();
 
-        Plugin::Controller* controller = _controller->ClassType<Plugin::Controller>();
-        
-        ASSERT(controller != nullptr);
-        
-        controller->SetServer(this);
-
         _dispatcher.Run();
         Dispatcher().Open(MAX_EXTERNAL_WAITS);
 
         // Right we have the shells for all possible services registered, time to activate what is needed :-)
-        ServiceMap::Iterator iterator(_services.Services());
+        iterator.Reset(0);
 
         // sort plugins based on StartupOrder from configuration
         std::vector<Core::ProxyType<Service>> configured_services;
@@ -909,7 +931,6 @@ POP_WARNING()
                     service->Activate(PluginHost::IShell::STARTUP);
                 }
                 else {
-                    service->LoadMetadata();
                     SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] delayed, autostart is false"),
                         service->ClassName().c_str(), service->Callsign().c_str()));
                 }
