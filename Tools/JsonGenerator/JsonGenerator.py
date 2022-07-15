@@ -27,6 +27,7 @@ import urllib
 import glob
 import copy
 from collections import OrderedDict
+from enum import Enum
 
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
@@ -43,14 +44,19 @@ INTERFACES_SECTION = True
 INTERFACE_SOURCE_LOCATION = None
 INTERFACE_SOURCE_REVISION = None
 DEFAULT_INTERFACE_SOURCE_REVISION = "main"
-VERBOSE = False
 GENERATED_JSON = False
 SHOW_WARNINGS = True
 DOC_ISSUES = True
-FORMAT = "compliant"
-FORMAT_FORCED = False
 
-log = Log.Log(NAME, VERBOSE, SHOW_WARNINGS, DOC_ISSUES)
+class RpcFormat(Enum):
+    COMPLIANT = "compliant"
+    EXTENDED = "uncompliant-extended"
+    COLLAPSED = "uncompliant-collapsed"
+
+RPC_FORMAT = RpcFormat.COMPLIANT
+RPC_FORMAT_FORCED = False
+
+log = None
 
 try:
     import jsonref
@@ -103,14 +109,11 @@ class CppParseError(RuntimeError):
 def TypePrefix(type):
     return (TYPE_PREFIX + "::" + type)
 
-
 def MakeObject(type):
     return (type + OBJECT_SUFFIX)
 
-
 def MakeArray(type):
     return (type + ARRAY_SUFFIX)
-
 
 def MakeEnum(type):
     return (type + ENUM_SUFFIX)
@@ -121,7 +124,7 @@ class JsonType():
         is_generated = name.startswith("_generated_")
         if is_generated:
             name = name.replace("_generated_", "")
-        self.name = schema["original"].lower() if "original" in schema else name
+        self.name = name
         self.original_name = schema["original"] if "original" in schema else None
         if parent:
             if not self.name.replace("_","").isalnum():
@@ -137,6 +140,9 @@ class JsonType():
         self.schema = schema
         self.duplicate = False
         self.parent = parent
+        self.concrete_parent = parent
+        while isinstance(self.concrete_parent, JsonArray):
+            self.concrete_parent = self.concrete_parent.parent
         self.description = None
         self.default = None
         self.included_from = included
@@ -144,12 +150,11 @@ class JsonType():
         if not self.create:
             self.cpptype = schema["originaltype"]
             self.enum_name = schema["originaltype"]
+        else:
+            self.cpptype = None
 
         if "description" in schema:
             self.description = schema["description"]
-        # BUG: Due to a bug in JsonRef, need to pick up the description from the original JSON
-        if isinstance(schema, jsonref.JsonRef) and "description" in schema.__reference__:
-            self.description = schema.__reference__["description"]
         # do some sanity check on the description text
         if self.description and not isinstance(self, JsonMethod):
             if self.description.endswith("."):
@@ -191,19 +196,21 @@ class JsonType():
     def JsonName(self): # Name as in JSON
         if self.new_name:
             return self.new_name
+        elif self.original_name:
+            return self.original_name.lower()
         else:
             return self.name
 
     def LocalName(self, prefix = ""):
-        return "_" + prefix + self.JsonName()
+        return ("_" + prefix + self.JsonName())
 
     def CppName(self): # C++ name of the object
         if self.new_name:
-            return self.new_name[0].upper() + self.new_name[1:]
+            return (self.new_name[0].upper() + self.new_name[1:])
         elif self.original_name:
-            return self.original_name[0].upper() + self.original_name[1:]
+            return (self.original_name[0].upper() + self.original_name[1:])
         else:
-            return self.name[0].upper() + self.name[1:]
+            return (self.name[0].upper() + self.name[1:])
 
     def Rename(self, new_name):
         self.new_name = new_name.lower()
@@ -212,14 +219,19 @@ class JsonType():
         return self.new_name != None
 
     def IsVoid(self):
-        return self.CppType() == "void"
+        return (self.CppType() == "void")
 
     def CppDefValue(self): # Value to instantiate with in C++
         return ""
 
     # Whether a copy constructor would be needed if this type is a member of a class
-    def NeedsCopyCtor(self):
+    @property
+    def is_copy_ctor_needed(self):
         return False
+
+    @property
+    def root(self):
+        return self.parent.root
 
 
 class JsonNull(JsonType):
@@ -291,11 +303,12 @@ class JsonEnum(JsonType):
     def __init__(self, name, parent, schema, enumType, included=None):
         self.cpptype = "undefined"
         JsonType.__init__(self, name, parent, schema, included)
+        self.origName = parent.OrigName() + "/" + name
         if enumType != "string":
             raise JsonParseError("Only strings are supported in enums")
         self.type = enumType
         if self.Create():
-            self.enum_name = MakeEnum(self.name.capitalize())
+            self.enum_name = MakeEnum(self.original_name.capitalize() if self.original_name else self.name.capitalize())
         self.enumerators = schema["enum"]
         self.values = schema["enumvalues"] if "enumvalues" in schema else []
         if self.values and (len(self.enumerators) != len(self.values)):
@@ -306,11 +319,11 @@ class JsonEnum(JsonType):
         self.origRef = None
         self.refs = []
         self.AddRef(self)
-        obj = enumTracker.Add(self)
+        obj = enumTracker.Add(self) 
         if obj:
             self.duplicate = True
             self.origRef = obj
-            if obj.parent != parent:
+            if obj.parent != self.parent and not IsInCustomRef(self):
                 obj.AddRef(self)
 
     def CppType(self):
@@ -328,9 +341,9 @@ class JsonEnum(JsonType):
             elif "class" in self.schema:
                 # Override class name if "class" property present
                 classname = self.schema["class"].capitalize()
-            elif CLASSNAME_FROM_REF and isinstance(self.schema, jsonref.JsonRef):
+            elif CLASSNAME_FROM_REF and ("@ref" in self.schema):
                 # NOTE: Abuse the ref feature to construct a name for the enum!
-                classname = MakeEnum(self.schema.__reference__["$ref"].rsplit(posixpath.sep, 1)[1].capitalize())
+                classname = MakeEnum(self.schema["@ref"].rsplit(posixpath.sep, 1)[1].capitalize())
             elif isinstance(self.parent, JsonProperty):
                 classname = MakeEnum(self.parent.name.capitalize())
             else:
@@ -353,7 +366,7 @@ class JsonEnum(JsonType):
         return self.duplicate
 
     def OrigName(self):
-        return self.JsonName()
+        return self.origName
 
     def AddRef(self, obj):
         self.refs.append(obj)
@@ -370,7 +383,7 @@ class JsonEnum(JsonType):
 
 class JsonObject(JsonType):
     def __init__(self, name, parent, schema, origName=None, included=None):
-        self.origName = ((parent.JsonName() + ".") if parent.JsonName() else "") + name
+        self.origName = parent.OrigName() + "/" + name
         JsonType.__init__(self, name, parent, schema, included)
         self.properties = []
         self.objects = []
@@ -385,7 +398,7 @@ class JsonObject(JsonType):
             if obj:
                 self.duplicate = True
                 self.origRef = obj
-                if obj.parent != parent:
+                if obj.parent != self.parent and not IsInCustomRef(self):
                     obj.AddRef(self)
             for prop_name, prop in schema["properties"].items():
                 newObject = JsonItem(prop_name, self, prop, included=included)
@@ -430,17 +443,18 @@ class JsonObject(JsonType):
             else:
                 if not self.properties:
                     return TypePrefix("Container")
-                elif CLASSNAME_FROM_REF and isinstance(self.schema, jsonref.JsonRef):
-                    # NOTE: Abuse the ref feature to construct a name for the class!
-                    classname = MakeObject(self.schema.__reference__["$ref"].rsplit(posixpath.sep, 1)[1].capitalize())
+                elif CLASSNAME_FROM_REF and ("@ref" in self.schema):
+                    classname = MakeObject(self.schema["@ref"].rsplit(posixpath.sep, 1)[1].capitalize())
                 else:
                     # Make the name out of properties, but not for params/result types
                     if len(self.Properties()) == 1 and not isinstance(self.parent, JsonMethod):
                         classname = MakeObject(self.Properties()[0].CppName())
                     elif isinstance(self.parent, JsonProperty):
                         classname = MakeObject(self.parent.CppName())
-                    elif self.parent.parent and isinstance(self.parent.parent, JsonProperty):
+                    elif self.root.rpc_format != RpcFormat.COMPLIANT and isinstance(self.parent, JsonArray) and isinstance(self.parent.parent, JsonProperty):
                         classname = MakeObject(self.parent.parent.CppName())
+                    elif self.root.rpc_format == RpcFormat.COMPLIANT and isinstance(self.parent, JsonArray):
+                        classname = (MakeObject(self.parent.CppName()) + "Elem")
                     elif "originaltype" in self.schema:
                         classname = self.schema["originaltype"].split("::")[-1]
                         return classname[0].upper() + classname[1:]
@@ -463,11 +477,15 @@ class JsonObject(JsonType):
     def Properties(self):
         return self.properties
 
-    def NeedsCopyCtor(self):
+    @property
+    def is_copy_ctor_needed(self):
+        if ALWAYS_COPYCTOR or self.parent.is_copy_ctor_needed:
+            return True
         # Check if a copy constructor is needed by scanning all duplicate classes
-        filteredClasses = filter(lambda obj: obj.parent.NeedsCopyCtor() if self != obj else False, self.refs)
-        foundInDuplicate = next(filteredClasses, None)
-        return ALWAYS_COPYCTOR or self.parent.NeedsCopyCtor() or foundInDuplicate is not None
+        for obj in self.refs:
+            if (obj != self) and obj.parent.is_copy_ctor_needed:
+                return True
+        return False
 
     def AddRef(self, obj):
         self.refs.append(obj)
@@ -482,7 +500,10 @@ class JsonObject(JsonType):
         return self.origName
 
     def CppStdClass(self):
-        return self.cpptype
+        if not self.create:
+            return self.cpptype
+        else:
+            return self.CppClass()
 
 
 class JsonArray(JsonType):
@@ -516,7 +537,8 @@ class JsonArray(JsonType):
     def CppType(self):
         return TypePrefix("ArrayType<%s>" % self._items.CppType())
 
-    def NeedsCopyCtor(self):
+    @property
+    def is_copy_ctor_needed(self):
         # Important, blame it on the arrays!
         return True
 
@@ -546,9 +568,11 @@ class JsonArray(JsonType):
     def CppStdClass(self):
         return "/* TODO */"
 
+    def OrigName(self):
+        return self.parent.OrigName() + "/{array}"
 
 class JsonMethod(JsonObject):
-    def __init__(self, name, parent, schema, included=None):
+    def __init__(self, name, parent, schema, included=None, property=False):
         if '.' in name:
             log.Warn("'%s': method names containing full designator are deprecated (include name only)" % name)
             name = name.rsplit(".", 1)[1]
@@ -576,11 +600,30 @@ class JsonMethod(JsonObject):
         self.deprecated = "deprecated" in schema and schema["deprecated"];
         self.obsolete = "obsolete" in schema and schema["obsolete"];
 
+        if (self.rpc_format == RpcFormat.COMPLIANT) and not isinstance(self.params, (JsonObject, JsonNull)):
+            raise RuntimeError("In 'compliant' format parameters to a method or event need to be an object: '%s'" % self.JsonName())
+        elif (self.rpc_format == RpcFormat.EXTENDED) and not property and not isinstance(self.params, (JsonObject, JsonArray, JsonNull)):
+            raise RuntimeError("In 'extended' format parameters to a method or event need to be an object or an array: '%s'" % self.JsonName())
+        elif (self.rpc_format == RpcFormat.COLLAPSED) and isinstance(self.params, JsonObject) and (len(self.params.Properties()) == 1):
+            log.Warn("'%s': in 'collapsed' format methods and events with one parameter ought not to have an outer object" % self.JsonName())
+
+    @property
+    def rpc_format(self):
+        return self.root.rpc_format
+
+    @property
+    def params(self):
+        return self.Properties()[0]
+
+    @property
+    def result(self):
+        return self.Properties()[1]
+
     def Errors(self):
         return self.errors
 
-    def MethodName(self):
-        return IMPL_ENDPOINT_PREFIX + JsonObject.JsonName(self)
+    def EndpointName(self):
+        return (IMPL_ENDPOINT_PREFIX + JsonObject.JsonName(self))
 
     def Headline(self):
         return "%s%s%s" % (self.JsonName(), (" - " + self.summary.split(".", 1)[0]) if self.summary else "", " (DEPRECATED)" if self.deprecated else " (OBSOLETE)" if self.obsolete else "")
@@ -592,35 +635,32 @@ class JsonNotification(JsonMethod):
         if "id" in schema and "type" not in schema["id"]:
             schema["id"]["type"] = "string"
         self.sendif = JsonItem("id", self, schema["id"]) if "id" in schema else None
-        self.statuslistener = schema["statuslistener"] if "statuslistener" in schema else False
+        self.status_listener = schema["statuslistener"] if "statuslistener" in schema else False
+        for param in self.params.Properties():
+            if param.create:
+                log.Warn("'%s': notification parameters with generated JSON objects" % name)
+                break
 
-    def HasSendif(self):
-        return self.sendif != None
-
-    def StatusListener(self):
-        return self.statuslistener
-
-    def MethodName(self):
-        return IMPL_EVENT_PREFIX + JsonObject.JsonName(self)
+    def EndpointName(self):
+        return (IMPL_EVENT_PREFIX + JsonObject.JsonName(self))
 
 
 class JsonProperty(JsonMethod):
     def __init__(self, name, parent, schema, included=None):
-        JsonMethod.__init__(self, name, parent, schema, included)
-        self.readonly = "readonly" in schema and schema["readonly"] == True
-        self.writeonly = "writeonly" in schema and schema["writeonly"] == True
-        if "index" in schema and "type" not in schema["index"]:
+        self.readonly = "readonly" in schema and schema["readonly"]
+        self.writeonly = "writeonly" in schema and schema["writeonly"]
+        if ("params" not in schema) and ("result" not in schema):
+            raise RuntimeError("No parameters defined for property: %s" % name)
+        if ("index" in schema) and ("type" not in schema["index"]):
             schema["index"]["type"] = "string"
+        JsonMethod.__init__(self, name, parent, schema, included, property=True)
         self.index = JsonItem("index", self, schema["index"]) if "index" in schema else None
 
-    def SetMethodName(self):
-        return "set_" + JsonObject.JsonName(self)
+    def SetEndpointName(self):
+        return (IMPL_ENDPOINT_PREFIX + "set_" + self.JsonName())
 
-    def GetMethodName(self):
-        return "get_" + JsonObject.JsonName(self)
-
-    def HasIndex(self):
-        return self.index != None
+    def GetEndpointName(self):
+        return (IMPL_ENDPOINT_PREFIX + "get_" + self.JsonName())
 
 
 class JsonRpcSchema(JsonType):
@@ -631,49 +671,52 @@ class JsonRpcSchema(JsonType):
         self.jsonrpc_version = None
         self.methods = []
         self.includes = []
+        self.rpc_format = RPC_FORMAT
+        if "interface" in schema:
+            schema = schema["interface"]
         if "$schema" in schema:
             self.base_schema = schema["$schema"]
         if "jsonrpc" in schema:
             self.jsonrpc_version = schema["jsonrpc"]
         if "info" in schema:
             self.info = schema["info"]
-        if "interface" in schema:
-            schema = schema["interface"]
+            if "format" in self.info and not RPC_FORMAT_FORCED:
+                self.rpc_format = RpcFormat(self.info["format"])
         if "include" in schema:
-            for name, s in schema["include"].items():
-                include = s["info"]["class"]
+            for name, included_schema in schema["include"].items():
+                include = included_schema["info"]["class"]
                 self.includes.append(include)
-                if "methods" in s:
-                    for name, method in s["methods"].items():
-                        newMethod = JsonMethod(name, self, method, include)
-                        self.methods.append(newMethod)
-                if "properties" in s:
-                    for name, method in s["properties"].items():
-                        newMethod = JsonProperty(name, self, method, include)
-                        self.methods.append(newMethod)
-                if "events" in s:
-                    for name, method in s["events"].items():
-                        newMethod = JsonNotification(name, self, method, include)
-                        self.methods.append(newMethod)
+                if "methods" in included_schema:
+                    for name, method in included_schema["methods"].items():
+                        self.methods.append(JsonMethod(name, self, method, include))
+                if "properties" in included_schema:
+                    for name, method in included_schema["properties"].items():
+                        self.methods.append(JsonProperty(name, self, method, include))
+                if "events" in included_schema:
+                    for name, method in included_schema["events"].items():
+                        self.methods.append(JsonNotification(name, self, method, include))
 
         method_list = list(map(lambda x: x.name, self.methods))
 
-        def __AddMethods(section, schema, ctor):
+        def _AddMethods(section, schema, ctor):
             if section in schema:
                 for name, method in schema[section].items():
                     if name in method_list:
                         del self.methods[method_list.index(name)]
                         method_list.remove(name)
                     if method != None:
-                        newMethod = ctor(name, self, method)
-                        self.methods.append(newMethod)
+                        self.methods.append(ctor(name, self, method))
 
-        __AddMethods("methods", schema, lambda name, obj, method: JsonMethod(name, obj, method))
-        __AddMethods("properties", schema, lambda name, obj, method: JsonProperty(name, obj, method))
-        __AddMethods("events", schema, lambda name, obj, method: JsonNotification(name, obj, method))
+        _AddMethods("methods", schema, lambda name, obj, method: JsonMethod(name, obj, method))
+        _AddMethods("properties", schema, lambda name, obj, method: JsonProperty(name, obj, method))
+        _AddMethods("events", schema, lambda name, obj, method: JsonNotification(name, obj, method))
 
         if not self.methods:
             raise JsonParseError("no methods, properties or events defined in '%s'" % name)
+
+    @property
+    def root(self):
+        return self
 
     def CppClass(self):
         return JsonType.CppName(self)
@@ -684,11 +727,11 @@ class JsonRpcSchema(JsonType):
     def Objects(self):
         return self.Properties()
 
-    def NeedsCopyCtor(self):
-        return False
-
     def RefCount(self):
         return 1
+
+    def OrigName(self):
+        return ""
 
 
 def JsonItem(name, parent, schema, origName=None, included=None):
@@ -786,9 +829,49 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
         # Return back the preprocessed JSON as a string
         return " ".join(tokens)
 
+    def Adjust(schema):
+        # Fixes properties to conform to params/result scheme
+        # Also automatically enclose params in object for COMPLIANT mode
+        def AdjustProperties(schema, rpc_format):
+            if "properties" in schema:
+                for _, prop in schema["properties"].items():
+                    if "params" in prop: 
+                        if (rpc_format == RpcFormat.COMPLIANT) and ("type" in prop["params"]) and (prop["params"]["type"] != "object"):
+                            prop["params"] = { "type": "object", "properties" : { "value" : prop["params"] } } 
+                        if ("result" not in prop) and ("writeonly" not in prop):
+                            if "readonly" in prop:
+                                prop["result"] = prop["params"]
+                                del prop["params"]
+                            else:
+                                prop["result"] = copy.deepcopy(prop["params"])
+                                prop["result"]["@ref"] = "#../params"
+
+        rpc_format = RPC_FORMAT
+        if (not RPC_FORMAT_FORCED) and ("info" in schema) and ("format" in schema["info"]):
+            rpc_format = RpcFormat(schema["info"]["format"])
+        
+        AdjustProperties(schema, rpc_format)
+        if "include" in schema:
+            for _, face_schema in schema["include"].items():
+                AdjustProperties(face_schema, rpc_format)
+
+    def MarkRefs(schema):
+        # Tags all objects that used to be $references
+        if isinstance(schema, jsonref.JsonRef):
+            schema["@ref"] = schema.__reference__["$ref"]
+            if "description" in schema.__reference__:
+                schema["description"] = schema.__reference__["description"]
+        if isinstance(schema, OrderedDict):
+            for _, item in schema.items():
+                MarkRefs(item)
+
     with open(file, "r") as json_file:
         jsonPre = PreprocessJson(file, json_file.read(), include_path, cpp_include_path, header_include_paths)
-        return jsonref.loads(jsonPre, object_pairs_hook=OrderedDict)
+        jsonResolved = jsonref.loads(jsonPre, object_pairs_hook=OrderedDict)
+        Adjust(jsonResolved)
+        MarkRefs(jsonResolved)
+        return jsonResolved
+
 
 
 
@@ -802,6 +885,17 @@ def LoadInterface(file, includePaths = []):
     interfaces = [i for i in ProxyStubGenerator.Interface.FindInterfaceClasses(tree, INTERFACE_NAMESPACE, file) if i.obj.is_json]
 
     def Build(face):
+        def _EvaluateRpcFormat(obj):
+            rpc_format = RPC_FORMAT
+            if not RPC_FORMAT_FORCED:
+                if obj.is_collapsed:
+                    rpc_format = RpcFormat.COLLAPSED
+                elif obj.is_extended:
+                    rpc_format = RpcFormat.EXTENDED
+                elif obj.is_compliant:
+                    rpc_format = RpcFormat.COMPLIANT
+            return rpc_format
+
         schema = OrderedDict()
         methods = OrderedDict()
         properties = OrderedDict()
@@ -814,14 +908,17 @@ def LoadInterface(file, includePaths = []):
         schema["fromheader"] = True
         schema["configuration"] = { "nodefault" : True }
 
+        rpc_format = _EvaluateRpcFormat(face.obj)
+
         info = dict()
+        info["format"] = rpc_format.value
         if not face.obj.parent.full_name.endswith(INTERFACE_NAMESPACE):
             info["namespace"] = face.obj.parent.name
         info["class"] = face.obj.name[1:] if face.obj.name[0] == "I" else face.obj.name
-        qualified_face = face.obj.full_name.split("::")[1:]
-        if qualified_face[0] == FRAMEWORK_NAMESPACE:
-            qualified_face = qualified_face[1:]
-        info["interface"] = "::".join(qualified_face)
+        scoped_face = face.obj.full_name.split("::")[1:]
+        if scoped_face[0] == FRAMEWORK_NAMESPACE:
+            scoped_face = scoped_face[1:]
+        info["interface"] = "::".join(scoped_face)
         info["sourcefile"] = os.path.basename(file)
         if face.obj.sourcelocation:
             info["sourcelocation"] = face.obj.sourcelocation
@@ -836,9 +933,6 @@ def LoadInterface(file, includePaths = []):
         schema["info"] = info
 
         event_interfaces = set()
-
-        collapsed = (face.obj.is_collapsed and not FORMAT_FORCED) or (FORMAT == "collapsed" and not face.obj.is_compliant and not face.obj.is_extended)
-        extended = (face.obj.is_extended and not FORMAT_FORCED) or (FORMAT == "extended" and not face.obj.is_compliant and not face.obj.is_collapsed)
 
         for method in face.obj.methods:
 
@@ -988,7 +1082,7 @@ def LoadInterface(file, includePaths = []):
                     events = ResolveTypedef(resolved, events, var.type)
                 return events
 
-            def BuildParameters(vars, json_collapsed, json_extended, prop=False, test=False):
+            def BuildParameters(vars, rpc_format, is_property=False, test=False):
                 params = {"type": "object"}
                 properties = OrderedDict()
                 required = []
@@ -999,21 +1093,21 @@ def LoadInterface(file, includePaths = []):
                                 log.WarnLine(var, "'%s': non-const parameter assumed to be input (forgot 'const'?)" % var.name)
                             elif not var.meta.output:
                                 log.WarnLine(var, "'%s': non-const parameter marked with @in tag (forgot 'const'?)" % var.name)
-                        var_name = "value" if prop else (var.meta.text if var.meta.text else var.name.lower())
+                        var_name = "value" if is_property else (var.meta.text if var.meta.text else var.name.lower())
                         if var_name.startswith("__unnamed") and not test:
                             raise CppParseError(var, "unnamed parameter, can't deduce parameter name")
                         properties[var_name] = ConvertParameter(var)
                         if not var.name.startswith("_"):
                             properties[var_name]["original"] = var.name.lower()
                         properties[var_name]["position"] = vars.index(var)
-                        if not prop and "description" not in properties[var_name]:
+                        if not is_property and "description" not in properties[var_name]:
                             log.DocIssue("'%s': parameter is missing description" % var_name)
                         required.append(var_name)
                         if properties[var_name]["type"] == "string" and not var.type.IsReference() and not var.type.IsPointer() and not "enum" in properties[var_name]:
                             log.WarnLine(var, "'%s': passing string by value (forgot &?)" % var.name)
                 params["properties"] = properties
                 params["required"] = required
-                if prop and (json_extended or json_collapsed):
+                if is_property and ((rpc_format == RpcFormat.EXTENDED) or (rpc_format == RpcFormat.COLLAPSED)):
                     if len(properties) == 1:
                         return list(properties.values())[0]
                     elif len(properties) > 1:
@@ -1024,7 +1118,7 @@ def LoadInterface(file, includePaths = []):
                 else:
                     if (len(properties) == 0):
                         return {}
-                    elif (len(properties) == 1) and json_collapsed:
+                    elif (len(properties) == 1) and (rpc_format == RpcFormat.COLLAPSED):
                         # collapsed format: if only one parameter present then omit the outer object
                         return list(properties.values())[0]
                     else:
@@ -1123,7 +1217,7 @@ def LoadInterface(file, includePaths = []):
                         if method.vars[value].type.IsConst():
                             raise CppParseError(method.vars[value], "property getter method must not use const parameter")
                         else:
-                            if collapsed:
+                            if rpc_format == RpcFormat.COLLAPSED:
                                 result_name = "params"
                             else:
                                 result_name = "result"
@@ -1153,9 +1247,9 @@ def LoadInterface(file, includePaths = []):
                             else:
                                 obj["writeonly"] = True
                             if "params" not in obj:
-                                obj["params"] = BuildParameters([method.vars[value]], collapsed, extended, True)
+                                obj["params"] = BuildParameters([method.vars[value]], rpc_format, True)
                             else:
-                                test = BuildParameters([method.vars[value]], collapsed, extended, True, True)
+                                test = BuildParameters([method.vars[value]], rpc_format, True, True)
                                 if not test:
                                     raise CppParseError(method.vars[value], "property setter method must have one input parameter")
                                 if obj["params"]["type"] != test["type"]:
@@ -1170,7 +1264,7 @@ def LoadInterface(file, includePaths = []):
             elif method.IsPureVirtual() and not event_params:
                 if method.retval.type and (isinstance(method.retval.type.Type(), ProxyStubGenerator.CppParser.Integer) and method.retval.type.Type().size == "long"):
                     obj = OrderedDict()
-                    params = BuildParameters(method.vars, collapsed, extended)
+                    params = BuildParameters(method.vars, rpc_format)
                     if "properties" in params and params["properties"]:
                         if method.name.lower() in [x.lower() for x in params["required"]]:
                             raise CppParseError(method, "parameters must not use the same name as the method")
@@ -1204,8 +1298,7 @@ def LoadInterface(file, includePaths = []):
                         obj["errors"] = errors
 
         for f in event_interfaces:
-            collapsed = (f.obj.is_collapsed and not FORMAT_FORCED) or (FORMAT == "collapsed" and not f.obj.is_compliant and not f.obj.is_extended)
-            extended = (f.obj.is_extended and not FORMAT_FORCED) or (FORMAT == "extended" and not f.obj.is_compliant and not f.obj.is_extended)
+            rpc_format = _EvaluateRpcFormat(f.obj)
             for method in f.obj.methods:
                 if method.IsPureVirtual() and method.is_excluded == False:
                     obj = OrderedDict()
@@ -1229,7 +1322,7 @@ def LoadInterface(file, includePaths = []):
                             varsidx = 1
                     if method.retval.meta.is_listener:
                         obj["statuslistener"] = True
-                    params = BuildParameters(method.vars[varsidx:], collapsed, extended, False)
+                    params = BuildParameters(method.vars[varsidx:], rpc_format, False)
                     if method.retval.meta.is_deprecated:
                         obj["deprecated"] = True
                     elif method.retval.meta.is_obsolete:
@@ -1295,11 +1388,17 @@ def SortByDependency(objects):
 
 def IsInRef(obj):
     while obj:
-        if (isinstance(obj.Schema(), jsonref.JsonRef)):
+        if "@ref" in obj.schema:
             return True
         obj = obj.parent
     return False
 
+def IsInCustomRef(obj):
+    while obj:
+        if "@ref" in obj.schema and obj.schema["@ref"] == "#../params":
+            return True
+        obj = obj.parent
+    return False
 
 class ObjectTracker:
     def __init__(self):
@@ -1390,11 +1489,11 @@ class ObjectTracker:
             props = newObj.Schema()["properties"]
             for obj in self.Objects()[:-1]:
                 if __CompareObject(obj.Schema()["properties"], props):
-                    if not GENERATED_JSON and not NO_DUP_WARNINGS and (not is_ref or not IsInRef(obj)):
-                        log.Warn("Duplicate object '%s' (same as '%s') - consider using $ref" %
-                                   (newObj.OrigName(), obj.OrigName()))
+                    if not GENERATED_JSON and not NO_DUP_WARNINGS and (not is_ref and not IsInRef(obj)):
+                        log.Warn("'%s': duplicate object (same as '%s') - consider using $ref" %
+                                (newObj.OrigName(), obj.OrigName()))
                     return obj
-            return None
+        return None
 
     def Objects(self):
         return self.objects
@@ -1432,8 +1531,8 @@ class EnumTracker(ObjectTracker):
             is_ref = IsInRef(newObj)
             for obj in self.Objects()[:-1]:
                 if __Compare(obj.Schema(), newObj.Schema()):
-                    if not GENERATED_JSON and not NO_DUP_WARNINGS and (not is_ref or not IsInRef(obj)):
-                        log.Warn("Duplicate enums '%s' (same as '%s') - consider using $ref" %
+                    if not GENERATED_JSON and not NO_DUP_WARNINGS and (not is_ref and not IsInRef(obj)):
+                        log.Warn("%s: duplicate enums (same as '%s') - consider using $ref" %
                                    (newObj.OrigName(), obj.OrigName()))
                     return obj
             return None
@@ -1533,17 +1632,16 @@ def EmitEnumRegs(root, emit, header_file, if_file):
 def EmitEvent(emit, root, event, static=False):
     module = "module"
     emit.Line("// Event: %s" % event.Headline())
-    params = event.Properties()[0].CppType()
+    params = event.params.CppType()
     par = ""
     if params != "void":
-        par = ("const %s& id, " % event.sendif.CppStdClass()) if event.HasSendif() else ""
-        if event.Properties()[0].Properties() and event.Properties()[0].Create():
-            par = par + ", ".join(map(lambda x: "const " + (GetNamespace(root, x, False) if not static else "") + x.CppStdClass() + "& " + x.JsonName(), event.Properties()[0].Properties()))
+        par = ("const %s& id, " % event.sendif.CppStdClass()) if event.sendif else ""
+        if event.params.Properties() and event.params.Create():
+            par = par + ", ".join(map(lambda x: "const " + (GetNamespace(root, x, False) if not static else "") + x.CppStdClass() + "& " + x.JsonName(), event.params.Properties()))
         else:
-            x = event.Properties()[0]
-            par = par + "const " + (GetNamespace(root, x, False) if not static else "") + x.CppStdClass() + "& " + x.JsonName()
+            par = par + "const " + (GetNamespace(root, event.params, False) if not static else "") + event.params.CppStdClass() + "& " + event.params.JsonName()
     if not static:
-        line = "void %s::%s(%s)" % (root.JsonName(), event.MethodName(), par)
+        line = "void %s::%s(%s)" % (root.JsonName(), event.EndpointName(), par)
     else:
         line = "static void %s(const PluginHost::JSONRPC& %s%s%s)" % (event.CppName(), module, ", " if par else "", par)
     if event.included_from:
@@ -1554,16 +1652,16 @@ def EmitEvent(emit, root, event, static=False):
 
     if params != "void":
         emit.Line("%s params;" % params)
-        if event.Properties()[0].Properties() and event.Properties()[0].Create():
-            for p in event.Properties()[0].Properties():
+        if event.params.Properties() and event.params.Create():
+            for p in event.params.Properties():
                 if isinstance(p, JsonEnum):
                     emit.Line("params.%s = static_cast<%s>(%s);" % (p.CppName(), GetNamespace(root, p, False) + p.CppClass(), p.JsonName()))
                 else:
                     emit.Line("params.%s = %s;" % (p.CppName(), p.JsonName()))
         else:
-            emit.Line("params = %s;" % event.Properties()[0].JsonName())
+            emit.Line("params = %s;" % event.params.JsonName())
         emit.Line()
-    if event.HasSendif():
+    if event.sendif:
         index_var = "designatorId"
         emit.Line('%sNotify(_T("%s")%s, [&id](const string& designator) -> bool {' %
                   (("%s." % module) if static else "", event.JsonName(), ", params" if params != "void" else ""))
@@ -1680,7 +1778,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
     for m in root.Properties():
         if not isinstance(m, JsonNotification):
 
-            indexed = isinstance(m, JsonProperty) and m.HasIndex()
+            indexed = isinstance(m, JsonProperty) and m.index
             if indexed:
                 index_converted = False
 
@@ -1760,7 +1858,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                             arg2 = q[0]
                             arg2_type = q[1]
                             if var == arg.schema["length"]:
-                                # Have to handle any order of lenght/buffer params
+                                # Have to handle any order of length/buffer params
                                 arg2.schema["bufferlength"] = True
                                 if arg2_type == WRITE_ONLY:
                                     raise RuntimeError("'%s': parameter marked pointed to by @length is output only" % arg2.name)
@@ -2034,12 +2132,16 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
 #
 
 def EmitHelperCode(root, emit, header_file):
+    if DUMP_JSON:
+        print("\n// JSON interface -----------")
+        print(json.dumps(root.schema, indent=2))
+        print("// ----------------\n")
+
     if root.Objects():
         namespace = DATA_NAMESPACE + "::" + root.JsonName()
 
-        def __NsName(obj):
-            ns = DATA_NAMESPACE + "::" + \
-                (root.JsonName() if not obj.included_from else obj.included_from)
+        def _ScopedName(obj):
+            ns = DATA_NAMESPACE + "::" + (root.JsonName() if not obj.included_from else obj.included_from)
             objName = obj.CppType()
             if objName != "void":
                 if not objName.startswith(TYPE_PREFIX):
@@ -2061,7 +2163,7 @@ def EmitHelperCode(root, emit, header_file):
         # Registration prototypes
         has_statuslistener = False
         for method in root.Properties():
-            if isinstance(method, JsonNotification) and method.StatusListener():
+            if isinstance(method, JsonNotification) and method.status_listener:
                 has_statuslistener = True
                 break
 
@@ -2078,9 +2180,9 @@ def EmitHelperCode(root, emit, header_file):
         emit.Line("void UnregisterAll();")
         for method in root.Properties():
             if not isinstance(method, JsonProperty) and not isinstance(method, JsonNotification):
-                params = __NsName(method.Properties()[0])
-                response = __NsName(method.Properties()[1])
-                line = ("uint32_t %s(%s%s%s);" % (method.MethodName(),
+                params = _ScopedName(method.params)
+                response = _ScopedName(method.result)
+                line = ("uint32_t %s(%s%s%s);" % (method.EndpointName(),
                                                   ("const " + params + "& params") if params != "void" else "",
                                                   ", " if params != "void" and response != "void" else "",
                                                   (response + "& response") if response != "void" else ""))
@@ -2091,32 +2193,28 @@ def EmitHelperCode(root, emit, header_file):
         for method in root.Properties():
             if isinstance(method, JsonProperty):
                 if not method.writeonly:
-                    line = "uint32_t %s(%s%s& response) const;" % (method.GetMethodName(),
-                                                                   "const string& index, " if method.index else "",
-                                                                   __NsName(method.Properties()[0]))
+                    response = _ScopedName(method.result)
+                    line = "uint32_t %s(%s%s& response) const;" % (method.GetEndpointName(), ("const string& index, " if method.index else ""), response)
                     if method.included_from:
                         line += " // %s" % method.included_from
                     emit.Line(line)
                 if not method.readonly:
-                    line = "uint32_t %s(%sconst %s& param);" % (method.SetMethodName(),
-                                                                "const string& index, " if method.index else "",
-                                                                __NsName(method.Properties()[0]))
+                    params = _ScopedName(method.params)
+                    line = "uint32_t %s(%sconst %s& param);" % (method.SetEndpointName(), ("const string& index, " if method.index else ""), params)
                     if method.included_from:
                         line += " // %s" % method.included_from
                     emit.Line(line)
 
         for method in root.Properties():
             if isinstance(method, JsonNotification):
-                params = __NsName(method.Properties()[0])
+                params = _ScopedName(method.params)
                 par = ""
                 if params != "void":
-                    if method.Properties()[0].Properties():
-                        par = ", ".join(map(lambda x: "const " + GetNamespace(root, x) + x.CppStdClass() + "& " + x.JsonName(), method.Properties()[0].Properties()))
+                    if method.params.Properties():
+                        par = ", ".join(map(lambda x: "const " + GetNamespace(root, x) + x.CppStdClass() + "& " + x.JsonName(), method.params.Properties()))
                     else:
-                        x = method.Properties()[0]
-                        par = "const " + GetNamespace(root, x) + x.CppStdClass() + "& " + x.JsonName()
-                line = ('void %s(%s%s);' %
-                        (method.MethodName(), "const string& id, " if method.HasSendif() else "", par))
+                        par = "const " + GetNamespace(root, method.params) + method.params.CppStdClass() + "& " + method.params.JsonName()
+                line = ('void %s(%s%s);' % (method.EndpointName(), "const string& id, " if method.sendif  else "", par))
                 if method.included_from:
                     line += " // %s" % method.included_from
                 emit.Line(line)
@@ -2143,9 +2241,8 @@ def EmitHelperCode(root, emit, header_file):
         emit.Line("{")
         emit.Indent()
         for method in root.Properties():
-            if isinstance(method, JsonNotification) and method.StatusListener():
-                emit.Line("RegisterEventStatusListener(_T(\"%s\"), [this](const string& client, Status status) {" %
-                          method.JsonName())
+            if isinstance(method, JsonNotification) and method.status_listener:
+                emit.Line("RegisterEventStatusListener(_T(\"%s\"), [this](const string& client, Status status) {" % method.JsonName())
                 emit.Indent()
                 emit.Line("const string id = client.substr(0, client.find('.'));")
                 emit.Line("// TODO...")
@@ -2155,17 +2252,23 @@ def EmitHelperCode(root, emit, header_file):
         for method in root.Properties():
             if not isinstance(method, JsonNotification) and not isinstance(method, JsonProperty):
                 line = 'Register<%s,%s>(_T("%s"), &%s::%s, this);' % (
-                    method.Properties()[0].CppType(), method.Properties()[1].CppType(), method.JsonName(),
-                    root.JsonName(), method.MethodName())
+                    method.params.CppType(), method.result.CppType(), method.JsonName(), root.JsonName(), method.EndpointName())
                 if method.included_from:
                     line += " /* %s */" % method.included_from
                 emit.Line(line)
         for method in root.Properties():
             if isinstance(method, JsonProperty):
-                line = 'Property<%s>(_T("%s")' % (method.Properties()[0].CppType(), method.JsonName())
-                line += ", &%s::%s" % (root.JsonName(), method.GetMethodName()) if not method.writeonly else ", nullptr"
-                line += ", &%s::%s" % (root.JsonName(), method.SetMethodName()) if not method.readonly else ", nullptr"
-                line += ', this);'
+                line = ""
+                if root.rpc_format != RpcFormat.COMPLIANT or method.readonly or method.writeonly:
+                    line += 'Property<%s>(_T("%s")' % (method.params.CppType() if not method.readonly else method.result.CppType(), method.JsonName())
+                    line += ", &%s::%s" % (root.JsonName(), method.GetEndpointName()) if not method.writeonly else ", nullptr"
+                    line += ", &%s::%s" % (root.JsonName(), method.SetEndpointName()) if not method.readonly else ", nullptr"
+                    line += ', this);'
+                else:
+                    line = 'Register<%s,%s>(_T("%s"), ([this](const %s& Params, %s& Response) { if (Params.IsSet() == true) return(%s(Params)); else return(%s(Response); }), this);' % (
+                        method.params.CppType(), method.result.CppType(), method.JsonName(),
+                        method.params.CppType(), method.result.CppType(), 
+                        method.SetEndpointName(), method.GetEndpointName())
                 if method.included_from:
                     line += " /* %s */" % method.included_from
                 emit.Line(line)
@@ -2182,7 +2285,7 @@ def EmitHelperCode(root, emit, header_file):
             if isinstance(method, JsonProperty):
                 emit.Line('Unregister(_T("%s"));' % method.JsonName())
         for method in reversed(root.Properties()):
-            if isinstance(method, JsonNotification) and method.StatusListener():
+            if isinstance(method, JsonNotification) and method.status_listener:
                 emit.Line("UnregisterEventStatusListener(_T(\"%s\");" % method.JsonName())
 
         emit.Unindent()
@@ -2197,17 +2300,15 @@ def EmitHelperCode(root, emit, header_file):
         for method in root.Properties():
             if not isinstance(method, JsonNotification) and not isinstance(method, JsonProperty):
                 log.Info("Emitting method '{}'".format(method.JsonName()))
-                params = method.Properties()[0].CppType()
+                params = method.params.CppType()
                 emit.Line("// Method: %s" % method.Headline())
                 emit.Line("// Return codes:")
                 emit.Line("//  - ERROR_NONE: Success")
                 for e in method.Errors():
                     description = e["description"] if "description" in e else ""
-                    if isinstance(e, jsonref.JsonRef) and "description" in e.__reference__:
-                        description = e.__reference__["description"]
                     emit.Line("//  - %s: %s" % (e["message"], description))
                 response = method.Properties()[1].CppType()
-                line = ("uint32_t %s::%s(%s%s%s)" % (root.JsonName(), method.MethodName(),
+                line = ("uint32_t %s::%s(%s%s%s)" % (root.JsonName(), method.EndpointName(),
                                                      ("const " + params + "& params") if params != "void" else "",
                                                      ", " if params != "void" and response != "void" else "",
                                                      (response + "& response") if response != "void" else ""))
@@ -2218,7 +2319,7 @@ def EmitHelperCode(root, emit, header_file):
                 emit.Indent()
                 emit.Line("uint32_t result = Core::ERROR_NONE;")
                 if params != "void":
-                    for p in method.Properties()[0].Properties():
+                    for p in method.params.Properties():
                         if not isinstance(p, (JsonObject, JsonArray)):
                             emit.Line("const %s& %s = params.%s.Value();" %
                                       (p.CppStdClass(), p.JsonName(), p.CppName()))
@@ -2239,32 +2340,38 @@ def EmitHelperCode(root, emit, header_file):
         for method in root.Properties():
             if isinstance(method, JsonProperty):
 
-                def EmitPropertyFc(method, name, getter):
-                    params = method.Properties()[0].CppType()
+                def _EmitProperty(method, name, getter):
+                    params = method.params.CppType() if not getter else method.result.CppType()
                     emit.Line("// Property: %s" % method.Headline())
                     emit.Line("// Return codes:")
                     emit.Line("//  - ERROR_NONE: Success")
                     for e in method.Errors():
                         description = e["description"] if "description" in e else ""
-                        if isinstance(e, jsonref.JsonRef) and "description" in e.__reference__:
-                            description = e.__reference__["description"]
                         emit.Line("//  - %s: %s" % (e["message"], description))
                     line = "uint32_t %s::%s(%s%s%s& %s)%s" % (
                         root.JsonName(), name, "const string& index, " if method.index else "", "const "
-                        if not getter else "", params, "response" if getter else "param", " const" if getter else "")
+                        if not getter else "", params, "response" if getter else "params", " const" if getter else "")
                     if method.included_from:
                         line += " /* %s */" % method.included_from
                     emit.Line(line)
                     emit.Line("{")
                     emit.Indent()
-                    if not getter:
-                        emit.Line("uint32_t result = Core::ERROR_NONE;")
-                        emit.Line()
-                        emit.Line("// TODO...")
-                    else:
-                        emit.Line("// response = ...")
+
+                    emit.Line("uint32_t result = Core::ERROR_NONE;")
+
+                    if not getter and params != "void":
+                        for p in method.params.Properties():
+                            if not isinstance(p, (JsonObject, JsonArray)):
+                                emit.Line("const %s& %s = params.%s.Value();" % (p.CppStdClass(), p.JsonName(), p.CppName()))
+                            else:
+                                emit.Line("// params.%s ..." % p.CppName())
                     emit.Line()
-                    emit.Line("return %s;" % ("Core::ERROR_NONE" if getter else "result"))
+                    emit.Line("// TODO...")
+                    if getter:
+                        emit.Line("// response = ...")
+
+                    emit.Line()
+                    emit.Line("return result;")
                     emit.Unindent()
                     emit.Line("}")
                     emit.Line()
@@ -2272,9 +2379,9 @@ def EmitHelperCode(root, emit, header_file):
                 propType = ' (write-only)' if method.writeonly else (' (read-only)' if method.readonly else '')
                 log.Info("Emitting property '{}' {}".format(method.JsonName(), propType))
                 if not method.writeonly:
-                    EmitPropertyFc(method, method.GetMethodName(), True)
+                    _EmitProperty(method, method.GetEndpointName(), True)
                 if not method.readonly:
-                    EmitPropertyFc(method, method.SetMethodName(), False)
+                    _EmitProperty(method, method.SetEndpointName(), False)
 
         for method in root.Properties():
             if isinstance(method, JsonNotification):
@@ -2408,8 +2515,8 @@ def EmitObjects(root, emit, if_file, emitCommon=False):
         if not isinstance(jsonObj, (JsonRpcSchema, JsonMethod)):
             global emittedItems
             emittedItems += 1
-            EmitCtor(jsonObj, jsonObj.NeedsCopyCtor())
-            if jsonObj.NeedsCopyCtor():
+            EmitCtor(jsonObj, jsonObj.is_copy_ctor_needed)
+            if jsonObj.is_copy_ctor_needed:
                 emit.Line()
                 EmitCtor(jsonObj, True, True, False)
                 emit.Line()
@@ -2421,7 +2528,7 @@ def EmitObjects(root, emit, if_file, emitCommon=False):
                 EmitAssignmentOperator(jsonObj, False, True)
                 emit.Line()
                 EmitConversionOperator(jsonObj)
-            if jsonObj.NeedsCopyCtor() or "originaltype" in jsonObj.schema:
+            if jsonObj.is_copy_ctor_needed or ("originaltype" in jsonObj.schema):
                 emit.Unindent()
                 emit.Line()
                 emit.Line("private:")
@@ -2627,8 +2734,6 @@ def CreateDocument(schema, path):
                     prefix += "?." if optional else "."
                 prefix += name
                 description = obj["description"] if "description" in obj else obj["summary"] if "summary" in obj else ""
-                if isinstance(obj, jsonref.JsonRef) and "description" in obj.__reference__:
-                    description = obj.__reference__["description"]
                 if name or prefix:
                     if "type" not in obj:
                         raise RuntimeError("missing 'type' for object %s" % (parentName + "/" + name))
@@ -2652,8 +2757,6 @@ def CreateDocument(schema, path):
             MdTableHeader(["Code", "Message", "Description"])
             for err in obj:
                 description = err["description"] if "description" in err else ""
-                if isinstance(err, jsonref.JsonRef) and "description" in err.__reference__:
-                    description = err.__reference__["description"]
                 MdRow([err["code"] if "code" in err else "", "```" + err["message"] + "```", description])
             MdBr()
 
@@ -3373,7 +3476,7 @@ if __name__ == "__main__":
             type=str,
             action="store",
             default="flexible",
-            choices=["default-compliant", "force-compliant", "default-extended", "force-extended", "default-collapsed", "force-collapsed"],
+            choices=["default-compliant", "force-compliant", "default-uncompliant-extended", "force-uncompliant-extended", "default-uncompliant-collapsed", "force-uncompliant-collapsed"],
             help="select JSON-RPC data format (default: default-compliant)")
 
     data_group = argparser.add_argument_group("C++ output arguments (optional)")
@@ -3442,7 +3545,7 @@ if __name__ == "__main__":
     ts_group.add_argument("--verbose",
             dest="verbose",
             action="store_true",
-            default=VERBOSE,
+            default=False,
             help="enable verbose logging")
     ts_group.add_argument("--keep-empty",
             dest="keep_empty",
@@ -3458,7 +3561,8 @@ if __name__ == "__main__":
 
     args = argparser.parse_args(sys.argv[1:])
 
-    VERBOSE = args.verbose
+    log = Log.Log(NAME, args.verbose, SHOW_WARNINGS, DOC_ISSUES)
+
     DOC_ISSUES = not args.no_style_warnings
     log.doc_issues = DOC_ISSUES
     NO_DUP_WARNINGS = args.no_duplicates_warnings
@@ -3474,14 +3578,14 @@ if __name__ == "__main__":
     INTERFACES_SECTION = not args.no_interfaces_section
     INTERFACE_SOURCE_LOCATION = args.source_location
     INTERFACE_SOURCE_REVISION = args.source_revision
-    if "extended" in args.format:
-        FORMAT = "extended"
-    elif "collapsed" in args.format:
-        FORMAT = "collapsed"
+    if RpcFormat.EXTENDED.value in args.format:
+        RPC_FORMAT = RpcFormat.EXTENDED
+    elif RpcFormat.COLLAPSED.value in args.format:
+        RPC_FORMAT = RpcFormat.COLLAPSED
     else:
-        FORMAT = "compliant"
-    if "forced" in args.format:
-        FORMAT_FORCED = True
+        RPC_FORMAT = RpcFormat.COMPLIANT
+    if "force" in args.format:
+        RPC_FORMAT_FORCED = True
 
     if args.if_path and args.if_path != ".":
         IF_PATH = args.if_path
@@ -3508,7 +3612,6 @@ if __name__ == "__main__":
             else:
                 files.append(p)
         for path in files:
-            log.Header(path)
             try:
                 log.Header(path)
                 if path.endswith(".h"):
