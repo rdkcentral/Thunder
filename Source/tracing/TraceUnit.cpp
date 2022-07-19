@@ -355,5 +355,9 @@ namespace Trace {
 
         m_Admin.Unlock();
     }
+
 }
 } // namespace WPEFramework::Trace
+
+// explicit instantation as on some yocto builds not all externally required methods were instantiated otherwise
+template class WPEFramework::Core::IteratorType<WPEFramework::Trace::TraceUnit::TraceControlList, WPEFramework::Trace::ITraceControl*>;
