@@ -147,10 +147,19 @@ namespace WPEFramework {
         }                                                                                                                                            \
     } while(0)
 
-#define VERIFY(x, y) assert(x == y)
+#define VERIFY(expr) ASSERT(expr)
 #else
 #define ASSERT(x)
-#define VERIFY(x, y) x
+
+#define VERIFY(expr)                                                                                                   \
+    do {                                                                                                               \
+        if(!(expr)) {                                                                                                  \
+            ASSERT_LOGGER("===== $$ [%d]: VERIFY FAILED [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
+       }                                                                                                               \
+    } while(0)
+
+
+
 #define ASSERT_VERBOSE(x, y, ...)
 #endif
 
