@@ -81,6 +81,7 @@ jobs:
           -DBUILD_TYPE=${{env.BUILD_TYPE}}
           -DBINDING=${{env.THUNDER_BINDING}}
           -DPORT=${{env.THUNDER_PORT}}
+          -DCMAKE_CXX_FLAGS:STRING="-Wall -Werror"
           -DBUILD_TESTS=ON
 
       - name: Build Thunder
