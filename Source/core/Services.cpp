@@ -66,7 +66,7 @@ namespace Core {
 
         while ((index != _services.end()) && (found == false)) {
             const char* thisName = index->first->ServiceName().c_str();
-            found = ((strcmp(thisName, name) == 0) && ((version == static_cast<uint32_t>(~0)) || (version == ((index->first->Major() << 8) | index->first->Minor()))));
+            found = ((strcmp(thisName, name) == 0) && ((version == static_cast<uint32_t>(~0)) || (version == (const uint32_t)((index->first->Major() << 8) | index->first->Minor()))));
 
             if (found == false) {
                 index++;
