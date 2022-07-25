@@ -50,7 +50,7 @@ option(WCHAR_SUPPORT
         "Enable support for WCHAR." OFF)
 option(DISABLE_TRACING
         "Disable tracing in debug" OFF)
-set(ENABLED_TRACING_LEVEL 2 CACHE STRING "If tracing is enabled, this sets its default level.")
+set(ENABLED_TRACING_LEVEL 0 CACHE STRING "If tracing is enabled, this sets its default level.")
 option(EXCEPTION_CATCHING
         "Enable unhandled exception handling catching." OFF)
 option(DEADLOCK_DETECTION
