@@ -162,7 +162,7 @@ namespace Core {
         {
             ASSERT(IsValid());
 
-            return (*m_Iterator);
+                return (*m_Iterator);
         }
 
         inline const ELEMENT& Current() const
@@ -208,6 +208,11 @@ namespace Core {
         inline const CONTAINER* Container() const
         {
             return (m_Container);
+        }
+        inline void Container(CONTAINER& container) {
+            m_Container = &container;
+            m_Iterator = m_Container->begin();
+            m_Index = 0;
         }
 
     private:

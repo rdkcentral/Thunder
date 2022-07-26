@@ -548,7 +548,7 @@ namespace Core {
                 }
             }
 
-            ::memcpy(_data[offset], bytes, index);
+            ::memcpy(&(_data[offset]), bytes, index);
 
             return (index);
         }
