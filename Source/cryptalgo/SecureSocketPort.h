@@ -83,8 +83,8 @@ namespace Crypto {
         };
 
     public:
-        SecureSocketPort(const SecureSocketPort&);
-        SecureSocketPort& operator=(const SecureSocketPort&);
+        SecureSocketPort(const SecureSocketPort&) = delete;
+        SecureSocketPort& operator=(const SecureSocketPort&) = delete;
 
         template <typename... Args>
         SecureSocketPort(Args&&... args)
@@ -102,6 +102,9 @@ namespace Crypto {
         {
             return (_handler.IsClosed());
         }
+        inline bool IsSuspended() const {
+            return (_handler.IsSuspended());
+        }
         inline bool HasError() const
         {
             return (_handler.HasError());
@@ -113,6 +116,14 @@ namespace Crypto {
         inline string RemoteId() const
         {
             return (_handler.RemoteId());
+        }
+        inline void LocalNode(const Core::NodeId& node)
+        {
+            _handler.LocalNode(node);
+        }
+        inline void RemoteNode(const Core::NodeId& node)
+        {
+            _handler.RemoteNode(node);
         }
 
         inline uint32_t Open(const uint32_t waitTime) {
