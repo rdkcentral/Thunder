@@ -371,15 +371,54 @@ namespace ProcessContainers {
 
     bool DobbyContainer::Stop(const uint32_t timeout /*ms*/)
     {
-        // TODO: add timeout support
         bool result = false;
+        bool stoppedSuccessfully = false;
         auto& admin = static_cast<DobbyContainerAdministrator&>(DobbyContainerAdministrator::Instance());
 
-        bool stoppedSuccessfully = admin.mDobbyProxy->stopContainer(_descriptor, false);
+        TRACE(Trace::Information, (_T("Stopping container. id: %s descriptor: %d timeout %d"), _name.c_str(), _descriptor, timeout));
+        if (timeout == 0)
+        {
+            stoppedSuccessfully = admin.mDobbyProxy->stopContainer(_descriptor, false);
+        }
+        else
+        {
+            std::mutex m;
+            std::condition_variable cv;
+            int temp_descriptor = _descriptor;
+            std::thread t([&cv, &stoppedSuccessfully, &admin, temp_descriptor]()
+            {
+                stoppedSuccessfully = admin.mDobbyProxy->stopContainer(temp_descriptor, false);
+                cv.notify_one();
+            });
 
-        if (!stoppedSuccessfully) {
-            TRACE(Trace::Error, (_T("Failed to stop container, internal Dobby error. id: %s descriptor: %d"), _name.c_str(), _descriptor));
-        } else {
+            t.detach();
+
+            std::unique_lock<std::mutex> tmp_lock(m);
+            if(cv.wait_for(tmp_lock, std::chrono::milliseconds(timeout)) == std::cv_status::timeout)
+            {
+                SYSLOG(Logging::Error, (_T("Timeout during container stop operation. id: %s descriptor: %d timeout %d"), _name.c_str(), _descriptor, timeout));
+                switch (static_cast<IDobbyProxyEvents::ContainerState>(admin.mDobbyProxy->getContainerState(_descriptor)))
+                {
+                case IDobbyProxyEvents::ContainerState::Invalid:
+                    stoppedSuccessfully = true;
+                    break;
+                case IDobbyProxyEvents::ContainerState::Stopped:
+                    stoppedSuccessfully = true;
+                break;
+                default:
+                    stoppedSuccessfully = false;
+                    break;
+                }
+            }
+        }
+
+        if (!stoppedSuccessfully)
+        {
+            SYSLOG(Logging::Error, (_T("Failed to stop container, internal Dobby error. id: %s descriptor: %d"), _name.c_str(), _descriptor));
+        }
+        else
+        {
+            TRACE(Trace::Information, (_T("Container stopped successfully. id: %s descriptor: %d"), _name.c_str(), _descriptor));
             result = true;
         }
 
