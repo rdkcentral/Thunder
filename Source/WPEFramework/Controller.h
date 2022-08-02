@@ -217,8 +217,8 @@ namespace Plugin {
         Controller& operator=(const Controller&);
 
     protected:
-PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-        Controller()
+        PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
+            Controller()
             : _adminLock()
             , _skipURL(0)
             , _webPath()
@@ -228,6 +228,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             , _systemInfoReport(*this)
             , _resumes()
             , _lastReported()
+            , _externalSubsystems()
         {
             RegisterAll();
         }
@@ -237,16 +238,25 @@ POP_WARNING()
         virtual ~Controller()
         {
             UnregisterAll();
-            SetServer(nullptr);
+
+            // Attach to the SubSystems, we propagate the changes.
+            PluginHost::ISubSystem* subSystems(_service->SubSystems());
+
+            ASSERT(subSystems != nullptr);
+
+            if (subSystems != nullptr) {
+                subSystems->Unregister(&_systemInfoReport);
+                subSystems->Release();
+            }
         }
         inline void Notification(const PluginHost::Server::ForwardMessage& message)
         {
             Notify("all", message);
         }
 
-        inline void SetServer(PluginHost::Server* pluginServer)
+        inline void SetServer(PluginHost::Server* pluginServer, const std::vector<PluginHost::ISubSystem::subsystem>& externalSubsystems)
         {
-            ASSERT((_pluginServer == nullptr) ^ (pluginServer == nullptr));
+            ASSERT((_pluginServer == nullptr) && (pluginServer != nullptr));
 
             _pluginServer = pluginServer;
 
@@ -256,11 +266,33 @@ POP_WARNING()
             ASSERT(subSystems != nullptr);
 
             if (subSystems != nullptr) {
-                if (pluginServer != nullptr) {
-                    subSystems->Register(&_systemInfoReport);
-                } else {
-                    subSystems->Unregister(&_systemInfoReport);
+                uint32_t entries = ~0;
+
+                for (const PluginHost::ISubSystem::subsystem& entry : externalSubsystems) {
+                    if (std::find(_externalSubsystems.begin(), _externalSubsystems.end(), entry) != _externalSubsystems.end()) {
+                        Core::EnumerateType<PluginHost::ISubSystem::subsystem> name(entry);
+                        SYSLOG(Logging::Startup, (Core::Format(_T("Subsystem [%s] was already signalled by plugin metadata. No need as Controller config!!!"), name.Data())));
+                    }
+                    else {
+                        _externalSubsystems.emplace_back(entry);
+                    }
                 }
+
+                // Insert the subsystems found from the Plugins configured to use..
+                for (const PluginHost::ISubSystem::subsystem& entry : _externalSubsystems) {
+                    entries &= ~(1 << entry);
+                }
+
+                uint8_t setFlag = 0;
+                while (setFlag < PluginHost::ISubSystem::END_LIST) {
+                    if ((entries & (1 << setFlag)) != 0) {
+                        TRACE_L1("Setting the default SubSystem: %d", setFlag);
+                        subSystems->Set(static_cast<PluginHost::ISubSystem::subsystem>(setFlag), nullptr);
+                    }
+                    setFlag++;
+                }
+
+                subSystems->Register(&_systemInfoReport);
                 subSystems->Release();
             }
         }
@@ -354,7 +386,6 @@ POP_WARNING()
 	}
         void Callstack(const ThreadId id, Core::JSON::ArrayType<CallstackData>& response) const;
         void SubSystems();
-        void SubSystems(Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator& index);
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;
         Core::ProxyType<Web::Response> PutMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
@@ -396,6 +427,7 @@ POP_WARNING()
         Core::Sink<Sink> _systemInfoReport;
         std::list<string> _resumes;
         uint32_t _lastReported;
+        std::vector<PluginHost::ISubSystem::subsystem> _externalSubsystems;
     };
 }
 }

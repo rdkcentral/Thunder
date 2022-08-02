@@ -30,8 +30,8 @@
 #include <time.h>
 #endif
 
-#define NS_MODULE_NAME_1 NS
-#define NS_MODULE_NAME CONCAT_STRINGS(NS_MODULE_NAME_1,MODULE_NAME)
+#define ROOT_META_DATA_1 RootMetaData_
+#define ROOT_META_DATA CONCAT_STRINGS(MODULE_NAME,ROOT_META_DATA_1)
 
 namespace WPEFramework {
 namespace Core {
@@ -39,9 +39,7 @@ namespace Core {
     struct IServiceMetadata;
 
     namespace System {
-        namespace NS_MODULE_NAME {
-            extern "C" const WPEFramework::Core::IServiceMetadata * RootMetadata;
-        }
+        extern "C" const WPEFramework::Core::IServiceMetadata * ROOT_META_DATA;
 
         extern "C" const char* MODULE_NAME;
 
@@ -245,12 +243,10 @@ namespace Core {
     namespace WPEFramework {                                                                                  \
         namespace Core {                                                                                      \
             namespace System {                                                                                \
-                namespace NS_MODULE_NAME {                                                                    \
-                    const WPEFramework::Core::IServiceMetadata* RootMetadata = nullptr;                       \
-                }                                                                                             \
+                const WPEFramework::Core::IServiceMetadata * ROOT_META_DATA = nullptr;                        \
                 const char* MODULE_NAME = DEFINE_STRING(MODULE_NAME);                                         \
                 const char* ModuleBuildRef() { return (DEFINE_STRING(buildref)); }                            \
-                const IServiceMetadata* ModuleServiceMetadata() { return (NS_MODULE_NAME::RootMetadata); }    \
+                const IServiceMetadata* ModuleServiceMetadata() { return (ROOT_META_DATA); }                  \
             }                                                                                                 \
         }                                                                                                     \
     }                                                                                                         \
