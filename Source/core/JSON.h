@@ -4184,7 +4184,6 @@ namespace Core {
             void Clear()
             {
                 Reset();
-                _elements.clear();
             }
             string GetDebugString(int indent = 0) const;
 
