@@ -49,9 +49,6 @@ namespace WPEFramework {
 #define TRACE_PROCESS_ID ::getpid()
 #endif
 
-#ifdef _THUNDER_PRODUCTION
-#define TRACE_FORMATTING(fmt, ...)
-#else
 #define TRACE_FORMATTING_IMPL(fmt, ...)                                                                            \
     do {                                                                                                                                  \
         fprintf(stderr, "\033[1;32m[%s:%d](%s)<%d>" fmt "\n\033[0m", &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, ##__VA_ARGS__);  \
@@ -65,7 +62,6 @@ namespace WPEFramework {
 #else
 #define TRACE_FORMATTING(fmt, ...)                                                                            \
     TRACE_FORMATTING_IMPL(fmt, ##__VA_ARGS__)
-#endif
 #endif
 
 #ifdef __WINDOWS__
