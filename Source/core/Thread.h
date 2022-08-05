@@ -162,7 +162,8 @@ namespace Core {
             BLOCKED = 0x0008,
             STOPPED = 0x0010,
             INITIALIZED = 0x0020,
-            STOPPING = 0x0040
+            STOPPING = 0x0040,
+            FAILED = 0x0080
 
         } thread_state;
 
@@ -194,6 +195,10 @@ namespace Core {
         inline bool IsBlocked() const
         {
             return (m_enumState == BLOCKED);
+        }
+        inline bool IsFailed() const
+        {
+            return (m_enumState == FAILED);
         }
         int PriorityMin() const;
         int PriorityMax() const;
