@@ -82,12 +82,15 @@ namespace Core {
             }
             inline void Allocate(SIZETYPE requiredSize)
             {
-                RealAllocate<STARTSIZE>(requiredSize, TemplateIntToType<STARTSIZE>());
+                RealAllocate(requiredSize, TemplateIntToType<STARTSIZE == 0 ? false : true>());
             }
 
         private:
-            template <const uint32_t NONZEROSIZE>
-            inline void RealAllocate(const SIZETYPE requiredSize, const TemplateIntToType<NONZEROSIZE>& /* For compile time diffrentiation */)
+            inline void RealAllocate(const SIZETYPE requiredSize, const TemplateIntToType<false>& /* For compile time diffrentiation */)
+            {
+                ASSERT(requiredSize <= _bufferSize);
+            }
+            inline void RealAllocate(const SIZETYPE requiredSize, const TemplateIntToType<true>& /* For compile time diffrentiation */)
             {
                 if (requiredSize > _bufferSize) {
 
@@ -101,10 +104,6 @@ namespace Core {
                         _bufferSize = bufferSize;
                     }
                 }
-            }
-            inline void RealAllocate(const SIZETYPE requiredSize, const TemplateIntToType<0>& /* For compile time diffrentiation */)
-            {
-                ASSERT(requiredSize <= _bufferSize);
             }
 
         private:
@@ -190,6 +189,15 @@ namespace Core {
                 _offset += _container->GetNumber<TYPENAME>(_offset, result);
 
                 return (result);
+            }
+            template <typename TYPENAME>
+            TYPENAME VariableNumber() const
+            {
+                TYPENAME result;
+
+                ASSERT(_container != nullptr);
+
+                _offset += _container->GetVariableNumber<TYPENAME>(_offset, result);
             }
             bool Boolean() const
             {
@@ -289,6 +297,13 @@ namespace Core {
                 ASSERT(_container != nullptr);
 
                 _offset += _container->SetNumber<TYPENAME>(_offset, value);
+            }
+            template <typename TYPENAME>
+            void VariableNumber(const TYPENAME value)
+            {
+                ASSERT(_container != nullptr);
+
+                _offset += _container->SetVariableNumber<TYPENAME>(_offset, value);
             }
             void Boolean(const bool value)
             {
@@ -504,6 +519,92 @@ namespace Core {
             value = (_data[offset] != 0);
 
             return (1);
+        }
+        template <typename TYPENAME>
+        inline SIZE_CONTEXT SetVariableNumber(const SIZE_CONTEXT offset, const TYPENAME number)
+        {
+            uint8_t bytes[10]; // This equals 2^(10*7) => 2^70 >= uint64_t
+            uint8_t index = 0;
+            TYPENAME value = number;
+
+            static_assert(sizeof(TYPENAME) <= ((sizeof(bytes) * 7) / 8));
+
+            do {
+                bytes[index++] = ( static_cast<uint8_t>(value % 128) | 0x80 );
+                value /= 128;
+
+            } while (value > 0);
+
+            bytes[index - 1] ^= 0x80;
+
+            if ((offset + index) >= _size) {
+                Size(offset + sizeof(TYPENAME));
+            }
+
+            if ( (BIG_ENDIAN_ORDERING == true) && (index > 1) ) {
+                // We need to swap, it is currently LITTLE_ENDIAN
+                for (uint8_t step = 0; step < (index / 2); step++) {
+                    std::swap(bytes[step], bytes[index - 1 - step]);
+                }
+            }
+
+            ::memcpy(&(_data[offset]), bytes, index);
+
+            return (index);
+        }
+
+        uint8_t GetVariableNumberLength(const SIZE_CONTEXT offset) const {
+            ASSERT(offset < _size);
+
+            uint8_t index = 0;
+
+            while (((offset + index) < _size) && ((_data[offset + index] & 0x80) != 0)) {
+                index++;
+            }
+
+            return ((_data[offset + index] & 0x80) == 0 ? index + 1 : 0);
+        }
+
+        static uint8_t VariableNumberLength(const uint64_t value) {
+            uint8_t byteCount = 0;
+            uint64_t testValue = value;
+
+            do {
+                byteCount++;
+                testValue = testValue >> 7;
+            } while (testValue != 0);
+
+            return (byteCount);
+        }
+
+        template <typename TYPENAME>
+        inline SIZE_CONTEXT GetVariableNumber(const SIZE_CONTEXT offset, TYPENAME& number) const
+        {
+            uint8_t index = 0;
+            number = 0;
+
+            ASSERT(offset < _size);
+
+            while (((offset + index) < _size) && ((_data[offset + index] & 0x80) != 0)) {
+                index++;
+            }
+
+            ASSERT(((index * 7) / 8) <= sizeof(TYPENAME));
+
+            ++index;
+
+            if (BIG_ENDIAN_ORDERING == false) {
+                uint8_t count = index;
+                while (count != 0) {
+                    count--;
+                    number = (number << 7) | ( (_data[offset + count]) & 0x7F);
+                }
+            }
+            else for (uint8_t pos = 0; pos < index; pos++) {
+                number = (number << 7) | ((_data[offset + pos]) & 0x7F);
+            }
+            
+            return (index);
         }
 
         template <typename TYPENAME>
