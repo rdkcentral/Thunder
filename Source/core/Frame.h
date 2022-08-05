@@ -565,6 +565,18 @@ namespace Core {
             return ((_data[offset + index] & 0x80) == 0 ? index + 1 : 0);
         }
 
+        static uint8_t VariableNumberLength(const uint64_t value) {
+            uint8_t byteCount = 0;
+            uint64_t testValue = value;
+
+            do {
+                byteCount++;
+                testValue = testValue >> 7;
+            } while (testValue != 0);
+
+            return (byteCount);
+        }
+
         template <typename TYPENAME>
         inline SIZE_CONTEXT GetVariableNumber(const SIZE_CONTEXT offset, TYPENAME& number) const
         {

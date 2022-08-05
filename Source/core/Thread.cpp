@@ -88,10 +88,11 @@ namespace Core {
 
         // If there is no thread, the "new" thread can also not free the destructor,
         // then it is up to us.
-        if ((err != 0) || (pthread_create(&m_hThreadInstance, &attr, (void* (*)(void*))Thread::StartThread, this) == -1))
+        if ((err != 0) || (pthread_create(&m_hThreadInstance, &attr, (void* (*)(void*))Thread::StartThread, this) != 0))
 #endif
         {
             // Creation failed, O.K. We will signal the inactive state our selves.
+            m_enumState = FAILED;
             m_sigExit.SetEvent();
         }
 
@@ -259,8 +260,10 @@ POP_WARNING()
         m_sigExit.Lock(Core::infinite);
 
 #ifdef __POSIX__
-        void* l_Dummy;
-        ::pthread_join(m_hThreadInstance, &l_Dummy);
+        if (!IsFailed()) {
+            void* l_Dummy;
+            ::pthread_join(m_hThreadInstance, &l_Dummy);
+        }
 #endif
     }
 
@@ -343,7 +346,7 @@ POP_WARNING()
 
     bool Thread::Wait(const unsigned int enumState, unsigned int nTime) const
     {
-        return (m_enumState.WaitState(enumState, nTime));
+        return (IsFailed() ? false : m_enumState.WaitState(enumState, nTime));
     }
 
     Thread::thread_state Thread::State() const
@@ -379,6 +382,9 @@ POP_WARNING()
         case STOPPED: // The STOPPED state is the end,
             // No changes possible anymore.
             blOK = (enumNewState == STOPPED);
+            break;
+        case FAILED: // There's no thread, so nothing we can do!
+            blOK = false;
             break;
         }
 
