@@ -52,8 +52,15 @@ namespace WPEFramework {
   }
 
   namespace PluginHost {
-    class IShell;
-    class ISubSystem;
+    class IShell {
+      enum state : uint8_t;
+      enum reason : uint8_t;
+    };
+
+    class ISubSystem {
+      enum subsystem : uint32_t;
+    };
+
     class IPlugin {
       class INotification;
     };
