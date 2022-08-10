@@ -31,6 +31,8 @@ option(HIDE_NON_EXTERNAL_SYMBOLS
     "Hide all non EXTERNAL tagged symbols" ON)
 option(ENABLE_STRICT_COMPILER_SETTINGS
     "Enable compiler flags to get the warnings/errors due to improper condition in the code" OFF) 
+option(LEGACY_CONFIG_GENERATOR
+    "Skip the legacy config generator even it's supported by your cmake version." ON) 
 
 if (BUILD_REFERENCE)
     add_definitions (-DBUILD_REFERENCE=${BUILD_REFERENCE})
@@ -95,9 +97,14 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
         RENAME "${NAMESPACE}Config.cmake"
         DESTINATION lib/cmake/${NAMESPACE})
 
+if (CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
+install(DIRECTORY
+        "${CMAKE_SOURCE_DIR}/cmake/config"
+    DESTINATION lib/cmake/${NAMESPACE})
+endif()
+
 install(DIRECTORY
             "${CMAKE_SOURCE_DIR}/cmake/common"
-            "${CMAKE_SOURCE_DIR}/cmake/config"
             "${CMAKE_SOURCE_DIR}/cmake/templates"
         DESTINATION lib/cmake/${NAMESPACE})
 
