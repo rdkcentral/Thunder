@@ -2,6 +2,7 @@ if(NOT PYTHON_EXECUTABLE)
     find_package(PythonInterp 3.5 REQUIRED QUIET)
 endif()
 
+if(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
 macro(IncludeConfig)
     if(NOT COMMAND map)
         ## includes all cmake files of cmakepp to write json files
@@ -9,6 +10,7 @@ macro(IncludeConfig)
         require("${MODULE_BASE_DIR}/config/*.cmake")
     endif()
 endmacro()
+endif(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
 
 
 # ----------------------------------------------------------------------------------------
@@ -25,10 +27,12 @@ endmacro()
 #    LOCATOR     Version of the package, defaults to lib + MODULE_NAME + CMAKE_SHARED_LIBRARY_SUFFIX
 #                of the latest cmake project call.
 #    COMPONENT   The cmake component group defaults to PROJECT_NAME
+#    INSTALL_PATH Overrule the default instalation location. 
+#    INSTALL_NAME Overrule the default file name
 # ----------------------------------------------------------------------------------------
 function(write_config)
-    set(optionsArgs SKIP_COMPARE)
-    set(oneValueArgs CLASSNAME LOCATOR COMPONENT)
+    set(optionsArgs SKIP_COMPARE DISABLE_LEGACY_GENERATOR)
+    set(oneValueArgs CLASSNAME LOCATOR COMPONENT INSTALL_PATH INSTALL_NAME)
     set(multiValueArgs PLUGINS)
 
     set(CONFIG_GENERATOR_PATH "@GENERATOR_INSTALL_PATH@/ConfigGenerator")
@@ -87,6 +91,25 @@ function(write_config)
     endif()
     endif()
 
+    if(NOT ARG_INSTALL_PATH)
+        set(_install_path "${CMAKE_INSTALL_PREFIX}/../etc/${NAMESPACE}/plugins/")
+    else()
+        set(_install_path "${ARG_INSTALL_PATH}")
+    endif(NOT ARG_INSTALL_PATH)
+
+    if(NOT ARG_INSTALL_NAME)
+        set(_install_var_filename plugin)
+        set(extenstion ".json")
+    else()
+        list(LENGTH _plugins _plugins_length)
+        if(_plugins_length GREATER 1)
+            message(FATAL_ERROR "Using INSTALL_NAME together with multiple plugins will result in file overwrites :')")
+        else()
+            set(custom_filename "${ARG_INSTALL_NAME}")
+            set(_install_var_filename custom_filename)
+        endif()
+    endif(NOT ARG_INSTALL_NAME)
+
     if(ARG_LOCATOR)
         set(_locator ${ARG_LOCATOR})
     else()
@@ -98,7 +121,13 @@ function(write_config)
         set(COMPARE OFF)
     endif(ARG_SKIP_COMPARE)
 
+    if(ARG_DISABLE_LEGACY_GENERATOR)
+        set(LEGACY_CONFIG_GENERATOR OFF)
+    endif(ARG_DISABLE_LEGACY_GENERATOR)
+
+if(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
     IncludeConfig()
+endif(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
 
     foreach(plugin ${_plugins})
         set(config_generated "N")
@@ -218,10 +247,14 @@ function(write_config)
                 endif()
             endif()
         endif()
+endif(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
+
+        set(_install_filename "${${_install_var_filename}}${extenstion}")       
 
         install(
-                FILES ${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}.json DESTINATION
-               "${CMAKE_INSTALL_PREFIX}/../etc/${NAMESPACE}/plugins/"
+                FILES ${CMAKE_CURRENT_BINARY_DIR}/config/${plugin}.json 
+                DESTINATION ${_install_path}
+                RENAME ${_install_filename}
                 COMPONENT ${_component})
 
 
