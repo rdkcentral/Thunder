@@ -31,6 +31,17 @@
 // ---- Referenced classes and types ----
 
 // ---- Helper types and constants ----
+
+#ifdef _THUNDER_PRODUCTION
+
+#define TRACE_ENABLED(CATEGORY)
+#define TRACE(CATEGORY, PARAMETERS)
+#define TRACE_GLOBAL(CATEGORY, PARAMETERS)
+#define TRACE_DURATION(CODE, ...)
+#define TRACE_DURATION_GLOBAL(CODE, ...)
+
+#else
+
 #define TRACE_ENABLED(CATEGORY)                                                         \
     WPEFramework::Trace::TraceType<CATEGORY, &WPEFramework::Core::System::MODULE_NAME>::IsEnabled()
 
@@ -66,6 +77,7 @@
     CODE                                                                  \
     TRACE_GLOBAL(WPEFramework::Trace::Duration, (start, ##__VA_ARGS__));
 
+#endif
 // ---- Helper functions ----
 
 // ---- Class Definition ----

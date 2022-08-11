@@ -24,6 +24,16 @@
 #include "TextMessage.h"
 #include <inttypes.h>
 
+#ifdef _THUNDER_PRODUCTION
+
+#define TRACE_ENABLED(CATEGORY)
+#define TRACE(CATEGORY, PARAMETERS)
+#define TRACE_GLOBAL(CATEGORY, PARAMETERS)
+#define TRACE_DURATION(CODE, ...)
+#define TRACE_DURATION_GLOBAL(CODE, ...)
+
+#else
+
 #define TRACE_ENABLED(CATEGORY)                                                                                                                                                             \
         WPEFramework::Messaging::ControlLifetime<CATEGORY, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::Messaging::MetaData::MessageType::TRACING>::IsEnabled()
 
@@ -62,3 +72,5 @@
     WPEFramework::Core::Time start = WPEFramework::Core::Time::Now(); \
     CODE                                                              \
         TRACE_GLOBAL(WPEFramework::Trace::Duration, (start, ##__VA_ARGS__));
+
+#endif

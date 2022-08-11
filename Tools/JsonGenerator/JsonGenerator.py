@@ -1106,7 +1106,7 @@ def LoadInterface(file, includePaths = []):
                     raise CppParseError(method, "property method must have one parameter")
 
             elif method.IsPureVirtual() and not event_params:
-                if method.retval.type and (isinstance(method.retval.type.Type(), ProxyStubGenerator.CppParser.Void) or (isinstance(method.retval.type.Type(), ProxyStubGenerator.CppParser.Integer) and method.retval.type.Type().size == "long")):
+                if method.retval.type and (isinstance(method.retval.type.Type(), ProxyStubGenerator.CppParser.Integer) and method.retval.type.Type().size == "long"):
                     obj = OrderedDict()
                     params = BuildParameters(method.vars, face.obj.is_extended)
                     if "properties" in params and params["properties"]:
@@ -1118,7 +1118,7 @@ def LoadInterface(file, includePaths = []):
                     obj["cppname"] = method_name
                     methods[prefix + method_name_lower] = obj
                 else:
-                    raise CppParseError(method, "method return type must be uint32_t (error code) or void (i.e. pass other return values by reference)")
+                    raise CppParseError(method, "method return type must be uint32_t (error code), i.e. pass other return values by a reference")
 
             if obj:
                 if method.retval.meta.is_deprecated:
