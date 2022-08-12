@@ -1359,7 +1359,7 @@ def __Tokenize(contents,log = None):
 
             if ((token[:2] == "/*") or (token[:2] == "//")):
                 def _find(word, string):
-                    return re.compile(r"[ \r\n/\*]({0})([: \r\n\*]|$)".format(word)).search(string) != None
+                    return re.compile(r"[ \r\n/\*]({0})([-: \r\n\*]|$)".format(word)).search(string) != None
 
                 if _find("@stubgen", token):
                     if "@stubgen:skip" in token:
@@ -1407,6 +1407,10 @@ def __Tokenize(contents,log = None):
                     if "@uncompliant:extended" in token:
                         tagtokens.append("@EXTENDED")
                     elif "@uncompliant:collapsed" in token:
+                        tagtokens.append("@COLLAPSED")
+                    elif "@uncompliant-extended" in token:
+                        tagtokens.append("@EXTENDED")
+                    elif "@uncompliant-collapsed" in token:
                         tagtokens.append("@COLLAPSED")
                     else:
                         raise ParserError("Invalid @uncompliant tag")
