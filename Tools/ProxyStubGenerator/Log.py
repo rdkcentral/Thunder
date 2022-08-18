@@ -72,7 +72,7 @@ class Log:
                 self.__Print(item)
 
     def Header(self, text):
-        self.Info("Processing file %s..." % text)
+        self.Print("Processing file %s..." % text)
         self.file = text
 
     def Ellipsis(self,text, front=True):
