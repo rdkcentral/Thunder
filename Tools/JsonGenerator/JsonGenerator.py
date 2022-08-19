@@ -968,6 +968,8 @@ def LoadInterface(file, includePaths = []):
                         result = ["array", { "items": ConvertParameter(currentMethod.retval), "iterator": StripInterfaceNamespace(cppType.type) } ]
                         if var_type.IsPointerToPointer():
                             result[1]["ptr"] = True
+                        if var_type.IsPointerToConst():
+                            result[1]["ptrtoconst"] = True
                         return result
                     # All other pointer types are not supported
                     else:
@@ -1028,6 +1030,8 @@ def LoadInterface(file, includePaths = []):
                         result[1]["ptr"] = True
                     if var_type.IsReference():
                         result[1]["ref"] = True
+                    if var_type.IsPointerToConst():
+                        result[1]["ptrtoconst"] = True
                     return result
 
             def ExtractExample(var):
@@ -1232,6 +1236,8 @@ def LoadInterface(file, includePaths = []):
                                     raise CppParseError(method.vars[value], "setter and getter of the same property must have same type (*1)")
                                 if "ptr" in test and test["ptr"]:
                                     obj[result_name]["ptr"] = True
+                                if "ptrtoconst" in test and test["ptrtoconst"]:
+                                    obj[result_name]["ptrtoconst"] = True
                             if obj[result_name] == None:
                                 raise CppParseError(method.vars[value], "property getter method must have one output parameter")
                     else:
@@ -1915,7 +1921,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                                 if "ref" in arg.schema and arg.schema["ref"]:
                                     arg.cast = "static_cast<%s* const&>(%s)" % (arg.iterator, arg.TempName())
                             elif arg_type == WRITE_ONLY:
-                                emit.Line("%s* %s{};" % (arg.iterator, arg.TempName()))
+                                emit.Line("%s%s* %s{};" % ("const " if "ptrtoconst" in arg.schema else "", arg.iterator, arg.TempName()))
                             else:
                                 raise RuntimeError("Read/write arrays are not supported: %s" % arg.json_name)
                         else:
