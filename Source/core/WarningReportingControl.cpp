@@ -23,6 +23,8 @@
 #include "Sync.h"
 #include "Thread.h"
 
+#ifdef __CORE_WARNING_REPORTING__
+
 namespace {
 WPEFramework::Core::CriticalSection adminlock; // we cannot have this as a member as Sync.h might also need WarningReporting. but as WarningReportingUnitProxy that is not a problem
 
@@ -185,3 +187,5 @@ namespace WarningReporting {
     }
 }
 }
+
+#endif
