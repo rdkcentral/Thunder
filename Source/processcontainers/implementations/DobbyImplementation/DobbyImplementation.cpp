@@ -51,7 +51,6 @@ namespace ProcessContainers {
                 DobbyContainer* container = new DobbyContainer(id, path, logpath, useSpecFile);
                 InsertContainer(container);
                 this->InternalUnlock();
-
                 return container;
             };
 
@@ -76,7 +75,7 @@ namespace ProcessContainers {
     }
 
     DobbyContainerAdministrator::DobbyContainerAdministrator()
-        : BaseAdministrator()
+        : BaseAdministrator(), _exitStoppingThread(false)
     {
         mIpcService = AI_IPC::createIpcService("unix:path=/var/run/dbus/system_bus_socket", "org.rdk.dobby.processcontainers");
 
@@ -91,16 +90,66 @@ namespace ProcessContainers {
         // Create a DobbyProxy remote service that wraps up the dbus API
         // calls to the Dobby daemon
         mDobbyProxy = std::make_shared<DobbyProxy>(mIpcService, DOBBY_SERVICE, DOBBY_OBJECT);
+
+        // Create thread to handle stopping containers with timeout and callback
+        _stoppingThread = std::thread(&DobbyContainerAdministrator::ContainerStoppingThreadFn, this);
     }
 
     DobbyContainerAdministrator::~DobbyContainerAdministrator()
     {
+        _exitStoppingThread = true;
+        _stoppingCV.notify_one();
+        TRACE(ProcessContainers::ProcessContainerization, (_T("Waiting for container stop thread to finish")));
+        _stoppingThread.join();
+        TRACE(ProcessContainers::ProcessContainerization, (_T("Container stop thread finished")));
     }
 
     void DobbyContainerAdministrator::Logging(const string& logPath, const string& loggingOptions)
     {
         // Only container-scope logging
     }
+
+    void DobbyContainerAdministrator::EnqueueStopRequest(ContainerStoppingInfo info)
+    {
+        TRACE(Trace::Information, (_T("Queued container stop request. id: %s descriptor: %d"), info._name.c_str(), info._descriptor));
+        std::unique_lock<std::mutex> queueLock(_stoppingMutex);
+        _stoppingQueue.push(info);
+        _stoppingCV.notify_one();
+    }
+
+    void DobbyContainerAdministrator::StopContainer(int32_t cd, const string& name, uint32_t timeout, bool withPrejudice)
+    {
+        TRACE(ProcessContainers::ProcessContainerization, (_T("Processing container stop request. id: %s, timeout: %u"), name.c_str(), timeout));
+        this->InternalLock();
+        _stopPromise = std::promise<void>();
+        const void* vp = static_cast<void*>(new std::string(name));
+        int listenerId = mDobbyProxy->registerListener(
+            std::bind(&DobbyContainerAdministrator::containerStopCallback,
+                this,
+                std::placeholders::_1,
+                std::placeholders::_2,
+                std::placeholders::_3,
+                std::placeholders::_4),
+            vp);
+
+        std::future<void> future = _stopPromise.get_future();
+        bool stoppedSuccessfully = mDobbyProxy->stopContainer(cd, withPrejudice);
+        if (!stoppedSuccessfully) {
+            TRACE(Trace::Warning, (_T("Failed to stop container, internal Dobby error. id: %s descriptor: %d"), name.c_str(), cd));
+        } else {
+            // Block here until container has stopped or timeout expired
+            std::future_status status = future.wait_for(std::chrono::milliseconds(timeout));
+            if (status == std::future_status::ready) {
+                TRACE(ProcessContainers::ProcessContainerization, (_T("Container %s has stopped"), name.c_str()));
+            } else if (status == std::future_status::timeout) {
+                TRACE(Trace::Warning, (_T("Timeout waiting for container %s to stop"), name.c_str()));
+            }
+        }
+        // Always make sure we unregister our callback
+        mDobbyProxy->unregisterListener(listenerId);
+        this->InternalUnlock();
+    }
+
 
     void DobbyContainerAdministrator::DestroyContainer(const string& name)
     {
@@ -112,39 +161,10 @@ namespace ProcessContainers {
             for (const std::pair<int32_t, std::string>& c : runningContainers) {
                 if (c.second == name) {
                     // found the container, now try stopping it...
-                    TRACE(ProcessContainers::ProcessContainerization, (_T("destroying container: %s "), name.c_str()));
-
-                    // Dobby stop is async - block until we get the notification the container
-                    // has actually stopped
-                    this->InternalLock();
-
-                    _stopPromise = std::promise<void>();
-                    const void* vp = static_cast<void*>(new std::string(name));
-                    int listenerId = mDobbyProxy->registerListener(std::bind(&DobbyContainerAdministrator::containerStopCallback, this,
-                                                                       std::placeholders::_1,
-                                                                       std::placeholders::_2,
-                                                                       std::placeholders::_3,
-                                                                       std::placeholders::_4), vp);
-
-                    std::future<void> future = _stopPromise.get_future();
-                    bool stoppedSuccessfully = mDobbyProxy->stopContainer(c.first, true);
-                    if (!stoppedSuccessfully) {
-                        TRACE(Trace::Warning, (_T("Failed to destroy container, internal Dobby error. id: %s descriptor: %d"), name.c_str(), c.first));
-                    } else {
-                        // Block here until container has stopped (max 5 seconds)
-                        std::future_status status = future.wait_for(std::chrono::seconds(5));
-                        if (status == std::future_status::ready) {
-                            TRACE(ProcessContainers::ProcessContainerization, (_T("Container %s has stopped"), name.c_str()));
-                        } else if (status == std::future_status::timeout) {
-                            TRACE(Trace::Warning, (_T("Timeout waiting for container %s to stop"), name.c_str()));
-                        }
-                    }
-
-                    this->InternalUnlock();
-
-                    // Always make sure we unregister our callback
-                    mDobbyProxy->unregisterListener(listenerId);
-
+                    TRACE(ProcessContainers::ProcessContainerization,
+                        (_T("Destroying container. id: %s descriptor: %d"), name.c_str(), c.first));
+                    // Blocking call to stop container waits until callback or timeout
+                    StopContainer(c.first, name, 5000, true);
                     break;
                 }
             }
@@ -163,7 +183,8 @@ namespace ProcessContainers {
         if (!runningContainers.empty()) {
             for (const std::pair<int32_t, std::string>& c : runningContainers) {
                 if (c.second == name) {
-                    TRACE(ProcessContainers::ProcessContainerization, (_T("container %s already running..."), name.c_str()));
+                    TRACE(ProcessContainers::ProcessContainerization,
+                        (_T("Container %s already running..."), name.c_str()));
                     result = true;
                     break;
                 }
@@ -181,7 +202,35 @@ namespace ProcessContainers {
 
         // Interested in stop events only
         if (state == IDobbyProxyEvents::ContainerState::Stopped && containerId == *id) {
+            TRACE(ProcessContainers::ProcessContainerization,
+                (_T("Container stop callback from Dobby. id: %s descriptor: %d"), containerId.c_str(), cd));
             _stopPromise.set_value();
+        }
+    }
+
+    void DobbyContainerAdministrator::ContainerStoppingThreadFn()
+    {
+        std::unique_lock<std::mutex> queueLock(_stoppingMutex);
+        while (!_exitStoppingThread) {
+            // If queue is empty wait for new item notification
+            if (_stoppingQueue.empty()) {
+                _stoppingCV.wait(queueLock);
+            }
+
+            // Process all items in the queue
+            while (!_stoppingQueue.empty()) {
+                ContainerStoppingInfo info = _stoppingQueue.front();
+                _stoppingQueue.pop();
+
+                // Allow more items to be added to the queue whilst stopping container
+                queueLock.unlock();
+
+                // Blocking call to stop container waits until callback or timeout
+                StopContainer(info._descriptor, info._name, info._timeout, info._withPrejudice);
+
+                // Lock ready for checking queue on next iteration
+                queueLock.lock();
+            }
         }
     }
 
@@ -201,11 +250,9 @@ namespace ProcessContainers {
     DobbyContainer::~DobbyContainer()
     {
         auto& admin = static_cast<DobbyContainerAdministrator&>(DobbyContainerAdministrator::Instance());
-
         if (admin.ContainerNameTaken(_name) == true) {
             Stop(Core::infinite);
         }
-
         admin.RemoveContainer(this);
     }
 
@@ -363,27 +410,20 @@ namespace ProcessContainers {
             TRACE(Trace::Error, (_T("Failed to start container %s - internal Dobby error."), _name.c_str()));
             result = false;
         } else {
-            TRACE(ProcessContainers::ProcessContainerization, (_T("started %s container! descriptor: %d"), _name.c_str(), _descriptor));
+            TRACE(ProcessContainers::ProcessContainerization, (_T("started %s container descriptor: %d"), _name.c_str(), _descriptor));
             result = true;
         }
         return result;
     }
 
+    // Stop Dobby container asynchronously
     bool DobbyContainer::Stop(const uint32_t timeout /*ms*/)
     {
-        // TODO: add timeout support
-        bool result = false;
         auto& admin = static_cast<DobbyContainerAdministrator&>(DobbyContainerAdministrator::Instance());
 
-        bool stoppedSuccessfully = admin.mDobbyProxy->stopContainer(_descriptor, false);
-
-        if (!stoppedSuccessfully) {
-            TRACE(Trace::Error, (_T("Failed to stop container, internal Dobby error. id: %s descriptor: %d"), _name.c_str(), _descriptor));
-        } else {
-            result = true;
-        }
-
-        return result;
+        ContainerStoppingInfo info(_descriptor, _name, timeout, false);
+        admin.EnqueueStopRequest(info);
+        return true;    // True indicates that asynchronous request has been made. Return value not used by callers.
     }
 
 } // namespace ProcessContainers

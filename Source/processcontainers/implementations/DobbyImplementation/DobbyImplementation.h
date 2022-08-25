@@ -36,6 +36,17 @@
 namespace WPEFramework {
 namespace ProcessContainers {
 
+    // Data structure to queue when requesting containers to stop
+    struct ContainerStoppingInfo {
+        int _descriptor;
+        string _name;
+        uint32_t _timeout;
+        bool _withPrejudice;
+
+        ContainerStoppingInfo(int descriptor, std::string name, uint16_t timeout, bool withPrejudice) :
+            _descriptor(descriptor), _name(name), _timeout(timeout), _withPrejudice(withPrejudice) {}
+    };
+
     const string CONFIG_NAME = "/config.json";
     const string CONFIG_NAME_SPEC = "/spec.json";
 
@@ -91,14 +102,22 @@ namespace ProcessContainers {
         // IContainerAdministrator methods
         void Logging(const string& logDir, const string& loggingOptions) override;
 
-    protected:
+    private:
         void DestroyContainer(const string& name); // make sure that no leftovers from previous launch will cause crash
         bool ContainerNameTaken(const string& name);
         void containerStopCallback(int32_t cd, const std::string& containerId,
             IDobbyProxyEvents::ContainerState state,
             const void* params);
+        void EnqueueStopRequest(ContainerStoppingInfo info);
+        void StopContainer(int32_t cd, const string& name, uint32_t timeout, bool withPrejudice);
+        void ContainerStoppingThreadFn(); // Thread to process queued container stop requests
 
     private:
+        bool _exitStoppingThread;
+        std::thread _stoppingThread;
+        std::queue<ContainerStoppingInfo> _stoppingQueue;
+        std::mutex _stoppingMutex;
+        std::condition_variable _stoppingCV;
         std::promise<void> _stopPromise;
     };
 }
