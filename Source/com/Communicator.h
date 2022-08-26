@@ -387,7 +387,7 @@ namespace RPC {
             _adminLock.Lock();
 
             string oldPath;
-            if (_linkLoaderPath.empty() == 0) {
+            if (_linkLoaderPath.empty() == false) {
                 Core::SystemInfo::GetEnvironment(_T("LD_LIBRARY_PATH"), oldPath);
                 string newPath = oldPath + ":" + _linkLoaderPath;
                 Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), newPath, true);
@@ -399,7 +399,9 @@ namespace RPC {
             uint32_t result = fork.Launch(_options, &id);
 
             //restore the original value
-            Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), oldPath, true);
+            if (_linkLoaderPath.empty() == false) {
+                Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), oldPath, true);
+            }
 
             _adminLock.Unlock();
 
