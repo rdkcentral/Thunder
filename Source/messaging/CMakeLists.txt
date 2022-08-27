@@ -90,8 +90,13 @@ InstallCompatibleCMakeConfig(
         LEGACY_PUBLIC_HEADER_LOCATION "include/${NAMESPACE}/tracing") 
 
 createlink(
-        LINK ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/tracing/tracing.h 
-        TARGET messaging.h) 
+        LINK ${CMAKE_CURRENT_BINARY_DIR}/tracing.h
+        TARGET messaging.h
+       )
+install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/tracing.h
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/tracing/
+       )
 endif()
 
 
