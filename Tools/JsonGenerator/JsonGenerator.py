@@ -774,8 +774,8 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
         tokens = _Tokenize(string)
         for c, t in enumerate(tokens):
             # BUG?: jsonref (urllib) needs file:// and absolute path to a ref'd file
-            if t == '"$ref"' and tokens[c + 1] == ":" and tokens[c + 2][:2] != '"#':
-                ref_file = tokens[c + 2].strip('"')
+            if (t == '"$ref"') and (tokens[c+1] == ":") and (tokens[c+2][:2] != '"#') and (tokens[c+2].endswith('.json"') or tokens[c+2].endswith('.json#"')):
+                ref_file = tokens[c+2].strip('"')
                 ref_tok = ref_file.split("#", 1) if "#" in ref_file else [ref_file, ""]
                 if "{interfacedir}/" in ref_file:
                     ref_tok[0] = ref_tok[0].replace("{interfacedir}/", (include_path + os.sep) if include_path else "")
@@ -788,7 +788,7 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
                     raise RuntimeError("$ref file '%s' not found" % ref_tok[0])
                 ref_file = '"file:%s#%s"' % (urllib.request.pathname2url(ref_tok[0]), ref_tok[1])
                 tokens[c + 2] = ref_file
-            elif t == '"$cppref"' and tokens[c + 1] == ":" and tokens[c + 2][:2] != '"#':
+            elif (t == '"$cppref"' or t == '"$ref"') and (tokens[c+1] == ":") and (tokens[c+2][:2] != '"#') and (tokens[c+2].endswith('.h"') or tokens[c+2].endswith('.h#"')):
                 ref_file = tokens[c + 2].strip('"')
                 ref_tok = ref_file.split("#", 1) if "#" in ref_file else [ref_file, ""]
                 if "{cppinterfacedir}/" in ref_file:
@@ -799,8 +799,8 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
                     if os.path.isfile(os.path.join(path, ref_tok[0])):
                         ref_tok[0] = os.path.join(path, ref_tok[0])
                 if not os.path.isfile(ref_tok[0]):
-                    raise RuntimeError("$cppref file '%s' not found" % ref_tok[0])
-                cppif = LoadInterface(ref_tok[0], header_include_paths)
+                    raise RuntimeError("$ref file '%s' not found" % ref_tok[0])
+                cppif = LoadInterface(ref_tok[0], True, header_include_paths)
                 if cppif:
                     tokens[c] = json.dumps(cppif)
                     tokens[c - 1] = ""
@@ -813,6 +813,8 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
                         tokens[c + 3] = ""
                 else:
                     raise RuntimeError("failed to parse C++ header '%s'" % ref_tok[0])
+            elif (t == '"$ref"') and (tokens[c+1] == ":") and ("::" in tokens[c+2]):
+                tokens[c] = '"@dataref"'
         # Return back the preprocessed JSON as a string
         return " ".join(tokens)
 
@@ -854,21 +856,67 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
             else:
                 AdjustByFormat(schema["interface"])
 
-    def MarkRefs(schema):
+    def MarkRefs(schema, parent_name, parent, root):
+
+        def _Find(element, root):
+            paths = element.split("/")
+            data = root
+            for i in range(0, len(paths)):
+                if paths[i] and paths[i] != '#':
+                    if paths[i] in data:
+                        data = data[paths[i]]
+                    else:
+                        return None
+            return data
+
+        def _FindCpp(element, schema):
+            if isinstance(schema, OrderedDict):
+                if "original_type" in schema:
+                    if schema["original_type"] == element:
+                        return schema
+                for _, item in schema.items():
+                    found = _FindCpp(element, item)
+                    if found:
+                        return found
+            return None
+
         # Tags all objects that used to be $references
         if isinstance(schema, jsonref.JsonRef):
             schema["@ref"] = schema.__reference__["$ref"]
             if "description" in schema.__reference__:
                 schema["description"] = schema.__reference__["description"]
+
         if isinstance(schema, OrderedDict):
-            for _, item in schema.items():
-                MarkRefs(item)
+            for elem, item in schema.items():
+                MarkRefs(item, elem, schema, root)
+            if "@dataref" in schema:
+                splitted_path = schema["@dataref"].split('/')
+                json_path = '/'.join(splitted_path[:-1])
+                cpp_path = splitted_path[-1]
+                obj = _Find(json_path, root)
+                if obj:
+                    found = False
+                    for o in obj:
+                        if cpp_path.startswith(FRAMEWORK_NAMESPACE + "::"):
+                            cpp_path = cpp_path.replace(FRAMEWORK_NAMESPACE + "::","")
+                        cpp_obj = _FindCpp(cpp_path, o)
+                        if cpp_obj:
+                            parent[parent_name] = copy.deepcopy(cpp_obj)
+                            parent[parent_name]["@ref"] = "@" + json_path + "/" + cpp_obj["original_name"]
+                            if "description" in schema:
+                                parent[parent_name]["description"] = schema["description"]
+                            found = True
+                            break
+                    if not found:
+                        raise RuntimeError("Failed to find $ref path '%s' (C++ part)" % schema["@dataref"])
+                else:
+                    raise RuntimeError("Failed to find $ref path '%s' (JSON part)" % schema["@dataref"])
 
     with open(file, "r") as json_file:
         json_pre = PreprocessJson(file, json_file.read(), include_path, cpp_include_path, header_include_paths)
         json_resolved = jsonref.loads(json_pre, object_pairs_hook=OrderedDict)
         Adjust(json_resolved)
-        MarkRefs(json_resolved)
+        MarkRefs(json_resolved, None, None, json_resolved)
         return json_resolved
 
 
@@ -877,10 +925,10 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
 # C++ HEADER TO JSON CONVERTER
 #
 
-def LoadInterface(file, includePaths = []):
-    tree = ProxyStubGenerator.CppParser.ParseFiles([os.path.join(os.path.dirname(os.path.realpath(__file__)), 
+def LoadInterface(file, all = False, includePaths = []):
+    tree = ProxyStubGenerator.CppParser.ParseFiles([os.path.join(os.path.dirname(os.path.realpath(__file__)),
                 posixpath.normpath(DEFAULT_DEFINITIONS_FILE)), file], includePaths, log)
-    interfaces = [i for i in ProxyStubGenerator.Interface.FindInterfaceClasses(tree, INTERFACE_NAMESPACE, file) if i.obj.is_json]
+    interfaces = [i for i in ProxyStubGenerator.Interface.FindInterfaceClasses(tree, INTERFACE_NAMESPACE, file) if (i.obj.is_json or (all and not i.obj.is_event))]
 
     def Build(face):
         def _EvaluateRpcFormat(obj):
@@ -901,11 +949,17 @@ def LoadInterface(file, includePaths = []):
 
         schema["$schema"] = "interface.json.schema"
         schema["jsonrpc"] = "2.0"
-        schema["@dorpc"] = True
+        if face.obj.is_json:
+            schema["@dorpc"] = True
+            rpc_format = _EvaluateRpcFormat(face.obj)
+        else:
+            rpc_format = RpcFormat.COLLAPSED
+
+        verify = face.obj.is_json or face.obj.is_event
+
         schema["@interfaceonly"] = True
         schema["configuration"] = { "nodefault" : True }
 
-        rpc_format = _EvaluateRpcFormat(face.obj)
 
         info = dict()
         info["format"] = rpc_format.value
@@ -1089,7 +1143,7 @@ def LoadInterface(file, includePaths = []):
                 required = []
                 for var in vars:
                     if var.meta.input or not var.meta.output:
-                        if not var.type.IsConst() or (var.type.IsPointer() and not var.type.IsPointerToConst()):
+                        if (not var.type.IsConst() or (var.type.IsPointer() and not var.type.IsPointerToConst())) and verify:
                             if not var.meta.input:
                                 log.WarnLine(var, "'%s': non-const parameter assumed to be input (forgot 'const'?)" % var.name)
                             elif not var.meta.output:
@@ -1101,7 +1155,7 @@ def LoadInterface(file, includePaths = []):
                         if not is_property and not var.name.startswith("@_") and not var.name.startswith("__unnamed"):
                             properties[var_name]["original_name"] = var.name
                         properties[var_name]["position"] = vars.index(var)
-                        if not is_property and "description" not in properties[var_name]:
+                        if not is_property and "description" not in properties[var_name] and verify:
                             log.DocIssue("'%s': parameter is missing description" % var_name)
                         required.append(var_name)
                         if properties[var_name]["type"] == "string" and not var.type.IsReference() and not var.type.IsPointer() and not "enum" in properties[var_name]:
@@ -1265,7 +1319,7 @@ def LoadInterface(file, includePaths = []):
                     raise CppParseError(method, "property method must have one parameter")
 
             elif method.IsPureVirtual() and not event_params:
-                if method.retval.type and (isinstance(method.retval.type.Type(), ProxyStubGenerator.CppParser.Integer) and method.retval.type.Type().size == "long"):
+                if method.retval.type and ((isinstance(method.retval.type.Type(), ProxyStubGenerator.CppParser.Integer) and (method.retval.type.Type().size == "long")) or not verify):
                     obj = OrderedDict()
                     params = BuildParameters(method.vars, rpc_format)
                     if "properties" in params and params["properties"]:
@@ -1277,6 +1331,7 @@ def LoadInterface(file, includePaths = []):
                     obj["original_name"] = method_name
                     methods[prefix + method_name_lower] = obj
                 else:
+                    print(method.retval.type, verify, event_params)
                     raise CppParseError(method, "method return type must be uint32_t (error code), i.e. pass other return values by a reference")
 
             if obj:
@@ -1286,7 +1341,7 @@ def LoadInterface(file, includePaths = []):
                     obj["obsolete"] = True
                 if method.retval.meta.brief:
                     obj["summary"] = method.retval.meta.brief
-                elif (prefix + method_name_lower) not in properties:
+                elif (prefix + method_name_lower) not in properties and verify:
                     log.DocIssue("'%s': %s is missing brief description" % (method.name, "property" if method.retval.meta.is_property else "method"))
                 if method.retval.meta.details:
                     obj["description"] = method.retval.meta.details
@@ -2351,7 +2406,7 @@ def EmitHelperCode(root, emit, header_file):
                         description = e["description"] if "description" in e else ""
                         emit.Line("//  - %s: %s" % (e["message"], description))
                     line = "uint32_t %s::%s(%s%s%s& %s)%s" % (
-                        root.json_name, name, "const string& index, " if method.index else "", "const " if not getter else "", 
+                        root.json_name, name, "const string& index, " if method.index else "", "const " if not getter else "",
                             params, "response" if getter else "params", " const" if getter else "")
                     if method.included_from:
                         line += " /* %s */" % method.included_from
@@ -2769,7 +2824,6 @@ def CreateDocument(schema, path):
             MdBr()
 
         def ExampleObj(name, obj, root=False):
-            #name = (name if not "original_name" in obj else obj["original_name"].lower()) if not root else name
             obj_type = obj["type"]
             default = obj["example"] if "example" in obj else obj["default"] if "default" in obj else ""
             if not default and "enum" in obj:
@@ -3136,7 +3190,7 @@ def CreateDocument(schema, path):
                 extra += "notifications sent"
             if extra:
                 extra = " It includes detailed specification about its " + extra + "."
-            MdParagraph("This document describes purpose and functionality of the %s %s%s.%s" % 
+            MdParagraph("This document describes purpose and functionality of the %s %s%s.%s" %
                 (plugin_class, document_type, (" (version %s)" % version if document_type == "interface" else ""), extra))
 
         MdHeader("Case Sensitivity", 2)
@@ -3341,9 +3395,7 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
                 emitter.Line("// C++ classes for %s JSON-RPC API." % rpcObj.info["title"].replace("Plugin", "").strip())
                 emitter.Line("// Generated automatically from '%s'. DO NOT EDIT." % os.path.basename(path))
                 emitter.Line()
-                emitter.Line(
-                    "// Note: This code is inherently not thread safe. If required, proper synchronisation must be added."
-                )
+                emitter.Line("// Note: This code is inherently not thread safe. If required, proper synchronisation must be added.")
                 emitter.Line()
                 data_emitted = EmitObjects(rpcObj, emitter, os.path.basename(path), True)
                 if data_emitted:
@@ -3632,7 +3684,7 @@ if __name__ == "__main__":
             try:
                 log.Header(path)
                 if path.endswith(".h"):
-                    schemas = LoadInterface(path, args.includePaths)
+                    schemas = LoadInterface(path, False, args.includePaths)
                 else:
                     schemas = [LoadSchema(path, args.if_dir, args.cppif_dir, args.includePaths)]
                 for schema in schemas:
