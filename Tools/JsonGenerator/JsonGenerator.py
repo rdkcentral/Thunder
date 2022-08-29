@@ -1023,7 +1023,7 @@ def LoadInterface(file, all = False, includePaths = []):
                         if var_type.IsPointerToPointer():
                             result[1]["ptr"] = True
                         if var_type.IsPointerToConst():
-                            result[1]["ptrtoconst"] = True
+                            raise CppParseError(var, "passed iterators must not be constant")
                         return result
                     # All other pointer types are not supported
                     else:
