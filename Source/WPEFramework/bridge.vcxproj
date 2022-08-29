@@ -27,6 +27,7 @@
     <None Include="ExampleConfigAll.json" />
     <None Include="ExampleConfigLinux.json" />
     <None Include="ExampleConfigWindows.json" />
+    <None Include="ExampleConfigZigBee.json" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Controller.cpp" />
