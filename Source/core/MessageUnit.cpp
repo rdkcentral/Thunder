@@ -22,7 +22,6 @@
 namespace WPEFramework {
 namespace Core {
     namespace Messaging {
-        using namespace std::placeholders;
 
         MetaData::MetaData()
             : _type(INVALID)
@@ -582,7 +581,7 @@ namespace Core {
             _dispatcher.reset(new MessageDispatcher(identifier, 0, true, basePath, socketPort));
             if (_dispatcher != nullptr) {
                 if (_dispatcher->IsValid()) {
-                    _dispatcher->RegisterDataAvailable(std::bind(&MessageUnit::ReceiveMetaData, this, _1, _2, _3, _4));
+                    _dispatcher->RegisterDataAvailable(std::bind(&MessageUnit::ReceiveMetaData, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
                     result = Core::ERROR_NONE;
                 }
             }

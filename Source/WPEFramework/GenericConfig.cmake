@@ -42,6 +42,7 @@ set(ETHERNETCARD_NAME "eth0" CACHE STRING "Ethernet Card name which has to be as
 set(GROUP "" CACHE STRING "Define which system group will be used")
 set(UMASK "" CACHE STRING "Set the permission mask for the creation of new files. e.g. 0760")
 
+if(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
 map()
   key(plugins)
   if(MESSAGING)
@@ -304,3 +305,7 @@ install(
         DESTINATION ${CMAKE_INSTALL_PREFIX}/../etc/${NAMESPACE}/
         RENAME config.json
         COMPONENT ${MODULE_NAME})
+else()
+    find_package(ConfigGenerator REQUIRED)
+    message(SEND_ERROR "( ✿ ◠ ‿ ◠ ) FIXME: If you hit this error you are 'the choosen one' to fix the generic config using the ConfigGenerator")
+endif(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)

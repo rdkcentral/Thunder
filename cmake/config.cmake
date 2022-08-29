@@ -1,8 +1,4 @@
-## This is an stripped version of cmakepp
-##
-## https://github.com/toeb/cmakepp
-##
-cmake_minimum_required(VERSION 2.8.7)
+cmake_minimum_required(VERSION 3.7.0)
 
 get_property(is_included GLOBAL PROPERTY INCLUDE_GUARD)
 if(is_included)
@@ -13,7 +9,11 @@ set_property(GLOBAL PROPERTY INCLUDE_GUARD true)
 cmake_policy(SET CMP0007 NEW)
 cmake_policy(SET CMP0012 NEW)
 if(POLICY CMP0054)
-  cmake_policy(SET CMP0054 OLD)
+if(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
+  cmake_policy(SET CMP0054 OLD) # needed for the old config generator
+else()
+  cmake_policy(SET CMP0054 NEW)
+endif(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
 endif()
 # installation dir of cmakepp
 set(CMAKE_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}")
@@ -34,7 +34,13 @@ function(config_dir key)
 	return("${TMP_DIR}")
 endfunction()
 
+if(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
+## This is an stripped version of cmakepp
+##
+## https://github.com/toeb/cmakepp
+##
 ## includes all cmake files of cmakepp 
 include("${CMAKE_BASE_DIR}/config/core/require.cmake")
 
 require("${CMAKE_BASE_DIR}/config/*.cmake")
+endif(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
