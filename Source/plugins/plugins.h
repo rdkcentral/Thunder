@@ -29,6 +29,7 @@
 #include "Configuration.h"
 #include "IPlugin.h"
 #include "IShell.h"
+#include "IController.h"
 #include "IStateControl.h"
 #include "ISubSystem.h"
 #include "JSONRPC.h"

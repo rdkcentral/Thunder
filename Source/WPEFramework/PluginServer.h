@@ -3087,6 +3087,15 @@ namespace PluginHost {
 
         static void PostMortem(Service& service, const IShell::reason why, RPC::IRemoteConnection* connection);
 
+        uint32_t Persist()
+        {
+            return (_services.Persist());
+        }
+        uint32_t Load()
+        {
+            return (_services.Load());
+        }
+
     private:
         inline Core::ProxyType<Service> Controller()
         {

@@ -38,6 +38,7 @@ set(PUBLIC_HEADERS
         Configuration.h
         IPlugin.h
         IShell.h
+        IController.h
         IStateControl.h
         ISubSystem.h
         JSONRPC.h

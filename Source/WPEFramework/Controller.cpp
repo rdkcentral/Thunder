@@ -195,6 +195,131 @@ namespace Plugin {
         return (result);
     }
 
+    uint32_t Controller::Persist()
+    {
+        ASSERT(_pluginServer != nullptr);
+
+        uint32_t result = _pluginServer->Persist();
+
+        // Normalise return code
+        if (result != Core::ERROR_NONE) {
+            result = Core::ERROR_GENERAL;
+        }
+
+        return result;
+
+    }
+
+    uint32_t Controller::Delete(const string& path)
+    {
+        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+
+        if (path.empty() == false) {
+            if (path.find("..") == string::npos) {
+                ASSERT(_service != nullptr);
+                Core::File file(_service->PersistentPath() +  path);
+
+                if (file.Exists() == true) {
+                    if (file.IsDirectory() == true) {
+                        result = (Core::Directory((_service->PersistentPath() +  path).c_str()).Destroy(true) == true) ? Core::ERROR_NONE : Core::ERROR_DESTRUCTION_FAILED;
+                    } else {
+                        result = (file.Destroy() == true) ? Core::ERROR_NONE : Core::ERROR_DESTRUCTION_FAILED;
+                    }
+                } else {
+                    result = Core::ERROR_UNKNOWN_KEY;
+                }
+            }
+            else {
+                result = Core::ERROR_PRIVILIGED_REQUEST;
+            }
+        }
+
+        return result;
+    }
+
+    uint32_t Controller::Reboot()
+    {
+        uint32_t result =  Core::System::Reboot();
+
+        if ((result != Core::ERROR_NONE) && (result != Core::ERROR_UNAVAILABLE) && (result != Core::ERROR_PRIVILIGED_REQUEST) && (result != Core::ERROR_GENERAL)) {
+            result = Core::ERROR_GENERAL;
+        }
+
+        return result;
+    }
+
+    uint32_t Controller::Environment(const string& index, string& environment) const
+    {
+        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+
+        if (Core::SystemInfo::GetEnvironment(index, environment) == true) {
+            result = Core::ERROR_NONE;
+        }
+
+        return result;
+    }
+
+    uint32_t Controller::Configuration(const string& callsign, string& configuration) const 
+    {
+        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+        Core::ProxyType<PluginHost::Server::Service> service;
+
+        ASSERT(_pluginServer != nullptr);
+
+        if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
+            configuration = service->ConfigLine();
+            result = Core::ERROR_NONE;
+        }
+
+        return result;
+    }
+
+    uint32_t Controller::Configuration(const string& callsign, const string& configuration)
+    {
+        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+        Core::ProxyType<PluginHost::Server::Service> service;
+
+        ASSERT(_pluginServer != nullptr);
+
+        if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
+            result = service->ConfigLine(configuration);
+
+            // Normalise return code
+            if (result != Core::ERROR_NONE) {
+                result = Core::ERROR_GENERAL;
+            }
+        }
+
+        return result;
+    }
+
+    uint32_t Controller::Clone(const string& baseCallsign, const string& newCallsign)
+    {
+        uint32_t result = Core::ERROR_NONE;
+        const string controllerName = _pluginServer->Controller()->Callsign();
+
+        ASSERT(_pluginServer != nullptr);
+
+        if ((baseCallsign.empty() == false) && (baseCallsign.empty() == false) && (baseCallsign != controllerName) && (newCallsign != controllerName)) {
+            Core::ProxyType<PluginHost::Server::Service> baseService, newService;
+
+            if (_pluginServer->Services().FromIdentifier(baseCallsign, baseService) != Core::ERROR_NONE) {
+                result = Core::ERROR_UNKNOWN_KEY;
+            }
+            else if (_pluginServer->Services().FromIdentifier(newCallsign, newService) != Core::ERROR_NONE) {
+                result = _pluginServer->Services().Clone(baseService, newCallsign, newService);
+            }
+            else if (baseService->ClassName() != newService->ClassName()) {
+                result = Core::ERROR_GENERAL;
+            }
+        }
+        else {
+            result = Core::ERROR_PRIVILIGED_REQUEST;
+        }
+
+        return result;
+    }
+
     Core::ProxyType<Web::Response> Controller::GetMethod(Core::TextSegmentIterator& index) const
     {
         Core::ProxyType<Web::Response> result(PluginHost::IFactories::Instance().Response());
