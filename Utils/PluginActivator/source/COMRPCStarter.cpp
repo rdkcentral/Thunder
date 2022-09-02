@@ -119,15 +119,14 @@ bool COMRPCStarter::activatePlugin(const int maxRetries, const int retryDelayMs)
             }
         }
     }
+
     if (!success) {
         LOG_ERROR(mPluginName.c_str(), "Max retries hit - giving up activating the plugin");
     }
 
-    if (shell)
-    {
+    if (shell) {
         shell->Release();
     }
-
 
     return success;
 }
