@@ -17,14 +17,14 @@
  * limitations under the License.
  */
 
-#include "Module.h"
 #include "COMRPCStarter.h"
+#include "Module.h"
 
 #include <memory>
 
 static int gRetryCount = 100;
 static int gRetryDelayMs = 500;
-static std::string gPluginName;
+static string gPluginName;
 
 /**
  * @brief Display a help message for the tool
@@ -46,46 +46,41 @@ static void displayUsage()
  * Must be given the name of the plugin to activate, everything else
  * is optional and will fallback to sane defaults
  */
-static void parseArgs(const int argc, char **argv)
+static void parseArgs(const int argc, char** argv)
 {
-    if (argc == 1)
-    {
+    if (argc == 1) {
         displayUsage();
         exit(EXIT_SUCCESS);
     }
 
-    struct option longopts[] =
-        {
-            {"help", no_argument, nullptr, (int)'h'},
-            {"retries", required_argument, nullptr, (int)'r'},
-            {"delay", required_argument, nullptr, (int)'d'},
-            {nullptr, 0, nullptr, 0}};
+    struct option longopts[] = {
+        { "help", no_argument, nullptr, (int)'h' },
+        { "retries", required_argument, nullptr, (int)'r' },
+        { "delay", required_argument, nullptr, (int)'d' },
+        { nullptr, 0, nullptr, 0 }
+    };
 
     opterr = 0;
 
     int c;
     int longindex;
 
-    while ((c = getopt_long(argc, argv, "hr:d:", longopts, &longindex)) != -1)
-    {
-        switch (c)
-        {
+    while ((c = getopt_long(argc, argv, "hr:d:", longopts, &longindex)) != -1) {
+        switch (c) {
         case 'h':
             displayUsage();
             exit(EXIT_SUCCESS);
             break;
         case 'r':
             gRetryCount = std::atoi(optarg);
-            if (gRetryCount < 0)
-            {
+            if (gRetryCount < 0) {
                 fprintf(stderr, "Error: Retry count must be > 0\n");
                 exit(EXIT_FAILURE);
             }
             break;
         case 'd':
             gRetryDelayMs = std::atoi(optarg);
-            if (gRetryDelayMs < 0)
-            {
+            if (gRetryDelayMs < 0) {
                 fprintf(stderr, "Error: Delay ms must be > 0\n");
                 exit(EXIT_FAILURE);
             }
@@ -106,8 +101,7 @@ static void parseArgs(const int argc, char **argv)
         }
     }
 
-    if (optind == argc)
-    {
+    if (optind == argc) {
         fprintf(stderr, "Error: Must provide plugin name to activate\n");
         exit(EXIT_FAILURE);
     }
@@ -115,25 +109,20 @@ static void parseArgs(const int argc, char **argv)
     gPluginName = argv[optind];
 
     optind++;
-    for (int i = optind; i < argc; i++)
-    {
+    for (int i = optind; i < argc; i++) {
         printf("Warning: Non-option argument %s ignored\n", argv[i]);
     }
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     parseArgs(argc, argv);
 
     // For now, we only implement the starter in COM-RPC but could do a JSON-RPC version
     // in the future
+    bool success;
     std::unique_ptr<IPluginStarter> starter = std::make_unique<COMRPCStarter>(gPluginName);
-    if (starter->activatePlugin(gRetryCount, gRetryDelayMs))
-    {
-        return EXIT_SUCCESS;
-    }
-    else
-    {
-        return EXIT_FAILURE;
-    }
+    success = starter->activatePlugin(gRetryCount, gRetryDelayMs);
+
+    return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

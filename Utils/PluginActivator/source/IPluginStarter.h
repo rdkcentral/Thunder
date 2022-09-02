@@ -26,10 +26,9 @@
  *
  * Could be implemented with JSON-RPC or COM-RPC
  */
-class IPluginStarter
-{
+class IPluginStarter {
 public:
-    virtual ~IPluginStarter() {};
+    virtual ~IPluginStarter(){};
 
     /**
      * @brief Activate a Thunder plugin

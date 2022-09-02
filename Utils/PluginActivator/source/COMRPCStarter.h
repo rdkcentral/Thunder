@@ -29,10 +29,9 @@ using namespace WPEFramework;
  *
  * Connects to Thunder over COM-RPC and attempts to start a given plugin
  */
-class COMRPCStarter : public IPluginStarter
-{
+class COMRPCStarter : public IPluginStarter {
 public:
-    explicit COMRPCStarter(const std::string& pluginName);
+    explicit COMRPCStarter(const string& pluginName);
     ~COMRPCStarter() override;
 
     bool activatePlugin(const int maxRetries, const int retryDelayMs) final;
@@ -41,7 +40,7 @@ private:
     Core::NodeId getConnectionEndpoint() const;
 
 private:
-    const std::string mPluginName;
+    const string mPluginName;
 
     Core::ProxyType<RPC::InvokeServerType<1, 0, 4>> mEngine;
     Core::ProxyType<RPC::CommunicatorClient> mClient;

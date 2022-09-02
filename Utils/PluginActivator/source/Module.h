@@ -23,10 +23,10 @@
 #define MODULE_NAME PluginStarter
 #endif
 
-#include <core/core.h>
 #include <com/com.h>
-#include <plugins/IShell.h>
+#include <core/core.h>
 #include <plugins/Configuration.h>
+#include <plugins/IShell.h>
 
 #undef EXTERNAL
 #define EXTERNAL
