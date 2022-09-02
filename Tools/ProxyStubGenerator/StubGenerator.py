@@ -827,6 +827,8 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                               ((" ".join(m.qualifiers) + " " + iface_name).strip(),  (" ".join(m.qualifiers) + " " + iface_name).strip()))
                     emit.Line("ASSERT((implementation != %s) && \"Null %s implementation pointer\");" %
                               (NULLPTR, iface_name))
+                    emit.Line("if (implementation != %s) {" % (NULLPTR))
+                    emit.IndentInc()
                     call = ""
                     if retval.has_output:
                         call += "%s %s = " % (retval.str_noref, retval.name)
@@ -924,6 +926,8 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                     p.name)
                                 emit.IndentDec()
                                 emit.Line("}")
+                    emit.IndentDec()
+                    emit.Line("}")
 
                 else:
                     log.Print("stubbed method %s" % m.full_name, source_file)
