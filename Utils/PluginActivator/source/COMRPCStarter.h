@@ -34,14 +34,14 @@ public:
     explicit COMRPCStarter(const string& pluginName);
     ~COMRPCStarter() override;
 
-    bool activatePlugin(const int maxRetries, const int retryDelayMs) final;
+    bool activatePlugin(const uint8_t maxRetries, const uint16_t retryDelayMs) override;
 
 private:
     Core::NodeId getConnectionEndpoint() const;
 
 private:
-    const string mPluginName;
+    const string _pluginName;
 
-    Core::ProxyType<RPC::InvokeServerType<1, 0, 4>> mEngine;
-    Core::ProxyType<RPC::CommunicatorClient> mClient;
+    Core::ProxyType<RPC::InvokeServerType<1, 0, 4>> _engine;
+    Core::ProxyType<RPC::CommunicatorClient> _client;
 };

@@ -62,11 +62,11 @@ static void parseArgs(const int argc, char** argv)
 
     opterr = 0;
 
-    int c;
+    int option;
     int longindex;
 
-    while ((c = getopt_long(argc, argv, "hr:d:", longopts, &longindex)) != -1) {
-        switch (c) {
+    while ((option = getopt_long(argc, argv, "hr:d:", longopts, &longindex)) != -1) {
+        switch (option) {
         case 'h':
             displayUsage();
             exit(EXIT_SUCCESS);
@@ -121,8 +121,12 @@ int main(int argc, char* argv[])
     // For now, we only implement the starter in COM-RPC but could do a JSON-RPC version
     // in the future
     bool success;
-    std::unique_ptr<IPluginStarter> starter = std::make_unique<COMRPCStarter>(gPluginName);
+    std::unique_ptr<IPluginStarter> starter(new COMRPCStarter(gPluginName));
     success = starter->activatePlugin(gRetryCount, gRetryDelayMs);
+
+    // Destruct the COM-RPC starter so it cleans up after itself before we dispose WPEFramework singletons
+    starter.reset();
+    Core::Singleton::Dispose();
 
     return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

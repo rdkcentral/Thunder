@@ -25,8 +25,7 @@
 
 #include <com/com.h>
 #include <core/core.h>
-#include <plugins/Configuration.h>
-#include <plugins/IShell.h>
+#include <plugins/plugins.h>
 
 #undef EXTERNAL
 #define EXTERNAL

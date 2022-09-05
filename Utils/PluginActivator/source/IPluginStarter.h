@@ -28,7 +28,7 @@
  */
 class IPluginStarter {
 public:
-    virtual ~IPluginStarter(){};
+    virtual ~IPluginStarter() = default;
 
     /**
      * @brief Activate a Thunder plugin
@@ -39,5 +39,5 @@ public:
      *                                  this method will return false
      * @param[in]   retryDelayMs        Amount of time to wait after a failed activation before retrying again
      */
-    virtual bool activatePlugin(const int maxRetries, const int retryDelayMs) = 0;
+    virtual bool activatePlugin(const uint8_t maxRetries, const uint16_t retryDelayMs) = 0;
 };

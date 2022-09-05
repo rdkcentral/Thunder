@@ -25,28 +25,29 @@
 #include <thread>
 
 COMRPCStarter::COMRPCStarter(const string& pluginName)
-    : mPluginName(pluginName)
-    , mEngine(Core::ProxyType<RPC::InvokeServerType<1, 0, 4>>::Create())
-    , mClient(Core::ProxyType<RPC::CommunicatorClient>::Create(getConnectionEndpoint(),
-          Core::ProxyType<Core::IIPCServer>(mEngine)))
+    : _pluginName(pluginName)
+    , _engine(Core::ProxyType<RPC::InvokeServerType<1, 0, 4>>::Create())
+    , _client(Core::ProxyType<RPC::CommunicatorClient>::Create(getConnectionEndpoint(),
+          Core::ProxyType<Core::IIPCServer>(_engine)))
 {
     // Announce our arrival
-    mEngine->Announcements(mClient->Announcement());
+    _engine->Announcements(_client->Announcement());
 
-    if (!mClient.IsValid()) {
+    if (!_client.IsValid()) {
         LOG_ERROR(pluginName.c_str(), "Failed to create valid COM-RPC client");
     }
 }
 
 COMRPCStarter::~COMRPCStarter()
 {
-    // Disconnect from Thunder and clean up
-    mClient->Close(RPC::CommunicationTimeOut);
-    if (mClient.IsValid()) {
-        mClient.Release();
+    // Close the connection just in case something left it open
+    if (_client->IsOpen()) {
+        _client->Close(RPC::CommunicationTimeOut);
     }
 
-    Core::Singleton::Dispose();
+    if (_client.IsValid()) {
+        _client.Release();
+    }
 }
 
 /**
@@ -57,7 +58,7 @@ COMRPCStarter::~COMRPCStarter()
  *
  * @return True if plugin successfully activated, false if failed to activate
  */
-bool COMRPCStarter::activatePlugin(const int maxRetries, const int retryDelayMs)
+bool COMRPCStarter::activatePlugin(const uint8_t maxRetries, const uint16_t retryDelayMs)
 {
     // Attempt to open the plugin shell
     bool success = false;
@@ -66,12 +67,12 @@ bool COMRPCStarter::activatePlugin(const int maxRetries, const int retryDelayMs)
     PluginHost::IShell* shell = nullptr;
 
     while (!success && currentRetry <= maxRetries) {
-        LOG_INF(mPluginName.c_str(), "Attempting to activate plugin - attempt %d/%d", currentRetry, maxRetries);
+        LOG_INF(_pluginName.c_str(), "Attempting to activate plugin - attempt %d/%d", currentRetry, maxRetries);
 
-        auto start = std::chrono::steady_clock::now();
+        auto start = Core::Time::Now();
 
         if (!shell) {
-            shell = mClient->Open<PluginHost::IShell>(mPluginName, ~0, RPC::CommunicationTimeOut);
+            shell = _client->Open<PluginHost::IShell>(_pluginName, ~0, RPC::CommunicationTimeOut);
         }
 
         // We could not open IShell for some reason - Thunder doesn't give an error about why this might have failed
@@ -79,53 +80,57 @@ bool COMRPCStarter::activatePlugin(const int maxRetries, const int retryDelayMs)
         //  a) Thunder isn't running or we can't connect to /tmp/communicator
         //  b) A plugin with the specified callsign does not exist
         if (!shell) {
-            LOG_ERROR(mPluginName.c_str(), "Failed to open IShell interface for %s", mPluginName.c_str());
+            LOG_ERROR(_pluginName.c_str(), "Failed to open IShell interface for %s", _pluginName.c_str());
             currentRetry++;
 
             // Must close the connection before we retry, since even if shell is null the underlying
             // connection will still have been opened
-            mClient->Close(RPC::CommunicationTimeOut);
+            _client->Close(RPC::CommunicationTimeOut);
 
+            // Sleep, then try again
             std::this_thread::sleep_for(std::chrono::milliseconds(retryDelayMs));
-            continue;
-        };
-
-        // Connected to Thunder successfully and got the plugin shell
-        if (shell->State() == PluginHost::IShell::ACTIVATED) {
-            LOG_INF(mPluginName.c_str(), "Plugin is already activated - nothing to do");
-            success = true;
         } else {
-            // Will block until plugin is activated
-            uint32_t result = shell->Activate(PluginHost::IShell::REQUESTED);
-
-            auto end = std::chrono::steady_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-            if (result != Core::ERROR_NONE) {
-                if (result == Core::ERROR_PENDING_CONDITIONS) {
-                    // Ideally we'd print out which preconditions are un-met for debugging, but that data is not exposed through the IShell interface
-                    LOG_ERROR(mPluginName.c_str(), "Failed to activate plugin due to unmet preconditions after %ldms", duration.count());
-                } else {
-                    LOG_ERROR(mPluginName.c_str(), "Failed to activate plugin with error %u (%s) after %ldms", result, Core::ErrorToString(result), duration.count());
-                }
-                // Try activation again up until the max number of retries
-                currentRetry++;
-                std::this_thread::sleep_for(std::chrono::milliseconds(retryDelayMs));
-                continue;
-            } else {
-                // Our work here is done!
-                LOG_INF(mPluginName.c_str(), "Successfully activated plugin after %ldms", duration.count());
+            // Connected to Thunder successfully and got the plugin shell
+            if (shell->State() == PluginHost::IShell::ACTIVATED) {
+                LOG_INF(_pluginName.c_str(), "Plugin is already activated - nothing to do");
                 success = true;
+            } else {
+                // Will block until plugin is activated
+                uint32_t result = shell->Activate(PluginHost::IShell::REQUESTED);
+
+                auto duration = Core::Time::Now().Sub(start.MilliSeconds());
+
+                if (result != Core::ERROR_NONE) {
+                    if (result == Core::ERROR_PENDING_CONDITIONS) {
+                        // Ideally we'd print out which preconditions are un-met for debugging, but that data is not exposed through the IShell interface
+                        LOG_ERROR(_pluginName.c_str(), "Failed to activate plugin due to unmet preconditions after %dms", duration.MilliSeconds());
+                    } else {
+                        LOG_ERROR(_pluginName.c_str(), "Failed to activate plugin with error %u (%s) after %dms", result, Core::ErrorToString(result), duration.MilliSeconds());
+                    }
+
+                    // Try activation again up until the max number of retries
+                    currentRetry++;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(retryDelayMs));
+                } else {
+                    // Our work here is done!
+                    LOG_INF(_pluginName.c_str(), "Successfully activated plugin after %dms", duration.MilliSeconds());
+                    success = true;
+                }
             }
         }
     }
 
     if (!success) {
-        LOG_ERROR(mPluginName.c_str(), "Max retries hit - giving up activating the plugin");
+        LOG_ERROR(_pluginName.c_str(), "Max retries hit - giving up activating the plugin");
     }
 
     if (shell) {
         shell->Release();
+    }
+
+    // Be a good citizen and don't leave any open connections
+    if (_client->IsOpen()) {
+        _client->Close(RPC::CommunicationTimeOut);
     }
 
     return success;
@@ -142,7 +147,7 @@ Core::NodeId COMRPCStarter::getConnectionEndpoint() const
     // On linux, Thunder defaults to /tmp/communicator for the generic COM-RPC
     // interface
     if (communicatorPath.empty()) {
-        communicatorPath = "/tmp/communicator";
+        communicatorPath = _T("/tmp/communicator");
     }
 
     return Core::NodeId(communicatorPath.c_str());
