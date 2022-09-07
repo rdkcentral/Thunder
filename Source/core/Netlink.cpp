@@ -22,6 +22,14 @@
 #include "Netlink.h"
 #include "Sync.h"
 
+#ifdef __WINDOWS__
+#include <Winsock2.h>
+#include <ws2tcpip.h>
+#define __ERRORRESULT__ ::WSAGetLastError()
+#else
+#define __ERRORRESULT__ errno
+#endif
+
 // #define DEBUG_FRAMES 1
 
 namespace WPEFramework {
