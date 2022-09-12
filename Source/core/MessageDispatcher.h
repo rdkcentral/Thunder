@@ -78,7 +78,7 @@ namespace Core {
             }
             void Relinquish()
             {
-                return (_doorBell.Relinquish());
+                _doorBell.Relinquish();
             }
             uint32_t GetOverwriteSize(Cursor& cursor) override
             {
@@ -86,7 +86,7 @@ namespace Core {
                     uint16_t chunkSize = 0;
                     cursor.Peek(chunkSize);
 
-                    TRACE_L1("Flushing buffer data !!! %d", __LINE__);
+                    TRACE_L1("Flushing buffer data!");
 
                     cursor.Forward(chunkSize);
                 }
@@ -100,11 +100,6 @@ namespace Core {
                 cursor.Peek(entrySize);
                 cursor.Forward(sizeof(entrySize));
                 return entrySize > sizeof(entrySize) ? entrySize - sizeof(entrySize) : 0;
-            }
-
-            void DataAvailable() override
-            {
-                Ring();
             }
 
         private:
@@ -180,7 +175,6 @@ namespace Core {
         };
 
     public:
-        //public methods
         /**
          * @brief Construct a new Message Dispatcher object
          *
@@ -190,7 +184,7 @@ namespace Core {
          * @param baseDirectory where to place all the necessary files. This directory should exist before creating this class.
          * @param socketPort triggers the use of using a IP socket in stead of a domain socket if the port value is not 0.
          */
-        MessageDispatcherType(const string& identifier, const uint32_t instanceId, bool initialize, const string& baseDirectory, const uint16_t socketPort = 0)
+        MessageDispatcherType(const string& identifier, const uint32_t instanceId, const bool initialize, const string& baseDirectory, const uint16_t socketPort = 0)
             : _filenames(PrepareFilenames(baseDirectory, identifier, instanceId, socketPort))
             // clang-format off
             , _dataBuffer(_filenames.doorBell, _filenames.data,  Core::File::USER_READ    |
@@ -201,12 +195,18 @@ namespace Core {
                                                                  Core::File::OTHERS_READ  |
                                                                  Core::File::OTHERS_WRITE |
                                                                  Core::File::SHAREABLE,
-                                                                 initialize ? DATA_SIZE + sizeof(Core::CyclicBuffer::control) : 0, true)
+                                                                 initialize ? DATA_SIZE : 0, true)
             // clang-format on
             , _metaDataBuffer(initialize ? new MetaDataBuffer<METADATA_SIZE>(_filenames.metaData) : nullptr)
         {
-            if (!IsValid()) {
-                TRACE_L1("MessageDispatcher is not valid!");
+            if (IsValid() == true) {
+                const uint32_t used = _dataBuffer.Used();
+                if ((initialize == false) && (used  > 0)) {
+                    TRACE_L1("%d bytes already in the buffer instance %d", used, instanceId);
+                    _dataBuffer.Ring();
+                }
+            } else {
+                TRACE_L1("MessageDispatcher instance %d is not valid!", instanceId);
             }
         }
 
@@ -221,7 +221,7 @@ namespace Core {
 
         /**
         * @brief Writes data into cyclic buffer. After writing everything, this side should call Ring() to notify other side.
-        *        To receive this data other side needs to wait for the doorbel ring and then use PopData
+        *        To receive this data other side needs to wait for the doorbell ring and then use PopData
         *
         * @param length length of message
         * @param value buffer
@@ -230,11 +230,13 @@ namespace Core {
         */
         uint32_t PushData(const uint16_t length, const uint8_t* value)
         {
-            _dataLock.Lock();
-
-            ASSERT(length > 0);
             uint32_t result = Core::ERROR_WRITE_ERROR;
             const uint16_t fullLength = sizeof(length) + length; // headerLength + informationLength
+
+            ASSERT(length > 0);
+            ASSERT(value != nullptr);
+
+            _dataLock.Lock();
 
             const uint16_t reservedLength = _dataBuffer.Reserve(fullLength);
 
@@ -242,10 +244,10 @@ namespace Core {
                 //no need to serialize because we can write to CyclicBuffer step by step
                 _dataBuffer.Write(reinterpret_cast<const uint8_t*>(&fullLength), sizeof(fullLength)); //fullLength
                 _dataBuffer.Write(value, length); //value
+                _dataBuffer.Ring();
                 result = Core::ERROR_NONE;
-
             } else {
-                TRACE_L1("Buffer to small to fit message!\n");
+                TRACE_L1("Buffer to small to fit message!");
             }
 
             _dataLock.Unlock();
@@ -260,30 +262,31 @@ namespace Core {
          *                  ERROR_GENERAL - mimimal required bytes to fit whole message.
          *                  ERROR_READ_ERROR - the same value as passed in
          * @param outValue buffer
-         * @return uint32_t ERROR_READ_ERROR - unable to read or data is corrupted
+         * @return uint32_t ERROR_READ_ERROR - no data or data is corrupted
          *                  ERROR_NONE - OK
          *                  ERROR_GENERAL - buffer too small to fit whole message at once
          */
         uint32_t PopData(uint16_t& outLength, uint8_t* outValue)
         {
-            ASSERT(_dataBuffer.IsValid());
-
-            _dataLock.Lock();
             uint32_t result = Core::ERROR_READ_ERROR;
 
-            if (_dataBuffer.Validate()) {
+            ASSERT(outLength != 0);
+            ASSERT(outValue != nullptr);
 
-                uint32_t length = _dataBuffer.Read(outValue, outLength, true);
+            _dataLock.Lock();
+
+            if (_dataBuffer.IsValid() == true) {
+                const uint32_t length = _dataBuffer.Read(outValue, outLength, true);
                 if (length > 0) {
                     if (length > outLength) {
-                        TRACE_L1("Lost part of the message\n");
+                        TRACE_L1("Lost part of the message");
                         result = Core::ERROR_GENERAL;
-                        outLength = length;
                     } else {
                         result = Core::ERROR_NONE;
-                        outLength = length;
                     }
                 }
+
+                outLength = length;
             }
 
             _dataLock.Unlock();
@@ -298,7 +301,6 @@ namespace Core {
         {
             return _dataBuffer.Wait(waitTime);
         }
-
         void FlushDataBuffer()
         {
             _dataBuffer.Flush();
@@ -315,7 +317,11 @@ namespace Core {
          */
         uint16_t PushMetadata(const uint16_t length, uint8_t* value, const uint16_t maxLength)
         {
+            ASSERT(value != nullptr);
+            ASSERT(maxLength != 0);
+
             _metaDataLock.Lock();
+
             uint16_t readLength = 0;
 
             Core::IPCChannelClientType<Core::Void, false, true> channel(Core::NodeId(_filenames.metaData.c_str()), METADATA_SIZE);
@@ -344,10 +350,11 @@ namespace Core {
 
         void RegisterDataAvailable(MetaDataCallback notification)
         {
-            if (_metaDataBuffer->IsOpen()) {
+            if (_metaDataBuffer->IsOpen() == true) {
                 _metaDataBuffer->RegisterMetaDataCallback(notification);
             }
         }
+
         void UnregisterDataAvailable()
         {
             _metaDataBuffer->UnregisterMetaDataCallback();
@@ -357,14 +364,13 @@ namespace Core {
         {
             bool result = true;
 
-            if (!_dataBuffer.IsValid()) {
+            if (_dataBuffer.IsValid() == false) {
                 result = _dataBuffer.Validate();
             }
-            if (_metaDataBuffer != nullptr) {
-                if (!_metaDataBuffer->IsOpen()) {
-                    result = false;
-                }
+            if ((result == true) && (_metaDataBuffer != nullptr)) {
+                result = _metaDataBuffer->IsOpen();
             }
+
             return result;
         }
 
@@ -409,7 +415,7 @@ namespace Core {
             return { doorBellFilename, metaDataFilename, dataFilename };
         }
 
-        //private variables
+    private:
         Core::CriticalSection _dataLock;
         Core::CriticalSection _metaDataLock;
 
