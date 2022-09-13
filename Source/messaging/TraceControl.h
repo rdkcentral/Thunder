@@ -22,7 +22,6 @@
 #include "Control.h"
 #include "Module.h"
 #include "TextMessage.h"
-#include <inttypes.h>
 
 #ifdef _THUNDER_PRODUCTION
 

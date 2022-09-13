@@ -47,6 +47,7 @@ namespace Logging {
 #define SYSLOG(CATEGORY, PARAMETERS) \
     do {                                                                                                                                              \
         if (SYSLOG_ENABLED(CATEGORY) == true) {                                                                                                       \
+            static_assert(std::is_base_of<WPEFramework::Logging::BaseCategory, CATEGORY>::value, "SYSLOG() only for Logging controls");               \
             CATEGORY __data__ PARAMETERS;                                                                                                             \
             WPEFramework::Core::Messaging::Information __info__(WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING,                        \
                 WPEFramework::Core::ClassNameOnly(typeid(CATEGORY).name()).Text(),                                                                    \

@@ -27,6 +27,7 @@ set(PUBLIC_HEADERS
         Module.h
         TraceFactory.h
         TextMessage.h
+        BaseCategory.h
         )
 
 set(SOURCES 
