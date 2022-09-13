@@ -243,7 +243,7 @@ namespace Core {
             }
 
         private:
-            Core::CriticalSection _adminLock;
+            mutable Core::CriticalSection _adminLock;
             InformationStorage _info;
             std::list<IControl*> _controls;
         };

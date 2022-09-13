@@ -78,7 +78,8 @@ namespace Core {
             return deserialized;
         }
 
-        Information::Information(const MetaData::MessageType type, const string& category, const string& module, const string& filename, uint16_t lineNumber, const uint64_t timeStamp)
+        Information::Information(const MetaData::MessageType type, const string& category, const string& module,
+                        const string& filename, uint16_t lineNumber, const uint64_t timeStamp)
             : _metaData(type, category, module)
             , _filename(filename)
             , _lineNumber(lineNumber)
@@ -265,48 +266,59 @@ namespace Core {
             if (metaData.Type() == MetaData::MessageType::TRACING) {
                 bool found = false;
                 auto it = _settings.Tracing.Entries.Elements();
-                while (it.Next()) {
 
-                    //toggle for module and category
-                    if (!metaData.Module().empty() && !metaData.Category().empty()) {
+                // module and category set
+                if ((metaData.Module().empty() == false) && (metaData.Category().empty() == false)) {
+                    while (it.Next() == true) {
                         if (metaData.Module() == it.Current().Module.Value() && metaData.Category() == it.Current().Category.Value()) {
                             it.Current().Enabled = isEnabled;
                             found = true;
+                            break;
                         }
-                        //toggle all categories for module
-                    } else if (!metaData.Module().empty() && metaData.Category().empty()) {
+                    }
+                }
+                // all categories for module
+                else if ((metaData.Module().empty() == false) && (metaData.Category().empty() == true)) {
+                    while (it.Next() == true) {
                         if (metaData.Module() == it.Current().Module.Value()) {
                             it.Current().Enabled = isEnabled;
                             found = true;
                         }
                     }
-                    //toggle category for all modules
-                    else if (metaData.Module().empty() && !metaData.Category().empty()) {
+                }
+                // category for all modules
+                else if ((metaData.Module().empty() == true) && (metaData.Category().empty() == false)) {
+                    while (it.Next() == true) {
                         if (metaData.Category() == it.Current().Category.Value()) {
                             it.Current().Enabled = isEnabled;
                             found = true;
                         }
                     }
                 }
-                if (!found) {
+
+                if (found == false) {
                     _settings.Tracing.Entries.Add({ metaData.Module(), metaData.Category(), isEnabled });
                 }
             }
-
             else if (metaData.Type() == MetaData::MessageType::LOGGING) {
                 bool found = false;
-                auto it = _settings.Tracing.Entries.Elements();
-                while (it.Next()) {
-                    if (!metaData.Category().empty()) {
+                if (metaData.Category().empty() == false) {
+                    auto it = _settings.Logging.Entries.Elements();
+
+                    while (it.Next() == true) {
                         if (metaData.Category() == it.Current().Category.Value()) {
                             it.Current().Enabled = isEnabled;
                             found = true;
+                            break;
                         }
                     }
                 }
-                if (!found) {
-                    _settings.Logging.Entries.Add({ _T("SysLog"), metaData.Category(), isEnabled });
+
+                if (found == false) {
+                    _settings.Logging.Entries.Add({ _T(""), metaData.Category(), isEnabled });
                 }
+            } else {
+                ASSERT(!"Invalid message type");
             }
         }
         const Settings& MessageList::JsonSettings() const
@@ -327,22 +339,30 @@ namespace Core {
         bool MessageList::IsEnabled(const MetaData& metaData) const
         {
             bool result = false;
+
             if (metaData.Type() == MetaData::MessageType::TRACING) {
                 auto it = _settings.Tracing.Entries.Elements();
 
-                while (it.Next()) {
-                    if ((!it.Current().Module.IsSet() && it.Current().Category.Value() == metaData.Category()) || (it.Current().Module.Value() == metaData.Module() && it.Current().Category.Value() == metaData.Category())) {
-                        result = it.Current().Enabled.Value();
+                while (it.Next() == true) {
+                    if (((it.Current().Module.IsSet() == false) && (it.Current().Category.Value() == metaData.Category()))
+                        || ((it.Current().Category.IsSet() == false) && (it.Current().Module.Value() == metaData.Module()))
+                        || ((it.Current().Module.Value() == metaData.Module()) && (it.Current().Category.Value() == metaData.Category()))) {
+                            result = it.Current().Enabled.Value();
+                            break;
                     }
                 }
-            } else if (metaData.Type() == MetaData::MessageType::LOGGING) {
+            }
+            else if (metaData.Type() == MetaData::MessageType::LOGGING) {
                 result = true;
                 auto it = _settings.Logging.Entries.Elements();
-                while (it.Next()) {
+                while (it.Next() == true) {
                     if (it.Current().Category.Value() == metaData.Category()) {
                         result = it.Current().Enabled.Value();
+                        break;
                     }
                 }
+            } else {
+                ASSERT(!"Invalid message type");
             }
 
             return result;
@@ -365,6 +385,8 @@ namespace Core {
             uint16_t lastSerialized = 0;
             buffer[serialized++] = static_cast<uint8_t>(0); //buffer[0] will indicate how much entries was serialized
 
+            _adminLock.Lock();
+
             for (const auto& control : _controls) {
                 lastSerialized = control->MessageMetaData().Serialize(buffer + serialized, length - serialized);
 
@@ -373,11 +395,13 @@ namespace Core {
                     buffer[serialized++] = control->Enable();
                     buffer[0]++;
                 } else {
-                    TRACE_L1(_T("ControlList is cut, not enough memory to fit all controls. (MetaDataSize too small)"));
+                    TRACE_L1("ControlList is cut, not enough memory to fit all controls (MetaDataSize too small)");
                     //unlucky, not all entries will fit
                     break;
                 }
             }
+
+            _adminLock.Unlock();
 
             return serialized;
         }
@@ -392,6 +416,7 @@ namespace Core {
         uint16_t ControlList::Deserialize(uint8_t buffer[], const uint16_t length)
         {
             ASSERT(length > 0);
+            ASSERT(buffer != nullptr);
 
             uint16_t deserialized = 0;
             uint16_t lastDeserialized = 0;
@@ -418,18 +443,18 @@ namespace Core {
         void ControlList::Announce(IControl* control)
         {
             ASSERT(control != nullptr);
-            ASSERT(std::find(_controls.begin(), _controls.end(), control) == _controls.end());
 
             Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+            ASSERT(std::find(_controls.begin(), _controls.end(), control) == _controls.end());
             _controls.emplace_back(control);
         }
 
         void ControlList::Revoke(IControl* control)
         {
             ASSERT(control != nullptr);
-            ASSERT(std::find(_controls.begin(), _controls.end(), control) != _controls.end());
 
             Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+            ASSERT(std::find(_controls.begin(), _controls.end(), control) != _controls.end());
 
             auto entry = std::find(_controls.begin(), _controls.end(), control);
             _controls.erase(entry);
@@ -441,33 +466,48 @@ namespace Core {
          */
         void ControlList::Update(const MetaData& metaData, const bool enabled)
         {
-            for (auto& control : _controls) {
+            _adminLock.Lock();
 
-                if (metaData.Type() == control->MessageMetaData().Type()) {
-
-                    //toggle for module and category
-                    if (!metaData.Module().empty() && !metaData.Category().empty()) {
-                        if (metaData.Module() == control->MessageMetaData().Module() && metaData.Category() == control->MessageMetaData().Category()) {
-                            control->Enable(enabled);
-                        }
-                        //toggle all categories for module
-                    } else if (!metaData.Module().empty() && metaData.Category().empty()) {
-                        if (metaData.Module() == control->MessageMetaData().Module()) {
-                            control->Enable(enabled);
-                        }
+            // module and category
+            if ((metaData.Module().empty() == false) && (metaData.Category().empty() == false)) {
+                for (auto& control : _controls) {
+                    if ((metaData.Type() == control->MessageMetaData().Type())
+                            && (metaData.Module() == control->MessageMetaData().Module())
+                            && (metaData.Category() == control->MessageMetaData().Category())) {
+                        control->Enable(enabled);
+                        break;
                     }
-                    //toggle category for all modules
-                    else if (metaData.Module().empty() && !metaData.Category().empty()) {
-                        if (metaData.Category() == control->MessageMetaData().Category()) {
-                            control->Enable(enabled);
-                        }
-                        //toggle all categories for all modules
-                    } else {
+                }
+            }
+            // all categories for module
+            else if ((metaData.Module().empty() == false) && (metaData.Category().empty() == true)) {
+                for (auto& control : _controls) {
+                    if ((metaData.Type() == control->MessageMetaData().Type())
+                            && (metaData.Module() == control->MessageMetaData().Module())) {
                         control->Enable(enabled);
                     }
                 }
             }
+            // category for all modules
+            else if ((metaData.Module().empty() == true) && (metaData.Category().empty() == false)) {
+                for (auto& control : _controls) {
+                    if ((metaData.Type() == control->MessageMetaData().Type())
+                            && (metaData.Category() == control->MessageMetaData().Category())) {
+                        control->Enable(enabled);
+                    }
+                }
+            // all categories for all modules
+            } else {
+                for (auto& control : _controls) {
+                    if (metaData.Type() == control->MessageMetaData().Type()) {
+                        control->Enable(enabled);
+                    }
+                }
+            }
+
+            _adminLock.Unlock();
         }
+
         /**
          * @brief Update controls based on list of messages (eg. coming from config)
          *
@@ -475,6 +515,8 @@ namespace Core {
          */
         void ControlList::Update(const MessageList& messages)
         {
+            Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+
             for (auto& control : _controls) {
                 auto enabled = messages.IsEnabled(control->MessageMetaData());
                 control->Enable(enabled);
@@ -489,6 +531,7 @@ namespace Core {
                 (*_controls.begin())->Destroy();
             }
         }
+
         //----------LoggingOutput----------
         LoggingOutput::LoggingAssembler::LoggingAssembler(uint64_t baseTime)
             : _baseTime(baseTime)
@@ -498,6 +541,9 @@ namespace Core {
         {
             string result;
             string messageString;
+
+            ASSERT(message != nullptr);
+
             message->ToString(messageString);
 
             if (abbreviate) {
@@ -523,6 +569,8 @@ namespace Core {
 
         void LoggingOutput::Output(const Information& info, const IEvent* message) const
         {
+            ASSERT(message != nullptr);
+
 #ifndef __WINDOWS__
             if (_isSyslog) {
                 //use longer messages for syslog
@@ -564,12 +612,15 @@ namespace Core {
             string basePath = Directory::Normalize(pathName) + _T("MessageDispatcher");
             string identifier = _T("md");
 
+            ASSERT(_dispatcher == nullptr);
+
             if (Core::File(basePath).IsDirectory()) {
                 //if directory exists remove it to clear data (eg. sockets) that can remain after previous run
                 Core::Directory(basePath.c_str()).Destroy();
             }
-            else if (!Core::Directory(basePath.c_str()).CreatePath()) {
-                TRACE_L1(_T("Unable to create MessageDispatcher directory"));
+
+            if (Core::Directory(basePath.c_str()).CreatePath() == false) {
+                TRACE_L1("Unable to create MessageDispatcher directory");
             }
 
             Core::SystemInfo::SetEnvironment(MESSAGE_DISPATCHER_PATH_ENV, basePath);
@@ -579,12 +630,15 @@ namespace Core {
             }
 
             _dispatcher.reset(new MessageDispatcher(identifier, 0, true, basePath, socketPort));
+            ASSERT(_dispatcher != nullptr);
+
             if (_dispatcher != nullptr) {
                 if (_dispatcher->IsValid()) {
                     _dispatcher->RegisterDataAvailable(std::bind(&MessageUnit::ReceiveMetaData, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
                     result = Core::ERROR_NONE;
                 }
             }
+
             return result;
         }
 
@@ -599,12 +653,13 @@ namespace Core {
         uint32_t MessageUnit::Open(const uint32_t instanceId)
         {
             uint32_t result = Core::ERROR_OPENING_FAILED;
-
             string basePath;
             string identifier;
             string isBackground;
             string socketPortText;
             uint16_t socketPort = 0;
+
+            ASSERT(_dispatcher == nullptr);
 
             Core::SystemInfo::GetEnvironment(MESSAGE_DISPATCHER_PATH_ENV, basePath);
             if (Core::SystemInfo::GetEnvironment(MESSAGE_DISPATCHER_SOCKETPORT_ENV, socketPortText) == true) {
@@ -614,6 +669,8 @@ namespace Core {
             Core::SystemInfo::GetEnvironment(MESSAGE_UNIT_LOGGING_SYSLOG_ENV, isBackground);
 
             _dispatcher.reset(new MessageDispatcher(identifier, instanceId, true, basePath, socketPort));
+            ASSERT(_dispatcher != nullptr);
+
             std::istringstream(isBackground) >> _isBackground;
             if (_dispatcher != nullptr) {
                 if (_dispatcher->IsValid()) {
@@ -651,7 +708,7 @@ namespace Core {
             serialized.IElement::FromString(setting, error);
             if (error.IsSet() == true) {
 
-                TRACE_L1(_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str());
+                TRACE_L1("Parsing failed with %s", ErrorDisplayMessage(error.Value()).c_str());
             }
 
             SetDefaultSettings(serialized);
@@ -675,7 +732,7 @@ namespace Core {
             serialized.IElement::FromFile(file, error);
             if (error.IsSet() == true) {
 
-                TRACE_L1(_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str());
+                TRACE_L1("Parsing failed with %s", ErrorDisplayMessage(error.Value()).c_str());
             }
 
             SetDefaultSettings(serialized);
@@ -751,11 +808,11 @@ namespace Core {
                     length += message->Serialize(_serializationBuffer + length, sizeof(_serializationBuffer) - length);
 
                     if (_dispatcher->PushData(length, _serializationBuffer) != Core::ERROR_NONE) {
-                        TRACE_L1(_T("Unable to push message data!"));
+                        TRACE_L1("Unable to push message data!");
                     }
 
                 } else {
-                    TRACE_L1(_T("Unable to push data, buffer is too small!"));
+                    TRACE_L1("Unable to push data, buffer is too small!");
                 }
             }
         }
