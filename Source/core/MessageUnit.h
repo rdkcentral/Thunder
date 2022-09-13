@@ -320,7 +320,6 @@ namespace Core {
             void Defaults(const string& setting);
             void Defaults(Core::File& file);
             string Defaults() const;
-            bool IsEnabledByDefault(const MetaData& metaData) const;
 
             void Push(const Information& info, const IEvent* message);
 

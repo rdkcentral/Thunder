@@ -346,7 +346,8 @@ namespace Core {
                 while (it.Next() == true) {
                     if (((it.Current().Module.IsSet() == false) && (it.Current().Category.Value() == metaData.Category()))
                         || ((it.Current().Category.IsSet() == false) && (it.Current().Module.Value() == metaData.Module()))
-                        || ((it.Current().Module.Value() == metaData.Module()) && (it.Current().Category.Value() == metaData.Category()))) {
+                        || ((it.Current().Module.Value() == metaData.Module()) && (it.Current().Category.Value() == metaData.Category()))
+                        || ((it.Current().Module.IsSet() == false) && (it.Current().Category.IsSet() == false))) {
                             result = it.Current().Enabled.Value();
                             break;
                     }
@@ -769,18 +770,6 @@ namespace Core {
 
             _adminLock.Unlock();
             return result;
-        }
-
-        /**
-         * @brief Check if message of given metaData is enabled by default configuration
-         *
-         * @param metaData message information
-         * @return true is enabled by default
-         * @return false not enabled by default
-         */
-        bool MessageUnit::IsEnabledByDefault(const MetaData& metaData) const
-        {
-            return _messages.IsEnabled(metaData);
         }
 
         /**
