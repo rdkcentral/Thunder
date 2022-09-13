@@ -75,8 +75,6 @@ namespace Process {
 
         public:
             void Dispatch() {
-                Core::ServiceAdministrator::Instance().FlushLibraries();
-
                 uint32_t instances = Core::ServiceAdministrator::Instance().Instances();
 
                 if (instances != 0) {
