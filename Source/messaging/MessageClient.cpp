@@ -69,7 +69,9 @@ namespace Messaging {
      */
     void MessageClient::ClearInstances()
     {
+        _adminLock.Lock();
         _clients.clear();
+        _adminLock.Unlock();
     }
 
     /**
@@ -179,13 +181,20 @@ namespace Messaging {
     void MessageClient::PopMessagesAndCall(std::function<void(const Core::Messaging::Information& info, const Core::ProxyType<Core::Messaging::IEvent>& message)> function)
     {
         _adminLock.Lock();
-        uint16_t size = sizeof(_readBuffer);
 
         Core::Messaging::Information information;
         Core::ProxyType<Core::Messaging::IEvent> message;
 
         for (auto& client : _clients) {
+            uint16_t size = sizeof(_readBuffer);
+
             while (client.second.PopData(size, _readBuffer) != Core::ERROR_READ_ERROR) {
+                ASSERT(size != 0);
+
+                if (size > sizeof(_readBuffer)) {
+                    size = sizeof(_readBuffer);
+                }
+
                 auto length = information.Deserialize(_readBuffer, size);
 
                 if (length > sizeof(Core::Messaging::MetaData::MessageType) && length < sizeof(_readBuffer)) {
