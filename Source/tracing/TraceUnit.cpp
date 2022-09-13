@@ -51,6 +51,7 @@ namespace Trace {
         // Make sure the trace file opened proeprly.
         TRACE_L1("Opened a file to stash my traces at: %s [%d] and doorbell: %s", name.c_str(), CyclicBufferSize, doorBell.c_str());
         ASSERT (IsValid() == true);
+        Group(Core::ProcessCurrent().Group());
     }
 
     TraceUnit::TraceBuffer::~TraceBuffer()

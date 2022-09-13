@@ -489,12 +489,21 @@ POP_WARNING()
                 if (_config->Process().Priority() != 0) {
                     myself.Priority(_config->Process().Priority());
                 }
+                if (_config->Process().Group().empty() == false) {
+                    myself.Group(_config->Process().Group());
+
+                    Core::Directory persistentPath(_config->PersistentPath().c_str());
+                    persistentPath.Group(_config->Process().Group());
+                    persistentPath.Permission((S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP));
+
+                    Core::Directory dataPath(_config->DataPath().c_str());
+                     dataPath.Group(_config->Process().Group());
+                    dataPath.Permission((S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP));
+                }
                 if (_config->Process().User().empty() == false) {
                     myself.User(_config->Process().User());
                 }
-                if (_config->Process().Group().empty() == false) {
-                    myself.Group(_config->Process().Group());
-                }
+
                 if (_config->StackSize() != 0) {
                     Core::Thread::DefaultStackSize(_config->StackSize()); 
                 }
