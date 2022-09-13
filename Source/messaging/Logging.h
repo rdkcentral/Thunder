@@ -19,33 +19,42 @@
 
 #pragma once
 
+#include "Module.h"
 #include "Control.h"
 #include "LoggingCategories.h"
-#include "Module.h"
 #include "TextMessage.h"
-
-#include <stdarg.h>
 
 namespace WPEFramework {
 namespace Logging {
 
     extern EXTERNAL const char* MODULE_LOGGING;
 
-#define SYSLOG(CATEGORY, PARAMETERS)                                                                                                                                              \
-    if (WPEFramework::Messaging::ControlLifetime<CATEGORY, &WPEFramework::Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::IsEnabled()) { \
-        CATEGORY __data__ PARAMETERS;                                                                                                                                             \
-        WPEFramework::Core::Messaging::Information __info__(WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING,                                                        \
-            Core::ClassNameOnly(typeid(CATEGORY).name()).Text(),                                                                                                                  \
-            WPEFramework::Logging::MODULE_LOGGING,                                                                                                                                \
-            __FILE__,                                                                                                                                                             \
-            __LINE__,                                                                                                                                                             \
-            Core::Time::Now().Ticks());                                                                                                                                           \
-        WPEFramework::Messaging::TextMessage __message__(__data__.Data());                                                                                                        \
-        WPEFramework::Core::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                                                                                      \
-    }
-
     void EXTERNAL DumpException(const string& exceptionType);
     void EXTERNAL DumpSystemFiles(const Core::process_t pid);
 
-}
 } // namespace Logging
+}
+
+#define SYSLOG_CONTROL(CATEGORY) \
+    WPEFramework::Messaging::ControlLifetime<CATEGORY, &WPEFramework::Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>
+
+#define SYSLOG_ANNOUNCE(CATEGORY) \
+    SYSLOG_CONTROL(CATEGORY)::Announce()
+
+#define SYSLOG_ENABLED(CATEGORY) \
+    SYSLOG_CONTROL(CATEGORY)::IsEnabled()
+
+#define SYSLOG(CATEGORY, PARAMETERS) \
+    do {                                                                                                                                              \
+        if (SYSLOG_ENABLED(CATEGORY) == true) {                                                                                                       \
+            CATEGORY __data__ PARAMETERS;                                                                                                             \
+            WPEFramework::Core::Messaging::Information __info__(WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING,                        \
+                WPEFramework::Core::ClassNameOnly(typeid(CATEGORY).name()).Text(),                                                                    \
+                WPEFramework::Logging::MODULE_LOGGING,                                                                                                \
+                __FILE__,                                                                                                                             \
+                __LINE__,                                                                                                                             \
+                WPEFramework::Core::Time::Now().Ticks());                                                                                             \
+            WPEFramework::Messaging::TextMessage __message__(__data__.Data());                                                                        \
+            WPEFramework::Core::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                                                      \
+        }                                                                                                                                             \
+    } while(false)
