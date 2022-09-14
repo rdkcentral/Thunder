@@ -660,18 +660,20 @@ int main(int argc, char** argv)
                 Core::ProcessCurrent().Group(string(options.Group));
             }
 
+            Core::Directory dataPath(options.DataPath.c_str());
+            dataPath.Permission((S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP));
+
+            Core::Directory persistentPath(options.PersistentPath.c_str());
+            persistentPath.Permission((S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP));
+
             if (options.User != nullptr) {
                 string group = Core::ProcessCurrent().Group();
                 if (group.empty() != true) {
-                    Core::Directory persistentPath(options.PersistentPath.c_str());
                     persistentPath.User(options.User);
                     persistentPath.Group(group);
-                    persistentPath.Permission(0770);
 
-                    Core::Directory dataPath(options.DataPath.c_str());
                     dataPath.User(options.User);
                     dataPath.Group(group);
-                    dataPath.Permission(0770);
                 }
                 Core::ProcessCurrent().User(string(options.User));
             }
