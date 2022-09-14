@@ -53,6 +53,9 @@ namespace PluginHost {
                 _variables.insert(std::make_pair("volatilepath", [](const Config& config, const Plugin::Config* info) {
                     return (info == nullptr ? config.VolatilePath() : info->VolatilePath(config.VolatilePath()));
                 }));
+                _variables.insert(std::make_pair("downloadpath", [](const Config& config, const Plugin::Config*) {
+                    return (config.DownloadPath());
+                }));
                 _variables.insert(std::make_pair("proxystubpath", [](const Config& config, const Plugin::Config*) {
                     return (config.ProxyStubPath());
                 }));
@@ -294,6 +297,7 @@ namespace PluginHost {
                 , Prefix(_T("Service"))
                 , JSONRPC(_T("jsonrpc"))
                 , PersistentPath()
+                , DownloadPath()
                 , DataPath()
                 , SystemPath()
 #ifdef __WINDOWS__
@@ -333,6 +337,7 @@ namespace PluginHost {
                 Add(_T("interface"), &Interface);
                 Add(_T("prefix"), &Prefix);
                 Add(_T("persistentpath"), &PersistentPath);
+                Add(_T("downloadpath"), &DownloadPath);
                 Add(_T("datapath"), &DataPath);
                 Add(_T("systempath"), &SystemPath);
                 Add(_T("volatilepath"), &VolatilePath);
@@ -368,6 +373,7 @@ namespace PluginHost {
             Core::JSON::String Prefix;
             Core::JSON::String JSONRPC;
             Core::JSON::String PersistentPath;
+            Core::JSON::String DownloadPath;
             Core::JSON::String DataPath;
             Core::JSON::String SystemPath;
             Core::JSON::String VolatilePath;
@@ -519,6 +525,7 @@ namespace PluginHost {
 #endif
                 _volatilePath = Core::Directory::Normalize(config.VolatilePath.Value());
                 _persistentPath = Core::Directory::Normalize(config.PersistentPath.Value());
+                _downloadPath = Core::Directory::Normalize(config.DownloadPath.Value());
                 _dataPath = Core::Directory::Normalize(config.DataPath.Value());
                 _systemPath = Core::Directory::Normalize(config.SystemPath.Value());
                 _configsPath = Core::Directory::Normalize(config.Configs.Value());
@@ -637,6 +644,10 @@ namespace PluginHost {
         inline const string& PersistentPath() const
         {
             return (_persistentPath);
+        }
+        inline const string& DownloadPath() const
+        {
+            return (_downloadPath);
         }
         inline const string& DataPath() const
         {
@@ -831,6 +842,7 @@ namespace PluginHost {
         string _JSONRPCPrefix;
         string _volatilePath;
         string _persistentPath;
+        string _downloadPath;
         string _dataPath;
         string _hashKey;
         string _appPath;

@@ -534,7 +534,7 @@ namespace PluginHost {
 
         public:
             Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator)
-                : PluginHost::Service(plugin, server.WebPrefix(), server.PersistentPath(), server.DataPath(), server.VolatilePath())
+                : PluginHost::Service(plugin, server.WebPrefix(), server.PersistentPath(), server.DownloadPath(), server.DataPath(), server.VolatilePath())
                 , _pluginHandling()
                 , _handler(nullptr)
                 , _extended(nullptr)
@@ -962,7 +962,7 @@ namespace PluginHost {
             {
                 ASSERT(_connection == nullptr);
 
-                void* result(_administrator.Instantiate(object, waitTime, sessionId, className, callsign, DataPath(), PersistentPath(), VolatilePath()));
+                void* result(_administrator.Instantiate(object, waitTime, sessionId, className, callsign, DataPath(), PersistentPath(), DownloadPath(), VolatilePath()));
 
                 _connection = _administrator.RemoteConnection(sessionId);
 
@@ -1020,6 +1020,7 @@ namespace PluginHost {
                     string className = PluginHost::Service::Configuration().ClassName.Value() + _T("/");
                     // system configured paths
                     all_paths.push_back(_administrator.Configuration().DataPath() + className + locator);
+                    all_paths.push_back(_administrator.Configuration().DownloadPath() + locator);
                     all_paths.push_back(_administrator.Configuration().PersistentPath() + className + locator);
                     all_paths.push_back(_administrator.Configuration().SystemPath() + locator);
                     all_paths.push_back(_administrator.Configuration().AppPath() + _T("Plugins/") + locator);
@@ -1288,6 +1289,7 @@ namespace PluginHost {
                     ServiceMap& parent,
                     const Core::NodeId& node,
                     const string& persistentPath,
+                    const string& downloadPath,
                     const string& systemPath,
                     const string& dataPath,
                     const string& volatilePath,
@@ -1298,6 +1300,7 @@ namespace PluginHost {
                     : RPC::Communicator(node, proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath, Core::ProxyType<Core::IIPCServer>(handler))
                     , _parent(parent)
                     , _persistentPath(persistentPath.empty() == false ? Core::Directory::Normalize(persistentPath) : persistentPath)
+                    , _downloadPath(downloadPath.empty() == false ? Core::Directory::Normalize(downloadPath) : downloadPath)
                     , _systemPath(systemPath.empty() == false ? Core::Directory::Normalize(systemPath) : systemPath)
                     , _dataPath(dataPath.empty() == false ? Core::Directory::Normalize(dataPath) : dataPath)
                     , _volatilePath(volatilePath.empty() == false ? Core::Directory::Normalize(volatilePath) : volatilePath)
@@ -1327,13 +1330,17 @@ namespace PluginHost {
                 }
 
             public:
-                void* Create(uint32_t& connectionId, const RPC::Object& instance, const string& classname, const string& callsign, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath)
+                void* Create(uint32_t& connectionId, const RPC::Object& instance, const string& classname, const string& callsign, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& downloadPath, const string& volatilePath)
                 {
-                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, volatilePath, _appPath, _proxyStubPath, _postMortemPath), waitTime));
+                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, downloadPath, _systemPath, dataPath, volatilePath, _appPath, _proxyStubPath, _postMortemPath), waitTime));
                 }
                 const string& PersistentPath() const
                 {
                     return (_persistentPath);
+                }
+                const string& DownloadPath() const
+                {
+                    return (_downloadPath);
                 }
                 const string& SystemPath() const
                 {
@@ -1386,6 +1393,7 @@ namespace PluginHost {
             private:
                 ServiceMap& _parent;
                 const string _persistentPath;
+                const string _downloadPath;
                 const string _systemPath;
                 const string _dataPath;
                 const string _volatilePath;
@@ -1452,17 +1460,19 @@ namespace PluginHost {
                     const string configuration) override
                 {
                     string persistentPath(_comms.PersistentPath());
+                    string downloadPath(_comms.DownloadPath());
                     string dataPath(_comms.DataPath());
                     string volatilePath(_comms.VolatilePath());
 
                     if (callsign.empty() == false) {
                         dataPath += callsign + '/';
                         persistentPath += callsign + '/';
+                        downloadPath += callsign + '/';
                         volatilePath += callsign + '/';
                     }
 
                     uint32_t id;
-                    RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath());
+                    RPC::Config config(_connector, _comms.Application(), persistentPath, downloadPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath());
                     RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, linkLoaderPath, _T(""), configuration);
 
                     RPC::Process process(requestId, config, instance);
@@ -1751,6 +1761,7 @@ namespace PluginHost {
                     *this, 
                     config.Communicator(), 
                     config.PersistentPath(), 
+                    config.DownloadPath(), 
                     config.SystemPath(), 
                     config.DataPath(), 
                     config.VolatilePath(), 
@@ -1888,9 +1899,9 @@ namespace PluginHost {
                 return (result);
             }
 
-            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign, const string& dataPath, const string& persistentPath, const string& volatilePath)
+            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign, const string& dataPath, const string& persistentPath, const string& downloadPath, const string& volatilePath)
             {
-                return (_processAdministrator.Create(sessionId, object, className, callsign, waitTime, dataPath, persistentPath, volatilePath));
+                return (_processAdministrator.Create(sessionId, object, className, callsign, waitTime, dataPath, persistentPath, downloadPath, volatilePath));
             }
             void Register(RPC::IRemoteConnection::INotification* sink)
             {

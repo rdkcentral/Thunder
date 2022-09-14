@@ -38,11 +38,12 @@ namespace PluginHost {
             Config(const Config&) = delete;
             Config& operator=(const Config&) = delete;
 
-            Config(const Plugin::Config& plugin, const string& webPrefix, const string& persistentPath, const string& dataPath, const string& volatilePath)
+            Config(const Plugin::Config& plugin, const string& webPrefix, const string& persistentPath, const string& downloadPath, const string& dataPath, const string& volatilePath)
             {
                 const string& callSign(plugin.Callsign.Value());
 
                 _webPrefix = webPrefix + '/' + callSign;
+                _downloadPath = downloadPath + callSign + '/';
                 _persistentPath = plugin.PersistentPath(persistentPath);
                 _dataPath = plugin.DataPath(dataPath);
                 _volatilePath = plugin.VolatilePath(volatilePath);
@@ -85,6 +86,14 @@ namespace PluginHost {
             inline const string& PersistentPath() const
             {
                 return (_persistentPath);
+            }
+
+            // DownloadPath is a path to a location where the plugin instance can store data needed
+            // by the plugin instance, hence why the callSign is included. .
+            // This path is build up from: DownloadPath / callSign /
+            inline const string& DownloadPath() const
+            {
+                return (_downloadPath);
             }
 
             // VolatilePath is a path to a location where the plugin instance can store data needed
@@ -132,6 +141,7 @@ namespace PluginHost {
 
             string _webPrefix;
             string _persistentPath;
+            string _downloadPath;
             string _volatilePath;
             string _dataPath;
             string _accessor;
@@ -146,14 +156,14 @@ namespace PluginHost {
         Service(const Service&) = delete;
         Service& operator=(const Service&) = delete;
 
-        Service(const Plugin::Config& plugin, const string& webPrefix, const string& persistentPath, const string& dataPath, const string& volatilePath)
+        Service(const Plugin::Config& plugin, const string& webPrefix, const string& persistentPath, const string& downloadPath, const string& dataPath, const string& volatilePath)
             : _adminLock()
             #if THUNDER_RUNTIME_STATISTICS
             , _processedRequests(0)
             , _processedObjects(0)
             #endif
             , _state(DEACTIVATED)
-            , _config(plugin, webPrefix, persistentPath, dataPath, volatilePath)
+            , _config(plugin, webPrefix, persistentPath, downloadPath,  dataPath, volatilePath)
             #if THUNDER_RESTFULL_API
             , _notifiers()
             #endif
@@ -217,6 +227,10 @@ namespace PluginHost {
         string PersistentPath() const override
         {
             return (_config.PersistentPath());
+        }
+        string DownloadPath() const 
+        {
+            return (_config.DownloadPath());
         }
         string VolatilePath() const override
         {
