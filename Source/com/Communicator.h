@@ -217,6 +217,7 @@ namespace RPC {
             : _connector()
             , _hostApplication()
             , _persistent()
+            , _download()
             , _system()
             , _data()
             , _volatile()
@@ -229,6 +230,7 @@ namespace RPC {
             const string& connector,
             const string& hostApplication,
             const string& persistentPath,
+            const string& downloadPath,
             const string& systemPath,
             const string& dataPath,
             const string& volatilePath,
@@ -238,6 +240,7 @@ namespace RPC {
             : _connector(connector)
             , _hostApplication(hostApplication)
             , _persistent(persistentPath)
+            , _download(downloadPath)
             , _system(systemPath)
             , _data(dataPath)
             , _volatile(volatilePath)
@@ -250,6 +253,7 @@ namespace RPC {
             : _connector(copy._connector)
             , _hostApplication(copy._hostApplication)
             , _persistent(copy._persistent)
+            , _download(copy._download)
             , _system(copy._system)
             , _data(copy._data)
             , _volatile(copy._volatile)
@@ -274,6 +278,10 @@ namespace RPC {
         inline const string& PersistentPath() const
         {
             return (_persistent);
+        }
+        inline const string& DownloadPath() const
+        {
+            return (_download);
         }
         inline const string& SystemPath() const
         {
@@ -304,6 +312,7 @@ namespace RPC {
         string _connector;
         string _hostApplication;
         string _persistent;
+        string _download;
         string _system;
         string _data;
         string _volatile;
@@ -343,6 +352,9 @@ namespace RPC {
             }
             if (config.PersistentPath().empty() == false) {
                 _options.Add(_T("-p")).Add('"' + config.PersistentPath() + '"');
+            }
+            if (config.DownloadPath().empty() == false) {
+                _options.Add(_T("-D")).Add('"' + config.DownloadPath() + '"');
             }
             if (config.SystemPath().empty() == false) {
                 _options.Add(_T("-s")).Add('"' + config.SystemPath() + '"');
@@ -612,10 +624,11 @@ namespace RPC {
             {
                 ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
 
-                std::vector<string> searchpaths(3);
+                std::vector<string> searchpaths(4);
                 searchpaths[0] = baseConfig.VolatilePath();
-                searchpaths[1] = baseConfig.PersistentPath();
-                searchpaths[2] = baseConfig.DataPath();
+                searchpaths[1] = baseConfig.DownloadPath();
+                searchpaths[2] = baseConfig.PersistentPath();
+                searchpaths[3] = baseConfig.DataPath();
 
 #ifdef __DEBUG__
                 ContainerConfig config;

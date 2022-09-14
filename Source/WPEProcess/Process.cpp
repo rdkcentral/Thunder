@@ -161,7 +161,7 @@ POP_WARNING()
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:D:s:d:a:m:i:u:g:t:e:x:V:v:P:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , Callsign(nullptr)
@@ -170,6 +170,7 @@ POP_WARNING()
             , Version(~0)
             , Exchange(0)
             , PersistentPath()
+            , DownloadPath()
             , SystemPath()
             , DataPath()
             , VolatilePath()
@@ -195,6 +196,7 @@ POP_WARNING()
         uint32_t Version;
         uint32_t Exchange;
         string PersistentPath;
+        string DownloadPath;
         string SystemPath;
         string DataPath;
         string VolatilePath;
@@ -238,6 +240,9 @@ POP_WARNING()
                 break;
             case 'p':
                 PersistentPath = Strip(argument);
+                break;
+            case 'D':
+                DownloadPath = Strip(argument);
                 break;
             case 's':
                 SystemPath = Strip(argument);
@@ -318,18 +323,22 @@ POP_WARNING()
         void* result = nullptr;
 
         if ((options.Locator != nullptr) && (options.ClassName != nullptr)) {
-            result = CheckInstance(options.PersistentPath, options.Locator, options.ClassName, options.InterfaceId, options.Version);
+            result = CheckInstance(options.DownloadPath, options.Locator, options.ClassName, options.InterfaceId, options.Version);
 
             if (result == nullptr) {
-                result = CheckInstance(options.SystemPath, options.Locator, options.ClassName, options.InterfaceId, options.Version);
+                result = CheckInstance(options.PersistentPath, options.Locator, options.ClassName, options.InterfaceId, options.Version);
 
                 if (result == nullptr) {
-                    result = CheckInstance(options.DataPath, options.Locator, options.ClassName, options.InterfaceId, options.Version);
+                    result = CheckInstance(options.SystemPath, options.Locator, options.ClassName, options.InterfaceId, options.Version);
 
                     if (result == nullptr) {
-                        string searchPath(options.AppPath.empty() == false ? Core::Directory::Normalize(options.AppPath) : string());
+                        result = CheckInstance(options.DataPath, options.Locator, options.ClassName, options.InterfaceId, options.Version);
 
-                        result = CheckInstance((searchPath + _T("Plugins/")), options.Locator, options.ClassName, options.InterfaceId, options.Version);
+                        if (result == nullptr) {
+                            string searchPath(options.AppPath.empty() == false ? Core::Directory::Normalize(options.AppPath) : string());
+
+                            result = CheckInstance((searchPath + _T("Plugins/")), options.Locator, options.ClassName, options.InterfaceId, options.Version);
+                        }
                     }
                 }
             }
@@ -566,6 +575,7 @@ int main(int argc, char** argv)
         printf("        [-p <persistent path>]\n");
         printf("        [-s <system path>]\n");
         printf("        [-d <data path>]\n");
+        printf("        [-D <download path>]\n");
         printf("        [-v <volatile path>]\n");
         printf("        [-a <app path>]\n");
         printf("        [-m <proxy stub library path>]\n");
@@ -575,10 +585,11 @@ int main(int argc, char** argv)
         printf("        [-P <post mortem path>]\n\n");
         printf("This application spawns a seperate process space for a plugin. The plugins");
         printf("are searched in the same order as they are done in process. Starting from:\n");
-        printf(" 1) <persistent path>/<locator>\n");
-        printf(" 2) <system path>/<locator>\n");
-        printf(" 3) <data path>/<locator>\n");
-        printf(" 4) <app path>/Plugins/<locator>\n\n");
+        printf(" 1) <download path>/<locator>\n");
+        printf(" 2) <persistent path>/<locator>\n");
+        printf(" 3) <system path>/<locator>\n");
+        printf(" 4) <data path>/<locator>\n");
+        printf(" 5) <app path>/Plugins/<locator>\n\n");
         printf("Within the DSO, the system looks for an object with <classname>, this object must implement ");
         printf("the interface, indicated byt the Id <interfaceId>, and if passed, the object should be of ");
         printf("version <version>. All these conditions must met for an object to be instantiated and thus run.\n\n");
