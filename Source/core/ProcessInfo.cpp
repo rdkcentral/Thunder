@@ -585,11 +585,33 @@ namespace Core {
 #ifndef __WINDOWS__
             struct passwd* pwd = getpwnam(userName.c_str());
             if (pwd != nullptr) {
+                SupplementryGroups(userName);
                 result = (::setuid(pwd->pw_uid) == 0 ? ERROR_NONE : ERROR_UNAVAILABLE);
             }
 #endif
         }
         return (result);
+    }
+
+    void ProcessCurrent::SupplementryGroups(const string& userName)
+    {
+#ifndef __WINDOWS__
+        struct passwd* pwd = getpwnam(userName.c_str());
+        if (pwd != nullptr) {
+            int numberOfGroups = 0;
+
+            // Collect number of groups in which this user added
+            getgrouplist(pwd->pw_name, pwd->pw_gid, nullptr, &numberOfGroups);
+            gid_t groups[numberOfGroups];
+            memset(groups, 0, sizeof(groups));
+
+            // Collect actual groups details
+            getgrouplist(pwd->pw_name, pwd->pw_gid, groups, &numberOfGroups);
+            if (numberOfGroups > 0) {
+                setgroups(numberOfGroups, groups);
+            }
+        }
+#endif
     }
 
     string ProcessCurrent::Group() const
