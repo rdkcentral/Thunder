@@ -33,6 +33,8 @@ namespace RPC {
 
     static Core::ProxyPoolType<RPC::AnnounceMessage> AnnounceMessageFactory(2);
 
+    /* static */ Core::CriticalSection Process::_ldLibLock ;
+
     class ProcessShutdown {
     public:
         static constexpr uint32_t DestructionStackSize = 64 * 1024;
