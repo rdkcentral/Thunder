@@ -43,30 +43,29 @@ namespace Core {
             MetaData(const MessageType type, const string& category, const string& module);
             MetaData(const MetaData&) = default;
             MetaData& operator=(const MetaData&) = default;
-            inline bool operator==(const MetaData& other) const
+            bool operator==(const MetaData& other) const
             {
                 return _type == other._type && _category == other._category && _module == other._module;
             }
-            inline bool operator!=(const MetaData& other) const
+            bool operator!=(const MetaData& other) const
             {
                 return !operator==(other);
             }
-
-            inline MessageType Type() const
+            MessageType Type() const
             {
                 return _type;
             }
-            inline string Category() const
+            string Category() const
             {
                 return _category;
             }
-            inline string Module() const
+            string Module() const
             {
                 return _module;
             }
 
             uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const;
-            uint16_t Deserialize(uint8_t buffer[], const uint16_t bufferSize);
+            uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize);
 
         private:
             MessageType _type;
@@ -80,43 +79,57 @@ namespace Core {
         */
         class EXTERNAL Information {
         public:
-            Information() = default;
+            Information() 
+                : _metaData()
+                , _fileName()
+                , _lineNumber(0)
+                , _className()
+                , _timeStamp(0)
+            {
+            }
+            ~Information() = default;
+
             Information(const MetaData::MessageType type, const string& category, const string& module,
-                const string& filename, uint16_t lineNumber, const uint64_t timestamp);
+                const string& fileName, const uint16_t lineNumber, const string& className, const uint64_t timestamp);
             Information(const Information&) = default;
             Information& operator=(const Information&) = default;
 
-            inline const MetaData& MessageMetaData() const
+            const MetaData& MessageMetaData() const
             {
                 return _metaData;
             }
-            inline string FileName() const
+            const string& FileName() const
             {
-                return _filename;
+                return _fileName;
             }
-            inline uint16_t LineNumber() const
+            uint16_t LineNumber() const
             {
                 return _lineNumber;
             }
-            inline uint64_t TimeStamp() const
+            const string& ClassName() const
+            {
+                return _className;
+            }
+            uint64_t TimeStamp() const
             {
                 return _timeStamp;
             }
 
             uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const;
-            uint16_t Deserialize(uint8_t buffer[], const uint16_t bufferSize);
+            uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize);
 
         private:
             MetaData _metaData;
-            string _filename;
+            string _fileName;
             uint16_t _lineNumber;
+            string _className;
             uint64_t _timeStamp;
         };
 
         struct EXTERNAL IEvent {
             virtual ~IEvent() = default;
             virtual uint16_t Serialize(uint8_t buffer[], const uint16_t length) const = 0;
-            virtual uint16_t Deserialize(uint8_t buffer[], const uint16_t length) = 0;
+            virtual uint16_t Deserialize(const uint8_t buffer[], const uint16_t length) = 0;
             virtual void ToString(string& text) const = 0;
         };
 
@@ -229,7 +242,7 @@ namespace Core {
             ControlList& operator=(const ControlList&) = delete;
 
             uint16_t Serialize(uint8_t buffer[], const uint16_t length) const;
-            uint16_t Deserialize(uint8_t buffer[], const uint16_t length);
+            uint16_t Deserialize(const uint8_t buffer[], const uint16_t length);
 
             void Announce(IControl* control);
             void Revoke(IControl* control);
@@ -237,7 +250,7 @@ namespace Core {
             void Update(const MessageList& messages);
             void Destroy();
 
-            inline InformationIterator Information()
+            InformationIterator Information()
             {
                 return InformationIterator(_info);
             }
@@ -270,11 +283,11 @@ namespace Core {
             ~LoggingOutput() = default;
             LoggingOutput(const LoggingOutput&) = default;
             LoggingOutput& operator=(const LoggingOutput&) = default;
-            inline void IsBackground(bool background)
+            void IsBackground(bool background)
             {
                 _isSyslog.store(background);
             }
-            inline void IsAbbreviated(bool abbreviate)
+            void IsAbbreviated(bool abbreviate)
             {
                 _abbreviate.store(abbreviate);
             }

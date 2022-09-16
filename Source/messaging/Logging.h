@@ -54,6 +54,24 @@ namespace Logging {
                 WPEFramework::Logging::MODULE_LOGGING,                                                                                                \
                 __FILE__,                                                                                                                             \
                 __LINE__,                                                                                                                             \
+                typeid(*this).name(),                                                                                                                 \
+                WPEFramework::Core::Time::Now().Ticks());                                                                                             \
+            WPEFramework::Messaging::TextMessage __message__(__data__.Data());                                                                        \
+            WPEFramework::Core::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                                                      \
+        }                                                                                                                                             \
+    } while(false)
+
+#define SYSLOG_GLOBAL(CATEGORY, PARAMETERS) \
+    do {                                                                                                                                              \
+        if (SYSLOG_ENABLED(CATEGORY) == true) {                                                                                                       \
+            static_assert(std::is_base_of<WPEFramework::Logging::BaseCategory, CATEGORY>::value, "SYSLOG() only for Logging controls");               \
+            CATEGORY __data__ PARAMETERS;                                                                                                             \
+            WPEFramework::Core::Messaging::Information __info__(WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING,                        \
+                WPEFramework::Core::ClassNameOnly(typeid(CATEGORY).name()).Text(),                                                                    \
+                WPEFramework::Logging::MODULE_LOGGING,                                                                                                \
+                __FILE__,                                                                                                                             \
+                __LINE__,                                                                                                                             \
+                __FUNCTION__,                                                                                                                         \
                 WPEFramework::Core::Time::Now().Ticks());                                                                                             \
             WPEFramework::Messaging::TextMessage __message__(__data__.Data());                                                                        \
             WPEFramework::Core::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                                                      \

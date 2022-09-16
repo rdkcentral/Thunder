@@ -59,10 +59,10 @@ namespace Core {
 
             return length;
         }
-        uint16_t MetaData::Deserialize(uint8_t buffer[], const uint16_t bufferSize)
+        uint16_t MetaData::Deserialize(const uint8_t buffer[], const uint16_t bufferSize)
         {
             uint16_t deserialized = 0;
-            Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
+            Core::FrameType<0> frame(const_cast<uint8_t*>(buffer), bufferSize, bufferSize);
             Core::FrameType<0>::Reader frameReader(frame, 0);
 
             _type = frameReader.Number<MetaData::MessageType>();
@@ -79,10 +79,11 @@ namespace Core {
         }
 
         Information::Information(const MetaData::MessageType type, const string& category, const string& module,
-                        const string& filename, uint16_t lineNumber, const uint64_t timeStamp)
+                const string& fileName, const uint16_t lineNumber, const string& className, const uint64_t timeStamp)
             : _metaData(type, category, module)
-            , _filename(filename)
+            , _fileName(fileName)
             , _lineNumber(lineNumber)
+            , _className(className)
             , _timeStamp(timeStamp)
         {
         }
@@ -92,14 +93,14 @@ namespace Core {
             auto length = _metaData.Serialize(buffer, bufferSize);
 
             if (length != 0) {
-                if (bufferSize >= length + _filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp)) {
-
-                    Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
+                if (bufferSize >= length + (_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + sizeof(_timeStamp)) {
+                    Core::FrameType<0> frame(const_cast<uint8_t*>(buffer) + length, bufferSize - length, bufferSize - length);
                     Core::FrameType<0>::Writer frameWriter(frame, 0);
-                    frameWriter.NullTerminatedText(_filename);
+                    frameWriter.NullTerminatedText(_className);
+                    frameWriter.NullTerminatedText(_fileName);
                     frameWriter.Number(_lineNumber);
                     frameWriter.Number(_timeStamp);
-                    length += static_cast<uint16_t>(_filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp));
+                    length += static_cast<uint16_t>((_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + sizeof(_timeStamp));
 
                 } else {
                     length = 0;
@@ -108,18 +109,19 @@ namespace Core {
 
             return length;
         }
-        uint16_t Information::Deserialize(uint8_t buffer[], const uint16_t bufferSize)
+        uint16_t Information::Deserialize(const uint8_t buffer[], const uint16_t bufferSize)
         {
             auto length = _metaData.Deserialize(buffer, bufferSize);
 
             if (length <= bufferSize && length > sizeof(MetaData::MessageType)) {
-                Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
+                Core::FrameType<0> frame(const_cast<uint8_t*>(buffer) + length, bufferSize - length, bufferSize - length);
                 Core::FrameType<0>::Reader frameReader(frame, 0);
-                _filename = frameReader.NullTerminatedText();
+                _className = frameReader.NullTerminatedText();
+                _fileName = frameReader.NullTerminatedText();
                 _lineNumber = frameReader.Number<uint16_t>();
                 _timeStamp = frameReader.Number<uint64_t>();
 
-                length += static_cast<uint16_t>(_filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp));
+                length += static_cast<uint16_t>((_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + sizeof(_timeStamp));
             }
 
             return length;
@@ -414,7 +416,7 @@ namespace Core {
         * @param length max length of the buffer
         * @return uint16_t how much bytes deserialized
         */
-        uint16_t ControlList::Deserialize(uint8_t buffer[], const uint16_t length)
+        uint16_t ControlList::Deserialize(const uint8_t buffer[], const uint16_t length)
         {
             ASSERT(length > 0);
             ASSERT(buffer != nullptr);
@@ -547,15 +549,19 @@ namespace Core {
 
             message->ToString(messageString);
 
-            if (abbreviate) {
-                result = Core::Format("[%11ju us] %s", static_cast<uintmax_t>(info.TimeStamp() - _baseTime), messageString.c_str());
+            if (abbreviate == true) {
+                result = Core::Format("[%11ju us]:[%s] %s",
+                    static_cast<uintmax_t>(info.TimeStamp() - _baseTime),
+                    info.MessageMetaData().Category().c_str(),
+                    messageString.c_str());
             } else {
                 Core::Time now(info.TimeStamp());
                 string time(now.ToRFC1123(true));
 
-                result = Core::Format("[%s]:[%s:%d]: %s: %s", time.c_str(),
+                result = Core::Format("[%s]:[%s:%d]:[%s]:[%s]: %s", time.c_str(),
                     Core::FileNameOnly(info.FileName().c_str()),
                     info.LineNumber(),
+                    info.ClassName().c_str(),
                     info.MessageMetaData().Category().c_str(),
                     messageString.c_str());
             }
@@ -843,7 +849,7 @@ namespace Core {
             if (size != 0) {
                 MetaData metaData;
                 //last byte is enabled flag
-                auto length = metaData.Deserialize(const_cast<uint8_t*>(data), size - 1); //for now, FrameType is not handling const buffers :/
+                auto length = metaData.Deserialize(data, size - 1); //for now, FrameType is not handling const buffers :/
 
                 if (length <= size - 1) {
                     bool enabled = data[length];
