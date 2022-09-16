@@ -43,11 +43,10 @@ namespace Core {
         }
         uint16_t MetaData::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
-            uint16_t length = static_cast<uint16_t>(sizeof(_type) + _category.size() + 1 + _module.size() + 1);
+            uint16_t length = static_cast<uint16_t>(sizeof(_type) + (_category.size() + 1) + (_module.size() + 1));
+            ASSERT(bufferSize >= length);
 
             if (bufferSize >= length) {
-                ASSERT(bufferSize >= length);
-
                 Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
                 Core::FrameType<0>::Writer frameWriter(frame, 0);
                 frameWriter.Number(_type);
@@ -66,8 +65,10 @@ namespace Core {
             Core::FrameType<0>::Reader frameReader(frame, 0);
 
             _type = frameReader.Number<MetaData::MessageType>();
+            ASSERT(_type != MessageType::INVALID);
+
             deserialized += sizeof(_type);
-            if(_type < MessageType::INVALID){
+            if (_type != MessageType::INVALID) {
                 _category = frameReader.NullTerminatedText();
                 deserialized += static_cast<uint16_t>(_category.size() + 1);
 
@@ -88,20 +89,32 @@ namespace Core {
         {
         }
 
+        Information::Information(const MetaData& metaData, const string& fileName, const uint16_t lineNumber,
+                const string& className, const uint64_t timeStamp)
+            : _metaData(metaData)
+            , _fileName(fileName)
+            , _lineNumber(lineNumber)
+            , _className(className)
+            , _timeStamp(timeStamp)
+        {
+        }
+
         uint16_t Information::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
-            auto length = _metaData.Serialize(buffer, bufferSize);
+            uint16_t length = _metaData.Serialize(buffer, bufferSize);
 
             if (length != 0) {
-                if (bufferSize >= length + (_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + sizeof(_timeStamp)) {
+                const uint16_t extra = (_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + sizeof(_timeStamp);
+                ASSERT(bufferSize >= (length + extra));
+
+                if (bufferSize >= (length + extra)) {
                     Core::FrameType<0> frame(const_cast<uint8_t*>(buffer) + length, bufferSize - length, bufferSize - length);
                     Core::FrameType<0>::Writer frameWriter(frame, 0);
                     frameWriter.NullTerminatedText(_className);
                     frameWriter.NullTerminatedText(_fileName);
                     frameWriter.Number(_lineNumber);
                     frameWriter.Number(_timeStamp);
-                    length += static_cast<uint16_t>((_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + sizeof(_timeStamp));
-
+                    length += extra;
                 } else {
                     length = 0;
                 }
@@ -111,9 +124,10 @@ namespace Core {
         }
         uint16_t Information::Deserialize(const uint8_t buffer[], const uint16_t bufferSize)
         {
-            auto length = _metaData.Deserialize(buffer, bufferSize);
+            uint16_t length = _metaData.Deserialize(buffer, bufferSize);
+            ASSERT(length <= bufferSize);
 
-            if (length <= bufferSize && length > sizeof(MetaData::MessageType)) {
+            if ((length <= bufferSize) && (length != 0)) {
                 Core::FrameType<0> frame(const_cast<uint8_t*>(buffer) + length, bufferSize - length, bufferSize - length);
                 Core::FrameType<0>::Reader frameReader(frame, 0);
                 _className = frameReader.NullTerminatedText();
@@ -122,6 +136,8 @@ namespace Core {
                 _timeStamp = frameReader.Number<uint64_t>();
 
                 length += static_cast<uint16_t>((_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + sizeof(_timeStamp));
+            } else {
+                length = 0;
             }
 
             return length;
@@ -449,6 +465,7 @@ namespace Core {
 
             Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
             ASSERT(std::find(_controls.begin(), _controls.end(), control) == _controls.end());
+
             _controls.emplace_back(control);
         }
 

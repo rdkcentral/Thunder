@@ -29,23 +29,24 @@ namespace Core {
 
         /**
         * @brief Data-Carrier class storing information about basic information about the Message.
-        * 
+        *
         */
         class EXTERNAL MetaData {
         public:
             enum MessageType : uint8_t {
-                TRACING = 0,
-                LOGGING = 1,
-                INVALID = 3
+                INVALID = 0,
+                TRACING = 1,
+                LOGGING = 2
             };
 
             MetaData();
             MetaData(const MessageType type, const string& category, const string& module);
             MetaData(const MetaData&) = default;
             MetaData& operator=(const MetaData&) = default;
+
             bool operator==(const MetaData& other) const
             {
-                return _type == other._type && _category == other._category && _module == other._module;
+                return ((_type == other._type) && (_category == other._category) && (_module == other._module));
             }
             bool operator!=(const MetaData& other) const
             {
@@ -55,11 +56,11 @@ namespace Core {
             {
                 return _type;
             }
-            string Category() const
+            const string& Category() const
             {
                 return _category;
             }
-            string Module() const
+            const string& Module() const
             {
                 return _module;
             }
@@ -75,11 +76,11 @@ namespace Core {
 
         /**
         * @brief Data-Carrier, extended information about the message
-        * 
+        *
         */
         class EXTERNAL Information {
         public:
-            Information() 
+            Information()
                 : _metaData()
                 , _fileName()
                 , _lineNumber(0)
@@ -91,6 +92,8 @@ namespace Core {
 
             Information(const MetaData::MessageType type, const string& category, const string& module,
                 const string& fileName, const uint16_t lineNumber, const string& className, const uint64_t timestamp);
+            Information(const MetaData& metaData, const string& fileName, const uint16_t lineNumber, const string& className,
+                const uint64_t timestamp);
             Information(const Information&) = default;
             Information& operator=(const Information&) = default;
 
@@ -149,7 +152,7 @@ namespace Core {
 
         /**
          * @brief JSON Settings for all messages
-         * 
+         *
          */
         class EXTERNAL Settings : public Core::JSON::Container {
         private:
@@ -206,7 +209,7 @@ namespace Core {
         * @brief Class responsible for storing information about all messages, so announced IControl will know if it should be enabled
         *        Initial list is retreived from thunder config, and is modified/extended when there is change requested in enabled categories.
         *        Info will be passed to another starting unit.
-        * 
+        *
         */
         class EXTERNAL MessageList {
         public:
@@ -225,10 +228,10 @@ namespace Core {
         };
 
         /**
-         * @brief Class responsible for storing information about announced controls and updating them based on incoming metadata or 
-         *        MessageList from config. 
+         * @brief Class responsible for storing information about announced controls and updating them based on incoming metadata or
+         *        MessageList from config.
          *        This class can be serialized, and then recreated on the other side to get information about all announced controls on this side.
-         * 
+         *
          */
         class EXTERNAL ControlList {
         public:
@@ -264,7 +267,7 @@ namespace Core {
         /**
          * @brief Logging can be used in Core, so messages should be printed asap. This class prepares a message and prints it
          *        to a channel.
-         * 
+         *
          */
         class EXTERNAL LoggingOutput {
         private:
@@ -304,9 +307,9 @@ namespace Core {
         * @brief Class responsible for:
         *        - opening buffers
         *        - reading configuration and setting message configuration accordingly
-        *        - a center, where messages (and its information) from specific componenets can be pushed 
+        *        - a center, where messages (and its information) from specific componenets can be pushed
         *        - receiving information that specific message should be enabled or disabled
-        * 
+        *
         */
         class EXTERNAL MessageUnit {
 

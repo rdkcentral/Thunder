@@ -19,8 +19,8 @@
 
 #pragma once
 
-#include "Control.h"
 #include "Module.h"
+#include "Control.h"
 #include "TextMessage.h"
 
 #ifdef _THUNDER_PRODUCTION
@@ -32,45 +32,33 @@
 #define TRACE_DURATION(CODE, ...)
 #define TRACE_DURATION_GLOBAL(CODE, ...)
 
-#else
+#else // _THUNDER_PRODUCTION
 
 #define TRACE_CONTROL(CATEGORY) \
-    WPEFramework::Messaging::ControlLifetime<CATEGORY, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::Messaging::MetaData::MessageType::TRACING>
+    WPEFramework::Messaging::ControlLifetime<CATEGORY, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Messaging::MessageType::TRACING>
 
 #define TRACE_ENABLED(CATEGORY) \
     TRACE_CONTROL(CATEGORY)::IsEnabled()
 
-#define TRACE(CATEGORY, PARAMETERS) \
-    do {                                                                                                                                        \
-        if (TRACE_ENABLED(CATEGORY) == true) {                                                                                                  \
-            CATEGORY __data__ PARAMETERS;                                                                                                       \
-            WPEFramework::Core::Messaging::Information __info__(WPEFramework::Core::Messaging::MetaData::MessageType::TRACING,                  \
-                WPEFramework::Core::ClassNameOnly(typeid(CATEGORY).name()).Text(),                                                              \
-                WPEFramework::Core::System::MODULE_NAME,                                                                                        \
-                __FILE__,                                                                                                                       \
-                __LINE__,                                                                                                                       \
-                typeid(*this).name(),                                                                                                           \
-                WPEFramework::Core::Time::Now().Ticks());                                                                                       \
-            WPEFramework::Messaging::TextMessage __message__(__data__.Data());                                                                  \
-            WPEFramework::Core::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                                                \
-        }                                                                                                                                       \
+#define _TRACE_INTERNAL(CATEGORY, CLASSNAME, PARAMETERS) \
+    do {                                                                                                \
+        using __control__ = TRACE_CONTROL(CATEGORY);                                                    \
+        if (__control__::IsEnabled() == true) {                                                         \
+            CATEGORY __data__ PARAMETERS;                                                               \
+            WPEFramework::Core::Messaging::Information __info__(                                        \
+                __control__::MetaData(),                                                                \
+                __FILE__,                                                                               \
+                __LINE__,                                                                               \
+                (CLASSNAME),                                                                            \
+                WPEFramework::Core::Time::Now().Ticks()                                                 \
+            );                                                                                          \
+            WPEFramework::Messaging::TextMessage __message__(__data__.Data());                          \
+            WPEFramework::Core::Messaging::MessageUnit::Instance().Push(__info__, &__message__);        \
+        }                                                                                               \
     } while(false)
 
-#define TRACE_GLOBAL(CATEGORY, PARAMETERS) \
-    do {                                                                                                                                        \
-        if (TRACE_ENABLED(CATEGORY) == true) {                                                                                                  \
-            CATEGORY __data__ PARAMETERS;                                                                                                       \
-            WPEFramework::Core::Messaging::Information __info__(WPEFramework::Core::Messaging::MetaData::MessageType::TRACING,                  \
-                WPEFramework::Core::ClassNameOnly(typeid(CATEGORY).name()).Text(),                                                              \
-                WPEFramework::Core::System::MODULE_NAME,                                                                                        \
-                __FILE__,                                                                                                                       \
-                __LINE__,                                                                                                                       \
-                __FUNCTION__,                                                                                                                   \
-                WPEFramework::Core::Time::Now().Ticks());                                                                                       \
-            WPEFramework::Messaging::TextMessage __message__(__data__.Data());                                                                  \
-            WPEFramework::Core::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                                                \
-        }                                                                                                                                       \
-    } while(false)
+#define TRACE(CATEGORY, PARAMETERS) _TRACE_INTERNAL(CATEGORY, typeid(*this).name(), PARAMETERS)
+#define TRACE_GLOBAL(CATEGORY, PARAMETERS) _TRACE_INTERNAL(CATEGORY, __FUNCTION__, PARAMETERS)
 
 #define TRACE_DURATION(CODE, ...) \
     do {                                                                        \
@@ -86,4 +74,4 @@
         TRACE_GLOBAL(WPEFramework::Trace::Duration, (start, ##__VA_ARGS__));    \
     } while(false)
 
-#endif
+#endif // _THUNDER_PRODUCTION

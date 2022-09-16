@@ -18,6 +18,7 @@
  */
 
 #include "Logging.h"
+#include "LoggingCategories.h"
 #include <fstream>
 
 namespace WPEFramework {

@@ -57,7 +57,7 @@ namespace Messaging {
             }
 
             //non virtual method, so it can be called faster
-            inline bool IsEnabled() const
+            bool IsEnabled() const
             {
                 return ((_enabled & 0x01) != 0);
             }
@@ -106,6 +106,10 @@ namespace Messaging {
         inline static void Enable(const bool enable)
         {
             ControlLifetimeClass::_messageControl.Enable(enable);
+        }
+        inline static const Core::Messaging::MetaData& MetaData()
+        {
+            return (ControlLifetimeClass::_messageControl.MessageMetaData());
         }
     };
 
