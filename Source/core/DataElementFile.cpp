@@ -62,6 +62,7 @@ namespace Core {
 
         if ((type & File::CREATE) != 0) {
             m_File.Create(type);
+            m_File.Permission(type & ~(File::CREATE));
         } else {
             m_File.Open((type & File::USER_WRITE) == 0);
         }
