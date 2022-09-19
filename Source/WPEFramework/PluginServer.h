@@ -1068,14 +1068,34 @@ namespace PluginHost {
                 std::vector<string> all_paths;
 
                 const std::vector<string> temp = _administrator.Configuration().LinkerPluginPaths();
+                string rootPath(PluginHost::Service::Configuration().SystemRootPath.Value());
+
+                if (rootPath.empty() == false) {
+                    rootPath = Core::Directory::Normalize(rootPath);
+                }
+
                 if (!temp.empty())
                 {
                     // additionaly defined user paths
-                    for (const string& s : temp)
-                        all_paths.push_back(Core::Directory::Normalize(s) + locator);
+                    for (const string& s : temp) {
+                        if (rootPath.empty() == true) {
+                            all_paths.push_back(Core::Directory::Normalize(s) + locator);
+                        }
+                        else {
+                            all_paths.push_back(rootPath + Core::Directory::Normalize(s) + locator);
+                        }
+		    }
                 }
-                else
+                else if (rootPath.empty() == false)
                 {
+                    string className = PluginHost::Service::Configuration().ClassName.Value() + _T("/");
+                    // system configured paths
+                    all_paths.push_back(rootPath + DataPath() + locator);
+                    all_paths.push_back(rootPath + PersistentPath() + locator);
+                    all_paths.push_back(rootPath + SystemPath() + locator);
+                    all_paths.push_back(rootPath + PluginPath() + locator);
+                }
+                else {
                     string className = PluginHost::Service::Configuration().ClassName.Value() + _T("/");
                     // system configured paths
                     all_paths.push_back(DataPath() + locator);
@@ -1524,7 +1544,7 @@ namespace PluginHost {
                                     _object.Version(),
                                     _object.User(),
                                     _object.Group(),
-                                    _object.LinkLoaderPath(),
+                                    _object.SystemRootPath(),
                                     _object.Threads(),
                                     _object.Priority(),
                                     _object.Configuration());
@@ -1796,7 +1816,7 @@ namespace PluginHost {
                     const uint32_t version,
                     const string& user,
                     const string& group,
-                    const string& linkLoaderPath,
+                    const string& systemRootPath,
                     const uint8_t threads,
                     const int8_t priority,
                     const string configuration) override
@@ -1813,7 +1833,7 @@ namespace PluginHost {
 
                     uint32_t id;
                     RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath());
-                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, linkLoaderPath, _T(""), configuration);
+                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, systemRootPath, _T(""), configuration);
 
                     RPC::Process process(requestId, config, instance);
 

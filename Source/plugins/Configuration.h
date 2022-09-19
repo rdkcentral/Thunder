@@ -34,7 +34,7 @@ namespace Plugin {
             DEACTIVATED,
             SUSPENDED,
             RESUMED
-	};
+        };
 
     public:
         Config()
@@ -51,6 +51,7 @@ namespace Plugin {
             , Configuration(false)
             , PersistentPathPostfix()
             , VolatilePathPostfix()
+            , SystemRootPath()
             , StartupOrder(50)
             , Startup(startup::DEACTIVATED)
         {
@@ -66,6 +67,7 @@ namespace Plugin {
             Add(_T("configuration"), &Configuration);
             Add(_T("persistentpathpostfix"), &PersistentPathPostfix);
             Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
+            Add(_T("systemrootpath"), &SystemRootPath);
             Add(_T("startuporder"), &StartupOrder);
             Add(_T("startmode"), &Startup);
         }
@@ -83,6 +85,7 @@ namespace Plugin {
             , Configuration(copy.Configuration)
             , PersistentPathPostfix(copy.PersistentPathPostfix)
             , VolatilePathPostfix(copy.VolatilePathPostfix)
+            , SystemRootPath(copy.SystemRootPath)
             , StartupOrder(copy.StartupOrder)
             , Startup(copy.Startup)
         {
@@ -98,6 +101,7 @@ namespace Plugin {
             Add(_T("configuration"), &Configuration);
             Add(_T("persistentpathpostfix"), &PersistentPathPostfix);
             Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
+            Add(_T("systemrootpath"), &SystemRootPath);
             Add(_T("startuporder"), &StartupOrder);
             Add(_T("startmode"), &Startup);
         }
@@ -117,6 +121,7 @@ namespace Plugin {
             Termination = RHS.Termination;
             PersistentPathPostfix = RHS.PersistentPathPostfix;
             VolatilePathPostfix = RHS.VolatilePathPostfix;
+            SystemRootPath = RHS.SystemRootPath;
             StartupOrder = RHS.StartupOrder;
             Startup = RHS.Startup;
 
@@ -148,6 +153,7 @@ namespace Plugin {
         Core::JSON::String Configuration;
         Core::JSON::String PersistentPathPostfix;
         Core::JSON::String VolatilePathPostfix;
+        Core::JSON::String SystemRootPath;
         Core::JSON::DecUInt32 StartupOrder;
         Core::JSON::EnumType<startup> Startup;
 

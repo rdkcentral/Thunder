@@ -206,6 +206,9 @@ namespace PluginHost {
         //! SystemPath: <config:apppath>/Plugins/
         virtual string PluginPath() const = 0;
 
+        //! SystemPath: <config:systemrootpath>/
+        virtual string SystemRootPath() const = 0;
+
         //! Substituted Config value
         virtual string Substitute(const string& input) const = 0;
 

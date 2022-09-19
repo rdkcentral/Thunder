@@ -222,6 +222,10 @@ namespace PluginHost {
         {
             return (_config.DataPath());
         }
+        string SystemRootPath() const override
+        {
+            return (_config.Configuration().SystemRootPath.Value());
+        }
         state State() const override
         {
             return (_state);
