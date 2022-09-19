@@ -33,6 +33,78 @@ namespace RPC {
 
     static Core::ProxyPoolType<RPC::AnnounceMessage> AnnounceMessageFactory(2);
 
+    class DynamicLoaderPaths {
+    private:
+        static constexpr TCHAR LoaderConfig[] = _T("/etc/ld.so.conf");
+
+    public:
+        DynamicLoaderPaths(const DynamicLoaderPaths&) = delete;
+        DynamicLoaderPaths& operator= (const DynamicLoaderPaths&) = delete;
+
+        DynamicLoaderPaths() 
+            : _downloadLists() {
+            ReadList(LoaderConfig, _downloadLists);
+            _downloadLists.emplace_back(_T("/usr/lib/"));
+            _downloadLists.emplace_back(_T("/lib/"));
+        }
+        ~DynamicLoaderPaths() = default;
+
+    public:
+        const std::vector<string> Paths() const {
+            return (_downloadLists);
+        }
+
+    private:
+        void ReadList(const string& filename, std::vector<string>& entries) {
+
+            string filter(Core::File::FileNameExtended(filename));
+
+            if (filter.find('*') != string::npos) {
+                Core::Directory dir(Core::File::PathName(filename).c_str(), filter.c_str());
+
+                while (dir.Next() == true) {
+                    ReadList(dir.Current(), entries);
+                }
+            }
+            else {
+                // Parse it line, by line...
+                Core::DataElementFile bufferFile(filename, Core::File::USER_READ);
+                Core::TextReader reader(bufferFile);
+
+                while (reader.EndOfText() == false) {
+                    Core::TextFragment line(reader.ReadLine());
+
+                    // Drop the spaces in the begining...
+                    line.TrimBegin(" \t");
+
+                    if ((line.IsEmpty() == false) && (line[0] != '#')) {
+                        Core::TextSegmentIterator segments(line, true, " \t");
+
+                        if (segments.Next() == true) {
+
+                            // Looks like we have a word, see what the word is...
+                            if ((segments.Current() == _T("include")) && (segments.Next() == true)) {
+                                // Oke, dive into this entry...
+                                ReadList(segments.Remainder().Text(), entries);
+                            }
+                            else {
+                                entries.emplace_back(line.Text());
+                            }
+                        }
+                        else {
+                            entries.emplace_back(line.Text());
+                        }
+                    }
+                }
+            }
+        }
+
+    private:
+        std::vector<string> _downloadLists;
+    };
+
+    static DynamicLoaderPaths _LoaderPaths;
+
     /* static */ Core::CriticalSection Process::_ldLibLock ;
 
     class ProcessShutdown : public Core::Thread {
