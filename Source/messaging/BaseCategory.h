@@ -21,7 +21,7 @@
 
 #include "Module.h"
 
-#define DEFINE_CATEGORY(BASE, CATEGORY) \
+#define _INTERNAL_DEFINE_CATEGORY(BASE, CATEGORY) \
     class EXTERNAL CATEGORY : public BASE {                 \
     public:                                                 \
         using BASE::BASE;                                   \
@@ -30,7 +30,7 @@
         CATEGORY& operator=(const CATEGORY&) = delete;      \
     }
 
-#define DEFINE_TRACING_CATEGORY(CATEGORY) DEFINE_CATEGORY(BaseCategory, CATEGORY)
+#define DEFINE_TRACING_CATEGORY(CATEGORY) _INTERNAL_DEFINE_CATEGORY(BaseCategory, CATEGORY)
 
 namespace WPEFramework {
 namespace Trace {

@@ -34,7 +34,7 @@ namespace Logging {
         static constexpr bool isLoggingCategory = true;
     };
 
-#define DEFINE_LOGGING_CATEGORY(CATEGORY) DEFINE_CATEGORY(BaseCategory, CATEGORY)
+#define DEFINE_LOGGING_CATEGORY(CATEGORY) _INTERNAL_DEFINE_CATEGORY(BaseCategory, CATEGORY)
 
     DEFINE_LOGGING_CATEGORY(Startup);
     DEFINE_LOGGING_CATEGORY(Shutdown);
