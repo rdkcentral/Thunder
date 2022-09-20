@@ -18,6 +18,7 @@
  */
 
 #pragma once
+
 #include "Module.h"
 
 namespace WPEFramework {
@@ -30,46 +31,43 @@ namespace Messaging {
      * 
      */
     class EXTERNAL MessageClient {
-        using Factories = std::unordered_map<Core::Messaging::MetaData::MessageType, Core::Messaging::IEventFactory*>;
-
     public:
-        using Messages = std::list<std::pair<Core::Messaging::Information, Core::ProxyType<Core::Messaging::IEvent>>>;
+        MessageClient() = delete;
         ~MessageClient() = default;
         MessageClient(const MessageClient&) = delete;
         MessageClient& operator=(const MessageClient&) = delete;
-
-    public:
         MessageClient(const string& identifer, const string& basePath, const uint16_t socketPort = 0);
 
-        void AddInstance(uint32_t id);
-        void RemoveInstance(uint32_t id);
+    public:
+        void AddInstance(const uint32_t id);
+        void RemoveInstance(const uint32_t id);
         void ClearInstances();
 
         void WaitForUpdates(const uint32_t waitTime);
         void SkipWaiting();
 
         void Enable(const Core::Messaging::MetaData& metaData, const bool enable);
-        Core::Messaging::ControlList::InformationIterator Enabled();
+        void Controls(Core::Messaging::ControlList::InformationStorage& controls) const;
 
-        Messages PopMessagesAsList();
         void PopMessagesAndCall(std::function<void(const Core::Messaging::Information& info, const Core::ProxyType<Core::Messaging::IEvent>& message)> function);
 
         void AddFactory(Core::Messaging::MetaData::MessageType type, Core::Messaging::IEventFactory* factory);
         void RemoveFactory(Core::Messaging::MetaData::MessageType type);
 
     private:
+        using Factories = std::unordered_map<Core::Messaging::MetaData::MessageType, Core::Messaging::IEventFactory*>;
         using Clients = std::unordered_map<uint32_t, Core::Messaging::MessageUnit::MessageDispatcher>;
+
         mutable Core::CriticalSection _adminLock;
         const string _identifier;
         const string _basePath;
         const uint16_t _socketPort;
 
-        uint8_t _readBuffer[Core::Messaging::MessageUnit::DataSize];
-        uint8_t _writeBuffer[Core::Messaging::MessageUnit::MetaDataSize];
+        mutable uint8_t _readBuffer[Core::Messaging::MessageUnit::DataSize];
+        mutable uint8_t _writeBuffer[Core::Messaging::MessageUnit::MetaDataSize];
 
         Clients _clients;
         Factories _factories;
-        Core::Messaging::ControlList::InformationStorage _enabledCategories;
     };
 }
 }

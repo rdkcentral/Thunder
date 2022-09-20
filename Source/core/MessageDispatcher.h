@@ -315,7 +315,7 @@ namespace Core {
          * @param maxLength maximum size of the buffer
          * @return uint16_t how much data was written back to the buffer
          */
-        uint16_t PushMetadata(const uint16_t length, uint8_t* value, const uint16_t maxLength)
+        uint16_t PushMetadata(const uint16_t length, uint8_t* value, const uint16_t maxLength) const
         {
             ASSERT(value != nullptr);
             ASSERT(maxLength != 0);
@@ -416,8 +416,8 @@ namespace Core {
         }
 
     private:
-        Core::CriticalSection _dataLock;
-        Core::CriticalSection _metaDataLock;
+        mutable Core::CriticalSection _dataLock;
+        mutable Core::CriticalSection _metaDataLock;
 
         DataBuffer _dataBuffer;
         std::unique_ptr<MetaDataBuffer<METADATA_SIZE>> _metaDataBuffer;
