@@ -137,6 +137,10 @@ macro(write_config)
                 map_append(${plugin_config} resumed ${resumed})
             endif()
 
+            if (NOT ${startuporder} STREQUAL "")
+                map_append(${plugin_config} startuporder ${startuporder})
+            endif()
+
             if (NOT ${configuration} STREQUAL "")
                 map_append(${plugin_config} configuration ${configuration})
             endif()
