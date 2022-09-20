@@ -1084,7 +1084,7 @@ namespace PluginHost {
                         else {
                             all_paths.push_back(rootPath + Core::Directory::Normalize(s) + locator);
                         }
-		    }
+                    }
                 }
                 else if (rootPath.empty() == false)
                 {

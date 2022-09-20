@@ -103,7 +103,8 @@ namespace RPC {
         std::vector<string> _downloadLists;
     };
 
-    static DynamicLoaderPaths _LoaderPaths;
+    /* static */ constexpr TCHAR DynamicLoaderPaths::LoaderConfig[];
+    static DynamicLoaderPaths& _LoaderPaths = Core::SingletonType<DynamicLoaderPaths>::Instance();
 
     /* static */ Core::CriticalSection Process::_ldLibLock ;
 
@@ -524,11 +525,16 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         _connectionMap.Destroy();
     }
 
-    void Communicator::Destroy(const uint32_t id) {
+    void Communicator::Destroy(const uint32_t id)
+    {
         // This is a forceull call, blocking, to kill that specific connection
         g_destructor.ForceDestruct(id);
     }
 
+    const std::vector<string> Process::DynamicLoaderPaths() const
+    {
+        return _LoaderPaths.Paths();
+    }
     CommunicatorClient::CommunicatorClient(
         const Core::NodeId& remoteNode)
         : Core::IPCChannelClientType<Core::Void, false, true>(remoteNode, CommunicationBufferSize)

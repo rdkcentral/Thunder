@@ -364,6 +364,7 @@ namespace RPC {
             }
             if (instance.SystemRootPath().empty() == false) {
                 _systemRootPath = instance.SystemRootPath();
+                _options.Add(_T("-S")).Add('"' + instance.SystemRootPath() + '"');
             }
             if (instance.Threads() > 1) {
                 _options.Add(_T("-t")).Add(Core::NumberType<uint8_t>(instance.Threads()).Text());
@@ -392,13 +393,16 @@ namespace RPC {
             _options.Add(_T("-e")).Add(Core::NumberType<uint32_t>(loggingSettings).Text());
             #endif
 
-            string oldPath;
+            string oldLDLibraryPaths;
             _ldLibLock.Lock();
             if (_systemRootPath.empty() == false) {
 
-                Core::SystemInfo::GetEnvironment(_T("LD_LIBRARY_PATH"), oldPath);
-                string newPath = _systemRootPath+':'+oldPath ;
-                Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), newPath, true);
+                string newLDLibraryPaths;
+                Core::SystemInfo::GetEnvironment(_T("LD_LIBRARY_PATH"), oldLDLibraryPaths);
+
+                PopulateLDLibraryPaths(oldLDLibraryPaths, newLDLibraryPaths);
+
+                Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), newLDLibraryPaths, true);
             }
 
             // Start the external process launch..
@@ -408,7 +412,7 @@ namespace RPC {
 
             //restore the original value
             if (_systemRootPath.empty() == false) {
-                Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), oldPath, true);
+                Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), oldLDLibraryPaths, true);
 
             }
             _ldLibLock.Unlock();
@@ -419,6 +423,31 @@ namespace RPC {
             }
 
             return (result);
+        }
+
+    private:
+        const std::vector<string> DynamicLoaderPaths() const;
+        void PopulateLDLibraryPaths(const string& oldLDLibraryPaths, string& newLDLibraryPaths) const {
+            // Read currently added LD_LIBRARY_PATH to prefix with _systemRootPath
+            if (oldLDLibraryPaths.empty() != true) {
+                size_t start = 0;
+                size_t end = oldLDLibraryPaths.find(':');
+                do {
+                    newLDLibraryPaths += _systemRootPath;
+                    newLDLibraryPaths += oldLDLibraryPaths.substr(start,
+                                        ((end != string::npos) ? (end - start + 1) : end));
+                    start = end;
+                    if (end != string::npos) {
+                        end = oldLDLibraryPaths.find(':', start + 1);
+                    }
+                } while (start != string::npos);
+            }
+
+            std::vector<string> loaderPaths = DynamicLoaderPaths();
+            for (const auto& loaderPath : loaderPaths) {
+                newLDLibraryPaths += (newLDLibraryPaths.empty() != true) ? ":" : "";
+                newLDLibraryPaths += _systemRootPath + loaderPath;
+            }
         }
 
     private:
