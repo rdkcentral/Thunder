@@ -65,9 +65,21 @@ namespace PluginHost {
             {
                 _config.Configuration = value;
             }
+            inline void Startup(const PluginHost::IShell::startup value)
+            {
+                _config.Startup = value;
+            }
             inline void AutoStart(const bool value)
             {
                 _config.AutoStart = value;
+            }
+            inline void Resumed(const bool value)
+            {
+                _config.Resumed = value;
+            }
+            inline void SystemRootPath(const string& value)
+            {
+                _config.SystemRootPath = value;
             }
             inline const Plugin::Config& Configuration() const
             {
@@ -158,7 +170,7 @@ namespace PluginHost {
             , _notifiers()
             #endif
         {
-            if ( (plugin.Startup.IsSet() == true) && (plugin.Startup.Value() == Plugin::Config::UNAVAILABLE) ) {
+            if ((plugin.Startup.IsSet() == true) && (plugin.Startup.Value() == PluginHost::IShell::startup::UNAVAILABLE)) {
                 _state = UNAVAILABLE;
             }
         }
@@ -226,6 +238,11 @@ namespace PluginHost {
         {
             return (_config.Configuration().SystemRootPath.Value());
         }
+        uint32_t SystemRootPath(const string& systemRootPath) override
+        {
+            _config.SystemRootPath(systemRootPath);
+            return (Core::ERROR_NONE);
+        }
         state State() const override
         {
             return (_state);
@@ -235,8 +252,8 @@ namespace PluginHost {
             bool result = _config.Configuration().AutoStart.Value();
 
             if (_config.Configuration().Startup.IsSet() == true) {
-                Plugin::Config::startup value = _config.Configuration().Startup.Value();
-                result = (value == Plugin::Config::startup::SUSPENDED) || (value == Plugin::Config::startup::RESUMED);
+                PluginHost::IShell::startup value = _config.Configuration().Startup.Value();
+                result = (value == PluginHost::IShell::startup::SUSPENDED) || (value == PluginHost::IShell::startup::RESUMED);
             }
 
             return (result);
@@ -246,11 +263,20 @@ namespace PluginHost {
             bool result = (_config.Configuration().Resumed.IsSet() ? _config.Configuration().Resumed.Value() : (_config.Configuration().AutoStart.Value() == false));
 
             if (_config.Configuration().Startup.IsSet() == true) {
-                result = (_config.Configuration().Startup.Value() == Plugin::Config::startup::RESUMED);
+                result = (_config.Configuration().Startup.Value() == PluginHost::IShell::startup::RESUMED);
             }
 
             return (result);
         }
+        uint32_t Startup(const PluginHost::IShell::startup value) override
+        {
+            _config.Startup(value);
+            _config.AutoStart((value == PluginHost::IShell::startup::SUSPENDED) || (value == PluginHost::IShell::startup::RESUMED));
+            _config.Resumed((value == PluginHost::IShell::startup::RESUMED));
+
+            return (Core::ERROR_NONE);
+        }
+
         bool IsSupported(const uint8_t number) const override
         {
             return (_config.IsSupported(number));

@@ -59,6 +59,13 @@ namespace PluginHost {
             virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) = 0;
         };
 
+        enum class startup : uint8_t {
+            UNAVAILABLE,
+            DEACTIVATED,
+            SUSPENDED,
+            RESUMED
+        };
+
         // State of the IPlugin interface associated with this shell.
         enum state : uint8_t {
             UNAVAILABLE,
@@ -208,6 +215,12 @@ namespace PluginHost {
 
         //! SystemPath: <config:systemrootpath>/
         virtual string SystemRootPath() const = 0;
+
+        //! SystemRootPath: Set <config:systemrootpath>/
+        virtual uint32_t SystemRootPath(const string& systemRootPath) = 0;
+
+        //! Startup: Set<startup,autostart,resumed states>/
+        virtual uint32_t Startup(const startup value) = 0;
 
         //! Substituted Config value
         virtual string Substitute(const string& input) const = 0;

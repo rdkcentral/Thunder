@@ -48,15 +48,15 @@ ENUM_CONVERSION_BEGIN(PluginHost::IShell::reason)
 
 ENUM_CONVERSION_END(PluginHost::IShell::reason)
 
-ENUM_CONVERSION_BEGIN(Plugin::Config::startup)
+ENUM_CONVERSION_BEGIN(PluginHost::IShell::startup)
 
-    { Plugin::Config::startup::UNAVAILABLE, _TXT("Unavailable") },
-    { Plugin::Config::startup::DEACTIVATED, _TXT("Deactivated") },
-    { Plugin::Config::startup::SUSPENDED,   _TXT("Suspended")   },
-    { Plugin::Config::startup::RESUMED,     _TXT("Resumed")     },
-    { Plugin::Config::startup::RESUMED,     _TXT("Activated")   },
+    { PluginHost::IShell::startup::UNAVAILABLE, _TXT("Unavailable") },
+    { PluginHost::IShell::startup::DEACTIVATED, _TXT("Deactivated") },
+    { PluginHost::IShell::startup::SUSPENDED,   _TXT("Suspended")   },
+    { PluginHost::IShell::startup::RESUMED,     _TXT("Resumed")     },
+    { PluginHost::IShell::startup::RESUMED,     _TXT("Activated")   },
 
-ENUM_CONVERSION_END(Plugin::Config::startup)
+ENUM_CONVERSION_END(PluginHost::IShell::startup)
 
 namespace PluginHost
 {

@@ -29,14 +29,6 @@ namespace WPEFramework {
 namespace Plugin {
     class EXTERNAL Config : public Core::JSON::Container {
     public:
-        enum startup : uint8_t {
-            UNAVAILABLE,
-            DEACTIVATED,
-            SUSPENDED,
-            RESUMED
-        };
-
-    public:
         Config()
             : Core::JSON::Container()
             , Callsign()
@@ -53,7 +45,7 @@ namespace Plugin {
             , VolatilePathPostfix()
             , SystemRootPath()
             , StartupOrder(50)
-            , Startup(startup::DEACTIVATED)
+            , Startup(PluginHost::IShell::startup::DEACTIVATED)
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -155,7 +147,7 @@ namespace Plugin {
         Core::JSON::String VolatilePathPostfix;
         Core::JSON::String SystemRootPath;
         Core::JSON::DecUInt32 StartupOrder;
-        Core::JSON::EnumType<startup> Startup;
+        Core::JSON::EnumType<PluginHost::IShell::startup> Startup;
 
         static Core::NodeId IPV4UnicastNode(const string& ifname);
 
