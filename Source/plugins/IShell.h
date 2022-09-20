@@ -219,6 +219,9 @@ namespace PluginHost {
         //! SystemRootPath: Set <config:systemrootpath>/
         virtual uint32_t SystemRootPath(const string& systemRootPath) = 0;
 
+        //! Startup: <config:startup>/
+        virtual PluginHost::IShell::startup Startup() const = 0;
+
         //! Startup: Set<startup,autostart,resumed states>/
         virtual uint32_t Startup(const startup value) = 0;
 

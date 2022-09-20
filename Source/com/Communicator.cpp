@@ -42,7 +42,8 @@ namespace RPC {
         DynamicLoaderPaths& operator= (const DynamicLoaderPaths&) = delete;
 
         DynamicLoaderPaths() 
-            : _downloadLists() {
+            : _downloadLists()
+        {
             ReadList(LoaderConfig, _downloadLists);
             _downloadLists.emplace_back(_T("/usr/lib/"));
             _downloadLists.emplace_back(_T("/lib/"));
@@ -50,12 +51,14 @@ namespace RPC {
         ~DynamicLoaderPaths() = default;
 
     public:
-        const std::vector<string> Paths() const {
+        const std::vector<string> Paths() const
+        {
             return (_downloadLists);
         }
 
     private:
-        void ReadList(const string& filename, std::vector<string>& entries) {
+        void ReadList(const string& filename, std::vector<string>& entries)
+        {
 
             string filter(Core::File::FileNameExtended(filename));
 

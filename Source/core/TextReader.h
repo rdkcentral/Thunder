@@ -38,7 +38,8 @@ namespace Core {
     public:
         TextReader()
             : m_Index(0)
-            , m_DataBlock() {
+            , m_DataBlock()
+        {
         }
         TextReader(DataElement& element, const uint32_t offset = 0)
             : m_Index(offset)
@@ -52,7 +53,8 @@ namespace Core {
         }
         ~TextReader() = default;
 
-        TextReader& operator=(const TextReader& rhs) {
+        TextReader& operator=(const TextReader& rhs)
+        {
             m_Index = rhs.m_Index;
             m_DataBlock = rhs.m_DataBlock;
 
@@ -60,10 +62,12 @@ namespace Core {
         }
 
     public:
-        inline void Reset() {
+        inline void Reset()
+        {
             m_Index = 0;
         }
-        inline bool EndOfText() const {
+        inline bool EndOfText() const
+        {
             return (m_Index >= static_cast<uint32_t>(m_DataBlock.Size()));
         }
         TextFragment ReadLine() const;

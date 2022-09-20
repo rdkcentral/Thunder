@@ -170,7 +170,7 @@ namespace PluginHost {
             , _notifiers()
             #endif
         {
-            if ((plugin.Startup.IsSet() == true) && (plugin.Startup.Value() == PluginHost::IShell::startup::UNAVAILABLE)) {
+            if ( (plugin.Startup.IsSet() == true) && (plugin.Startup.Value() == PluginHost::IShell::startup::UNAVAILABLE) ) {
                 _state = UNAVAILABLE;
             }
         }
@@ -268,6 +268,10 @@ namespace PluginHost {
 
             return (result);
         }
+        PluginHost::IShell::startup Startup() const override
+        {
+            return _config.Configuration().Startup.Value();
+        }
         uint32_t Startup(const PluginHost::IShell::startup value) override
         {
             _config.Startup(value);
@@ -276,7 +280,6 @@ namespace PluginHost {
 
             return (Core::ERROR_NONE);
         }
-
         bool IsSupported(const uint8_t number) const override
         {
             return (_config.IsSupported(number));

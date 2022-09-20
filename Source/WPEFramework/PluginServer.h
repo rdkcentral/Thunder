@@ -1088,7 +1088,6 @@ namespace PluginHost {
                 }
                 else if (rootPath.empty() == false)
                 {
-                    string className = PluginHost::Service::Configuration().ClassName.Value() + _T("/");
                     // system configured paths
                     all_paths.push_back(rootPath + DataPath() + locator);
                     all_paths.push_back(rootPath + PersistentPath() + locator);
@@ -1096,7 +1095,6 @@ namespace PluginHost {
                     all_paths.push_back(rootPath + PluginPath() + locator);
                 }
                 else {
-                    string className = PluginHost::Service::Configuration().ClassName.Value() + _T("/");
                     // system configured paths
                     all_paths.push_back(DataPath() + locator);
                     all_paths.push_back(PersistentPath() + locator);
@@ -1311,30 +1309,36 @@ namespace PluginHost {
                     , AutoStart()
                     , Configuration(_T("{}"), false)
                     , SystemRootPath()
+                    , Startup()
                 {
                     Add(_T("autostart"), &AutoStart);
                     Add(_T("configuration"), &Configuration);
                     Add(_T("systemrootpath"), &SystemRootPath);
+                    Add(_T("startup"), &Startup);
                 }
-                Plugin(const string& config, const bool autoStart, const string& systemRootPath)
+                Plugin(const string& config, const bool autoStart, const string& systemRootPath, const PluginHost::IShell::startup value)
                     : Core::JSON::Container()
                     , AutoStart(autoStart)
                     , Configuration(config, false)
                     , SystemRootPath(systemRootPath)
+                    , Startup(value)
                 {
                     Add(_T("autostart"), &AutoStart);
                     Add(_T("configuration"), &Configuration);
                     Add(_T("systemrootpath"), &SystemRootPath);
+                    Add(_T("startup"), &Startup);
                 }
                 Plugin(Plugin const& copy)
                     : Core::JSON::Container()
                     , AutoStart(copy.AutoStart)
                     , Configuration(copy.Configuration)
                     , SystemRootPath(copy.SystemRootPath)
+                    , Startup(copy.Startup)
                 {
                     Add(_T("autostart"), &AutoStart);
                     Add(_T("configuration"), &Configuration);
                     Add(_T("systemrootpath"), &SystemRootPath);
+                    Add(_T("startup"), &Startup);
                 }
 
                 ~Plugin() override = default;
@@ -1343,6 +1347,7 @@ namespace PluginHost {
                 Core::JSON::Boolean AutoStart;
                 Core::JSON::String Configuration;
                 Core::JSON::String SystemRootPath;
+                Core::JSON::EnumType<PluginHost::IShell::startup> Startup;
             };
 
             typedef std::map<string, Plugin>::iterator Iterator;
@@ -1368,7 +1373,7 @@ namespace PluginHost {
                     const string& name(service->Callsign());
 
                     // Create an element for this service with its callsign
-                    std::pair<Iterator, bool> index(_callsigns.insert(std::pair<string, Plugin>(name, Plugin(_T("{}"), false, ""))));
+                    std::pair<Iterator, bool> index(_callsigns.insert(std::pair<string, Plugin>(name, Plugin(_T("{}"), false, "", PluginHost::IShell::startup::UNAVAILABLE))));
 
                     // Store the override config in the JSON String created in the map
                     Services.Add(index.first->first.c_str(), &(index.first->second));
@@ -1426,6 +1431,9 @@ namespace PluginHost {
                             if (current->second.SystemRootPath.IsSet() == true) {
                                 (*index)->SystemRootPath(current->second.SystemRootPath.Value());
                             }
+                            if (current->second.Startup.IsSet() == true) {
+                                (*index)->Startup(current->second.Startup.Value());
+                            }
                         }
                     }
 
@@ -1473,6 +1481,7 @@ namespace PluginHost {
                         }
                         current->second.AutoStart = (index)->AutoStart();
                         current->second.SystemRootPath = (index)->SystemRootPath();
+                        current->second.Startup = (index)->Startup();
                     }
 
                     // Persist the currently set information

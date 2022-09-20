@@ -22,7 +22,8 @@
 namespace WPEFramework {
 namespace Core {
 
-    TextFragment TextReader::ReadLine() const {
+    TextFragment TextReader::ReadLine() const
+    {
         const uint32_t location = m_Index;
         m_Index = static_cast<uint32_t>(m_DataBlock.SearchNumber<TCHAR, ENDIAN_PLATFORM>(location, '\n'));
         uint32_t length = m_Index - static_cast<uint32_t>(location);
