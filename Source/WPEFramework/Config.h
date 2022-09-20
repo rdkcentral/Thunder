@@ -315,6 +315,7 @@ namespace PluginHost {
                 , SoftKillCheckWaitTime(10)
                 , HardKillCheckWaitTime(4)
                 , IPV6(false)
+                , LegacyInitialize(true)
                 , DefaultMessagingCategories(false)
                 , DefaultWarningReportingCategories(false)
                 , Process()
@@ -350,6 +351,8 @@ namespace PluginHost {
                 Add(_T("softkillcheckwaittime"), &SoftKillCheckWaitTime);
                 Add(_T("hardkillcheckwaittime"), &HardKillCheckWaitTime);
                 Add(_T("ipv6"), &IPV6);
+                Add(_T("legacyinitialize"), &LegacyInitialize);
+                
 #ifdef __CORE_MESSAGING__
                 Add(_T("messaging"), &DefaultMessagingCategories);
 #else
@@ -395,6 +398,7 @@ namespace PluginHost {
             Core::JSON::DecUInt8 SoftKillCheckWaitTime;
             Core::JSON::DecUInt8 HardKillCheckWaitTime;
             Core::JSON::Boolean IPV6;
+            Core::JSON::Boolean LegacyInitialize;
             Core::JSON::String DefaultMessagingCategories; 
             Core::JSON::String DefaultWarningReportingCategories; 
             ProcessSet Process;
@@ -552,6 +556,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             , _ethernetCard()
             , _portNumber(0)
             , _IPV6()
+            , _legacyInitialize(false)
             , _idleTime(180)
             , _softKillCheckWaitTime(3)
             , _hardKillCheckWaitTime(10)
@@ -597,6 +602,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 _softKillCheckWaitTime = config.SoftKillCheckWaitTime.Value();
                 _hardKillCheckWaitTime = config.HardKillCheckWaitTime.Value();
                 _IPV6 = config.IPV6.Value();
+                _legacyInitialize = config.LegacyInitialize.Value();
                 _binding = config.Binding.Value();
                 _interface = config.Interface.Value();
                 _portNumber = config.Port.Value();
@@ -830,6 +836,10 @@ POP_WARNING()
         inline bool IPv6() const {
             return (_IPV6);
         }
+        inline bool LegacyInitialize() const {
+            return (_legacyInitialize);
+        }
+
         const Plugin::Config* Plugin(const string& name) const {
             Core::JSON::ArrayType<Plugin::Config>::ConstIterator index(_plugins.Elements());
 
@@ -982,6 +992,7 @@ POP_WARNING()
         string _ethernetCard;
         uint16_t _portNumber;
         bool _IPV6;
+        bool _legacyInitialize;
         uint16_t _idleTime;
         uint8_t _softKillCheckWaitTime;
         uint8_t _hardKillCheckWaitTime;

@@ -1998,6 +1998,7 @@ POP_WARNING()
                 std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
 
                 while (currentlist.size()) {
+                    currentlist.front()->Initialized(callsign, entry);
                     currentlist.front()->Activated(callsign, entry);
                     currentlist.pop_front();
                 }
@@ -2013,6 +2014,20 @@ POP_WARNING()
 
                 while (currentlist.size()) {
                     currentlist.front()->Deactivated(callsign, entry);
+                    currentlist.pop_front();
+                }
+
+                _notificationLock.Unlock();
+            }
+
+            void Deinitialized(const string& callsign, PluginHost::IShell* entry)
+            {
+                _notificationLock.Lock();
+
+                std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
+
+                while (currentlist.size()) {
+                    currentlist.front()->Deinitialized(callsign, entry);
                     currentlist.pop_front();
                 }
 
