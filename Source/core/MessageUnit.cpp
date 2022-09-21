@@ -103,7 +103,8 @@ namespace Core {
                 _timeStamp = frameReader.Number<uint64_t>();
 
                 length += static_cast<uint16_t>((_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + sizeof(_timeStamp));
-            } else {
+            }
+            else {
                 length = 0;
             }
 
@@ -120,14 +121,14 @@ namespace Core {
                 auto it = config.Tracing.Settings.Elements();
                 while (it.Next() == true) {
                     // Ensure the list is reversed, giving the bottom-most settings priority.
-                    _tracing.push_front({it.Current().Category.Value(), it.Current().Module.Value(), it.Current().Enabled.Value()});
+                    _tracing.push_front({ it.Current().Category.Value(), it.Current().Module.Value(), it.Current().Enabled.Value() });
                 }
             }
 
             if (config.Logging.IsSet() == true) {
                 auto it = config.Logging.Settings.Elements();
                 while (it.Next() == true) {
-                    _logging.push_front({it.Current().Category.Value(), it.Current().Module.Value(), it.Current().Enabled.Value()});
+                    _logging.push_front({ it.Current().Category.Value(), it.Current().Module.Value(), it.Current().Enabled.Value() });
                 }
             }
 
@@ -142,11 +143,11 @@ namespace Core {
             _adminLock.Lock();
 
             for (auto it = _tracing.crbegin(); it != _tracing.crend(); ++it) {
-                config.Tracing.Settings.Add({(*it).Category, (*it).Module, (*it).Enabled});
+                config.Tracing.Settings.Add({ (*it).Category, (*it).Module, (*it).Enabled });
             }
 
             for (auto it = _logging.crbegin(); it != _logging.crend(); ++it) {
-                config.Logging.Settings.Add({(*it).Category, (*it).Module, (*it).Enabled});
+                config.Logging.Settings.Add({ (*it).Category, (*it).Module, (*it).Enabled });
             }
 
             _adminLock.Unlock();
@@ -213,7 +214,7 @@ namespace Core {
 
                 if (found == false) {
                     // Have a new one. Again put it in front of the list.
-                    _tracing.push_front({metaData.Category(), metaData.Module(), isEnabled});
+                    _tracing.push_front({ metaData.Category(), metaData.Module(), isEnabled });
                 }
             }
             else if (metaData.Type() == MessageType::LOGGING) {
@@ -242,7 +243,7 @@ namespace Core {
                 }
 
                 if (found == false) {
-                    _logging.push_front({metaData.Category(), _T("") /* don't care */, isEnabled});
+                    _logging.push_front({ metaData.Category(), _T("") /* don't care */, isEnabled });
                 }
             }
             else {
@@ -342,8 +343,6 @@ namespace Core {
             uint16_t lastDeserialized = 0;
             uint8_t entries = buffer[deserialized++];
 
-            _adminLock.Lock();
-
             for (int i = 0; i < entries; i++) {
                 MetaData metadata;
                 bool isEnabled = false;
@@ -356,9 +355,10 @@ namespace Core {
                     break;
                 }
 
-                _info.push_back({ metadata, isEnabled });
+                _adminLock.Lock();
+                _info.emplace_back(std::piecewise_construct, std::make_tuple(metadata), std::make_tuple(isEnabled));
+                _adminLock.Lock();
             }
-
 
             return (deserialized);
         }
@@ -468,20 +468,17 @@ namespace Core {
 
         //----------LoggingOutput----------
 
-        string LoggingOutput::LoggingAssembler::Prepare(const bool abbreviate, const Information& info, const IEvent* message) const
+        string LoggingOutput::Prepare(const bool abbreviate, const Information& info, const IEvent* message) const
         {
             string result;
-            string messageString;
 
             ASSERT(message != nullptr);
-
-            message->ToString(messageString);
 
             if (abbreviate == true) {
                 result = Core::Format("[%11ju us]:[%s] %s",
                     static_cast<uintmax_t>(info.TimeStamp() - _baseTime),
                     info.MessageMetaData().Category().c_str(),
-                    messageString.c_str());
+                    message->Data().c_str());
             } else {
                 Core::Time now(info.TimeStamp());
                 string time(now.ToRFC1123(true));
@@ -491,26 +488,24 @@ namespace Core {
                     info.LineNumber(),
                     info.ClassName().c_str(),
                     info.MessageMetaData().Category().c_str(),
-                    messageString.c_str());
+                    message->Data().c_str());
             }
 
             return (result);
         }
 
-        void LoggingOutput::Output(const Information& info, const IEvent* message) const
+        void LoggingOutput::Output(const Information& info, const IEvent* message)
         {
             ASSERT(message != nullptr);
 
 #ifndef __WINDOWS__
             if (_isSyslog == true) {
                 //use longer messages for syslog
-                auto result = _assembler.Prepare(false, info, message);
-                syslog(LOG_NOTICE, "%s\n", result.c_str());
+                syslog(LOG_NOTICE, "%s\n", Prepare(false, info, message).c_str());
             } else
 #endif
             {
-                auto result = _assembler.Prepare(_abbreviate, info, message);
-                std::cout << result << std::endl;
+                std::cout << Prepare(_abbreviate, info, message) << std::endl;
             }
         }
 
@@ -745,7 +740,7 @@ namespace Core {
                     _settingsList.Update(metaData, enabled);
                 }
             } else {
-                outSize = _controlList.Serialize(outData, outSize);;
+                outSize = _controlList.Serialize(outData, outSize);
             }
         }
 

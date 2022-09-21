@@ -163,7 +163,12 @@ namespace Core {
             virtual ~IEvent() = default;
             virtual uint16_t Serialize(uint8_t buffer[], const uint16_t length) const = 0;
             virtual uint16_t Deserialize(const uint8_t buffer[], const uint16_t length) = 0;
-            virtual void ToString(string& text) const = 0;
+            virtual const string& Data() const = 0;
+        };
+
+        struct EXTERNAL IEventFactory {
+            virtual ~IEventFactory() = default;
+            virtual Core::ProxyType<IEvent> Create() = 0;
         };
 
         struct EXTERNAL IControl {
@@ -175,9 +180,9 @@ namespace Core {
             virtual const MetaData& MessageMetaData() const = 0;
         };
 
-        struct EXTERNAL IEventFactory {
-            virtual ~IEventFactory() = default;
-            virtual Core::ProxyType<IEvent> Create() = 0;
+        struct EXTERNAL IOutput {
+            virtual ~IOutput() = default;
+            virtual void Output(const Information& info, const IEvent* message) = 0;
         };
 
         /**
@@ -354,33 +359,15 @@ namespace Core {
          * @brief Logging can be used in Core, so messages should be printed asap. This class prepares a message and prints it
          *        to a channel.
          */
-        class EXTERNAL LoggingOutput {
-        private:
-            class LoggingAssembler {
-            public:
-                LoggingAssembler(uint64_t baseTime)
-                    : _baseTime(baseTime)
-                {
-                }
-                ~LoggingAssembler() = default;
-                LoggingAssembler(const LoggingAssembler&) = delete;
-                LoggingAssembler& operator=(const LoggingAssembler&) = delete;
-
-            public:
-                string Prepare(const bool abbreviate, const Information& info, const IEvent* message) const;
-
-            private:
-                uint64_t _baseTime;
-            };
-
+        class EXTERNAL LoggingOutput : public IOutput {
         public:
             LoggingOutput()
-                : _assembler(Core::Time::Now().Ticks())
+                : _baseTime(Core::Time::Now().Ticks())
                 , _isSyslog(true)
                 , _abbreviate(true)
             {
             }
-            ~LoggingOutput() = default;
+            ~LoggingOutput() override = default;
             LoggingOutput(const LoggingOutput&) = delete;
             LoggingOutput& operator=(const LoggingOutput&) = delete;
 
@@ -394,10 +381,13 @@ namespace Core {
                 _abbreviate.store(abbreviate);
             }
 
-            void Output(const Information& info, const IEvent* message) const;
+            void Output(const Information& info, const IEvent* message) override;
 
         private:
-            LoggingAssembler _assembler;
+            string Prepare(const bool abbreviate, const Information& info, const IEvent* message) const;
+
+        private:
+            uint64_t _baseTime;
             std::atomic_bool _isSyslog;
             std::atomic_bool _abbreviate;
         };

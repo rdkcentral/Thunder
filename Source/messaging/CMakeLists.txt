@@ -17,7 +17,6 @@
 set(PUBLIC_HEADERS
         Module.h
         MessageClient.h
-        IMessageOutput.h
         messaging.h
         TraceCategories.h
         TraceControl.h
