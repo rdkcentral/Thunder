@@ -266,8 +266,6 @@ namespace Core {
          */
         uint32_t PopData(uint16_t& outLength, uint8_t* outValue)
         {
-            ASSERT(_dataBuffer.IsValid());
-
             _dataLock.Lock();
             uint32_t result = Core::ERROR_READ_ERROR;
 
