@@ -554,7 +554,7 @@ POP_WARNING()
 
                 if (input.Open(true)) {
 #if defined(__CORE_MESSAGING__)
-                    Core::Messaging::MessageUnit::Instance().Defaults(input);
+                    Core::Messaging::MessageUnit::Instance().Configure(input);
 #else
                     Trace::TraceUnit::Instance().Defaults(input);
 #endif
@@ -563,7 +563,7 @@ POP_WARNING()
 
             else {
 #if defined(__CORE_MESSAGING__)
-                Core::Messaging::MessageUnit::Instance().Defaults(_config->MessagingCategories());
+                Core::Messaging::MessageUnit::Instance().Configure(_config->MessagingCategories());
 #else
                 Trace::TraceUnit::Instance().Defaults(_config->MessagingCategories());
 #endif

@@ -27,7 +27,14 @@
 
 namespace WPEFramework {
 namespace Core {
+
     namespace Messaging {
+
+        enum MessageType : uint8_t {
+            INVALID = 0,
+            TRACING = 1,
+            LOGGING = 2
+        };
 
         /**
         * @brief Data-Carrier class storing information about basic information about the Message.
@@ -35,14 +42,19 @@ namespace Core {
         */
         class EXTERNAL MetaData {
         public:
-            enum MessageType : uint8_t {
-                INVALID = 0,
-                TRACING = 1,
-                LOGGING = 2
-            };
-
-            MetaData();
-            MetaData(const MessageType type, const string& category, const string& module);
+            using MessageType = Messaging::MessageType;
+            MetaData()
+                : _type(INVALID)
+                , _category()
+                , _module()
+            {
+            }
+            MetaData(const MessageType type, const string& category, const string& module)
+                : _type(type)
+                , _category(category)
+                , _module(module)
+            {
+            }
             MetaData(const MetaData&) = default;
             MetaData& operator=(const MetaData&) = default;
 
@@ -54,6 +66,8 @@ namespace Core {
             {
                 return !operator==(other);
             }
+
+        public:
             MessageType Type() const
             {
                 return _type;
@@ -67,6 +81,7 @@ namespace Core {
                 return _module;
             }
 
+        public:
             uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const;
             uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize);
 
@@ -78,7 +93,6 @@ namespace Core {
 
         /**
         * @brief Data-Carrier, extended information about the message
-        *
         */
         class EXTERNAL Information {
         public:
@@ -90,36 +104,51 @@ namespace Core {
                 , _timeStamp(0)
             {
             }
-            ~Information() = default;
-
             Information(const MetaData::MessageType type, const string& category, const string& module,
-                const string& fileName, const uint16_t lineNumber, const string& className, const uint64_t timestamp);
+                    const string& fileName, const uint16_t lineNumber, const string& className, const uint64_t timeStamp)
+                : _metaData(type, category, module)
+                , _fileName(fileName)
+                , _lineNumber(lineNumber)
+                , _className(className)
+                , _timeStamp(timeStamp)
+            {
+            }
             Information(const MetaData& metaData, const string& fileName, const uint16_t lineNumber, const string& className,
-                const uint64_t timestamp);
+                    const uint64_t timeStamp)
+                : _metaData(metaData)
+                , _fileName(fileName)
+                , _lineNumber(lineNumber)
+                , _className(className)
+                , _timeStamp(timeStamp)
+            {
+            }
+            ~Information() = default;
             Information(const Information&) = default;
             Information& operator=(const Information&) = default;
 
+        public:
             const MetaData& MessageMetaData() const
             {
-                return _metaData;
+                return (_metaData);
             }
             const string& FileName() const
             {
-                return _fileName;
+                return (_fileName);
             }
             uint16_t LineNumber() const
             {
-                return _lineNumber;
+                return (_lineNumber);
             }
             const string& ClassName() const
             {
-                return _className;
+                return (_className);
             }
             uint64_t TimeStamp() const
             {
-                return _timeStamp;
+                return (_timeStamp);
             }
 
+        public:
             uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const;
             uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize);
 
@@ -154,19 +183,44 @@ namespace Core {
 
         /**
          * @brief JSON Settings for all messages
-         *
          */
-        class EXTERNAL Settings : public Core::JSON::Container {
+        class EXTERNAL Config : public Core::JSON::Container {
         private:
-            class Messages : public Core::JSON::Container {
+            class TracingSection : public Core::JSON::Container {
             private:
                 class Entry : public Core::JSON::Container {
                 public:
-                    Entry(const string& module, const string& category, const bool enabled);
-                    Entry();
+                    Entry()
+                        : Core::JSON::Container()
+                    {
+                        Add(_T("module"), &Module);
+                        Add(_T("category"), &Category);
+                        Add(_T("enabled"), &Enabled);
+                    }
+                    Entry(const string& module, const string& category, const bool enabled)
+                        : Entry()
+                    {
+                        Module = module;
+                        Category = category;
+                        Enabled = enabled;
+                    }
+                    Entry(const Entry& other)
+                        : Entry()
+                    {
+                        Module = other.Module;
+                        Category = other.Category;
+                        Enabled = other.Enabled;
+                    }
+                    Entry& operator=(const Entry& other)
+                    {
+                        if (&other != this) {
+                            Module = other.Module;
+                            Category = other.Category;
+                            Enabled = other.Enabled;
+                        }
+                        return (*this);
+                    }
                     ~Entry() = default;
-                    Entry(const Entry& other);
-                    Entry& operator=(const Entry& other);
 
                 public:
                     Core::JSON::String Module;
@@ -175,65 +229,94 @@ namespace Core {
                 };
 
             public:
-                Messages();
-                ~Messages() = default;
-                Messages(const Messages& other);
-                Messages& operator=(const Messages& other);
+                TracingSection()
+                    : Core::JSON::Container()
+                    , Settings()
+                {
+                    Add(_T("settings"), &Settings);
+                }
+                ~TracingSection() = default;
+                TracingSection(const TracingSection& other) = delete;
+                TracingSection& operator=(const TracingSection& other) = delete;
 
             public:
-                Core::JSON::ArrayType<Entry> Entries;
+                Core::JSON::ArrayType<Entry> Settings;
             };
 
-            class LoggingSetting : public Messages {
+            class LoggingSection: public TracingSection {
             public:
-                LoggingSetting();
-                ~LoggingSetting() = default;
-                LoggingSetting(const LoggingSetting& other);
-                LoggingSetting& operator=(const LoggingSetting& other);
+                LoggingSection()
+                    : TracingSection()
+                    , Abbreviated(true)
+                {
+                    Add(_T("abbreviated"), &Abbreviated);
+                }
+                ~LoggingSection() = default;
+                LoggingSection(const LoggingSection& other) = delete;
+                LoggingSection& operator=(const LoggingSection& other) = delete;
 
             public:
                 Core::JSON::Boolean Abbreviated;
             };
 
         public:
-            Settings();
-            ~Settings() = default;
-            Settings(const Settings& other);
-            Settings& operator=(const Settings& other);
+            Config()
+                : Core::JSON::Container()
+                , Tracing()
+                , Logging()
+            {
+                Add(_T("tracing"), &Tracing);
+                Add(_T("logging"), &Logging);
+            }
+            ~Config() = default;
+            Config(const Config& other) = delete;
+            Config& operator=(const Config& other) = delete;
 
         public:
-            Messages Tracing;
-            LoggingSetting Logging;
-            Core::JSON::String WarningReporting;
+            TracingSection Tracing;
+            LoggingSection Logging;
         };
 
         /**
-        * @brief Class responsible for storing information about all messages, so announced IControl will know if it should be enabled
-        *        Initial list is retreived from thunder config, and is modified/extended when there is change requested in enabled categories.
-        *        Info will be passed to another starting unit.
-        *
+        * @brief Class responsible for storing control settings, so announced IControl will know if it should be enabled
+        *        Initial list is retreived from Thunder config, and is modified/extended when there is change requested
+        *        in enabled categories. Info will be passed to another starting unit.
         */
-        class EXTERNAL MessageList {
+        class EXTERNAL SettingsList {
         public:
-            MessageList() = default;
-            ~MessageList() = default;
-            MessageList(const MessageList&) = delete;
-            MessageList& operator=(const MessageList&) = delete;
+            struct Record {
+                string Category;
+                string Module;
+                bool Enabled;
+            };
 
+        public:
+            SettingsList()
+                : _adminLock()
+                , _tracing()
+                , _logging()
+            {
+            }
+            ~SettingsList() = default;
+            SettingsList(const SettingsList&) = delete;
+            SettingsList& operator=(const SettingsList&) = delete;
+
+        public:
             void Update(const MetaData& metaData, const bool isEnabled);
-            const Settings& JsonSettings() const;
-            void JsonSettings(const Settings& settings);
+            void ToConfig(Config& config) const;
+            void FromConfig(const Config& config);
             bool IsEnabled(const MetaData& metaData) const;
 
         private:
-            Settings _settings;
+            mutable Core::CriticalSection _adminLock;
+            std::list<Record> _tracing;
+            std::list<Record> _logging;
         };
 
         /**
-         * @brief Class responsible for storing information about announced controls and updating them based on incoming metadata or
-         *        MessageList from config.
-         *        This class can be serialized, and then recreated on the other side to get information about all announced controls on this side.
-         *
+         * @brief Class responsible for storing information about announced controls and updating them based on incoming
+         *        metadata or  SettingsList from config. This class can be serialized, and then recreated on the other
+         *        side to get information about all announced controls on this side.
          */
         class EXTERNAL ControlList {
         public:
@@ -246,13 +329,15 @@ namespace Core {
             ControlList(const ControlList&) = delete;
             ControlList& operator=(const ControlList&) = delete;
 
+        public:
             uint16_t Serialize(uint8_t buffer[], const uint16_t length) const;
             uint16_t Deserialize(const uint8_t buffer[], const uint16_t length);
 
+        public:
             void Announce(IControl* control);
             void Revoke(IControl* control);
             void Update(const MetaData& metaData, const bool enabled);
-            void Update(const MessageList& messages);
+            void Update(const SettingsList& messages);
             void Destroy();
 
             InformationIterator Information()
@@ -269,14 +354,20 @@ namespace Core {
         /**
          * @brief Logging can be used in Core, so messages should be printed asap. This class prepares a message and prints it
          *        to a channel.
-         *
          */
         class EXTERNAL LoggingOutput {
         private:
             class LoggingAssembler {
             public:
-                LoggingAssembler(uint64_t baseTime);
+                LoggingAssembler(uint64_t baseTime)
+                    : _baseTime(baseTime)
+                {
+                }
                 ~LoggingAssembler() = default;
+                LoggingAssembler(const LoggingAssembler&) = delete;
+                LoggingAssembler& operator=(const LoggingAssembler&) = delete;
+
+            public:
                 string Prepare(const bool abbreviate, const Information& info, const IEvent* message) const;
 
             private:
@@ -284,10 +375,17 @@ namespace Core {
             };
 
         public:
-            LoggingOutput();
+            LoggingOutput()
+                : _assembler(Core::Time::Now().Ticks())
+                , _isSyslog(true)
+                , _abbreviate(true)
+            {
+            }
             ~LoggingOutput() = default;
-            LoggingOutput(const LoggingOutput&) = default;
-            LoggingOutput& operator=(const LoggingOutput&) = default;
+            LoggingOutput(const LoggingOutput&) = delete;
+            LoggingOutput& operator=(const LoggingOutput&) = delete;
+
+        public:
             void IsBackground(bool background)
             {
                 _isSyslog.store(background);
@@ -301,8 +399,8 @@ namespace Core {
 
         private:
             LoggingAssembler _assembler;
-            std::atomic_bool _isSyslog{ true };
-            std::atomic_bool _abbreviate{ true };
+            std::atomic_bool _isSyslog;
+            std::atomic_bool _abbreviate;
         };
 
         /**
@@ -311,7 +409,6 @@ namespace Core {
         *        - reading configuration and setting message configuration accordingly
         *        - a center, where messages (and its information) from specific componenets can be pushed
         *        - receiving information that specific message should be enabled or disabled
-        *
         */
         class EXTERNAL MessageUnit {
 
@@ -330,14 +427,15 @@ namespace Core {
 
         public:
             static MessageUnit& Instance();
+
             uint32_t Open(const string& pathName, const uint16_t doorbell = 0);
             uint32_t Open(const uint32_t instanceId);
             void Close();
             void IsBackground(bool background);
 
-            void Defaults(const string& setting);
-            void Defaults(Core::File& file);
-            string Defaults() const;
+            void Configure(const string& setting);
+            void Configure(Core::File& file);
+            string Configuration() const;
 
             void Push(const Information& info, const IEvent* message);
 
@@ -346,25 +444,40 @@ namespace Core {
 
         private:
             friend class Core::SingletonType<MessageUnit>;
-            MessageUnit() = default;
-            ~MessageUnit();
+
+            MessageUnit()
+                : _adminLock()
+                , _dispatcher()
+                , _settingsList()
+                , _controlList()
+                , _loggingOutput()
+                , _isBackground(false)
+            {
+            }
+            ~MessageUnit()
+            {
+                Close();
+            }
             MessageUnit(const MessageUnit&) = delete;
             MessageUnit& operator=(const MessageUnit&) = delete;
 
+        private:
             void ReceiveMetaData(const uint16_t size, const uint8_t* data, uint16_t& outSize, uint8_t* outData);
-            void SetDefaultSettings(const Settings& serialized);
+            void Configure(const Config& config);
 
         private:
             mutable Core::CriticalSection _adminLock;
             std::unique_ptr<MessageDispatcher> _dispatcher;
             uint8_t _serializationBuffer[DataSize];
 
-            MessageList _messages;
+            SettingsList _settingsList;
             ControlList _controlList;
 
             LoggingOutput _loggingOutput;
             bool _isBackground;
         };
-    }
-}
+
+    } // namespace Messaging
+
+} // namespace Core
 }
