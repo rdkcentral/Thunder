@@ -426,7 +426,7 @@ namespace RPC {
         }
 
     private:
-        const std::vector<string> DynamicLoaderPaths() const;
+        const std::vector<string>& DynamicLoaderPaths() const;
         void PopulateLDLibraryPaths(const string& oldLDLibraryPaths, string& newLDLibraryPaths) const {
             // Read currently added LD_LIBRARY_PATH to prefix with _systemRootPath
             if (oldLDLibraryPaths.empty() != true) {
@@ -443,7 +443,7 @@ namespace RPC {
                 } while (start != string::npos);
             }
 
-            std::vector<string> loaderPaths = DynamicLoaderPaths();
+            const std::vector<string>& loaderPaths = DynamicLoaderPaths();
             for (const auto& loaderPath : loaderPaths) {
                 newLDLibraryPaths += (newLDLibraryPaths.empty() != true) ? ":" : "";
                 newLDLibraryPaths += _systemRootPath + loaderPath;

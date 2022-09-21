@@ -137,6 +137,11 @@ namespace PluginHost {
                 if (_versions.empty() == true) {
                     _versions.push_back(1);
                 }
+
+                _config.Startup = ((_config.AutoStart.Value() == true) ?
+                                   ((_config.Resumed.Value() == true) ? PluginHost::IShell::startup::RESUMED
+                                   : PluginHost::IShell::startup::SUSPENDED)
+                                   : PluginHost::IShell::startup::DEACTIVATED);
             }
 
         private:

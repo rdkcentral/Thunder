@@ -51,7 +51,7 @@ namespace RPC {
         ~DynamicLoaderPaths() = default;
 
     public:
-        const std::vector<string> Paths() const
+        const std::vector<string>& Paths() const
         {
             return (_downloadLists);
         }
@@ -534,7 +534,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         g_destructor.ForceDestruct(id);
     }
 
-    const std::vector<string> Process::DynamicLoaderPaths() const
+    const std::vector<string>& Process::DynamicLoaderPaths() const
     {
         return _LoaderPaths.Paths();
     }
