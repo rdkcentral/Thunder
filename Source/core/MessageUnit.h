@@ -42,7 +42,6 @@ namespace Core {
         */
         class EXTERNAL MetaData {
         public:
-            using MessageType = Messaging::MessageType;
             MetaData()
                 : _type(INVALID)
                 , _category()
@@ -104,7 +103,7 @@ namespace Core {
                 , _timeStamp(0)
             {
             }
-            Information(const MetaData::MessageType type, const string& category, const string& module,
+            Information(const MessageType type, const string& category, const string& module,
                     const string& fileName, const uint16_t lineNumber, const string& className, const uint64_t timeStamp)
                 : _metaData(type, category, module)
                 , _fileName(fileName)
@@ -413,7 +412,7 @@ namespace Core {
         class EXTERNAL MessageUnit {
 
             using Controls = std::list<IControl*>;
-            using Factories = std::unordered_map<MetaData::MessageType, IEventFactory*>;
+            using Factories = std::unordered_map<MessageType, IEventFactory*>;
 
         public:
             static constexpr uint32_t MetaDataSize = 10 * 1024;

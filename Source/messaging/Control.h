@@ -24,7 +24,7 @@
 namespace WPEFramework {
 namespace Messaging {
 
-    using MessageType = Core::Messaging::MetaData::MessageType;
+    using MessageType = Core::Messaging::MessageType;
 
     template <typename CATEGORY, const char** MODULENAME, MessageType TYPE> class ControlLifetime;
 

@@ -51,11 +51,11 @@ namespace Messaging {
 
         void PopMessagesAndCall(std::function<void(const Core::Messaging::Information& info, const Core::ProxyType<Core::Messaging::IEvent>& message)> function);
 
-        void AddFactory(Core::Messaging::MetaData::MessageType type, Core::Messaging::IEventFactory* factory);
-        void RemoveFactory(Core::Messaging::MetaData::MessageType type);
+        void AddFactory(Core::Messaging::MessageType type, Core::Messaging::IEventFactory* factory);
+        void RemoveFactory(Core::Messaging::MessageType type);
 
     private:
-        using Factories = std::unordered_map<Core::Messaging::MetaData::MessageType, Core::Messaging::IEventFactory*>;
+        using Factories = std::unordered_map<Core::Messaging::MessageType, Core::Messaging::IEventFactory*>;
         using Clients = std::unordered_map<uint32_t, Core::Messaging::MessageUnit::MessageDispatcher>;
 
         mutable Core::CriticalSection _adminLock;

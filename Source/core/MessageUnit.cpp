@@ -52,7 +52,7 @@ namespace Core {
                 Core::FrameType<0> frame(const_cast<uint8_t*>(buffer), bufferSize, bufferSize);
                 Core::FrameType<0>::Reader frameReader(frame, 0);
 
-                _type = frameReader.Number<MetaData::MessageType>();
+                _type = frameReader.Number<MessageType>();
                 ASSERT(_type != MessageType::INVALID);
 
                 if (_type != MessageType::INVALID) {
@@ -263,7 +263,7 @@ namespace Core {
 
             _adminLock.Lock();
 
-            if (metaData.Type() == MetaData::MessageType::TRACING) {
+            if (metaData.Type() == MessageType::TRACING) {
                 for (auto it = _tracing.cbegin(); it != _tracing.cend(); ++it) {
                     if ((((*it).Module == metaData.Module()) && (((*it).Category.empty() == true) || ((*it).Category == metaData.Category())))
                             || (((*it).Category == metaData.Category()) && (((*it).Module.empty() == true) || ((*it).Module == metaData.Module())))
@@ -274,7 +274,7 @@ namespace Core {
                     }
                 }
             }
-            else if (metaData.Type() == MetaData::MessageType::LOGGING) {
+            else if (metaData.Type() == MessageType::LOGGING) {
                 for (auto it = _logging.cbegin(); it != _logging.cend(); ++it) {
                     if (((*it).Category.empty() == true) || ((*it).Category == metaData.Category())) {
                         result = (*it).Enabled;
@@ -683,7 +683,7 @@ namespace Core {
         {
             //logging messages can happen in Core, meaning, otherside plugin can be not started yet
             //those should be just printed
-            if (info.MessageMetaData().Type() == MetaData::MessageType::LOGGING) {
+            if (info.MessageMetaData().Type() == MessageType::LOGGING) {
                 _loggingOutput.Output(info, message);
             }
 

@@ -195,7 +195,7 @@ namespace Messaging {
 
                 auto length = information.Deserialize(_readBuffer, size);
 
-                if (length > sizeof(Core::Messaging::MetaData::MessageType) && length < sizeof(_readBuffer)) {
+                if (length > sizeof(Core::Messaging::MessageType) && length < sizeof(_readBuffer)) {
                     auto factory = _factories.find(information.MessageMetaData().Type());
                     if (factory != _factories.end()) {
                         message = factory->second->Create();
@@ -220,7 +220,7 @@ namespace Messaging {
      * @param type for which message type the factory should be used
      * @param factory
      */
-    void MessageClient::AddFactory(Core::Messaging::MetaData::MessageType type, Core::Messaging::IEventFactory* factory)
+    void MessageClient::AddFactory(Core::Messaging::MessageType type, Core::Messaging::IEventFactory* factory)
     {
         _adminLock.Lock();
         _factories.emplace(type, factory);
@@ -232,7 +232,7 @@ namespace Messaging {
      *
      * @param type
      */
-    void MessageClient::RemoveFactory(Core::Messaging::MetaData::MessageType type)
+    void MessageClient::RemoveFactory(Core::Messaging::MessageType type)
     {
         _adminLock.Lock();
         _factories.erase(type);
