@@ -1009,20 +1009,38 @@ namespace PluginHost {
                 std::vector<string> all_paths;
 
                 const std::vector<string> temp = _administrator.Configuration().LinkerPluginPaths();
+                string rootPath(PluginHost::Service::Configuration().SystemRootPath.Value());
+
+                if (rootPath.empty() == false) {
+                    rootPath = Core::Directory::Normalize(rootPath);
+                }
+
                 if (!temp.empty())
                 {
                     // additionaly defined user paths
-                    for (const string& s : temp)
-                        all_paths.push_back(Core::Directory::Normalize(s) + locator);
+                    for (const string& s : temp) {
+                        if (rootPath.empty() == true) {
+                            all_paths.push_back(Core::Directory::Normalize(s) + locator);
+                        }
+                        else {
+                            all_paths.push_back(rootPath + Core::Directory::Normalize(s) + locator);
+                        }
+                    }
                 }
-                else
+                else if (rootPath.empty() == false)
                 {
-                    string className = PluginHost::Service::Configuration().ClassName.Value() + _T("/");
                     // system configured paths
-                    all_paths.push_back(_administrator.Configuration().DataPath() + className + locator);
-                    all_paths.push_back(_administrator.Configuration().PersistentPath() + className + locator);
+                    all_paths.push_back(rootPath + _administrator.Configuration().DataPath() + locator);
+                    all_paths.push_back(rootPath + _administrator.Configuration().PersistentPath() + locator);
+                    all_paths.push_back(rootPath + _administrator.Configuration().SystemPath() + locator);
+                    all_paths.push_back(rootPath + _administrator.Configuration().AppPath() + locator);
+                }
+                else {
+                    // system configured paths
+                    all_paths.push_back(_administrator.Configuration().DataPath() + locator);
+                    all_paths.push_back(_administrator.Configuration().PersistentPath() + locator);
                     all_paths.push_back(_administrator.Configuration().SystemPath() + locator);
-                    all_paths.push_back(_administrator.Configuration().AppPath() + _T("Plugins/") + locator);
+                    all_paths.push_back(_administrator.Configuration().AppPath() + locator);
                 }
 
                 return all_paths;
@@ -1263,7 +1281,7 @@ namespace PluginHost {
                                     _object.Version(),
                                     _object.User(),
                                     _object.Group(),
-                                    _object.LinkLoaderPath(),
+                                    _object.SystemRootPath(),
                                     _object.Threads(),
                                     _object.Priority(),
                                     _object.Configuration());
@@ -1446,7 +1464,7 @@ namespace PluginHost {
                     const uint32_t version,
                     const string& user,
                     const string& group,
-                    const string& linkLoaderPath,
+                    const string& systemLoaderPath,
                     const uint8_t threads,
                     const int8_t priority,
                     const string configuration) override
@@ -1463,7 +1481,7 @@ namespace PluginHost {
 
                     uint32_t id;
                     RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath());
-                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, linkLoaderPath, _T(""), configuration);
+                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, systemLoaderPath, _T(""), configuration);
 
                     RPC::Process process(requestId, config, instance);
 
@@ -1495,34 +1513,39 @@ namespace PluginHost {
                         : Core::JSON::Container()
                         , AutoStart()
                         , Configuration(_T("{}"), false)
+                        , SystemRootPath()
                     {
                         Add(_T("autostart"), &AutoStart);
                         Add(_T("configuration"), &Configuration);
+                        Add(_T("systemrootpath"), &SystemRootPath);
                     }
-                    Plugin(const string& config, const bool autoStart)
+                    Plugin(const string& config, const bool autoStart, const string& systemRootPath)
                         : Core::JSON::Container()
                         , AutoStart(autoStart)
                         , Configuration(config, false)
+                        , SystemRootPath(systemRootPath)
                     {
                         Add(_T("autostart"), &AutoStart);
                         Add(_T("configuration"), &Configuration);
+                        Add(_T("systemrootpath"), &SystemRootPath);
                     }
                     Plugin(Plugin const& copy)
                         : Core::JSON::Container()
                         , AutoStart(copy.AutoStart)
                         , Configuration(copy.Configuration)
+                        , SystemRootPath(copy.SystemRootPath)
                     {
                         Add(_T("autostart"), &AutoStart);
                         Add(_T("configuration"), &Configuration);
+                        Add(_T("systemrootpath"), &SystemRootPath);
                     }
 
-                    virtual ~Plugin()
-                    {
-                    }
+                    ~Plugin() override = default;
 
                 public:
                     Core::JSON::Boolean AutoStart;
                     Core::JSON::String Configuration;
+                    Core::JSON::String SystemRootPath;
                 };
 
                 typedef std::map<string, Plugin>::iterator Iterator;
@@ -1541,7 +1564,7 @@ namespace PluginHost {
                         const string& name(service->Callsign());
 
                         // Create an element for this service with its callsign
-                        std::pair<Iterator, bool> index(_callsigns.insert(std::pair<string, Plugin>(name, Plugin(_T("{}"), false))));
+                        std::pair<Iterator, bool> index(_callsigns.insert(std::pair<string, Plugin>(name, Plugin(_T("{}"), false, ""))));
 
                         // Store the override config in the JSON String created in the map
                         Add(index.first->first.c_str(), &(index.first->second));
@@ -1586,6 +1609,9 @@ namespace PluginHost {
                                 if (current->second.AutoStart.IsSet() == true) {
                                     (*index)->AutoStart(current->second.AutoStart.Value());
                                 }
+                                if (current->second.SystemRootPath.IsSet() == true) {
+                                    (*index)->SystemRootPath(current->second.SystemRootPath.Value());
+                                }
                             }
                         }
 
@@ -1627,6 +1653,7 @@ namespace PluginHost {
                                 current->second.Configuration = config;
                             }
                             current->second.AutoStart = (index)->AutoStart();
+                            current->second.SystemRootPath = (index)->SystemRootPath();
                         }
 
                         // Persist the currently set information
@@ -2379,7 +2406,7 @@ namespace PluginHost {
 #if THUNDER_PERFORMANCE
                         Core::ProxyType<TrackingJSONRPC> tracking (Core::proxy_cast<TrackingJSONRPC>(_element));
                         ASSERT (tracking.IsValid() == true);
-			tracking->Dispatch();
+                        tracking->Dispatch();
 #endif
                         Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(_element));
                         ASSERT(message.IsValid() == true);
@@ -2387,7 +2414,7 @@ namespace PluginHost {
                         _element = Core::ProxyType<Core::JSON::IElement>(Job::Process(_token, message));
 
 #if THUNDER_PERFORMANCE
-			tracking->Execution();
+                        tracking->Execution();
 #endif
 
                     } else {

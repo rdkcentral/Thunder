@@ -335,7 +335,7 @@ namespace Core {
             _handle = open(_name.c_str(), O_RDONLY | O_CLOEXEC);
 #endif
 #ifdef __WINDOWS__
-            _handle = ::CreateFile(_name.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+            _handle = ::CreateFile(_name.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, nullptr);
 #endif
             const_cast<File*>(this)->LoadFileInfo();
             return (IsOpen());
@@ -346,7 +346,7 @@ namespace Core {
             _handle = open(_name.c_str(), O_CLOEXEC | (readOnly ? O_RDONLY : O_RDWR));
 #endif
 #ifdef __WINDOWS__
-            _handle = ::CreateFile(_name.c_str(), (readOnly ? GENERIC_READ : GENERIC_READ | GENERIC_WRITE), FILE_SHARE_READ | (readOnly ? 0 : FILE_SHARE_WRITE), nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+            _handle = ::CreateFile(_name.c_str(), GENERIC_READ | (readOnly ? 0 : GENERIC_WRITE), FILE_SHARE_READ | (readOnly ? 0 : FILE_SHARE_WRITE), nullptr, OPEN_EXISTING, (readOnly ? FILE_ATTRIBUTE_READONLY : FILE_ATTRIBUTE_NORMAL), nullptr);
 #endif
             LoadFileInfo();
             return (IsOpen());

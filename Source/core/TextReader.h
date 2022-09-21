@@ -17,8 +17,7 @@
  * limitations under the License.
  */
  
-#ifndef __TEXTREADER_H
-#define __TEXTREADER_H
+#pragma once
 
 // ---- Include system wide include files ----
 
@@ -42,7 +41,7 @@ namespace Core {
             , m_DataBlock()
         {
         }
-        TextReader(const DataElement& element, const uint32_t offset = 0)
+        TextReader(DataElement& element, const uint32_t offset = 0)
             : m_Index(offset)
             , m_DataBlock(element)
         {
@@ -52,9 +51,7 @@ namespace Core {
             , m_DataBlock(copy.m_DataBlock)
         {
         }
-        ~TextReader()
-        {
-        }
+        ~TextReader() = default;
 
         TextReader& operator=(const TextReader& rhs)
         {
@@ -83,5 +80,3 @@ namespace Core {
     };
 }
 } // namespace Core
-
-#endif // __TEXTREADER_H
