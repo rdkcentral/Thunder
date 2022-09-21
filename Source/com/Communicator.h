@@ -66,7 +66,7 @@ namespace RPC {
             , _threads()
             , _priority()
             , _type(HostType::LOCAL)
-            , _linkLoaderPath()
+            , _systemRootPath()
             , _remoteAddress()
             , _configuration()
         {
@@ -82,7 +82,7 @@ namespace RPC {
             , _threads(copy._threads)
             , _priority(copy._priority)
             , _type(copy._type)
-            , _linkLoaderPath(copy._linkLoaderPath)
+            , _systemRootPath(copy._systemRootPath)
             , _remoteAddress(copy._remoteAddress)
             , _configuration(copy._configuration)
         {
@@ -97,7 +97,7 @@ namespace RPC {
             const uint8_t threads,
             const int8_t priority,
             const HostType type,
-            const string& linkLoaderPath,
+            const string& systemRootPath,
             const string& remoteAddress,
             const string& configuration)
             : _locator(locator)
@@ -110,7 +110,7 @@ namespace RPC {
             , _threads(threads)
             , _priority(priority)
             , _type(type)
-            , _linkLoaderPath(linkLoaderPath)
+            , _systemRootPath(systemRootPath)
             , _remoteAddress(remoteAddress)
             , _configuration(configuration)
         {
@@ -130,7 +130,7 @@ namespace RPC {
             _group = RHS._group;
             _threads = RHS._threads;
             _priority = RHS._priority;
-            _linkLoaderPath = RHS._linkLoaderPath;
+            _systemRootPath = RHS._systemRootPath;
             _type = RHS._type;
             _remoteAddress = RHS._remoteAddress;
             _configuration = RHS._configuration;
@@ -179,9 +179,9 @@ namespace RPC {
         {
             return (_type);
         }
-        inline const string& LinkLoaderPath() const
+        inline const string& SystemRootPath() const
         {
-            return (_linkLoaderPath);
+            return (_systemRootPath);
         }
         inline const Core::NodeId RemoteAddress() const
         {
@@ -203,7 +203,7 @@ namespace RPC {
         uint8_t _threads;
         int8_t _priority;
         HostType _type;
-        string _linkLoaderPath;
+        string _systemRootPath;
         string _remoteAddress;
         string _configuration;
     };
@@ -362,8 +362,9 @@ namespace RPC {
             if (config.PostMortemPath().empty() == false) {
                 _options.Add(_T("-P")).Add('"' + config.PostMortemPath() + '"');
             }
-            if (instance.LinkLoaderPath().empty() == false) {
-                _linkLoaderPath = instance.LinkLoaderPath();
+            if (instance.SystemRootPath().empty() == false) {
+                _systemRootPath = instance.SystemRootPath();
+                _options.Add(_T("-S")).Add('"' + instance.SystemRootPath() + '"');
             }
             if (instance.Threads() > 1) {
                 _options.Add(_T("-t")).Add(Core::NumberType<uint8_t>(instance.Threads()).Text());
@@ -392,13 +393,16 @@ namespace RPC {
             _options.Add(_T("-e")).Add(Core::NumberType<uint32_t>(loggingSettings).Text());
             #endif
 
-            string oldPath;
+            string oldLDLibraryPaths;
             _ldLibLock.Lock();
-            if (_linkLoaderPath.empty() == false) {
+            if (_systemRootPath.empty() == false) {
 
-                Core::SystemInfo::GetEnvironment(_T("LD_LIBRARY_PATH"), oldPath);
-                string newPath = _linkLoaderPath+':'+oldPath ;
-                Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), newPath, true);
+                string newLDLibraryPaths;
+                Core::SystemInfo::GetEnvironment(_T("LD_LIBRARY_PATH"), oldLDLibraryPaths);
+
+                PopulateLDLibraryPaths(oldLDLibraryPaths, newLDLibraryPaths);
+
+                Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), newLDLibraryPaths, true);
             }
 
             // Start the external process launch..
@@ -407,8 +411,8 @@ namespace RPC {
             uint32_t result = fork.Launch(_options, &id);
 
             //restore the original value
-            if (_linkLoaderPath.empty() == false) {
-                Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), oldPath, true);
+            if (_systemRootPath.empty() == false) {
+                Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), oldLDLibraryPaths, true);
 
             }
             _ldLibLock.Unlock();
@@ -422,9 +426,34 @@ namespace RPC {
         }
 
     private:
+        const std::vector<string>& DynamicLoaderPaths() const;
+        void PopulateLDLibraryPaths(const string& oldLDLibraryPaths, string& newLDLibraryPaths) const {
+            // Read currently added LD_LIBRARY_PATH to prefix with _systemRootPath
+            if (oldLDLibraryPaths.empty() != true) {
+                size_t start = 0;
+                size_t end = oldLDLibraryPaths.find(':');
+                do {
+                    newLDLibraryPaths += _systemRootPath;
+                    newLDLibraryPaths += oldLDLibraryPaths.substr(start,
+                                        ((end != string::npos) ? (end - start + 1) : end));
+                    start = end;
+                    if (end != string::npos) {
+                        end = oldLDLibraryPaths.find(':', start + 1);
+                    }
+                } while (start != string::npos);
+            }
+
+            const std::vector<string>& loaderPaths = DynamicLoaderPaths();
+            for (const auto& loaderPath : loaderPaths) {
+                newLDLibraryPaths += (newLDLibraryPaths.empty() != true) ? ":" : "";
+                newLDLibraryPaths += _systemRootPath + loaderPath;
+            }
+        }
+
+    private:
         Core::Process::Options _options;
         int8_t _priority;
-        string _linkLoaderPath;
+        string _systemRootPath;
         static Core::CriticalSection _ldLibLock;
     };
 
