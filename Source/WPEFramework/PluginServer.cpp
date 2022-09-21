@@ -418,6 +418,8 @@ namespace PluginHost
 
                 TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
+                _administrator.Initialize(callSign, this);
+
                 REPORT_DURATION_WARNING( { ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
 
                 if (HasError() == true) {
@@ -428,6 +430,8 @@ namespace PluginHost
                     if( _administrator.Configuration().LegacyInitialize() == false ) {
                         Deactivate(reason::INITIALIZATION_FAILED);
                     } else {
+                        _reason = reason::INITIALIZATION_FAILED;
+                        _administrator.Deinitialized(callSign, this);
                         Lock();
                         ReleaseInterfaces();
                         State(DEACTIVATED);

@@ -1991,6 +1991,19 @@ POP_WARNING()
             {
                 return (reinterpret_cast<ISubSystem*>(_subSystems.QueryInterface(ISubSystem::ID)));
             }
+            void Initialize(const string& callsign, PluginHost::IShell* entry)
+            {
+                _notificationLock.Lock();
+
+                std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
+
+                while (currentlist.size()) {
+                    currentlist.front()->Initialize(callsign, entry);
+                    currentlist.pop_front();
+                }
+
+                _notificationLock.Unlock();
+            }
             void Activated(const string& callsign, PluginHost::IShell* entry)
             {
                 _notificationLock.Lock();
@@ -1998,7 +2011,6 @@ POP_WARNING()
                 std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
 
                 while (currentlist.size()) {
-                    currentlist.front()->Initialized(callsign, entry);
                     currentlist.front()->Activated(callsign, entry);
                     currentlist.pop_front();
                 }
