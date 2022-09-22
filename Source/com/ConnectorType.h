@@ -105,14 +105,17 @@ namespace RPC {
             {
                 CommunicatorClient::Close(Core::infinite);
             }
+            void Unlink()
+            {
+                CommunicatorClient::Close(Core::infinite);
+            }
         };
     public:
         ConnectorType(const ConnectorType<ENGINE>&) = delete;
         ConnectorType<ENGINE>& operator=(const ConnectorType<ENGINE>&) = delete;
 
         ConnectorType()
-            : _comChannels()
-        {
+            : _comChannels() {
         }
         ~ConnectorType() = default;
 

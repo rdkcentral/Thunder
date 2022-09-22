@@ -366,6 +366,9 @@ namespace Core {
         uint32_t User(const string& userName);
         string Group() const;
         uint32_t Group(const string& groupName);
+
+    private:
+        void SupplementryGroups(const string& userName);
     };
 
     class EXTERNAL ProcessTree {
