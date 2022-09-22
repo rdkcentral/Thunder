@@ -1068,15 +1068,33 @@ namespace PluginHost {
                 std::vector<string> all_paths;
 
                 const std::vector<string> temp = _administrator.Configuration().LinkerPluginPaths();
+                string rootPath(PluginHost::Service::Configuration().SystemRootPath.Value());
+
+                if (rootPath.empty() == false) {
+                    rootPath = Core::Directory::Normalize(rootPath);
+                }
+
                 if (!temp.empty())
                 {
                     // additionaly defined user paths
-                    for (const string& s : temp)
-                        all_paths.push_back(Core::Directory::Normalize(s) + locator);
+                    for (const string& s : temp) {
+                        if (rootPath.empty() == true) {
+                            all_paths.push_back(Core::Directory::Normalize(s) + locator);
+                        }
+                        else {
+                            all_paths.push_back(rootPath + Core::Directory::Normalize(s) + locator);
+                        }
+                    }
                 }
-                else
+                else if (rootPath.empty() == false)
                 {
-                    string className = PluginHost::Service::Configuration().ClassName.Value() + _T("/");
+                    // system configured paths
+                    all_paths.push_back(rootPath + DataPath() + locator);
+                    all_paths.push_back(rootPath + PersistentPath() + locator);
+                    all_paths.push_back(rootPath + SystemPath() + locator);
+                    all_paths.push_back(rootPath + PluginPath() + locator);
+                }
+                else {
                     // system configured paths
                     all_paths.push_back(DataPath() + locator);
                     all_paths.push_back(PersistentPath() + locator);
@@ -1288,34 +1306,41 @@ namespace PluginHost {
             public:
                 Plugin()
                     : Core::JSON::Container()
-                    , AutoStart()
                     , Configuration(_T("{}"), false)
+                    , SystemRootPath()
+                    , Startup()
                 {
-                    Add(_T("autostart"), &AutoStart);
                     Add(_T("configuration"), &Configuration);
+                    Add(_T("systemrootpath"), &SystemRootPath);
+                    Add(_T("startup"), &Startup);
                 }
-                Plugin(const string& config, const bool autoStart)
+                Plugin(const string& config, const string& systemRootPath, const PluginHost::IShell::startup value)
                     : Core::JSON::Container()
-                    , AutoStart(autoStart)
                     , Configuration(config, false)
+                    , SystemRootPath(systemRootPath)
+                    , Startup(value)
                 {
-                    Add(_T("autostart"), &AutoStart);
                     Add(_T("configuration"), &Configuration);
+                    Add(_T("systemrootpath"), &SystemRootPath);
+                    Add(_T("startup"), &Startup);
                 }
                 Plugin(Plugin const& copy)
                     : Core::JSON::Container()
-                    , AutoStart(copy.AutoStart)
                     , Configuration(copy.Configuration)
+                    , SystemRootPath(copy.SystemRootPath)
+                    , Startup(copy.Startup)
                 {
-                    Add(_T("autostart"), &AutoStart);
                     Add(_T("configuration"), &Configuration);
+                    Add(_T("systemrootpath"), &SystemRootPath);
+                    Add(_T("startup"), &Startup);
                 }
 
                 ~Plugin() override = default;
 
             public:
-                Core::JSON::Boolean AutoStart;
                 Core::JSON::String Configuration;
+                Core::JSON::String SystemRootPath;
+                Core::JSON::EnumType<PluginHost::IShell::startup> Startup;
             };
 
             typedef std::map<string, Plugin>::iterator Iterator;
@@ -1341,7 +1366,7 @@ namespace PluginHost {
                     const string& name(service->Callsign());
 
                     // Create an element for this service with its callsign
-                    std::pair<Iterator, bool> index(_callsigns.insert(std::pair<string, Plugin>(name, Plugin(_T("{}"), false))));
+                    std::pair<Iterator, bool> index(_callsigns.insert(std::pair<string, Plugin>(name, Plugin(_T("{}"), "", PluginHost::IShell::startup::UNAVAILABLE))));
 
                     // Store the override config in the JSON String created in the map
                     Services.Add(index.first->first.c_str(), &(index.first->second));
@@ -1393,8 +1418,11 @@ namespace PluginHost {
                             if (current->second.Configuration.IsSet() == true) {
                                 (*index)->Configuration(current->second.Configuration.Value());
                             }
-                            if (current->second.AutoStart.IsSet() == true) {
-                                (*index)->AutoStart(current->second.AutoStart.Value());
+                            if (current->second.SystemRootPath.IsSet() == true) {
+                                (*index)->SystemRootPath(current->second.SystemRootPath.Value());
+                            }
+                            if (current->second.Startup.IsSet() == true) {
+                                (*index)->Startup(current->second.Startup.Value());
                             }
                         }
                     }
@@ -1441,7 +1469,8 @@ namespace PluginHost {
                         } else {
                             current->second.Configuration = config;
                         }
-                        current->second.AutoStart = (index)->AutoStart();
+                        current->second.SystemRootPath = (index)->SystemRootPath();
+                        current->second.Startup = (index)->Startup();
                     }
 
                     // Persist the currently set information
@@ -1524,7 +1553,7 @@ namespace PluginHost {
                                     _object.Version(),
                                     _object.User(),
                                     _object.Group(),
-                                    _object.LinkLoaderPath(),
+                                    _object.SystemRootPath(),
                                     _object.Threads(),
                                     _object.Priority(),
                                     _object.Configuration());
@@ -1796,7 +1825,7 @@ namespace PluginHost {
                     const uint32_t version,
                     const string& user,
                     const string& group,
-                    const string& linkLoaderPath,
+                    const string& systemRootPath,
                     const uint8_t threads,
                     const int8_t priority,
                     const string configuration) override
@@ -1813,7 +1842,7 @@ namespace PluginHost {
 
                     uint32_t id;
                     RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath());
-                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, linkLoaderPath, _T(""), configuration);
+                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, systemRootPath, _T(""), configuration);
 
                     RPC::Process process(requestId, config, instance);
 
@@ -1991,6 +2020,19 @@ POP_WARNING()
             {
                 return (reinterpret_cast<ISubSystem*>(_subSystems.QueryInterface(ISubSystem::ID)));
             }
+            void Initialize(const string& callsign, PluginHost::IShell* entry)
+            {
+                _notificationLock.Lock();
+
+                std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
+
+                while (currentlist.size()) {
+                    currentlist.front()->Initialize(callsign, entry);
+                    currentlist.pop_front();
+                }
+
+                _notificationLock.Unlock();
+            }
             void Activated(const string& callsign, PluginHost::IShell* entry)
             {
                 _notificationLock.Lock();
@@ -2013,6 +2055,20 @@ POP_WARNING()
 
                 while (currentlist.size()) {
                     currentlist.front()->Deactivated(callsign, entry);
+                    currentlist.pop_front();
+                }
+
+                _notificationLock.Unlock();
+            }
+
+            void Deinitialized(const string& callsign, PluginHost::IShell* entry)
+            {
+                _notificationLock.Lock();
+
+                std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
+
+                while (currentlist.size()) {
+                    currentlist.front()->Deinitialized(callsign, entry);
                     currentlist.pop_front();
                 }
 

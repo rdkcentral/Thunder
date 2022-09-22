@@ -48,15 +48,15 @@ ENUM_CONVERSION_BEGIN(PluginHost::IShell::reason)
 
 ENUM_CONVERSION_END(PluginHost::IShell::reason)
 
-ENUM_CONVERSION_BEGIN(Plugin::Config::startup)
+ENUM_CONVERSION_BEGIN(PluginHost::IShell::startup)
 
-    { Plugin::Config::startup::UNAVAILABLE, _TXT("Unavailable") },
-    { Plugin::Config::startup::DEACTIVATED, _TXT("Deactivated") },
-    { Plugin::Config::startup::SUSPENDED,   _TXT("Suspended")   },
-    { Plugin::Config::startup::RESUMED,     _TXT("Resumed")     },
-    { Plugin::Config::startup::RESUMED,     _TXT("Activated")   },
+    { PluginHost::IShell::startup::UNAVAILABLE, _TXT("Unavailable") },
+    { PluginHost::IShell::startup::DEACTIVATED, _TXT("Deactivated") },
+    { PluginHost::IShell::startup::SUSPENDED,   _TXT("Suspended")   },
+    { PluginHost::IShell::startup::RESUMED,     _TXT("Resumed")     },
+    { PluginHost::IShell::startup::RESUMED,     _TXT("Activated")   },
 
-ENUM_CONVERSION_END(Plugin::Config::startup)
+ENUM_CONVERSION_END(PluginHost::IShell::startup)
 
 namespace PluginHost
 {
@@ -97,7 +97,6 @@ namespace PluginHost
             , Priority(0)
             , OutOfProcess(false)
             , Mode(ModeType::LOCAL)
-            , LinkLoaderPath()
             , RemoteAddress()
             , Configuration(false)
         {
@@ -108,7 +107,6 @@ namespace PluginHost
             Add(_T("priority"), &Priority);
             Add(_T("outofprocess"), &OutOfProcess);
             Add(_T("mode"), &Mode);
-            Add(_T("loaderpath"), &LinkLoaderPath);
             Add(_T("remoteaddress"), &RemoteAddress);
             Add(_T("configuration"), &Configuration);
         }
@@ -121,7 +119,6 @@ namespace PluginHost
             , Priority(0)
             , OutOfProcess(false)
             , Mode(ModeType::LOCAL)
-            , LinkLoaderPath()
             , RemoteAddress()
             , Configuration(false)
         {
@@ -132,7 +129,6 @@ namespace PluginHost
             Add(_T("priority"), &Priority);
             Add(_T("outofprocess"), &OutOfProcess);
             Add(_T("mode"), &Mode);
-            Add(_T("loaderpath"), &LinkLoaderPath);
             Add(_T("remoteaddress"), &RemoteAddress);
             Add(_T("configuration"), &Configuration);
 
@@ -167,7 +163,6 @@ namespace PluginHost
             , Priority(copy.Priority)
             , OutOfProcess(true)
             , Mode(copy.Mode)
-            , LinkLoaderPath(copy.LinkLoaderPath)
             , RemoteAddress(copy.RemoteAddress)
             , Configuration(copy.Configuration)
         {
@@ -178,7 +173,6 @@ namespace PluginHost
             Add(_T("priority"), &Priority);
             Add(_T("outofprocess"), &OutOfProcess);
             Add(_T("mode"), &Mode);
-            Add(_T("loaderpath"), &LinkLoaderPath);
             Add(_T("remoteaddress"), &RemoteAddress);
             Add(_T("configuration"), &Configuration);
         }
@@ -194,7 +188,6 @@ namespace PluginHost
             OutOfProcess = RHS.OutOfProcess;
             Mode = RHS.Mode;
             RemoteAddress = RHS.RemoteAddress;
-            LinkLoaderPath = RHS.LinkLoaderPath;
             Configuration = RHS.Configuration;
 
             return (*this);
@@ -224,7 +217,6 @@ namespace PluginHost
         Core::JSON::DecSInt8 Priority;
         Core::JSON::Boolean OutOfProcess;
         Core::JSON::EnumType<ModeType> Mode; 
-        Core::JSON::String LinkLoaderPath; 
         Core::JSON::String RemoteAddress; 
         Core::JSON::String Configuration;
     };
@@ -283,7 +275,7 @@ namespace PluginHost
                     rootObject.Threads.Value(),
                     rootObject.Priority.Value(),
                     rootObject.HostType(), 
-                    rootObject.LinkLoaderPath.Value(),
+                    SystemRootPath(),
                     rootObject.RemoteAddress.Value(),
                     rootObject.Configuration.Value());
 

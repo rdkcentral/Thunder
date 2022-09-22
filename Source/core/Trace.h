@@ -142,7 +142,7 @@ namespace WPEFramework {
             std::list<WPEFramework::Core::callstack_info> entries;                                              \
             DumpCallStack(0, entries);                                                                          \
             for(const WPEFramework::Core::callstack_info& entry : entries) {                                    \
-                fprintf(stderr, "[%s]:[%s]:[%d]", entry.module.c_str(), entry.function.c_str(), entry.line);    \
+                fprintf(stderr, "[%s]:[%s]:[%d]\n", entry.module.c_str(), entry.function.c_str(), entry.line);  \
             }                                                                                                   \
             fflush(stderr);                                                                                     \
             abort();                                                                                            \
@@ -156,7 +156,7 @@ namespace WPEFramework {
             std::list<WPEFramework::Core::callstack_info> entries;                                                                                   \
             DumpCallStack(0, entries);                                                                                                               \
             for(const WPEFramework::Core::callstack_info& entry : entries) {                                                                         \
-                fprintf(stderr, "[%s]:[%s]:[%d]", entry.module.c_str(), entry.function.c_str(), entry.line);                                         \
+                fprintf(stderr, "[%s]:[%s]:[%d]\n", entry.module.c_str(), entry.function.c_str(), entry.line);                                       \
             }                                                                                                                                        \
             fflush(stderr);                                                                                                                          \
             abort();                                                                                                                                 \

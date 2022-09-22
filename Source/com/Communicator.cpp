@@ -33,6 +33,82 @@ namespace RPC {
 
     static Core::ProxyPoolType<RPC::AnnounceMessage> AnnounceMessageFactory(2);
 
+    class DynamicLoaderPaths {
+    private:
+        static constexpr TCHAR LoaderConfig[] = _T("/etc/ld.so.conf");
+
+    public:
+        DynamicLoaderPaths(const DynamicLoaderPaths&) = delete;
+        DynamicLoaderPaths& operator= (const DynamicLoaderPaths&) = delete;
+
+        DynamicLoaderPaths() 
+            : _downloadLists()
+        {
+            ReadList(LoaderConfig, _downloadLists);
+            _downloadLists.emplace_back(_T("/usr/lib/"));
+            _downloadLists.emplace_back(_T("/lib/"));
+        }
+        ~DynamicLoaderPaths() = default;
+
+    public:
+        const std::vector<string>& Paths() const
+        {
+            return (_downloadLists);
+        }
+
+    private:
+        void ReadList(const string& filename, std::vector<string>& entries)
+        {
+
+            string filter(Core::File::FileNameExtended(filename));
+
+            if (filter.find('*') != string::npos) {
+                Core::Directory dir(Core::File::PathName(filename).c_str(), filter.c_str());
+
+                while (dir.Next() == true) {
+                    ReadList(dir.Current(), entries);
+                }
+            }
+            else {
+                // Parse it line, by line...
+                Core::DataElementFile bufferFile(filename, Core::File::USER_READ);
+                Core::TextReader reader(bufferFile);
+
+                while (reader.EndOfText() == false) {
+                    Core::TextFragment line(reader.ReadLine());
+
+                    // Drop the spaces in the begining...
+                    line.TrimBegin(" \t");
+
+                    if ((line.IsEmpty() == false) && (line[0] != '#')) {
+                        Core::TextSegmentIterator segments(line, true, " \t");
+
+                        if (segments.Next() == true) {
+
+                            // Looks like we have a word, see what the word is...
+                            if ((segments.Current() == _T("include")) && (segments.Next() == true)) {
+                                // Oke, dive into this entry...
+                                ReadList(segments.Remainder().Text(), entries);
+                            }
+                            else {
+                                entries.emplace_back(line.Text());
+                            }
+                        }
+                        else {
+                            entries.emplace_back(line.Text());
+                        }
+                    }
+                }
+            }
+        }
+
+    private:
+        std::vector<string> _downloadLists;
+    };
+
+    /* static */ constexpr TCHAR DynamicLoaderPaths::LoaderConfig[];
+    static DynamicLoaderPaths& _LoaderPaths = Core::SingletonType<DynamicLoaderPaths>::Instance();
+
     /* static */ Core::CriticalSection Process::_ldLibLock ;
 
     class ProcessShutdown : public Core::Thread {
@@ -452,11 +528,16 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         _connectionMap.Destroy();
     }
 
-    void Communicator::Destroy(const uint32_t id) {
+    void Communicator::Destroy(const uint32_t id)
+    {
         // This is a forceull call, blocking, to kill that specific connection
         g_destructor.ForceDestruct(id);
     }
 
+    const std::vector<string>& Process::DynamicLoaderPaths() const
+    {
+        return _LoaderPaths.Paths();
+    }
     CommunicatorClient::CommunicatorClient(
         const Core::NodeId& remoteNode)
         : Core::IPCChannelClientType<Core::Void, false, true>(remoteNode, CommunicationBufferSize)
@@ -594,7 +675,7 @@ POP_WARNING()
             string jsonMessagingCategories(announceMessage->Response().MessagingCategories());
             if (!jsonMessagingCategories.empty()) {
 #if defined(__CORE_MESSAGING__)
-                Core::Messaging::MessageUnit::Instance().Defaults(jsonMessagingCategories);
+                Core::Messaging::MessageUnit::Instance().Configure(jsonMessagingCategories);
 #else
                 Trace::TraceUnit::Instance().Defaults(jsonMessagingCategories);
 #endif

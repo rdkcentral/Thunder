@@ -19,32 +19,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="generated\ProxyStubs_Controller.cpp" />
+    <ClCompile Include="generated\ProxyStubs_Plugin.cpp" />
+    <ClCompile Include="generated\ProxyStubs_Shell.cpp" />
+    <ClCompile Include="generated\ProxyStubs_StateControl.cpp" />
+    <ClCompile Include="generated\ProxyStubs_SubSystem.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <Text Include="CMakeLists.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Control.h" />
-    <ClInclude Include="BaseCategory.h" />
-    <ClInclude Include="Logging.h" />
-    <ClInclude Include="LoggingCategories.h" />
-    <ClInclude Include="MessageClient.h" />
-    <ClInclude Include="Module.h" />
-    <ClInclude Include="TextMessage.h" />
-    <ClInclude Include="TraceCategories.h" />
-    <ClInclude Include="TraceControl.h" />
-    <ClInclude Include="TraceFactory.h" />
-    <ClInclude Include="messaging.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Logging.cpp" />
-    <ClCompile Include="MessageClient.cpp" />
-    <ClCompile Include="Module.cpp" />
-    <ClCompile Include="TraceCategories.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{68388CCB-365D-443A-A435-2F1940790836}</ProjectGuid>
+    <ProjectGuid>{0CA4C35A-2DE4-4BB3-804C-331D09CC3402}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>messaging</RootNamespace>
+    <RootNamespace>proxystubs</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -94,23 +82,27 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
     <IntDir>$(OutDir)WebBridge\$(TargetName)\</IntDir>
+    <TargetExt>.so</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
     <IntDir>$(OutDir)WebBridge\$(TargetName)\</IntDir>
+    <TargetExt>.so</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
     <IntDir>$(OutDir)WebBridge\$(TargetName)\</IntDir>
+    <TargetExt>.so</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
     <IntDir>$(OutDir)WebBridge\$(TargetName)\</IntDir>
+    <TargetExt>.so</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -120,9 +112,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>MESSAGING_EXPORTS;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;NDEBUG;PLUGINS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(FrameworkPath);$(WindowsPath)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
@@ -130,9 +122,12 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir)..\..\$(Configuration)</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
+    <PreBuildEvent>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  --outdir "$(ProjectDir)generated/" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -140,17 +135,20 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>MESSAGING_EXPORTS;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;PLUGINS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(FrameworkPath);$(WindowsPath)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir)..\..\$(Configuration)</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
+    <PreBuildEvent>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  --outdir "$(ProjectDir)generated/" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -158,17 +156,20 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>MESSAGING_EXPORTS;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;_DEBUG;PLUGINS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(FrameworkPath);$(WindowsPath)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir)..\..\$(Configuration)</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
+    <PreBuildEvent>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  --outdir "$(ProjectDir)generated/" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -178,9 +179,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>MESSAGING_EXPORTS;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;PLUGINS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(FrameworkPath);$(WindowsPath)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
@@ -188,9 +189,12 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir)..\..\$(Configuration)</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
+    <PreBuildEvent>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  --outdir "$(ProjectDir)generated/" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

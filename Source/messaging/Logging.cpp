@@ -18,45 +18,48 @@
  */
 
 #include "Logging.h"
-
-#ifndef __WINDOWS__
-#include <syslog.h>
-#endif
-
+#include "LoggingCategories.h"
 #include <fstream>
 
 namespace WPEFramework {
-    namespace Logging {
-
-        const char* MODULE_LOGGING = _T("SysLog");
-    }
-    template <>
-    WPEFramework::Messaging::ControlLifetime<Logging::Startup, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::template Control<Logging::Startup, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING> Messaging::ControlLifetime<Logging::Startup, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::_messageControl;
-    template <>
-    WPEFramework::Messaging::ControlLifetime<Logging::Shutdown, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::template Control<Logging::Shutdown, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING> Messaging::ControlLifetime<Logging::Shutdown, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::_messageControl;
-    template <>
-    WPEFramework::Messaging::ControlLifetime<Logging::Notification, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::template Control<Logging::Notification, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING> Messaging::ControlLifetime<Logging::Notification, &Logging::MODULE_LOGGING, WPEFramework::Core::Messaging::MetaData::MessageType::LOGGING>::_messageControl;
-
 namespace Logging {
-    static const TCHAR* UnknownCallsign = _T("NoTLSCallsign");
+
+    static struct Announcement {
+        Announcement() {
+            // Announce upfront all SYSLOG categories...
+            SYSLOG_ANNOUNCE(Logging::Startup);
+            SYSLOG_ANNOUNCE(Logging::Shutdown);
+            SYSLOG_ANNOUNCE(Logging::Crash);
+            SYSLOG_ANNOUNCE(Logging::Fatal);
+            SYSLOG_ANNOUNCE(Logging::Error);
+            SYSLOG_ANNOUNCE(Logging::ParsingError);
+            SYSLOG_ANNOUNCE(Logging::Notification);
+        }
+    } AnnounceCategories;
+
+    const char* MODULE_LOGGING = _T("SysLog");
 
     void DumpException(const string& exceptionType)
     {
+        static const TCHAR* UnknownCallsign = _T("NoTLSCallsign");
+
         uint8_t counter = 0;
         std::list<Core::callstack_info> stack;
         DumpCallStack(Core::Thread::ThreadId(), stack);
+
 #if defined(__CORE_EXCEPTION_CATCHING__) || defined(__CORE_WARNING_REPORTING__)
         const TCHAR* callsign = Core::CallsignTLS::CallsignAccess<&UnknownCallsign>::Callsign();
 #else
         const TCHAR* callsign = UnknownCallsign;
 #endif
-        SYSLOG(Logging::Crash, (_T("-== Unhandled exception in: %s [%s] ==-\n"), callsign, exceptionType.c_str()));
+
+        SYSLOG_GLOBAL(Logging::Crash, (_T("-== Unhandled exception in: %s [%s] ==-\n"), callsign, exceptionType.c_str()));
         for (const Core::callstack_info& entry : stack) {
             if (entry.line != static_cast<uint32_t>(~0)) {
-                SYSLOG(Logging::Crash, (Core::Format(_T("[%03d] [%p] %.30s %s [%d]"), counter, entry.address, entry.module.c_str(), entry.function.c_str(), entry.line)));
+                SYSLOG_GLOBAL(Logging::Crash, (Core::Format(_T("[%03d] [%p] %.30s %s [%d]"), counter, entry.address, entry.module.c_str(), entry.function.c_str(), entry.line)));
             }
             else {
-                SYSLOG(Logging::Crash, (Core::Format(_T("[%03d] [%p] %.30s %s"), counter, entry.address, entry.module.c_str(), entry.function.c_str())));
+                SYSLOG_GLOBAL(Logging::Crash, (Core::Format(_T("[%03d] [%p] %.30s %s"), counter, entry.address, entry.module.c_str(), entry.function.c_str())));
             }
             counter++;
         }
@@ -67,10 +70,10 @@ namespace Logging {
         static auto logProcPath = [](const std::string& path) {
             std::ifstream fileStream(path);
             if (fileStream.is_open()) {
-                SYSLOG(Logging::Crash, ("-== %s ==-\n", path.c_str()));
+                SYSLOG_GLOBAL(Logging::Crash, (_T("-== %s ==-\n"), path.c_str()));
                 std::string line;
                 while (std::getline(fileStream, line)) {
-                    SYSLOG(Logging::Crash, (line));
+                    SYSLOG_GLOBAL(Logging::Crash, (line));
                 }
             }
         };
@@ -107,5 +110,6 @@ namespace Logging {
 
     }
 #endif
+
+} // namespace Logging
 }
-} // namespace PluginHost

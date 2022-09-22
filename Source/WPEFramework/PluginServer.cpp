@@ -319,8 +319,10 @@ namespace PluginHost
         IShell::state currentState(State());
 
         if (currentState == IShell::ACTIVATION) {
+            Unlock();
             result = Core::ERROR_INPROGRESS;
         } else if ((currentState == IShell::UNAVAILABLE) || (currentState == IShell::DEACTIVATION) || (currentState == IShell::DESTROYED)) {
+            Unlock();
             result = Core::ERROR_ILLEGAL_STATE;
         } else if ((currentState == IShell::DEACTIVATED) || (currentState == IShell::PRECONDITION)) {
 
@@ -336,6 +338,8 @@ namespace PluginHost
                 SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
                 result = Core::ERROR_UNAVAILABLE;
 
+                Unlock();
+
                 // See if the preconditions have been met..
             } else if (_precondition.IsMet() == false) {
                 SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], postponed, preconditions have not been met, yet."), className.c_str(), callSign.c_str()));
@@ -344,7 +348,7 @@ namespace PluginHost
                 State(PRECONDITION);
 
 #ifdef __CORE_MESSAGING__
-                if (Messaging::ControlLifetime<Activity, &Core::System::MODULE_NAME, Core::Messaging::MetaData::MessageType::TRACING>::IsEnabled() == true) {
+                if (TRACE_ENABLED(Activity) == true) {
                     string feedback;
                     uint8_t index = 1;
                     uint32_t delta(_precondition.Delta(_administrator.SubSystemInfo()));
@@ -363,14 +367,7 @@ namespace PluginHost
                         index++;
                     }
 
-                    Activity newData(_T("Delta preconditions: %s"), feedback.c_str());
-                    Messaging::TextMessage traceData(newData.Data());
-
-                    Core::Messaging::Information info(Core::Messaging::MetaData::MessageType::TRACING,
-                        Core::ClassNameOnly(typeid(Activity).name()).Text(),
-                        WPEFramework::Core::System::MODULE_NAME, __FILE__, __LINE__, Core::Time::Now().Ticks());
-
-                    Core::Messaging::MessageUnit::Instance().Push(info, &traceData);
+                    TRACE(Activity, (_T("Delta preconditions: %s"), feedback.c_str()));
                 }
 #else
                 if (Trace::TraceType<Activity, &Core::System::MODULE_NAME>::IsEnabled() == true) {
@@ -398,6 +395,8 @@ namespace PluginHost
                 }
 #endif
 
+                Unlock();
+
             } else {
 
                 State(ACTIVATION);
@@ -412,6 +411,8 @@ namespace PluginHost
 
                 TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
+                _administrator.Initialize(callSign, this);
+
                 REPORT_DURATION_WARNING( { ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
 
                 if (HasError() == true) {
@@ -419,9 +420,17 @@ namespace PluginHost
 
                     SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
 
-                    Lock();
-                    ReleaseInterfaces();
-                    State(DEACTIVATED);
+                    if( _administrator.Configuration().LegacyInitialize() == false ) {
+                        Deactivate(reason::INITIALIZATION_FAILED);
+                    } else {
+                        _reason = reason::INITIALIZATION_FAILED;
+                        _administrator.Deinitialized(callSign, this);
+                        Lock();
+                        ReleaseInterfaces();
+                        State(DEACTIVATED);
+                        Unlock();
+                    }
+
                 } else {
                     const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
                     const string webUI(PluginHost::Service::Configuration().WebUI.Value());
@@ -453,11 +462,13 @@ namespace PluginHost
                         stateControl->Request(PluginHost::IStateControl::RESUME);
                         stateControl->Release();
                     }
+
+                    Unlock();
                 }
             }
+        } else {
+            Unlock();
         }
-
-        Unlock();
 
         return (result);
     }
@@ -476,7 +487,7 @@ namespace PluginHost
         } else if (currentState == IShell::DEACTIVATED) {
             result = Activate(why);
             currentState = State();
-        } 
+        }
 
         if (currentState == IShell::ACTIVATED) {
             // See if we need can and should RESUME.
@@ -508,10 +519,9 @@ namespace PluginHost
 
         if (currentState == IShell::DEACTIVATION) {
             result = Core::ERROR_INPROGRESS;
-        } else if ((currentState == IShell::ACTIVATION) || (currentState == IShell::DESTROYED)) {
+        } else if ((currentState == IShell::ACTIVATION && why != IShell::INITIALIZATION_FAILED) || (currentState == IShell::DESTROYED)) {
             result = Core::ERROR_ILLEGAL_STATE;
-        } else if ((currentState == IShell::UNAVAILABLE) || (currentState == IShell::ACTIVATED) || (currentState == IShell::PRECONDITION)) {
-
+        } else if ( (currentState == IShell::ACTIVATION && why == IShell::INITIALIZATION_FAILED) || (currentState == IShell::UNAVAILABLE) || (currentState == IShell::ACTIVATED) || (currentState == IShell::PRECONDITION)) {
             const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
 
             const string className(PluginHost::Service::Configuration().ClassName.Value());
@@ -519,11 +529,13 @@ namespace PluginHost
 
             _reason = why;
 
-            if (currentState == IShell::ACTIVATED) {
+            if ( (currentState == IShell::ACTIVATION) || (currentState == IShell::ACTIVATED)) {
                 ASSERT(_handler != nullptr);
 
                 State(DEACTIVATION);
+                if( currentState == IShell::ACTIVATED ) {
                 _administrator.Deactivated(callSign, this);
+                }
 
                 Unlock();
 
@@ -536,7 +548,9 @@ namespace PluginHost
                     DisableWebServer();
                 }
 
+                if( currentState == IShell::ACTIVATED ) {
                 TRACE(Activity, (_T("Deactivation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
+                }
 
                 REPORT_DURATION_WARNING( { _handler->Deinitialize(this); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::DEACTIVATION, callSign.c_str());
 
@@ -547,13 +561,16 @@ namespace PluginHost
                 if (dispatcher != nullptr) {
                     dispatcher->Deactivate();
                 }
+
+                _administrator.Deinitialized(callSign, this);
+
             }
+
+            if( currentState != IShell::ACTIVATION ) {
 
             SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
             TRACE(Activity, (Core::Format(_T("Deactivate plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
-
-            State(why == CONDITIONS? PRECONDITION : DEACTIVATED);
 
 #if THUNDER_RESTFULL_API
             _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
@@ -561,11 +578,14 @@ namespace PluginHost
 
             _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
 
-            ASSERT(State() != ACTIVATED);
+            }
+
+            State(why == CONDITIONS ? PRECONDITION : DEACTIVATED);
 
             // We have no need for his module anymore..
             ReleaseInterfaces();
         }
+
 
         Unlock();
 
@@ -617,9 +637,9 @@ namespace PluginHost
 
         IShell::state currentState(State());
 
-        if ((currentState == IShell::DEACTIVATION) || 
-            (currentState == IShell::ACTIVATION)   || 
-            (currentState == IShell::DESTROYED)    || 
+        if ((currentState == IShell::DEACTIVATION) ||
+            (currentState == IShell::ACTIVATION)   ||
+            (currentState == IShell::DESTROYED)    ||
             (currentState == IShell::ACTIVATED)    ||
             (currentState == IShell::PRECONDITION)) {
             result = Core::ERROR_ILLEGAL_STATE;
@@ -812,8 +832,8 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 
         // Create input handle
         _inputHandler.Initialize(
-            configuration.Input().Type(), 
-            configuration.Input().Locator(), 
+            configuration.Input().Type(),
+            configuration.Input().Locator(),
             configuration.Input().Enabled());
 
         // Initialize static message.
@@ -843,7 +863,7 @@ POP_WARNING()
     {
         Plugin::Controller* controller;
         if ((_controller.IsValid() == true) && ((controller = (_controller->ClassType<Plugin::Controller>())) != nullptr)) {
-            
+
             controller->Notification(data);
 
 #if THUNDER_RESTFULL_API

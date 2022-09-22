@@ -1,8 +1,8 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2022 Metrological
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,15 @@
  * limitations under the License.
  */
 
-#include "TraceCategories.h"
+#pragma once
 
-#ifdef __WINDOWS__
-#include "TraceFactory.h"
-#endif // __WINDOWS__
+#ifndef MODULE_NAME
+#define MODULE_NAME PluginStarter
+#endif
 
-namespace WPEFramework {
-namespace Trace {
+#include <com/com.h>
+#include <core/core.h>
+#include <plugins/plugins.h>
 
-    /* static */ const string Constructor::_text(_T("Constructor called"));
-    /* static */ const string Destructor::_text(_T("Destructor called"));
-    /* static */ const string CopyConstructor::_text(_T("Copy Constructor called"));
-    /* static */ const string AssignmentOperator::_text(_T("Assignment Operator called"));
-
-} // namespace Trace
-}
+#undef EXTERNAL
+#define EXTERNAL
