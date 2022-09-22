@@ -170,7 +170,7 @@ namespace Process {
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:S:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , Callsign(nullptr)
@@ -185,6 +185,7 @@ namespace Process {
             , AppPath()
             , ProxyStubPath()
             , PostMortemPath()
+            , SystemRootPath()
             , User(nullptr)
             , Group(nullptr)
             , Threads(1)
@@ -211,6 +212,7 @@ namespace Process {
         string AppPath;
         string ProxyStubPath;
         string PostMortemPath;
+        string SystemRootPath;
         const TCHAR* User;
         const TCHAR* Group;
         uint8_t Threads;
@@ -256,6 +258,9 @@ namespace Process {
             case 'P':
                 PostMortemPath = Strip(argument);
                 break;
+            case 'S':
+                 SystemRootPath = Strip(argument);
+                 break;
             case 'v':
                 VolatilePath = Strip(argument);
                 break;
@@ -324,18 +329,21 @@ namespace Process {
         void* result = nullptr;
 
         if ((options.Locator != nullptr) && (options.ClassName != nullptr)) {
-            result = CheckInstance(options.PersistentPath, options.Locator, options.ClassName, options.InterfaceId, options.Version);
+            string path = (!options.SystemRootPath.empty() ? options.SystemRootPath : "") + options.PersistentPath;
+            result = CheckInstance(path, options.Locator, options.ClassName, options.InterfaceId, options.Version);
 
             if (result == nullptr) {
-                result = CheckInstance(options.SystemPath, options.Locator, options.ClassName, options.InterfaceId, options.Version);
+                path = (!options.SystemRootPath.empty() ? options.SystemRootPath : "") + options.SystemPath;
+                result = CheckInstance(path, options.Locator, options.ClassName, options.InterfaceId, options.Version);
 
                 if (result == nullptr) {
-                    result = CheckInstance(options.DataPath, options.Locator, options.ClassName, options.InterfaceId, options.Version);
+                    path = (!options.SystemRootPath.empty() ? options.SystemRootPath : "") + options.DataPath;
+                    result = CheckInstance(path, options.Locator, options.ClassName, options.InterfaceId, options.Version);
 
                     if (result == nullptr) {
                         string searchPath(options.AppPath.empty() == false ? Core::Directory::Normalize(options.AppPath) : string());
-
-                        result = CheckInstance((searchPath + _T("Plugins/")), options.Locator, options.ClassName, options.InterfaceId, options.Version);
+                        path = (!options.SystemRootPath.empty() ? options.SystemRootPath : "") + searchPath;
+                        result = CheckInstance((path + _T("Plugins/")), options.Locator, options.ClassName, options.InterfaceId, options.Version);
                     }
                 }
             }
@@ -577,6 +585,7 @@ int main(int argc, char** argv)
         printf("        [-m <proxy stub library path>]\n");
         printf("        [-e <enabled SYSLOG categories>]\n");
         printf("        [-P <post mortem path>]\n");
+        printf("        [-S <system root path>]\n\n");
         printf("This application spawns a seperate process space for a plugin. The plugins");
         printf("are searched in the same order as they are done in process. Starting from:\n");
         printf(" 1) <persistent path>/<locator>\n");
