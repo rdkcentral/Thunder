@@ -321,25 +321,25 @@ POP_WARNING()
                         LoadPlugins(file.Name(), config);
                     }
                 } else if (file.Open(true) == false) {
-                    SYSLOG(Logging::Startup, (_T("Plugin config file [%s] could not be opened."), file.Name().c_str()));
+                    SYSLOG_GLOBAL(Logging::Startup, (_T("Plugin config file [%s] could not be opened."), file.Name().c_str()));
                 } else {
                     Plugin::Config pluginConfig;
                     Core::OptionalType<Core::JSON::Error> error;
                     pluginConfig.IElement::FromFile(file, error);
                     if (error.IsSet() == true) {
-                        SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                        SYSLOG_GLOBAL(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
                     }
                     file.Close();
 
                     if ((pluginConfig.ClassName.Value().empty() == true) || (pluginConfig.Locator.Value().empty() == true)) {
-                        SYSLOG(Logging::Startup, (_T("Plugin config file [%s] does not contain classname or locator."), file.Name().c_str()));
+                        SYSLOG_GLOBAL(Logging::Startup, (_T("Plugin config file [%s] does not contain classname or locator."), file.Name().c_str()));
                     } else {
                         if (pluginConfig.Callsign.Value().empty() == true) {
                             pluginConfig.Callsign = Core::File::FileName(file.FileName());
                         }
 
                         if (config.Add(pluginConfig) == false) {
-                            SYSLOG(Logging::Startup, (_T("Plugin config file [%s] can not be reconfigured."), file.Name().c_str()));
+                            SYSLOG_GLOBAL(Logging::Startup, (_T("Plugin config file [%s] can not be reconfigured."), file.Name().c_str()));
                         }
                     }
                 }
@@ -354,9 +354,9 @@ POP_WARNING()
 
         if (observer.WaitForCompletion(AdapterObserver::WaitTime) == Core::ERROR_NONE) {
             observer.Up();
-            SYSLOG(Logging::Startup, (string(_T("Interface [lo], fully functional"))));
+            SYSLOG_GLOBAL(Logging::Startup, (string(_T("Interface [lo], fully functional"))));
         } else {
-            SYSLOG(Logging::Startup, (string(_T("Interface [lo], partly functional (no name resolving)"))));
+            SYSLOG_GLOBAL(Logging::Startup, (string(_T("Interface [lo], partly functional (no name resolving)"))));
         }
     }
 #endif
@@ -460,7 +460,7 @@ POP_WARNING()
             _config = new Config(configFile, _background, error);
 
             if (error.IsSet() == true) {
-                SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                SYSLOG_GLOBAL(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
                 delete _config;
                 _config = nullptr;
             }
@@ -554,7 +554,7 @@ POP_WARNING()
 
                 if (input.Open(true)) {
 #if defined(__CORE_MESSAGING__)
-                    Core::Messaging::MessageUnit::Instance().Defaults(input);
+                    Core::Messaging::MessageUnit::Instance().Configure(input);
 #else
                     Trace::TraceUnit::Instance().Defaults(input);
 #endif
@@ -563,7 +563,7 @@ POP_WARNING()
 
             else {
 #if defined(__CORE_MESSAGING__)
-                Core::Messaging::MessageUnit::Instance().Defaults(_config->MessagingCategories());
+                Core::Messaging::MessageUnit::Instance().Configure(_config->MessagingCategories());
 #else
                 Trace::TraceUnit::Instance().Defaults(_config->MessagingCategories());
 #endif
@@ -584,17 +584,17 @@ POP_WARNING()
             WarningReporting::WarningReportingUnit::Instance().Defaults(_config->WarningReportingCategories());
 #endif
 
-            SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
-            SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
-            SYSLOG(Logging::Startup, (_T("Process Id:    %d"), Core::ProcessInfo().Id()));
-            SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
-            SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
-            SYSLOG(Logging::Startup, (_T("Version:       %s"), _config->Version().c_str()));
-            SYSLOG(Logging::Startup, (_T("Messages:        %s"), messagingSettings.c_str()));
+            SYSLOG_GLOBAL(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
+            SYSLOG_GLOBAL(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
+            SYSLOG_GLOBAL(Logging::Startup, (_T("Process Id:    %d"), Core::ProcessInfo().Id()));
+            SYSLOG_GLOBAL(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
+            SYSLOG_GLOBAL(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
+            SYSLOG_GLOBAL(Logging::Startup, (_T("Version:       %s"), _config->Version().c_str()));
+            SYSLOG_GLOBAL(Logging::Startup, (_T("Messages:        %s"), messagingSettings.c_str()));
 
             // Before we do any translation of IP, make sure we have the right network info...
             if (_config->IPv6() == false) {
-                SYSLOG(Logging::Startup, (_T("Forcing the network to IPv4 only.")));
+                SYSLOG_GLOBAL(Logging::Startup, (_T("Forcing the network to IPv4 only.")));
                 Core::NodeId::ClearIPV6Enabled();
             }
 
@@ -609,14 +609,14 @@ POP_WARNING()
             // Startup/load/initialize what we found in the configuration.
             _dispatcher = new PluginHost::Server(*_config, _background);
 
-            SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " actively listening.")));
+            SYSLOG_GLOBAL(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " actively listening.")));
 
             // If we have handlers open up the gates to analyze...
             _dispatcher->Open();
 
             string id = GetDeviceId(_dispatcher);
             if (id.empty() == false) {
-                SYSLOG(Logging::Startup, (_T("SystemId:      %s"), id.c_str()));
+                SYSLOG_GLOBAL(Logging::Startup, (_T("SystemId:      %s"), id.c_str()));
             }
 
 #ifndef __WINDOWS__

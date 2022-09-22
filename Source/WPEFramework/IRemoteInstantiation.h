@@ -53,7 +53,7 @@ namespace PluginHost {
             const uint32_t version,
             const string& user,
             const string& group,
-            const string& linkLoaderPath,
+            const string& systemRootPath,
             const uint8_t threads,
             const int8_t priority,
             const string configuration) = 0;

@@ -348,7 +348,7 @@ namespace PluginHost
                 State(PRECONDITION);
 
 #ifdef __CORE_MESSAGING__
-                if (Messaging::ControlLifetime<Activity, &Core::System::MODULE_NAME, Core::Messaging::MetaData::MessageType::TRACING>::IsEnabled() == true) {
+                if (TRACE_ENABLED(Activity) == true) {
                     string feedback;
                     uint8_t index = 1;
                     uint32_t delta(_precondition.Delta(_administrator.SubSystemInfo()));
@@ -367,14 +367,7 @@ namespace PluginHost
                         index++;
                     }
 
-                    Activity newData(_T("Delta preconditions: %s"), feedback.c_str());
-                    Messaging::TextMessage traceData(newData.Data());
-
-                    Core::Messaging::Information info(Core::Messaging::MetaData::MessageType::TRACING,
-                        Core::ClassNameOnly(typeid(Activity).name()).Text(),
-                        WPEFramework::Core::System::MODULE_NAME, __FILE__, __LINE__, Core::Time::Now().Ticks());
-
-                    Core::Messaging::MessageUnit::Instance().Push(info, &traceData);
+                    TRACE(Activity, (_T("Delta preconditions: %s"), feedback.c_str()));
                 }
 #else
                 if (Trace::TraceType<Activity, &Core::System::MODULE_NAME>::IsEnabled() == true) {
@@ -494,7 +487,7 @@ namespace PluginHost
         } else if (currentState == IShell::DEACTIVATED) {
             result = Activate(why);
             currentState = State();
-        } 
+        }
 
         if (currentState == IShell::ACTIVATED) {
             // See if we need can and should RESUME.
@@ -644,9 +637,9 @@ namespace PluginHost
 
         IShell::state currentState(State());
 
-        if ((currentState == IShell::DEACTIVATION) || 
-            (currentState == IShell::ACTIVATION)   || 
-            (currentState == IShell::DESTROYED)    || 
+        if ((currentState == IShell::DEACTIVATION) ||
+            (currentState == IShell::ACTIVATION)   ||
+            (currentState == IShell::DESTROYED)    ||
             (currentState == IShell::ACTIVATED)    ||
             (currentState == IShell::PRECONDITION)) {
             result = Core::ERROR_ILLEGAL_STATE;
@@ -839,8 +832,8 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 
         // Create input handle
         _inputHandler.Initialize(
-            configuration.Input().Type(), 
-            configuration.Input().Locator(), 
+            configuration.Input().Type(),
+            configuration.Input().Locator(),
             configuration.Input().Enabled());
 
         // Initialize static message.
@@ -870,7 +863,7 @@ POP_WARNING()
     {
         Plugin::Controller* controller;
         if ((_controller.IsValid() == true) && ((controller = (_controller->ClassType<Plugin::Controller>())) != nullptr)) {
-            
+
             controller->Notification(data);
 
 #if THUNDER_RESTFULL_API

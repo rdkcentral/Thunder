@@ -18,29 +18,33 @@
  */
 
 #include "MessageClient.h"
+
 namespace WPEFramework {
 namespace Messaging {
 
     /**
      * @brief Construct a new Message Client:: Message Client object
-     * 
+     *
      * @param identifer identifier of the buffers
      * @param basePath where are those buffers located
      * @param socketPort triggers the use of using a IP socket in stead of a domain socket if the port value is not 0.
      */
     MessageClient::MessageClient(const string& identifer, const string& basePath, const uint16_t socketPort)
-        : _identifier(identifer)
+        : _adminLock()
+        , _identifier(identifer)
         , _basePath(basePath)
         , _socketPort(socketPort)
+        , _clients()
+        , _factories()
     {
     }
 
     /**
      * @brief Add buffer for instance of given id
-     * 
-     * @param id 
+     *
+     * @param id
      */
-    void MessageClient::AddInstance(uint32_t id)
+    void MessageClient::AddInstance(const uint32_t id)
     {
         _adminLock.Lock();
 
@@ -53,10 +57,10 @@ namespace Messaging {
 
     /**
      * @brief Remove buffer for instance of given id
-     * 
-     * @param id 
+     *
+     * @param id
      */
-    void MessageClient::RemoveInstance(uint32_t id)
+    void MessageClient::RemoveInstance(const uint32_t id)
     {
         _adminLock.Lock();
         _clients.erase(id);
@@ -65,16 +69,18 @@ namespace Messaging {
 
     /**
      * @brief Remove all buffers
-     * 
+     *
      */
     void MessageClient::ClearInstances()
     {
+        _adminLock.Lock();
         _clients.clear();
+        _adminLock.Unlock();
     }
 
     /**
      * @brief Wait for updates in any of the buffers
-     * 
+     *
      * @param waitTime for how much should this function block
      */
     void MessageClient::WaitForUpdates(const uint32_t waitTime)
@@ -95,7 +101,7 @@ namespace Messaging {
     /**
      * @brief When @ref WaitForUpdates is waiting in a blocking state, this function can be used to force it to stop.
      *        It can be also used to "flush" the buffers (for example, data was already waiting, but the buffers were not registered on this side yet)
-     *        
+     *
      */
     void MessageClient::SkipWaiting()
     {
@@ -114,13 +120,15 @@ namespace Messaging {
 
     /**
      * @brief Enable or disable message (specified by the metaData)
-     * 
+     *
      * @param metaData information about the message
      * @param enable should it be enabled or not
      */
     void MessageClient::Enable(const Core::Messaging::MetaData& metaData, const bool enable)
     {
         uint16_t bufferSize = sizeof(_writeBuffer);
+
+        _adminLock.Lock();
 
         for (auto& client : _clients) {
             auto length = metaData.Serialize(_writeBuffer, bufferSize);
@@ -131,18 +139,20 @@ namespace Messaging {
                 client.second.PushMetadata(length, _writeBuffer, bufferSize);
             }
         }
+
+        _adminLock.Unlock();
     }
 
     /**
-     * @brief Get list of currently active message controls
-     * 
-     * @return Core::ControlList::InformationIterator iterator for all the controls
+     * @brief Get list of currently announced message controls
      */
-    Core::Messaging::ControlList::InformationIterator MessageClient::Enabled()
+    void MessageClient::Controls(Core::Messaging::ControlList::InformationStorage& controls) const
     {
-        _enabledCategories.clear();
+        controls.clear();
 
         uint16_t bufferSize = sizeof(_writeBuffer);
+
+        _adminLock.Lock();
 
         for (auto& client : _clients) {
             auto writtenBack = client.second.PushMetadata(0, _writeBuffer, bufferSize);
@@ -152,43 +162,40 @@ namespace Messaging {
 
                 auto it = controlList.Information();
                 while (it.Next()) {
-                    _enabledCategories.push_back(it.Current());
+                    controls.emplace_back(it.Current().first, it.Current().second);
                 }
             }
         }
 
-        return Core::Messaging::ControlList::InformationIterator(_enabledCategories);
-    }
-
-    MessageClient::Messages MessageClient::PopMessagesAsList()
-    {
-        Messages result;
-        PopMessagesAndCall([&result](const Core::Messaging::Information& info, const Core::ProxyType<Core::Messaging::IEvent>& message) {
-            result.emplace_back(info, message);
-        });
-
-        return result;
+        _adminLock.Unlock();
     }
 
     /**
      * @brief Pop all messages from all buffers, and for each of them call a passed function, with information about popped message
      *        This method should be called after receiving doorbell ring (after WaitForUpdated function)
-     * 
+     *
      * @param function function to be called on each of the messages in the buffer
      */
     void MessageClient::PopMessagesAndCall(std::function<void(const Core::Messaging::Information& info, const Core::ProxyType<Core::Messaging::IEvent>& message)> function)
     {
-        _adminLock.Lock();
-        uint16_t size = sizeof(_readBuffer);
-
         Core::Messaging::Information information;
         Core::ProxyType<Core::Messaging::IEvent> message;
 
+        _adminLock.Lock();
+
         for (auto& client : _clients) {
+            uint16_t size = sizeof(_readBuffer);
+
             while (client.second.PopData(size, _readBuffer) != Core::ERROR_READ_ERROR) {
+                ASSERT(size != 0);
+
+                if (size > sizeof(_readBuffer)) {
+                    size = sizeof(_readBuffer);
+                }
+
                 auto length = information.Deserialize(_readBuffer, size);
 
-                if (length > sizeof(Core::Messaging::MetaData::MessageType) && length < sizeof(_readBuffer)) {
+                if (length > sizeof(Core::Messaging::MessageType) && length < sizeof(_readBuffer)) {
                     auto factory = _factories.find(information.MessageMetaData().Type());
                     if (factory != _factories.end()) {
                         message = factory->second->Create();
@@ -199,7 +206,7 @@ namespace Messaging {
                 else {
                     client.second.FlushDataBuffer();
                 }
-                
+
                 size = sizeof(_readBuffer);
             }
         }
@@ -209,11 +216,11 @@ namespace Messaging {
 
     /**
      * @brief Register factory for a given message type. The factory will spawn a message suitable for deserializing received bytes
-     * 
+     *
      * @param type for which message type the factory should be used
-     * @param factory 
+     * @param factory
      */
-    void MessageClient::AddFactory(Core::Messaging::MetaData::MessageType type, Core::Messaging::IEventFactory* factory)
+    void MessageClient::AddFactory(Core::Messaging::MessageType type, Core::Messaging::IEventFactory* factory)
     {
         _adminLock.Lock();
         _factories.emplace(type, factory);
@@ -222,10 +229,10 @@ namespace Messaging {
 
     /**
      * @brief Unregister factory for given type
-     * 
-     * @param type 
+     *
+     * @param type
      */
-    void MessageClient::RemoveFactory(Core::Messaging::MetaData::MessageType type)
+    void MessageClient::RemoveFactory(Core::Messaging::MessageType type)
     {
         _adminLock.Lock();
         _factories.erase(type);

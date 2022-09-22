@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2022 Metrological
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,24 +18,30 @@
  */
 
 #pragma once
+#include "Module.h"
 
-#ifndef MODULE_NAME
-#error "Please define a MODULE_NAME that describes the binary/library you are building."
-#endif
+#include "IPluginStarter.h"
 
-#ifndef __CORE_MESSAGING__
-#define __CORE_MESSAGING__
-#endif
+using namespace WPEFramework;
 
-#include "MessageClient.h"
-#include "Logging.h"
-#include "LoggingCategories.h"
-#include "TraceCategories.h"
-#include "TraceControl.h"
-#include "Control.h"
-#include "TraceFactory.h"
-#include "TextMessage.h"
+/**
+ * @brief COM-RPC implementation of a plugin starter
+ *
+ * Connects to Thunder over COM-RPC and attempts to start a given plugin
+ */
+class COMRPCStarter : public IPluginStarter {
+public:
+    explicit COMRPCStarter(const string& pluginName);
+    ~COMRPCStarter() override;
 
-#ifdef __WINDOWS__
-#pragma comment(lib, "messaging.lib")
-#endif
+    bool activatePlugin(const uint8_t maxRetries, const uint16_t retryDelayMs) override;
+
+private:
+    Core::NodeId getConnectionEndpoint() const;
+
+private:
+    const string _pluginName;
+
+    Core::ProxyType<RPC::InvokeServerType<1, 0, 4>> _engine;
+    Core::ProxyType<RPC::CommunicatorClient> _client;
+};

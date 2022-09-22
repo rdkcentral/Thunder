@@ -52,9 +52,10 @@ namespace Messaging {
 
             return length;
         }
-        uint16_t Deserialize(uint8_t buffer[], const uint16_t bufferSize) override
+
+        uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override
         {
-            Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
+            Core::FrameType<0> frame(const_cast<uint8_t*>(buffer), bufferSize, bufferSize);
             Core::FrameType<0>::Reader reader(frame, 0);
 
             _text = reader.NullTerminatedText();
@@ -62,9 +63,9 @@ namespace Messaging {
             return (static_cast<uint16_t>(_text.size() + 1));
         }
 
-        void ToString(string& text) const override
+        const string& Data() const override
         {
-            text = _text;
+            return (_text);
         }
 
     private:
