@@ -33,7 +33,7 @@
     <ClInclude Include="Control.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="IMessageOutput.h">
+    <ClInclude Include="BaseCategory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="LoggingCategories.h">

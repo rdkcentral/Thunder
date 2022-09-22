@@ -28,7 +28,6 @@
 #endif
 
 #include "MessageClient.h"
-#include "IMessageOutput.h"
 #include "Logging.h"
 #include "LoggingCategories.h"
 #include "TraceCategories.h"

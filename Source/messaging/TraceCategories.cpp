@@ -20,17 +20,16 @@
 #include "TraceCategories.h"
 
 #ifdef __WINDOWS__
-#include "IMessageOutput.h"
 #include "TraceFactory.h"
 #endif // __WINDOWS__
 
-// ---- Class Definition ----
 namespace WPEFramework {
 namespace Trace {
 
-    /* static */ const std::string Constructor::_text("Constructor called");
-    /* static */ const std::string Destructor::_text("Destructor called");
-    /* static */ const std::string CopyConstructor::_text("Copy Constructor called");
-    /* static */ const std::string AssignmentOperator::_text("Assignment Operator called");
-}
+    /* static */ const string Constructor::_text(_T("Constructor called"));
+    /* static */ const string Destructor::_text(_T("Destructor called"));
+    /* static */ const string CopyConstructor::_text(_T("Copy Constructor called"));
+    /* static */ const string AssignmentOperator::_text(_T("Assignment Operator called"));
+
 } // namespace Trace
+}

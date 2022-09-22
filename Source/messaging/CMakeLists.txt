@@ -17,7 +17,6 @@
 set(PUBLIC_HEADERS
         Module.h
         MessageClient.h
-        IMessageOutput.h
         messaging.h
         TraceCategories.h
         TraceControl.h
@@ -27,6 +26,7 @@ set(PUBLIC_HEADERS
         Module.h
         TraceFactory.h
         TextMessage.h
+        BaseCategory.h
         )
 
 set(SOURCES 

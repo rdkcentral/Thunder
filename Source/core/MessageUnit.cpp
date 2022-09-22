@@ -23,329 +23,270 @@ namespace WPEFramework {
 namespace Core {
     namespace Messaging {
 
-        MetaData::MetaData()
-            : _type(INVALID)
-        {
-        }
-        /**
-        * @brief Construct a new MetaData object
-        *
-        * NOTE: Category and module can be set as empty
-        * @param type type of the message
-        * @param category category name of the message
-        * @param module module name of the message
-        */
-        MetaData::MetaData(const MessageType type, const string& category, const string& module)
-            : _type(type)
-            , _category(category)
-            , _module(module)
-        {
-        }
         uint16_t MetaData::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
-            uint16_t length = static_cast<uint16_t>(sizeof(_type) + _category.size() + 1 + _module.size() + 1);
+            uint16_t length = static_cast<uint16_t>(sizeof(_type) + (_category.size() + 1) + (_module.size() + 1));
+            ASSERT(bufferSize >= length);
 
             if (bufferSize >= length) {
-                ASSERT(bufferSize >= length);
-
                 Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
                 Core::FrameType<0>::Writer frameWriter(frame, 0);
                 frameWriter.Number(_type);
                 frameWriter.NullTerminatedText(_category);
                 frameWriter.NullTerminatedText(_module);
-            } else {
+            }
+            else {
                 length = 0;
             }
 
-            return length;
+            return (length);
         }
-        uint16_t MetaData::Deserialize(uint8_t buffer[], const uint16_t bufferSize)
+
+        uint16_t MetaData::Deserialize(const uint8_t buffer[], const uint16_t bufferSize)
         {
-            uint16_t deserialized = 0;
-            Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
-            Core::FrameType<0>::Reader frameReader(frame, 0);
+            uint16_t length = 0;
 
-            _type = frameReader.Number<MetaData::MessageType>();
-            deserialized += sizeof(_type);
-            if(_type < MessageType::INVALID){
-                _category = frameReader.NullTerminatedText();
-                deserialized += static_cast<uint16_t>(_category.size() + 1);
+            ASSERT(bufferSize > (sizeof(_type) + (sizeof(_category[0]) * 2)));
 
-                _module = frameReader.NullTerminatedText();
-                deserialized += static_cast<uint16_t>(_module.size() + 1);
+            if (bufferSize > (sizeof(_type) + (sizeof(_category[0]) * 2))) {
+                Core::FrameType<0> frame(const_cast<uint8_t*>(buffer), bufferSize, bufferSize);
+                Core::FrameType<0>::Reader frameReader(frame, 0);
+
+                _type = frameReader.Number<MessageType>();
+                ASSERT(_type != MessageType::INVALID);
+
+                if (_type != MessageType::INVALID) {
+                    _category = frameReader.NullTerminatedText();
+                    _module = frameReader.NullTerminatedText();
+                    length = (sizeof(_type) + (static_cast<uint16_t>(_category.size()) + 1) + (static_cast<uint16_t>(_module.size()) + 1));
+                }
             }
 
-            return deserialized;
-        }
-
-        Information::Information(const MetaData::MessageType type, const string& category, const string& module, const string& filename, uint16_t lineNumber, const uint64_t timeStamp)
-            : _metaData(type, category, module)
-            , _filename(filename)
-            , _lineNumber(lineNumber)
-            , _timeStamp(timeStamp)
-        {
+            return (length);
         }
 
         uint16_t Information::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
-            auto length = _metaData.Serialize(buffer, bufferSize);
+            uint16_t length = _metaData.Serialize(buffer, bufferSize);
 
             if (length != 0) {
-                if (bufferSize >= length + _filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp)) {
+                const uint16_t extra = (_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + sizeof(_timeStamp);
+                ASSERT(bufferSize >= (length + extra));
 
-                    Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
+                if (bufferSize >= (length + extra)) {
+                    Core::FrameType<0> frame(const_cast<uint8_t*>(buffer) + length, bufferSize - length, bufferSize - length);
                     Core::FrameType<0>::Writer frameWriter(frame, 0);
-                    frameWriter.NullTerminatedText(_filename);
+                    frameWriter.NullTerminatedText(_className);
+                    frameWriter.NullTerminatedText(_fileName);
                     frameWriter.Number(_lineNumber);
                     frameWriter.Number(_timeStamp);
-                    length += static_cast<uint16_t>(_filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp));
-
+                    length += extra;
                 } else {
                     length = 0;
                 }
             }
 
-            return length;
+            return (length);
         }
-        uint16_t Information::Deserialize(uint8_t buffer[], const uint16_t bufferSize)
-        {
-            auto length = _metaData.Deserialize(buffer, bufferSize);
 
-            if (length <= bufferSize && length > sizeof(MetaData::MessageType)) {
-                Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
+        uint16_t Information::Deserialize(const uint8_t buffer[], const uint16_t bufferSize)
+        {
+            uint16_t length = _metaData.Deserialize(buffer, bufferSize);
+            ASSERT(length <= bufferSize);
+
+            if ((length <= bufferSize) && (length != 0)) {
+                Core::FrameType<0> frame(const_cast<uint8_t*>(buffer) + length, bufferSize - length, bufferSize - length);
                 Core::FrameType<0>::Reader frameReader(frame, 0);
-                _filename = frameReader.NullTerminatedText();
+                _className = frameReader.NullTerminatedText();
+                _fileName = frameReader.NullTerminatedText();
                 _lineNumber = frameReader.Number<uint16_t>();
                 _timeStamp = frameReader.Number<uint64_t>();
 
-                length += static_cast<uint16_t>(_filename.size() + 1 + sizeof(_lineNumber) + sizeof(_timeStamp));
+                length += static_cast<uint16_t>((_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + sizeof(_timeStamp));
+            }
+            else {
+                length = 0;
             }
 
-            return length;
+            return (length);
         }
 
-        //----------Entry----------
-        Settings::Messages::Entry::Entry(const string& module, const string& category, const bool enabled)
-            : Core::JSON::Container()
-        {
-            Add(_T("module"), &Module);
-            Add(_T("category"), &Category);
-            Add(_T("enabled"), &Enabled);
+        //----------SettingsList----------
 
-            //if done in initializer list, set values are seen as "Defaults", not as "Values"
-            Module = module;
-            Category = category;
-            Enabled = enabled;
-        }
-        Settings::Messages::Entry::Entry()
-            : Core::JSON::Container()
-            , Module()
-            , Category()
-            , Enabled(false)
+        void SettingsList::FromConfig(const Config& config)
         {
-            Add(_T("module"), &Module);
-            Add(_T("category"), &Category);
-            Add(_T("enabled"), &Enabled);
-        }
+            _adminLock.Lock();
 
-        Settings::Messages::Entry::Entry(const Entry& other)
-            : Core::JSON::Container()
-            , Module(other.Module)
-            , Category(other.Category)
-            , Enabled(other.Enabled)
-        {
-            Add(_T("module"), &Module);
-            Add(_T("category"), &Category);
-            Add(_T("enabled"), &Enabled);
-        }
-
-        Settings::Messages::Entry& Settings::Messages::Entry::operator=(const Entry& other)
-        {
-            if (&other == this) {
-                return *this;
+            if (config.Tracing.IsSet() == true) {
+                auto it = config.Tracing.Settings.Elements();
+                while (it.Next() == true) {
+                    // Ensure the list is reversed, giving the bottom-most settings priority.
+                    _tracing.push_front({ it.Current().Category.Value(), it.Current().Module.Value(), it.Current().Enabled.Value() });
+                }
             }
 
-            Module = other.Module;
-            Category = other.Category;
-            Enabled = other.Enabled;
-
-            return *this;
-        }
-
-        //----------Messages----------
-        Settings::Messages::Messages()
-            : Core::JSON::Container()
-            , Entries()
-        {
-            Add(_T("messages"), &Entries);
-        }
-        Settings::Messages::Messages(const Messages& other)
-            : Core::JSON::Container()
-            , Entries(other.Entries)
-        {
-            Add(_T("messages"), &Entries);
-        }
-        Settings::Messages& Settings::Messages::operator=(const Messages& other)
-        {
-            if (&other == this) {
-                return *this;
+            if (config.Logging.IsSet() == true) {
+                auto it = config.Logging.Settings.Elements();
+                while (it.Next() == true) {
+                    _logging.push_front({ it.Current().Category.Value(), it.Current().Module.Value(), it.Current().Enabled.Value() });
+                }
             }
 
-            Entries = other.Entries;
-            return *this;
+            _adminLock.Unlock();
         }
 
-        //----------LoggingSettings----------
-        Settings::LoggingSetting::LoggingSetting()
-            : Messages()
-            , Abbreviated(true)
+        void SettingsList::ToConfig(Config& config) const
         {
-            Add(_T("abbreviated"), &Abbreviated);
-        }
-        Settings::LoggingSetting::LoggingSetting(const LoggingSetting& other)
-            : Messages()
-            , Abbreviated(other.Abbreviated)
-        {
-            Add(_T("abbreviated"), &Abbreviated);
-        }
-        Settings::LoggingSetting& Settings::LoggingSetting::operator=(const LoggingSetting& other)
-        {
-            if (&other == this) {
-                return *this;
-            }
-            Messages::operator=(other);
-            Abbreviated = other.Abbreviated;
+            config.Tracing.Settings.Clear();
+            config.Logging.Settings.Clear();
 
-            return *this;
-        }
+            _adminLock.Lock();
 
-        //----------Settings----------
-        Settings::Settings()
-            : Core::JSON::Container()
-            , Tracing()
-            , Logging()
-            , WarningReporting(false)
-        {
-            Add(_T("tracing"), &Tracing);
-            Add(_T("logging"), &Logging);
-            Add(_T("warning_reporting"), &WarningReporting);
-        }
-        Settings::Settings(const Settings& other)
-            : Core::JSON::Container()
-            , Tracing(other.Tracing)
-            , Logging(other.Logging)
-            , WarningReporting(other.WarningReporting)
-        {
-            Add(_T("tracing"), &Tracing);
-            Add(_T("logging"), &Logging);
-            Add(_T("warning_reporting"), &WarningReporting);
-        }
-
-        Settings& Settings::operator=(const Settings& other)
-        {
-            if (this == &other) {
-                return *this;
+            for (auto it = _tracing.crbegin(); it != _tracing.crend(); ++it) {
+                config.Tracing.Settings.Add({ (*it).Category, (*it).Module, (*it).Enabled });
             }
 
-            Tracing = other.Tracing;
-            Logging = other.Logging;
-            WarningReporting = other.WarningReporting;
-            return *this;
+            for (auto it = _logging.crbegin(); it != _logging.crend(); ++it) {
+                config.Logging.Settings.Add({ (*it).Category, (*it).Module, (*it).Enabled });
+            }
+
+            _adminLock.Unlock();
         }
 
-        //----------MessageList----------
         /**
-        * @brief Based on metadata, update specific message. If there is no match, add entry to the list
-        *
-        * @param metaData information about the message
-        * @param isEnabled should the message be enabled
+        * @brief Based on new metadata, update a specific setting. If there is no match, add entry to the list
         */
-        void MessageList::Update(const MetaData& metaData, const bool isEnabled)
+        void SettingsList::Update(const MetaData& metaData, const bool isEnabled)
         {
-            if (metaData.Type() == MetaData::MessageType::TRACING) {
-                bool found = false;
-                auto it = _settings.Tracing.Entries.Elements();
-                while (it.Next()) {
+            TRACE_L1("Updating settings(s): '%s':'%s'->%u\n", metaData.Category().c_str(), metaData.Module().c_str(), isEnabled);
 
-                    //toggle for module and category
-                    if (!metaData.Module().empty() && !metaData.Category().empty()) {
-                        if (metaData.Module() == it.Current().Module.Value() && metaData.Category() == it.Current().Category.Value()) {
-                            it.Current().Enabled = isEnabled;
+            _adminLock.Lock();
+
+            if (metaData.Type() == MessageType::TRACING) {
+                bool found = false;
+
+                // This code will ensure that the updated record is moved to the front of the settings list,
+                // so the most recent update is considered when checking if a new control should be enabled upon anouncement.
+
+                // module and category set
+                if ((metaData.Module().empty() == false) && (metaData.Category().empty() == false)) {
+                    for (auto it = _tracing.begin(); it != _tracing.end(); ++it) {
+                        if ((metaData.Module() == (*it).Module) && (metaData.Category() == (*it).Category)) {
+                            (*it).Enabled = isEnabled;
+                            _tracing.splice(_tracing.begin(), _tracing, it);
                             found = true;
-                        }
-                        //toggle all categories for module
-                    } else if (!metaData.Module().empty() && metaData.Category().empty()) {
-                        if (metaData.Module() == it.Current().Module.Value()) {
-                            it.Current().Enabled = isEnabled;
-                            found = true;
-                        }
-                    }
-                    //toggle category for all modules
-                    else if (metaData.Module().empty() && !metaData.Category().empty()) {
-                        if (metaData.Category() == it.Current().Category.Value()) {
-                            it.Current().Enabled = isEnabled;
-                            found = true;
+                            break;
                         }
                     }
                 }
-                if (!found) {
-                    _settings.Tracing.Entries.Add({ metaData.Module(), metaData.Category(), isEnabled });
+                // all categories for module
+                else if ((metaData.Module().empty() == false) && (metaData.Category().empty() == true)) {
+                    for (auto it = _tracing.begin(); it != _tracing.end(); ++it) {
+                        if ((metaData.Module() == (*it).Module) && ((*it).Category.empty() == true)) {
+                            (*it).Enabled = isEnabled;
+                            _tracing.splice(_tracing.begin(), _tracing, it);
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                // category for all modules
+                else if ((metaData.Module().empty() == true) && (metaData.Category().empty() == false)) {
+                    for (auto it = _tracing.begin(); it != _tracing.end(); ++it) {
+                        if ((metaData.Category() == (*it).Category) && ((*it).Module.empty() == true)) {
+                            (*it).Enabled = isEnabled;
+                            _tracing.splice(_tracing.begin(), _tracing, it);
+                            break;
+                        }
+                    }
+                }
+                // all categories for all modules
+                else if ((metaData.Module().empty() == true) && (metaData.Category().empty() == true)) {
+                    for (auto it = _tracing.begin(); it != _tracing.end(); ++it) {
+                        if (((*it).Module.empty() == true) && ((*it).Category.empty() == true)) {
+                            (*it).Enabled = isEnabled;
+                            _tracing.splice(_tracing.begin(), _tracing, it);
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (found == false) {
+                    // Have a new one. Again put it in front of the list.
+                    _tracing.push_front({ metaData.Category(), metaData.Module(), isEnabled });
                 }
             }
-
-            else if (metaData.Type() == MetaData::MessageType::LOGGING) {
+            else if (metaData.Type() == MessageType::LOGGING) {
                 bool found = false;
-                auto it = _settings.Tracing.Entries.Elements();
-                while (it.Next()) {
-                    if (!metaData.Category().empty()) {
-                        if (metaData.Category() == it.Current().Category.Value()) {
-                            it.Current().Enabled = isEnabled;
-                            found = true;
+
+                // category
+                if (metaData.Category().empty() == false) {
+                    for (auto it = _logging.begin(); it != _logging.end(); ++it) {
+                        if (metaData.Category() == (*it).Category) {
+                            (*it).Enabled = isEnabled;
+                            _logging.splice(_logging.begin(), _logging, it);
+                            break;
                         }
                     }
                 }
-                if (!found) {
-                    _settings.Logging.Entries.Add({ _T("SysLog"), metaData.Category(), isEnabled });
+                // all categories
+                else if (metaData.Category().empty() == true) {
+                    for (auto it = _logging.begin(); it != _logging.end(); ++it) {
+                        if ((*it).Category.empty() == true) {
+                            (*it).Enabled = isEnabled;
+                            _logging.splice(_logging.begin(), _logging, it);
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (found == false) {
+                    _logging.push_front({ metaData.Category(), _T("") /* don't care */, isEnabled });
                 }
             }
+            else {
+                ASSERT(!"Invalid message type");
+            }
+
+            _adminLock.Unlock();
         }
-        const Settings& MessageList::JsonSettings() const
-        {
-            return _settings;
-        }
-        void MessageList::JsonSettings(const Settings& settings)
-        {
-            _settings = settings;
-        }
+
         /**
-        * @brief Check if speific message (control) should be enabled
-        *
-        * @param metaData information about the message
-        * @return true should be enabled
-        * @return false should not be enabled
+        * @brief Check if speific based on current settings a control should be enabled
         */
-        bool MessageList::IsEnabled(const MetaData& metaData) const
+        bool SettingsList::IsEnabled(const MetaData& metaData) const
         {
             bool result = false;
-            if (metaData.Type() == MetaData::MessageType::TRACING) {
-                auto it = _settings.Tracing.Entries.Elements();
 
-                while (it.Next()) {
-                    if ((!it.Current().Module.IsSet() && it.Current().Category.Value() == metaData.Category()) || (it.Current().Module.Value() == metaData.Module() && it.Current().Category.Value() == metaData.Category())) {
-                        result = it.Current().Enabled.Value();
+            ASSERT(metaData.Category().empty() == false);
+
+            _adminLock.Lock();
+
+            if (metaData.Type() == MessageType::TRACING) {
+                for (auto it = _tracing.cbegin(); it != _tracing.cend(); ++it) {
+                    if ((((*it).Module == metaData.Module()) && (((*it).Category.empty() == true) || ((*it).Category == metaData.Category())))
+                            || (((*it).Category == metaData.Category()) && (((*it).Module.empty() == true) || ((*it).Module == metaData.Module())))
+                            || (((*it).Category.empty() == true) && ((*it).Module.empty() == true))) {
+                        result = (*it).Enabled;
+                        // The settings are in a particular order, so we can break the loop.
+                        break;
                     }
                 }
-            } else if (metaData.Type() == MetaData::MessageType::LOGGING) {
-                result = true;
-                auto it = _settings.Logging.Entries.Elements();
-                while (it.Next()) {
-                    if (it.Current().Category.Value() == metaData.Category()) {
-                        result = it.Current().Enabled.Value();
+            }
+            else if (metaData.Type() == MessageType::LOGGING) {
+                for (auto it = _logging.cbegin(); it != _logging.cend(); ++it) {
+                    if (((*it).Category.empty() == true) || ((*it).Category == metaData.Category())) {
+                        result = (*it).Enabled;
+                        break;
                     }
                 }
             }
 
-            return result;
+            _adminLock.Unlock();
+
+            return (result);
         }
 
         //----------ControlList----------
@@ -365,21 +306,25 @@ namespace Core {
             uint16_t lastSerialized = 0;
             buffer[serialized++] = static_cast<uint8_t>(0); //buffer[0] will indicate how much entries was serialized
 
+            _adminLock.Lock();
+
             for (const auto& control : _controls) {
                 lastSerialized = control->MessageMetaData().Serialize(buffer + serialized, length - serialized);
 
-                if (serialized + lastSerialized < length && lastSerialized != 0) {
+                if ((serialized + lastSerialized < length) && (lastSerialized != 0)) {
                     serialized += lastSerialized;
                     buffer[serialized++] = control->Enable();
                     buffer[0]++;
                 } else {
-                    TRACE_L1(_T("ControlList is cut, not enough memory to fit all controls. (MetaDataSize too small)"));
+                    TRACE_L1("ControlList is cut, not enough memory to fit all controls (MetaDataSize too small)");
                     //unlucky, not all entries will fit
                     break;
                 }
             }
 
-            return serialized;
+            _adminLock.Unlock();
+
+            return (serialized);
         }
 
         /**
@@ -389,9 +334,10 @@ namespace Core {
         * @param length max length of the buffer
         * @return uint16_t how much bytes deserialized
         */
-        uint16_t ControlList::Deserialize(uint8_t buffer[], const uint16_t length)
+        uint16_t ControlList::Deserialize(const uint8_t buffer[], const uint16_t length)
         {
             ASSERT(length > 0);
+            ASSERT(buffer != nullptr);
 
             uint16_t deserialized = 0;
             uint16_t lastDeserialized = 0;
@@ -402,150 +348,174 @@ namespace Core {
                 bool isEnabled = false;
                 lastDeserialized = metadata.Deserialize(buffer + deserialized, length - deserialized);
 
-                if (deserialized < length && lastDeserialized != 0) {
+                if ((deserialized < length) && (lastDeserialized != 0)) {
                     deserialized += lastDeserialized;
                     isEnabled = buffer[deserialized++];
                 } else {
                     break;
                 }
 
-                _info.push_back({ metadata, isEnabled });
+                _adminLock.Lock();
+                _info.emplace_back(std::piecewise_construct, std::make_tuple(metadata), std::make_tuple(isEnabled));
+                _adminLock.Lock();
             }
 
-            return deserialized;
+            return (deserialized);
         }
 
         void ControlList::Announce(IControl* control)
         {
             ASSERT(control != nullptr);
-            ASSERT(std::find(_controls.begin(), _controls.end(), control) == _controls.end());
 
-            Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
-            _controls.emplace_back(control);
+            _adminLock.Lock();
+
+            ASSERT(std::find(_controls.begin(), _controls.end(), control) == _controls.end());
+            _controls.push_back(control);
+
+            _adminLock.Unlock();
         }
 
         void ControlList::Revoke(IControl* control)
         {
             ASSERT(control != nullptr);
+
+            _adminLock.Lock();
+
             ASSERT(std::find(_controls.begin(), _controls.end(), control) != _controls.end());
 
-            Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
-
             auto entry = std::find(_controls.begin(), _controls.end(), control);
-            _controls.erase(entry);
+            if (entry != _controls.end()) {
+                _controls.erase(entry);
+            }
+
+            _adminLock.Unlock();
         }
 
         /**
          * @brief Update controls based on metadata
-         *
          */
         void ControlList::Update(const MetaData& metaData, const bool enabled)
         {
-            for (auto& control : _controls) {
+            TRACE_L1("Updating control(s): '%s':'%s'->%u\n", metaData.Category().c_str(), metaData.Module().c_str(), enabled);
 
-                if (metaData.Type() == control->MessageMetaData().Type()) {
+            _adminLock.Lock();
 
-                    //toggle for module and category
-                    if (!metaData.Module().empty() && !metaData.Category().empty()) {
-                        if (metaData.Module() == control->MessageMetaData().Module() && metaData.Category() == control->MessageMetaData().Category()) {
-                            control->Enable(enabled);
-                        }
-                        //toggle all categories for module
-                    } else if (!metaData.Module().empty() && metaData.Category().empty()) {
-                        if (metaData.Module() == control->MessageMetaData().Module()) {
-                            control->Enable(enabled);
-                        }
+            // module and category
+            if ((metaData.Module().empty() == false) && (metaData.Category().empty() == false)) {
+                for (auto& control : _controls) {
+                    if ((metaData.Type() == control->MessageMetaData().Type())
+                            && (metaData.Module() == control->MessageMetaData().Module())
+                            && (metaData.Category() == control->MessageMetaData().Category())) {
+                        control->Enable(enabled);
+                        break;
                     }
-                    //toggle category for all modules
-                    else if (metaData.Module().empty() && !metaData.Category().empty()) {
-                        if (metaData.Category() == control->MessageMetaData().Category()) {
-                            control->Enable(enabled);
-                        }
-                        //toggle all categories for all modules
-                    } else {
+                }
+            }
+            // all categories for module
+            else if ((metaData.Module().empty() == false) && (metaData.Category().empty() == true)) {
+                for (auto& control : _controls) {
+                    if ((metaData.Type() == control->MessageMetaData().Type())
+                            && (metaData.Module() == control->MessageMetaData().Module())) {
                         control->Enable(enabled);
                     }
                 }
             }
+            // category for all modules
+            else if ((metaData.Module().empty() == true) && (metaData.Category().empty() == false)) {
+                for (auto& control : _controls) {
+                    if ((metaData.Type() == control->MessageMetaData().Type())
+                            && (metaData.Category() == control->MessageMetaData().Category())) {
+                        control->Enable(enabled);
+                    }
+                }
+            // all categories for all modules
+            } else {
+                for (auto& control : _controls) {
+                    if (metaData.Type() == control->MessageMetaData().Type()) {
+                        control->Enable(enabled);
+                    }
+                }
+            }
+
+            _adminLock.Unlock();
         }
+
         /**
-         * @brief Update controls based on list of messages (eg. coming from config)
-         *
-         * @param messages message list
+         * @brief Update controls based on settings
          */
-        void ControlList::Update(const MessageList& messages)
+        void ControlList::Update(const SettingsList& messages)
         {
+            _adminLock.Lock();
+
             for (auto& control : _controls) {
                 auto enabled = messages.IsEnabled(control->MessageMetaData());
                 control->Enable(enabled);
             }
+
+            _adminLock.Unlock();
         }
 
         void ControlList::Destroy()
         {
-            Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+            _adminLock.Lock();
 
             while (_controls.size() != 0) {
                 (*_controls.begin())->Destroy();
             }
+
+            _adminLock.Unlock();
         }
+
         //----------LoggingOutput----------
-        LoggingOutput::LoggingAssembler::LoggingAssembler(uint64_t baseTime)
-            : _baseTime(baseTime)
-        {
-        }
-        string LoggingOutput::LoggingAssembler::Prepare(const bool abbreviate, const Information& info, const IEvent* message) const
+
+        string LoggingOutput::Prepare(const bool abbreviate, const Information& info, const IEvent* message) const
         {
             string result;
-            string messageString;
-            message->ToString(messageString);
 
-            if (abbreviate) {
-                result = Core::Format("[%11ju us] %s", static_cast<uintmax_t>(info.TimeStamp() - _baseTime), messageString.c_str());
+            ASSERT(message != nullptr);
+
+            if (abbreviate == true) {
+                result = Core::Format("[%11ju us]:[%s] %s",
+                    static_cast<uintmax_t>(info.TimeStamp() - _baseTime),
+                    info.MessageMetaData().Category().c_str(),
+                    message->Data().c_str());
             } else {
                 Core::Time now(info.TimeStamp());
                 string time(now.ToRFC1123(true));
 
-                result = Core::Format("[%s]:[%s:%d]: %s: %s", time.c_str(),
+                result = Core::Format("[%s]:[%s:%d]:[%s]:[%s]: %s", time.c_str(),
                     Core::FileNameOnly(info.FileName().c_str()),
                     info.LineNumber(),
+                    info.ClassName().c_str(),
                     info.MessageMetaData().Category().c_str(),
-                    messageString.c_str());
+                    message->Data().c_str());
             }
 
-            return result;
+            return (result);
         }
 
-        LoggingOutput::LoggingOutput()
-            : _assembler(Core::Time::Now().Ticks())
+        void LoggingOutput::Output(const Information& info, const IEvent* message)
         {
-        }
+            ASSERT(message != nullptr);
 
-        void LoggingOutput::Output(const Information& info, const IEvent* message) const
-        {
 #ifndef __WINDOWS__
-            if (_isSyslog) {
+            if (_isSyslog == true) {
                 //use longer messages for syslog
-                auto result = _assembler.Prepare(false, info, message);
-                syslog(LOG_NOTICE, "%s\n", result.c_str());
+                syslog(LOG_NOTICE, "%s\n", Prepare(false, info, message).c_str());
             } else
 #endif
             {
-                auto result = _assembler.Prepare(_abbreviate, info, message);
-                std::cout << result << std::endl;
+                std::cout << Prepare(_abbreviate, info, message) << std::endl;
             }
         }
 
-        //----------MessageUNIT----------
+        //----------MessageUnit----------
+
         MessageUnit& MessageUnit::Instance()
         {
             return (Core::SingletonType<MessageUnit>::Instance());
         }
 
-        MessageUnit::~MessageUnit()
-        {
-            Close();
-        }
         /**
         * @brief Open MessageUnit. This method is used on the WPEFramework side.
         *        This method:
@@ -554,8 +524,6 @@ namespace Core {
         *
         * @param pathName volatile path (/tmp/ by default)
         * @param socketPort triggers the use of using a IP socket in stead of a domain socket (in pathName) if the port value is not 0.
-        * @return uint32_t ERROR_NONE: opened sucessfully
-        *                  ERROR_OPENING_FAILED failed to open
         */
         uint32_t MessageUnit::Open(const string& pathName, const uint16_t socketPort)
         {
@@ -564,12 +532,15 @@ namespace Core {
             string basePath = Directory::Normalize(pathName) + _T("MessageDispatcher");
             string identifier = _T("md");
 
-            if (Core::File(basePath).IsDirectory()) {
+            ASSERT(_dispatcher == nullptr);
+
+            if (Core::File(basePath).IsDirectory() == true) {
                 //if directory exists remove it to clear data (eg. sockets) that can remain after previous run
                 Core::Directory(basePath.c_str()).Destroy();
             }
-            else if (!Core::Directory(basePath.c_str()).CreatePath()) {
-                TRACE_L1(_T("Unable to create MessageDispatcher directory"));
+
+            if (Core::Directory(basePath.c_str()).CreatePath() == false) {
+                TRACE_L1("Unable to create MessageDispatcher directory");
             }
 
             Core::SystemInfo::SetEnvironment(MESSAGE_DISPATCHER_PATH_ENV, basePath);
@@ -579,32 +550,32 @@ namespace Core {
             }
 
             _dispatcher.reset(new MessageDispatcher(identifier, 0, true, basePath, socketPort));
+            ASSERT(_dispatcher != nullptr);
+
             if (_dispatcher != nullptr) {
-                if (_dispatcher->IsValid()) {
+                if (_dispatcher->IsValid() == true) {
                     _dispatcher->RegisterDataAvailable(std::bind(&MessageUnit::ReceiveMetaData, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
                     result = Core::ERROR_NONE;
                 }
             }
-            return result;
+
+            return (result);
         }
 
         /**
         * @brief Open MessageUnit. Method used in OOP components
-        *
         * @param instanceId number of the instance
-        * @return uint32_t ERROR_NONE: Opened sucesfully
-        *                  ERROR_OPENING_FAILED: failed to open
-        *
         */
         uint32_t MessageUnit::Open(const uint32_t instanceId)
         {
             uint32_t result = Core::ERROR_OPENING_FAILED;
-
             string basePath;
             string identifier;
             string isBackground;
             string socketPortText;
             uint16_t socketPort = 0;
+
+            ASSERT(_dispatcher == nullptr);
 
             Core::SystemInfo::GetEnvironment(MESSAGE_DISPATCHER_PATH_ENV, basePath);
             if (Core::SystemInfo::GetEnvironment(MESSAGE_DISPATCHER_SOCKETPORT_ENV, socketPortText) == true) {
@@ -614,21 +585,25 @@ namespace Core {
             Core::SystemInfo::GetEnvironment(MESSAGE_UNIT_LOGGING_SYSLOG_ENV, isBackground);
 
             _dispatcher.reset(new MessageDispatcher(identifier, instanceId, true, basePath, socketPort));
+            ASSERT(_dispatcher != nullptr);
+
             std::istringstream(isBackground) >> _isBackground;
             if (_dispatcher != nullptr) {
-                if (_dispatcher->IsValid()) {
+                if (_dispatcher->IsValid() == true) {
                     result = Core::ERROR_NONE;
                 }
             }
 
-            return result;
+            return (result);
         }
 
         void MessageUnit::Close()
         {
-            Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
             _controlList.Destroy();
+
+            _adminLock.Lock();
             _dispatcher.reset(nullptr);
+            _adminLock.Unlock();
         }
 
         void MessageUnit::IsBackground(bool background)
@@ -638,124 +613,88 @@ namespace Core {
         }
 
         /**
-        * @brief Read defaults settings form string
-        * @param setting json able to be parsed by @ref MessageUnit::Settings
+        * @brief Read default configuration form JSON string
         */
-        void MessageUnit::Defaults(const string& setting)
+        void MessageUnit::Configure(const string& config)
         {
-            _adminLock.Lock();
-
-            Settings serialized;
+            Config deserialized;
 
             Core::OptionalType<Core::JSON::Error> error;
-            serialized.IElement::FromString(setting, error);
+            deserialized.IElement::FromString(config, error);
             if (error.IsSet() == true) {
-
-                TRACE_L1(_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str());
+                TRACE_L1("Parsing failed with %s", ErrorDisplayMessage(error.Value()).c_str());
             }
 
-            SetDefaultSettings(serialized);
-            _loggingOutput.IsAbbreviated(serialized.Logging.Abbreviated.Value());
-
-            _adminLock.Unlock();
+            Configure(deserialized);
+            _loggingOutput.IsAbbreviated(deserialized.Logging.Abbreviated.Value());
         }
 
         /**
-        * @brief Read default settings from file
-        *
-        * @param file file containing configuraton
+        * @brief Read default configuration from .json file
         */
-        void MessageUnit::Defaults(Core::File& file)
+        void MessageUnit::Configure(Core::File& config)
         {
-            _adminLock.Lock();
-
-            Settings serialized;
+            Config deserialized;
 
             Core::OptionalType<Core::JSON::Error> error;
-            serialized.IElement::FromFile(file, error);
+            deserialized.IElement::FromFile(config, error);
             if (error.IsSet() == true) {
-
-                TRACE_L1(_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str());
+                TRACE_L1("Parsing failed with %s", ErrorDisplayMessage(error.Value()).c_str());
             }
 
-            SetDefaultSettings(serialized);
-
-            _adminLock.Unlock();
+            Configure(deserialized);
         }
 
         /**
-        * @brief Set defaults acording to settings
-        *
-        * @param serialized settings
+        * @brief Set defaults acording to configuration
         */
-        void MessageUnit::SetDefaultSettings(const Settings& serialized)
+        void MessageUnit::Configure(const Config& config)
         {
-            _messages.JsonSettings(serialized);
+            _settingsList.FromConfig(config);
 
             //according to received config,
             //let all announced controls know, whether they should push messages
-            _controlList.Update(_messages);
+            _controlList.Update(_settingsList);
         }
 
         /**
-        * @brief Get defaults settings
-        *
-        * @return string json containing information about default values
+        * @brief Get current configuration as JSON string
         */
-        string MessageUnit::Defaults() const
+        string MessageUnit::Configuration() const
         {
-            _adminLock.Lock();
-
             string result;
-            auto& settings = _messages.JsonSettings();
-            settings.ToString(result);
+            Config config;
 
-            _adminLock.Unlock();
-            return result;
-        }
+            _settingsList.ToConfig(config);
+            config.ToString(result);
 
-        /**
-         * @brief Check if message of given metaData is enabled by default configuration
-         *
-         * @param metaData message information
-         * @return true is enabled by default
-         * @return false not enabled by default
-         */
-        bool MessageUnit::IsEnabledByDefault(const MetaData& metaData) const
-        {
-            return _messages.IsEnabled(metaData);
+            return (result);
         }
 
         /**
         * @brief Push a message and its information to a buffer
-        *
-        * @param info contains information about the event (where it happened)
-        * @param message message
         */
         void MessageUnit::Push(const Information& info, const IEvent* message)
         {
             //logging messages can happen in Core, meaning, otherside plugin can be not started yet
             //those should be just printed
-            if (info.MessageMetaData().Type() == MetaData::MessageType::LOGGING) {
+            if (info.MessageMetaData().Type() == MessageType::LOGGING) {
                 _loggingOutput.Output(info, message);
             }
 
             if (_dispatcher != nullptr) {
-
-                uint16_t length = 0;
-
-                length = info.Serialize(_serializationBuffer, sizeof(_serializationBuffer));
+                uint16_t length = info.Serialize(_serializationBuffer, sizeof(_serializationBuffer));
 
                 //only serialize message if the information could fit
                 if (length != 0) {
                     length += message->Serialize(_serializationBuffer + length, sizeof(_serializationBuffer) - length);
 
                     if (_dispatcher->PushData(length, _serializationBuffer) != Core::ERROR_NONE) {
-                        TRACE_L1(_T("Unable to push message data!"));
+                        TRACE_L1("Unable to push message data!");
                     }
 
                 } else {
-                    TRACE_L1(_T("Unable to push data, buffer is too small!"));
+                    TRACE_L1("Unable to push data, buffer is too small!");
                 }
             }
         }
@@ -763,21 +702,18 @@ namespace Core {
         /**
         * @brief When IControl spawns it should announce itself to the unit, so it can be influenced from here
         *        (For example for enabling the category it controls)
-        *
-        * @param control IControl implementation
         */
         void MessageUnit::Announce(IControl* control)
         {
             _controlList.Announce(control);
+
             //if control was announced after we received defaults config (eg. plugin re-initialized)
             //we already have information about it - let know the control if it should push messages or not
-            control->Enable(_messages.IsEnabled(control->MessageMetaData()));
+            control->Enable(_settingsList.IsEnabled(control->MessageMetaData()));
         }
 
         /**
         * @brief When IControl dies it should be unregistered
-        *
-        * @param control IControl implementation
         */
         void MessageUnit::Revoke(IControl* control)
         {
@@ -786,7 +722,6 @@ namespace Core {
 
         /**
         * @brief Notification, that there is metadata available
-        *
         * @param size size of the buffer
         * @param data buffer containing in data
         * @param outSize size of the out buffer (initially set to the maximum one can write)
@@ -797,16 +732,15 @@ namespace Core {
             if (size != 0) {
                 MetaData metaData;
                 //last byte is enabled flag
-                auto length = metaData.Deserialize(const_cast<uint8_t*>(data), size - 1); //for now, FrameType is not handling const buffers :/
+                auto length = metaData.Deserialize(data, size - 1); //for now, FrameType is not handling const buffers :/
 
                 if (length <= size - 1) {
-                    bool enabled = data[length];
+                    const bool enabled = data[length];
                     _controlList.Update(metaData, enabled);
-                    _messages.Update(metaData, enabled);
+                    _settingsList.Update(metaData, enabled);
                 }
             } else {
-                auto length = _controlList.Serialize(outData, outSize);
-                outSize = length;
+                outSize = _controlList.Serialize(outData, outSize);
             }
         }
 

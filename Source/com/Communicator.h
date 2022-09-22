@@ -1195,7 +1195,7 @@ namespace RPC {
                     string jsonDefaultMessagingSettings;
                     string jsonDefaultWarningReportingSettings;
 #if defined(__CORE_MESSAGING__)
-                    jsonDefaultMessagingSettings = Core::Messaging::MessageUnit::Instance().Defaults();
+                    jsonDefaultMessagingSettings = Core::Messaging::MessageUnit::Instance().Configuration();
 #else
                     jsonDefaultMessagingSettings = Trace::TraceUnit::Instance().Defaults();
 

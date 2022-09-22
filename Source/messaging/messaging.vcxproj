@@ -23,7 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Control.h" />
-    <ClInclude Include="IMessageOutput.h" />
+    <ClInclude Include="BaseCategory.h" />
     <ClInclude Include="Logging.h" />
     <ClInclude Include="LoggingCategories.h" />
     <ClInclude Include="MessageClient.h" />
