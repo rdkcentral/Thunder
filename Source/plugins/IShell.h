@@ -242,6 +242,9 @@ namespace PluginHost {
         //! Return whether the given version is supported by this IShell instance.
         virtual bool IsSupported(const uint8_t version) const = 0;
 
+        virtual string Group() const = 0;
+        virtual string User() const = 0;
+
         // Get access to the SubSystems and their corrresponding information. Information can be set or get to see what the
         // status of the sub systems is.
         virtual ISubSystem* SubSystems() = 0;
@@ -327,7 +330,7 @@ namespace PluginHost {
 
             return (handler == nullptr ? nullptr : handler->RemoteConnection(connectionId));
         }
-        inline uint32_t EnablePersistentStorage() {
+        inline uint32_t EnablePersistentStorage(uint32_t permission = 0, const string& group = {}, const string& user = {}) {
             uint32_t result = Core::ERROR_NONE;
 
             // Make sure there is a path to the persitent infmration
@@ -337,6 +340,15 @@ namespace PluginHost {
                 if (Core::Directory(PersistentPath().c_str()).Create() != true) {
                     result = Core::ERROR_BAD_REQUEST;
                 }
+            }
+            if (permission) {
+                path.Permission(permission);
+            }
+            if (group.empty() != true) {
+                path.Group(group);
+            }
+            if (user.empty() != true) {
+                path.User(user);
             }
 
             return (result);
