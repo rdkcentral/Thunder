@@ -396,10 +396,24 @@ class JsonObject(JsonType):
         if "properties" in schema:
             obj = objTracker.Add(self)
             if obj:
-                self.is_duplicate = True
-                self.ref_destination = obj
-                if obj.parent != self.parent and not IsInCustomRef(self):
-                    obj.AddRef(self)
+                if "original_type" in self.schema and "original_type" not in obj.schema:
+                    # Very unlucky scenario when duplicate class carries more information than the original.
+                    # Swap the classes in duplicate lists so we take the better one for generating code.
+                    objTracker.Remove(obj)
+                    objTracker.Remove(self)
+                    objTracker.Add(self)
+                    self.refs += obj.refs[1:]
+                    obj.is_duplicate = True
+                    obj.ref_destination = self
+                    obj.refs = [obj]
+                    objTracker.Add(obj)
+                    if obj.parent != self.parent and not IsInCustomRef(obj):
+                        self.AddRef(obj)
+                else:
+                    self.is_duplicate = True
+                    self.ref_destination = obj
+                    if obj.parent != self.parent and not IsInCustomRef(self):
+                        obj.AddRef(self)
 
             for prop_name, prop in schema["properties"].items():
                 new_obj = JsonItem(prop_name, self, prop, included=included)
@@ -457,7 +471,10 @@ class JsonObject(JsonType):
                     classname = MakeObject(self.schema["@ref"].rsplit(posixpath.sep, 1)[1].capitalize())
                 else:
                     # Make the name out of properties, but not for params/result types
-                    if len(self.properties) == 1 and not isinstance(self.parent, JsonMethod):
+                    if self.original_type:
+                        classonly = self.original_type.split("::")[-1]
+                        classname = MakeObject(classonly[0].upper() + classonly[1:])
+                    elif len(self.properties) == 1 and not isinstance(self.parent, JsonMethod):
                         classname = MakeObject(self.properties[0].cpp_name)
                     elif isinstance(self.parent, JsonProperty):
                         classname = MakeObject(self.parent.cpp_name)
@@ -465,9 +482,6 @@ class JsonObject(JsonType):
                         classname = MakeObject(self.parent.parent.cpp_name)
                     elif self.root.rpc_format == RpcFormat.COMPLIANT and isinstance(self.parent, JsonArray):
                         classname = (MakeObject(self.parent.cpp_name) + "Elem")
-                    elif self.original_type:
-                        classname = self.original_type.split("::")[-1]
-                        return classname[0].upper() + classname[1:]
                     else:
                         classname = MakeObject(self.cpp_name)
             # For common classes append special suffix
@@ -949,6 +963,7 @@ def LoadInterface(file, all = False, includePaths = []):
 
         schema["$schema"] = "interface.json.schema"
         schema["jsonrpc"] = "2.0"
+        schema["@generated"] = True
         if face.obj.is_json:
             schema["@dorpc"] = True
             rpc_format = _EvaluateRpcFormat(face.obj)
@@ -1331,7 +1346,6 @@ def LoadInterface(file, all = False, includePaths = []):
                     obj["original_name"] = method_name
                     methods[prefix + method_name_lower] = obj
                 else:
-                    print(method.retval.type, verify, event_params)
                     raise CppParseError(method, "method return type must be uint32_t (error code), i.e. pass other return values by a reference")
 
             if obj:
@@ -1554,6 +1568,9 @@ class ObjectTracker:
                                 (newObj.print_name, obj.print_name))
                     return obj
         return None
+
+    def Remove(self, obj):
+        self.objects.remove(obj)
 
     def Reset(self):
         self.objects = []
@@ -2039,9 +2056,9 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                             emit.Indent()
                             if "encode" in elem.schema and elem.schema["encode"]:
                                 emit.Line("// Convert the C-style buffer to a base64-encoded JSON string")
-                                emit.Line("%s %s;" % (elem.cpp_native_type, elem.TempName("Encoded")))
-                                emit.Line("Core::ToString(%s, _%s, true, %s);" % (elem.TempName(), elem.schema["length"], elem.TempName("Encoded")))
-                                emit.Line("%s%s = %s;" % (parent, elem.cpp_name, elem.TempName("Encoded")))
+                                emit.Line("%s %s;" % (elem.cpp_native_type, elem.TempName("encoded")))
+                                emit.Line("Core::ToString(%s, _%s, true, %s);" % (elem.TempName(), elem.schema["length"], elem.TempName("encoded")))
+                                emit.Line("%s%s = %s;" % (parent, elem.cpp_name, elem.TempName("encoded")))
                             else:
                                 emit.Line("%s%s = string(%s, %s);" % (parent, elem.cpp_name, elem.TempName(), elem.schema["length"]))
                             emit.Unindent()
@@ -2052,11 +2069,11 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                                 emit.Line("if (%s != nullptr) {" % elem.TempName())
                                 emit.Indent()
                                 emit.Line("// Convert the iterator to a JSON array")
-                                emit.Line("%s %s{};" % ((elem.items.cpp_native_type, elem.items.TempName())))
-                                emit.Line("while (%s->Next(%s) == true) {" % (elem.TempName(), elem.items.TempName()))
+                                emit.Line("%s %s{};" % ((elem.items.cpp_native_type, elem.items.TempName("item"))))
+                                emit.Line("while (%s->Next(%s) == true) {" % (elem.TempName(), elem.items.TempName("item")))
                                 emit.Indent()
                                 emit.Line("%s& _Element(%s.Add());" % (elem.items.cpp_type, parent + elem.cpp_name))
-                                emit.Line("_Element = %s;" % elem.items.TempName())
+                                emit.Line("_Element = %s;" % elem.items.TempName("item"))
                                 emit.Unindent()
                                 emit.Line("}")
                                 emit.Line("%s->Release();" % elem.TempName())
@@ -2995,12 +3012,6 @@ def CreateDocument(schema, path):
         if not isinstance(outer_interfaces, list):
             outer_interfaces = [outer_interfaces]
 
-        tmpinterfaces = []
-        if "include" in schema:
-            for face in schema["include"]:
-                tmpinterfaces.append(schema["include"][face])
-                tmpinterfaces[-1]["info"]["format"] = global_rpc_format.value
-
         interfaces = []
         for interface in outer_interfaces:
             rpc_format = RPC_FORMAT
@@ -3022,6 +3033,9 @@ def CreateDocument(schema, path):
                     for face in interface["include"]:
                         interfaces.append(interface["include"][face])
                         interfaces[-1]["info"]["format"] = rpc_format.value
+
+        # Don't consider all interfaces for processing
+        interfaces = [interface for interface in interfaces if "@generated" not in interface or "@dorpc" in interface]
 
         version = "1.0" # Plugin version, not interface version
 
@@ -3440,7 +3454,7 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
                 EmitHelperCode(rpcObj, emitter, os.path.basename(header_file))
                 log.Success("JSON-RPC stubs generated in '%s'." % os.path.basename(output_file.name))
 
-        if generateRpc and "@dorpc" in rpcObj.schema and rpcObj.schema["@dorpc"] == True:
+        if generateRpc and "@dorpc" in rpcObj.schema and rpcObj.schema["@dorpc"]:
             with open(os.path.join(directory, "J" + filename + ".h"), "w") as output_file:
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
@@ -3690,7 +3704,7 @@ if __name__ == "__main__":
                 for schema in schemas:
                     if schema:
                         warnings = GENERATED_JSON
-                        GENERATED_JSON = "@dorpc" in schema
+                        GENERATED_JSON = "@generated" in schema
                         output_path = path
                         if args.output_dir:
                             if (args.output_dir[0]) == '/':
