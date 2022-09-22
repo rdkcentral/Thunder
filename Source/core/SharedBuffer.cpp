@@ -103,7 +103,7 @@ namespace Core {
 
         struct timespec structTime;
 
-        clock_gettime(CLOCK_REALTIME, &structTime);
+        clock_gettime(CLOCK_MONOTONIC, &structTime);
         structTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
         structTime.tv_sec += (waitTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
         structTime.tv_nsec = structTime.tv_nsec % 1000000000;
@@ -111,7 +111,7 @@ namespace Core {
         // MF2018 please note: sem_timedwait is not compatible with CLOCK_MONOTONIC.
         //                     When used with CLOCK_REALTIME do not use this when the system time can make large jumps (so when Time subsystem is not yet up)
         do {
-            if (sem_timedwait(_semaphore, &structTime) == 0) {
+            if (sem_clockwait(_semaphore, CLOCK_MONOTONIC, &structTime) == 0) {
                 result = Core::ERROR_NONE;
             }
             else if ( errno == EINTR ) {
