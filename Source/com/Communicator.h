@@ -403,6 +403,7 @@ namespace RPC {
                 PopulateLDLibraryPaths(oldLDLibraryPaths, newLDLibraryPaths);
 
                 Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), newLDLibraryPaths, true);
+                TRACE_L1("Populated New LD_LIBRARY_PATH : %s", newLDLibraryPaths.c_str());
             }
 
             // Start the external process launch..
@@ -438,7 +439,8 @@ namespace RPC {
                                         ((end != string::npos) ? (end - start + 1) : end));
                     start = end;
                     if (end != string::npos) {
-                        end = oldLDLibraryPaths.find(':', start + 1);
+                        start++;
+                        end = oldLDLibraryPaths.find(':', start);
                     }
                 } while (start != string::npos);
             }
