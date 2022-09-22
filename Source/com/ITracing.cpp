@@ -100,3 +100,6 @@ namespace ProxyStub {
     SERVICE_REGISTRATION(TraceController, 1, 0);
 }
 }
+
+//Force the compiler to generate template for all methods
+template class WPEFramework::Core::IteratorType<WPEFramework::Trace::TraceUnit::TraceControlList, WPEFramework::Trace::ITraceControl*>;

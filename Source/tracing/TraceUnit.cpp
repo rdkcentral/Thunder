@@ -360,6 +360,3 @@ namespace Trace {
     }
 }
 } // namespace WPEFramework::Trace
-
-//Force the compiler to generate template for all methods
-template class WPEFramework::Core::IteratorType<WPEFramework::Trace::TraceUnit::TraceControlList, WPEFramework::Trace::ITraceControl*>;
