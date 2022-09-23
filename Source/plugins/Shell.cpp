@@ -52,9 +52,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::IShell::startup)
 
     { PluginHost::IShell::startup::UNAVAILABLE, _TXT("Unavailable") },
     { PluginHost::IShell::startup::DEACTIVATED, _TXT("Deactivated") },
-    { PluginHost::IShell::startup::SUSPENDED,   _TXT("Suspended")   },
-    { PluginHost::IShell::startup::RESUMED,     _TXT("Resumed")     },
-    { PluginHost::IShell::startup::RESUMED,     _TXT("Activated")   },
+    { PluginHost::IShell::startup::ACTIVATED,   _TXT("Activated")   },
 
 ENUM_CONVERSION_END(PluginHost::IShell::startup)
 
