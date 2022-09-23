@@ -38,8 +38,7 @@ namespace PluginHost {
             Config(const Config&) = delete;
             Config& operator=(const Config&) = delete;
 
-            Config(Service* parent, const Plugin::Config& plugin, const string& webPrefix, const string& persistentPath, const string& dataPath, const string& volatilePath)
-               : _parent(parent)
+            Config(const Plugin::Config& plugin, const string& webPrefix, const string& persistentPath, const string& dataPath, const string& volatilePath)
             {
                 const string& callSign(plugin.Callsign.Value());
 
@@ -85,10 +84,6 @@ namespace PluginHost {
             inline const Plugin::Config& Configuration() const
             {
                 return (_config);
-            }
-            inline const Plugin::Config::RootConfig& RootConfiguration() const
-            {
-                return (_rootConfig);
             }
             // WebPrefix is the Fully qualified name, indicating the endpoint for this plugin.
             inline const string& WebPrefix() const
@@ -147,14 +142,10 @@ namespace PluginHost {
                                    ((_config.Resumed.Value() == true) ? PluginHost::IShell::startup::RESUMED
                                    : PluginHost::IShell::startup::SUSPENDED)
                                    : PluginHost::IShell::startup::DEACTIVATED);
-
-                _rootConfig = Plugin::Config::RootConfig(_parent);
             }
 
         private:
             Plugin::Config _config;
-            Plugin::Config::RootConfig _rootConfig;
-            Service* _parent;
 
             string _webPrefix;
             string _persistentPath;
@@ -179,7 +170,7 @@ namespace PluginHost {
             , _processedObjects(0)
             #endif
             , _state(DEACTIVATED)
-            , _config(this, plugin, webPrefix, persistentPath, dataPath, volatilePath)
+            , _config(plugin, webPrefix, persistentPath, dataPath, volatilePath)
             #if THUNDER_RESTFULL_API
             , _notifiers()
             #endif
@@ -297,14 +288,6 @@ namespace PluginHost {
         bool IsSupported(const uint8_t number) const override
         {
             return (_config.IsSupported(number));
-        }
-        string Group() const override
-        {
-            return (_config.RootConfiguration().Group.Value());
-        }
-        string User() const override
-        {
-            return (_config.RootConfiguration().User.Value());
         }
 
         // As a service, the plugin could act like a WebService. The Webservice hosts files from a location over the
