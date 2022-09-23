@@ -257,7 +257,7 @@ namespace PluginHost {
         }
         bool Resumed() const override
         {
-            return ((_config.Configuration().Resumed.IsSet() ? _config.Configuration().Resumed.Value() : (_config.Configuration().AutoStart.Value() == PluginHost::IShell::startup::ACTIVATED)));
+            return ((_config.Configuration().Resumed.IsSet() ? _config.Configuration().Resumed.Value() : (_config.Configuration().Startup.Value() == PluginHost::IShell::startup::ACTIVATED)));
         }
         uint32_t Resumed(const bool resumed) override
         {
