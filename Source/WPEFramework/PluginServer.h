@@ -1309,30 +1309,36 @@ namespace PluginHost {
                     , Configuration(_T("{}"), false)
                     , SystemRootPath()
                     , Startup()
+                    , Resumed()
                 {
                     Add(_T("configuration"), &Configuration);
                     Add(_T("systemrootpath"), &SystemRootPath);
                     Add(_T("startup"), &Startup);
+                    Add(_T("resumed"), &Resumed);
                 }
-                Plugin(const string& config, const string& systemRootPath, const PluginHost::IShell::startup value)
+                Plugin(const string& config, const string& systemRootPath, const PluginHost::IShell::startup value, const bool resumed)
                     : Core::JSON::Container()
                     , Configuration(config, false)
                     , SystemRootPath(systemRootPath)
                     , Startup(value)
+                    , Resumed(resumed)
                 {
                     Add(_T("configuration"), &Configuration);
                     Add(_T("systemrootpath"), &SystemRootPath);
                     Add(_T("startup"), &Startup);
+                    Add(_T("resumed"), &Resumed);
                 }
                 Plugin(Plugin const& copy)
                     : Core::JSON::Container()
                     , Configuration(copy.Configuration)
                     , SystemRootPath(copy.SystemRootPath)
                     , Startup(copy.Startup)
+                    , Resumed(copy.Resumed)
                 {
                     Add(_T("configuration"), &Configuration);
                     Add(_T("systemrootpath"), &SystemRootPath);
                     Add(_T("startup"), &Startup);
+                    Add(_T("resumed"), &Resumed);
                 }
 
                 ~Plugin() override = default;
@@ -1341,6 +1347,7 @@ namespace PluginHost {
                 Core::JSON::String Configuration;
                 Core::JSON::String SystemRootPath;
                 Core::JSON::EnumType<PluginHost::IShell::startup> Startup;
+                Core::JSON::Boolean Resumed;
             };
 
             typedef std::map<string, Plugin>::iterator Iterator;
@@ -1366,7 +1373,7 @@ namespace PluginHost {
                     const string& name(service->Callsign());
 
                     // Create an element for this service with its callsign
-                    std::pair<Iterator, bool> index(_callsigns.insert(std::pair<string, Plugin>(name, Plugin(_T("{}"), "", PluginHost::IShell::startup::UNAVAILABLE))));
+                    std::pair<Iterator, bool> index(_callsigns.insert(std::pair<string, Plugin>(name, Plugin(_T("{}"), "", PluginHost::IShell::startup::UNAVAILABLE, false))));
 
                     // Store the override config in the JSON String created in the map
                     Services.Add(index.first->first.c_str(), &(index.first->second));
@@ -1424,6 +1431,9 @@ namespace PluginHost {
                             if (current->second.Startup.IsSet() == true) {
                                 (*index)->Startup(current->second.Startup.Value());
                             }
+                            if (current->second.Resumed.IsSet() == true) {
+                                (*index)->Resumed(current->second.Resumed.Value());
+                            }
                         }
                     }
 
@@ -1471,6 +1481,7 @@ namespace PluginHost {
                         }
                         current->second.SystemRootPath = (index)->SystemRootPath();
                         current->second.Startup = (index)->Startup();
+                        current->second.Resumed = (index)->Resumed();
                     }
 
                     // Persist the currently set information
