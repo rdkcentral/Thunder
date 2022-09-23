@@ -139,9 +139,8 @@ namespace PluginHost {
                 }
 
                 _config.Startup = ((_config.AutoStart.Value() == true) ?
-                                   ((_config.Resumed.Value() == true) ? PluginHost::IShell::startup::RESUMED
-                                   : PluginHost::IShell::startup::SUSPENDED)
-                                   : PluginHost::IShell::startup::DEACTIVATED);
+                                   PluginHost::IShell::startup::ACTIVATED :
+                                   PluginHost::IShell::startup::DEACTIVATED);
             }
 
         private:
@@ -254,24 +253,16 @@ namespace PluginHost {
         }
         bool AutoStart() const override
         {
-            bool result = _config.Configuration().AutoStart.Value();
-
-            if (_config.Configuration().Startup.IsSet() == true) {
-                PluginHost::IShell::startup value = _config.Configuration().Startup.Value();
-                result = (value == PluginHost::IShell::startup::SUSPENDED) || (value == PluginHost::IShell::startup::RESUMED);
-            }
-
-            return (result);
+            return (_config.Configuration().Startup.Value() == PluginHost::IShell::startup::ACTIVATED);
         }
         bool Resumed() const override
         {
-            bool result = (_config.Configuration().Resumed.IsSet() ? _config.Configuration().Resumed.Value() : (_config.Configuration().AutoStart.Value() == false));
-
-            if (_config.Configuration().Startup.IsSet() == true) {
-                result = (_config.Configuration().Startup.Value() == PluginHost::IShell::startup::RESUMED);
-            }
-
-            return (result);
+            return ((_config.Configuration().Resumed.IsSet() ? _config.Configuration().Resumed.Value() : (_config.Configuration().AutoStart.Value() == PluginHost::IShell::startup::ACTIVATED)));
+        }
+        uint32_t Resumed(const bool resumed) override
+        {
+            _config.Resumed(resumed);
+            return (Core::ERROR_NONE);
         }
         PluginHost::IShell::startup Startup() const override
         {
@@ -280,8 +271,7 @@ namespace PluginHost {
         uint32_t Startup(const PluginHost::IShell::startup value) override
         {
             _config.Startup(value);
-            _config.AutoStart((value == PluginHost::IShell::startup::SUSPENDED) || (value == PluginHost::IShell::startup::RESUMED));
-            _config.Resumed((value == PluginHost::IShell::startup::RESUMED));
+            _config.AutoStart(value == PluginHost::IShell::startup::ACTIVATED);
 
             return (Core::ERROR_NONE);
         }
