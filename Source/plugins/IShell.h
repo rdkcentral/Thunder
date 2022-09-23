@@ -62,8 +62,7 @@ namespace PluginHost {
         enum class startup : uint8_t {
             UNAVAILABLE,
             DEACTIVATED,
-            SUSPENDED,
-            RESUMED
+            ACTIVATED
         };
 
         // State of the IPlugin interface associated with this shell.
@@ -85,7 +84,8 @@ namespace PluginHost {
             STARTUP,
             SHUTDOWN,
             CONDITIONS,
-            WATCHDOG_EXPIRED
+            WATCHDOG_EXPIRED,
+            INITIALIZATION_FAILED
         };
 
         /* @stubgen:omit */
@@ -233,6 +233,7 @@ namespace PluginHost {
 
         //! Resumed: boolean to inidcate wheter we need to start a plugin in a Resumed state, i.s.o. the Suspended state
         virtual bool Resumed() const = 0;
+        virtual uint32_t Resumed(const bool value) = 0;
 
         virtual string HashKey() const = 0;
         

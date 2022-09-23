@@ -35,6 +35,9 @@ namespace Logging {
         Logging::SysLog(__FILE__, __LINE__, &__data__);		\
     }
 
+// Forward compatibility with messaging
+#define SYSLOG_GLOBAL(CATEGORY, PARAMETERS) SYSLOG(CATEGORY, PARAMETERS)
+
     void EXTERNAL DumpException(const string& exceptionType);
     void EXTERNAL DumpSystemFiles(const Core::process_t pid);
     void EXTERNAL SysLog(const char filename[], const uint32_t line, const Trace::ITrace* data);
