@@ -391,7 +391,7 @@ namespace RPC {
                 PopulateLDLibraryPaths(oldLDLibraryPaths, newLDLibraryPaths);
 
                 Core::SystemInfo::SetEnvironment(_T("LD_LIBRARY_PATH"), newLDLibraryPaths, true);
-                TRACE(Trace::Information, (_T("Populated New LD_LIBRARY_PATH : %s"), newLDLibraryPaths.c_str()));
+                TRACE_L1("Populated New LD_LIBRARY_PATH : %s", newLDLibraryPaths.c_str());
             }
 
             // Start the external process launch..
