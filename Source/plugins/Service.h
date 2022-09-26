@@ -251,10 +251,6 @@ namespace PluginHost {
         {
             return (_state);
         }
-        bool AutoStart() const override
-        {
-            return (_config.Configuration().Startup.Value() == PluginHost::IShell::startup::ACTIVATED);
-        }
         bool Resumed() const override
         {
             return ((_config.Configuration().Resumed.IsSet() ? _config.Configuration().Resumed.Value() : (_config.Configuration().Startup.Value() == PluginHost::IShell::startup::ACTIVATED)));
@@ -361,24 +357,6 @@ namespace PluginHost {
             if ((value = Patch()) != static_cast<uint8_t>(~0)) {
                 metaData.Patch = value;
             }
-        }
-        inline uint32_t AutoStart(const bool autoStart)
-        {
-            uint32_t result = Core::ERROR_ILLEGAL_STATE;
-
-            Lock();
-
-            if (State() == PluginHost::IShell::DEACTIVATED) {
-
-                // Time to update the config line...
-                _config.AutoStart(autoStart);
-
-                result = Core::ERROR_NONE;
-            }
-
-            Unlock();
-
-            return (result);
         }
 
         bool IsWebServerRequest(const string& segment) const;
