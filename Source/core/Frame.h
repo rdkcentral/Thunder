@@ -86,7 +86,7 @@ namespace Core {
             }
 
         private:
-            inline void RealAllocate(const SIZETYPE requiredSize, const TemplateIntToType<false>& /* For compile time diffrentiation */)
+            inline void RealAllocate(const SIZETYPE requiredSize VARIABLE_IS_NOT_USED, const TemplateIntToType<false>& /* For compile time diffrentiation */)
             {
                 ASSERT(requiredSize <= _bufferSize);
             }
