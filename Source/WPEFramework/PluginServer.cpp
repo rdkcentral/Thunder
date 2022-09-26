@@ -596,7 +596,7 @@ namespace PluginHost
 
         uint32_t result = Core::ERROR_NONE;
 
-        if (AutoStart() == false) {
+        if (Startup() == PluginHost::IShell::startup::DEACTIVATED) {
             // We need to shutdown completely
             result = Deactivate(why);
         }
@@ -945,7 +945,7 @@ POP_WARNING()
         for (auto service : configured_services)
         {
             if (service->State() != PluginHost::Service::state::UNAVAILABLE) {
-                if (service->AutoStart() == true) {
+                if (service->Startup() == PluginHost::IShell::startup::ACTIVATED) {
                     SYSLOG(Logging::Startup, (_T("Activating plugin [%s]:[%s]"),
                         service->ClassName().c_str(), service->Callsign().c_str()));
                     service->Activate(PluginHost::IShell::STARTUP);
