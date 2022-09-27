@@ -22,6 +22,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "Portability.h"
+#include "AccessControl.h"
 #include "Serialization.h"
 #include "TextFragment.h"
 #include "Trace.h"
@@ -81,7 +82,8 @@ namespace Core {
     // CONSTRUCTOR & DESTRUCTOR
     //----------------------------------------------------------------------------
     NodeId::NodeId()
-        : m_hostName()
+        : m_group()
+        , m_hostName()
     {
         // Fill it with FF's
         memset(&m_structInfo, 0xFF, sizeof(m_structInfo));
@@ -91,7 +93,8 @@ namespace Core {
     }
 
     NodeId::NodeId(const struct sockaddr_in& rInfo, const uint32_t protocol)
-        : m_hostName()
+        : m_group()
+        , m_hostName()
     {
         *this = rInfo;
         m_structInfo.IPV4Socket.in_protocol = protocol;
@@ -100,7 +103,8 @@ namespace Core {
     }
 
     NodeId::NodeId(const struct in_addr& value, const uint32_t protocol)
-        : m_hostName()
+        : m_group()
+        , m_hostName()
     {
         struct sockaddr_in rInfo;
         ::memset(&rInfo, 0, sizeof(rInfo));
@@ -113,7 +117,8 @@ namespace Core {
         ASSERT(m_structInfo.IPV4Socket.sin_family == AF_INET);
     }
     NodeId::NodeId(const struct sockaddr_in6& rInfo, const uint32_t protocol)
-        : m_hostName()
+        : m_group()
+        , m_hostName()
     {
         *this = rInfo;
         m_structInfo.IPV6Socket.in_protocol = protocol;
@@ -122,7 +127,8 @@ namespace Core {
     }
 
     NodeId::NodeId(const struct in6_addr& value, const uint32_t protocol)
-        : m_hostName()
+        : m_group()
+        , m_hostName()
     {
 
         struct sockaddr_in6 rInfo;
@@ -138,7 +144,8 @@ namespace Core {
     }
 #ifndef __WINDOWS__
     NodeId::NodeId(const struct sockaddr_un& rInfo, const uint16_t access)
-        : m_hostName(rInfo.sun_path)
+        : m_group()
+        , m_hostName(rInfo.sun_path)
     {
 
         *this = rInfo;
@@ -147,6 +154,7 @@ namespace Core {
         ASSERT(m_structInfo.DomainSocket.sun_family == AF_UNIX);
     }
     NodeId::NodeId(const uint32_t destination, const pid_t pid, const uint32_t groups)
+        : m_group()
     {
 
         m_structInfo.NetlinkSocket.nl_family = AF_NETLINK;
@@ -158,6 +166,7 @@ namespace Core {
     }
 
     NodeId::NodeId(const struct sockaddr_ll& rInfo)
+        : m_group()
     {
         memcpy(&(m_structInfo.RawSocket), &rInfo, sizeof(sockaddr_ll));
         
@@ -165,6 +174,8 @@ namespace Core {
     }
     
     NodeId::NodeId(const uint16_t interfaceIndex, const uint16_t protocol, const uint8_t pkgType, const uint8_t haType, const uint8_t length, const uint8_t* address)
+        : m_group()
+        , m_hostName()
     {
         if (interfaceIndex == 0) {
             memset(&m_structInfo, 0xFF, sizeof(m_structInfo));
@@ -193,6 +204,7 @@ namespace Core {
 
 #ifdef __CORE_BLUETOOTH_SUPPORT__
     NodeId::NodeId(const uint16_t device, const uint16_t channel)
+        : m_group()
     {
 
         memset(&m_structInfo.BTSocket, 0, sizeof(m_structInfo.BTSocket));
@@ -205,6 +217,7 @@ namespace Core {
         m_hostName = BTName(m_structInfo);
     }
     NodeId::NodeId(const bdaddr_t& address, const uint8_t addressType, const uint16_t cid, const uint16_t psm)
+        : m_group()
     {
 
         memset(&m_structInfo.L2Socket, 0, sizeof(m_structInfo.L2Socket));
@@ -226,7 +239,8 @@ namespace Core {
         const uint16_t nPortNumber,
         const enumType defaultType,
         const uint32_t protocol)
-        : m_hostName()
+        : m_group()
+        , m_hostName()
     {
 
         m_structInfo.IPV4Socket.sin_family = TYPE_UNSPECIFIED;
@@ -251,7 +265,8 @@ namespace Core {
         const TCHAR strHostName[],
         const enumType defaultType,
         const uint32_t protocol)
-        : m_hostName()
+        : m_group()
+        , m_hostName()
     {
 
         m_structInfo.IPV4Socket.sin_family = TYPE_UNSPECIFIED;
@@ -259,16 +274,24 @@ namespace Core {
 #ifndef __WINDOWS__
         if (strchr(strHostName, '/') != nullptr) {
             // Seems like we have a path, so a domain socket is required....
-            const TCHAR* indicator;
 
-            // There might be a ':0' at the end to identify the domain socket access properties. Extract these
-            if ((indicator = strrchr(strHostName, '|')) != nullptr) {
-                Core::NumberType<uint16_t> number(&(indicator[1]), strlen(&(indicator[1])));
+            string hostName(strHostName);
+            // Check there is group indicator ','
+            size_t position = hostName.find(",");
+            if (position != string::npos) {
+                m_group = hostName.substr(position + 1);
+                hostName = hostName.substr(0, position);
+            }
+
+            position = hostName.find("|");
+            if (position != string::npos) {
+                //string number = hostName.substr(position + 1);
+                Core::NumberType<uint16_t> number(hostName.substr(position + 1).c_str(), (hostName.length() - position));
                 m_structInfo.DomainSocket.un_access = number.Value();
-                m_hostName = string(strHostName, ((indicator - strHostName) / sizeof(TCHAR)));
+                m_hostName = hostName.substr(0, position);
             } else {
                 m_structInfo.DomainSocket.un_access = static_cast<uint16_t>(~0);
-                m_hostName = strHostName;
+                m_hostName = hostName;
             }
 
             m_structInfo.DomainSocket.sun_family = AF_UNIX;
@@ -386,7 +409,7 @@ namespace Core {
         memcpy(&m_structInfo, &rInfo.m_structInfo, sizeof(m_structInfo));
 
         m_hostName = rInfo.m_hostName;
-
+        m_group = rInfo.m_group;
         // Give back our-selves.
         return (*this);
     }
@@ -400,6 +423,7 @@ namespace Core {
         m_structInfo.IPV4Socket.in_protocol = 0;
 
         m_hostName.clear();
+        m_group.clear();
 
         // Give back our-selves.
         return (*this);
@@ -414,6 +438,7 @@ namespace Core {
         m_structInfo.IPV6Socket.in_protocol = 0;
 
         m_hostName.clear();
+        m_group.clear();
 
         // Give back our-selves.
         return (*this);
@@ -512,9 +537,9 @@ namespace Core {
 #ifdef __CORE_BLUETOOTH_SUPPORT__
         if (m_structInfo.BTSocket.hci_family == AF_BLUETOOTH) {
             m_hostName = BTName(m_structInfo);
-            else
+        else
 #endif
-                m_hostName.clear();
+            m_hostName.clear();
 #endif
 
         // Give back our-selves.
@@ -827,6 +852,19 @@ POP_WARNING()
         }
 
         return (result);
+    }
+
+    uint32_t NodeId::EnablePermission() const
+    {
+        uint32_t status(Core::ERROR_NONE);
+
+        if (Rights() <= 0777) {
+            status = AccessControl::Permission(m_hostName, Rights());
+        }
+        if (m_group.empty() != true) {
+            status = AccessControl::OwnerShip(m_hostName, "", m_group);
+        }
+        return status;
     }
 }
 }

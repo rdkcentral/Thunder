@@ -834,13 +834,13 @@ namespace WPEFramework {
                     if (::bind(l_Result, static_cast<const NodeId&>(localNode), localNode.Size()) != SOCKET_ERROR) {
 
 #ifndef __WINDOWS__
-                        if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (localNode.Rights() <= 0777)) {
-                            if (::chmod(localNode.HostName().c_str(), localNode.Rights()) == 0) {
+                        if (localNode.Type() == NodeId::TYPE_DOMAIN) {
+                            if (localNode.EnablePermission() == Core::ERROR_NONE) {
                                 BufferAlignment(l_Result);
                                 return (l_Result);
                             }
                             else {
-                                TRACE_L1("Error on port socket CHMOD. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
+                                TRACE_L1("Error on port socket PermissionSettings. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
                             }
                         }
                         else

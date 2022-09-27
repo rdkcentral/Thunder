@@ -175,14 +175,6 @@ namespace Core {
 
             return (0);
         }
-        inline uint32_t Rights() const
-        {
-#ifndef __WINDOWS__
-            return (Type() == TYPE_DOMAIN ? m_structInfo.DomainSocket.un_access : 0);
-#else
-            return (0);
-#endif
-        }
 
         NodeId::enumType Type() const
         {
@@ -269,6 +261,8 @@ namespace Core {
         bool IsMulticast() const;
         uint8_t DefaultMask() const;
 
+        uint32_t EnablePermission() const;
+
         bool operator==(const NodeId& rInfo) const;
 
         NodeId& operator=(const NodeId& rInfo);
@@ -299,6 +293,16 @@ namespace Core {
             return (reinterpret_cast<struct sockaddr*>(&(m_structInfo)));
         }
 
+        inline uint32_t Rights() const
+        {
+#ifndef __WINDOWS__
+            return (Type() == TYPE_DOMAIN ? m_structInfo.DomainSocket.un_access : 0);
+#else
+            return (0);
+#endif
+        }
+
+        string m_group;
         mutable string m_hostName;
         SocketInfo m_structInfo;
         static bool m_isIPV6Enabled;
