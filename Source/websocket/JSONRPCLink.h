@@ -498,6 +498,10 @@ namespace WPEFramework {
 			virtual ~LinkType()
 			{
 				_channel->Unregister(*this);
+
+				for (auto& element : _pendingQueue) {
+					element.second.Abort(element.first);
+				}
 			}
 
 		public:
