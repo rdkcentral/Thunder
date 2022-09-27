@@ -48,7 +48,7 @@ namespace PluginHost {
         ASSERT(_service.IsValid() == false);
         ASSERT(State() == INCOMPLETE);
 
-		uint8_t value = (serviceCall ? SERVICE_CALL : 0);
+        uint8_t value = (serviceCall ? SERVICE_CALL : 0);
 
         if (service.IsValid() == true) {
             _state = COMPLETE | value;

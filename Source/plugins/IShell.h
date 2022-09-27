@@ -324,7 +324,7 @@ namespace PluginHost {
 
             return (handler == nullptr ? nullptr : handler->RemoteConnection(connectionId));
         }
-        inline uint32_t EnablePersistentStorage() {
+        inline uint32_t EnablePersistentStorage(uint32_t permission = 0, const string& user = {}, const string& group = {}) {
             uint32_t result = Core::ERROR_NONE;
 
             // Make sure there is a path to the persitent infmration
@@ -334,6 +334,15 @@ namespace PluginHost {
                 if (Core::Directory(PersistentPath().c_str()).Create() != true) {
                     result = Core::ERROR_BAD_REQUEST;
                 }
+            }
+            if (permission) {
+                path.Permission(permission);
+            }
+            if (user.empty() != true) {
+                path.User(user);
+            }
+            if (group.empty() != true) {
+                path.Group(group);
             }
 
             return (result);

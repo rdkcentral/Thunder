@@ -659,6 +659,7 @@ int main(int argc, char** argv)
             if (options.Group != nullptr) {
                 Core::ProcessCurrent().Group(string(options.Group));
             }
+
             if (options.User != nullptr) {
                 Core::ProcessCurrent().User(string(options.User));
             }
