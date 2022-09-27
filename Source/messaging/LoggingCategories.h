@@ -25,26 +25,13 @@
 namespace WPEFramework {
 namespace Logging {
 
-    class BaseCategory : public Trace::BaseCategory {
-    public:
-        BaseCategory() = delete;
-        ~BaseCategory() = default;
-        BaseCategory& operator=(const BaseCategory&) = delete;
-        using Trace::BaseCategory::BaseCategory;
-        static constexpr bool isLoggingCategory = true;
-    };
-
-#define DEFINE_LOGGING_CATEGORY(CATEGORY) _INTERNAL_DEFINE_CATEGORY(BaseCategory, CATEGORY)
-
-    DEFINE_LOGGING_CATEGORY(Startup);
-    DEFINE_LOGGING_CATEGORY(Shutdown);
-    DEFINE_LOGGING_CATEGORY(Notification);
-    DEFINE_LOGGING_CATEGORY(Error);
-    DEFINE_LOGGING_CATEGORY(ParsingError);
-    DEFINE_LOGGING_CATEGORY(Fatal);
-    DEFINE_LOGGING_CATEGORY(Crash);
-
-#undef DEFINE_LOGGING_CATEGORY
+    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::LOGGING, Startup);
+    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::LOGGING, Shutdown);
+    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::LOGGING, Notification);
+    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::LOGGING, Error);
+    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::LOGGING, ParsingError);
+    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::LOGGING, Fatal);
+    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::LOGGING, Crash);
 
 } // namespace Logging
 }

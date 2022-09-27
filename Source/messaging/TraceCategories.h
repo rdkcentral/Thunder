@@ -22,7 +22,6 @@
 #include "Module.h"
 #include "BaseCategory.h"
 
-
 namespace WPEFramework {
 namespace Trace {
 
@@ -32,12 +31,12 @@ namespace Trace {
     template <typename... Args>
     inline string Format(Args&&... args) { return Core::Format(std::forward<Args>(args)...); }
 
-    DEFINE_TRACING_CATEGORY(Text);
-    DEFINE_TRACING_CATEGORY(Initialisation);
-    DEFINE_TRACING_CATEGORY(Information);
-    DEFINE_TRACING_CATEGORY(Warning);
-    DEFINE_TRACING_CATEGORY(Error);
-    DEFINE_TRACING_CATEGORY(Fatal);
+    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::TRACING, Text);
+    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::TRACING, Initialisation);
+    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::TRACING, Information);
+    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::TRACING, Warning);
+    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::TRACING, Error);
+    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::TRACING, Fatal);
 
     class EXTERNAL Constructor {
     private:
@@ -127,7 +126,7 @@ namespace Trace {
         static const string _text;
     };
 
-    class EXTERNAL MethodEntry : public BaseCategory {
+    class EXTERNAL MethodEntry : public Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING> {
     private:
         MethodEntry() = delete;
         ~MethodEntry() = default;
@@ -141,7 +140,7 @@ namespace Trace {
         }
     };
 
-    class EXTERNAL MethodExit : public BaseCategory {
+    class EXTERNAL MethodExit : public Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING> {
     private:
         MethodExit() = delete;
         ~MethodExit() = default;
@@ -155,7 +154,7 @@ namespace Trace {
         }
     };
 
-    class EXTERNAL Duration : public BaseCategory {
+    class EXTERNAL Duration : public Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING> {
     public:
         Duration() = delete;
         Duration(const Duration&) = delete;

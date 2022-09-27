@@ -70,7 +70,7 @@ namespace Core {
             uint16_t length = _metaData.Serialize(buffer, bufferSize);
 
             if (length != 0) {
-                const uint16_t extra = (_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + sizeof(_timeStamp);
+                const uint16_t extra = static_cast<uint16_t>((_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + sizeof(_timeStamp));
                 ASSERT(bufferSize >= (length + extra));
 
                 if (bufferSize >= (length + extra)) {

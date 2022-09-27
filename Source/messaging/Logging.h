@@ -35,7 +35,7 @@ namespace Logging {
 }
 
 #define SYSLOG_CONTROL(CATEGORY) \
-    WPEFramework::Messaging::ControlLifetime<CATEGORY, &WPEFramework::Logging::MODULE_LOGGING, WPEFramework::Messaging::MessageType::LOGGING>
+    WPEFramework::Messaging::GlobalLifetimeType<CATEGORY,&WPEFramework::Logging::MODULE_LOGGING,WPEFramework::Messaging::MessageType::LOGGING>
 
 #define SYSLOG_ANNOUNCE(CATEGORY) \
     SYSLOG_CONTROL(CATEGORY)::Announce()
@@ -47,7 +47,7 @@ namespace Logging {
     do {                                                                                                                                     \
         using __control__ = SYSLOG_CONTROL(CATEGORY);                                                                                        \
         if (__control__::IsEnabled() == true) {                                                                                              \
-            static_assert(std::is_base_of<WPEFramework::Logging::BaseCategory, CATEGORY>::value, "SYSLOG() only for Logging controls");      \
+            static_assert(CATEGORY::Type == WPEFramework::Core::Messaging::MessageType::LOGGING, "SYSLOG() only for Logging controls");      \
             CATEGORY __data__ PARAMETERS;                                                                                                    \
             WPEFramework::Core::Messaging::Information __info__(                                                                             \
                 __control__::MetaData(),                                                                                                     \

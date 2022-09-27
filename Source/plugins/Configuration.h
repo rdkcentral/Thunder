@@ -172,15 +172,18 @@ namespace Plugin {
 
     public:
         Setting(const string& key, const bool value)
+            : Trace::Text()
         {
             Trace::Text::Set(_T("Setting: [") + key + _T("] set to value [") + (value ? _T("TRUE]") : _T("FALSE]")));
         }
         Setting(const string& key, const string& value)
+            : Trace::Text()
         {
             Trace::Text::Set(_T("Setting: [") + key + _T("] set to value [") + value + _T("]"));
         }
         template <typename NUMBERTYPE, const bool SIGNED, const NumberBase BASETYPE>
         Setting(const string& key, const NUMBERTYPE value)
+            : Trace::Text()
         {
             Core::NumberType<NUMBERTYPE, SIGNED, BASETYPE> number(value);
             Trace::Text::Set(_T("Setting: [") + key + _T("] set to value [") + number.Text() + _T("]"));
