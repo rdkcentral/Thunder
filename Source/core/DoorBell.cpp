@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "AccessControl.h"
 #include "DoorBell.h"
 
 #ifdef __WINDOWS__
@@ -124,8 +125,8 @@ namespace Core {
                 }
                 else {
 #ifndef __WINDOWS__
-                    if ((_doorbell.Type() == NodeId::TYPE_DOMAIN) && (_doorbell.Rights() <= 0777)) {
-                        if (::chmod(_doorbell.HostName().c_str(), _doorbell.Rights()) != 0) {
+                    if (_doorbell.Type() == NodeId::TYPE_DOMAIN) {
+                        if (AccessControl::Apply(_doorbell) != Core::ERROR_NONE) {
                             ::close(_receiveSocket);
                             _receiveSocket = INVALID_SOCKET;
                         }

@@ -29,6 +29,184 @@ namespace WPEFramework {
 namespace Plugin {
     class EXTERNAL Config : public Core::JSON::Container {
     public:
+        class EXTERNAL RootConfig : public Core::JSON::Container {
+        private:
+            class RootObject : public Core::JSON::Container {
+            private:
+                RootObject(const RootObject&) = delete;
+                RootObject& operator=(const RootObject&) = delete;
+
+            public:
+                RootObject()
+                    : Config(false)
+                {
+                    Add(_T("root"), &Config);
+                }
+                ~RootObject() override = default;
+
+            public:
+                Core::JSON::String Config;
+            };
+
+        public:
+
+            enum class ModeType {
+                OFF,
+                LOCAL,
+                CONTAINER,
+                DISTRIBUTED
+            };
+
+            RootConfig()
+                : Core::JSON::Container()
+                , Locator()
+                , User()
+                , Group()
+                , Threads(1)
+                , Priority(0)
+                , OutOfProcess(false)
+                , Mode(ModeType::LOCAL)
+                , SystemRootPath()
+                , RemoteAddress()
+                , Configuration(false)
+            {
+                Add(_T("locator"), &Locator);
+                Add(_T("user"), &User);
+                Add(_T("group"), &Group);
+                Add(_T("threads"), &Threads);
+                Add(_T("priority"), &Priority);
+                Add(_T("outofprocess"), &OutOfProcess);
+                Add(_T("mode"), &Mode);
+                Add(_T("systemrootpath"), &SystemRootPath);
+                Add(_T("remoteaddress"), &RemoteAddress);
+                Add(_T("configuration"), &Configuration);
+            }
+            RootConfig(const PluginHost::IShell* info)
+                : Core::JSON::Container()
+                , Locator()
+                , User()
+                , Group()
+                , Threads()
+                , Priority(0)
+                , OutOfProcess(false)
+                , Mode(ModeType::LOCAL)
+                , SystemRootPath()
+                , RemoteAddress()
+                , Configuration(false)
+            {
+                Add(_T("locator"), &Locator);
+                Add(_T("user"), &User);
+                Add(_T("group"), &Group);
+                Add(_T("threads"), &Threads);
+                Add(_T("priority"), &Priority);
+                Add(_T("outofprocess"), &OutOfProcess);
+                Add(_T("mode"), &Mode);
+                Add(_T("systemrootpath"), &SystemRootPath);
+                Add(_T("remoteaddress"), &RemoteAddress);
+                Add(_T("configuration"), &Configuration);
+
+                RootObject config;
+                Core::OptionalType<Core::JSON::Error> error;
+                config.FromString(info->ConfigLine(), error);
+                if (error.IsSet() == true) {
+                    SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                }
+
+                if (config.Config.IsSet() == true) {
+                    // Yip we want to go out-of-process
+                    RootConfig settings;
+                    Core::OptionalType<Core::JSON::Error> error;
+                    settings.FromString(config.Config.Value(), error);
+                    if (error.IsSet() == true) {
+                        SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                    }
+                    *this = settings;
+
+                    if (Locator.Value().empty() == true) {
+                        Locator = info->Locator();
+                    }
+                }
+            }
+            RootConfig(const RootConfig& copy)
+                : Core::JSON::Container()
+                , Locator(copy.Locator)
+                , User(copy.User)
+                , Group(copy.Group)
+                , Threads(copy.Threads)
+                , Priority(copy.Priority)
+                , OutOfProcess(true)
+                , Mode(copy.Mode)
+                , SystemRootPath(copy.SystemRootPath)
+                , RemoteAddress(copy.RemoteAddress)
+                , Configuration(copy.Configuration)
+            {
+                Add(_T("locator"), &Locator);
+                Add(_T("user"), &User);
+                Add(_T("group"), &Group);
+                Add(_T("threads"), &Threads);
+                Add(_T("priority"), &Priority);
+                Add(_T("outofprocess"), &OutOfProcess);
+                Add(_T("mode"), &Mode);
+                Add(_T("systemrootpath"), &SystemRootPath);
+                Add(_T("remoteaddress"), &RemoteAddress);
+                Add(_T("configuration"), &Configuration);
+            }
+            ~RootConfig() override = default;
+
+            RootConfig& operator=(const RootConfig& RHS)
+            {
+                Locator = RHS.Locator;
+                User = RHS.User;
+                Group = RHS.Group;
+                Threads = RHS.Threads;
+                Priority = RHS.Priority;
+                OutOfProcess = RHS.OutOfProcess;
+                Mode = RHS.Mode;
+                RemoteAddress = RHS.RemoteAddress;
+                SystemRootPath = RHS.SystemRootPath;
+                Configuration = RHS.Configuration;
+
+                return (*this);
+            }
+
+            RPC::Object::HostType HostType() const {
+                RPC::Object::HostType result = RPC::Object::HostType::LOCAL;
+                switch( Mode.Value() ) {
+                    case ModeType::CONTAINER :
+                        result = RPC::Object::HostType::CONTAINER;
+                        break;
+                    case ModeType::DISTRIBUTED:
+                        result = RPC::Object::HostType::DISTRIBUTED;
+                        break;
+                    default:
+                        result = RPC::Object::HostType::LOCAL;
+                        break;
+                }
+                return result;
+            }
+
+        public:
+            Core::JSON::String Locator;
+            Core::JSON::String User;
+            Core::JSON::String Group;
+            Core::JSON::DecUInt8 Threads;
+            Core::JSON::DecSInt8 Priority;
+            Core::JSON::Boolean OutOfProcess;
+            Core::JSON::EnumType<ModeType> Mode;
+            Core::JSON::String SystemRootPath;
+            Core::JSON::String RemoteAddress;
+            Core::JSON::String Configuration;
+        };
+
+        public:
+            enum startup : uint8_t {
+            UNAVAILABLE,
+            DEACTIVATED,
+            SUSPENDED,
+            RESUMED
+        };
+
+    public:
         Config()
             : Core::JSON::Container()
             , Callsign()
