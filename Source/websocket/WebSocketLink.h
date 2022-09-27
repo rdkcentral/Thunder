@@ -395,15 +395,11 @@ POP_WARNING()
         public:
             bool IsOpen() const
             {
-                Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
-
-                return ((ACTUALLINK::IsOpen() == true) && ((_state & SUSPENDED) == 0));
+                return ((ACTUALLINK::IsOpen() == true) && ((State() & SUSPENDED) == 0));
             }
             bool IsSuspended() const
             {
-                Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
-
-                return ((ACTUALLINK::IsSuspended() == true) || ((_state & SUSPENDED) != 0));
+                return ((ACTUALLINK::IsSuspended() == true) || ((State() & SUSPENDED) != 0));
             }
             bool IsClosed() const
             {
@@ -411,21 +407,15 @@ POP_WARNING()
             }
             bool IsWebServer() const
             {
-                Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
-
-                return ((_state & WEBSERVER) != 0);
+                return ((State() & WEBSERVER) != 0);
             }
             bool IsUpgrading() const
             {
-                Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
-
-                return ((_state & UPGRADING) != 0);
+                return ((State() & UPGRADING) != 0);
             }
             bool IsWebSocket() const
             {
-                Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
-
-                return ((_state & WEBSOCKET) != 0);
+                return ((State() & WEBSOCKET) != 0);
             }
             bool IsCompleted() const
             {
@@ -517,7 +507,7 @@ POP_WARNING()
                 _adminLock.Lock();
 
                 if (IsSuspended() == false) {
-                    if ((_state & WEBSOCKET) != 0) {
+                    if ((State() & WEBSOCKET) != 0) {
                         // Send out a close message
                         // TODO: Creat a message we can SEND
                     }
@@ -701,6 +691,10 @@ POP_WARNING()
             }
 
         private:
+            inline uint16_t State() const
+            {
+                return (_state.load(Core::memory_order::memory_order_relaxed));
+            }
             uint32_t CheckForClose(uint32_t waitTime)
             {
                 uint32_t result = 0;
@@ -904,7 +898,7 @@ POP_WARNING()
             WebSocket::Protocol _handler;
             ParentClass& _parent;
             mutable Core::CriticalSection _adminLock;
-            uint8_t _state;
+            std::atomic<uint8_t> _state;
             SerializerImpl _serializerImpl;
             DeserializerImpl _deserialiserImpl;
             string _path;
