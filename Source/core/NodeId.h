@@ -176,6 +176,15 @@ namespace Core {
             return (0);
         }
 
+        inline uint32_t Rights() const
+        {
+#ifndef __WINDOWS__
+            return (Type() == TYPE_DOMAIN ? m_structInfo.DomainSocket.un_access : 0);
+#else
+            return (0);
+#endif
+        }
+
         NodeId::enumType Type() const
         {
             return (static_cast<NodeId::enumType>(m_structInfo.FamilyType));
@@ -249,6 +258,10 @@ namespace Core {
         {
             return ((IsMulticast() == false) && (IsLocalInterface() == false) && (IsAnyInterface() == false));
         }
+        inline string Group() const
+        {
+            return (m_group);
+        }
 
         string HostName() const;
 
@@ -260,8 +273,6 @@ namespace Core {
         bool IsAnyInterface() const;
         bool IsMulticast() const;
         uint8_t DefaultMask() const;
-
-        uint32_t EnablePermission() const;
 
         bool operator==(const NodeId& rInfo) const;
 
@@ -291,15 +302,6 @@ namespace Core {
         inline operator struct sockaddr*()
         {
             return (reinterpret_cast<struct sockaddr*>(&(m_structInfo)));
-        }
-
-        inline uint32_t Rights() const
-        {
-#ifndef __WINDOWS__
-            return (Type() == TYPE_DOMAIN ? m_structInfo.DomainSocket.un_access : 0);
-#else
-            return (0);
-#endif
         }
 
         string m_group;

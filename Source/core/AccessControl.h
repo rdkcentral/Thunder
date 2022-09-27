@@ -19,6 +19,10 @@
 
 #pragma once
 
+#include "Module.h"
+#include "NodeId.h"
+#include "Portability.h"
+
 #ifdef __POSIX__
 #include <grp.h>
 #include <pwd.h>
@@ -81,6 +85,20 @@ namespace Core {
 #endif
             return result;
         }
+
+        static uint32_t Apply(const Core::NodeId& node)
+        {
+            uint32_t status(Core::ERROR_NONE);
+
+            if (node.Rights() <= 0777) {
+                status = Permission(node.HostName(), node.Rights());
+            }
+            if (node.Group().empty() != true) {
+                status = OwnerShip(node.HostName(), "", node.Group());
+            }
+            return status;
+        }
+
     };
 }
 } // namespace Core

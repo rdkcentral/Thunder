@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "AccessControl.h"
 #include "SocketPort.h"
 #include "ProcessInfo.h"
 #include "ResourceMonitor.h"
@@ -835,7 +836,7 @@ namespace WPEFramework {
 
 #ifndef __WINDOWS__
                         if (localNode.Type() == NodeId::TYPE_DOMAIN) {
-                            if (localNode.EnablePermission() == Core::ERROR_NONE) {
+                            if (AccessControl::Apply(localNode) == Core::ERROR_NONE) {
                                 BufferAlignment(l_Result);
                                 return (l_Result);
                             }

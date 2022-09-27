@@ -22,7 +22,6 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "Portability.h"
-#include "AccessControl.h"
 #include "Serialization.h"
 #include "TextFragment.h"
 #include "Trace.h"
@@ -852,19 +851,6 @@ POP_WARNING()
         }
 
         return (result);
-    }
-
-    uint32_t NodeId::EnablePermission() const
-    {
-        uint32_t status(Core::ERROR_NONE);
-
-        if (Rights() <= 0777) {
-            status = AccessControl::Permission(m_hostName, Rights());
-        }
-        if (m_group.empty() != true) {
-            status = AccessControl::OwnerShip(m_hostName, "", m_group);
-        }
-        return status;
     }
 }
 }
