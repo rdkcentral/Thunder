@@ -792,7 +792,12 @@ POP_WARNING()
                 // And did we succeed ?
                 return (l_Index != PROXY_LIST_ERROR);
             }
-
+            void Clear() {
+                for (unsigned int teller = 0; teller != m_Current; teller++) {
+                    m_List[teller]->Release();
+                }
+                m_Current = 0;
+            }
             void Clear(const unsigned int a_Start, const unsigned int a_Count)
             {
                 ASSERT((a_Start + a_Count) <= m_Current);

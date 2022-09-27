@@ -46,6 +46,7 @@ namespace Core {
             }
             ~SerializerImpl()
             {
+                _sendQueue.Clear();
             }
 
         public:
@@ -149,7 +150,6 @@ namespace Core {
                 return (loaded);
             }
 
-
         private:
             inline uint16_t Deserialize(const Core::ProxyType<Core::JSON::IElement>& source, const uint8_t* stream, const uint16_t length) {
                 return(source->Deserialize(reinterpret_cast<const char*>(stream), length, _offset));
@@ -234,8 +234,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         }
 POP_WARNING()
 
-        virtual ~StreamJSONType()
-        {
+        virtual ~StreamJSONType() {
             _channel.Close(Core::infinite);
         }
 
