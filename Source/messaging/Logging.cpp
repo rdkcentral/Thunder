@@ -24,18 +24,14 @@
 namespace WPEFramework {
 namespace Logging {
 
-    static struct Announcement {
-        Announcement() {
-            // Announce upfront all SYSLOG categories...
-            SYSLOG_ANNOUNCE(Logging::Startup);
-            SYSLOG_ANNOUNCE(Logging::Shutdown);
-            SYSLOG_ANNOUNCE(Logging::Crash);
-            SYSLOG_ANNOUNCE(Logging::Fatal);
-            SYSLOG_ANNOUNCE(Logging::Error);
-            SYSLOG_ANNOUNCE(Logging::ParsingError);
-            SYSLOG_ANNOUNCE(Logging::Notification);
-        }
-    } AnnounceCategories;
+    // Announce upfront all SYSLOG categories...
+    SYSLOG_ANNOUNCE(Logging::Startup);
+    SYSLOG_ANNOUNCE(Logging::Shutdown);
+    SYSLOG_ANNOUNCE(Logging::Crash);
+    SYSLOG_ANNOUNCE(Logging::Fatal);
+    SYSLOG_ANNOUNCE(Logging::Error);
+    SYSLOG_ANNOUNCE(Logging::ParsingError);
+    SYSLOG_ANNOUNCE(Logging::Notification);
 
     const char* MODULE_LOGGING = _T("SysLog");
 

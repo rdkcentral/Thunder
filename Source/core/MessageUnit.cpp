@@ -258,13 +258,16 @@ namespace Core {
         */
         bool SettingsList::IsEnabled(const MetaData& metaData) const
         {
-            bool result = false;
+            bool result;
 
             ASSERT(metaData.Category().empty() == false);
 
             _adminLock.Lock();
 
             if (metaData.Type() == MessageType::TRACING) {
+
+                result = false;
+
                 for (auto it = _tracing.cbegin(); it != _tracing.cend(); ++it) {
                     if ((((*it).Module == metaData.Module()) && (((*it).Category.empty() == true) || ((*it).Category == metaData.Category())))
                             || (((*it).Category == metaData.Category()) && (((*it).Module.empty() == true) || ((*it).Module == metaData.Module())))
@@ -276,6 +279,9 @@ namespace Core {
                 }
             }
             else if (metaData.Type() == MessageType::LOGGING) {
+
+                result = true;
+
                 for (auto it = _logging.cbegin(); it != _logging.cend(); ++it) {
                     if (((*it).Category.empty() == true) || ((*it).Category == metaData.Category())) {
                         result = (*it).Enabled;

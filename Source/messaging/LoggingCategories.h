@@ -25,13 +25,13 @@
 namespace WPEFramework {
 namespace Logging {
 
-    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::LOGGING, Startup);
-    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::LOGGING, Shutdown);
-    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::LOGGING, Notification);
-    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::LOGGING, Error);
-    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::LOGGING, ParsingError);
-    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::LOGGING, Fatal);
-    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::LOGGING, Crash);
+    DEFINE_MESSAGING_CATEGORY(BaseLoggingType<Startup>,      Startup);
+    DEFINE_MESSAGING_CATEGORY(BaseLoggingType<Shutdown>,     Shutdown);
+    DEFINE_MESSAGING_CATEGORY(BaseLoggingType<Notification>, Notification);
+    DEFINE_MESSAGING_CATEGORY(BaseLoggingType<Error>,        Error);
+    DEFINE_MESSAGING_CATEGORY(BaseLoggingType<ParsingError>, ParsingError);
+    DEFINE_MESSAGING_CATEGORY(BaseLoggingType<Fatal>,        Fatal);
+    DEFINE_MESSAGING_CATEGORY(BaseLoggingType<Crash>,        Crash);
 
 } // namespace Logging
 }

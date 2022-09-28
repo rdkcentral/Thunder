@@ -31,12 +31,12 @@ namespace Trace {
     template <typename... Args>
     inline string Format(Args&&... args) { return Core::Format(std::forward<Args>(args)...); }
 
-    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::TRACING, Text);
-    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::TRACING, Initialisation);
-    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::TRACING, Information);
-    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::TRACING, Warning);
-    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::TRACING, Error);
-    DEFINE_MESSAGING_CATEGORY(Core::Messaging::MessageType::TRACING, Fatal);
+    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING>, Text);
+    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING>, Initialisation);
+    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING>, Information);
+    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING>, Warning);
+    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING>, Error);
+    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING>, Fatal);
 
     class EXTERNAL Constructor {
     private:

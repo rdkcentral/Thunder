@@ -18,6 +18,7 @@
  */
 
 #pragma once
+
 #include "Module.h"
 #include "TextMessage.h"
 
@@ -29,11 +30,12 @@ namespace Messaging {
     template <typename CONTROLCATEGORY, const char** CONTROLMODULENAME, MessageType CONTROLTYPE>
     class ControlType : public Core::Messaging::IControl {
     public:
+        ControlType() = delete;
         ControlType(const ControlType&) = delete;
         ControlType& operator=(const ControlType&) = delete;
 
-        ControlType()
-            : _enabled(0x02)
+        ControlType(const bool enabled)
+            : _enabled(0x02 | (enabled ? 0x01 : 0x00))
             , _metaData(CONTROLTYPE, Core::ClassNameOnly(typeid(CONTROLCATEGORY).name()).Text(), *CONTROLMODULENAME)
         {
             // Register Our trace control unit, so it can be influenced from the outside
@@ -114,43 +116,7 @@ namespace Messaging {
     // Controls should not be exported out of defining modules...
     template <typename CATEGORY, const char** MODULENAME, MessageType TYPE>
     EXTERNAL_HIDDEN typename ControlType<CATEGORY, MODULENAME, TYPE>
-        typename LocalLifetimeType<CATEGORY, MODULENAME, TYPE>::_control;
-
-    template <typename CATEGORY, const char** MODULENAME, MessageType TYPE>
-    class GlobalLifetimeType {
-    public:
-        GlobalLifetimeType(const GlobalLifetimeType&) = delete;
-        GlobalLifetimeType& operator=(const GlobalLifetimeType&) = delete;
-
-        GlobalLifetimeType() = default;
-        ~GlobalLifetimeType() = default;
-
-    public:
-        inline static void Announce()
-        {
-            IsEnabled();
-        }
-        inline static bool IsEnabled()
-        {
-            return (_control.IsEnabled());
-        }
-        inline static void Enable(const bool enable)
-        {
-            _control.Enable(enable);
-        }
-        inline static const Core::Messaging::MetaData& MetaData()
-        {
-            return (_control.MessageMetaData());
-        }
-
-    private:
-        static ControlType<CATEGORY, MODULENAME, TYPE> _control;
-    };
-
-    // ...but logging controls have to be visible outside of the Messaging lib
-    template <typename CATEGORY, const char** MODULENAME, MessageType TYPE>
-    typename ControlType<CATEGORY, MODULENAME, TYPE>
-        typename GlobalLifetimeType<CATEGORY, MODULENAME, TYPE>::_control;
+        typename LocalLifetimeType<CATEGORY, MODULENAME, TYPE>::_control(false);
 
 } // namespace Messaging
 }

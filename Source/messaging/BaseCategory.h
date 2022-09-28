@@ -69,21 +69,20 @@ namespace Messaging {
         }
 
     private:
-        std::string _text;
+        string _text;
     };
 
 } // namespace Messaging
 }
 
-#define DEFINE_MESSAGING_CATEGORY(TYPE, CATEGORY)                                                                   \
-    class EXTERNAL CATEGORY : public WPEFramework::Messaging::BaseCategoryType<TYPE> {                              \
-    private:                                                                                                        \
-        using BaseClass = WPEFramework::Messaging::BaseCategoryType<TYPE>;                                          \
-    public:                                                                                                         \
-        using BaseClass::BaseClass;                                                                                 \
-        CATEGORY() = default;                                                                                       \
-        ~CATEGORY() = default;                                                                                      \
-        CATEGORY(const CATEGORY&) = delete;                                                                         \
-        CATEGORY& operator=(const CATEGORY&) = delete;                                                              \
-        static constexpr bool IsLoggingCategory = (TYPE == WPEFramework::Core::Messaging::MessageType::LOGGING);    \
+#define DEFINE_MESSAGING_CATEGORY(BASECATEGORY, CATEGORY)   \
+    class EXTERNAL CATEGORY : public BASECATEGORY {         \
+    private:                                                \
+        using BaseClass = BASECATEGORY;                     \
+    public:                                                 \
+        using BaseClass::BaseClass;                         \
+        CATEGORY() = default;                               \
+        ~CATEGORY() = default;                              \
+        CATEGORY(const CATEGORY&) = delete;                 \
+        CATEGORY& operator=(const CATEGORY&) = delete;      \
     };
