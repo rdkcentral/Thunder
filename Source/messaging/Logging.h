@@ -68,10 +68,14 @@ namespace Logging {
         static Control  _control;
     };
 
+    // ...but logging controls have to be visible outside of the Messaging lib
+    template <typename CATEGORY>
+    EXTERNAL typename BaseLoggingType<CATEGORY>::Control BaseLoggingType<CATEGORY>::_control(true);
+
 } // namespace Logging
 }
 
-#define SYSLOG_ANNOUNCE(CATEGORY) WPEFramework::Logging::BaseLoggingType<CATEGORY>::Control WPEFramework::Logging::BaseLoggingType<CATEGORY>::_control(true)  
+#define SYSLOG_ANNOUNCE(CATEGORY) template<> WPEFramework::Logging::BaseLoggingType<CATEGORY>::Control WPEFramework::Logging::BaseLoggingType<CATEGORY>::_control(true)
 
 #define _SYSLOG_INTERNAL(CATEGORY, CLASSNAME, PARAMETERS)                                                                                         \
     do {                                                                                                                                          \

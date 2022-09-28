@@ -115,8 +115,8 @@ namespace Messaging {
 
     // Controls should not be exported out of defining modules...
     template <typename CATEGORY, const char** MODULENAME, MessageType TYPE>
-    EXTERNAL_HIDDEN typename ControlType<CATEGORY, MODULENAME, TYPE>
-        typename LocalLifetimeType<CATEGORY, MODULENAME, TYPE>::_control(false);
+    EXTERNAL_HIDDEN ControlType<CATEGORY, MODULENAME, TYPE>
+        LocalLifetimeType<CATEGORY, MODULENAME, TYPE>::_control(false);
 
 } // namespace Messaging
 }
