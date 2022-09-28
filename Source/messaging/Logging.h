@@ -68,9 +68,11 @@ namespace Logging {
         static Control  _control;
     };
 
+    #ifndef __WINDOWS__ 
     // ...but logging controls have to be visible outside of the Messaging lib
     template <typename CATEGORY>
     EXTERNAL typename BaseLoggingType<CATEGORY>::Control BaseLoggingType<CATEGORY>::_control(true);
+    #endif
 
 } // namespace Logging
 }
