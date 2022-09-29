@@ -1168,7 +1168,7 @@ POP_WARNING()
         }
         bool IsOpen() const
         {
-            return (_channel.IsOpen());
+            return ( (_channel.IsOpen()) && (_channel.IsWebSocket()) );
         }
         bool IsClosed() const
         {
