@@ -24,21 +24,17 @@
 namespace WPEFramework {
 namespace Logging {
 
-    static struct Announcement {
-        Announcement() {
-            // Announce upfront all SYSLOG categories...
-            SYSLOG_ANNOUNCE(Logging::Startup);
-            SYSLOG_ANNOUNCE(Logging::Shutdown);
-            SYSLOG_ANNOUNCE(Logging::Crash);
-            SYSLOG_ANNOUNCE(Logging::Fatal);
-            SYSLOG_ANNOUNCE(Logging::Error);
-            SYSLOG_ANNOUNCE(Logging::ParsingError);
-            SYSLOG_ANNOUNCE(Logging::Notification);
-        }
-    } AnnounceCategories;
-
     const char* MODULE_LOGGING = _T("SysLog");
 
+    // Announce upfront all SYSLOG categories...
+    SYSLOG_ANNOUNCE(Crash);
+    SYSLOG_ANNOUNCE(Startup);
+    SYSLOG_ANNOUNCE(Shutdown);
+    SYSLOG_ANNOUNCE(Fatal);
+    SYSLOG_ANNOUNCE(Error);
+    SYSLOG_ANNOUNCE(ParsingError);
+    SYSLOG_ANNOUNCE(Notification);
+ 
     void DumpException(const string& exceptionType)
     {
         static const TCHAR* UnknownCallsign = _T("NoTLSCallsign");
@@ -113,3 +109,5 @@ namespace Logging {
 
 } // namespace Logging
 }
+
+

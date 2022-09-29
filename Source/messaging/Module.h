@@ -23,7 +23,7 @@
 #define MODULE_NAME Messaging
 #endif
 
-#include <core/core.h>
+#include <core/core.h> 
 
 #if defined(__WINDOWS__) && defined(MESSAGING_EXPORTS)
 #undef EXTERNAL

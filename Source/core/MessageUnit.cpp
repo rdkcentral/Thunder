@@ -70,7 +70,7 @@ namespace Core {
             uint16_t length = _metaData.Serialize(buffer, bufferSize);
 
             if (length != 0) {
-                const uint16_t extra = (_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + sizeof(_timeStamp);
+                const uint16_t extra = static_cast<uint16_t>((_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + sizeof(_timeStamp));
                 ASSERT(bufferSize >= (length + extra));
 
                 if (bufferSize >= (length + extra)) {
@@ -258,13 +258,16 @@ namespace Core {
         */
         bool SettingsList::IsEnabled(const MetaData& metaData) const
         {
-            bool result = false;
+            bool result;
 
             ASSERT(metaData.Category().empty() == false);
 
             _adminLock.Lock();
 
             if (metaData.Type() == MessageType::TRACING) {
+
+                result = false;
+
                 for (auto it = _tracing.cbegin(); it != _tracing.cend(); ++it) {
                     if ((((*it).Module == metaData.Module()) && (((*it).Category.empty() == true) || ((*it).Category == metaData.Category())))
                             || (((*it).Category == metaData.Category()) && (((*it).Module.empty() == true) || ((*it).Module == metaData.Module())))
@@ -276,6 +279,9 @@ namespace Core {
                 }
             }
             else if (metaData.Type() == MessageType::LOGGING) {
+
+                result = true;
+
                 for (auto it = _logging.cbegin(); it != _logging.cend(); ++it) {
                     if (((*it).Category.empty() == true) || ((*it).Category == metaData.Category())) {
                         result = (*it).Enabled;

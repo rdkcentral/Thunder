@@ -21,43 +21,37 @@
 
 #include "Module.h"
 
-#define _INTERNAL_DEFINE_CATEGORY(BASE, CATEGORY) \
-    class EXTERNAL CATEGORY : public BASE {                 \
-    public:                                                 \
-        using BASE::BASE;                                   \
-        ~CATEGORY() = default;                              \
-        CATEGORY(const CATEGORY&) = delete;                 \
-        CATEGORY& operator=(const CATEGORY&) = delete;      \
-    }
-
-#define DEFINE_TRACING_CATEGORY(CATEGORY) _INTERNAL_DEFINE_CATEGORY(BaseCategory, CATEGORY)
-
 namespace WPEFramework {
-namespace Trace {
+namespace Messaging {
 
-    class BaseCategory {
+    template <const Core::Messaging::MessageType TYPE>
+    class BaseCategoryType {
     public:
-        ~BaseCategory() = default;
-        BaseCategory& operator=(const BaseCategory&) = delete;
+        ~BaseCategoryType() = default;
+        BaseCategoryType& operator=(const BaseCategoryType&) = delete;
 
         template<typename... Args>
-        BaseCategory(const string& formatter, Args... args)
+        BaseCategoryType(const string& formatter, Args... args)
             : _text()
         {
             Core::Format(_text, formatter.c_str(), args...);
         }
 
-        BaseCategory(const string& text)
+        BaseCategoryType(const string& text)
             : _text(text)
         {
         }
 
-        BaseCategory()
+        BaseCategoryType()
             : _text()
         {
         }
 
     public:
+        using BaseCategory = BaseCategoryType<TYPE>;
+
+        static constexpr Core::Messaging::MessageType Type = TYPE;
+
         const char* Data() const
         {
             return (_text.c_str());
@@ -75,8 +69,20 @@ namespace Trace {
         }
 
     private:
-        std::string _text;
+        string _text;
     };
 
-} // namespace Trace
+} // namespace Messaging
 }
+
+#define DEFINE_MESSAGING_CATEGORY(BASECATEGORY, CATEGORY)   \
+    class EXTERNAL CATEGORY : public BASECATEGORY {         \
+    private:                                                \
+        using BaseClass = BASECATEGORY;                     \
+    public:                                                 \
+        using BaseClass::BaseClass;                         \
+        CATEGORY() = default;                               \
+        ~CATEGORY() = default;                              \
+        CATEGORY(const CATEGORY&) = delete;                 \
+        CATEGORY& operator=(const CATEGORY&) = delete;      \
+    };
