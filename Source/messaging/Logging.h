@@ -71,10 +71,19 @@ namespace Logging {
 } // namespace Logging
 }
 
+#ifdef __WINDOWS__
+
+#define DEFINE_LOGGING_CATEGORY(CATEGORY)                                                                                                         \
+    DEFINE_MESSAGING_CATEGORY(WPEFramework::Logging::BaseLoggingType<CATEGORY>, CATEGORY)
+
+#else
+
 #define DEFINE_LOGGING_CATEGORY(CATEGORY)                                                                                                         \
     DEFINE_MESSAGING_CATEGORY(WPEFramework::Logging::BaseLoggingType<CATEGORY>, CATEGORY)                                                         \
     template<>                                                                                                                                    \
     EXTERNAL typename WPEFramework::Logging::BaseLoggingType<CATEGORY>::Control WPEFramework::Logging::BaseLoggingType<CATEGORY>::_control;
+
+#endif
 
 #define SYSLOG_ANNOUNCE(CATEGORY) template<> WPEFramework::Logging::BaseLoggingType<CATEGORY>::Control WPEFramework::Logging::BaseLoggingType<CATEGORY>::_control(true)
 
