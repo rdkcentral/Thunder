@@ -324,28 +324,13 @@ namespace PluginHost {
 
             return (handler == nullptr ? nullptr : handler->RemoteConnection(connectionId));
         }
-        inline uint32_t EnablePersistentStorage(uint32_t permission = 0, const string& user = {}, const string& group = {}) {
-            uint32_t result = Core::ERROR_NONE;
-
-            // Make sure there is a path to the persitent infmration
-            Core::File path(PersistentPath());
-
-            if (path.IsDirectory() == false) {
-                if (Core::Directory(PersistentPath().c_str()).Create() != true) {
-                    result = Core::ERROR_BAD_REQUEST;
-                }
-            }
-            if (permission) {
-                path.Permission(permission);
-            }
-            if (user.empty() != true) {
-                path.User(user);
-            }
-            if (group.empty() != true) {
-                path.Group(group);
-            }
-
-            return (result);
+        inline uint32_t EnablePersistentStorage(uint32_t permission = 0, const string& user = {}, const string& group = {})
+        {
+            return (EnableStoragePath(PersistentPath(), permission, user, group));
+        }
+        inline uint32_t EnableVolatileStorage(uint32_t permission = 0, const string& user = {}, const string& group = {})
+        {
+            return (EnableStoragePath(VolatilePath(), permission, user, group));
         }
 
         template <typename REQUESTEDINTERFACE>
@@ -373,6 +358,31 @@ namespace PluginHost {
         }
 
     private:
+        inline uint32_t EnableStoragePath(const string& storagePath, uint32_t permission, const string& user, const string& group)
+        {
+            uint32_t result = Core::ERROR_NONE;
+
+            // Make sure there is a path to the persitent infmration
+            Core::File path(storagePath);
+
+            if (path.IsDirectory() == false) {
+                if (Core::Directory(PersistentPath().c_str()).Create() != true) {
+                    result = Core::ERROR_BAD_REQUEST;
+                }
+            }
+            if (permission) {
+                path.Permission(permission);
+            }
+            if (user.empty() != true) {
+                path.User(user);
+            }
+            if (group.empty() != true) {
+                path.Group(group);
+            }
+
+            return (result);
+        }
+
         void* Root(uint32_t& pid, const uint32_t waitTime, const string className, const uint32_t interface, const uint32_t version = ~0);
 
         /* @stubgen:omit */
