@@ -25,13 +25,14 @@
 namespace WPEFramework {
 namespace Logging {
 
-    DEFINE_MESSAGING_CATEGORY(BaseLoggingType<Startup>,      Startup);
-    DEFINE_MESSAGING_CATEGORY(BaseLoggingType<Shutdown>,     Shutdown);
-    DEFINE_MESSAGING_CATEGORY(BaseLoggingType<Notification>, Notification);
-    DEFINE_MESSAGING_CATEGORY(BaseLoggingType<Error>,        Error);
-    DEFINE_MESSAGING_CATEGORY(BaseLoggingType<ParsingError>, ParsingError);
-    DEFINE_MESSAGING_CATEGORY(BaseLoggingType<Fatal>,        Fatal);
-    DEFINE_MESSAGING_CATEGORY(BaseLoggingType<Crash>,        Crash);
+    // ...but logging controls have to be visible outside of the Messaging lib
+    DEFINE_LOGGING_CATEGORY(Startup);
+    DEFINE_LOGGING_CATEGORY(Shutdown);
+    DEFINE_LOGGING_CATEGORY(Notification);
+    DEFINE_LOGGING_CATEGORY(Error);
+    DEFINE_LOGGING_CATEGORY(ParsingError);
+    DEFINE_LOGGING_CATEGORY(Fatal);
+    DEFINE_LOGGING_CATEGORY(Crash);
 
 } // namespace Logging
 }
