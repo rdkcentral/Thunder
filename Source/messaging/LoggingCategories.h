@@ -25,17 +25,7 @@
 namespace WPEFramework {
 namespace Logging {
 
-    class BaseCategory : public Trace::BaseCategory {
-    public:
-        BaseCategory() = delete;
-        ~BaseCategory() = default;
-        BaseCategory& operator=(const BaseCategory&) = delete;
-        using Trace::BaseCategory::BaseCategory;
-        static constexpr bool isLoggingCategory = true;
-    };
-
-#define DEFINE_LOGGING_CATEGORY(CATEGORY) _INTERNAL_DEFINE_CATEGORY(BaseCategory, CATEGORY)
-
+    // ...but logging controls have to be visible outside of the Messaging lib
     DEFINE_LOGGING_CATEGORY(Startup);
     DEFINE_LOGGING_CATEGORY(Shutdown);
     DEFINE_LOGGING_CATEGORY(Notification);
@@ -43,8 +33,6 @@ namespace Logging {
     DEFINE_LOGGING_CATEGORY(ParsingError);
     DEFINE_LOGGING_CATEGORY(Fatal);
     DEFINE_LOGGING_CATEGORY(Crash);
-
-#undef DEFINE_LOGGING_CATEGORY
 
 } // namespace Logging
 }

@@ -11,31 +11,29 @@
   "communicator": "127.0.0.1:62000",
   "redirect": "Service/Controller/UI",
   "messagingport": 63000,
-  "messaging": [
-    {
-      "module": "Plugin_ZigbeeControl",
-      "enabled": false
+  "messaging": {
+    "logging": {
+      "abbreviated": true,
+      "settings": [
+        {
+          "category": "Notification",
+          "enabled": false
+        }
+      ]
     },
-    {
-      "module": "Zigbee",
-      "enabled": true
-    },
-    {
-      "module": "Plugin_ScriptEngine",
-      "category": "Log",
-      "enabled": true
-    },
-    {
-      "module": "Plugin_CloudRelay",
-      "enabled": true
+    "tracing": {
+      "settings": [
+        {
+          "category": "Information",
+          "enabled": true
+        }
+      ]
     }
-  ],
+  },
   "plugins": [
     {
       "callsign": "Controller",
-      "configuration": {
-        "subsystems": []
-      }
+      "configuration": {}
     },
     {
       "callsign": "Cobalt",
@@ -43,22 +41,36 @@
       "classname": "OutOfProcessPlugin",
       "autostart": false,
       "configuration": {
-        "outofprocess": true,
         "url": "http://netflix.com/tv",
         "sleep": "1",
         "single": false,
-        "crash": false
+        "crash": false,
+        "root": {
+          "mode": "Local"
+        }
+      }
+    },
+    {
+      "callsign": "Doofah",
+      "locator": "libDoofah.so",
+      "classname": "Doofah",
+      "autostart": false,
+      "configuration": {
+        "connector": {
+          "port": "\\\\.\\COM14"
+        },
+        "peripheral": "ble"
       }
     },
     {
       "callsign": "calculator",
       "locator": "librustbridge.so",
       "classname": "RustBridge",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
-        "module": "calculator.so",
+        "module": "calculator.dll",
         "root": {
-          "mode": "Local"
+          "mode": "Off"
         }
       }
     },
@@ -75,7 +87,7 @@
       "callsign": "Butler",
       "locator": "libButler.so",
       "classname": "Butler",
-      "autostart": true
+      "autostart": false
     },
     {
       "callsign": "ZigbeeControl",
@@ -86,6 +98,17 @@
         "port": "\\\\.\\COM6",
         "watchdog": 1442,
         "pan": 65200
+      }
+    },
+    {
+      "callsign": "MQTTBroker",
+      "locator": "libMQTTBroker.so",
+      "classname": "MQTTBroker",
+      "autostart": false,
+      "configuration": {
+        "port": "1883",
+        "binding": "0.0.0.0",
+        "butler": "butler"
       }
     },
     {
@@ -116,18 +139,89 @@
       "autostart": false
     },
     {
-      "autostart": true,
+      "autostart": false,
       "callsign": "VirtualControl",
       "classname": "VirtualControl",
       "locator": "libVirtualControl.so",
       "configuration": {
         "sunriseset": 365,
         "virtuals": [
+          {
+            "id": 1,
+            "passive": false,
+            "min": 0,
+            "max": 1
+          },
+          {
+            "id": 30,
+            "on": {
+              "url": "http://irrigatie.integraal.info/Service/EtherControl/Pin/0/On",
+              "verb": "PUT"
+            },
+            "off": {
+              "url": "http://irrigatie.integraal.info/Service/EtherControl/Pin/0/Off",
+              "verb": "PUT"
+            }
+          },
+          {
+            "id": 31,
+            "on": {
+              "url": "http://irrigatie.integraal.info/Service/EtherControl/Pin/1/On",
+              "verb": "PUT"
+            },
+            "off": {
+              "url": "http://irrigatie.integraal.info/Service/EtherControl/Pin/1/Off",
+              "verb": "PUT"
+            }
+          },
+          {
+            "id": 32,
+            "on": {
+              "url": "http://irrigatie.integraal.info/Service/EtherControl/Pin/2/On",
+              "verb": "PUT"
+            },
+            "off": {
+              "url": "http://irrigatie.integraal.info/Service/EtherControl/Pin/2/Off",
+              "verb": "PUT"
+            }
+          },
+          {
+            "id": 33,
+            "on": {
+              "url": "http://irrigatie.integraal.info/Service/EtherControl/Pin/3/On",
+              "verb": "PUT"
+            },
+            "off": {
+              "url": "http://irrigatie.integraal.info/Service/EtherControl/Pin/3/Off",
+              "verb": "PUT"
+            }
+          },
+          {
+            "id": 34,
+            "on": {
+              "url": "http://irrigatie.integraal.info/Service/EtherControl/Pin/4/On",
+              "verb": "PUT"
+            },
+            "off": {
+              "url": "http://irrigatie.integraal.info/Service/EtherControl/Pin/4/Off",
+              "verb": "PUT"
+            }
+          },
+          {
+            "id": 35,
+            "destinations": "@30",
+            "or": [
+              "@31",
+              "@32",
+              "@33",
+              "@34"
+            ]
+          }
         ]
       }
     },
     {
-      "autostart": true,
+      "autostart": false,
       "callsign": "ScriptEngine",
       "classname": "ScriptEngine",
       "locator": "libScriptEngine.so"
@@ -161,7 +255,7 @@
       "callsign": "IOControl",
       "locator": "libIOControl.so",
       "classname": "IOControl",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "port": "\\\\.\\COM8",
         "pins": [
@@ -208,7 +302,7 @@
       "callsign": "OneWireControl",
       "locator": "libOneWireControl.so",
       "classname": "OneWireControl",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "port": "\\\\.\\COM8",
         "devices": [
@@ -224,9 +318,9 @@
       "callsign": "I2CControl",
       "locator": "libI2CControl.so",
       "classname": "I2CControl",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
-        "port": "\\\\.\\COM8",
+        "port": "\\\\.\\COM20",
         "devices": [
           {
             "address": 35,
@@ -248,19 +342,6 @@
         "sleep": "5",
         "single": false,
         "crash": true
-      }
-    },
-    {
-      "callsign": "SecurityAgent",
-      "locator": "libSecurityAgent.so",
-      "classname": "SecurityAgent",
-      "precondition": [
-        "Platform"
-      ],
-      "autostart": false,
-      "configuration": {
-        "acl": "data.json",
-        "connector": "127.0.0.1:63000"
       }
     },
     {
@@ -316,7 +397,7 @@
         "port": 8080,
         "binding": "0.0.0.0",
         "root": {
-          "mode": "Local"
+          "mode": "Off"
         }
       }
     },
@@ -381,9 +462,7 @@
       "callsign": "Dictionary",
       "locator": "libdictionary.so",
       "classname": "Dictionary",
-      "autostart": false,
-      "configuration": {
-      }
+      "autostart": true
     },
     {
       "callsign": "DIALServer",
