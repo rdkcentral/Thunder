@@ -112,7 +112,7 @@ namespace PluginHost
                     rootConfig.Threads.Value(),
                     rootConfig.Priority.Value(),
                     rootConfig.HostType(),
-                    rootConfig.SystemRootPath.Value(),
+                    SystemRootPath(),
                     rootConfig.RemoteAddress.Value(),
                     rootConfig.Configuration.Value());
 
