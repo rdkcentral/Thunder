@@ -74,6 +74,7 @@ DEFAULT_INT_SIZE = 32
 CPP_INTERFACE_PATH = "interfaces" + os.sep
 JSON_INTERFACE_PATH = CPP_INTERFACE_PATH + "json"
 DUMP_JSON = False
+FORCE = False
 
 GLOBAL_DEFINITIONS = "global.json"
 DATA_NAMESPACE = "JsonData"
@@ -3390,7 +3391,7 @@ def ParseJsonRpcSchema(schema):
     else:
         return None
 
-def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
+def CreateCode(schema, source_file, path, generateClasses, generateStubs, generateRpc):
     directory = os.path.dirname(path)
     filename = (schema["info"]["namespace"]) if "info" in schema and "namespace" in schema["info"] else ""
     filename += (schema["info"]["class"]) if "info" in schema and "class" in schema["info"] else ""
@@ -3403,49 +3404,59 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
 
         if generateClasses:
             data_emitted = 0
-            with open(header_file, "w") as output_file:
-                emitter = Emitter(output_file, INDENT_SIZE)
-                emitter.Line()
-                emitter.Line("// C++ classes for %s JSON-RPC API." % rpcObj.info["title"].replace("Plugin", "").strip())
-                emitter.Line("// Generated automatically from '%s'. DO NOT EDIT." % os.path.basename(path))
-                emitter.Line()
-                emitter.Line("// Note: This code is inherently not thread safe. If required, proper synchronisation must be added.")
-                emitter.Line()
-                data_emitted = EmitObjects(rpcObj, emitter, os.path.basename(path), True)
-                if data_emitted:
-                    log.Success("JSON data classes generated in '%s'." % os.path.basename(output_file.name))
-                else:
-                    log.Info("No JSON data classes generated for '%s'." % os.path.basename(filename))
-            if not data_emitted and not KEEP_EMPTY:
-                try:
-                    os.remove(header_file)
-                except:
-                    pass
+            if not FORCE and (os.path.exists(header_file) and (os.path.getmtime(source_file) < os.path.getmtime(header_file))):
+                log.Success("skipping file '%s', up-to-date" % header_file)
+            else:
+                with open(header_file, "w") as output_file:
+                    emitter = Emitter(output_file, INDENT_SIZE)
+                    emitter.Line()
+                    emitter.Line("// C++ classes for %s JSON-RPC API." % rpcObj.info["title"].replace("Plugin", "").strip())
+                    emitter.Line("// Generated automatically from '%s'. DO NOT EDIT." % os.path.basename(source_file))
+                    emitter.Line()
+                    emitter.Line("// Note: This code is inherently not thread safe. If required, proper synchronisation must be added.")
+                    emitter.Line()
+                    data_emitted = EmitObjects(rpcObj, emitter, os.path.basename(source_file), True)
+                    if data_emitted:
+                        log.Success("JSON data classes generated in '%s'." % os.path.basename(output_file.name))
+                    else:
+                        log.Info("No JSON data classes generated for '%s'." % os.path.basename(filename))
+                if not data_emitted and not KEEP_EMPTY:
+                    try:
+                        os.remove(header_file)
+                    except:
+                        pass
 
             enum_emitted = 0
-            with open(enum_file, "w") as output_file:
-                emitter = Emitter(output_file, INDENT_SIZE)
-                emitter.Line()
-                emitter.Line("// Enumeration code for %s JSON-RPC API." %
-                             rpcObj.info["title"].replace("Plugin", "").strip())
-                emitter.Line("// Generated automatically from '%s'." % os.path.basename(path))
-                emitter.Line()
-                enum_emitted = EmitEnumRegs(rpcObj, emitter, filename, os.path.basename(path))
-                if enum_emitted:
-                    log.Success("JSON enumeration code generated in '%s'." % os.path.basename(output_file.name))
-                else:
-                    log.Info("No JSON enumeration code generated for '%s'." % os.path.basename(filename))
-            if not enum_emitted and not KEEP_EMPTY:
-                try:
-                    os.remove(enum_file)
-                except:
-                    pass
+            if not FORCE and (os.path.exists(enum_file) and (os.path.getmtime(source_file) < os.path.getmtime(enum_file))):
+                log.Success("skipping file '%s', up-to-date" % enum_file)
+            else:
+                with open(enum_file, "w") as output_file:
+                    emitter = Emitter(output_file, INDENT_SIZE)
+                    emitter.Line()
+                    emitter.Line("// Enumeration code for %s JSON-RPC API." %
+                                rpcObj.info["title"].replace("Plugin", "").strip())
+                    emitter.Line("// Generated automatically from '%s'." % os.path.basename(source_file))
+                    emitter.Line()
+                    enum_emitted = EmitEnumRegs(rpcObj, emitter, filename, os.path.basename(source_file))
+                    if enum_emitted:
+                        log.Success("JSON enumeration code generated in '%s'." % os.path.basename(output_file.name))
+                    else:
+                        log.Info("No JSON enumeration code generated for '%s'." % os.path.basename(filename))
+                if not enum_emitted and not KEEP_EMPTY:
+                    try:
+                        os.remove(enum_file)
+                    except:
+                        pass
 
             if not generateRpc or "@dorpc" not in rpcObj.schema:
-                with open(os.path.join(directory, "J" + filename + ".h"), "w") as output_file:
-                    emitter = Emitter(output_file, INDENT_SIZE)
-                    EmitVersionCode(rpcObj, emitter, filename, os.path.basename(path), data_emitted)
-                    log.Success("JSON-RPC version information generated in '%s'." % os.path.basename(output_file.name))
+                rpc_file = os.path.join(directory, "J" + filename + ".h")
+                if not FORCE and (os.path.exists(rpc_file) and (os.path.getmtime(source_file) < os.path.getmtime(rpc_file))):
+                    log.Success("skipping file '%s', up-to-date" % rpc_file)
+                else:
+                    with open(rpc_file, "w") as output_file:
+                        emitter = Emitter(output_file, INDENT_SIZE)
+                        EmitVersionCode(rpcObj, emitter, filename, os.path.basename(source_file), data_emitted)
+                        log.Success("JSON-RPC version information generated in '%s'." % os.path.basename(output_file.name))
 
         if generateStubs:
             with open(os.path.join(directory, filename + "JsonRpc.cpp"), "w") as output_file:
@@ -3455,11 +3466,15 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
                 log.Success("JSON-RPC stubs generated in '%s'." % os.path.basename(output_file.name))
 
         if generateRpc and "@dorpc" in rpcObj.schema and rpcObj.schema["@dorpc"]:
-            with open(os.path.join(directory, "J" + filename + ".h"), "w") as output_file:
-                emitter = Emitter(output_file, INDENT_SIZE)
-                emitter.Line()
-                EmitRpcCode(rpcObj, emitter, filename, os.path.basename(path), data_emitted)
-                log.Success("JSON-RPC implementation generated in '%s'." % os.path.basename(output_file.name))
+            output_filename = os.path.join(directory, "J" + filename + ".h")
+            if not FORCE and (os.path.exists(output_filename) and (os.path.getmtime(source_file) < os.path.getmtime(output_filename))):
+               log.Success("skipping file '%s', up-to-date" % os.path.basename(output_filename))
+            else:
+                with open(output_filename, "w") as output_file:
+                    emitter = Emitter(output_file, INDENT_SIZE)
+                    emitter.Line()
+                    EmitRpcCode(rpcObj, emitter, filename, os.path.basename(source_file), data_emitted)
+                    log.Success("JSON-RPC implementation generated in '%s'." % os.path.basename(output_file.name))
 
     else:
         log.Info("No code to generate.")
@@ -3500,8 +3515,13 @@ if __name__ == "__main__":
             metavar="DIR",
             action="store",
             default=None,
-            help=
-            "output directory, absolute path or directory relative to output file (default: output in the same directory as the source json)")
+            help="output directory, absolute path or directory relative to output file (default: output in the same directory as the source file)")
+    argparser.add_argument(
+            "--force",
+            dest="force",
+            action="store_true",
+            default=False,
+            help= "force code generation even if destination appears up-to-date (default: force disabled)")
 
     json_group = argparser.add_argument_group("JSON parser arguments (optional)")
     json_group.add_argument("-i",
@@ -3656,6 +3676,7 @@ if __name__ == "__main__":
     DEFAULT_EMPTY_STRING = args.def_string
     DEFAULT_INT_SIZE = args.def_int_size
     DUMP_JSON = args.dump_json
+    FORCE = args.force
     DEFAULT_DEFINITIONS_FILE = args.extra_include
     INTERFACE_NAMESPACE = "::" + args.if_namespace if args.if_namespace.find("::") != 0 else args.if_namespace
     INTERFACES_SECTION = not args.no_interfaces_section
@@ -3715,7 +3736,7 @@ if __name__ == "__main__":
                                     os.makedirs(dir)
                                 output_path = os.path.join(dir, os.path.basename(output_path))
                         if generateCode or generateStubs or generateRpc:
-                            CreateCode(schema, output_path, generateCode, generateStubs, generateRpc)
+                            CreateCode(schema, path, output_path, generateCode, generateStubs, generateRpc)
                         if generateDocs:
                             if "$schema" in schema:
                                 if "info" in schema:
