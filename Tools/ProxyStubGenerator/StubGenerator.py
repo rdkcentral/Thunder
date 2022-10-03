@@ -40,6 +40,7 @@ SHOW_WARNINGS = True
 USE_OLD_CPP = False
 BE_VERBOSE = False
 EMIT_TRACES = False
+FORCE = False
 
 # static configuration
 EMIT_DESTRUCTOR_FOR_PROXY_CLASS = False
@@ -62,6 +63,10 @@ log = Log.Log(NAME,BE_VERBOSE,SHOW_WARNINGS)
 
 # -------------------------------------------------------------------------
 # Exception classes
+
+
+class NotModifiedException(RuntimeError):
+    pass
 
 
 class SkipFileError(RuntimeError):
@@ -133,8 +138,10 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
         __Traverse(tree, interfaces)
         return interfaces
 
-    if BE_VERBOSE:
-        log.Print("Parsing '%s'..." % source_file)
+    log.Info("Parsing '%s'..." % source_file)
+
+    if not FORCE and (os.path.exists(output_file) and (os.path.getmtime(source_file) < os.path.getmtime(output_file))):
+        raise NotModifiedException(output_file)
 
     ids = os.path.join("@" + os.path.dirname(source_file), IDS_DEFINITIONS_FILE)
 
@@ -1348,6 +1355,11 @@ if __name__ == "__main__":
                            action="store_true",
                            default=BE_VERBOSE,
                            help="enable verbose logging (default: verbose logging disabled)")
+    argparser.add_argument("--force",
+                           dest="force",
+                           action="store_true",
+                           default=FORCE,
+                           help="force stub generation even if destination appears up-to-date (default: force disabled)")
     argparser.add_argument('-I', dest="includePaths", metavar="INCLUDE_DIR", action='append', default=[], type=str,
                            help='add an include path (can be used multiple times)')
 
@@ -1357,6 +1369,7 @@ if __name__ == "__main__":
     USE_OLD_CPP = args.old_cpp
     SHOW_WARNINGS = not args.no_warnings
     BE_VERBOSE = args.verbose
+    FORCE = args.force
     log.be_verbose = BE_VERBOSE
     log.warning = SHOW_WARNINGS
     INTERFACE_NAMESPACE = args.if_namespace
@@ -1451,6 +1464,9 @@ if __name__ == "__main__":
                         for f in sorted(output, key=lambda x: str(x.id)):
                             print(f.id, f.obj.full_name)
 
+                except NotModifiedException as err:
+                    log.Print("skipped file '%s', up-to-date" % err)
+                    skipped.append(source_file)
                 except SkipFileError as err:
                     log.Print("skipped file '%s'" % err)
                     skipped.append(source_file)
@@ -1484,7 +1500,7 @@ if __name__ == "__main__":
             if len(interface_files) > 1 and BE_VERBOSE:
                 print("")
 
-            log.Print(("all done; %i file%s processed" %
+            log.Info(("all done; %i file%s processed" %
                        (len(interface_files) - len(skipped), "s" if len(interface_files) - len(skipped) > 1 else "")) +
                       ((" (%i file%s skipped)" % (len(skipped), "s" if len(skipped) > 1 else "")) if skipped else "") +
                       ("; %i interface%s parsed:" % (len(faces), "s" if len(faces) > 1 else "")) +
