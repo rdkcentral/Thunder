@@ -933,7 +933,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                 emit.Line("}")
 
                 else:
-                    log.Print("stubbed method %s" % m.full_name, source_file)
+                    log.Info("stubbed method %s" % m.full_name, source_file)
                     emit.Line("// RPC::Data::Input& input(message->Parameters());")
                     emit.Line()
 
