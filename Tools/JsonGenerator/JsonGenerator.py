@@ -3402,10 +3402,11 @@ def CreateCode(schema, source_file, path, generateClasses, generateStubs, genera
         header_file = os.path.join(directory, DATA_NAMESPACE + "_" + filename + ".h")
         enum_file = os.path.join(directory, "JsonEnum_" + filename + ".cpp")
 
+        data_emitted = 0
         if generateClasses:
-            data_emitted = 0
             if not FORCE and (os.path.exists(header_file) and (os.path.getmtime(source_file) < os.path.getmtime(header_file))):
                 log.Success("skipping file '%s', up-to-date" % header_file)
+                data_emitted = 1
             else:
                 with open(header_file, "w") as output_file:
                     emitter = Emitter(output_file, INDENT_SIZE)
@@ -3426,10 +3427,10 @@ def CreateCode(schema, source_file, path, generateClasses, generateStubs, genera
                     except:
                         pass
 
-            enum_emitted = 0
             if not FORCE and (os.path.exists(enum_file) and (os.path.getmtime(source_file) < os.path.getmtime(enum_file))):
                 log.Success("skipping file '%s', up-to-date" % enum_file)
             else:
+                enum_emitted = 0
                 with open(enum_file, "w") as output_file:
                     emitter = Emitter(output_file, INDENT_SIZE)
                     emitter.Line()
