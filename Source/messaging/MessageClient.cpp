@@ -50,7 +50,7 @@ namespace Messaging {
 
         _clients.emplace(std::piecewise_construct,
             std::forward_as_tuple(id),
-            std::forward_as_tuple(_identifier, id, false, _basePath, _socketPort));
+            std::forward_as_tuple(_identifier, id, _basePath, _socketPort));
 
         _adminLock.Unlock();
     }
@@ -131,13 +131,7 @@ namespace Messaging {
         _adminLock.Lock();
 
         for (auto& client : _clients) {
-            auto length = metaData.Serialize(_writeBuffer, bufferSize);
-
-            if (length < bufferSize - 1) {
-                _writeBuffer[length++] = static_cast<uint8_t>(enable);
-
-                client.second.PushMetadata(length, _writeBuffer, bufferSize);
-            }
+            client.second.Update(1000, metaData, enable);
         }
 
         _adminLock.Unlock();
@@ -146,28 +140,19 @@ namespace Messaging {
     /**
      * @brief Get list of currently announced message controls
      */
-    void MessageClient::Controls(Core::Messaging::ControlList::InformationStorage& controls) const
+    void MessageClient::Controls(Core::Messaging::MessageUnit::Iterator& controls) const
     {
-        controls.clear();
-
-        uint16_t bufferSize = sizeof(_writeBuffer);
+        Core::Messaging::MessageUnit::ControlList list;
 
         _adminLock.Lock();
 
         for (auto& client : _clients) {
-            auto writtenBack = client.second.PushMetadata(0, _writeBuffer, bufferSize);
-            if (writtenBack > 0) {
-                Core::Messaging::ControlList controlList;
-                controlList.Deserialize(_writeBuffer, writtenBack);
-
-                auto it = controlList.Information();
-                while (it.Next()) {
-                    controls.emplace_back(it.Current().first, it.Current().second);
-                }
-            }
+            client.second.Load(list);
         }
 
         _adminLock.Unlock();
+
+        controls = std::move(list);
     }
 
     /**
@@ -195,7 +180,7 @@ namespace Messaging {
 
                 auto length = information.Deserialize(_readBuffer, size);
 
-                if (length > sizeof(Core::Messaging::MessageType) && length < sizeof(_readBuffer)) {
+                if ((length > sizeof(Core::Messaging::MessageType)) && (length < sizeof(_readBuffer))) {
                     auto factory = _factories.find(information.MessageMetaData().Type());
                     if (factory != _factories.end()) {
                         message = factory->second->Create();
