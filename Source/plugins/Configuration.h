@@ -66,7 +66,6 @@ namespace Plugin {
                 , Priority(0)
                 , OutOfProcess(false)
                 , Mode(ModeType::LOCAL)
-                , SystemRootPath()
                 , RemoteAddress()
                 , Configuration(false)
             {
@@ -77,7 +76,6 @@ namespace Plugin {
                 Add(_T("priority"), &Priority);
                 Add(_T("outofprocess"), &OutOfProcess);
                 Add(_T("mode"), &Mode);
-                Add(_T("systemrootpath"), &SystemRootPath);
                 Add(_T("remoteaddress"), &RemoteAddress);
                 Add(_T("configuration"), &Configuration);
             }
@@ -90,7 +88,6 @@ namespace Plugin {
                 , Priority(0)
                 , OutOfProcess(false)
                 , Mode(ModeType::LOCAL)
-                , SystemRootPath()
                 , RemoteAddress()
                 , Configuration(false)
             {
@@ -101,7 +98,6 @@ namespace Plugin {
                 Add(_T("priority"), &Priority);
                 Add(_T("outofprocess"), &OutOfProcess);
                 Add(_T("mode"), &Mode);
-                Add(_T("systemrootpath"), &SystemRootPath);
                 Add(_T("remoteaddress"), &RemoteAddress);
                 Add(_T("configuration"), &Configuration);
 
@@ -136,7 +132,6 @@ namespace Plugin {
                 , Priority(copy.Priority)
                 , OutOfProcess(true)
                 , Mode(copy.Mode)
-                , SystemRootPath(copy.SystemRootPath)
                 , RemoteAddress(copy.RemoteAddress)
                 , Configuration(copy.Configuration)
             {
@@ -147,7 +142,6 @@ namespace Plugin {
                 Add(_T("priority"), &Priority);
                 Add(_T("outofprocess"), &OutOfProcess);
                 Add(_T("mode"), &Mode);
-                Add(_T("systemrootpath"), &SystemRootPath);
                 Add(_T("remoteaddress"), &RemoteAddress);
                 Add(_T("configuration"), &Configuration);
             }
@@ -163,7 +157,6 @@ namespace Plugin {
                 OutOfProcess = RHS.OutOfProcess;
                 Mode = RHS.Mode;
                 RemoteAddress = RHS.RemoteAddress;
-                SystemRootPath = RHS.SystemRootPath;
                 Configuration = RHS.Configuration;
 
                 return (*this);
@@ -193,7 +186,6 @@ namespace Plugin {
             Core::JSON::DecSInt8 Priority;
             Core::JSON::Boolean OutOfProcess;
             Core::JSON::EnumType<ModeType> Mode;
-            Core::JSON::String SystemRootPath;
             Core::JSON::String RemoteAddress;
             Core::JSON::String Configuration;
         };
