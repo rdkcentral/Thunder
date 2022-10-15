@@ -674,9 +674,7 @@ POP_WARNING()
         if (announceMessage->Response().IsSet() == true) {
             string jsonMessagingCategories(announceMessage->Response().MessagingCategories());
             if (!jsonMessagingCategories.empty()) {
-#if defined(__CORE_MESSAGING__)
-                Core::Messaging::MessageUnit::Instance().Configure(jsonMessagingCategories);
-#else
+#if !defined(__CORE_MESSAGING__)
                 Trace::TraceUnit::Instance().Defaults(jsonMessagingCategories);
 #endif
             }

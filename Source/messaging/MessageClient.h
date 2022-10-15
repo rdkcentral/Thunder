@@ -47,7 +47,7 @@ namespace Messaging {
         void SkipWaiting();
 
         void Enable(const Core::Messaging::MetaData& metaData, const bool enable);
-        void Controls(Core::Messaging::ControlList::InformationStorage& controls) const;
+        void Controls(Core::Messaging::MessageUnit::Iterator& controls) const;
 
         void PopMessagesAndCall(std::function<void(const Core::Messaging::Information& info, const Core::ProxyType<Core::Messaging::IEvent>& message)> function);
 
@@ -56,7 +56,7 @@ namespace Messaging {
 
     private:
         using Factories = std::unordered_map<Core::Messaging::MessageType, Core::Messaging::IEventFactory*>;
-        using Clients = std::unordered_map<uint32_t, Core::Messaging::MessageUnit::MessageDispatcher>;
+        using Clients = std::unordered_map<uint32_t, Core::Messaging::MessageUnit::Client>;
 
         mutable Core::CriticalSection _adminLock;
         const string _identifier;

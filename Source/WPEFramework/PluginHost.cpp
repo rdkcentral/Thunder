@@ -18,6 +18,7 @@
  */
 
 #include "PluginServer.h"
+#include <fstream>
 
 #ifndef __WINDOWS__
 #include <dlfcn.h> // for dladdr
@@ -447,9 +448,7 @@ POP_WARNING()
 #endif
 
         std::set_terminate(UncaughtExceptions);
-#if defined(__CORE_MESSAGING__)
-        Core::Messaging::MessageUnit::Instance().IsBackground(_background);
-#else
+#if !defined(__CORE_MESSAGING__)
         Logging::SysLog(!_background);
 #endif
 
@@ -533,11 +532,36 @@ POP_WARNING()
                 postMortemPath.CreatePath();
             }
 
+            if (_config->MessagingCategoriesFile()) {
+
+                messagingSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + _config->MessagingCategories();
+
+#if defined(__CORE_MESSAGING__)
+                std::ifstream inputFile (messagingSettings, std::ifstream::in);
+                std::stringstream buffer;
+                buffer << inputFile.rdbuf();
+                messagingSettings = buffer.str();
+#else
+                Core::File input(messagingSettings);
+
+                if (input.Open(true)) {
+                    Trace::TraceUnit::Instance().Defaults(input);
+                }
+#endif
+            }
+            else {
+#if defined(__CORE_MESSAGING__)
+                messagingSettings = _config->MessagingCategories();
+#else
+                Trace::TraceUnit::Instance().Defaults(_config->MessagingCategories());
+#endif
+            }
+
             // Time to open up, the message buffer for this process and define it for the out-of-proccess systems
             // Define the environment variable for Messaging files, if it is not already set.
             uint32_t messagingErrorCode = Core::ERROR_GENERAL;
 #if defined(__CORE_MESSAGING__)
-            messagingErrorCode = Core::Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), _config->MessagingPort());
+            messagingErrorCode = Core::Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), _config->MessagingPort(), messagingSettings, _background);
 #else
             messagingErrorCode = Trace::TraceUnit::Instance().Open(_config->VolatilePath());
 #endif
@@ -553,29 +577,6 @@ POP_WARNING()
                 }
             }
             
-            if (_config->MessagingCategoriesFile()) {
-
-                messagingSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + _config->MessagingCategories();
-
-                Core::File input (messagingSettings);
-
-                if (input.Open(true)) {
-#if defined(__CORE_MESSAGING__)
-                    Core::Messaging::MessageUnit::Instance().Configure(input);
-#else
-                    Trace::TraceUnit::Instance().Defaults(input);
-#endif
-                }
-            }
-
-            else {
-#if defined(__CORE_MESSAGING__)
-                Core::Messaging::MessageUnit::Instance().Configure(_config->MessagingCategories());
-#else
-                Trace::TraceUnit::Instance().Defaults(_config->MessagingCategories());
-#endif
-            }
-
 #ifdef __CORE_WARNING_REPORTING__
             if (WarningReporting::WarningReportingUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE) {
 #ifndef __WINDOWS__
