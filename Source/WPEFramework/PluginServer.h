@@ -101,7 +101,7 @@ namespace PluginHost {
         };
 
     private:
-        class WorkerPoolImplementation : public Core::WorkerPool {
+        class WorkerPoolImplementation : public Core::WorkerPool, public Core::ThreadPool::ICallback {
         private:
             class Dispatcher : public Core::ThreadPool::IDispatcher {
             public:
@@ -125,12 +125,18 @@ namespace PluginHost {
             WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
             WorkerPoolImplementation(const uint32_t stackSize)
-                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 16, &_dispatch)
+                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 16, &_dispatch, this)
                 , _dispatch()
             {
                 Run();
             }
             ~WorkerPoolImplementation() override = default;
+
+        public:
+            void Idle() {
+                // Could be that we can now drop the dynamic library...
+                Core::ServiceAdministrator::Instance().FlushLibraries();
+            }
 
         private:
             Dispatcher _dispatch;
@@ -1032,8 +1038,6 @@ namespace PluginHost {
                 if (dispatcher != nullptr) {
                     dispatcher->Close(id);
                     dispatcher->Release();
-                    // Could be that we can now drop the dynamic library...
-                    Core::ServiceAdministrator::Instance().FlushLibraries();
                 }
             }
 
@@ -1263,9 +1267,6 @@ namespace PluginHost {
                 if (currentIF != nullptr) {
 
                     currentIF->Release();
-
-                    // Could be that we can now drop the dynamic library...
-                    Core::ServiceAdministrator::Instance().FlushLibraries();
                 }
             }
 
