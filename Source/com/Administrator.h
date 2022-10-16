@@ -429,7 +429,7 @@ namespace RPC {
 
         InvokeServerType()
             : _dispatcher()
-            , _threadPoolEngine(THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS, &_dispatcher, nullptr)
+            , _threadPoolEngine(THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS, &_dispatcher, nullptr, nullptr, nullptr)
             , _handler(nullptr)
         {
             _threadPoolEngine.Run();
