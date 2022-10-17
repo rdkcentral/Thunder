@@ -26,6 +26,7 @@ import posixpath
 import urllib
 import glob
 import copy
+import tempfile
 from collections import OrderedDict
 from enum import Enum
 
@@ -57,6 +58,8 @@ RPC_FORMAT = RpcFormat.COMPLIANT
 RPC_FORMAT_FORCED = False
 
 log = None
+
+temp_files = []
 
 try:
     import jsonref
@@ -769,78 +772,7 @@ def JsonItem(name, parent, schema, print_name=None, included=None):
 def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
     additional_includes = []
 
-    def PreprocessJson(file, string, include_path=None, cpp_include_path=None, header_include_paths=[]):
-        def _Tokenize(contents):
-            # Tokenize the JSON first to be able to preprocess it easier
-            formula = (
-                # multi-line comments
-                r"(/\*(.|[\r\n])*?\*/)"
-                # single line comments
-                r"|(//.*)"
-                # double quotes
-                r'|("(?:[^\\"]|\\.)*")'
-                # singe quotes
-                r"|('(?:[^\\']|\\.)*')"
-                # single-char operators
-                r"|([~,:;?=^/*-\+&<>\{\}\(\)\[\]])")
-
-            tokens = [s.strip() for s in re.split(formula, contents, flags=re.MULTILINE) if s]
-            # Remove comments from the JSON
-            tokens = [s for s in tokens if (s and (s[:2] != '/*' and s[:2] != '//'))]
-            return tokens
-
-        path = os.path.abspath(os.path.dirname(file))
-        tokens = _Tokenize(string)
-        for c, t in enumerate(tokens):
-            # BUG?: jsonref (urllib) needs file:// and absolute path to a ref'd file
-            if (t == '"$ref"') and (tokens[c+1] == ":") and (tokens[c+2][:2] != '"#') and (tokens[c+2].endswith('.json"') or tokens[c+2].endswith('.json#"')):
-                ref_file = tokens[c+2].strip('"')
-                ref_tok = ref_file.split("#", 1) if "#" in ref_file else [ref_file, ""]
-                if "{interfacedir}/" in ref_file:
-                    ref_tok[0] = ref_tok[0].replace("{interfacedir}/", (include_path + os.sep) if include_path else "")
-                    if not include_path:
-                        ref_tok[0] = os.path.join(path, ref_tok[0])
-                else:
-                    if os.path.isfile(os.path.join(path, ref_tok[0])):
-                        ref_tok[0] = os.path.join(path, ref_tok[0])
-                if not os.path.isfile(ref_tok[0]):
-                    raise RuntimeError("$ref file '%s' not found" % ref_tok[0])
-                ref_file = '"file:%s#%s"' % (urllib.request.pathname2url(ref_tok[0]), ref_tok[1])
-                tokens[c + 2] = ref_file
-            elif (t == '"$cppref"' or t == '"$ref"') and (tokens[c+1] == ":") and (tokens[c+2][:2] != '"#') and (tokens[c+2].endswith('.h"') or tokens[c+2].endswith('.h#"')):
-                ref_file = tokens[c + 2].strip('"')
-                ref_tok = ref_file.split("#", 1) if "#" in ref_file else [ref_file, ""]
-                if "{cppinterfacedir}/" in ref_file:
-                    ref_tok[0] = ref_tok[0].replace("{cppinterfacedir}/", (cpp_include_path + os.sep) if cpp_include_path else "")
-                    if not cpp_include_path:
-                        ref_tok[0] = os.path.join(path, ref_tok[0])
-                else:
-                    if os.path.isfile(os.path.join(path, ref_tok[0])):
-                        ref_tok[0] = os.path.join(path, ref_tok[0])
-                if not os.path.isfile(ref_tok[0]):
-                    raise RuntimeError("$ref file '%s' not found" % ref_tok[0])
-                cppif, _ = LoadInterface(ref_tok[0], True, header_include_paths)
-                if cppif:
-                    if ref_tok[0] not in additional_includes:
-                        additional_includes.append(ref_tok[0])
-                    tokens[c] = json.dumps(cppif)
-                    tokens[c - 1] = ""
-                    tokens[c + 1] = ""
-                    tokens[c + 2] = ""
-                    if tokens[c + 4] == '"include"':
-                        log.Warn("Using 'include' in 'interface' is deprecated, use a list of interfaces instead")
-                        tokens[c + 16] = ""
-                    else:
-                        tokens[c + 3] = ""
-                else:
-                    raise RuntimeError("failed to parse C++ header '%s'" % ref_tok[0])
-            elif (t == '"$ref"') and (tokens[c+1] == ":") and ("::" in tokens[c+2]):
-                tokens[c] = '"@dataref"'
-        # Return back the preprocessed JSON as a string
-        return " ".join(tokens)
-
     def Adjust(schema):
-
         def AdjustByFormat(schema):
             # Fixes properties to conform to params/result scheme
             # Also automatically enclose params in object for COMPLIANT mode
@@ -877,8 +809,7 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
             else:
                 AdjustByFormat(schema["interface"])
 
-    def MarkRefs(schema, parent_name, parent, root):
-
+    def MarkRefs(schema, parent_name, parent, root, idx=None):
         def _Find(element, root):
             paths = element.split("/")
             data = root
@@ -905,8 +836,12 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
         if isinstance(schema, jsonref.JsonRef):
             if "description" in schema.__reference__ or "example" in schema.__reference__ or "default" in schema.__reference__:
                 # Need a copy, there an override on one of the properites
-                parent[parent_name] = copy.deepcopy(schema)
-                new_schema = parent[parent_name]
+                if idx == None:
+                    parent[parent_name] = copy.deepcopy(schema)
+                    new_schema = parent[parent_name]
+                else:
+                    parent[parent_name][idx] = copy.deepcopy(schema)
+                    new_schema = parent[parent_name][idx]
                 new_schema["@ref"] = schema.__reference__["$ref"]
                 if "description" in schema.__reference__:
                     new_schema["description"] = schema.__reference__["description"]
@@ -915,17 +850,25 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
                 if "default" in schema.__reference__:
                     new_schema["default"] = schema.__reference__["default"]
                 schema = new_schema
-            else:
+            elif isinstance(schema.__reference__["$ref"], dict):
                 schema["@ref"] = schema.__reference__["$ref"]
 
         if isinstance(schema, OrderedDict):
             for elem, item in schema.items():
-                MarkRefs(item, elem, schema, root)
+                if isinstance(item, list):
+                    for i, e in enumerate(item):
+                        MarkRefs(e, elem, schema, root, i)
+                else:
+                    MarkRefs(item, elem, schema, root, None)
             if "@dataref" in schema:
                 splitted_path = schema["@dataref"].split('/')
                 json_path = '/'.join(splitted_path[:-1])
                 cpp_path = splitted_path[-1]
                 obj = _Find(json_path, root)
+                if not obj and "interface" in root:
+                    obj = _Find(json_path, root["interface"])
+                if not obj and "interfaces" in root:
+                    obj = _Find(json_path, root["interfaces"])
                 if obj:
                     found = False
                     for o in obj:
@@ -949,8 +892,56 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
                     raise RuntimeError("Failed to find $ref path '%s' (JSON part)" % schema["@dataref"])
 
     with open(file, "r") as json_file:
-        json_pre = PreprocessJson(file, json_file.read(), include_path, cpp_include_path, header_include_paths)
-        json_resolved = jsonref.loads(json_pre, object_pairs_hook=OrderedDict)
+        def Preprocess(pairs):
+            def Scan(pairs):
+                for i, c in enumerate(pairs):
+                    if isinstance(c, tuple):
+                        k = c[0]
+                        v = c[1]
+                        if isinstance(v, list):
+                            Scan(v)
+                        elif k == "$ref":
+                            if ".json" in v:
+                                # Need to prepend with 'file:' for jsonref to load an external file..
+                                ref = v.split("#") if "#" in v else [v,""]
+                                if ("{interfacedir}" in ref[0]) and include_path:
+                                    ref_file = ref[0].replace("{interfacedir}", include_path)
+                                    if os.path.exists(ref_file):
+                                        pairs[i] = (k, ("file:" + ref_file + "#" + ref[1]))
+                                    else:
+                                        raise RuntimeError("$ref file '%s' not found" % ref_file)
+                                else:
+                                    ref_file = os.path.abspath(os.path.dirname(file)) + os.sep + ref[0]
+                                    if not os.path.exists(ref_file):
+                                        ref_file = v
+                                    else:
+                                        pairs[i] = (k, ("file:" + ref_file + "#" + ref[1]))
+                            elif v.endswith(".h") or v.endswith(".h#"):
+                                ref = v.replace("#", "")
+                                if ("{interfacedir}" in ref or "{cppinterfacedir}" in ref) and cpp_include_path:
+                                    ref_file = ref.replace("{interfacedir}", cpp_include_path).replace("{cppinterfacedir}", cpp_include_path)
+                                    if os.path.exists(ref_file):
+                                        cppif, _ = LoadInterface(ref_file, True, header_include_paths)
+                                        if cppif:
+                                            if ref_file not in additional_includes:
+                                                additional_includes.append(ref_file)
+                                            with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp_json_file:
+                                                temp_json_file.write(json.dumps(cppif))
+                                                pairs[i] = (k, "file:" + temp_json_file.name)
+                                                temp_files.append(temp_json_file.name)
+                                    else:
+                                        raise RuntimeError("$ref file '%s' not found" % ref_file)
+                            elif "::" in v:
+                                pairs[i] = ("@dataref", v)
+
+            Scan(pairs)
+            d = OrderedDict()
+            for k,v in pairs:
+                d[k] = v
+            return d
+
+        #json_pre = PreprocessJson(file, json_file.read(), include_path, cpp_include_path, header_include_paths)
+        json_resolved = jsonref.loads(json_file.read(), object_pairs_hook=Preprocess)
         Adjust(json_resolved)
         MarkRefs(json_resolved, None, None, json_resolved)
         return [json_resolved], additional_includes
@@ -3800,8 +3791,15 @@ if __name__ == "__main__":
                 log.Error(str(err))
             except ValueError as err:
                 log.Error(str(err))
+            except jsonref.JsonRefError as err:
+                log.Error(str(err))
 
         log.Info("JsonGenerator: All done, {} files parsed, {} error{}.".format(len(files), len(log.errors) if log.errors else 'no',
                                                               '' if len(log.errors) == 1 else 's'))
+
+        for tf in temp_files:
+            os.remove(tf)
+
         if log.errors:
             sys.exit(1)
+
