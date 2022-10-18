@@ -74,6 +74,7 @@ DEFAULT_INT_SIZE = 32
 CPP_INTERFACE_PATH = "interfaces" + os.sep
 JSON_INTERFACE_PATH = CPP_INTERFACE_PATH + "json"
 DUMP_JSON = False
+FORCE = False
 
 GLOBAL_DEFINITIONS = "global.json"
 DATA_NAMESPACE = "JsonData"
@@ -240,8 +241,10 @@ class JsonType():
     def is_copy_ctor_needed(self):
         return False
 
+class JsonNative:
+    pass
 
-class JsonNull(JsonType):
+class JsonNull(JsonNative, JsonType):
     @property
     def cpp_type(self):
         return self.cpp_native_type
@@ -250,7 +253,7 @@ class JsonNull(JsonType):
     def cpp_native_type(self):
         return "void"
 
-class JsonBoolean(JsonType):
+class JsonBoolean(JsonNative, JsonType):
     @property
     def cpp_class(self):
         return TypePrefix("Boolean")
@@ -260,7 +263,7 @@ class JsonBoolean(JsonType):
         return "bool"
 
 
-class JsonNumber(JsonType):
+class JsonNumber(JsonNative, JsonType):
     def __init__(self, name, parent, schema, size = DEFAULT_INT_SIZE, signed = False):
         JsonType.__init__(self, name, parent, schema)
         self.size = schema["size"] if "size" in schema else size
@@ -287,7 +290,7 @@ class AuxJsonInteger(JsonInteger):
         JsonInteger.__init__(self, "@_generated_" + name, None, {}, size, signed)
 
 
-class JsonFloat(JsonType):
+class JsonFloat(JsonNative, JsonType):
     @property
     def cpp_class(self):
         return TypePrefix("Float")
@@ -297,7 +300,7 @@ class JsonFloat(JsonType):
         return "float"
 
 
-class JsonDouble(JsonType):
+class JsonDouble(JsonNative, JsonType):
     @property
     def cpp_class(self):
         return TypePrefix("Double")
@@ -307,7 +310,7 @@ class JsonDouble(JsonType):
         return "double"
 
 
-class JsonString(JsonType):
+class JsonString(JsonNative, JsonType):
     @property
     def cpp_class(self):
         return TypePrefix("String")
@@ -643,8 +646,8 @@ class JsonNotification(JsonMethod):
         self.is_status_listener = schema["statuslistener"] if "statuslistener" in schema else False
         self.endpoint_name = (IMPL_EVENT_PREFIX + self.json_name)
         for param in self.params.properties:
-            if param.do_create:
-                log.Warn("'%s': notification parameters refer to generated JSON objects" % name)
+            if not isinstance(param,JsonNative) and param.do_create:
+                log.Info("'%s': notification parameter '%s' refers to generated JSON objects" % (name, param.name))
                 break
 
 
@@ -764,6 +767,8 @@ def JsonItem(name, parent, schema, print_name=None, included=None):
 
 
 def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
+    additional_includes = []
+
     def PreprocessJson(file, string, include_path=None, cpp_include_path=None, header_include_paths=[]):
         def _Tokenize(contents):
             # Tokenize the JSON first to be able to preprocess it easier
@@ -814,8 +819,10 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
                         ref_tok[0] = os.path.join(path, ref_tok[0])
                 if not os.path.isfile(ref_tok[0]):
                     raise RuntimeError("$ref file '%s' not found" % ref_tok[0])
-                cppif = LoadInterface(ref_tok[0], True, header_include_paths)
+                cppif, _ = LoadInterface(ref_tok[0], True, header_include_paths)
                 if cppif:
+                    if ref_tok[0] not in additional_includes:
+                        additional_includes.append(ref_tok[0])
                     tokens[c] = json.dumps(cppif)
                     tokens[c - 1] = ""
                     tokens[c + 1] = ""
@@ -896,9 +903,20 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
 
         # Tags all objects that used to be $references
         if isinstance(schema, jsonref.JsonRef):
-            schema["@ref"] = schema.__reference__["$ref"]
-            if "description" in schema.__reference__:
-                schema["description"] = schema.__reference__["description"]
+            if "description" in schema.__reference__ or "example" in schema.__reference__ or "default" in schema.__reference__:
+                # Need a copy, there an override on one of the properites
+                parent[parent_name] = copy.deepcopy(schema)
+                new_schema = parent[parent_name]
+                new_schema["@ref"] = schema.__reference__["$ref"]
+                if "description" in schema.__reference__:
+                    new_schema["description"] = schema.__reference__["description"]
+                if "example" in schema.__reference__:
+                    new_schema["example"] = schema.__reference__["example"]
+                if "default" in schema.__reference__:
+                    new_schema["default"] = schema.__reference__["default"]
+                schema = new_schema
+            else:
+                schema["@ref"] = schema.__reference__["$ref"]
 
         if isinstance(schema, OrderedDict):
             for elem, item in schema.items():
@@ -919,6 +937,10 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
                             parent[parent_name]["@ref"] = "@" + json_path + "/" + cpp_obj["original_name"]
                             if "description" in schema:
                                 parent[parent_name]["description"] = schema["description"]
+                            if "example" in schema:
+                                parent[parent_name]["example"] = schema["example"]
+                            if "default" in schema:
+                                parent[parent_name]["default"] = schema["default"]
                             found = True
                             break
                     if not found:
@@ -931,7 +953,9 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
         json_resolved = jsonref.loads(json_pre, object_pairs_hook=OrderedDict)
         Adjust(json_resolved)
         MarkRefs(json_resolved, None, None, json_resolved)
-        return json_resolved
+        return [json_resolved], additional_includes
+
+    return [], []
 
 
 ########################################################
@@ -1433,7 +1457,7 @@ def LoadInterface(file, all = False, includePaths = []):
     else:
         log.Info("No interfaces found")
 
-    return schemas
+    return schemas, []
 
 
 
@@ -1564,8 +1588,11 @@ class ObjectTracker:
             for obj in self.objects[:-1]:
                 if _CompareObject(obj.schema["properties"], props):
                     if not GENERATED_JSON and not NO_DUP_WARNINGS and (not is_ref and not IsInRef(obj)):
-                        log.Warn("'%s': duplicate object (same as '%s') - consider using $ref" %
-                                (newObj.print_name, obj.print_name))
+                        warning = "'%s': duplicate object (same as '%s') - consider using $ref" % (newObj.print_name, obj.print_name)
+                        if len(props) > 2:
+                            log.Warn(warning)
+                        else:
+                            log.Info(warning)
                     return obj
         return None
 
@@ -2474,7 +2501,7 @@ def EmitHelperCode(root, emit, header_file):
 # C++ OBJECT GENERATOR
 #
 
-def EmitObjects(root, emit, if_file, emitCommon=False):
+def EmitObjects(root, emit, if_file, additional_includes, emitCommon=False):
     global emittedItems
     emittedItems = 0
 
@@ -2641,6 +2668,8 @@ def EmitObjects(root, emit, if_file, emitCommon=False):
     emit.Line("#include <core/JSON.h>")
     if if_file.endswith(".h"):
         emit.Line("#include <%s%s>" % (CPP_INTERFACE_PATH, if_file))
+    for ai in additional_includes:
+        emit.Line("#include <%s%s>" % (CPP_INTERFACE_PATH, os.path.basename(ai)))
     if count:
         emit.Line("#include <core/Enumerate.h>")
     emit.Line()
@@ -2793,6 +2822,8 @@ def CreateDocument(schema, path):
             def _TableObj(name, obj, parentName="", parent=None, prefix="", parentOptional=False):
                 # determine if the attribute is optional
                 optional = parentOptional or (obj["optional"] if "optional" in obj else False)
+                deprecated = obj["deprecated"] if "deprecated" in obj else False
+                obsolete = obj["obsolete"] if "obsolete" in obj else False
                 if parent and not optional:
                     if parent["type"] == "object":
                         optional = ("required" not in parent and len(parent["properties"]) > 1) or (
@@ -2811,9 +2842,16 @@ def CreateDocument(schema, path):
                 if name or prefix:
                     if "type" not in obj:
                         raise RuntimeError("missing 'type' for object %s" % (parentName + "/" + name))
-                    row = (("<sup>" + italics("(optional)") + "</sup>" + " ") if optional else "") + description + enum
+                    row = (("<sup>" + italics("(optional)") + "</sup>" + " ") if optional else "")
+                    if deprecated:
+                        row = "<sup>" + italics("(deprecated)") + "</sup> " + row
+                    if obsolete:
+                        row = "<sup>" + italics("(obsolete)") + "</sup> " + row
+                    row += description + enum
                     if row.endswith('.'):
                         row = row[:-1]
+                    if optional and "default" in obj:
+                        row += " (default: " + (italics("%s") % str(obj["default"]) + ")")
                     MdRow([prefix, obj["type"], row])
 
                 if obj["type"] == "object":
@@ -3315,6 +3353,11 @@ def CreateDocument(schema, path):
                                 access = "WO"
                             if access:
                                 access = " <sup>%s</sup>" % access
+                            tags = ""
+                            if "obsolete" in contents and contents["obsolete"]:
+                                tags += "<sup>obsolete</sup> "
+                            if "deprecated" in contents and contents["deprecated"]:
+                                tags += "<sup>deprecated</sup> "
                             descr = ""
                             if "summary" in contents:
                                 descr = contents["summary"]
@@ -3323,7 +3366,7 @@ def CreateDocument(schema, path):
                                 if "i.e" in descr:
                                     descr = descr[0:descr.index("i.e") - 1]
                                 descr = descr.split(".", 1)[0] if "." in descr else descr
-                            MdRow([link(header + "." + (method.rsplit(".", 1)[1] if "." in method else method)) + access, descr])
+                            MdRow([tags + link(header + "." + (method.rsplit(".", 1)[1] if "." in method else method)) + access, descr])
                             emitted = True
                         skip_list.append(method)
                     if emitted:
@@ -3390,7 +3433,7 @@ def ParseJsonRpcSchema(schema):
     else:
         return None
 
-def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
+def CreateCode(schema, source_file, path, additional_includes, generateClasses, generateStubs, generateRpc):
     directory = os.path.dirname(path)
     filename = (schema["info"]["namespace"]) if "info" in schema and "namespace" in schema["info"] else ""
     filename += (schema["info"]["class"]) if "info" in schema and "class" in schema["info"] else ""
@@ -3401,51 +3444,62 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
         header_file = os.path.join(directory, DATA_NAMESPACE + "_" + filename + ".h")
         enum_file = os.path.join(directory, "JsonEnum_" + filename + ".cpp")
 
+        data_emitted = 0
         if generateClasses:
-            data_emitted = 0
-            with open(header_file, "w") as output_file:
-                emitter = Emitter(output_file, INDENT_SIZE)
-                emitter.Line()
-                emitter.Line("// C++ classes for %s JSON-RPC API." % rpcObj.info["title"].replace("Plugin", "").strip())
-                emitter.Line("// Generated automatically from '%s'. DO NOT EDIT." % os.path.basename(path))
-                emitter.Line()
-                emitter.Line("// Note: This code is inherently not thread safe. If required, proper synchronisation must be added.")
-                emitter.Line()
-                data_emitted = EmitObjects(rpcObj, emitter, os.path.basename(path), True)
-                if data_emitted:
-                    log.Success("JSON data classes generated in '%s'." % os.path.basename(output_file.name))
-                else:
-                    log.Info("No JSON data classes generated for '%s'." % os.path.basename(filename))
-            if not data_emitted and not KEEP_EMPTY:
-                try:
-                    os.remove(header_file)
-                except:
-                    pass
+            if not FORCE and (os.path.exists(header_file) and (os.path.getmtime(source_file) < os.path.getmtime(header_file))):
+                log.Success("skipping file '%s', up-to-date" % header_file)
+                data_emitted = 1
+            else:
+                with open(header_file, "w") as output_file:
+                    emitter = Emitter(output_file, INDENT_SIZE)
+                    emitter.Line()
+                    emitter.Line("// C++ classes for %s JSON-RPC API." % rpcObj.info["title"].replace("Plugin", "").strip())
+                    emitter.Line("// Generated automatically from '%s'. DO NOT EDIT." % os.path.basename(source_file))
+                    emitter.Line()
+                    emitter.Line("// Note: This code is inherently not thread safe. If required, proper synchronisation must be added.")
+                    emitter.Line()
+                    data_emitted = EmitObjects(rpcObj, emitter, os.path.basename(source_file), additional_includes, True)
+                    if data_emitted:
+                        log.Success("JSON data classes generated in '%s'." % os.path.basename(output_file.name))
+                    else:
+                        log.Info("No JSON data classes generated for '%s'." % os.path.basename(filename))
+                if not data_emitted and not KEEP_EMPTY:
+                    try:
+                        os.remove(header_file)
+                    except:
+                        pass
 
-            enum_emitted = 0
-            with open(enum_file, "w") as output_file:
-                emitter = Emitter(output_file, INDENT_SIZE)
-                emitter.Line()
-                emitter.Line("// Enumeration code for %s JSON-RPC API." %
-                             rpcObj.info["title"].replace("Plugin", "").strip())
-                emitter.Line("// Generated automatically from '%s'." % os.path.basename(path))
-                emitter.Line()
-                enum_emitted = EmitEnumRegs(rpcObj, emitter, filename, os.path.basename(path))
-                if enum_emitted:
-                    log.Success("JSON enumeration code generated in '%s'." % os.path.basename(output_file.name))
-                else:
-                    log.Info("No JSON enumeration code generated for '%s'." % os.path.basename(filename))
-            if not enum_emitted and not KEEP_EMPTY:
-                try:
-                    os.remove(enum_file)
-                except:
-                    pass
+            if not FORCE and (os.path.exists(enum_file) and (os.path.getmtime(source_file) < os.path.getmtime(enum_file))):
+                log.Success("skipping file '%s', up-to-date" % enum_file)
+            else:
+                enum_emitted = 0
+                with open(enum_file, "w") as output_file:
+                    emitter = Emitter(output_file, INDENT_SIZE)
+                    emitter.Line()
+                    emitter.Line("// Enumeration code for %s JSON-RPC API." %
+                                rpcObj.info["title"].replace("Plugin", "").strip())
+                    emitter.Line("// Generated automatically from '%s'." % os.path.basename(source_file))
+                    emitter.Line()
+                    enum_emitted = EmitEnumRegs(rpcObj, emitter, filename, os.path.basename(source_file))
+                    if enum_emitted:
+                        log.Success("JSON enumeration code generated in '%s'." % os.path.basename(output_file.name))
+                    else:
+                        log.Info("No JSON enumeration code generated for '%s'." % os.path.basename(filename))
+                if not enum_emitted and not KEEP_EMPTY:
+                    try:
+                        os.remove(enum_file)
+                    except:
+                        pass
 
             if not generateRpc or "@dorpc" not in rpcObj.schema:
-                with open(os.path.join(directory, "J" + filename + ".h"), "w") as output_file:
-                    emitter = Emitter(output_file, INDENT_SIZE)
-                    EmitVersionCode(rpcObj, emitter, filename, os.path.basename(path), data_emitted)
-                    log.Success("JSON-RPC version information generated in '%s'." % os.path.basename(output_file.name))
+                rpc_file = os.path.join(directory, "J" + filename + ".h")
+                if not FORCE and (os.path.exists(rpc_file) and (os.path.getmtime(source_file) < os.path.getmtime(rpc_file))):
+                    log.Success("skipping file '%s', up-to-date" % rpc_file)
+                else:
+                    with open(rpc_file, "w") as output_file:
+                        emitter = Emitter(output_file, INDENT_SIZE)
+                        EmitVersionCode(rpcObj, emitter, filename, os.path.basename(source_file), data_emitted)
+                        log.Success("JSON-RPC version information generated in '%s'." % os.path.basename(output_file.name))
 
         if generateStubs:
             with open(os.path.join(directory, filename + "JsonRpc.cpp"), "w") as output_file:
@@ -3455,11 +3509,15 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
                 log.Success("JSON-RPC stubs generated in '%s'." % os.path.basename(output_file.name))
 
         if generateRpc and "@dorpc" in rpcObj.schema and rpcObj.schema["@dorpc"]:
-            with open(os.path.join(directory, "J" + filename + ".h"), "w") as output_file:
-                emitter = Emitter(output_file, INDENT_SIZE)
-                emitter.Line()
-                EmitRpcCode(rpcObj, emitter, filename, os.path.basename(path), data_emitted)
-                log.Success("JSON-RPC implementation generated in '%s'." % os.path.basename(output_file.name))
+            output_filename = os.path.join(directory, "J" + filename + ".h")
+            if not FORCE and (os.path.exists(output_filename) and (os.path.getmtime(source_file) < os.path.getmtime(output_filename))):
+               log.Success("skipping file '%s', up-to-date" % os.path.basename(output_filename))
+            else:
+                with open(output_filename, "w") as output_file:
+                    emitter = Emitter(output_file, INDENT_SIZE)
+                    emitter.Line()
+                    EmitRpcCode(rpcObj, emitter, filename, os.path.basename(source_file), data_emitted)
+                    log.Success("JSON-RPC implementation generated in '%s'." % os.path.basename(output_file.name))
 
     else:
         log.Info("No code to generate.")
@@ -3500,8 +3558,13 @@ if __name__ == "__main__":
             metavar="DIR",
             action="store",
             default=None,
-            help=
-            "output directory, absolute path or directory relative to output file (default: output in the same directory as the source json)")
+            help="output directory, absolute path or directory relative to output file (default: output in the same directory as the source file)")
+    argparser.add_argument(
+            "--force",
+            dest="force",
+            action="store_true",
+            default=False,
+            help= "force code generation even if destination appears up-to-date (default: force disabled)")
 
     json_group = argparser.add_argument_group("JSON parser arguments (optional)")
     json_group.add_argument("-i",
@@ -3656,6 +3719,7 @@ if __name__ == "__main__":
     DEFAULT_EMPTY_STRING = args.def_string
     DEFAULT_INT_SIZE = args.def_int_size
     DUMP_JSON = args.dump_json
+    FORCE = args.force
     DEFAULT_DEFINITIONS_FILE = args.extra_include
     INTERFACE_NAMESPACE = "::" + args.if_namespace if args.if_namespace.find("::") != 0 else args.if_namespace
     INTERFACES_SECTION = not args.no_interfaces_section
@@ -3698,9 +3762,9 @@ if __name__ == "__main__":
             try:
                 log.Header(path)
                 if path.endswith(".h"):
-                    schemas = LoadInterface(path, False, args.includePaths)
+                    schemas, additional_includes = LoadInterface(path, False, args.includePaths)
                 else:
-                    schemas = [LoadSchema(path, args.if_dir, args.cppif_dir, args.includePaths)]
+                    schemas, additional_includes = LoadSchema(path, args.if_dir, args.cppif_dir, args.includePaths)
                 for schema in schemas:
                     if schema:
                         warnings = GENERATED_JSON
@@ -3715,7 +3779,7 @@ if __name__ == "__main__":
                                     os.makedirs(dir)
                                 output_path = os.path.join(dir, os.path.basename(output_path))
                         if generateCode or generateStubs or generateRpc:
-                            CreateCode(schema, output_path, generateCode, generateStubs, generateRpc)
+                            CreateCode(schema, path, output_path, additional_includes, generateCode, generateStubs, generateRpc)
                         if generateDocs:
                             if "$schema" in schema:
                                 if "info" in schema:

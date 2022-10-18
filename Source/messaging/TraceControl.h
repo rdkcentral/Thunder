@@ -35,7 +35,7 @@
 #else // _THUNDER_PRODUCTION
 
 #define TRACE_CONTROL(CATEGORY) \
-    WPEFramework::Messaging::ControlLifetime<CATEGORY, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Messaging::MessageType::TRACING>
+    WPEFramework::Messaging::LocalLifetimeType<CATEGORY, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Messaging::MessageType::TRACING>
 
 #define TRACE_ENABLED(CATEGORY) \
     TRACE_CONTROL(CATEGORY)::IsEnabled()

@@ -13,7 +13,7 @@ namespace WPEFramework {
 
 namespace Process {
 
-    class WorkerPoolImplementation : public Core::IIPCServer, public Core::WorkerPool {
+    class WorkerPoolImplementation : public Core::IIPCServer, public Core::WorkerPool, public Core::ThreadPool::ICallback {
     private:
         class Dispatcher : public Core::ThreadPool::IDispatcher {
         public:
@@ -71,7 +71,6 @@ POP_WARNING()
 
         public:
             void Dispatch() {
-                Core::ServiceAdministrator::Instance().FlushLibraries();
 
                 uint32_t instances = Core::ServiceAdministrator::Instance().Instances();
 
@@ -107,7 +106,7 @@ POP_WARNING()
 
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize, const string& callsign)
-            : WorkerPool(threads - 1, stackSize, queueSize, &_dispatcher)
+            : WorkerPool(threads - 1, stackSize, queueSize, &_dispatcher, this)
             , _dispatcher(callsign)
             , _announceHandler(nullptr)
             , _sink(*this)
@@ -141,6 +140,10 @@ POP_WARNING()
         void Stop()
         {
             Core::WorkerPool::Stop();
+        }
+        void Idle() {
+            // If we handled all pending requests, it is safe to "unload"
+            Core::ServiceAdministrator::Instance().FlushLibraries();
         }
 
     protected:
@@ -659,6 +662,7 @@ int main(int argc, char** argv)
             if (options.Group != nullptr) {
                 Core::ProcessCurrent().Group(string(options.Group));
             }
+
             if (options.User != nullptr) {
                 Core::ProcessCurrent().User(string(options.User));
             }

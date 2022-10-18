@@ -19,6 +19,8 @@ Makefile
 */*/*/Makefile
 */*/WPEFramework*Config.cmake
 */*/WPEFramework*ConfigVersion.cmake
+*/*/CompileSettingsDebugConfig.cmake
+*/*/CompileSettingsDebugConfigVersion.cmake
 *.pc
 *.so.*
 *.so

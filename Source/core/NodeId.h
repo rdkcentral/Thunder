@@ -175,6 +175,7 @@ namespace Core {
 
             return (0);
         }
+
         inline uint32_t Rights() const
         {
 #ifndef __WINDOWS__
@@ -257,6 +258,10 @@ namespace Core {
         {
             return ((IsMulticast() == false) && (IsLocalInterface() == false) && (IsAnyInterface() == false));
         }
+        inline string Group() const
+        {
+            return (m_group);
+        }
 
         string HostName() const;
 
@@ -299,6 +304,7 @@ namespace Core {
             return (reinterpret_cast<struct sockaddr*>(&(m_structInfo)));
         }
 
+        string m_group;
         mutable string m_hostName;
         SocketInfo m_structInfo;
         static bool m_isIPV6Enabled;

@@ -26,7 +26,7 @@
 #pragma once
 
 /* @define EXTERNAL */
-/* @define DEPRACETED */
+/* @define DEPRECATED */
 
 typedef char TCHAR;
 typedef wchar_t WCHAR;
