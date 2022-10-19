@@ -150,7 +150,6 @@ POP_WARNING()
         sigset_t mask;
         sigemptyset(&mask);
         sigaddset(&mask, SIGTERM);
-        sigaddset(&mask, SIGPIPE);
         pthread_sigmask(SIG_BLOCK, &mask, nullptr);
 #endif
 
