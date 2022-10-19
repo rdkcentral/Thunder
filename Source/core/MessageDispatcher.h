@@ -28,16 +28,15 @@
 namespace WPEFramework {
 namespace Core {
 
-    template <uint16_t METADATA_SIZE, uint16_t DATA_SIZE>
-    class MessageDispatcherType {
+    template <const uint16_t DATA_BUFFER_SIZE, const uint16_t METADATA_SIZE>
+    class MessageDataBufferType {
     private:
+
         /**
         * @brief MetaData Callback. First two arguments are for data in. Two later for data out (responded to the other side).
         *        Third parameter is initially set to maximum length that can be written to the out buffer
         *
         */
-        using MetaDataCallback = std::function<void(const uint16_t, const uint8_t*, uint16_t&, uint8_t*)>;
-
         class DataBuffer : public Core::CyclicBuffer {
         public:
             DataBuffer(const string& doorBell, const string& fileName, const uint32_t mode, const uint32_t bufferSize, const bool overwrite)
@@ -106,86 +105,23 @@ namespace Core {
             Core::DoorBell _doorBell;
         };
 
-        template <uint16_t SIZE>
-        class MetaDataBuffer : public Core::IPCChannelClientType<Core::Void, true, true> {
-        private:
-            using BaseClass = Core::IPCChannelClientType<Core::Void, true, true>;
-
-            class MetaDataFrameHandler : public Core::IIPCServer {
-            public:
-                MetaDataFrameHandler(MetaDataBuffer* parent)
-                    : _parent(*parent)
-                {
-                }
-                ~MetaDataFrameHandler() override = default;
-
-                MetaDataFrameHandler(const MetaDataFrameHandler&) = delete;
-                MetaDataFrameHandler& operator=(const MetaDataFrameHandler&) = delete;
-
-            public:
-                void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data) override
-                {
-                    auto message = Core::ProxyType<MetaDataFrame>(data);
-
-                    if (_parent._notification != nullptr) {
-                        uint16_t outLength = sizeof(_outBuffer);
-                        _parent._notification(message->Parameters().Length(), message->Parameters().Value(), outLength, _outBuffer);
-                        message->Response().Set(outLength, _outBuffer);
-                    }
-                    source.ReportResponse(data);
-                }
-
-            private:
-                uint8_t _outBuffer[SIZE];
-                MetaDataBuffer& _parent;
-            };
-
-        public:
-            using MetaDataFrame = Core::IPCMessageType<1, Core::IPC::BufferType<SIZE>, Core::IPC::BufferType<SIZE>>;
-
-            MetaDataBuffer() = default;
-            MetaDataBuffer(const string& binding)
-                : BaseClass(Core::NodeId(binding.c_str()), SIZE)
-            {
-                CreateFactory<MetaDataFrame>(1);
-                Register(MetaDataFrame::Id(), Core::ProxyType<Core::IIPCServer>(Core::ProxyType<MetaDataFrameHandler>::Create(this)));
-                Open(Core::infinite);
-            }
-            ~MetaDataBuffer() override
-            {
-                Close(Core::infinite);
-                Unregister(MetaDataFrame::Id());
-                DestroyFactory<MetaDataFrame>();
-            }
-
-            MetaDataBuffer(const MetaDataBuffer&) = delete;
-            MetaDataBuffer& operator=(const MetaDataBuffer&) = delete;
-
-            void RegisterMetaDataCallback(MetaDataCallback notification)
-            {
-                _notification = notification;
-            }
-            void UnregisterMetaDataCallback()
-            {
-                _notification = nullptr;
-            }
-
-        private:
-            MetaDataCallback _notification;
-        };
-
     public:
+        using MetaDataFrame = Core::IPCMessageType<1, Core::IPC::BufferType<METADATA_SIZE>, Core::IPC::BufferType<METADATA_SIZE>>;
+
+        MessageDataBufferType(const MessageDataBufferType&) = delete;
+        MessageDataBufferType& operator=(const MessageDataBufferType&) = delete;
+
         /**
          * @brief Construct a new Message Dispatcher object
          *
          * @param identifier name of the instance
          * @param instanceId number of the instance
-         * @param initialize should dispatcher be initialzied. Should be done only once, on the server side
          * @param baseDirectory where to place all the necessary files. This directory should exist before creating this class.
          * @param socketPort triggers the use of using a IP socket in stead of a domain socket if the port value is not 0.
          */
-        MessageDispatcherType(const string& identifier, const uint32_t instanceId, const bool initialize, const string& baseDirectory, const uint16_t socketPort = 0)
+        MessageDataBufferType(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t socketPort = 0, const bool initialize = false)
             : _filenames(PrepareFilenames(baseDirectory, identifier, instanceId, socketPort))
+            , _dataLock()
             // clang-format off
             , _dataBuffer(_filenames.doorBell, _filenames.data,  Core::File::USER_READ    |
                                                                  Core::File::USER_WRITE   |
@@ -195,29 +131,25 @@ namespace Core {
                                                                  Core::File::OTHERS_READ  |
                                                                  Core::File::OTHERS_WRITE |
                                                                  Core::File::SHAREABLE,
-                                                                 initialize ? DATA_SIZE : 0, true)
+                                                                 (initialize == true ? DATA_BUFFER_SIZE : 0), true)
             // clang-format on
-            , _metaDataBuffer(initialize ? new MetaDataBuffer<METADATA_SIZE>(_filenames.metaData) : nullptr)
         {
-            if (IsValid() == true) {
-                const uint32_t used = _dataBuffer.Used();
-                if ((initialize == false) && (used  > 0)) {
-                    TRACE_L1("%d bytes already in the buffer instance %d", used, instanceId);
+            if (_dataBuffer.IsValid() == false) {
+                _dataBuffer.Validate();
+            }
+
+            if (_dataBuffer.IsValid() == true) {
+                if ( (initialize == false) && (_dataBuffer.Used() > 0) ) {
+                    TRACE_L1("%d bytes already in the buffer instance %d", _dataBuffer.Used(), instanceId);
                     _dataBuffer.Ring();
                 }
             } else {
                 TRACE_L1("MessageDispatcher instance %d is not valid!", instanceId);
             }
         }
-
-        ~MessageDispatcherType()
-        {
+        ~MessageDataBufferType() {
             _dataBuffer.Relinquish();
-            _metaDataBuffer.reset(nullptr);
         }
-
-        MessageDispatcherType(const MessageDispatcherType&) = delete;
-        MessageDispatcherType& operator=(const MessageDispatcherType&) = delete;
 
         /**
         * @brief Writes data into cyclic buffer. After writing everything, this side should call Ring() to notify other side.
@@ -305,73 +237,12 @@ namespace Core {
         {
             _dataBuffer.Flush();
         }
-
-        /**
-         * @brief Exchanges metadata with the server. Reader needs to register for notifications to recevie this message.
-         *        Passed buffer will be filled with data from thr other side
-         *
-         * @param length length of the message
-         * @param value buffer
-         * @param maxLength maximum size of the buffer
-         * @return uint16_t how much data was written back to the buffer
-         */
-        uint16_t PushMetadata(const uint16_t length, uint8_t* value, const uint16_t maxLength) const
+        bool IsValid() const
         {
-            ASSERT(value != nullptr);
-            ASSERT(maxLength != 0);
-
-            _metaDataLock.Lock();
-
-            uint16_t readLength = 0;
-
-            Core::IPCChannelClientType<Core::Void, false, true> channel(Core::NodeId(_filenames.metaData.c_str()), METADATA_SIZE);
-
-            auto metaDataFrame = Core::ProxyType<typename MetaDataBuffer<METADATA_SIZE>::MetaDataFrame>::Create();
-
-            if (channel.Open(Core::infinite) == Core::ERROR_NONE) {
-                metaDataFrame->Parameters().Set(length, value);
-
-                if (channel.Invoke(metaDataFrame, Core::infinite) == Core::ERROR_NONE) {
-                    auto const & bufferType = metaDataFrame->Response();
-
-                    readLength = bufferType.Length();
-                    if (readLength <= maxLength) {
-                        std::copy_n(bufferType.Value(), readLength, value);
-                    }
-                }
-
-                channel.Close(Core::infinite);
-            }
-
-            _metaDataLock.Unlock();
-
-            return readLength;
+            return (_dataBuffer.IsValid());
         }
-
-        void RegisterDataAvailable(MetaDataCallback notification)
-        {
-            if (_metaDataBuffer->IsOpen() == true) {
-                _metaDataBuffer->RegisterMetaDataCallback(notification);
-            }
-        }
-
-        void UnregisterDataAvailable()
-        {
-            _metaDataBuffer->UnregisterMetaDataCallback();
-        }
-
-        bool IsValid()
-        {
-            bool result = true;
-
-            if (_dataBuffer.IsValid() == false) {
-                result = _dataBuffer.Validate();
-            }
-            if ((result == true) && (_metaDataBuffer != nullptr)) {
-                result = _metaDataBuffer->IsOpen();
-            }
-
-            return result;
+        const string& MetadataName() const {
+            return (_filenames.metaData);
         }
 
     private:
@@ -417,10 +288,7 @@ namespace Core {
 
     private:
         mutable Core::CriticalSection _dataLock;
-        mutable Core::CriticalSection _metaDataLock;
-
         DataBuffer _dataBuffer;
-        std::unique_ptr<MetaDataBuffer<METADATA_SIZE>> _metaDataBuffer;
     };
 }
 }

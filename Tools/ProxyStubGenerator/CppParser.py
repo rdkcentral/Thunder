@@ -218,7 +218,6 @@ class Identifier():
         self.value = []
 
         if string.count("*") > 2:
-            print(string)
             raise ParserError("multi-dimensional pointers to pointers are not supported: '%s'" % (" ".join(["".join(x) for x in string])))
         if string.count("[") > 1:
             raise ParserError("multi-dimensional arrays are not supported: '%s'" % (" ".join(["".join(x) for x in string])))
@@ -696,16 +695,16 @@ class Type:
         self.ref = Ref.VALUE
 
     def IsConst(self):
-        return self.ref & Ref.CONST != 0
+        return (self.ref & Ref.CONST) != 0
 
     def IsVolatile(self):
-        return self.ref & Ref.VOLATILE != 0
+        return (self.ref & Ref.VOLATILE) != 0
 
     def IsPointer(self):
-        return self.ref & Ref.POINTER != 0
+        return (self.ref & Ref.POINTER) != 0
 
     def IsPointerToPointer(self):
-        return self.ref & Ref.POINTER_TO_POINTER != 0
+        return (self.ref & Ref.POINTER_TO_POINTER) != 0
 
     def IsConstPointer(self):
         return self.IsPointer() and self.IsConst()
@@ -714,16 +713,16 @@ class Type:
         return self.IsPointer() and self.IsVolatile()
 
     def IsReference(self):
-        return self.ref & Ref.REFERENCE != 0
+        return (self.ref & Ref.REFERENCE) != 0
 
     def IsRvalueReference(self):
-        return self.ref & Ref.RVALUE_REFERENCE
+        return (self.ref & Ref.RVALUE_REFERENCE) != 0
 
     def IsPointerToConst(self):
-        return self.ref & Ref.POINTER_TO_CONST
+        return (self.ref & Ref.POINTER_TO_CONST) != 0
 
     def IsPointerToVolatile(self):
-        return self.ref & Ref.POINTER_TO_VOLATILE
+        return (self.ref & Ref.POINTER_TO_VOLATILE) != 0
 
     def IsConstPointerToConst(self):
         return self.IsConst() and self.IsPointerToConst()
@@ -810,7 +809,14 @@ class Typedef(Identifier, Name):
         self.is_iterator = self.parent.is_iterator if isinstance(self.parent, (Class, Typedef)) else False
 
     def Resolve(self, ref = 0):
-        type = self.type.Resolve(self.type.ref | ref)
+        if isinstance(self.type, Typedef):
+            type = self.type.Resolve(self.type.ref | ref)
+        else:
+            if isinstance(self.type, list):
+                type = self.type[0]
+            else:
+                type = copy.deepcopy(self.type)
+                type.ref |= ref
         return type
 
     def Proto(self):
@@ -1192,6 +1198,7 @@ class TemplateClass(Class):
         instance.ancestors = self.ancestors
         instance.specifiers = self.specifiers
         instance.is_json = self.is_json
+        instance.json_version = self.json_version
         instance.is_extended = self.is_extended
         instance.is_collapsed = self.is_collapsed
         instance.is_compliant = self.is_compliant
@@ -1302,6 +1309,7 @@ def __Tokenize(contents,log = None):
     tagtokens = []
     # check for special metadata within comments
     skipmode = False
+    omit_depth = 0
     for token in tokens:
         if token:
             if skipmode:
@@ -1377,6 +1385,14 @@ def __Tokenize(contents,log = None):
                     skipmode = True
                 if _find("@omit", token):
                     tagtokens.append("@OMIT")
+                if _find("@_omit_start", token):
+                    if omit_depth == 0:
+                        tagtokens.append("@OMITSTART")
+                    omit_depth += 1
+                if _find("@_omit_end", token):
+                    omit_depth -= 1
+                    if omit_depth == 0:
+                        tagtokens.append("@OMITEND")
                 if _find("@stub", token):
                     tagtokens.append("@STUB")
                 if _find("@in", token):
@@ -1557,6 +1573,7 @@ def Parse(contents,log = None):
     next_block = None
     last_template_def = []
     min_index = 0
+    omit_mode = False
     omit_next = False
     stub_next = False
     json_next = False
@@ -1580,6 +1597,14 @@ def Parse(contents,log = None):
 
         if tokens[i] == "@OMIT":
             omit_next = True
+            tokens[i] = ";"
+            i += 1
+        elif tokens[i] == "@OMITSTART":
+            omit_mode = True
+            tokens[i] = ";"
+            i += 1
+        elif tokens[i] == "@OMITEND":
+            omit_mode = False
             tokens[i] = ";"
             i += 1
         elif tokens[i] == "@STUB":
@@ -1733,6 +1758,8 @@ def Parse(contents,log = None):
 
             new_class._current_access = "private" if tokens[i] == "class" else "public"
 
+            if omit_mode:
+                new_class.omit = True
             if omit_next:
                 new_class.omit = True
                 omit_next = False
@@ -1872,13 +1899,15 @@ def Parse(contents,log = None):
             if omit_next:
                 method.omit = True
                 omit_next = False
-            elif method.parent.omit:
-                method.omit = True
             elif stub_next:
                 method.stub = True
                 stub_next = False
-            elif method.parent.stub:
-                method.stub = True
+
+            if isinstance(method.parent,Namespace):
+                if method.parent.omit:
+                    method.omit = True
+                elif method.parent.stub:
+                    method.stub = True
 
             if exclude_next:
                 method.is_excluded = True
@@ -1920,7 +1949,7 @@ def Parse(contents,log = None):
                         assignment = param.index('=')
                         value = param[assignment + 1:]
                         param = param[0:assignment]
-                    if not current_block[-1].omit and not method.omit:
+                    if not method.omit:
                         Parameter(method, param, value)
                 i = j
                 j += 1
@@ -2047,7 +2076,7 @@ def Parse(contents,log = None):
 # -------------------------------------------------------------------------
 
 
-def ReadFile(source_file, includePaths, quiet=False, initial=""):
+def ReadFile(source_file, includePaths, quiet=False, initial="", omit=False):
     contents = initial
     global current_file
     try:
@@ -2067,7 +2096,7 @@ def ReadFile(source_file, includePaths, quiet=False, initial=""):
                             if os.path.isfile(tryPath):
                                 prev = current_file
                                 current_file = source_file
-                                contents += ReadFile(tryPath, includePaths, False, contents)
+                                contents += ReadFile(tryPath, includePaths, False, contents, True)
                                 current_file = prev
                             else:
                                 raise LoaderError(source_file, "can't include '%s', file does not exist" % tryPath)
@@ -2082,7 +2111,7 @@ def ReadFile(source_file, includePaths, quiet=False, initial=""):
                                 if os.path.isfile(tryPath):
                                     prev = current_file
                                     current_file = source_file
-                                    contents += ReadFile(tryPath, includePaths, True, contents)
+                                    contents += ReadFile(tryPath, includePaths, True, contents, True)
                                     current_file = prev
                                     found = True
                             if not found:
@@ -2093,7 +2122,11 @@ def ReadFile(source_file, includePaths, quiet=False, initial=""):
                     break
 
             contents += "// @_file:%s\n" % source_file
+            if omit:
+                contents += "// @_omit_start\n"
             contents += file_content
+            if omit:
+                contents += "// @_omit_end\n"
             return contents
     except FileNotFoundError:
         if not quiet:
@@ -2152,7 +2185,7 @@ def DumpTree(tree, ind=0):
 # entry point
 
 if __name__ == "__main__":
-    tree = ParseFile(sys.argv[1], sys.argv[2:])
+    tree = ParseFiles(["default.h", sys.argv[1]], sys.argv[2:])
     if isinstance(tree, Namespace):
         DumpTree(tree)
     else:

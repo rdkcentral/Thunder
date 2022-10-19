@@ -245,8 +245,6 @@ namespace PluginHost
         // Now deactivate controller plugin, once other plugins are deactivated
         controller->Deactivate(PluginHost::IShell::SHUTDOWN);
 
-        Core::ServiceAdministrator::Instance().FlushLibraries();
-
         TRACE_L1("Pending notifiers are %zu", _notifiers.size());
         for (VARIABLE_IS_NOT_USED auto notifier : _notifiers) {
             TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier).name()).Text().c_str());
