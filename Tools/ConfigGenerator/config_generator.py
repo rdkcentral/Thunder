@@ -186,13 +186,10 @@ if __name__ == "__main__":
     result = JSON()
     if args.locator:
         result.add("locator", args.locator)
-    else:
-        result.add("locator", "libWPEFramework" + args.project + ".so")
 
     if args.classname:
         result.add("classname", args.classname)
-    else:
-        result.add("classname", args.project)
+
 
     if not os.path.exists(args.projectdir):
         log.Error(f"Error: Config Dir path {args.projectdir} doesnt exit\n")
