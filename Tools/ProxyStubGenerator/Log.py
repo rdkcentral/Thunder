@@ -15,13 +15,13 @@ class Log:
             self.info      = "\033[0mINFO"
             self.cwarn     = "\033[33mWARNING"
             self.cerror    = "\033[31mERROR"
-            self.cdocissue = "\033[37mDOC-ISSUE"
+            self.cdocissue = "\033[37mDOCUMENTATION"
             self.creset    = "\033[0m"
         else:
             self.info      = "INFO:"
             self.cwarn = "WARNING:"
             self.cerror = "ERROR:"
-            self.cdocissue = "DOC-ISSUE:"
+            self.cdocissue = "DOCUMENTATION:"
             self.creset = ""
 
     def __Print(self, text, file=""):
@@ -74,7 +74,7 @@ class Log:
     def Header(self, text):
         if self.infos:
             self.Print("Processing file %s..." % text)
-        self.file = text
+        self.file = os.path.basename(text)
 
     def Ellipsis(self,text, front=True):
         if front:

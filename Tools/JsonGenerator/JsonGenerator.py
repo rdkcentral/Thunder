@@ -333,14 +333,40 @@ class JsonEnum(JsonType):
         if self.do_create:
             self.enum_name = MakeEnum(self.original_name.capitalize() if self.original_name else self.name.capitalize())
         self.enumerators = schema["enum"]
-        self.cpp_enumerator_values = schema["enumvalues"] if "enumvalues" in schema else []
-        if self.do_create and "enumids" not in self.schema:
-            self.cpp_enumerators = list(map(lambda x: ("E" if x[0].isdigit() else "") + x.upper(), self.enumerators))
+        self.cpp_enumerator_values = schema["values"] if "values" in schema else []
+        if not self.cpp_enumerator_values:
+            self.cpp_enumerator_values = schema["enumvalues"] if "enumvalues" in schema else []
+        if self.cpp_enumerator_values:
+            same = True
+            biggest = 0;
+            for idx, e in enumerate(self.cpp_enumerator_values):
+                if idx != e:
+                    same = False
+                if e > biggest:
+                    biggest = e
+            if same:
+                log.Warn("'%s': specified enum values are same as automatic" % name)
+                self.cpp_enumerator_values = []
+            self.size = 32 if biggest > 65536 else 16 if biggest > 256 else 8
         else:
+            self.size = 16 if len(self.enumerators) > 256 else 8
+        if "size" in schema and isinstance(schema["size"], int):
+            self.size = schema["size"]
+        if self.size not in [8, 16, 32, 64]:
+            raise JsonParseError("Invalid enum size value (%i)" % self.size)
+        self.cpp_enumerators = []
+        if "enumids" in self.schema:
             self.cpp_enumerators = self.schema["enumids"]
+        elif "ids" in self.schema:
+            self.cpp_enumerators = self.schema["ids"]
+        else:
+            if "case" in self.schema and self.schema["case"] == "snake" :
+                self.cpp_enumerators = list(map(lambda x: re.sub(r'(?<!^)(?=[A-Z])', '_', x).upper(), self.enumerators))
+            else:
+                self.cpp_enumerators = list(map(lambda x: ("E" if x[0].isdigit() else "") + x.upper(), self.enumerators))
         if self.cpp_enumerator_values and (len(self.enumerators) != len(self.cpp_enumerator_values)):
             raise JsonParseError("Mismatch in enumeration values in enum '%s'" % self.json_name)
-        self.is_strongly_typed = schema["enumtyped"] if "enumtyped" in schema else True
+        self.is_scoped = schema["scoped"] if "scoped" in schema else schema["enumtyped"] if "enumtyped" in schema else True
         self.ref_destination = None
         self.refs = []
         self.AddRef(self)
@@ -373,7 +399,10 @@ class JsonEnum(JsonType):
                 classname = self.original_type
             elif "class" in self.schema:
                 # Override class name if "class" property present
-                classname = self.schema["class"].capitalize()
+                classname = self.schema["class"].capitalize
+            elif "hint" in self.schema:
+                # Override class name if "hint" property present
+                classname = self.schema["hint"]
             elif CLASSNAME_FROM_REF and ("@ref" in self.schema):
                 # NOTE: Abuse the ref feature to construct a name for the enum!
                 classname = MakeEnum(self.schema["@ref"].rsplit(posixpath.sep, 1)[1].capitalize())
@@ -470,6 +499,9 @@ class JsonObject(JsonType):
             if "class" in self.schema:
                 # Override class name if "class" property present
                 classname = self.schema["class"].capitalize()
+            elif "hint" in self.schema:
+                # Override class name if "class" property present
+                classname = self.schema["hint"]
             else:
                 if not self.properties:
                     return TypePrefix("Container")
@@ -490,9 +522,9 @@ class JsonObject(JsonType):
                         classname = (MakeObject(self.parent.cpp_name) + "Elem")
                     else:
                         classname = MakeObject(self.cpp_name)
-            # For common classes append special suffix
-            if self.RefCount() > 1:
-                classname = classname.replace(OBJECT_SUFFIX, COMMON_OBJECT_SUFFIX)
+                # For common classes append special suffix
+                if self.RefCount() > 1:
+                    classname = classname.replace(OBJECT_SUFFIX, COMMON_OBJECT_SUFFIX)
             return classname
 
     @property
@@ -718,7 +750,7 @@ class JsonRpcSchema(JsonType):
         _AddMethods("events", schema, lambda name, obj, method: JsonNotification(name, obj, method))
 
         if not self.methods:
-            raise JsonParseError("no methods, properties or events defined in '%s'" % name)
+            raise JsonParseError("no methods, properties or events defined in %s" % name)
 
     @property
     def root(self):
@@ -850,7 +882,7 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
                 if "default" in schema.__reference__:
                     new_schema["default"] = schema.__reference__["default"]
                 schema = new_schema
-            elif isinstance(schema.__reference__["$ref"], dict):
+            else: #isinstance(schema.__reference__["$ref"], dict):
                 schema["@ref"] = schema.__reference__["$ref"]
 
         if isinstance(schema, OrderedDict):
@@ -909,7 +941,7 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
                                     if os.path.exists(ref_file):
                                         pairs[i] = (k, ("file:" + ref_file + "#" + ref[1]))
                                     else:
-                                        raise RuntimeError("$ref file '%s' not found" % ref_file)
+                                        raise RuntimeError("$ref file %s not found" % ref_file)
                                 else:
                                     ref_file = os.path.abspath(os.path.dirname(file)) + os.sep + ref[0]
                                     if not os.path.exists(ref_file):
@@ -930,7 +962,7 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
                                                 pairs[i] = (k, "file:" + temp_json_file.name)
                                                 temp_files.append(temp_json_file.name)
                                     else:
-                                        raise RuntimeError("$ref file '%s' not found" % ref_file)
+                                        raise RuntimeError("$ref file %s not found" % ref_file)
                             elif "::" in v:
                                 pairs[i] = ("@dataref", v)
 
@@ -1085,11 +1117,11 @@ def LoadInterface(file, all = False, includePaths = []):
                             for i, e in enumerate(cppType.items, 0):
                                 if enumValues[i - 1] != enumValues[i]:
                                     raise CppParseError(var, "enumerator values in an enum must all be explicit or all be implied")
-                        enumSpec = { "enum": [e.meta.text if e.meta.text else e.name.replace("_"," ").title().replace(" ","") for e in cppType.items], "enumtyped": var.type.Type().scoped  }
-                        enumSpec["enumids"] = [e.name for e in cppType.items]
-                        enumSpec["class"] = var.type.Type().name
+                        enumSpec = { "enum": [e.meta.text if e.meta.text else e.name.replace("_"," ").title().replace(" ","") for e in cppType.items], "scoped": var.type.Type().scoped  }
+                        enumSpec["ids"] = [e.name for e in cppType.items]
+                        enumSpec["hint"] = var.type.Type().name
                         if not cppType.items[0].autoValue:
-                            enumSpec["enumvalues"] = [e.value for e in cppType.items]
+                            enumSpec["values"] = [e.value for e in cppType.items]
                         result = [ "string", enumSpec ]
                     # POD objects
                     elif isinstance(cppType, ProxyStubGenerator.CppParser.Class):
@@ -1499,7 +1531,7 @@ class ObjectTracker:
             def _CompareType(lhs, rhs):
                 if rhs["type"] != lhs["type"]:
                     return False
-                elif "size" in lhs:
+                if "size" in lhs:
                     if "size" in rhs:
                         if lhs["size"] != rhs["size"]:
                             return False
@@ -1508,7 +1540,7 @@ class ObjectTracker:
                 elif "size" in rhs:
                     if rhs["size"] != 32:
                         return False
-                elif "signed" in lhs:
+                if "signed" in lhs:
                     if "signed" in rhs:
                         if lhs["signed"] != rhs["signed"]:
                             return False
@@ -1517,31 +1549,47 @@ class ObjectTracker:
                 elif "signed" in rhs:
                     if rhs["signed"] != False:
                         return False
-                elif "enum" in lhs:
+                if "enum" in lhs:
                     if "enum" in rhs:
                         if lhs["enum"] != rhs["enum"]:
                             return False
                     else:
                         return False
+                    if "enumvalues" in lhs:
+                        if "enumvalues" in rhs:
+                            if lhs["enumvalues"] != rhs["enumvalues"]:
+                                return False
+                        else:
+                            return False
+                    elif "enumvalues" in rhs:
+                        return False
+                    if "values" in lhs:
+                        if "values" in rhs:
+                            if lhs["values"] != rhs["values"]:
+                                return False
+                        else:
+                            return False
+                    elif "values" in rhs:
+                        return False
+                    if "enumids" in lhs:
+                        if "enumids" in rhs:
+                            if lhs["enumids"] != rhs["enumids"]:
+                                return False
+                        else:
+                            return False
+                    elif "enumids" in rhs:
+                        return False
+                    if "ids" in lhs:
+                        if "ids" in rhs:
+                            if lhs["ids"] != rhs["ids"]:
+                                return False
+                        else:
+                            return False
+                    elif "ids" in rhs:
+                        return False
                 elif "enum" in rhs:
                     return False
-                elif "enumvalues" in lhs:
-                    if "enumvalues" in rhs:
-                        if lhs["enumvalues"] != rhs["enumvalues"]:
-                            return False
-                    else:
-                        return False
-                elif "enumvalues" in rhs:
-                    return False
-                elif "enumids" in lhs:
-                    if "enumids" in rhs:
-                        if lhs["enumids"] != rhs["enumids"]:
-                            return False
-                    else:
-                        return False
-                elif "enumids" in rhs:
-                    return False
-                elif "items" in lhs:
+                if "items" in lhs:
                     if "items" in rhs:
                         if not _CompareType(lhs["items"], rhs["items"]):
                             return False
@@ -1549,7 +1597,7 @@ class ObjectTracker:
                         return False
                 elif "items" in rhs:
                     return False
-                elif "properties" in lhs:
+                if "properties" in lhs:
                     if "properties" in rhs:
                         if not _CompareObject(lhs["properties"], rhs["properties"]):
                             return False
@@ -1613,6 +1661,27 @@ class EnumTracker(ObjectTracker):
                     else:
                         return lhs["enumvalues"] == rhs["enumvalues"]
                 elif "enumvalues" in rhs:
+                    return False
+                if "enumids" in lhs:
+                    if "enumids" not in rhs:
+                        return False
+                    else:
+                        return lhs["enumids"] == rhs["enumids"]
+                elif "enumids" in rhs:
+                    return False
+                if "values" in lhs:
+                    if "values" not in rhs:
+                        return False
+                    else:
+                        return lhs["values"] == rhs["values"]
+                elif "values" in rhs:
+                    return False
+                if "ids" in lhs:
+                    if "ids" not in rhs:
+                        return False
+                    else:
+                        return lhs["ids"] == rhs["ids"]
+                elif "ids" in rhs:
                     return False
                 return True
             else:
@@ -2509,7 +2578,7 @@ def EmitObjects(root, emit, if_file, additional_includes, emitCommon=False):
             root = root.parent
         if enum.description:
             emit.Line("// " + enum.description)
-        emit.Line("enum%s %s {" % (" class" if enum.is_strongly_typed else "", enum.cpp_class))
+        emit.Line("enum%s %s : uint%i_t {" % (" class" if enum.is_scoped else "", enum.cpp_class, enum.size))
         emit.Indent()
         for c, item in enumerate(enum.cpp_enumerators):
             emit.Line("%s%s%s" % (item.upper(),
@@ -2524,45 +2593,45 @@ def EmitObjects(root, emit, if_file, additional_includes, emitCommon=False):
             for prop in json_obj.properties:
                 emit.Line("Add(_T(\"%s\"), &%s);" % (prop.json_name, prop.cpp_name))
 
-        def EmitCtor(json_obj, noInitCode=False, copyCtor=False, convCtor = False):
-            if copyCtor:
+        def EmitCtor(json_obj, no_init_code=False, copy_ctor=False, conversion_ctor=False):
+            if copy_ctor:
                 emit.Line("%s(const %s& _other)" % (json_obj.cpp_class, json_obj.cpp_class))
-            elif convCtor:
+            elif conversion_ctor:
                 emit.Line("%s(const %s& _other)" % (json_obj.cpp_class, json_obj.cpp_native_type))
             else:
                 emit.Line("%s()" % (json_obj.cpp_class))
             emit.Indent()
             emit.Line(": %s()" % TypePrefix("Container"))
             for prop in json_obj.properties:
-                if copyCtor:
+                if copy_ctor:
                     emit.Line(", %s(_other.%s)" % (prop.cpp_name, prop.cpp_name))
                 elif prop.cpp_def_value != '""' and prop.cpp_def_value != "":
                     emit.Line(", %s(%s)" % (prop.cpp_name, prop.cpp_def_value))
             emit.Unindent()
             emit.Line("{")
             emit.Indent()
-            if convCtor:
+            if conversion_ctor:
                 for prop in json_obj.properties:
                     emit.Line("%s = _other.%s;" % (prop.cpp_name, prop.actual_name))
-            if not noInitCode:
-                EmitInit(json_obj)
+            if no_init_code:
+                emit.Line("_Init();")
             else:
-                emit.Line("Init();")
+                EmitInit(json_obj)
 
             emit.Unindent()
             emit.Line("}")
 
-        def EmitAssignmentOperator(json_obj, copyCtor = False, convCtor = False):
-            if copyCtor:
+        def EmitAssignmentOperator(json_obj, copy_ctor=False, conversion_ctor=False):
+            if copy_ctor:
                 emit.Line("%s& operator=(const %s& _rhs)" % (json_obj.cpp_class, json_obj.cpp_class))
-            elif convCtor:
+            elif conversion_ctor:
                 emit.Line("%s& operator=(const %s& _rhs)" % (json_obj.cpp_class, json_obj.cpp_native_type))
             emit.Line("{")
             emit.Indent()
             for prop in json_obj.properties:
-                if copyCtor:
+                if copy_ctor:
                     emit.Line("%s = _rhs.%s;" % (prop.cpp_name, prop.cpp_name))
-                elif convCtor:
+                elif conversion_ctor:
                     emit.Line("%s = _rhs.%s;" % (prop.cpp_name, prop.actual_name))
             emit.Line("return (*this);")
             emit.Unindent()
@@ -2606,7 +2675,7 @@ def EmitObjects(root, emit, if_file, additional_includes, emitCommon=False):
         if not isinstance(json_obj, (JsonRpcSchema, JsonMethod)):
             global emittedItems
             emittedItems += 1
-            EmitCtor(json_obj, json_obj.is_copy_ctor_needed)
+            EmitCtor(json_obj, json_obj.is_copy_ctor_needed or "original_type" in json_obj.schema, False, False)
             if json_obj.is_copy_ctor_needed:
                 emit.Line()
                 EmitCtor(json_obj, True, True, False)
@@ -2624,7 +2693,7 @@ def EmitObjects(root, emit, if_file, additional_includes, emitCommon=False):
                 emit.Line()
                 emit.Line("private:")
                 emit.Indent()
-                emit.Line("void Init()")
+                emit.Line("void _Init()")
                 emit.Line("{")
                 emit.Indent()
                 EmitInit(json_obj)
@@ -2870,6 +2939,8 @@ def CreateDocument(schema, path):
             MdBr()
 
         def ExampleObj(name, obj, root=False):
+            if "deprecated" in obj and obj["deprecated"]:
+                return "$deprecated"
             obj_type = obj["type"]
             default = obj["example"] if "example" in obj else obj["default"] if "default" in obj else ""
             if not default and "enum" in obj:
@@ -2891,6 +2962,7 @@ def CreateDocument(schema, path):
                 json_data += "{ %s }" % ", ".join(
                     list(map(lambda p: ExampleObj(p, obj["properties"][p]),
                              obj["properties"]))[0:obj["maxProperties"] if "maxProperties" in obj else None])
+                json_data = json_data.replace("$deprecated, ", "")
             return json_data
 
         def MethodDump(method, props, classname, section, is_notification=False, is_property=False, include=None):
@@ -3438,7 +3510,7 @@ def CreateCode(schema, source_file, path, additional_includes, generateClasses, 
         data_emitted = 0
         if generateClasses:
             if not FORCE and (os.path.exists(header_file) and (os.path.getmtime(source_file) < os.path.getmtime(header_file))):
-                log.Success("skipping file '%s', up-to-date" % header_file)
+                log.Success("skipping file %s, up-to-date" % os.path.basename(header_file))
                 data_emitted = 1
             else:
                 with open(header_file, "w") as output_file:
@@ -3451,9 +3523,9 @@ def CreateCode(schema, source_file, path, additional_includes, generateClasses, 
                     emitter.Line()
                     data_emitted = EmitObjects(rpcObj, emitter, os.path.basename(source_file), additional_includes, True)
                     if data_emitted:
-                        log.Success("JSON data classes generated in '%s'." % os.path.basename(output_file.name))
+                        log.Success("JSON data classes generated in %s" % os.path.basename(output_file.name))
                     else:
-                        log.Info("No JSON data classes generated for '%s'." % os.path.basename(filename))
+                        log.Info("No JSON data classes generated for %s" % os.path.basename(filename))
                 if not data_emitted and not KEEP_EMPTY:
                     try:
                         os.remove(header_file)
@@ -3461,7 +3533,7 @@ def CreateCode(schema, source_file, path, additional_includes, generateClasses, 
                         pass
 
             if not FORCE and (os.path.exists(enum_file) and (os.path.getmtime(source_file) < os.path.getmtime(enum_file))):
-                log.Success("skipping file '%s', up-to-date" % enum_file)
+                log.Success("skipping file %s, up-to-date" % os.path.basename(enum_file))
             else:
                 enum_emitted = 0
                 with open(enum_file, "w") as output_file:
@@ -3473,9 +3545,9 @@ def CreateCode(schema, source_file, path, additional_includes, generateClasses, 
                     emitter.Line()
                     enum_emitted = EmitEnumRegs(rpcObj, emitter, filename, os.path.basename(source_file))
                     if enum_emitted:
-                        log.Success("JSON enumeration code generated in '%s'." % os.path.basename(output_file.name))
+                        log.Success("JSON enumeration code generated in %s" % os.path.basename(output_file.name))
                     else:
-                        log.Info("No JSON enumeration code generated for '%s'." % os.path.basename(filename))
+                        log.Info("No JSON enumeration code generated for %s" % os.path.basename(filename))
                 if not enum_emitted and not KEEP_EMPTY:
                     try:
                         os.remove(enum_file)
@@ -3485,30 +3557,30 @@ def CreateCode(schema, source_file, path, additional_includes, generateClasses, 
             if not generateRpc or "@dorpc" not in rpcObj.schema:
                 rpc_file = os.path.join(directory, "J" + filename + ".h")
                 if not FORCE and (os.path.exists(rpc_file) and (os.path.getmtime(source_file) < os.path.getmtime(rpc_file))):
-                    log.Success("skipping file '%s', up-to-date" % rpc_file)
+                    log.Success("skipping file %s, up-to-date" % os.path.basename(rpc_file))
                 else:
                     with open(rpc_file, "w") as output_file:
                         emitter = Emitter(output_file, INDENT_SIZE)
                         EmitVersionCode(rpcObj, emitter, filename, os.path.basename(source_file), data_emitted)
-                        log.Success("JSON-RPC version information generated in '%s'." % os.path.basename(output_file.name))
+                        log.Success("JSON-RPC version information generated in %s" % os.path.basename(output_file.name))
 
         if generateStubs:
             with open(os.path.join(directory, filename + "JsonRpc.cpp"), "w") as output_file:
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
                 EmitHelperCode(rpcObj, emitter, os.path.basename(header_file))
-                log.Success("JSON-RPC stubs generated in '%s'." % os.path.basename(output_file.name))
+                log.Success("JSON-RPC stubs generated in %s" % os.path.basename(output_file.name))
 
         if generateRpc and "@dorpc" in rpcObj.schema and rpcObj.schema["@dorpc"]:
             output_filename = os.path.join(directory, "J" + filename + ".h")
             if not FORCE and (os.path.exists(output_filename) and (os.path.getmtime(source_file) < os.path.getmtime(output_filename))):
-               log.Success("skipping file '%s', up-to-date" % os.path.basename(output_filename))
+               log.Success("skipping file %s, up-to-date" % os.path.basename(output_filename))
             else:
                 with open(output_filename, "w") as output_file:
                     emitter = Emitter(output_file, INDENT_SIZE)
                     emitter.Line()
                     EmitRpcCode(rpcObj, emitter, filename, os.path.basename(source_file), data_emitted)
-                    log.Success("JSON-RPC implementation generated in '%s'." % os.path.basename(output_file.name))
+                    log.Success("JSON-RPC implementation generated in %s" % os.path.basename(output_file.name))
 
     else:
         log.Info("No code to generate.")
@@ -3738,7 +3810,6 @@ if __name__ == "__main__":
     generateRpc = args.code
     generateDocs = args.docs
     generateStubs = args.stubs
-
 
     if not args.path or (not generateCode and not generateRpc and not generateStubs and not generateDocs):
         argparser.print_help()
