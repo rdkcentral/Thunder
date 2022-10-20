@@ -116,8 +116,12 @@ namespace Core {
         ~ResourceMonitorType()
         {
 
+#ifdef __DEBUG__
             // All resources should be gone !!!
-            ASSERT(_resourceList.size() == 0);
+            for (const auto& resource : _resourceList) {
+                ASSERT(resource == nullptr);
+            }
+#endif
 
             if (_monitor != nullptr) {
 
