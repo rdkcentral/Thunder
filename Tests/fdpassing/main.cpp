@@ -150,8 +150,6 @@ int main(int argc, char** argv)
         }
     }
 
-    sleep(1);
-
     Core::Singleton::Dispose();
     return (0);
 }
