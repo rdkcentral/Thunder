@@ -19,8 +19,18 @@
 
 #pragma once
 
-// #define MODULE_NAME PriviligedRequest
-#include <core/core.h>
+#include "Module.h"
+
+#include "Portability.h"
+#include "ResourceMonitor.h"
+#include "Sync.h"
+
+#ifdef __UNIX__
+#include <errno.h>
+#include <poll.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#endif
 
 namespace WPEFramework {
 
@@ -93,7 +103,7 @@ namespace Core {
                                 result = Core::ERROR_NONE;
 
                                 ResourceMonitor::Instance().Register(*this);
-                                
+
                                 _signal.ResetEvent();
 
                                 ::sendto(_domainSocket, &id, sizeof(id), 0, reinterpret_cast<struct sockaddr*>(&_server), sizeof(_server));
