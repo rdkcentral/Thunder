@@ -79,7 +79,7 @@ class NoInterfaceError(RuntimeError):
 
 class TypenameError(RuntimeError):
     def __init__(self, type, msg):
-        msg = "%s(%s): %s" % (type.parent.parser_file, type.parent.parser_line, msg)
+        msg = "%s(%s): %s" % (os.path.basename(type.parent.parser_file), type.parent.parser_line, msg)
         super(TypenameError, self).__init__(msg)
         pass
 
@@ -617,6 +617,15 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                     p.length_var = p.name + "_length"
                                     p.length_expr, p.length_type, p.length_constant, p.length_ref = __ParseLength(
                                         p.ptr_length, False, c - 1, p.length_var)
+                                    if p.length_ref:
+                                        if isinstance(p.length_ref.expanded_typename, CppParser.Integer):
+                                            if p.length_ref.expanded_typename.size == "long":
+                                                log.WarnLine(p.oclass, "32-bits length variables are supported ('%s'), but buffer lengths up to 64 KB are recommended" % p.length_ref.origname)
+                                            if p.length_ref.expanded_typename.size == "long long":
+                                                raise TypenameError(p.oclass, "unable to serialise '%s': 64-bit length variables ('%s') are not allowed" % (p.origname, p.length_ref.origname))
+                                            pass
+                                        else:
+                                            raise TypenameError(p.oclass, "unable to serialise '%s': length variable '%s' is not of integral type" % (p.origname, p.length_ref.origname))
                             if not p.ptr_length and not p.ptr_interface:
                                 raise TypenameError(
                                     p.oclass, "unable to serialise '%s': length variable not defined" % (p.origname))
@@ -768,7 +777,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                                 if p.length_type not in [
                                                         "char", "short", "int8_t", "uint8_t", "int16_t", "uint16_t"
                                                 ]:
-                                                    emit.Line("ASSERT((%s < 0x10000) && \"Buffer too large\");" %
+                                                    emit.Line("ASSERT((%s < 0x100000) && \"Buffer length too big\");" %
                                                               length_var)
                                                 emit.Line("%s = static_cast<%s>(ALLOCA(%s));" %
                                                           (p.name, p.str_nocvref, length_var))
@@ -785,7 +794,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                                             if p.length_type not in [
                                                     "char", "short", "int8_t", "uint8_t", "int16_t", "uint16_t"
                                             ]:
-                                                emit.Line("ASSERT((%s < 0x10000) && \"Buffer length too big\");" %
+                                                emit.Line("ASSERT((%s < 0x100000) && \"Buffer length too big\");" %
                                                           length_var)
                                             emit.Line("%s = static_cast<%s>(ALLOCA(%s));" %
                                                       (p.name, p.str_nocvref, length_var))
@@ -1442,6 +1451,7 @@ if __name__ == "__main__":
         if interface_files:
             for source_file in interface_files:
                 try:
+                    log.Header(source_file)
                     output_file = os.path.join(
                         os.path.dirname(source_file) if not OUTDIR else OUTDIR,
                         PROXYSTUB_CPP_NAME % CreateName(os.path.basename(source_file)).split(".", 1)[0])
@@ -1465,10 +1475,10 @@ if __name__ == "__main__":
                             print(f.id, f.obj.full_name)
 
                 except NotModifiedException as err:
-                    log.Print("skipped file %s, up-to-date" % os.path.basename(err))
+                    log.Print("skipped file %s, up-to-date" % os.path.basename(output_file))
                     skipped.append(source_file)
                 except SkipFileError as err:
-                    log.Print("skipped file %s" % os.path.basename(err))
+                    log.Print("skipped file %s" % os.path.basename(output_file))
                     skipped.append(source_file)
                 except NoInterfaceError as err:
                     log.Warn("no interface classes found in %s" % (INTERFACE_NAMESPACE), os.path.basename(source_file))
