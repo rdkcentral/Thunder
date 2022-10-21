@@ -608,7 +608,7 @@ class JsonArray(JsonType):
 
     @property
     def cpp_native_type(self):
-        return "/* TODO */"
+        return "std::list<%s>" % self._items.cpp_native_type
 
     @property
     def enums(self):
@@ -1815,6 +1815,13 @@ def EmitEvent(emit, root, event, static=False):
             for p in event.params.properties:
                 if isinstance(p, JsonEnum):
                     emit.Line("_params.%s = static_cast<%s>(%s);" % (p.cpp_name, GetNamespace(root, p, False) + p.cpp_class, p.local_name))
+                elif isinstance(p, JsonArray):
+                    emit.Line("for (auto const& _element : %s) {" % p.local_name)
+                    emit.Indent()
+                    emit.Line("%s& _Element(_params.%s.Add());" % (p.items.cpp_type, p.cpp_name))
+                    emit.Line("_Element = _element;")
+                    emit.Unindent()
+                    emit.Line("}")
                 else:
                     emit.Line("_params.%s = %s;" % (p.cpp_name, p.local_name))
         else:
