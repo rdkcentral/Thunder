@@ -1242,7 +1242,7 @@ def LoadInterface(file, all = False, includePaths = []):
                         return params
 
             def BuildIndex(var, test=False):
-                return BuildParameters([var], rpc_format, True, test)
+                return BuildParameters([var], rpc_format.COLLAPSED, True, test)
 
             def BuildResult(vars, is_property=False):
                 params = {"type": "object"}
@@ -2107,7 +2107,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                 else:
                     line = "%s = %s->%s(" % (error_code.TempName(), destination_var, m.cpp_name)
                 if indexed:
-                    line = line + m.index.TempName() + ", "
+                    line = line + m.index.cpp_name + ", "
                 for _, _record in sorted(vars.items(), key=lambda x: x[1][0].schema["position"]):
                     arg = _record[0]
                     line = line + ("%s%s, " % (arg.prefix, arg.cast if arg.cast else arg.TempName()))
