@@ -1242,7 +1242,7 @@ def LoadInterface(file, all = False, includePaths = []):
                         return params
 
             def BuildIndex(var, test=False):
-                return BuildParameters([var], True, True, True, test)
+                return BuildParameters([var], rpc_format, True, test)
 
             def BuildResult(vars, is_property=False):
                 params = {"type": "object"}
