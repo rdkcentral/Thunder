@@ -1521,7 +1521,7 @@ def CurrentFile():
         return files[i]
     else:
         # error during preprocessing
-        return current_file
+        return os.path.basename(current_file)
 
 
 def CurrentLine():

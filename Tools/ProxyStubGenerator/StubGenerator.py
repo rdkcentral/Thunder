@@ -1457,7 +1457,7 @@ if __name__ == "__main__":
                         scan_only)
                     faces += output
 
-                    log.Print("created file '%s'" % output_file)
+                    log.Print("created file %s" % os.path.basename(output_file))
 
                     # dump interfaces if only scanning
                     if scan_only:
@@ -1465,13 +1465,13 @@ if __name__ == "__main__":
                             print(f.id, f.obj.full_name)
 
                 except NotModifiedException as err:
-                    log.Print("skipped file '%s', up-to-date" % err)
+                    log.Print("skipped file %s, up-to-date" % os.path.basename(err))
                     skipped.append(source_file)
                 except SkipFileError as err:
-                    log.Print("skipped file '%s'" % err)
+                    log.Print("skipped file %s" % os.path.basename(err))
                     skipped.append(source_file)
                 except NoInterfaceError as err:
-                    log.Warn("no interface classes found in %s" % (INTERFACE_NAMESPACE), source_file)
+                    log.Warn("no interface classes found in %s" % (INTERFACE_NAMESPACE), os.path.basename(source_file))
                 except TypenameError as err:
                     log.Error(err)
                     if not keep_incomplete and os.path.isfile(output_file):
