@@ -2615,6 +2615,7 @@ namespace Core {
         private:
             enum modus : uint8_t {
                 ERROR = 0x80,
+                SET = 0x20,
                 UNDEFINED = 0x40
             };
 
@@ -2892,13 +2893,23 @@ namespace Core {
             // IElement and IMessagePack iface:
             bool IsSet() const override
             {
-                return (Length() > 0);
+                return ( (Length() > 0) || ((_state & modus::SET) != 0) );
             }
 
             bool IsNull() const override
             {
                 //TODO: Implement null for Arrays
                 return ((_state & UNDEFINED) != 0);
+            }
+
+            void Set(const bool enabled)
+            {
+                if (enabled == true) {
+                    _state |= (modus::SET);
+                }
+                else {
+                    _state &= (~modus::SET);
+                }
             }
 
             void Clear() override

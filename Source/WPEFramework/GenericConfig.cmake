@@ -243,5 +243,15 @@ install(
         COMPONENT ${MODULE_NAME})
 else()
     find_package(ConfigGenerator REQUIRED)
-    message(SEND_ERROR "( ✿ ◠ ‿ ◠ ) FIXME: If you hit this error you are 'the choosen one' to fix the generic config using the ConfigGenerator")
+
+    write_config(
+        SKIP_COMPARE
+        SKIP_CLASSNAME
+        SKIP_LOCATOR
+        CUSTOM_PARAMS_WHITELIST "${CMAKE_CURRENT_LIST_DIR}/params.config"
+        INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/../etc/${NAMESPACE}/"
+        INSTALL_NAME "config.json"
+        PLUGINS "WPEFramework"
+    )
+
 endif(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
