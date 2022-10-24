@@ -126,8 +126,6 @@ namespace Messaging {
      */
     void MessageClient::Enable(const Core::Messaging::MetaData& metaData, const bool enable)
     {
-        uint16_t bufferSize = sizeof(_writeBuffer);
-
         _adminLock.Lock();
 
         for (auto& client : _clients) {

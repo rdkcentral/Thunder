@@ -381,20 +381,24 @@ namespace RPC {
     {
         static std::list<Core::Library> processProxyStubs;
 
-        Core::Directory index(pathName.c_str(), _T("*.so"));
+        Core::TextSegmentIterator places(Core::TextFragment(pathName), false, ':');
 
-        while (index.Next() == true) {
-            // Check if this ProxySTub file is already loaded in this process space..
-            std::list<Core::Library>::const_iterator loop(processProxyStubs.begin());
-            while ((loop != processProxyStubs.end()) && (loop->Name() != index.Current())) {
-                loop++;
-            }
+        while (places.Next() == true) {
+            Core::Directory index(places.Current().Text().c_str(), _T("*.so"));
 
-            if (loop == processProxyStubs.end()) {
-                Core::Library library(index.Current().c_str());
+            while (index.Next() == true) {
+                // Check if this ProxySTub file is already loaded in this process space..
+                std::list<Core::Library>::const_iterator loop(processProxyStubs.begin());
+                while ((loop != processProxyStubs.end()) && (loop->Name() != index.Current())) {
+                    loop++;
+                }
 
-                if (library.IsLoaded() == true) {
-                    processProxyStubs.push_back(library);
+                if (loop == processProxyStubs.end()) {
+                    Core::Library library(index.Current().c_str());
+
+                    if (library.IsLoaded() == true) {
+                        processProxyStubs.push_back(library);
+                    }
                 }
             }
         }

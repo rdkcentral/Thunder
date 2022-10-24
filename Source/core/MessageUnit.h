@@ -538,7 +538,6 @@ namespace Core {
                 void Update(const MetaData& metaData, const bool isEnabled)
                 {
                     bool enabled = metaData.Default();
-                    bool found = false;
 
                     TRACE_L1("Updating settings(s): '%s':'%s'->%u\n", metaData.Category().c_str(), metaData.Module().c_str(), isEnabled);
 
@@ -603,8 +602,6 @@ namespace Core {
                     return (result);
                 }
                 void Save() const {
-                    uint16_t index = 0;
-
                     // Store all config info..
                     string settings = _path + DELIMITER + 
                                _identifier + DELIMITER +
@@ -762,7 +759,7 @@ namespace Core {
                         uint16_t length = message.Serialize(dataBuffer, sizeof(dataBuffer));
                         metaDataFrame->Parameters().Set(length, dataBuffer);
 
-                        result = _channel.Invoke(metaDataFrame, Core::infinite);
+                        result = _channel.Invoke(metaDataFrame, waitTime);
                     }
 
                     return (result);
