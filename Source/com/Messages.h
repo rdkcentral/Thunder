@@ -33,9 +33,9 @@ namespace RPC {
     namespace Data {
         static const uint16_t IPC_BLOCK_SIZE = 512;
 
-        class Frame : public Core::FrameType<IPC_BLOCK_SIZE, true, uint16_t> {
+        class Frame : public Core::FrameType<IPC_BLOCK_SIZE, true, uint32_t> {
         private:
-            using BaseClass = Core::FrameType < IPC_BLOCK_SIZE, true, uint16_t>;
+            using BaseClass = Core::FrameType < IPC_BLOCK_SIZE, true, uint32_t>;
 
         public:
             Frame(Frame&) = delete;
@@ -50,7 +50,7 @@ namespace RPC {
             friend class Output;
             friend class ObjectInterface;
 
-            uint16_t Serialize(const uint16_t offset, uint8_t stream[], const uint16_t maxLength) const
+            uint16_t Serialize(const uint32_t offset, uint8_t stream[], const uint16_t maxLength) const
             {
                 uint16_t copiedBytes((Size() - offset) > maxLength ? maxLength : (Size() - offset));
 
@@ -58,7 +58,7 @@ namespace RPC {
 
                 return (copiedBytes);
             }
-            uint16_t Deserialize(const uint16_t offset, const uint8_t stream[], const uint16_t maxLength)
+            uint16_t Deserialize(const uint32_t offset, const uint8_t stream[], const uint16_t maxLength)
             {
                 Size(offset + maxLength);
 
@@ -126,11 +126,11 @@ namespace RPC {
             }
             uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
             {
-                return (_data.Serialize(static_cast<uint16_t>(offset), stream, maxLength));
+                return (_data.Serialize(offset, stream, maxLength));
             }
             uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset)
             {
-                return (_data.Deserialize(static_cast<uint16_t>(offset), stream, maxLength));
+                return (_data.Deserialize(offset, stream, maxLength));
             }
 
         private:
@@ -170,11 +170,11 @@ namespace RPC {
             }
             inline uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
             {
-                return (_data.Serialize(static_cast<uint16_t>(offset), stream, maxLength));
+                return (_data.Serialize(offset, stream, maxLength));
             }
             inline uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset)
             {
-                return (_data.Deserialize(static_cast<uint16_t>(offset), stream, maxLength));
+                return (_data.Deserialize(offset, stream, maxLength));
             }
 
         private:
@@ -394,11 +394,11 @@ namespace RPC {
             }
             uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
             {
-                return (_data.Serialize(static_cast<uint16_t>(offset), stream, maxLength));
+                return (_data.Serialize(offset, stream, maxLength));
             }
             uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset)
             {
-                return (_data.Deserialize(static_cast<uint16_t>(offset), stream, maxLength));
+                return (_data.Deserialize(offset, stream, maxLength));
             }
 
         private:
