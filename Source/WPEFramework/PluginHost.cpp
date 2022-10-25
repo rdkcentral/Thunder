@@ -212,7 +212,7 @@ POP_WARNING()
 #endif
 
 #if defined(__CORE_MESSAGING__)
-            Core::Messaging::MessageUnit::Instance().Close();
+            Messaging::MessageUnit::Instance().Close();
 #endif
 
 #ifdef __CORE_WARNING_REPORTING__
@@ -438,6 +438,8 @@ POP_WARNING()
             sigaction(SIGQUIT, &sa, nullptr);
         }
 
+        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
+
         if (_background == true) {
             //Close Standard File Descriptors
             // close(STDIN_FILENO);
@@ -447,17 +449,20 @@ POP_WARNING()
         } else
 #endif
 
+        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
         std::set_terminate(UncaughtExceptions);
 #if !defined(__CORE_MESSAGING__)
         Logging::SysLog(!_background);
 #endif
 
+        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
         // Read the config file, to instantiate the proper plugins and for us to open up the right listening ear.
         Core::File configFile(string(options.configFile));
         if (configFile.Open(true) == true) {
             Core::OptionalType<Core::JSON::Error> error;
             _config = new Config(configFile, _background, error);
 
+        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
             if (error.IsSet() == true) {
                 SYSLOG_GLOBAL(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
                 delete _config;
@@ -476,6 +481,7 @@ POP_WARNING()
             }
         }
 
+        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
         if (_config != nullptr) {
 
             if (_config->Process().IsSet() == true) {
@@ -516,6 +522,7 @@ POP_WARNING()
             // Time to start loading the config of the plugins.
             string pluginPath(_config->ConfigsPath());
 
+        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
             if (pluginPath.empty() == true) {
                 pluginPath = Core::Directory::Normalize(Core::File::PathName(options.configFile));
                 pluginPath += Server::PluginConfigDirectory;
@@ -524,6 +531,7 @@ POP_WARNING()
                 pluginPath = Core::Directory::Normalize(pluginPath);
             }
 
+        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
             string messagingSettings (options.configFile);
  
             // Create PostMortem path
@@ -532,6 +540,7 @@ POP_WARNING()
                 postMortemPath.CreatePath();
             }
 
+        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
             if (_config->MessagingCategoriesFile()) {
 
                 messagingSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + _config->MessagingCategories();
@@ -561,11 +570,12 @@ POP_WARNING()
             // Define the environment variable for Messaging files, if it is not already set.
             uint32_t messagingErrorCode = Core::ERROR_GENERAL;
 #if defined(__CORE_MESSAGING__)
-            messagingErrorCode = Core::Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), _config->MessagingPort(), messagingSettings, _background);
+            messagingErrorCode = Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), _config->MessagingPort(), messagingSettings, _background);
 #else
             messagingErrorCode = Trace::TraceUnit::Instance().Open(_config->VolatilePath());
 #endif
 
+        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
             if ( messagingErrorCode != Core::ERROR_NONE){
 #ifndef __WINDOWS__
                 if (_background == true) {
@@ -589,6 +599,7 @@ POP_WARNING()
                 }
             }
 
+        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
             WarningReporting::WarningReportingUnit::Instance().Defaults(_config->WarningReportingCategories());
 #endif
 

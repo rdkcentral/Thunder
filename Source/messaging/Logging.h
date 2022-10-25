@@ -23,6 +23,7 @@
 #include "Control.h"
 #include "TextMessage.h"
 #include "BaseCategory.h"
+#include "MessageUnit.h"
 
 namespace WPEFramework {
 namespace Logging {
@@ -33,10 +34,10 @@ namespace Logging {
     void EXTERNAL DumpSystemFiles(const Core::process_t pid);
 
     template <typename CATEGORY>
-    class BaseLoggingType : public Messaging::BaseCategoryType<Messaging::MessageType::LOGGING> {
+    class BaseLoggingType : public Messaging::BaseCategoryType<Core::Messaging::Metadata::type::LOGGING> {
     public:
-        using BaseClass = Messaging::BaseCategoryType<Messaging::MessageType::LOGGING>;
-        using Control = Messaging::ControlType<CATEGORY, &MODULE_LOGGING, Messaging::MessageType::LOGGING>;
+        using BaseClass = Messaging::BaseCategoryType<Core::Messaging::Metadata::type::LOGGING>;
+        using Control = Messaging::ControlType<CATEGORY, &MODULE_LOGGING, Core::Messaging::Metadata::type::LOGGING>;
 
         BaseLoggingType(const BaseLoggingType&) = delete;
         BaseLoggingType& operator=(const BaseLoggingType&) = delete;
@@ -59,9 +60,9 @@ namespace Logging {
         {
             _control.Enable(enable);
         }
-        inline static const Core::Messaging::MetaData& MetaData()
+        inline static const Core::Messaging::Metadata& Metadata()
         {
-            return (_control.MessageMetaData());
+            return (_control.Metadata());
         }
 
     private:
@@ -92,15 +93,15 @@ namespace Logging {
         static_assert(std::is_base_of<WPEFramework::Logging::BaseLoggingType<CATEGORY>, CATEGORY>::value, "SYSLOG() only for Logging controls");  \
         if (CATEGORY::IsEnabled() == true) {                                                                                                      \
             CATEGORY __data__ PARAMETERS;                                                                                                         \
-            WPEFramework::Core::Messaging::Information __info__(                                                                                  \
-                CATEGORY::MetaData(),                                                                                                             \
+            WPEFramework::Core::Messaging::IStore::Information __info__(                                                                          \
+                CATEGORY::Metadata(),                                                                                                             \
                 __FILE__,                                                                                                                         \
                 __LINE__,                                                                                                                         \
                 (CLASSNAME),                                                                                                                      \
                 WPEFramework::Core::Time::Now().Ticks()                                                                                           \
             );                                                                                                                                    \
             WPEFramework::Messaging::TextMessage __message__(__data__.Data());                                                                    \
-            WPEFramework::Core::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                                                  \
+            WPEFramework::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                                                  \
         }                                                                                                                                         \
     } while(false)
 

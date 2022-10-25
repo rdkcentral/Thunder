@@ -19,163 +19,12 @@
 
 #pragma once
 
-#include "JSON.h"
-#include "MessageDispatcher.h"
-#include "Module.h"
-#include "Proxy.h"
-#include "Sync.h"
+#include "module.h"
 
 namespace WPEFramework {
 namespace Core {
 
     namespace Messaging {
-
-        enum MessageType : uint8_t {
-            INVALID   = 0,
-            TRACING   = 1,
-            LOGGING   = 2,
-            REPORTING = 3
-        };
-
-        /**
-        * @brief Data-Carrier class storing information about basic information about the Message.
-        *
-        */
-        class EXTERNAL MetaData {
-        public:
-            MetaData()
-                : _type(INVALID)
-                , _category()
-                , _module()
-            {
-            }
-            MetaData(const MessageType type, const string& category, const string& module)
-                : _type(type)
-                , _category(category)
-                , _module(module)
-            {
-            }
-            MetaData(const MetaData&) = default;
-            MetaData& operator=(const MetaData&) = default;
-            MetaData(MetaData&&) = default;
-            MetaData& operator=(MetaData&&) = default;
-
-            bool operator==(const MetaData& other) const
-            {
-                return ((_type == other._type) && (_category == other._category) && (_module == other._module));
-            }
-            bool operator!=(const MetaData& other) const
-            {
-                return !operator==(other);
-            }
-
-        public:
-            MessageType Type() const {
-                return _type;
-            }
-            const string& Category() const {
-                return _category;
-            }
-            const string& Module() const {
-                return _module;
-            }
-            bool Default() const {
-                return (_type == MessageType::TRACING ? false : true);
-            }
-            bool Specific() const {
-                return ((_type == MessageType::LOGGING) || ((Category().empty() == false) && (Module().empty() == false)));
-            }
-            bool Applicable(const MetaData& rhs) const {
-                return ((rhs.Type() == Type()) &&
-                    (rhs.Module().empty() || Module().empty() || (rhs.Module() == Module())) &&
-                    (rhs.Category().empty() || Category().empty() || (rhs.Category() == Category())));
-            }
-
-        public:
-            uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const;
-            uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize);
-
-        private:
-            MessageType _type;
-            string _category;
-            string _module;
-        };
-
-        /**
-        * @brief Data-Carrier, extended information about the message
-        */
-        class EXTERNAL Information {
-        public:
-            Information()
-                : _metaData()
-                , _fileName()
-                , _lineNumber(0)
-                , _className()
-                , _timeStamp(0)
-            {
-            }
-            Information(const MessageType type, const string& category, const string& module,
-                    const string& fileName, const uint16_t lineNumber, const string& className, const uint64_t timeStamp)
-                : _metaData(type, category, module)
-                , _fileName(fileName)
-                , _lineNumber(lineNumber)
-                , _className(className)
-                , _timeStamp(timeStamp)
-            {
-            }
-            Information(const MetaData& metaData, const string& fileName, const uint16_t lineNumber, const string& className,
-                    const uint64_t timeStamp)
-                : _metaData(metaData)
-                , _fileName(fileName)
-                , _lineNumber(lineNumber)
-                , _className(className)
-                , _timeStamp(timeStamp)
-            {
-            }
-            ~Information() = default;
-            Information(const Information&) = default;
-            Information& operator=(const Information&) = default;
-
-        public:
-            const MetaData& MessageMetaData() const
-            {
-                return (_metaData);
-            }
-            const string& FileName() const
-            {
-                return (_fileName);
-            }
-            uint16_t LineNumber() const
-            {
-                return (_lineNumber);
-            }
-            const string& ClassName() const
-            {
-                return (_className);
-            }
-            uint64_t TimeStamp() const
-            {
-                return (_timeStamp);
-            }
-
-        public:
-            uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const;
-            uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize);
-
-        private:
-            MetaData _metaData;
-            string _fileName;
-            uint16_t _lineNumber;
-            string _className;
-            uint64_t _timeStamp;
-        };
-
-        struct EXTERNAL IEvent {
-            virtual ~IEvent() = default;
-            virtual uint16_t Serialize(uint8_t buffer[], const uint16_t length) const = 0;
-            virtual uint16_t Deserialize(const uint8_t buffer[], const uint16_t length) = 0;
-            virtual const string& Data() const = 0;
-        };
 
         struct EXTERNAL IEventFactory {
             virtual ~IEventFactory() = default;
@@ -754,7 +603,7 @@ namespace Core {
 
                         // We got a connection to the spawned process side, get the list of traces from 
                         // there and send our settings from here...
-                        Core::ProxyType<MetaDataFrame> metaDataFrame(Core::ProxyType<MetaDataFrame>::Create());
+                        Core::ProxyType<MetadataFrame> metaDataFrame(Core::ProxyType<MetadataFrame>::Create());
                         Control message(control, enabled);
                         uint16_t length = message.Serialize(dataBuffer, sizeof(dataBuffer));
                         metaDataFrame->Parameters().Set(length, dataBuffer);
@@ -770,7 +619,7 @@ namespace Core {
 
                         // We got a connection to the spawned process side, get the list of traces from 
                         // there and send our settings from here...
-                        Core::ProxyType<MetaDataFrame> metaDataFrame(Core::ProxyType<MetaDataFrame>::Create());
+                        Core::ProxyType<MetadataFrame> metaDataFrame(Core::ProxyType<MetadataFrame>::Create());
 
                         metaDataFrame->Parameters().Set(0, nullptr);
 
@@ -903,29 +752,29 @@ namespace Core {
             class MessageDispatcher : public Core::MessageDataBufferType<DataSize, MetaDataSize> {
             private:
                 using BaseClass = Core::MessageDataBufferType<DataSize, MetaDataSize>;
-                using MetaDataFrame = BaseClass::MetaDataFrame;
+                using MetadataFrame = BaseClass::MetadataFrame;
 
                 class MetaDataBuffer : public Core::IPCChannelClientType<Core::Void, true, true> {
                 private:
                     using BaseClass = Core::IPCChannelClientType<Core::Void, true, true>;
 
-                    class MetaDataFrameHandler : public Core::IIPCServer {
+                    class MetadataFrameHandler : public Core::IIPCServer {
                     public:
-                        MetaDataFrameHandler() = delete;
-                        MetaDataFrameHandler(const MetaDataFrameHandler&) = delete;
-                        MetaDataFrameHandler& operator=(const MetaDataFrameHandler&) = delete;
+                        MetadataFrameHandler() = delete;
+                        MetadataFrameHandler(const MetadataFrameHandler&) = delete;
+                        MetadataFrameHandler& operator=(const MetadataFrameHandler&) = delete;
 
-                        MetaDataFrameHandler(MessageUnit& parent)
+                        MetadataFrameHandler(MessageUnit& parent)
                             : _parent(parent) {
                         }
-                        ~MetaDataFrameHandler() override = default;
+                        ~MetadataFrameHandler() override = default;
 
                     public:
                         void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data) override
                         {
                             uint8_t outBuffer[MetaDataSize];
 
-                            auto message = Core::ProxyType<MetaDataFrame>(data);
+                            auto message = Core::ProxyType<MetadataFrame>(data);
 
                             // What is coming in, is an update?
                             if (message->Parameters().Length() > 0) {
@@ -955,20 +804,20 @@ namespace Core {
                         , _handler(parent)
                     {
                         _handler.AddRef();
-                        CreateFactory<MetaDataFrame>(1);
-                        Register(MetaDataFrame::Id(), Core::ProxyType<Core::IIPCServer>(_handler));
+                        CreateFactory<MetadataFrame>(1);
+                        Register(MetadataFrame::Id(), Core::ProxyType<Core::IIPCServer>(_handler));
                         Open(Core::infinite);
                     }
                     ~MetaDataBuffer() override
                     {
                         Close(Core::infinite);
-                        Unregister(MetaDataFrame::Id());
-                        DestroyFactory<MetaDataFrame>();
+                        Unregister(MetadataFrame::Id());
+                        DestroyFactory<MetadataFrame>();
                         _handler.CompositRelease();
                     }
 
                 private:
-                    Core::ProxyObject<MetaDataFrameHandler> _handler;
+                    Core::ProxyObject<MetadataFrameHandler> _handler;
                 };
 
             public:

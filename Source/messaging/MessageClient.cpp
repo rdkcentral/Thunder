@@ -124,12 +124,12 @@ namespace Messaging {
      * @param metaData information about the message
      * @param enable should it be enabled or not
      */
-    void MessageClient::Enable(const Core::Messaging::MetaData& metaData, const bool enable)
+    void MessageClient::Enable(const Core::Messaging::Metadata& metadata, const bool enable)
     {
         _adminLock.Lock();
 
         for (auto& client : _clients) {
-            client.second.Update(1000, metaData, enable);
+            client.second.Update(1000, metadata, enable);
         }
 
         _adminLock.Unlock();
@@ -138,9 +138,9 @@ namespace Messaging {
     /**
      * @brief Get list of currently announced message controls
      */
-    void MessageClient::Controls(Core::Messaging::MessageUnit::Iterator& controls) const
+    void MessageClient::Controls(Messaging::MessageUnit::Iterator& controls) const
     {
-        Core::Messaging::MessageUnit::ControlList list;
+        Messaging::MessageUnit::ControlList list;
 
         _adminLock.Lock();
 
@@ -159,9 +159,9 @@ namespace Messaging {
      *
      * @param function function to be called on each of the messages in the buffer
      */
-    void MessageClient::PopMessagesAndCall(std::function<void(const Core::Messaging::Information& info, const Core::ProxyType<Core::Messaging::IEvent>& message)> function)
+    void MessageClient::PopMessagesAndCall(std::function<void(const Core::Messaging::IStore::Information& info, const Core::ProxyType<Core::Messaging::IEvent>& message)> function)
     {
-        Core::Messaging::Information information;
+        Core::Messaging::IStore::Information information;
         Core::ProxyType<Core::Messaging::IEvent> message;
 
         _adminLock.Lock();
@@ -178,8 +178,8 @@ namespace Messaging {
 
                 auto length = information.Deserialize(_readBuffer, size);
 
-                if ((length > sizeof(Core::Messaging::MessageType)) && (length < sizeof(_readBuffer))) {
-                    auto factory = _factories.find(information.MessageMetaData().Type());
+                if ((length > sizeof(Core::Messaging::Metadata::type)) && (length < sizeof(_readBuffer))) {
+                    auto factory = _factories.find(information.Type());
                     if (factory != _factories.end()) {
                         message = factory->second->Create();
                         message->Deserialize(_readBuffer + length, size - length);
@@ -203,7 +203,7 @@ namespace Messaging {
      * @param type for which message type the factory should be used
      * @param factory
      */
-    void MessageClient::AddFactory(Core::Messaging::MessageType type, Core::Messaging::IEventFactory* factory)
+    void MessageClient::AddFactory(Core::Messaging::Metadata::type type, IEventFactory* factory)
     {
         _adminLock.Lock();
         _factories.emplace(type, factory);
@@ -215,7 +215,7 @@ namespace Messaging {
      *
      * @param type
      */
-    void MessageClient::RemoveFactory(Core::Messaging::MessageType type)
+    void MessageClient::RemoveFactory(Core::Messaging::Metadata::type type)
     {
         _adminLock.Lock();
         _factories.erase(type);
