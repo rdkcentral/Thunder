@@ -538,6 +538,11 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         g_destructor.ForceDestruct(id);
     }
 
+    void Communicator::LoadProxyStubs(const string& pathName)
+    {
+        RPC::LoadProxyStubs(pathName);
+    }
+
     const std::vector<string>& Process::DynamicLoaderPaths() const
     {
         return _LoaderPaths.Paths();

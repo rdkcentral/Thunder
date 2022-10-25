@@ -1363,6 +1363,9 @@ POP_WARNING()
         }
         void Destroy(const uint32_t id);
 
+    protected:
+        void LoadProxyStubs(const string& pathName);
+
     private:
         void Closed(const Core::ProxyType<Core::IPCChannel>& channel)
         {
