@@ -485,7 +485,7 @@ namespace Core {
             ASSERT((textLength + offset + sizeof(TYPENAME)) <= _size);
 
             if (textLength + offset + sizeof(TYPENAME) > _size) {
-                textLength = (_size - (offset + sizeof(TYPENAME)));
+                textLength = static_cast<TYPENAME>(_size - (offset + sizeof(TYPENAME)));
             }
 
             std::string convertedText(reinterpret_cast<const char*>(&(_data[offset + sizeof(TYPENAME)])), textLength);

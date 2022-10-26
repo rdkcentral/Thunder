@@ -36,7 +36,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Logging.cpp" />
+    <ClCompile Include="LoggingOutput.cpp" />
     <ClCompile Include="MessageClient.cpp" />
+    <ClCompile Include="MessageUnit.cpp" />
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="TraceCategories.cpp" />
   </ItemGroup>

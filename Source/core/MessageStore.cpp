@@ -117,7 +117,7 @@ namespace Core {
                 Core::FrameType<0>::Reader frameReader(frame, 0);
 
                 _type = frameReader.Number<type>();
-                ASSERT(_type != MessageType::INVALID);
+                ASSERT(_type != Metadata::type::INVALID);
 
                 if (_type != type::INVALID) {
                     _category = frameReader.NullTerminatedText();
@@ -131,7 +131,7 @@ namespace Core {
 
         uint16_t IStore::Information::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
-            uint16_t length = _metaData.Serialize(buffer, bufferSize);
+            uint16_t length = Metadata::Serialize(buffer, bufferSize);
 
             if (length != 0) {
                 const uint16_t extra = static_cast<uint16_t>((_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + sizeof(_timeStamp));
@@ -155,7 +155,7 @@ namespace Core {
 
         uint16_t IStore::Information::Deserialize(const uint8_t buffer[], const uint16_t bufferSize)
         {
-            uint16_t length = _metaData.Deserialize(buffer, bufferSize);
+            uint16_t length = Metadata::Deserialize(buffer, bufferSize);
             ASSERT(length <= bufferSize);
 
             if ((length <= bufferSize) && (length != 0)) {

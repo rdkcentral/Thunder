@@ -191,7 +191,6 @@ namespace Core {
                 uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize);
 
             private:
-                Metadata _metaData;
                 string _fileName;
                 uint16_t _lineNumber;
                 string _className;
