@@ -21,15 +21,11 @@
 
 #include "Module.h"
 #include "MessageDispatcher.h"
+#include "TraceFactory.h"
 
 namespace WPEFramework {
 
     namespace Messaging {
-
-        struct EXTERNAL IEventFactory {
-            virtual ~IEventFactory() = default;
-            virtual Core::ProxyType<Core::Messaging::IEvent> Create() = 0;
-        };
 
         /**
         * @brief Class responsible for:
