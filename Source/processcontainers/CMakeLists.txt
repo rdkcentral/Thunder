@@ -106,14 +106,12 @@ elseif (PROCESSCONTAINERS_CRUN)
 elseif (PROCESSCONTAINERS_DOBBY)
         find_package(Dobby REQUIRED CONFIG)
 
-        find_library(SYSTEMD_LIBRARIES
-	        NAMES systemd
-        )
+        find_package(Systemd REQUIRED)
 
         target_link_libraries(${TARGET}
                 PRIVATE
                 DobbyClientLib
-                ${SYSTEMD_LIBRARIES}
+                Systemd::Systemd
         )
 elseif (PROCESSCONTAINERS_AWC)
         find_package(LXC REQUIRED)
