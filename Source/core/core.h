@@ -71,6 +71,7 @@
 #include "NetworkInfo.h"
 #include "Optional.h"
 #include "Parser.h"
+#include "PriviligedRequest.h"
 #include "Process.h"
 #include "ProcessInfo.h"
 #include "Proxy.h"
