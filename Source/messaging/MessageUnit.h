@@ -739,6 +739,7 @@ namespace WPEFramework {
         private:
             uint16_t Serialize(uint8_t* buffer, const uint16_t length);
             void Update(const Core::Messaging::Metadata& control, const bool enable);
+            void Update();
 
         private:
             mutable Core::CriticalSection _adminLock;

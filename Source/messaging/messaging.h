@@ -30,6 +30,7 @@
 #include "MessageClient.h"
 #include "Logging.h"
 #include "LoggingCategories.h"
+#include "LoggingOutput.h"
 #include "TraceCategories.h"
 #include "TraceControl.h"
 #include "Control.h"

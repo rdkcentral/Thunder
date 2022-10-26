@@ -19,11 +19,10 @@
 
 #pragma once
 
-#include "JSON.h"
-#include "MessageDispatcher.h"
 #include "Module.h"
 #include "Proxy.h"
 #include "Sync.h"
+#include "Frame.h"
 
 namespace WPEFramework {
 namespace Core {

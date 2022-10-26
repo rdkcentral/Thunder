@@ -63,6 +63,7 @@ namespace WPEFramework {
 
             return (handler.Offset());
         }
+
         void MessageUnit::Update(const Core::Messaging::Metadata& control, const bool enable) {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
@@ -90,6 +91,31 @@ namespace WPEFramework {
 
             Core::Messaging::IControl::Iterate(handler);
         }
+
+        void MessageUnit::Update() {
+            class Handler : public Core::Messaging::IControl::IHandler {
+            public:
+                Handler() = delete;
+                Handler(const Handler&) = delete;
+                Handler& operator= (const Handler&) = delete;
+
+                Handler(const Settings& settings) : _settings(settings) {}
+                ~Handler() override = default;
+
+            public:
+                void Handle (Core::Messaging::IControl* control) override {
+                    bool enabled = _settings.IsEnabled(control->Metadata());
+                    if (enabled ^ control->Enable()) {
+                        control->Enable(enabled);
+                    }
+                }
+            private:
+                const Settings& _settings;
+            } handler(_settings);
+
+            Core::Messaging::IControl::Iterate(handler);
+        }
+
 
         MessageUnit& MessageUnit::Instance()
         {
@@ -138,7 +164,7 @@ namespace WPEFramework {
 
                 // according to received config,
                 // let all announced controls know, whether they should push messages
-                _controlList.Update(_settings);
+                Update();
 
                 result = Core::ERROR_NONE;
             }
@@ -162,7 +188,7 @@ namespace WPEFramework {
             ASSERT(_dispatcher != nullptr);
 
             _isBackground = ((_settings.Mode() & 0x02) != 0);
-            _loggingOutput.IsAbbreviated((_settings.Mode() & 0x04) != 0);
+            // _loggingOutput.IsAbbreviated((_settings.Mode() & 0x04) != 0);
 
             if ( (_dispatcher != nullptr) && (_dispatcher->IsValid() == true) ) {
 
@@ -170,7 +196,7 @@ namespace WPEFramework {
 
                 // according to received config,
                 // let all announced controls know, whether they should push messages
-                _controlList.Update(_settings);
+                Update();
 
                 result = Core::ERROR_NONE;
             }
@@ -180,10 +206,23 @@ namespace WPEFramework {
 
         void MessageUnit::Close()
         {
+
+            class Handler : public Core::Messaging::IControl::IHandler {
+            public:
+                Handler() = default;
+                Handler(const Handler&) = delete;
+                Handler& operator= (const Handler&) = delete;
+                ~Handler() override = default;
+
+            public:
+                void Handle (Core::Messaging::IControl* control) override {
+                    control->Destroy();
+                }
+            } handler;
+
             Core::Messaging::IStore::Set(nullptr);
-
-            _controlList.Destroy();
-
+            Core::Messaging::IControl::Iterate(handler);
+ 
             _adminLock.Lock();
             _dispatcher.reset(nullptr);
             _adminLock.Unlock();

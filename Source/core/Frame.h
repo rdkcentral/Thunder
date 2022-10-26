@@ -20,6 +20,7 @@
 #pragma once
 
 #include "Module.h"
+#include "Serialization.h"
 
 namespace WPEFramework {
 namespace Core {
