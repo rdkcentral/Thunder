@@ -131,7 +131,7 @@ namespace WPEFramework {
         * @param pathName volatile path (/tmp/ by default)
         * @param socketPort triggers the use of using a IP socket in stead of a domain socket (in pathName) if the port value is not 0.
         */
-        uint32_t MessageUnit::Open(const string& pathName, const uint16_t socketPort, const string& configuration, const bool background)
+        uint32_t MessageUnit::Open(const string& pathName, const uint16_t socketPort, const string& configuration, const bool background, const flush flushMode)
         {
             uint32_t result = Core::ERROR_OPENING_FAILED;
 
@@ -149,8 +149,7 @@ namespace WPEFramework {
                 TRACE_L1("Unable to create MessageDispatcher directory");
             }
 
-            _settings.Configure(basePath, identifier, socketPort, (background ? 0x02 : 0x00), configuration);
-            _isBackground = background;
+            _settings.Configure(basePath, identifier, socketPort, configuration, background, flushMode);
             
             // Store it on an environment variable so other instances can pick this info up..
             _settings.Save();
@@ -159,6 +158,8 @@ namespace WPEFramework {
             ASSERT(_dispatcher != nullptr);
 
             if ( (_dispatcher != nullptr) && (_dispatcher->IsValid() == true) )  {
+
+                _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
 
                 Core::Messaging::IStore::Set(this);
 
@@ -187,10 +188,9 @@ namespace WPEFramework {
             _dispatcher.reset(new MessageDispatcher(*this, _settings.Identifier(), instanceId, _settings.BasePath(), _settings.SocketPort()));
             ASSERT(_dispatcher != nullptr);
 
-            _isBackground = ((_settings.Mode() & 0x02) != 0);
-            // _loggingOutput.IsAbbreviated((_settings.Mode() & 0x04) != 0);
-
             if ( (_dispatcher != nullptr) && (_dispatcher->IsValid() == true) ) {
+
+                _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
 
                 Core::Messaging::IStore::Set(this);
 
@@ -206,7 +206,6 @@ namespace WPEFramework {
 
         void MessageUnit::Close()
         {
-
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = default;
@@ -235,8 +234,8 @@ namespace WPEFramework {
         {
             //logging messages can happen in Core, meaning, otherside plugin can be not started yet
             //those should be just printed
-            if (info.Type() == Core::Messaging::Metadata::type::LOGGING) {
-                //_loggingOutput.Output(info, message);
+            if (_settings.IsDirect() == true) {
+                _direct.Output(info, message);
             }
 
             if (_dispatcher != nullptr) {

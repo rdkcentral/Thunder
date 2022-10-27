@@ -149,8 +149,8 @@ namespace Core {
                     , _timeStamp(0)
                 {
                 }
-                Information(const type what, const string& category, const string& module,
-                        const string& fileName, const uint16_t lineNumber, const string& className, const uint64_t timeStamp)
+                Information(const type what, const uint64_t timeStamp, const string& module, const string& category,
+                        const string& fileName, const uint16_t lineNumber, const string& className)
                     : Metadata(what, category, module)
                     , _fileName(fileName)
                     , _lineNumber(lineNumber)

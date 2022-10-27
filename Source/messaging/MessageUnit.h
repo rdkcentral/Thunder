@@ -22,6 +22,7 @@
 #include "Module.h"
 #include "MessageDispatcher.h"
 #include "TraceFactory.h"
+#include "DirectOutput.h"
 
 namespace WPEFramework {
 
@@ -38,6 +39,12 @@ namespace WPEFramework {
         public:
             static constexpr uint32_t MetadataSize = 10 * 1024;
             static constexpr uint32_t DataSize = 20 * 1024;
+
+            enum flush : uint8_t {
+                OFF                = 0,
+                FLUSH              = 1,
+                FLUSH_ABBREVIATED  = 2
+            };
 
             /**
              * @brief Class responsible for maintaining the state of a specific Message module/category known to
@@ -190,6 +197,12 @@ namespace WPEFramework {
                 static constexpr const TCHAR* MESSAGE_DISPATCHER_CONFIG_ENV = _T("MESSAGE_DISPATCHER_CONFIG");
                 static constexpr const TCHAR  DELIMITER = '|';
 
+                enum mode : uint8_t {
+                    BACKGROUND   = 0x01,
+                    DIRECT       = 0x02,
+                    ABBREVIATED  = 0x04
+                };
+
                 /**
                  * @brief JSON Settings for all messages
                  */
@@ -311,16 +324,22 @@ namespace WPEFramework {
                 uint16_t SocketPort() const {
                     return (_socketPort);
                 }
-                uint8_t Mode() const {
-                    return (_mode);
+                bool IsBackground() const {
+                    return ((_mode & mode::BACKGROUND) != 0);
                 }
-                void Configure (const string& path, const string& identifier, const uint16_t socketPort, const uint8_t mode, const string& config)
+                bool IsDirect() const {
+                    return ((_mode & mode::DIRECT) != 0);
+                }
+                bool IsAbbreviated() const {
+                    return ((_mode & mode::ABBREVIATED) != 0);
+                }
+                void Configure (const string& path, const string& identifier, const uint16_t socketPort, const string& config, const bool background, const flush flushMode)
                 {
                     _settings.clear();
                     _path = path;
                     _identifier = identifier;
                     _socketPort = socketPort;
-                    _mode = mode;
+                    _mode = (background ? mode::BACKGROUND : 0) | (flushMode != flush::OFF ? mode::DIRECT : 0) | (flushMode == FLUSH_ABBREVIATED ? mode::ABBREVIATED : 0);
 
                     Config jsonParsed;
                     jsonParsed.FromString(config);
@@ -712,7 +731,7 @@ namespace WPEFramework {
                 : _adminLock()
                 , _dispatcher()
                 , _settings()
-                , _isBackground(false) {
+                , _direct() {
             }
 
         public:
@@ -722,11 +741,11 @@ namespace WPEFramework {
             static MessageUnit& Instance();
 
             ~MessageUnit() {
-                Close();
+                ASSERT(_dispatcher == nullptr);
             }
 
         public:
-            uint32_t Open(const string& pathName, const uint16_t doorbell, const string& configuration, const bool background);
+            uint32_t Open(const string& pathName, const uint16_t doorbell, const string& configuration, const bool background, const flush flushMode);
             uint32_t Open(const uint32_t instanceId);
             void Close();
 
@@ -741,7 +760,7 @@ namespace WPEFramework {
             mutable Core::CriticalSection _adminLock;
             std::unique_ptr<MessageDispatcher> _dispatcher;
             Settings _settings;
-            bool _isBackground;
+            DirectOutput _direct;
         };
     } // namespace Messaging
 }

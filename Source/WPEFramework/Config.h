@@ -628,7 +628,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                         _proxyStubPath = Core::Directory::Normalize(config.Observe.ProxyStubPath.Value());
                     }
                     else {
-                        _proxyStubPath = _proxyStubPath + ':' + Core::Directory::Normalize(config.Observe.ProxyStubPath.Value());
+                        _proxyStubPath = _proxyStubPath + '|' + Core::Directory::Normalize(config.Observe.ProxyStubPath.Value());
                     }
                 }
                 _postMortemPath = Core::Directory::Normalize(config.PostMortemPath.Value());

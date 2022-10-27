@@ -38,8 +38,9 @@ namespace PluginHost {
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T(":bhc:"))
+            : Core::Options(argumentCount, arguments, _T(":bhcfF:"))
             , configFile(Server::ConfigFile)
+            , flushMode(Messaging::MessageUnit::flush::OFF)
         {
             Parse();
         }
@@ -49,6 +50,7 @@ namespace PluginHost {
 
     public:
         const TCHAR* configFile;
+        Messaging::MessageUnit::flush flushMode;
 
     private:
         virtual void Option(const TCHAR option, const TCHAR* argument)
@@ -56,6 +58,12 @@ namespace PluginHost {
             switch (option) {
             case 'c':
                 configFile = argument;
+                break;
+            case 'f':
+                flushMode = Messaging::MessageUnit::flush::FLUSH;
+                break;
+            case 'F':
+                flushMode = Messaging::MessageUnit::flush::FLUSH_ABBREVIATED;
                 break;
 #ifndef __WINDOWS__
             case 'b':
@@ -421,6 +429,8 @@ POP_WARNING()
                 fprintf(stderr, "Usage: " EXPAND_AND_QUOTE(APPLICATION_NAME) " [-c <config file>] -b\n");
                 fprintf(stderr, "       -c <config file>  Define the configuration file to use.\n");
                 fprintf(stderr, "       -b                Run " EXPAND_AND_QUOTE(APPLICATION_NAME) " in the background.\n");
+                fprintf(stderr, "       -f                Flush messaging information also to syslog/console, none abbreviated\n");
+                fprintf(stderr, "       -F                Flush messaging information also to syslog/console, abbreviated\n");
             }
             exit(EXIT_FAILURE);
             ;
@@ -438,8 +448,6 @@ POP_WARNING()
             sigaction(SIGQUIT, &sa, nullptr);
         }
 
-        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
-
         if (_background == true) {
             //Close Standard File Descriptors
             // close(STDIN_FILENO);
@@ -449,20 +457,17 @@ POP_WARNING()
         } else
 #endif
 
-        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
         std::set_terminate(UncaughtExceptions);
 #if !defined(__CORE_MESSAGING__)
         Logging::SysLog(!_background);
 #endif
 
-        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
         // Read the config file, to instantiate the proper plugins and for us to open up the right listening ear.
         Core::File configFile(string(options.configFile));
         if (configFile.Open(true) == true) {
             Core::OptionalType<Core::JSON::Error> error;
             _config = new Config(configFile, _background, error);
 
-        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
             if (error.IsSet() == true) {
                 SYSLOG_GLOBAL(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
                 delete _config;
@@ -481,7 +486,6 @@ POP_WARNING()
             }
         }
 
-        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
         if (_config != nullptr) {
 
             if (_config->Process().IsSet() == true) {
@@ -522,7 +526,6 @@ POP_WARNING()
             // Time to start loading the config of the plugins.
             string pluginPath(_config->ConfigsPath());
 
-        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
             if (pluginPath.empty() == true) {
                 pluginPath = Core::Directory::Normalize(Core::File::PathName(options.configFile));
                 pluginPath += Server::PluginConfigDirectory;
@@ -531,7 +534,6 @@ POP_WARNING()
                 pluginPath = Core::Directory::Normalize(pluginPath);
             }
 
-        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
             string messagingSettings (options.configFile);
  
             // Create PostMortem path
@@ -540,7 +542,6 @@ POP_WARNING()
                 postMortemPath.CreatePath();
             }
 
-        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
             if (_config->MessagingCategoriesFile()) {
 
                 messagingSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + _config->MessagingCategories();
@@ -570,12 +571,11 @@ POP_WARNING()
             // Define the environment variable for Messaging files, if it is not already set.
             uint32_t messagingErrorCode = Core::ERROR_GENERAL;
 #if defined(__CORE_MESSAGING__)
-            messagingErrorCode = Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), _config->MessagingPort(), messagingSettings, _background);
+            messagingErrorCode = Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), _config->MessagingPort(), messagingSettings, _background, options.flushMode);
 #else
             messagingErrorCode = Trace::TraceUnit::Instance().Open(_config->VolatilePath());
 #endif
 
-        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
             if ( messagingErrorCode != Core::ERROR_NONE){
 #ifndef __WINDOWS__
                 if (_background == true) {
@@ -589,17 +589,9 @@ POP_WARNING()
             
 #ifdef __CORE_WARNING_REPORTING__
             if (WarningReporting::WarningReportingUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE) {
-#ifndef __WINDOWS__
-                if (_background == true) {
-                    syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable issue reporting functionality!");
-                } else
-#endif
-                {
-                    fprintf(stdout, "Could not enable issue reporting functionality!\n");
-                }
+                SYSLOG_GLOBAL(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable issue reporting functionality!")));
             }
 
-        printf ("-----------------------> [%d] Background indicates: %s\n\n", __LINE__, _background ? _T("true") : _T("false"));
             WarningReporting::WarningReportingUnit::Instance().Defaults(_config->WarningReportingCategories());
 #endif
 

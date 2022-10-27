@@ -17,19 +17,19 @@
  * limitations under the License.
  */
 
-#include "LoggingOutput.h"
+#include "DirectOutput.h"
 
 namespace WPEFramework {
 
     namespace Messaging {
 
-        string LoggingOutput::Prepare(const bool abbreviate, const Core::Messaging::IStore::Information& info, const Core::Messaging::IEvent* message) const
+        void DirectOutput::Output(const Core::Messaging::IStore::Information& info, const Core::Messaging::IEvent* message) const
         {
             string result;
 
             ASSERT(message != nullptr);
 
-            if (abbreviate == true) {
+            if (_abbreviate == true) {
                 result = Core::Format("[%11ju us]:[%s] %s",
                     static_cast<uintmax_t>(info.TimeStamp() - _baseTime),
                     info.Category().c_str(),
@@ -47,22 +47,15 @@ namespace WPEFramework {
                     message->Data().c_str());
             }
 
-            return (result);
-        }
-
-        void LoggingOutput::Output(const Core::Messaging::IStore::Information& info, const Core::Messaging::IEvent* message)
-        {
-            ASSERT(message != nullptr);
-
 #ifndef __WINDOWS__
             if (_isSyslog == true) {
                 //use longer messages for syslog
-                syslog(LOG_NOTICE, "%s\n", Prepare(false, info, message).c_str());
+                syslog(LOG_NOTICE, "%s\n", result.c_str());
             }
             else
 #endif
             {
-                std::cout << Prepare(_abbreviate, info, message) << std::endl;
+                std::cout << result << std::endl;
             }
         }
     }

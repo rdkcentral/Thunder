@@ -51,6 +51,12 @@
     <ClInclude Include="messaging.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DirectOutput.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MessageUnit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Logging.cpp">
@@ -65,10 +71,10 @@
     <ClCompile Include="MessageClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="LoggingOutput.cpp">
+    <ClCompile Include="MessageUnit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MessageUnit.cpp">
+    <ClCompile Include="DirectOutput.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

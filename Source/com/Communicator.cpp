@@ -381,7 +381,7 @@ namespace RPC {
     {
         static std::list<Core::Library> processProxyStubs;
 
-        Core::TextSegmentIterator places(Core::TextFragment(pathName), false, ':');
+        Core::TextSegmentIterator places(Core::TextFragment(pathName), false, '|');
 
         while (places.Next() == true) {
             Core::Directory index(places.Current().Text().c_str(), _T("*.so"));

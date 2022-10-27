@@ -25,7 +25,7 @@ set(PUBLIC_HEADERS
         Control.h
         Logging.h
         LoggingCategories.h
-        LoggingOutput.h
+        DirectOutput.h
         Module.h
         TraceFactory.h
         TextMessage.h
@@ -38,7 +38,7 @@ set(SOURCES
         MessageUnit.cpp
         TraceCategories.cpp
         Logging.cpp
-        LoggingOutput.cpp
+        DirectOutput.cpp
 )
 
 
