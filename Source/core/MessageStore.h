@@ -67,7 +67,6 @@ namespace Core {
                 , _module(module)
             {
             }
-
             bool operator==(const Metadata& other) const
             {
                 return ((_type == other._type) && (_category == other._category) && (_module == other._module));
@@ -81,11 +80,11 @@ namespace Core {
             type Type() const {
                 return _type;
             }
-            const string& Category() const {
-                return _category;
-            }
             const string& Module() const {
                 return _module;
+            }
+            const string& Category() const {
+                return _category;
             }
             bool Default() const {
                 return (_type == type::TRACING ? false : true);
@@ -147,15 +146,6 @@ namespace Core {
                     , _lineNumber(0)
                     , _className()
                     , _timeStamp(0)
-                {
-                }
-                Information(const type what, const uint64_t timeStamp, const string& module, const string& category,
-                        const string& fileName, const uint16_t lineNumber, const string& className)
-                    : Metadata(what, category, module)
-                    , _fileName(fileName)
-                    , _lineNumber(lineNumber)
-                    , _className(className)
-                    , _timeStamp(timeStamp)
                 {
                 }
                 Information(const Metadata& metadata, const string& fileName, const uint16_t lineNumber, const string& className, const uint64_t timeStamp)

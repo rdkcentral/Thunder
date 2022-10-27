@@ -38,7 +38,7 @@ namespace PluginHost {
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T(":bhcfF:"))
+            : Core::Options(argumentCount, arguments, _T(":bhcfF"))
             , configFile(Server::ConfigFile)
             , flushMode(Messaging::MessageUnit::flush::OFF)
         {
@@ -304,9 +304,9 @@ POP_WARNING()
         if ((signo == SIGTERM) || (signo == SIGQUIT)) {
 
             if (_background) {
-                syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a SIGTERM or SIGQUIT signal. Regular shutdown\n");
+                syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a SIGTERM or SIGQUIT signal. Regular shutdown");
             } else {
-                fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a SIGTERM or SIGQUIT signal. No regular shutdown. Errors to follow are collateral damage errors !!!!!!");
+                fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a SIGTERM or SIGQUIT signal. No regular shutdown.\nErrors to follow are collateral damage errors !!!!!!\n");
                 fflush(stderr);
             }
 
@@ -378,7 +378,7 @@ POP_WARNING()
             } else 
 #endif
             {
-                fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an atexit request. No regular shutdown. Errors to follow are collateral damage errors !!!!!!");
+                fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an atexit request.\nNo regular shutdown.\nErrors to follow are collateral damage errors !!!!!!\n");
                 fflush(stderr);
             }
             ExitHandler::Destruct();
@@ -392,7 +392,7 @@ POP_WARNING()
         } else
 #endif
         {
-            fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an uncaught exception. No regular shutdown. Errors to follow are collateral damage errors !!!!!!");
+            fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an uncaught exception.\nNo regular shutdown.\nErrors to follow are collateral damage errors !!!!!!\n");
             fflush(stderr);
         }
 
@@ -417,23 +417,18 @@ POP_WARNING()
 
         ConsoleOptions options(argc, argv);
 
-        if (atexit(ForcedExit) != 0) {
-            TRACE_L1("Could not register @exit handler. Argc %d.", argc);
-            ExitHandler::Destruct();
-            exit(EXIT_FAILURE);
-        } else if (options.RequestUsage()) {
+        if (options.RequestUsage()) {
 #ifndef __WINDOWS__
             syslog(LOG_ERR, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon failed to start. Incorrect Options.");
 #endif
             if ((_background == false) && (options.RequestUsage())) {
-                fprintf(stderr, "Usage: " EXPAND_AND_QUOTE(APPLICATION_NAME) " [-c <config file>] -b\n");
+                fprintf(stderr, "Usage: " EXPAND_AND_QUOTE(APPLICATION_NAME) " [-c <config file>] [-b] [-fF]\n");
                 fprintf(stderr, "       -c <config file>  Define the configuration file to use.\n");
                 fprintf(stderr, "       -b                Run " EXPAND_AND_QUOTE(APPLICATION_NAME) " in the background.\n");
                 fprintf(stderr, "       -f                Flush messaging information also to syslog/console, none abbreviated\n");
                 fprintf(stderr, "       -F                Flush messaging information also to syslog/console, abbreviated\n");
             }
             exit(EXIT_FAILURE);
-            ;
         }
 #ifndef __WINDOWS__
         else {
@@ -447,6 +442,12 @@ POP_WARNING()
             sigaction(SIGTERM, &sa, nullptr);
             sigaction(SIGQUIT, &sa, nullptr);
         }
+
+        if (atexit(ForcedExit) != 0) {
+            TRACE_L1("Could not register @exit handler. Argc %d.", argc);
+            ExitHandler::Destruct();
+            exit(EXIT_FAILURE);
+        } 
 
         if (_background == true) {
             //Close Standard File Descriptors
