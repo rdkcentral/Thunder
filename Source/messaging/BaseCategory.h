@@ -24,7 +24,7 @@
 namespace WPEFramework {
 namespace Messaging {
 
-    template <const Core::Messaging::MessageType TYPE>
+    template <const Core::Messaging::Metadata::type TYPE>
     class BaseCategoryType {
     public:
         ~BaseCategoryType() = default;
@@ -50,7 +50,7 @@ namespace Messaging {
     public:
         using BaseCategory = BaseCategoryType<TYPE>;
 
-        static constexpr Core::Messaging::MessageType Type = TYPE;
+        static constexpr Core::Messaging::Metadata::type Type = TYPE;
 
         const char* Data() const
         {

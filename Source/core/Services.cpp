@@ -38,20 +38,28 @@ namespace Core {
 
     void ServiceAdministrator::Register(IServiceMetadata* metadata, IServiceFactory* factory)
     {
+        _adminLock.Lock();
+
         // Only register a service once !!!
         ASSERT(std::find(_services.begin(), _services.end(), ServiceBlock(metadata, factory)) == _services.end());
 
         _services.emplace_back(metadata, factory);
+
+        _adminLock.Unlock();
     }
 
     void ServiceAdministrator::Unregister(IServiceMetadata* metadata, IServiceFactory* factory)
     {
+        _adminLock.Lock();
+
         ServiceList::iterator index = std::find(_services.begin(), _services.end(), ServiceBlock(metadata, factory));
 
         // Only unregister a service once !!!
         ASSERT(index != _services.end());
 
         _services.erase(index);
+
+        _adminLock.Unlock();
     }
 
     /* static */ ServiceAdministrator& ServiceAdministrator::Instance()
@@ -61,23 +69,28 @@ namespace Core {
 
     void* ServiceAdministrator::Instantiate(const Library& library, const char name[], const uint32_t version, const uint32_t interfaceNumber)
     {
-        bool found = false;
+        void* result = nullptr;
+
+        _adminLock.Lock();
+
         ServiceList::iterator index = _services.begin();
 
-        while ((index != _services.end()) && (found == false)) {
+        while ((index != _services.end()) && (result == nullptr)) {
             const char* thisName = index->first->ServiceName().c_str();
-            found = ((strcmp(thisName, name) == 0) && ((version == static_cast<uint32_t>(~0)) || (version == static_cast<uint32_t>((index->first->Major() << 8) | index->first->Minor()))));
 
-            if (found == false) {
-                index++;
+            if ((strcmp(thisName, name) == 0) && ((version == static_cast<uint32_t>(~0)) || (version == static_cast<uint32_t>((index->first->Major() << 8) | index->first->Minor())))) {
+                result = index->second->Create(index->first, library, interfaceNumber);
             }
+            index++;
         }
 
-        if(found == false){
+        _adminLock.Unlock();
+
+        if(result == nullptr){
             TRACE_L1("Missing implementation classname %s in library %s\n", name, library.Name().c_str());
         }
 
-        return (found == true ? index->second->Create(index->first, library, interfaceNumber) : nullptr);
+        return (result);
     }
 
     void ServiceAdministrator::ReleaseLibrary(Library& reference)

@@ -38,8 +38,9 @@ namespace PluginHost {
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T(":bhc:"))
+            : Core::Options(argumentCount, arguments, _T(":bhcfF"))
             , configFile(Server::ConfigFile)
+            , flushMode(Messaging::MessageUnit::flush::OFF)
         {
             Parse();
         }
@@ -49,6 +50,7 @@ namespace PluginHost {
 
     public:
         const TCHAR* configFile;
+        Messaging::MessageUnit::flush flushMode;
 
     private:
         virtual void Option(const TCHAR option, const TCHAR* argument)
@@ -56,6 +58,12 @@ namespace PluginHost {
             switch (option) {
             case 'c':
                 configFile = argument;
+                break;
+            case 'f':
+                flushMode = Messaging::MessageUnit::flush::FLUSH;
+                break;
+            case 'F':
+                flushMode = Messaging::MessageUnit::flush::FLUSH_ABBREVIATED;
                 break;
 #ifndef __WINDOWS__
             case 'b':
@@ -212,7 +220,7 @@ POP_WARNING()
 #endif
 
 #if defined(__CORE_MESSAGING__)
-            Core::Messaging::MessageUnit::Instance().Close();
+            Messaging::MessageUnit::Instance().Close();
 #endif
 
 #ifdef __CORE_WARNING_REPORTING__
@@ -296,9 +304,9 @@ POP_WARNING()
         if ((signo == SIGTERM) || (signo == SIGQUIT)) {
 
             if (_background) {
-                syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a SIGTERM or SIGQUIT signal. Regular shutdown\n");
+                syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a SIGTERM or SIGQUIT signal. Regular shutdown");
             } else {
-                fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a SIGTERM or SIGQUIT signal. No regular shutdown. Errors to follow are collateral damage errors !!!!!!");
+                fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a SIGTERM or SIGQUIT signal. No regular shutdown.\nErrors to follow are collateral damage errors !!!!!!\n");
                 fflush(stderr);
             }
 
@@ -370,7 +378,7 @@ POP_WARNING()
             } else 
 #endif
             {
-                fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an atexit request. No regular shutdown. Errors to follow are collateral damage errors !!!!!!");
+                fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an atexit request.\nNo regular shutdown.\nErrors to follow are collateral damage errors !!!!!!\n");
                 fflush(stderr);
             }
             ExitHandler::Destruct();
@@ -384,7 +392,7 @@ POP_WARNING()
         } else
 #endif
         {
-            fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an uncaught exception. No regular shutdown. Errors to follow are collateral damage errors !!!!!!");
+            fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an uncaught exception.\nNo regular shutdown.\nErrors to follow are collateral damage errors !!!!!!\n");
             fflush(stderr);
         }
 
@@ -409,21 +417,18 @@ POP_WARNING()
 
         ConsoleOptions options(argc, argv);
 
-        if (atexit(ForcedExit) != 0) {
-            TRACE_L1("Could not register @exit handler. Argc %d.", argc);
-            ExitHandler::Destruct();
-            exit(EXIT_FAILURE);
-        } else if (options.RequestUsage()) {
+        if (options.RequestUsage()) {
 #ifndef __WINDOWS__
             syslog(LOG_ERR, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon failed to start. Incorrect Options.");
 #endif
             if ((_background == false) && (options.RequestUsage())) {
-                fprintf(stderr, "Usage: " EXPAND_AND_QUOTE(APPLICATION_NAME) " [-c <config file>] -b\n");
+                fprintf(stderr, "Usage: " EXPAND_AND_QUOTE(APPLICATION_NAME) " [-c <config file>] [-b] [-fF]\n");
                 fprintf(stderr, "       -c <config file>  Define the configuration file to use.\n");
                 fprintf(stderr, "       -b                Run " EXPAND_AND_QUOTE(APPLICATION_NAME) " in the background.\n");
+                fprintf(stderr, "       -f                Flush messaging information also to syslog/console, none abbreviated\n");
+                fprintf(stderr, "       -F                Flush messaging information also to syslog/console, abbreviated\n");
             }
             exit(EXIT_FAILURE);
-            ;
         }
 #ifndef __WINDOWS__
         else {
@@ -437,6 +442,12 @@ POP_WARNING()
             sigaction(SIGTERM, &sa, nullptr);
             sigaction(SIGQUIT, &sa, nullptr);
         }
+
+        if (atexit(ForcedExit) != 0) {
+            TRACE_L1("Could not register @exit handler. Argc %d.", argc);
+            ExitHandler::Destruct();
+            exit(EXIT_FAILURE);
+        } 
 
         if (_background == true) {
             //Close Standard File Descriptors
@@ -561,7 +572,7 @@ POP_WARNING()
             // Define the environment variable for Messaging files, if it is not already set.
             uint32_t messagingErrorCode = Core::ERROR_GENERAL;
 #if defined(__CORE_MESSAGING__)
-            messagingErrorCode = Core::Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), _config->MessagingPort(), messagingSettings, _background);
+            messagingErrorCode = Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), _config->MessagingPort(), messagingSettings, _background, options.flushMode);
 #else
             messagingErrorCode = Trace::TraceUnit::Instance().Open(_config->VolatilePath());
 #endif
@@ -579,14 +590,7 @@ POP_WARNING()
             
 #ifdef __CORE_WARNING_REPORTING__
             if (WarningReporting::WarningReportingUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE) {
-#ifndef __WINDOWS__
-                if (_background == true) {
-                    syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable issue reporting functionality!");
-                } else
-#endif
-                {
-                    fprintf(stdout, "Could not enable issue reporting functionality!\n");
-                }
+                SYSLOG_GLOBAL(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable issue reporting functionality!")));
             }
 
             WarningReporting::WarningReportingUnit::Instance().Defaults(_config->WarningReportingCategories());
