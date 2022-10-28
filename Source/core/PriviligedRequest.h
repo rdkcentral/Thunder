@@ -74,8 +74,6 @@ namespace Core {
 
                     _domainSocket = ::socket(AF_UNIX, SOCK_DGRAM, 0);
 
-                    constexpr int queue_size = 1;
-
                     if (_domainSocket >= 0) {
                         int flags = fcntl(_domainSocket, F_GETFL, 0) | O_NONBLOCK;
 
@@ -217,7 +215,8 @@ namespace Core {
             {
                 uint32_t result = Core::ERROR_NONE;
 
-                struct msghdr msg = { 0 };
+                struct msghdr msg;
+                memset(&msg, 0, sizeof(msg));
 
                 char buf[CMSG_SPACE(sizeof(fd))];
                 memset(buf, 0, sizeof(buf));
@@ -358,10 +357,7 @@ namespace Core {
         }
 
     private:
-        virtual int Service(const uint32_t id)
-        {
-            return -1;
-        }
+        virtual int Service(const uint32_t /* id */) = 0;
 
     private:
         Connection _link;

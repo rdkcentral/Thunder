@@ -249,7 +249,7 @@
     <ClInclude Include="MessageDispatcher.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MessageUnit.h">
+    <ClInclude Include="MessageStore.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -350,13 +350,13 @@
     <ClCompile Include="WorkerPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MessageUnit.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="WarningReportingControl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CallsignTLS.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MessageStore.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

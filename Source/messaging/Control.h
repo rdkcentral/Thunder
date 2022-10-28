@@ -21,11 +21,12 @@
 
 #include "Module.h"
 #include "TextMessage.h"
+#include "MessageUnit.h"
 
 namespace WPEFramework {
 namespace Messaging {
 
-    using MessageType = Core::Messaging::MessageType;
+    using MessageType = Core::Messaging::Metadata::type;
 
     template <typename CONTROLCATEGORY, const char** CONTROLMODULENAME, MessageType CONTROLTYPE>
     class ControlType : public Core::Messaging::IControl {
@@ -40,7 +41,7 @@ namespace Messaging {
         {
             // Register Our trace control unit, so it can be influenced from the outside
             // if nessecary..
-            Core::Messaging::MessageUnit::Instance().Announce(this);
+            Core::Messaging::IControl::Announce(this);
         }
         ~ControlType() override
         {
@@ -48,7 +49,7 @@ namespace Messaging {
         }
 
     public:
-        const Core::Messaging::MetaData& MessageMetaData() const override
+        const Core::Messaging::Metadata& Metadata() const override
         {
             return (_metaData);
         }
@@ -72,14 +73,14 @@ namespace Messaging {
         void Destroy() override
         {
             if ((_enabled & 0x02) != 0) {
-                Core::Messaging::MessageUnit::Instance().Revoke(this);
+                Core::Messaging::IControl::Revoke(this);
                 _enabled = 0;
             }
         }
 
     private:
         uint8_t _enabled;
-        Core::Messaging::MetaData _metaData;
+        Core::Messaging::Metadata _metaData;
     };
 
     template <typename CATEGORY, const char** MODULENAME, MessageType TYPE>
@@ -104,9 +105,9 @@ namespace Messaging {
         {
             _control.Enable(enable);
         }
-        inline static const Core::Messaging::MetaData& MetaData()
+        inline static const Core::Messaging::Metadata& Metadata()
         {
-            return (_control.MessageMetaData());
+            return (_control.Metadata());
         }
 
     private:

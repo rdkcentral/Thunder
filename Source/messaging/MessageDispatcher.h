@@ -20,20 +20,15 @@
 #pragma once
 
 #include "Module.h"
-#include "CyclicBuffer.h"
-#include "DoorBell.h"
-#include "IPCChannel.h"
-#include "IPCMessage.h"
 
 namespace WPEFramework {
-namespace Core {
+namespace Messaging {
 
     template <const uint16_t DATA_BUFFER_SIZE, const uint16_t METADATA_SIZE>
     class MessageDataBufferType {
     private:
-
         /**
-        * @brief MetaData Callback. First two arguments are for data in. Two later for data out (responded to the other side).
+        * @brief Metdata Callback. First two arguments are for data in. Two later for data out (responded to the other side).
         *        Third parameter is initially set to maximum length that can be written to the out buffer
         *
         */
@@ -106,7 +101,7 @@ namespace Core {
         };
 
     public:
-        using MetaDataFrame = Core::IPCMessageType<1, Core::IPC::BufferType<METADATA_SIZE>, Core::IPC::BufferType<METADATA_SIZE>>;
+        using MetadataFrame = Core::IPCMessageType<1, Core::IPC::BufferType<METADATA_SIZE>, Core::IPC::BufferType<METADATA_SIZE>>;
 
         MessageDataBufferType(const MessageDataBufferType&) = delete;
         MessageDataBufferType& operator=(const MessageDataBufferType&) = delete;
@@ -270,7 +265,7 @@ namespace Core {
 
             string doorBellFilename;
             string metaDataFilename;
-            string basePath = Directory::Normalize(baseDirectory) + identifier;
+            string basePath = Core::Directory::Normalize(baseDirectory) + identifier;
 
             if (socketPort != 0) {
                 doorBellFilename = _T("127.0.0.1:") + Core::NumberType<uint16_t>(socketPort).Text();
