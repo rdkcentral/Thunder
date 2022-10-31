@@ -249,7 +249,7 @@ public:
     };
 
 private:
-    // The code for windows is derived from the example given her:
+    // The code for windows is derived from the example given here:
     // https://gist.github.com/nickav/a57009d4fcc3b527ed0f5c9cf30618f8
     // If you need to determine the event that really triggered the 
     // callback see this example for possible retrieval information (in 
@@ -297,22 +297,19 @@ private:
         }
 
     public:
+        // No need to lock here. This is an internal private class and can only be accessed through the
+        // outerclass FileSystemMonitor. This class will take care of the locking on:
+        // 1) Register
+        // 2) Unregister
+        // 3) Handle
+        // 4) IsEmpty
+        // 5) Notify
         void Register(ICallback* client) {
-            // No need to lock here. This is an internal provate class and can only be accessed through the
-            // outerclass FileSystemMonitor. This class will take care of the locking on:
-            // 1) Register
-            // 2) Unregister
-            // 3) Notify
             ASSERT(std::find(_clients.begin(), _clients.end(), client) == _clients.end());
 
             _clients.push_back(client);
         }
         void Unregister(ICallback* client) {
-            // No need to lock here. This is an internal provate class and can only be accessed through the
-            // outerclass FileSystemMonitor. This class will take care of the locking on:
-            // 1) Register
-            // 2) Unregister
-            // 3) Notify
             ClientList::iterator index (std::find(_clients.begin(), _clients.end(), client));
 
             ASSERT (index != _clients.end());
@@ -328,11 +325,6 @@ private:
             return (_clients.empty());
         }
         void Notify() {
-            // No need to lock here. This is an internal provate class and can only be accessed through the
-            // outerclass FileSystemMonitor. This class will take care of the locking on:
-            // 1) Register
-            // 2) Unregister
-            // 3) Notify
             DWORD bytes_transferred;
             if (GetOverlappedResult(_file, &_overlapped, &bytes_transferred, FALSE) != FALSE) {
                 // See: https://gist.github.com/nickav/a57009d4fcc3b527ed0f5c9cf30618f8 for
