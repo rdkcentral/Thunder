@@ -30,6 +30,7 @@
     <ClInclude Include="DoorBell.h" />
     <ClInclude Include="Enumerate.h" />
     <ClInclude Include="Factory.h" />
+    <ClInclude Include="FileObserver.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="Frame.h" />
     <ClInclude Include="IAction.h" />

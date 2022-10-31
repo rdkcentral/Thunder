@@ -72,6 +72,7 @@ namespace Core {
 
                     result = Core::ERROR_UNAVAILABLE;
 
+                    #ifndef __WINDOWS__
                     _domainSocket = ::socket(AF_UNIX, SOCK_DGRAM, 0);
 
                     if (_domainSocket >= 0) {
@@ -95,7 +96,7 @@ namespace Core {
                             clientAddress.sun_family = AF_UNIX;
                             strncpy(clientAddress.sun_path, clientPath.c_str(), sizeof(clientAddress.sun_path));
 
-                            Address(connector);
+                            _server = Core::NodeId(connector);
 
                             if (::bind(_domainSocket, reinterpret_cast<struct sockaddr*>(&clientAddress), sizeof(clientAddress)) == 0) {
                                 result = Core::ERROR_NONE;
@@ -104,7 +105,7 @@ namespace Core {
 
                                 _signal.ResetEvent();
 
-                                ::sendto(_domainSocket, &id, sizeof(id), 0, reinterpret_cast<struct sockaddr*>(&_server), sizeof(_server));
+                                ::sendto(_domainSocket, &id, sizeof(id), 0, _server, _server.Size());
 
                                 if (_signal.Lock(waitTime) == Core::ERROR_NONE) {
                                     descriptor = _descriptor;
@@ -126,6 +127,7 @@ namespace Core {
                         TRACE_L1("failed to open domain socket: %s\n", connector.c_str());
                     }
 
+                    #endif
                     _state = state::IDLE;
                 }
                 return (result);
@@ -140,6 +142,7 @@ namespace Core {
 
                     result = Core::ERROR_UNAVAILABLE;
 
+                    #ifndef __WINDOWS__
                     _domainSocket = ::socket(AF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC, 0);
 
                     if (_domainSocket >= 0) {
@@ -175,6 +178,7 @@ namespace Core {
                     } else {
                         TRACE_L1("Server running on fd=%d connector=%s", _domainSocket, connector.c_str());
                     }
+                    #endif      
                 }
                 return (result);
             }
@@ -183,7 +187,9 @@ namespace Core {
             {
                 if (_domainSocket != -1) {
                     ResourceMonitor::Instance().Unregister(*this);
+                    #ifndef __WINDOWS__
                     ::close(_domainSocket);
+                    #endif
                     _domainSocket = -1;
                 }
                 _state = state::IDLE;
@@ -205,12 +211,7 @@ namespace Core {
             }
 
         private:
-            void Address(const string identifier)
-            {
-                ::memset(&_server, 0, sizeof(_server));
-                _server.sun_family = AF_UNIX;
-                strncpy(_server.sun_path, identifier.c_str(), sizeof(_server.sun_path));
-            }
+            #ifndef __WINDOWS__
             uint32_t Write(const uint32_t id, int fd, struct sockaddr& client, socklen_t length)
             {
                 uint32_t result = Core::ERROR_NONE;
@@ -251,12 +252,14 @@ namespace Core {
 
                 return result;
             }
+            #endif      
             uint32_t Read()
             {
                 ASSERT(_domainSocket != -1);
 
                 uint32_t result = Core::ERROR_NONE;
 
+                #ifndef __WINDOWS__
                 struct msghdr msg;
                 ::memset(&msg, 0, sizeof(msg));
 
@@ -312,6 +315,8 @@ namespace Core {
                         }
                     }
                 }
+                #endif
+                 
                 return result;
             }
 
@@ -322,7 +327,7 @@ namespace Core {
             uint32_t _id;
             int _descriptor;
             Core::Event _signal;
-            struct sockaddr_un _server;
+            Core::NodeId _server;
         };
 
     public:
