@@ -167,7 +167,12 @@
 // W3 -- Code uses a function, class member, variable, or typedef that's marked deprecated
 #define DISABLE_WARNING_DEPRECATED_USE PUSH_WARNING_ARG_(4996)
 #define DISABLE_WARNING_MISSING_FIELD_INITIALIZERS
-#define DISABLE_WARNING_UNUSED_VARIABLES
+// W3 - 'identifier': unreferenced local variable
+#define DISABLE_WARNING_UNUSED_VARIABLES PUSH_WARNING_ARG_(4101)
+// W4 - 'identifier': unreferenced formal parameter
+#define DISABLE_WARNING_UNUSED_PARAMETERS PUSH_WARNING_ARG_(4100)
+// W4 - 'function': unreferenced function with internal linkage has been removed
+#define DISABLE_WARNING_UNUSED_FUNCTIONS PUSH_WARNING_ARG_(5242)
 #define DISABLE_WARNING_DEPRECATED_COPY
 #define DISABLE_WARNING_NON_VIRTUAL_DESTRUCTOR
 
@@ -187,6 +192,8 @@
 #if defined(__clang__) || (__GNUC__ >= 4)
 #define DISABLE_WARNING_MISSING_FIELD_INITIALIZERS PUSH_WARNING_ARG_("-Wmissing-field-initializers")
 #define DISABLE_WARNING_UNUSED_VARIABLES PUSH_WARNING_ARG_("-Wunused-variable")
+#define DISABLE_WARNING_UNUSED_PARAMTERS PUSH_WARNING_ARG_("-Wunused-parameter")
+#define DISABLE_WARNING_UNUSED_FUNCTIONS PUSH_WARNING_ARG_("-Wunused-function")
 #define DISABLE_WARNING_DEPRECATED_USE PUSH_WARNING_ARG_("-Wdeprecated-declarations")
 #define DISABLE_WARNING_DEPRECATED_COPY PUSH_WARNING_ARG_("-Wdeprecated-copy")
 #define DISABLE_WARNING_NON_VIRTUAL_DESTRUCTOR PUSH_WARNING_ARG_("-Wnon-virtual-dtor")
