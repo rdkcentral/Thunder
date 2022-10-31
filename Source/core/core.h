@@ -52,6 +52,7 @@
 #include "Enumerate.h"
 #include "Factory.h"
 #include "FileSystem.h"
+#include "FileObserver.h"
 #include "Frame.h"
 #include "IPCMessage.h"
 #include "IPCChannel.h"

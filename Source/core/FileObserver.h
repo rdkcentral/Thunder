@@ -20,6 +20,10 @@
 #pragma once
 
 #include "Module.h"
+#include "Trace.h"
+#include "Sync.h"
+#include "Thread.h"
+#include "FileSystem.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -98,7 +102,7 @@ public:
         static FileSystemMonitor _singleton;
         return (_singleton);
     }
-    virtual ~FileSystemMonitor()
+    ~FileSystemMonitor()
     {
         if (_notifyFd != -1) {
             ::close(_notifyFd);
@@ -236,7 +240,7 @@ private:
 // --------------------------------------------------------------------------------------------
 // https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-readdirectorychangesw
 // --------------------------------------------------------------------------------------------
-class FileSystemMonitor : public Core::IResource {
+class FileSystemMonitor {
 public:
     struct ICallback
     {
@@ -245,41 +249,172 @@ public:
     };
 
 private:
-    class Worker : public Core::Thread {
+    class Context {
+    private:
+        using ClientList = std::list<ICallback*>;
     public:
-        Worker() = delete;
-        Worker(const Worker&) = delete;
-        Worker& operator= (const Worker&) = delete;
-        Worker(FileSystemMonitor& parent) 
-            : _parent(parent) {
-            _syncEvent = ::CreateEvent(nullptr, true, false, nullptr);
+        Context() = delete;
+        Context(const Context&) = delete;
+        Context& operator= (const Context&) = delete;
+
+        Context(const string& pathName)
+            : _adminLock()
+            , _filename(pathName)
+            , _file(INVALID_HANDLE_VALUE)
+            , _clients() {
+            _file = CreateFile(pathName.c_str(),
+                FILE_LIST_DIRECTORY,
+                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                NULL,
+                OPEN_EXISTING,
+                FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
+                NULL);
+
+            if (_file != INVALID_HANDLE_VALUE) {        
+                _overlapped.hEvent = CreateEvent(NULL, FALSE, 0, NULL);
+
+                if (ReadDirectoryChangesW(
+                    _file, _buffer, sizeof(_buffer), FALSE,
+                    FILE_NOTIFY_CHANGE_FILE_NAME |
+                    FILE_NOTIFY_CHANGE_DIR_NAME,
+                    NULL, &_overlapped, NULL) == FALSE) {
+                    TRACE_L1("Could not start observing: %s", _filename.c_str());
+                }
+            }
         }
-        ~Worker() override {
+        ~Context() {
+            if (_file != INVALID_HANDLE_VALUE) {
+                ::CloseHandle(_file);
+                if (_overlapped.hEvent != INVALID_HANDLE_VALUE) {
+                    ::CloseHandle(_overlapped.hEvent);
+                }
+            }
         }
 
     public:
-        HANDLE Event() {
-            return(_syncEvent);
+        void Register(ICallback* client) {
+            ASSERT(std::find(_clients.begin(), _clients.end(), client) == _clients.end());
+
+            _clients.push_back(client);
         }
-        uint32_t Worker() override {
-        
-            return (Core::infinite);
+        void Unregister(ICallback* client) {
+            ClientList::iterator index (std::find(_clients.begin(), _clients.end(), client));
+
+            ASSERT (index != _clients.end());
+
+            if (index != _clients.end()) {
+                _clients.erase(index);
+            }
+        }
+        HANDLE Handle() {
+            return (_overlapped.hEvent);
+        }
+        bool IsEmpty() const {
+            return (_clients.empty());
+        }
+        void Notify() {
+            DWORD bytes_transferred;
+            if (GetOverlappedResult(_file, &_overlapped, &bytes_transferred, FALSE) != FALSE) {
+                if (ReadDirectoryChangesW(
+                    _file, _buffer, sizeof(_buffer), FALSE,
+                    FILE_NOTIFY_CHANGE_FILE_NAME |
+                    FILE_NOTIFY_CHANGE_DIR_NAME,
+                    NULL, &_overlapped, NULL) == FALSE) {
+
+                    TRACE_L1("Could not start observing: %s", _filename.c_str());
+                }
+
+                for (auto& client : _clients) {
+                    client->Updated();
+                }
+            }
+        }
+
+        /*           
+        bool completed = false;
+
+        FILE_NOTIFY_INFORMATION* event = reinterpret_cast<FILE_NOTIFY_INFORMATION*>(_buffer);
+
+        while (completed == false) {
+            DWORD name_len = event->FileNameLength / sizeof(wchar_t);
+
+            switch (event->Action) {
+            case FILE_ACTION_ADDED: {
+                wprintf(L"       Added: %.*s\n", name_len, event->FileName);
+            } break;
+
+            case FILE_ACTION_REMOVED: {
+                wprintf(L"     Removed: %.*s\n", name_len, event->FileName);
+            } break;
+
+            case FILE_ACTION_MODIFIED: {
+                wprintf(L"    Modified: %.*s\n", name_len, event->FileName);
+            } break;
+
+            case FILE_ACTION_RENAMED_OLD_NAME: {
+                wprintf(L"Renamed from: %.*s\n", name_len, event->FileName);
+            } break;
+
+            case FILE_ACTION_RENAMED_NEW_NAME: {
+                wprintf(L"          to: %.*s\n", name_len, event->FileName);
+            } break;
+
+            default: {
+                printf("Unknown action!\n");
+            } break;
+            }
+
+            // Are there more events to handle?
+            if (event->NextEntryOffset) {
+                *(reinterpret_cast<uint8_t**>(&event)) += event->NextEntryOffset;
+            }
+            else {
+                completed = true;
+            }
+        }
+
+        */
+
+    private:
+        Core::CriticalSection _adminLock;
+        string _filename;
+        HANDLE _file;
+        std::list<ICallback*> _clients;
+        OVERLAPPED _overlapped;
+        uint8_t _buffer[64];
+    };
+
+    using ObserveMap = std::unordered_map<string, Context>;
+
+    class Dispatcher : public Core::Thread {
+    public:
+        Dispatcher() = delete;
+        Dispatcher(const Dispatcher&) = delete;
+        Dispatcher& operator= (const Dispatcher&) = delete;
+        Dispatcher(FileSystemMonitor& parent)
+            : _parent(parent) {
+        }
+        ~Dispatcher() override {
+        }
+
+    public:
+        uint32_t Worker() override {        
+            _parent.Process();
+            return (0);
         }
 
     private:
         FileSystemMonitor& _parent; 
-        HANDLE _syncEvent;
     };
-
-    typedef std::unordered_map<int, string> Observers;
-    typedef std::unordered_map<string, int> Directories;
 
     FileSystemMonitor()
         : _adminLock()
-        , _directories()
+        , _dispatcher(*this)
         , _observers()
+        , _trigger(::CreateEvent(NULL, FALSE, FALSE, NULL))
     {
     }
+
 
 public:
     FileSystemMonitor(const FileSystemMonitor &) = delete;
@@ -290,12 +425,14 @@ public:
         static FileSystemMonitor _singleton;
         return (_singleton);
     }
-    virtual ~FileSystemMonitor() = default;
+    ~FileSystemMonitor() {
+        ::CloseHandle(_trigger);
+    }
 
 public:
     bool IsValid() const
     {
-        return (_notifyFd != -1);
+        return (_trigger != INVALID_HANDLE_VALUE);
     }
     bool Register(ICallback *callback, const string &filename)
     {
@@ -303,9 +440,23 @@ public:
 
         _adminLock.Lock();
 
-        if (Core::File(fileName).IsDirectory() == true) {
-        }
-        else {
+        if (Core::File(filename).IsDirectory() == true) {
+            ObserveMap::iterator index = _observers.find(filename);
+            if (index != _observers.end()) {
+                index = _observers.emplace(std::piecewise_construct,
+                    std::forward_as_tuple(filename),
+                    std::forward_as_tuple(filename)).first;
+
+                // Are we starting the first observer ?
+                if (_observers.size() == 1) {
+                    _dispatcher.Run();
+                }
+                else {
+                    // Make sure the wait, if pending, gets triggered..
+                    Trigger();
+                }
+            }
+            index->second.Register(callback);
         }
         _adminLock.Unlock();
 
@@ -313,38 +464,63 @@ public:
     }
     void Unregister(ICallback *callback, const string &filename)
     {
-        ASSERT(_notifyFd != -1);
         ASSERT(callback != nullptr);
 
         _adminLock.Lock();
 
-        Files::iterator index = _files.find(filename);
-        ASSERT(index != _files.end());
+        ObserveMap::iterator index = _observers.find(filename);
 
-        if (index != _files.end()) {
-            Observers::iterator loop = _observers.find(index->second);
-            ASSERT(loop != _observers.end());
+        ASSERT(index != _observers.end());
 
-            loop->second.Unregister(callback);
-            if (loop->second.HasCallbacks() == false) {
-                if (inotify_rm_watch(_notifyFd, index->second) < 0) {
-                    TRACE_L1(_T("Invoke of inotify_rm_watch failed"));
+        if (index != _observers.end()) {
+            index->second.Unregister(callback);
+            if (index->second.IsEmpty() == true) {
+                _observers.erase(index);
+
+                if (_observers.empty() == true) {
+                    _dispatcher.Block();
                 }
-                // Clear this index, we are no longer observing
-                _files.erase(index);
-                _observers.erase(loop);
-                if (_files.size() == 0) {
-                    // This is the first entry, lets start monitoring
-                    Core::ResourceMonitor::Instance().Unregister(*this);
-                }
+
+                // Make sure the wait, if pending, gets triggered..
+                Trigger();
             }
         }
 
         _adminLock.Unlock();
     }
+
 private:
-    Observers   _observers;
-    Directories _directories;
+    void Trigger() {
+        ::SetEvent(_trigger);
+    }
+    void Process() {
+
+        int count = 1;
+
+        _adminLock.Lock();
+        HANDLE* syncEvent = reinterpret_cast<HANDLE*>(ALLOCA((_observers.size() + 1) * sizeof(HANDLE)));
+        for (auto& observer : _observers) {
+            syncEvent[count++] = observer.second.Handle();
+        }
+        _adminLock.Unlock();
+
+        syncEvent[0] = _trigger;
+
+        ::WaitForMultipleObjects(count, syncEvent, FALSE, Core::infinite);
+        ::ResetEvent(_trigger);
+
+        _adminLock.Lock();
+        for (auto& observer : _observers) {
+            observer.second.Notify();
+        }
+        _adminLock.Unlock();
+    }
+
+private:
+    Core::CriticalSection _adminLock;
+    Dispatcher _dispatcher;
+    ObserveMap _observers;
+    HANDLE _trigger;
 };
 
 #endif
