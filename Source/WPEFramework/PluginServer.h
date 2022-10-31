@@ -352,11 +352,14 @@ namespace PluginHost {
         };
 
         class Service : public IShell::ICOMLink, public PluginHost::Service {
-        private:
-            Service() = delete;
-            Service(const Service&) = delete;
-            Service& operator=(const Service&) = delete;
+        public:
+            enum mode {
+                CONFIGURED,
+                CLONED,
+                DYNAMIC
+            };
 
+        private:
             class Condition {
             private:
                 enum state : uint8_t {
@@ -553,8 +556,13 @@ namespace PluginHost {
             };
 
         public:
-            Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator)
+            Service() = delete;
+            Service(const Service&) = delete;
+            Service& operator=(const Service&) = delete;
+
+            Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode type)
                 : PluginHost::Service(plugin, server.WebPrefix(), server.PersistentPath(), server.DataPath(), server.VolatilePath())
+                , _mode(type)
                 , _pluginHandling()
                 , _handler(nullptr)
                 , _extended(nullptr)
@@ -564,6 +572,7 @@ namespace PluginHost {
                 , _rawSocket(nullptr)
                 , _webSecurity(nullptr)
                 , _jsonrpc(nullptr)
+                , _reason(IShell::reason::SHUTDOWN)
                 , _precondition(true, plugin.Precondition)
                 , _termination(false, plugin.Termination)
                 , _activity(0)
@@ -573,7 +582,7 @@ namespace PluginHost {
                 , _administrator(administrator)
             {
             }
-            ~Service()
+            ~Service() override
             {
                 Deactivate(IShell::SHUTDOWN);
 
@@ -1252,6 +1261,7 @@ namespace PluginHost {
             }
 
         private:
+            const mode _mode;
             mutable Core::CriticalSection _pluginHandling;
 
             // The handlers that implement the actual logic behind the service
@@ -1540,6 +1550,34 @@ namespace PluginHost {
                     RPC::Object _object;
                     const RPC::Config& _config;
                 };
+                class ProxyStubObserver : public Core::FileSystemMonitor::ICallback {
+                public:
+                    ProxyStubObserver() = delete;
+                    ProxyStubObserver(const ProxyStubObserver&) = delete;
+                    ProxyStubObserver& operator= (const ProxyStubObserver&) = delete;
+
+                    ProxyStubObserver(CommunicatorServer& parent,const string& observableProxyStubPath)
+                        : _parent(parent)
+                        , _observerPath(observableProxyStubPath)  {
+                        if (_observerPath.empty() == false) {
+                            Core::FileSystemMonitor::Instance().Register(this, _observerPath);
+                        }
+                    }
+                    virtual ~ProxyStubObserver() {
+                        if (_observerPath.empty() == false) {
+                            Core::FileSystemMonitor::Instance().Unregister(this, _observerPath);
+                        }
+                    }
+
+                public:
+                    virtual void Updated() {
+                        _parent.Reload(_observerPath);
+                    }
+
+                private:
+                    CommunicatorServer& _parent;
+                    const string _observerPath;
+                };
 
             public:
                 CommunicatorServer() = delete;
@@ -1555,25 +1593,27 @@ namespace PluginHost {
                     const string& volatilePath,
                     const string& appPath,
                     const string& proxyStubPath,
+                    const string& observableProxyStubPath,
                     const string& postMortemPath,
                     const uint8_t softKillCheckWaitTime,
                     const uint8_t hardKillCheckWaitTime,
                     const Core::ProxyType<RPC::InvokeServer>& handler)
-                    : RPC::Communicator(node, proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath, Core::ProxyType<Core::IIPCServer>(handler))
+                    : RPC::Communicator(node, ProxyStubPathCreator(proxyStubPath, observableProxyStubPath), Core::ProxyType<Core::IIPCServer>(handler))
                     , _parent(parent)
-                    , _persistentPath(persistentPath.empty() == false ? Core::Directory::Normalize(persistentPath) : persistentPath)
-                    , _systemPath(systemPath.empty() == false ? Core::Directory::Normalize(systemPath) : systemPath)
-                    , _dataPath(dataPath.empty() == false ? Core::Directory::Normalize(dataPath) : dataPath)
-                    , _volatilePath(volatilePath.empty() == false ? Core::Directory::Normalize(volatilePath) : volatilePath)
-                    , _appPath(appPath.empty() == false ? Core::Directory::Normalize(appPath) : appPath)
-                    , _proxyStubPath(proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath)
-                    , _postMortemPath(postMortemPath.empty() == false ? Core::Directory::Normalize(postMortemPath) : postMortemPath)
+                    , _persistentPath(persistentPath)
+                    , _systemPath(systemPath)
+                    , _dataPath(dataPath)
+                    , _volatilePath(volatilePath)
+                    , _appPath(appPath)
+                    , _postMortemPath(postMortemPath)
 #ifdef __WINDOWS__
                     , _application(_systemPath + EXPAND_AND_QUOTE(HOSTING_COMPROCESS))
 #else
                     , _application(EXPAND_AND_QUOTE(HOSTING_COMPROCESS))
 #endif
                     , _adminLock()
+                    , _requestObservers()
+                    , _proxyStubObserver(*this, observableProxyStubPath)
                 {
                     // Make sure the engine knows how to call the Announcment handler..
                     handler->Announcements(Announcement());
@@ -1683,6 +1723,25 @@ namespace PluginHost {
                 }
 
             private:
+                void Reload(const string& path) {
+                    TRACE(Activity, (Core::Format(_T("Reloading ProxyStubs from %s."), path.c_str())));
+                    RPC::Communicator::LoadProxyStubs(path);
+                }
+                string ProxyStubPathCreator(const string& proxyStubPath, const string& observableProxyStubPath) {
+                    if (proxyStubPath.empty() == false) {
+                        _proxyStubPath = proxyStubPath;
+                    }
+                    if (observableProxyStubPath.empty() ==false) {
+                        if (_proxyStubPath.empty() == true) {
+                            _proxyStubPath = observableProxyStubPath;
+                        }
+                        else {
+                            _proxyStubPath = _proxyStubPath + '|' + observableProxyStubPath;
+                        }
+                    }
+
+                    return (_proxyStubPath);
+                }
                 RPC::Communicator::RemoteConnection* CreateStarter(const RPC::Config& config, const RPC::Object& instance) override
                 {
                     RPC::Communicator::RemoteConnection* result = nullptr;
@@ -1734,16 +1793,18 @@ namespace PluginHost {
 
             private:
                 ServiceMap& _parent;
+                string _proxyStubPath;
                 const string _persistentPath;
                 const string _systemPath;
                 const string _dataPath;
                 const string _volatilePath;
                 const string _appPath;
-                const string _proxyStubPath;
+                const string _observableProxyStubPath;
                 const string _postMortemPath;
                 const string _application;
                 mutable Core::CriticalSection _adminLock;
                 ObserverList _requestObservers;
+                ProxyStubObserver _proxyStubObserver;
             };
             class RemoteInstantiation : public IRemoteInstantiation {
             private:
@@ -1908,14 +1969,42 @@ POP_WARNING()
                 ServiceMap& _parent;
                 Core::ThreadPool::JobType<Job> _job;
             };
+            class ConfigObserver : public Core::FileSystemMonitor::ICallback {
+            public:
+                ConfigObserver() = delete;
+                ConfigObserver(const ConfigObserver&) = delete;
+                ConfigObserver& operator= (const ConfigObserver&) = delete;
+
+                ConfigObserver(ServiceMap& parent, const string& observableConfigPath)
+                    : _parent(parent)
+                    , _observerPath(observableConfigPath) {
+                    if (_observerPath.empty() == false) {
+                        Core::FileSystemMonitor::Instance().Register(this, _observerPath);
+                    }
+                }
+                virtual ~ConfigObserver() {
+                    if (_observerPath.empty() == false) {
+                        Core::FileSystemMonitor::Instance().Unregister(this, _observerPath);
+                    }
+                }
+
+            public:
+                virtual void Updated() {
+                    _parent.ConfigReload(_observerPath);
+                }
+
+            private:
+                ServiceMap& _parent;
+                const string _observerPath;
+            };
 
         public:
             ServiceMap() = delete;
             ServiceMap(const ServiceMap&) = delete;
             ServiceMap& operator=(const ServiceMap&) = delete;
 
-PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-            ServiceMap(Server& server, Config& config)
+            PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
+                ServiceMap(Server& server, Config& config)
                 : _webbridgeConfig(config)
                 , _adminLock()
                 , _notificationLock()
@@ -1923,14 +2012,15 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 , _notifiers()
                 , _engine(Core::ProxyType<RPC::InvokeServer>::Create(&(server._dispatcher)))
                 , _processAdministrator(
-                    *this, 
-                    config.Communicator(), 
-                    config.PersistentPath(), 
-                    config.SystemPath(), 
-                    config.DataPath(), 
-                    config.VolatilePath(), 
-                    config.AppPath(), 
-                    config.ProxyStubPath(), 
+                    *this,
+                    config.Communicator(),
+                    config.PersistentPath(),
+                    config.SystemPath(),
+                    config.DataPath(),
+                    config.VolatilePath(),
+                    config.AppPath(),
+                    config.ProxyStubPath(),
+                    config.ObservableProxyStubPath(),
                     config.PostMortemPath(),
                     config.SoftKillCheckWaitTime(),
                     config.HardKillCheckWaitTime(),
@@ -1938,6 +2028,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 , _server(server)
                 , _subSystems(this)
                 , _authenticationHandler(nullptr)
+                , _configObserver(*this, config.PluginConfigPath())
             {
             }
 POP_WARNING()
@@ -2131,10 +2222,10 @@ POP_WARNING()
 
                 _adminLock.Unlock();
             }
-            inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration)
+            inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration, const Service::mode mode)
             {
                 // Whatever plugin is needse, we at least have our MetaData plugin available (as the first entry :-).
-                Core::ProxyType<Service> newService(Core::ProxyType<Service>::Create(_webbridgeConfig, configuration, *this));
+                Core::ProxyType<Service> newService(Core::ProxyType<Service>::Create(_webbridgeConfig, configuration, *this, mode));
 
                 if (newService.IsValid() == true) {
                     _adminLock.Lock();
@@ -2160,7 +2251,7 @@ POP_WARNING()
                     Plugin::Config newConfiguration = original->PluginHost::Service::Configuration();
                     newConfiguration.Callsign = newCallsign;
 
-                    newService = Core::ProxyType<Service>::Create(_webbridgeConfig, newConfiguration, *this);
+                    newService = Core::ProxyType<Service>::Create(_webbridgeConfig, newConfiguration, *this, Service::mode::CLONED);
 
                     if (newService.IsValid() == true) {
                         // Fire up the interface. Let it handle the messages.
@@ -2270,6 +2361,39 @@ POP_WARNING()
             }
 
         private:
+            void ConfigReload(const string& configs) {
+                // Oke lets check the configs we are observing :-)
+                Core::Directory pluginDirectory(configs.c_str(), _T("*.json"));
+
+                while (pluginDirectory.Next() == true) {
+                    Core::File file(pluginDirectory.Current());
+
+                    if (file.IsDirectory() == false) { 
+                        if (file.Open(true) == false) {
+                            SYSLOG_GLOBAL(Logging::Fatal, (_T("Plugin config file [%s] could not be opened."), file.Name().c_str()));
+                        }
+                        else {
+                            Plugin::Config pluginConfig;
+                            Core::OptionalType<Core::JSON::Error> error;
+                            pluginConfig.IElement::FromFile(file, error);
+                            if (error.IsSet() == true) {
+                                SYSLOG_GLOBAL(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                            }
+                            else if ((pluginConfig.ClassName.Value().empty() == true) || (pluginConfig.Locator.Value().empty() == true)) {
+                                SYSLOG_GLOBAL(Logging::Fatal, (_T("Plugin config file [%s] does not contain classname or locator."), file.Name().c_str()));
+                            }
+                            else {
+                                if (pluginConfig.Callsign.Value().empty() == true) {
+                                    pluginConfig.Callsign = Core::File::FileName(file.FileName());
+                                }
+
+                                Insert(pluginConfig, Service::mode::DYNAMIC);
+                            }
+                            file.Close();
+                        }
+                    }
+                }
+            }
             void Remove(const string& connector) const
             {
                 // This is already locked by the callee, so safe to operate on the map..
@@ -2347,6 +2471,7 @@ POP_WARNING()
             Server& _server;
             Core::Sink<SubSystems> _subSystems;
             IAuthenticate* _authenticationHandler;
+            ConfigObserver _configObserver;
         };
 
         // Connection handler is the listening socket and keeps track of all open
