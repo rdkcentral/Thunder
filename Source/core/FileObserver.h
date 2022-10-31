@@ -399,7 +399,7 @@ public:
     }
 
 public:
-    // All access to ObserveMap (_observers) is protected agains consurrency from
+    // All access to ObserveMap (_observers) is protected against concurrency from
     // this outer class!!
     bool IsValid() const
     {
