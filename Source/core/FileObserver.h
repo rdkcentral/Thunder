@@ -249,6 +249,11 @@ public:
     };
 
 private:
+    // The code for windows is derived from the example given her:
+    // https://gist.github.com/nickav/a57009d4fcc3b527ed0f5c9cf30618f8
+    // If you need to determine the event that really triggered the 
+    // callback see this example for possible retrieval information (in 
+    // the overlapped call)
     class Context {
     private:
         using ClientList = std::list<ICallback*>;
@@ -293,11 +298,21 @@ private:
 
     public:
         void Register(ICallback* client) {
+            // No need to lock here. This is an internal provate class and can only be accessed through the
+            // outerclass FileSystemMonitor. This class will take care of the locking on:
+            // 1) Register
+            // 2) Unregister
+            // 3) Notify
             ASSERT(std::find(_clients.begin(), _clients.end(), client) == _clients.end());
 
             _clients.push_back(client);
         }
         void Unregister(ICallback* client) {
+            // No need to lock here. This is an internal provate class and can only be accessed through the
+            // outerclass FileSystemMonitor. This class will take care of the locking on:
+            // 1) Register
+            // 2) Unregister
+            // 3) Notify
             ClientList::iterator index (std::find(_clients.begin(), _clients.end(), client));
 
             ASSERT (index != _clients.end());
@@ -313,8 +328,15 @@ private:
             return (_clients.empty());
         }
         void Notify() {
+            // No need to lock here. This is an internal provate class and can only be accessed through the
+            // outerclass FileSystemMonitor. This class will take care of the locking on:
+            // 1) Register
+            // 2) Unregister
+            // 3) Notify
             DWORD bytes_transferred;
             if (GetOverlappedResult(_file, &_overlapped, &bytes_transferred, FALSE) != FALSE) {
+                // See: https://gist.github.com/nickav/a57009d4fcc3b527ed0f5c9cf30618f8 for
+                // data in the retrieved _buffer with size of &bytes_transferred.
                 if (ReadDirectoryChangesW(
                     _file, _buffer, sizeof(_buffer), FALSE,
                     FILE_NOTIFY_CHANGE_FILE_NAME |
@@ -329,51 +351,6 @@ private:
                 }
             }
         }
-
-        /*           
-        bool completed = false;
-
-        FILE_NOTIFY_INFORMATION* event = reinterpret_cast<FILE_NOTIFY_INFORMATION*>(_buffer);
-
-        while (completed == false) {
-            DWORD name_len = event->FileNameLength / sizeof(wchar_t);
-
-            switch (event->Action) {
-            case FILE_ACTION_ADDED: {
-                wprintf(L"       Added: %.*s\n", name_len, event->FileName);
-            } break;
-
-            case FILE_ACTION_REMOVED: {
-                wprintf(L"     Removed: %.*s\n", name_len, event->FileName);
-            } break;
-
-            case FILE_ACTION_MODIFIED: {
-                wprintf(L"    Modified: %.*s\n", name_len, event->FileName);
-            } break;
-
-            case FILE_ACTION_RENAMED_OLD_NAME: {
-                wprintf(L"Renamed from: %.*s\n", name_len, event->FileName);
-            } break;
-
-            case FILE_ACTION_RENAMED_NEW_NAME: {
-                wprintf(L"          to: %.*s\n", name_len, event->FileName);
-            } break;
-
-            default: {
-                printf("Unknown action!\n");
-            } break;
-            }
-
-            // Are there more events to handle?
-            if (event->NextEntryOffset) {
-                *(reinterpret_cast<uint8_t**>(&event)) += event->NextEntryOffset;
-            }
-            else {
-                completed = true;
-            }
-        }
-
-        */
 
     private:
         Core::CriticalSection _adminLock;
@@ -430,6 +407,8 @@ public:
     }
 
 public:
+    // All access to ObserveMap (_observers) is protected agains consurrency from
+    // this outer class!!
     bool IsValid() const
     {
         return (_trigger != INVALID_HANDLE_VALUE);
