@@ -45,7 +45,7 @@
         using __control__ = TRACE_CONTROL(CATEGORY);                                         \
         if (__control__::IsEnabled() == true) {                                              \
             CATEGORY __data__ PARAMETERS;                                                    \
-            Core::TextFragment classname (typeid(*this).name());                             \
+            WPEFramework::Core::TextFragment classname (typeid(*this).name());               \
             WPEFramework::Core::Messaging::IStore::Information __info__(                     \
                 __control__::Metadata(),                                                     \
                 __FILE__,                                                                    \
