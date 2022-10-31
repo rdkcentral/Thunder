@@ -144,8 +144,7 @@ set(PUBLIC_HEADERS
         Module.h
         CallsignTLS.h
         TokenizedStringList.h
-        MessageDispatcher.h
-        MessageUnit.h
+        MessageStore.h
         )
 
 # non-buildable interface target to carry the definitions
@@ -164,7 +163,7 @@ endif()
 
 if(MESSAGING)
     target_compile_definitions(${TARGET} PUBLIC __CORE_MESSAGING__)
-    target_sources(${TARGET} PRIVATE MessageUnit.cpp)
+    target_sources(${TARGET} PRIVATE MessageStore.cpp)
     message(STATUS "Messaging enabled")
 endif()
 

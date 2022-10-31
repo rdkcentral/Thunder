@@ -71,6 +71,7 @@
 #include "NetworkInfo.h"
 #include "Optional.h"
 #include "Parser.h"
+#include "PriviligedRequest.h"
 #include "Process.h"
 #include "ProcessInfo.h"
 #include "Proxy.h"
@@ -113,8 +114,7 @@
 #include "WarningReportingCategories.h"
 #include "CallsignTLS.h"
 #include "TokenizedStringList.h"
-#include "MessageDispatcher.h"
-#include "MessageUnit.h"
+#include "MessageStore.h"
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "core.lib")

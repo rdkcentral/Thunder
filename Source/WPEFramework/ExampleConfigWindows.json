@@ -11,6 +11,10 @@
   "communicator": "127.0.0.1:62000",
   "redirect": "Service/Controller/UI",
   "messagingport": 63000,
+  "observe": {
+    "proxystubpath": "D:/Domotica/artifacts/dynamic/proxystubs",
+    "configpath": "D:/Domotica/artifacts/dynamic/config"
+  },
   "messaging": {
     "logging": {
       "abbreviated": true,
@@ -24,8 +28,13 @@
     "tracing": {
       "settings": [
         {
-          "category": "Information",
+          "module": "Plugin_OutOfProcess",
+          "category": "TestTrace",
           "enabled": true
+        },
+        {
+          "module": "Plugin_Butler",
+          "enabled":  true
         }
       ]
     }
@@ -337,11 +346,13 @@
       "classname": "OutOfProcessPlugin",
       "autostart": false,
       "configuration": {
-        "outofprocess": true,
         "url": "http://netflix.com/tv",
         "sleep": "5",
         "single": false,
-        "crash": true
+        "crash": false,
+        "root": {
+          "mode": "Local"
+        }
       }
     },
     {
@@ -519,16 +530,20 @@
       }
     },
     {
-      "autostart": false,
+      "autostart": true,
       "callsign": "WebKitBrowser",
-      "classname": "OutOfProcessTest",
-      "locator": "liboutofprocesstest.so",
+      "classname": "OutOfProcessPlugin",
+      "locator": "libOutOfProcessPlugin.so",
       "configuration": {
-        "outofprocess": true,
         "url": "http://webkit.org/tveee",
-        "sleep": "720",
+        "sleep": "1",
+        "single": false,
+        "crash": false,
         "compositor": "noaa",
-        "inspector": "0.0.0.0:9998"
+        "inspector": "0.0.0.0:9998",
+        "root": {
+          "mode": "Local"
+        }
       }
     },
     {

@@ -254,6 +254,31 @@ namespace PluginHost {
                 Core::JSON::Boolean OutputEnabled;
             };
 
+
+            class Observables : public Core::JSON::Container {
+            public:
+                Observables& operator= (const Observables&);
+
+                Observables()
+                    : Core::JSON::Container()
+                    , ProxyStubPath()
+                    , PluginConfigPath() {
+                    Add(_T("proxystubpath"), &ProxyStubPath);
+                    Add(_T("configpath"), &PluginConfigPath);
+                }
+                Observables(const Observables& copy)
+                    : Core::JSON::Container()
+                    , ProxyStubPath(copy.ProxyStubPath)
+                    , PluginConfigPath(copy.PluginConfigPath) {
+                    Add(_T("proxystubpath"), &ProxyStubPath);
+                    Add(_T("configpath"), &PluginConfigPath);
+                }
+                ~Observables() override = default;
+
+                Core::JSON::String ProxyStubPath;
+                Core::JSON::String PluginConfigPath;
+            };
+
 #ifdef PROCESSCONTAINERS_ENABLED
 
             class ProcessContainerConfig : public Core::JSON::Container {
@@ -331,6 +356,7 @@ namespace PluginHost {
                 , ProcessContainers()
 #endif
                 , LinkerPluginPaths()
+                , Observe()
             {
                 // No IdleTime
                 Add(_T("version"), &Version);
@@ -374,6 +400,7 @@ namespace PluginHost {
                 Add(_T("processcontainers"), &ProcessContainers);
 #endif
                 Add(_T("linkerpluginpaths"), &LinkerPluginPaths);
+                Add(_T("observe"), &Observe);
             }
             ~JSONConfig() override = default;
 
@@ -415,6 +442,7 @@ namespace PluginHost {
             ProcessContainerConfig ProcessContainers;
 #endif
             Core::JSON::ArrayType<Core::JSON::String> LinkerPluginPaths;
+            Observables Observe;
         };
 
     public:
@@ -540,6 +568,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             , _configsPath()
             , _proxyStubPath()
             , _postMortemPath()
+            , _pluginConfigPath()
             , _accessor()
             , _communicator()
             , _binder()
@@ -591,7 +620,17 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 _dataPath = Core::Directory::Normalize(config.DataPath.Value());
                 _systemPath = Core::Directory::Normalize(config.SystemPath.Value());
                 _configsPath = Core::Directory::Normalize(config.Configs.Value());
-                _proxyStubPath = Core::Directory::Normalize(config.ProxyStubPath.Value());
+                if (config.ProxyStubPath.IsSet() == true) {
+                    _proxyStubPath = Core::Directory::Normalize(config.ProxyStubPath.Value());
+                }
+                if ((config.Observe.IsSet() == true) && (config.Observe.ProxyStubPath.IsSet() == true)) {
+                    if (_proxyStubPath.empty() == true) {
+                        _proxyStubPath = Core::Directory::Normalize(config.Observe.ProxyStubPath.Value());
+                    }
+                    else {
+                        _proxyStubPath = _proxyStubPath + '|' + Core::Directory::Normalize(config.Observe.ProxyStubPath.Value());
+                    }
+                }
                 _postMortemPath = Core::Directory::Normalize(config.PostMortemPath.Value());
                 _appPath = Core::File::PathName(Core::ProcessInfo().Executable());
                 _hashKey = config.Signature.Value();
@@ -726,6 +765,10 @@ POP_WARNING()
         inline const string& PersistentPath() const
         {
             return (_persistentPath);
+        }
+        inline const string& PluginConfigPath() const
+        {
+            return (_pluginConfigPath);
         }
         inline const string& DataPath() const
         {
@@ -976,6 +1019,7 @@ POP_WARNING()
         string _configsPath;
         string _proxyStubPath;
         string _postMortemPath;
+        string _pluginConfigPath;
         Core::NodeId _accessor;
         Core::NodeId _communicator;
         Core::NodeId _binder;
