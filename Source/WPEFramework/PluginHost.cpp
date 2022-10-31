@@ -40,7 +40,9 @@ namespace PluginHost {
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
             : Core::Options(argumentCount, arguments, _T(":bhcfF"))
             , configFile(Server::ConfigFile)
+#if defined(__CORE_MESSAGING__)
             , flushMode(Messaging::MessageUnit::flush::OFF)
+#endif
         {
             Parse();
         }
@@ -50,7 +52,9 @@ namespace PluginHost {
 
     public:
         const TCHAR* configFile;
+#if defined(__CORE_MESSAGING__)
         Messaging::MessageUnit::flush flushMode;
+#endif
 
     private:
         virtual void Option(const TCHAR option, const TCHAR* argument)
@@ -59,12 +63,14 @@ namespace PluginHost {
             case 'c':
                 configFile = argument;
                 break;
+#if defined(__CORE_MESSAGING__)
             case 'f':
                 flushMode = Messaging::MessageUnit::flush::FLUSH;
                 break;
             case 'F':
                 flushMode = Messaging::MessageUnit::flush::FLUSH_ABBREVIATED;
                 break;
+#endif
 #ifndef __WINDOWS__
             case 'b':
                 _background = true;
@@ -425,8 +431,10 @@ POP_WARNING()
                 fprintf(stderr, "Usage: " EXPAND_AND_QUOTE(APPLICATION_NAME) " [-c <config file>] [-b] [-fF]\n");
                 fprintf(stderr, "       -c <config file>  Define the configuration file to use.\n");
                 fprintf(stderr, "       -b                Run " EXPAND_AND_QUOTE(APPLICATION_NAME) " in the background.\n");
+#if defined(__CORE_MESSAGING__)
                 fprintf(stderr, "       -f                Flush messaging information also to syslog/console, none abbreviated\n");
                 fprintf(stderr, "       -F                Flush messaging information also to syslog/console, abbreviated\n");
+#endif
             }
             exit(EXIT_FAILURE);
         }
