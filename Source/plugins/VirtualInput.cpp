@@ -612,7 +612,7 @@ POP_WARNING()
                 });
 
                 // We are ready! Create that device!
-                (void)write(_eventDescriptor, &_uidev, sizeof(_uidev));
+                WARNING_RESULT_NOT_USED write(_eventDescriptor, &_uidev, sizeof(_uidev));
                 ioctl(_eventDescriptor, UI_DEV_CREATE);
             }
         }
@@ -634,7 +634,7 @@ POP_WARNING()
             ev.code  = ((data.Action == IVirtualInput::KeyData::COMPLETED) ? 0 : data.Code);
 
             TRACE_L1("Inserted a keycode: %d", data.Code);
-            (void)write(_eventDescriptor, &ev, sizeof(ev));
+            WARNING_RESULT_NOT_USED write(_eventDescriptor, &ev, sizeof(ev));
         }
     }
 

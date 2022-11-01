@@ -90,22 +90,17 @@ namespace Core {
 
                             ::unlink(clientPath.c_str());
 
-                            struct sockaddr_un clientAddress;
+                            const Core::NodeId client(clientPath.c_str());
+                            const Core::NodeId server(connector.c_str());
 
-                            ::memset(&clientAddress, 0, sizeof(clientAddress));
-                            clientAddress.sun_family = AF_UNIX;
-                            strncpy(clientAddress.sun_path, clientPath.c_str(), sizeof(clientAddress.sun_path));
-
-                            _server = Core::NodeId(connector);
-
-                            if (::bind(_domainSocket, reinterpret_cast<struct sockaddr*>(&clientAddress), sizeof(clientAddress)) == 0) {
+                            if (::bind(_domainSocket, client, client.Size()) == 0) {
                                 result = Core::ERROR_NONE;
 
                                 ResourceMonitor::Instance().Register(*this);
 
                                 _signal.ResetEvent();
 
-                                ::sendto(_domainSocket, &id, sizeof(id), 0, _server, _server.Size());
+                                ::sendto(_domainSocket, &id, sizeof(id), 0, server, server.Size());
 
                                 if (_signal.Lock(waitTime) == Core::ERROR_NONE) {
                                     descriptor = _descriptor;
@@ -154,9 +149,9 @@ namespace Core {
                         } else {
                             ::unlink(connector.c_str());
 
-                            Address(connector);
+                            const Core::NodeId server(connector.c_str());
 
-                            if (::bind(_domainSocket, reinterpret_cast<struct sockaddr*>(&_server), sizeof(_server)) == 0) {
+                            if (::bind(_domainSocket, server, server.Size()) == 0) {
                                 result = Core::ERROR_NONE;
                                 ResourceMonitor::Instance().Register(*this);
                             } else {
@@ -327,7 +322,6 @@ namespace Core {
             uint32_t _id;
             int _descriptor;
             Core::Event _signal;
-            Core::NodeId _server;
         };
 
     public:
