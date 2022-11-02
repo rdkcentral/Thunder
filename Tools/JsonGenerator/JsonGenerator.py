@@ -1248,7 +1248,7 @@ def LoadInterface(file, all = False, includePaths = []):
                         return None
                 else:
                     if (len(properties) == 0):
-                        return None
+                        return {}
                     elif (len(properties) == 1) and (rpc_format == RpcFormat.COLLAPSED):
                         # collapsed format: if only one parameter present then omit the outer object
                         return list(properties.values())[0]
@@ -1322,17 +1322,14 @@ def LoadInterface(file, all = False, includePaths = []):
                             raise CppParseError(method.vars[0], "index to a property must be an input parameter")
                         if "index" not in obj:
                             obj["index"] = BuildIndex(method.vars[0])
-                            if obj["index"]:
-                                obj["index"]["name"] = method.vars[0].name
-                                if "enum" in obj["index"]:
-                                    obj["index"]["example"] = obj["index"]["enum"][0]
-                                if "example" not in obj["index"]:
-                                    # example not specified, let's invent something...
-                                    obj["index"]["example"] = ("0" if obj["index"]["type"] == "integer" else "xyz")
-                                if obj["index"]["type"] not in ["integer", "string"]:
-                                    raise CppParseError(method.vars[0], "index to a property must be integer, enum or string type")
-                            else:
-                                raise CppParseError(method.vars[0], "failed to determine type of index")
+                            obj["index"]["name"] = method.vars[0].name
+                            if "enum" in obj["index"]:
+                                obj["index"]["example"] = obj["index"]["enum"][0]
+                            if "example" not in obj["index"]:
+                                # example not specified, let's invent something...
+                                obj["index"]["example"] = ("0" if obj["index"]["type"] == "integer" else "xyz")
+                            if obj["index"]["type"] not in ["integer", "string"]:
+                                raise CppParseError(method.vars[0], "index to a property must be integer, enum or string type")
                         else:
                             test = BuildIndex(method.vars[0], True)
                             if not test:
@@ -1392,7 +1389,7 @@ def LoadInterface(file, all = False, includePaths = []):
                                     raise CppParseError(method.vars[value], "setter and getter of the same property must have same type (*2)")
                                 if "ref" in test and test["ref"]:
                                     obj["params"]["ref"] = True
-                            if obj["params"] == None or obj["params"]["type"] == "null":
+                            if obj["params"] == None:
                                 raise CppParseError(method.vars[value], "property setter method must have one input parameter")
                 else:
                     raise CppParseError(method, "property method must have one parameter")
@@ -1401,11 +1398,11 @@ def LoadInterface(file, all = False, includePaths = []):
                 if method.retval.type and ((isinstance(method.retval.type.Type(), ProxyStubGenerator.CppParser.Integer) and (method.retval.type.Type().size == "long")) or not verify):
                     obj = OrderedDict()
                     params = BuildParameters(method.vars, rpc_format)
+                    if "properties" in params and params["properties"]:
+                        if method.name.lower() in [x.lower() for x in params["required"]]:
+                            raise CppParseError(method, "parameters must not use the same name as the method")
                     if params:
                         obj["params"] = params
-                        if "properties" in params and params["properties"]:
-                            if method.name.lower() in [x.lower() for x in params["required"]]:
-                                raise CppParseError(method, "parameters must not use the same name as the method")
                     obj["result"] = BuildResult(method.vars)
                     obj["original_name"] = method_name
                     methods[prefix + method_name_lower] = obj
@@ -1451,15 +1448,12 @@ def LoadInterface(file, all = False, includePaths = []):
                             if not method.vars[0].type.IsConst() and method.vars[0].type.IsReference():
                                 raise CppParseError(method.vars[0], "index to a notification must be an input parameter")
                             obj["id"] = BuildParameters([method.vars[0]], True, True, False)
-                            if obj["id"]:
-                                obj["id"]["name"] = method.vars[0].name
-                                if "example" not in obj["id"]:
-                                    obj["id"]["example"] = "0" if obj["id"]["type"] == "integer" else "abc"
-                                if obj["id"]["type"] not in ["integer", "string"]:
-                                    raise CppParseError(method.vars[0], "id of a notification must be integer, enum or string type")
-                                varsidx = 1
-                            else:
-                                raise CppParseError(method.vars[0], "failed to determine type of notification id parameter")
+                            obj["id"]["name"] = method.vars[0].name
+                            if "example" not in obj["id"]:
+                                obj["id"]["example"] = "0" if obj["id"]["type"] == "integer" else "abc"
+                            if obj["id"]["type"] not in ["integer", "string"]:
+                                raise CppParseError(method.vars[0], "index to a notification must be integer, enum or string type")
+                            varsidx = 1
                     if method.retval.meta.is_listener:
                         obj["statuslistener"] = True
                     params = BuildParameters(method.vars[varsidx:], rpc_format, False)
@@ -2069,7 +2063,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                             arg2 = q[0]
                             arg2_type = q[1]
                             if var == arg.schema["length"]:
-                                emit.Line("%s %s{%s};" % (arg2.cpp_native_type, arg2.TempName(), "%s%s" % (parent if parent else "", arg2.cpp_name) if arg2_type != WRITE_ONLY else ""))
+                                emit.Line("%s %s{%s};" % (arg2.cpp_native_type, arg2.TempName(), "%s%s()" % (parent if parent else "", arg2.cpp_name) if arg2_type != WRITE_ONLY else ""))
                                 break
                         encode = "encode" in arg.schema and arg.schema["encode"]
                         if arg_type == READ_ONLY and not encode:
@@ -2097,7 +2091,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                                 emit.Line("auto _Iterator = %s.Elements();" % ((parent if parent else "") + arg.cpp_name))
                                 emit.Line("while (_Iterator.Next() == true) {")
                                 emit.Indent()
-                                emit.Line("_elements.push_back(_Iterator.Current());")
+                                emit.Line("_elements.push_back(_Iterator.Current()%s);" % (".Value()" if not isinstance(arg.items, JsonObject) else ""))
                                 emit.Unindent()
                                 emit.Line("}")
                                 impl = arg.iterator[:arg.iterator.index('<')].replace("IIterator", "Iterator") + "<%s>" % arg.iterator
@@ -2230,7 +2224,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                 elif indexed and isinstance(m.index, JsonEnum):
                     index_converted = True
                     emit.Line("Core::EnumerateType<%s> _value(%s.c_str());" % (m.index.cpp_native_type, m.index.cpp_name))
-                    emit.Line("const %s %s = _value;" % (m.index.cpp_native_type, m.index.TempName()))
+                    emit.Line("const %s %s = _value.Value();" % (m.index.cpp_native_type, m.index.TempName()))
                     emit.Line("if (_value.IsSet() == false) {")
                     emit.Indent()
                     emit.Line("// failed enum look-up")
