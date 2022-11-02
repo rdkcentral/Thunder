@@ -356,7 +356,8 @@ namespace Core {
         }
 
     private:
-        virtual int Service(const uint32_t /* id */) = 0;
+        // ToDo: Create seperate client 
+        virtual int Service(const uint32_t /* id */) {return -1;}
 
     private:
         Connection _link;
