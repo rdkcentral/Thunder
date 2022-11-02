@@ -618,7 +618,7 @@ namespace Core {
                 if (((_set & UNDEFINED) == 0) && (loaded < maxLength)) {
                     loaded += Convert(&(stream[loaded]), (maxLength - loaded), offset, TemplateIntToType<SIGNED>());
                 }
-                   
+
                 if ((offset != 0) && (loaded < maxLength)) {
                     stream[loaded++] = '\"';
                     offset = 0;
@@ -1078,9 +1078,9 @@ namespace Core {
 
                 ASSERT(maxLength > 0);
 
-                if ((_set & UNDEFINED) != 0 || 
+                if ((_set & UNDEFINED) != 0 ||
                     std::isinf(_value) ||
-                    std::isnan(_value)) 
+                    std::isnan(_value))
                 {
                     ASSERT(offset < (sizeof(IElement::NullTag) - 1));
                     loaded = std::min(static_cast<uint16_t>((sizeof(IElement::NullTag) - 1) - offset), maxLength);
@@ -1091,10 +1091,10 @@ namespace Core {
                 {
                     loaded += Convert(stream, maxLength, offset);
                 }
-                
+
                 return loaded;
             }
-            
+
             uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
@@ -1160,13 +1160,13 @@ namespace Core {
             }
 
             // IMessagePack iface:
-            // Refer to https://github.com/msgpack/msgpack/blob/master/spec.md#float-format-family 
+            // Refer to https://github.com/msgpack/msgpack/blob/master/spec.md#float-format-family
             // for MessagePack format for float.
             uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                if ((_set & UNDEFINED) != 0 || 
+                if ((_set & UNDEFINED) != 0 ||
                     std::isinf(_value) ||
-                    std::isnan(_value))  
+                    std::isnan(_value))
                 {
                     stream[0] = IMessagePack::NullValue;
                     return (1);
@@ -1265,7 +1265,7 @@ namespace Core {
 
         typedef FloatType<float> Float;
         typedef FloatType<double> Double;
-        
+
         class EXTERNAL Boolean : public IElement, public IMessagePack {
         private:
             static constexpr uint8_t None = 0x00;
@@ -1704,7 +1704,7 @@ namespace Core {
 
                     while ((result < maxLength) && (length > 0)) {
                         const uint16_t current = static_cast<uint16_t>((_value[offset - 1]) & 0xFF);
-                           
+
                         // See if this is a printable character
                         if ((isQuoted == false) || ((::isprint(current)) && (current != '\"') && (current != '\\') && (current != '/')) ) {
                             stream[result++] = static_cast<TCHAR>(current);
@@ -1747,7 +1747,7 @@ namespace Core {
                                 _storage = (highPart << 16) | lowPart;
 
                                 // Oke start processing an escape squence and remember how many bytes we jump if
-                                // we are completed, start at 2 index now as we already wrote /u 
+                                // we are completed, start at 2 index now as we already wrote /u
                                 _flagsAndCounters |= ((codeSize & 0x07) << 3) | 0x02;
 
                                 stream[result++] = 'u';
@@ -1850,7 +1850,7 @@ namespace Core {
                             }
                         }
                         else if ((_flagsAndCounters & 0x1F) == 0) {
-                            // If we did not open an object, the only thing we allow are whitespaces as they can 
+                            // If we did not open an object, the only thing we allow are whitespaces as they can
                             // always be dropped!
                             finished = (((_flagsAndCounters & EscapeFoundBit) == 0) && ((current == ',') || (current == '}') || (current == ']') || (current == '\0')));
                         }
@@ -3013,6 +3013,45 @@ namespace Core {
                 return (*this);
             }
 
+            template<typename ENUM, typename std::enable_if<std::is_same<ELEMENT, EnumType<ENUM>>::value, int>::type = 0>
+            inline ArrayType<ELEMENT>& operator=(const ENUM& RHS)
+            {
+                using T = typename std::underlying_type<ENUM>::type;
+                T value(static_cast<T>(RHS));
+                T bit(1);
+
+                Clear();
+
+                while (value != 0) {
+                    if ((value & bit) != 0) {
+                        Add() = static_cast<ENUM>(bit);
+                        value &= ~bit;
+                    }
+
+                    bit <<= 1;
+                }
+
+                return (*this);
+            }
+
+            template<typename ENUM, typename std::enable_if<std::is_same<ELEMENT, EnumType<ENUM>>::value, int>::type = 0>
+            inline operator const ENUM() const
+            {
+                using T = typename std::underlying_type<ENUM>::type;
+                T value{};
+
+                for (const EnumType<ENUM>& item : _data) {
+                    if (item.IsSet() == true) {
+                        const T& element = static_cast<const T>(item.Value());
+                        ASSERT((element == 0) || ((element & (element - 1)) == 0));
+
+                        value |= element;
+                    }
+                }
+
+                return (static_cast<const ENUM>(value));
+            }
+
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
@@ -3768,7 +3807,7 @@ namespace Core {
                 return count;
             }
 
-            virtual bool Request(const TCHAR []) 
+            virtual bool Request(const TCHAR [])
             {
                 return (false);
             }
@@ -4533,7 +4572,7 @@ namespace Core {
             static const char* Id()
             {
                 return (__ID<JSONOBJECT>());
-            } 
+            }
             virtual const char* Label() const
             {
                 return (LabelType<JSONOBJECT>::Id());
@@ -4565,7 +4604,7 @@ namespace Core {
             IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Clear, hasClear);
 
             template <typename TYPE = JSONOBJECT>
-            inline typename Core::TypeTraits::enable_if<hasID<TYPE, void>::value, void>::type 
+            inline typename Core::TypeTraits::enable_if<hasID<TYPE, void>::value, void>::type
                 __Clear()
             {
                 TYPE::Clear();

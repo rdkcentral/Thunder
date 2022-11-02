@@ -167,7 +167,7 @@ class JsonType():
                 log.DocIssue("'%s': use sentence case capitalization and no period for parameter descriptions (\"%s\")" % (self.name,log.Ellipsis(self.description)))
 
     def TempName(self, prefix = ""):
-        return ("_" + prefix + self.json_name)
+        return ("_" + self.json_name + ((prefix[0].upper() + prefix[1:]) if prefix else ""))
 
     def Rename(self, new_name):
         self.new_name = new_name.lower()
@@ -324,32 +324,40 @@ class JsonString(JsonNative, JsonType):
 
 
 class JsonEnum(JsonType):
-    def __init__(self, name, parent, schema, enumType, included=None):
+    def __init__(self, name, parent, schema, enum_type, included=None):
         JsonType.__init__(self, name, parent, schema, included)
         self.print_name = parent.print_name + "/" + name
-        if enumType != "string":
+        if enum_type != "string":
             raise JsonParseError("Only strings are supported in enums")
-        self.type = enumType
+        self.type = enum_type
         if self.do_create:
             self.enum_name = MakeEnum(self.original_name.capitalize() if self.original_name else self.name.capitalize())
+        self.bitmask = "bitmask" in schema and schema["bitmask"]
         self.enumerators = schema["enum"]
         self.cpp_enumerator_values = schema["values"] if "values" in schema else []
         if not self.cpp_enumerator_values:
             self.cpp_enumerator_values = schema["enumvalues"] if "enumvalues" in schema else []
         if self.cpp_enumerator_values:
             same = True
-            biggest = 0;
+            is_bitmap = True
+            biggest = 0
             for idx, e in enumerate(self.cpp_enumerator_values):
+                if (e & (e-1) != 0) and (e != 0):
+                    is_bitmap = False
                 if idx != e:
                     same = False
                 if e > biggest:
                     biggest = e
             if same:
-                log.Warn("'%s': specified enum values are same as automatic" % name)
+                log.Warn("'%s': specified enum values are same as implicit" % name)
                 self.cpp_enumerator_values = []
-            self.size = 32 if biggest > 65536 else 16 if biggest > 256 else 8
+            if self.bitmask and not is_bitmap:
+                raise JsonParseError("Enum tagged @bitmask but values are not a power of 2: '%s'" % self.json_name);
+            self.size = 32 if biggest >= 65536 else 16 if biggest >= 256 else 8
         else:
-            self.size = 16 if len(self.enumerators) > 256 else 8
+            self.size = 16 if len(self.enumerators) >= 256 else 8
+            if self.bitmask:
+                raise JsonParseError("Enum tagged @bitmask but no explicit values are provided: '%s'" % self.json_name);
         if "size" in schema and isinstance(schema["size"], int):
             self.size = schema["size"]
         if self.size not in [8, 16, 32, 64]:
@@ -798,7 +806,7 @@ def JsonItem(name, parent, schema, print_name=None, included=None):
         else:
             raise JsonParseError("unsupported JSON type: %s" % schema["type"])
     else:
-        raise JsonParseError("undefined type for item: %s" % name)
+        raise JsonParseError("missing 'type' for item: %s" % name)
 
 
 def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
@@ -1113,16 +1121,22 @@ def LoadInterface(file, all = False, includePaths = []):
                     # Enums
                     elif isinstance(cppType, ProxyStubGenerator.CppParser.Enum):
                         if len(cppType.items) > 1:
-                            enumValues = [e.autoValue for e in cppType.items]
+                            enum_values = [e.auto_value for e in cppType.items]
                             for i, e in enumerate(cppType.items, 0):
-                                if enumValues[i - 1] != enumValues[i]:
+                                if enum_values[i - 1] != enum_values[i]:
                                     raise CppParseError(var, "enumerator values in an enum must all be explicit or all be implied")
-                        enumSpec = { "enum": [e.meta.text if e.meta.text else e.name.replace("_"," ").title().replace(" ","") for e in cppType.items], "scoped": var.type.Type().scoped  }
-                        enumSpec["ids"] = [e.name for e in cppType.items]
-                        enumSpec["hint"] = var.type.Type().name
-                        if not cppType.items[0].autoValue:
-                            enumSpec["values"] = [e.value for e in cppType.items]
-                        result = [ "string", enumSpec ]
+                        enum_spec = { "enum": [e.meta.text if e.meta.text else e.name.replace("_"," ").title().replace(" ","") for e in cppType.items], "scoped": var.type.Type().scoped  }
+                        enum_spec["ids"] = [e.name for e in cppType.items]
+                        enum_spec["hint"] = var.type.Type().name
+                        if not cppType.items[0].auto_value:
+                            enum_spec["values"] = [e.value for e in cppType.items]
+                        if "bitmask" in var.meta.decorators or "bitmask" in var.type.Type().meta.decorators:
+                            enum_spec["bitmask"] = True
+                            enum_spec["type"] = "string"
+                            enum_spec["original_type"] = StripFrameworkNamespace(var.type.Type().full_name)
+                            result = ["array", { "items": enum_spec } ]
+                        else:
+                            result = ["string", enum_spec]
                     # POD objects
                     elif isinstance(cppType, ProxyStubGenerator.CppParser.Class):
                         def GenerateObject(ctype):
@@ -1958,8 +1972,8 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                 else:
                     params = copy.deepcopy(m.properties[0])
                     response = copy.deepcopy(m.properties[1])
-                params.Rename("params")
-                response.Rename("result")
+                params.Rename("Params")
+                response.Rename("Result")
                 emit.Line("// %sProperty: %s%s" % ("Indexed " if indexed else "", m.Headline(), " (r/o)" if m.readonly else (" (w/o)" if m.writeonly else "")))
             else:
                 params = copy.deepcopy(m.properties[0])
@@ -2049,7 +2063,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                             arg2 = q[0]
                             arg2_type = q[1]
                             if var == arg.schema["length"]:
-                                emit.Line("%s %s{%s};" % (arg2.cpp_native_type, arg2.TempName(), "%s%s.Value()" % (parent if parent else "", arg2.cpp_name) if arg2_type != WRITE_ONLY else ""))
+                                emit.Line("%s %s{%s};" % (arg2.cpp_native_type, arg2.TempName(), "%s%s()" % (parent if parent else "", arg2.cpp_name) if arg2_type != WRITE_ONLY else ""))
                                 break
                         encode = "encode" in arg.schema and arg.schema["encode"]
                         if arg_type == READ_ONLY and not encode:
@@ -2090,14 +2104,16 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                                 emit.Line("%s%s* %s{};" % ("const " if "ptrtoconst" in arg.schema else "", arg.iterator, arg.TempName()))
                             else:
                                 raise RuntimeError("Read/write arrays are not supported: %s" % arg.json_name)
+                        elif "bitmask" in arg.items.schema and arg.items.schema["bitmask"]:
+                            emit.Line("%s%s %s{%s};" % ("const " if (arg_type == READ_ONLY) else "", arg.items.cpp_native_type, arg.TempName(), "%s%s" % (parent if parent else "", arg.cpp_name) if arg_type != WRITE_ONLY else ""))
                         else:
                             raise RuntimeError("Arrays need to be iterators: %s" % arg.json_name)
                     # PODs
                     elif isinstance(arg, JsonObject):
-                        emit.Line("%s%s %s%s;" % ("const " if (arg_type == READ_ONLY )else "", arg.cpp_native_type, arg.TempName(), "(%s%s)" % (parent if parent and not isinstance(arg.parent, JsonMethod) else "", arg.cpp_name) if arg_type != WRITE_ONLY else "{}"))
+                        emit.Line("%s%s %s%s;" % ("const " if (arg_type == READ_ONLY) else "", arg.cpp_native_type, arg.TempName(), "(%s%s)" % (parent if parent and not isinstance(arg.parent, JsonMethod) else "", arg.cpp_name) if arg_type != WRITE_ONLY else "{}"))
                     # All Other
                     else:
-                        emit.Line("%s%s %s{%s};" % ("const " if (arg_type == READ_ONLY) else "", arg.cpp_native_type, arg.TempName(), "%s%s.Value()" % (parent if parent else "", arg.cpp_name) if arg_type != WRITE_ONLY else ""))
+                        emit.Line("%s%s %s{%s};" % ("const " if (arg_type == READ_ONLY) else "", arg.cpp_native_type, arg.TempName(), "%s%s" % (parent if parent else "", arg.cpp_name) if arg_type != WRITE_ONLY else ""))
 
                 cond = ""
                 for _, _record in vars.items():
@@ -2173,6 +2189,8 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                                 emit.Line("%s->Release();" % elem.TempName())
                                 emit.Unindent()
                                 emit.Line("}")
+                            elif "bitmask" in elem.items.schema and elem.items.schema["bitmask"]:
+                                emit.Line("%s%s = %s%s;" % (parent, elem.cpp_name, cppParent, elem.TempName() if not cppParent else elem.cpp_name))
                             else:
                                 raise RuntimeError("unable to serialize a non-iterator array: %s" % elem.json_name)
                         # Enums
@@ -2650,7 +2668,7 @@ def EmitObjects(root, emit, if_file, additional_includes, emitCommon=False):
             emit.Indent();
             emit.Line("%s _value{};" % (json_obj.cpp_native_type))
             for prop in json_obj.properties:
-                emit.Line("_value.%s = %s%s;" % ( prop.actual_name, prop.cpp_name, ".Value()" if not isinstance(prop, JsonObject) else ""))
+                emit.Line("_value.%s = %s;" % ( prop.actual_name, prop.cpp_name))
             emit.Line("return (_value);")
             emit.Unindent()
             emit.Line("}")
