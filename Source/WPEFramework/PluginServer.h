@@ -800,7 +800,7 @@ namespace PluginHost {
                 if ( (_jsonrpc == nullptr) || (IsActive() == false) ) {
                     Unlock();
 
-                    result = Core::ProxyType<Core::JSONRPC::Message>(Factories::Instance().JSONRPC());
+                    result = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
                     result->Error.SetError(Core::ERROR_UNAVAILABLE);
                     result->Error.Text = _T("Service is not active");
                     result->Id = message.Id;
