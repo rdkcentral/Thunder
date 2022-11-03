@@ -49,9 +49,8 @@ add_library(${TARGET} SHARED ${SOURCES})
 target_compile_definitions(${TARGET} PRIVATE MESSAGING_EXPORTS)
 
 target_link_libraries(${TARGET}
-        PUBLIC
-          ${NAMESPACE}Core::${NAMESPACE}Core
         PRIVATE
+          ${NAMESPACE}Core::${NAMESPACE}Core
           CompileSettingsDebug::CompileSettingsDebug
         )
 
