@@ -74,13 +74,14 @@ set(PUBLIC_HEADERS
         )
 
 target_link_libraries(${TARGET}
+        PUBLIC
+          ${NAMESPACE}Core::${NAMESPACE}Core
+          ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
+          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
+          ${NAMESPACE}COM::${NAMESPACE}COM
+          ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
-          ${NAMESPACE}Core::${NAMESPACE}Core
-          ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
-          ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
-          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
-          ${NAMESPACE}COM::${NAMESPACE}COM
         )
 
 if (WARNING_REPORTING)
@@ -93,6 +94,7 @@ endif()
 target_link_libraries(${TARGET_PROXYSTUBS}
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
+          ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}COM::${NAMESPACE}COM
         )
 
