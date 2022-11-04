@@ -93,7 +93,7 @@ namespace Logging {
         static_assert(std::is_base_of<WPEFramework::Logging::BaseLoggingType<CATEGORY>, CATEGORY>::value, "SYSLOG() only for Logging controls");  \
         if (CATEGORY::IsEnabled() == true) {                                                                                                      \
             CATEGORY __data__ PARAMETERS;                                                                                                         \
-            Core::TextFragment classname (typeid(*this).name());                                                                                  \
+            WPEFramework::Core::TextFragment classname (typeid(*this).name());                                                                                  \
             WPEFramework::Core::Messaging::IStore::Information __info__(                                                                          \
                 CATEGORY::Metadata(),                                                                                                             \
                 __FILE__,                                                                                                                         \
