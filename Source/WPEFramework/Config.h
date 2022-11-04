@@ -617,7 +617,10 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 _systemPath = Core::Directory::Normalize(config.SystemPath.Value());
                 _configsPath = Core::Directory::Normalize(config.Configs.Value());
                 _proxyStubPath = Core::Directory::Normalize(config.ProxyStubPath.Value());
-                _observableProxyStubPath = Core::Directory::Normalize(config.Observe.ProxyStubPath.Value());
+                if (config.Observe.IsSet() == true) {
+                    _observableProxyStubPath = Core::Directory::Normalize(config.Observe.ProxyStubPath.Value());
+                    _pluginConfigPath = Core::Directory::Normalize(config.Observe.PluginConfigPath.Value());
+                }
                 _postMortemPath = Core::Directory::Normalize(config.PostMortemPath.Value());
                 _appPath = Core::File::PathName(Core::ProcessInfo().Executable());
                 _hashKey = config.Signature.Value();
