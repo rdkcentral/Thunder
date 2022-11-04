@@ -38,7 +38,7 @@ namespace PluginHost {
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T(":bhcfF"))
+            : Core::Options(argumentCount, arguments, _T(":bhc:fF"))
             , configFile(Server::ConfigFile)
 #if defined(__CORE_MESSAGING__)
             , flushMode(Messaging::MessageUnit::flush::OFF)
