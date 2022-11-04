@@ -567,6 +567,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             , _systemPath()
             , _configsPath()
             , _proxyStubPath()
+            , _observableProxyStubPath()
             , _postMortemPath()
             , _pluginConfigPath()
             , _accessor()
@@ -620,16 +621,10 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 _dataPath = Core::Directory::Normalize(config.DataPath.Value());
                 _systemPath = Core::Directory::Normalize(config.SystemPath.Value());
                 _configsPath = Core::Directory::Normalize(config.Configs.Value());
-                if (config.ProxyStubPath.IsSet() == true) {
-                    _proxyStubPath = Core::Directory::Normalize(config.ProxyStubPath.Value());
-                }
-                if ((config.Observe.IsSet() == true) && (config.Observe.ProxyStubPath.IsSet() == true)) {
-                    if (_proxyStubPath.empty() == true) {
-                        _proxyStubPath = Core::Directory::Normalize(config.Observe.ProxyStubPath.Value());
-                    }
-                    else {
-                        _proxyStubPath = _proxyStubPath + '|' + Core::Directory::Normalize(config.Observe.ProxyStubPath.Value());
-                    }
+                _proxyStubPath = Core::Directory::Normalize(config.ProxyStubPath.Value());
+                if (config.Observe.IsSet() == true) {
+                    _observableProxyStubPath = Core::Directory::Normalize(config.Observe.ProxyStubPath.Value());
+                    _pluginConfigPath = Core::Directory::Normalize(config.Observe.PluginConfigPath.Value());
                 }
                 _postMortemPath = Core::Directory::Normalize(config.PostMortemPath.Value());
                 _appPath = Core::File::PathName(Core::ProcessInfo().Executable());
@@ -802,6 +797,10 @@ POP_WARNING()
         inline const string& ProxyStubPath() const
         {
             return (_proxyStubPath);
+        }
+        inline const string& ObservableProxyStubPath() const
+        {
+            return (_observableProxyStubPath);
         }
         inline const string& PostMortemPath() const
         {
@@ -1018,6 +1017,7 @@ POP_WARNING()
         string _systemPath;
         string _configsPath;
         string _proxyStubPath;
+        string _observableProxyStubPath;
         string _postMortemPath;
         string _pluginConfigPath;
         Core::NodeId _accessor;
