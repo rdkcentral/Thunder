@@ -1639,7 +1639,7 @@ namespace PluginHost {
             public:
                 void* Create(uint32_t& connectionId, const RPC::Object& instance, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath)
                 {
-                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, volatilePath, _appPath, _proxyStubPath, _postMortemPath), waitTime));
+                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, volatilePath, _appPath, RPC::Communicator::ProxyStubPath(), _postMortemPath), waitTime));
                 }
                 const string& PersistentPath() const
                 {
@@ -1663,7 +1663,7 @@ namespace PluginHost {
                 }
                 const string& ProxyStubPath() const
                 {
-                    return (_proxyStubPath);
+                    return (RPC::Communicator::ProxyStubPath());
                 }
                 const string& PostMortemPath() const
                 {
@@ -1728,19 +1728,20 @@ namespace PluginHost {
                     RPC::Communicator::LoadProxyStubs(path);
                 }
                 string ProxyStubPathCreator(const string& proxyStubPath, const string& observableProxyStubPath) {
+                    string concatenatedPath;
+
                     if (proxyStubPath.empty() == false) {
-                        _proxyStubPath = proxyStubPath;
+                        concatenatedPath = proxyStubPath;
                     }
                     if (observableProxyStubPath.empty() ==false) {
-                        if (_proxyStubPath.empty() == true) {
-                            _proxyStubPath = observableProxyStubPath;
+                        if (concatenatedPath.empty() == true) {
+                            concatenatedPath = observableProxyStubPath;
                         }
                         else {
-                            _proxyStubPath = _proxyStubPath + '|' + observableProxyStubPath;
+                            concatenatedPath = concatenatedPath + '|' + observableProxyStubPath;
                         }
                     }
-
-                    return (_proxyStubPath);
+                    return (concatenatedPath);
                 }
                 RPC::Communicator::RemoteConnection* CreateStarter(const RPC::Config& config, const RPC::Object& instance) override
                 {
