@@ -416,7 +416,7 @@ namespace WPEFramework {
                 }
                 void Save() const {
                     // Store all config info..
-                    string settings = _path + DELIMITER + 
+                    string settings = _path + DELIMITER +
                                _identifier + DELIMITER +
                                Core::NumberType<uint16_t>(_socketPort).Text() + DELIMITER +
                                Core::NumberType<uint8_t>(_mode).Text();
@@ -464,7 +464,7 @@ namespace WPEFramework {
                                     string enabled = iterator.Current().Text();
 
                                     if ((type >= Core::Messaging::Metadata::type::TRACING) && (type <= Core::Messaging::Metadata::type::REPORTING) &&
-                                        (enabled.length() == 1) && 
+                                        (enabled.length() == 1) &&
                                         ((enabled[0] == '0') || (enabled[0] == '1'))) {
                                         _settings.emplace_back(Core::Messaging::Metadata(static_cast<Core::Messaging::Metadata::type>(type), category, module), (enabled[0] == '1'));
                                     }
@@ -568,7 +568,7 @@ namespace WPEFramework {
 
                         uint8_t dataBuffer[MetadataSize];
 
-                        // We got a connection to the spawned process side, get the list of traces from 
+                        // We got a connection to the spawned process side, get the list of traces from
                         // there and send our settings from here...
                         Core::ProxyType<BaseClass::MetadataFrame> metaDataFrame(Core::ProxyType<BaseClass::MetadataFrame>::Create());
                         Control message(control, enabled);
@@ -584,7 +584,7 @@ namespace WPEFramework {
 
                     if (_channel.IsOpen() == true) {
 
-                        // We got a connection to the spawned process side, get the list of traces from 
+                        // We got a connection to the spawned process side, get the list of traces from
                         // there and send our settings from here...
                         Core::ProxyType<BaseClass::MetadataFrame> metaDataFrame(Core::ProxyType<BaseClass::MetadataFrame>::Create());
 
@@ -749,7 +749,8 @@ namespace WPEFramework {
             uint32_t Open(const uint32_t instanceId);
             void Close();
 
-            void Push(const Core::Messaging::IStore::Information& info, const Core::Messaging::IEvent* message);
+            bool Default(const Core::Messaging::Metadata& control) const override;
+            void Push(const Core::Messaging::IStore::Information& info, const Core::Messaging::IEvent* message) override;
 
         private:
             uint16_t Serialize(uint8_t* buffer, const uint16_t length);
