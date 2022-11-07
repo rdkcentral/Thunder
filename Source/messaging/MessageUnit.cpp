@@ -29,11 +29,11 @@ namespace WPEFramework {
                 Handler(const Handler&) = delete;
                 Handler& operator= (const Handler&) = delete;
 
-                Handler(uint8_t* buffer, const uint16_t length) 
+                Handler(uint8_t* buffer, const uint16_t length)
                     : _buffer(buffer)
                     , _length(length)
                     , _offset(0) {
-                } 
+                }
                 ~Handler() override = default;
 
             public:
@@ -71,10 +71,10 @@ namespace WPEFramework {
                 Handler(const Handler&) = delete;
                 Handler& operator= (const Handler&) = delete;
 
-                Handler(const Core::Messaging::Metadata& info, const bool enable) 
+                Handler(const Core::Messaging::Metadata& info, const bool enable)
                     : _info(info)
                     , _enable(enable) {
-                } 
+                }
                 ~Handler() override = default;
 
             public:
@@ -85,7 +85,7 @@ namespace WPEFramework {
                 }
 
             private:
-                const Core::Messaging::Metadata& _info; 
+                const Core::Messaging::Metadata& _info;
                 const bool _enable;
             } handler(control, enable);
 
@@ -150,7 +150,7 @@ namespace WPEFramework {
             }
 
             _settings.Configure(basePath, identifier, socketPort, configuration, background, flushMode);
-            
+
             // Store it on an environment variable so other instances can pick this info up..
             _settings.Save();
 
@@ -221,16 +221,21 @@ namespace WPEFramework {
 
             Core::Messaging::IStore::Set(nullptr);
             Core::Messaging::IControl::Iterate(handler);
- 
+
             _adminLock.Lock();
             _dispatcher.reset(nullptr);
             _adminLock.Unlock();
         }
 
+        /* virtual */ bool MessageUnit::Default(const Core::Messaging::Metadata& control)
+        {
+            return (_settings.IsEnabled(control));
+        }
+
         /**
         * @brief Push a message and its information to a buffer
         */
-        void MessageUnit::Push(const Core::Messaging::IStore::Information& info, const Core::Messaging::IEvent* message)
+        /* virtual */ void MessageUnit::Push(const Core::Messaging::IStore::Information& info, const Core::Messaging::IEvent* message)
         {
             //logging messages can happen in Core, meaning, otherside plugin can be not started yet
             //those should be just printed

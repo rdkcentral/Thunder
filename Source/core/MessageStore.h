@@ -107,7 +107,7 @@ namespace Core {
             string _category;
             string _module;
         };
- 
+
         struct EXTERNAL IControl {
 
             struct EXTERNAL IHandler {
@@ -187,14 +187,14 @@ namespace Core {
                 uint64_t _timeStamp;
             };
 
-	public:
+	    public:
             virtual ~IStore() = default;
             static IStore* Instance();
-            static void Set (IStore*);
+            static void Set(IStore*);
 
+            virtual bool Default(const Metadata& metadata) = 0;
             virtual void Push(const Information& info, const IEvent* message) = 0;
         };
-
 
     } // namespace Messaging
 } // namespace Core
