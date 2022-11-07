@@ -192,7 +192,7 @@ namespace Core {
             static IStore* Instance();
             static void Set(IStore*);
 
-            virtual bool Default(const Metadata& metadata) = 0;
+            virtual bool Default(const Metadata& metadata) const = 0;
             virtual void Push(const Information& info, const IEvent* message) = 0;
         };
 

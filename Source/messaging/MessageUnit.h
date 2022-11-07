@@ -749,7 +749,7 @@ namespace WPEFramework {
             uint32_t Open(const uint32_t instanceId);
             void Close();
 
-            bool Default(const Core::Messaging::Metadata& control) override;
+            bool Default(const Core::Messaging::Metadata& control) const override;
             void Push(const Core::Messaging::IStore::Information& info, const Core::Messaging::IEvent* message) override;
 
         private:

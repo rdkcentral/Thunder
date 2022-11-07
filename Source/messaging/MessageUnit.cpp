@@ -227,7 +227,7 @@ namespace WPEFramework {
             _adminLock.Unlock();
         }
 
-        /* virtual */ bool MessageUnit::Default(const Core::Messaging::Metadata& control)
+        /* virtual */ bool MessageUnit::Default(const Core::Messaging::Metadata& control) const
         {
             return (_settings.IsEnabled(control));
         }
