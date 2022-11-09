@@ -130,7 +130,7 @@ public:
         }
         else
         {
-            int fileFd = inotify_add_watch(_notifyFd, filename.c_str(), IN_CLOSE_WRITE|IN_CREATE|IN_DELETE|IN_MODIFY);
+            int fileFd = inotify_add_watch(_notifyFd, filename.c_str(), IN_CLOSE_WRITE|IN_DELETE);
             if (fileFd >= 0) {
                 _files.emplace(std::piecewise_construct,
                     std::forward_as_tuple(filename),
