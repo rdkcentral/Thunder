@@ -119,9 +119,11 @@ public:
         ASSERT(_notifyFd != -1);
         ASSERT(callback != nullptr);
 
+        const string path = ((Core::File(filename).IsDirectory() == true)? Core::Directory::Normalize(filename) : filename);
+
         _adminLock.Lock();
 
-        Files::iterator index = _files.find(filename);
+        Files::iterator index = _files.find(path);
         if (index != _files.end()) {
             Observers::iterator loop = _observers.find(index->second);
             ASSERT(loop != _observers.end());
@@ -130,10 +132,13 @@ public:
         }
         else
         {
-            int fileFd = inotify_add_watch(_notifyFd, filename.c_str(), IN_CLOSE_WRITE|IN_CREATE|IN_DELETE|IN_MODIFY);
+            const uint32_t mask = Core::File(path).IsDirectory()? (IN_CREATE | IN_CLOSE_WRITE | IN_DELETE | IN_MOVE | IN_DELETE_SELF)
+                                            : (IN_MODIFY | IN_CLOSE_WRITE | IN_DELETE_SELF | IN_MOVE_SELF);
+
+            int fileFd = inotify_add_watch(_notifyFd, path.c_str(), mask);
             if (fileFd >= 0) {
                 _files.emplace(std::piecewise_construct,
-                    std::forward_as_tuple(filename),
+                    std::forward_as_tuple(path),
                     std::forward_as_tuple(fileFd));
                 _observers.emplace(std::piecewise_construct,
                     std::forward_as_tuple(fileFd),
@@ -155,9 +160,11 @@ public:
         ASSERT(_notifyFd != -1);
         ASSERT(callback != nullptr);
 
+        const string path = ((Core::File(filename).IsDirectory() == true)? Core::Directory::Normalize(filename) : filename);
+
         _adminLock.Lock();
 
-        Files::iterator index = _files.find(filename);
+        Files::iterator index = _files.find(path);
         ASSERT(index != _files.end());
 
         if (index != _files.end()) {
@@ -209,15 +216,33 @@ private:
             do
             {
                 length = ::read(_notifyFd, eventBuffer, sizeof(eventBuffer));
-                if (length > 0) {
+
+                if (length >= static_cast<int>(sizeof(struct inotify_event))) {
                     const struct inotify_event *event = reinterpret_cast<const struct inotify_event *>(eventBuffer);
+
+                    auto Evaluate = [this](const struct inotify_event* event) -> bool {
+                        // In case of IN_CREATE notify only if the created file is a link
+                        if ((event->mask & (IN_CREATE | IN_ISDIR)) == IN_CREATE) {
+                            ASSERT(event->len != 0);
+                            const int& wd = event->wd;
+                            auto const it = std::find_if(_files.cbegin(), _files.cend(), [wd](const std::pair<string, int>& elem) {
+                                return (elem.second == wd);
+                            });
+
+                            ASSERT(it != _files.cend());
+                            return (Core::File((*it).first + Core::ToString(event->name)).IsLink());
+                        }
+                        return (true);
+                    };
 
                     _adminLock.Lock();
 
-                    // Check if we have this entry..
-                    Observers::iterator loop = _observers.find(event->wd);
-                    if (loop != _observers.end()) {
-                        loop->second.Notify();
+                    if (Evaluate(event) == true) {
+                        // Check if we have this entry..
+                        Observers::iterator loop = _observers.find(event->wd);
+                        if (loop != _observers.end()) {
+                            loop->second.Notify();
+                        }
                     }
 
                     _adminLock.Unlock();
@@ -233,7 +258,7 @@ private:
     Observers _observers;
 };
 
-#endif 
+#endif
 
 #ifdef __WINDOWS__
 
@@ -251,8 +276,8 @@ public:
 private:
     // The code for windows is derived from the example given here:
     // https://gist.github.com/nickav/a57009d4fcc3b527ed0f5c9cf30618f8
-    // If you need to determine the event that really triggered the 
-    // callback see this example for possible retrieval information (in 
+    // If you need to determine the event that really triggered the
+    // callback see this example for possible retrieval information (in
     // the overlapped call)
     class Context {
     private:
@@ -275,7 +300,7 @@ private:
                 FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
                 NULL);
 
-            if (_file != INVALID_HANDLE_VALUE) {        
+            if (_file != INVALID_HANDLE_VALUE) {
                 _overlapped.hEvent = CreateEvent(NULL, FALSE, 0, NULL);
 
                 if (ReadDirectoryChangesW(
@@ -367,34 +392,37 @@ private:
         }
 
     public:
-        uint32_t Worker() override {        
+        uint32_t Worker() override {
             _parent.Process();
             return (0);
         }
 
     private:
-        FileSystemMonitor& _parent; 
+        FileSystemMonitor& _parent;
     };
 
+    friend class Core::SingletonType<FileSystemMonitor>;
     FileSystemMonitor()
         : _adminLock()
         , _dispatcher(*this)
         , _observers()
-        , _trigger(::CreateEvent(NULL, FALSE, FALSE, NULL))
-    {
+        , _trigger(::CreateEvent(NULL, FALSE, FALSE, NULL)) {
     }
-
 
 public:
     FileSystemMonitor(const FileSystemMonitor &) = delete;
     FileSystemMonitor &operator=(const FileSystemMonitor &) = delete;
 
-    static FileSystemMonitor &Instance()
+    static FileSystemMonitor& Instance()
     {
-        static FileSystemMonitor _singleton;
-        return (_singleton);
+        static Core::SingletonType<FileSystemMonitor> singleton;
+        return (singleton.Instance());
     }
     ~FileSystemMonitor() {
+        // Make sure all is stopped before we destruct..
+        _dispatcher.Stop();
+        Trigger();
+        _dispatcher.Wait(Core::Thread::BLOCKED | Core::Thread::STOPPED, Core::infinite);
         ::CloseHandle(_trigger);
     }
 
@@ -413,7 +441,7 @@ public:
 
         if (Core::File(filename).IsDirectory() == true) {
             ObserveMap::iterator index = _observers.find(filename);
-            if (index != _observers.end()) {
+            if (index == _observers.end()) {
                 index = _observers.emplace(std::piecewise_construct,
                     std::forward_as_tuple(filename),
                     std::forward_as_tuple(filename)).first;
@@ -427,6 +455,9 @@ public:
                     Trigger();
                 }
             }
+
+            ASSERT(index != _observers.end());
+
             index->second.Register(callback);
         }
         _adminLock.Unlock();

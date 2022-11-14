@@ -88,6 +88,7 @@ class Metadata:
         self.is_obsolete = False
         self.is_index = False
         self.is_listener = False
+        self.decorators = []
         self.length = None
         self.maxlength = None
         self.interface = None
@@ -115,11 +116,10 @@ class Undefined(BaseType):
     def Proto(self):
         proto = self.comment
         if isinstance(self.type, list):
-            if (type(self.type[0]) is str):
-                proto += " ".join(self.type).replace(" < ", "<").replace(" :: ", "::").replace(
-                    " >", ">").replace(" *", "*").replace(" &", "&").replace(" &&", "&&").replace(" ,",",")
-            else:
-                proto += " ".join([str(x) for x in self.type])
+            for e in self.type:
+                proto += " " + (e if isinstance(e, str) else str(e))
+            proto = proto.replace(" < ", "<").replace(" :: ", "::").replace(" >", ">")
+            proto = proto.replace(" *", "*").replace(" &", "&").replace(" &&", "&&").replace(" ,",",").strip()
         else:
             proto += str(self.type)
 
@@ -322,9 +322,15 @@ class Identifier():
                     self.meta.is_deprecated = True
                 elif token[1:] == "OBSOLETE":
                     self.meta.is_obsolete = True
+                elif token[1:] == "BITMASK":
+                    self.meta.is_bitmask = True
+                    self.meta.decorators.append("bitmask")
                 elif token[1:] == "TEXT":
-                    self.meta.text = "".join(string[i + 1])
-                    skip = 1
+                    if tags_allowed:
+                        self.meta.text = "".join(string[i + 1])
+                        skip = 1
+                    else:
+                        raise ParserError("@text tag not allowed on return value")
                 else:
                     raise ParserError("invalid tag: " + token)
 
@@ -887,12 +893,14 @@ class Union(Identifier, Block):
 
 # Holds enumeration blocks, including class enums
 class Enum(Identifier, Block):
-    def __init__(self, parent_block, name, is_scoped, type="int"):
+    def __init__(self, parent_block, name, is_scoped, type="int", bitmask=False):
         Identifier.__init__(self, parent_block, self, [type, name], [])
         Block.__init__(self, parent_block, name)
         self.items = []
         self.scoped = is_scoped
         self.parent.enums.append(self)
+        if bitmask:
+            self.meta.decorators.append("bitmask")
         self._last_value = 0 # used for auto-incrementation
 
     def Proto(self):
@@ -953,7 +961,6 @@ class Variable(Identifier, Name):
         Identifier.__init__(self, parent_block, self, string, valid_specifiers)
         Name.__init__(self, parent_block, self.name)
         self.value = Evaluate(value) if value else None
-        self.parent.vars
         self.parent.vars.append(self)
 
     def Proto(self):
@@ -1080,7 +1087,7 @@ class Enumerator(Identifier, Name):
         Name.__init__(self, parent_enum, self.name)
         self.parent = parent_block
         self.value = parent_block.GetValue() if value == None else Evaluate(value)
-        self.autoValue = (value == None)
+        self.auto_value = (value == None)
         if isinstance(self.value, (int)):
             self.parent.SetValue(self.value)
         self.parent.items.append(self)
@@ -1434,6 +1441,8 @@ def __Tokenize(contents,log = None):
                     tagtokens.append("@COMPLIANT")
                 if _find("@iterator", token):
                     tagtokens.append("@ITERATOR")
+                if _find("@bitmask", token):
+                    tagtokens.append("@BITMASK")
                 if _find("@sourcelocation", token):
                     tagtokens.append(__ParseParameterValue(token, "@sourcelocation"))
                 if _find("@text", token):
@@ -1846,20 +1855,27 @@ def Parse(contents,log = None):
         elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == "enum":
             enum_name = ""
             enum_type = "int"
+            enum_bitmask = False
             is_scoped = False
-            if (tokens[i + 1] == "class") or (tokens[i + 1] == "struct"):
+            i += 1
+            if (tokens[i] == "class") or (tokens[i] == "struct"):
                 is_scoped = True
                 i += 1
-            if is_valid(tokens[i + 1]): # enum name given?
-                enum_name = tokens[i + 1]
+            if is_valid(tokens[i]): # enum name given?
+                enum_name = tokens[i]
                 i += 1
-            if tokens[i + 1] == ':':
-                enum_type = tokens[i + 2]
+            if tokens[i] == "@BITMASK":
+                enum_bitmask = True
+                i += 1
+            if tokens[i] == ':':
+                enum_type = tokens[i + 1]
                 i += 2
+            if tokens[i] == "@BITMASK":
+                enum_bitmask = True
+                i += 1
 
-            new_enum = Enum(current_block[-1], enum_name, is_scoped, enum_type)
+            new_enum = Enum(current_block[-1], enum_name, is_scoped, enum_type, enum_bitmask)
             next_block = new_enum
-            i += 1
 
         # Parse class access specifier...
         elif isinstance(current_block[-1], Class) and tokens[i] == ':':

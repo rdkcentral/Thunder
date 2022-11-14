@@ -739,7 +739,14 @@ namespace Core {
     };
 
     struct EXTERNAL IUnknown : public IReferenceCounted  {
-        enum { ID = 0x00000000 };
+
+        enum {
+            ID_OFFSET_INTERNAL  = 0x00000000,
+            ID_OFFSET_PUBLIC    = 0x00000040,
+            ID_OFFSET_CUSTOM    = 0x80000000
+        };
+
+        enum { ID = (ID_OFFSET_INTERNAL + 0x0000) };
 
         ~IUnknown() override = default;
 

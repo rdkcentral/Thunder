@@ -190,6 +190,11 @@ namespace Core {
             _attributes |= (access(_name.c_str(), W_OK) == 0 ? 0 : FILE_READONLY);
             _attributes |= (_name[0] == '.' ? FILE_HIDDEN : 0);
             _attributes |= ((data.st_mode & (S_IFCHR | S_IFBLK)) != 0 ? FILE_DEVICE : 0);
+
+            if (lstat(_name.c_str(), &data) == 0) {
+                _attributes |= (data.st_mode & FILE_LINK);
+            }
+
         } else {
             _attributes = 0;
         }
