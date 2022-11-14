@@ -139,6 +139,12 @@ namespace RPC {
 
         class Output {
         public:
+            enum mode : uint8_t {
+                CACHED_ADDREF   = 0x01,
+                CACHED_RELEASE  = 0x02
+            };
+
+        public:
             Output(const Output&) = delete;
             Output& operator=(const Output&) = delete;
 
@@ -159,10 +165,11 @@ namespace RPC {
             {
                 return (Frame::Reader(_data, 0));
             }
-            inline void AddImplementation(Core::instance_id implementation, const uint32_t id)
+            inline void AddImplementation(Core::instance_id implementation, const uint32_t id, const mode how)
             {
                 _data.SetNumber<Core::instance_id>(_data.Size(), implementation);
                 _data.SetNumber<uint32_t>(_data.Size(), id);
+                _data.SetNumber<mode>(_data.Size(), how);
             }
             inline uint32_t Length() const
             {
