@@ -99,7 +99,7 @@ set(PUBLIC_HEADERS
         Optional.h
         Parser.h
         Portability.h
-        PriviligedRequest.h
+        PrivilegedRequest.h
         Process.h
         ProcessInfo.h
         Proxy.h
