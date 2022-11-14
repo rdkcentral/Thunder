@@ -235,17 +235,17 @@ private:
                         return (true);
                     };
 
-                    if (Evaluate(event) == true) {
-                        _adminLock.Lock();
+                    _adminLock.Lock();
 
+                    if (Evaluate(event) == true) {
                         // Check if we have this entry..
                         Observers::iterator loop = _observers.find(event->wd);
                         if (loop != _observers.end()) {
                             loop->second.Notify();
                         }
-
-                        _adminLock.Unlock();
                     }
+
+                    _adminLock.Unlock();
                 }
             } while (length > 0);
         }
