@@ -816,7 +816,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                     }
                 }
             } else {
-                _services.Insert(entry);
+                _services.Insert(entry, Service::mode::CONFIGURED);
             }
         }
 
@@ -839,7 +839,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         Channel::Initialize(_config.WebPrefix());
 
         // Add the controller as a service to the services.
-        _controller = _services.Insert(metaDataConfig);
+        _controller = _services.Insert(metaDataConfig, Service::mode::CONFIGURED);
 
 #ifdef PROCESSCONTAINERS_ENABLED
         // turn on ProcessContainer logging

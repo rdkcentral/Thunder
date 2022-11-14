@@ -79,10 +79,9 @@ endif()
 
 
 target_link_libraries(${TARGET}
-        PUBLIC
-          ${NAMESPACE}Core::${NAMESPACE}Core
-          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
         PRIVATE
+          ${NAMESPACE}Core::${NAMESPACE}Core
+          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
           CompileSettingsDebug::CompileSettingsDebug
         )
 

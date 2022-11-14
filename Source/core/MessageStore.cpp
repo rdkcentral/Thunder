@@ -41,40 +41,40 @@ namespace WPEFramework {
             void Announce(Core::Messaging::IControl* control)
             {
                 ASSERT(control != nullptr);
-     
+
                 _adminLock.Lock();
-     
+
                 ASSERT(std::find(_controlList.begin(), _controlList.end(), control) == _controlList.end());
                 _controlList.push_back(control);
-     
+
                 _adminLock.Unlock();
             }
             void Revoke(Core::Messaging::IControl* control)
             {
                 ASSERT(control != nullptr);
-     
+
                 _adminLock.Lock();
-     
+
                 ASSERT(std::find(_controlList.begin(), _controlList.end(), control) != _controlList.end());
-     
+
                 auto entry = std::find(_controlList.begin(), _controlList.end(), control);
                 if (entry != _controlList.end()) {
                     _controlList.erase(entry);
                 }
-     
+
                 _adminLock.Unlock();
             }
             void Iterate(Core::Messaging::IControl::IHandler& handler)
             {
                 _adminLock.Lock();
-     
+
                 for (auto& control : _controlList) {
                     handler.Handle(control);
                 }
-     
+
                 _adminLock.Unlock();
             }
-     
+
         private:
             mutable Core::CriticalSection _adminLock;
             ControlList _controlList;
@@ -177,6 +177,10 @@ namespace Core {
 
         /* static */ void IControl::Announce(IControl* control) {
             _registeredControls.Announce(control);
+
+            if (_storage != nullptr) {
+                control->Enable(_storage->Default(control->Metadata()));
+            }
         }
         /* static */ void IControl::Revoke(IControl* control) {
             _registeredControls.Revoke(control);
@@ -188,7 +192,7 @@ namespace Core {
         /* static */ IStore* IStore::Instance() {
             return (_storage);
         }
-        /* static */ void IStore::Set (IStore* storage) {
+        /* static */ void IStore::Set(IStore* storage) {
             ASSERT ((_storage == nullptr) ^ (storage == nullptr));
             _storage = storage;
         }

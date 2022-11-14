@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+find_package(Threads REQUIRED)
+
 get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 set(THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool")
@@ -54,17 +56,18 @@ target_link_libraries(${TARGET}
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
           ${NAMESPACE}Core::${NAMESPACE}Core
-          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
+          ${NAMESPACE}COM::${NAMESPACE}COM
+          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
+          ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
-          ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
-          ${NAMESPACE}COM::${NAMESPACE}COM
+          Threads::Threads
         )
         
 if (PROCESSCONTAINERS)
     target_link_libraries(${TARGET}
-        PUBLIC
+        PRIVATE
             ${NAMESPACE}ProcessContainers::${NAMESPACE}ProcessContainers)
     target_compile_definitions(${TARGET}
         PUBLIC

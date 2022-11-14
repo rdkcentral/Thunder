@@ -1327,6 +1327,10 @@ POP_WARNING()
         {
             return (_ipcServer.Connector());
         }
+        inline const string& ProxyStubPath() const
+        {
+            return (_ipcServer.ProxyStubPath());
+        }
         void ForcedDestructionTimes(const uint8_t softKillCheckWaitTime, const uint8_t hardKillCheckWaitTime)
         {
             _softKillCheckWaitTime = softKillCheckWaitTime;
