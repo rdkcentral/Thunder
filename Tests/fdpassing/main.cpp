@@ -20,7 +20,7 @@
 
 #include <core/core.h>
 
-#include "PriviligedRequest.h"
+#include "PrivilegedRequest.h"
 
 using namespace WPEFramework;
 
@@ -45,7 +45,7 @@ bool ParseOptions(int argc, char** argv, string& identifier, bool& server)
 }
 
 namespace {
-class Server : public Core::PriviligedRequest {
+class Server : public Core::PrivilegedRequest {
 public:
     Server(const Server&) = delete;
     Server& operator=(const Server&) = delete;
@@ -103,7 +103,7 @@ int main(int argc, char** argv)
     } else {
         int keyPress;
 
-        Core::PriviligedRequest& channel = (server == true) ? *new Server() : *new Core::PriviligedRequest();
+        Core::PrivilegedRequest& channel = (server == true) ? *new Server() : *new Core::PrivilegedRequest();
 
         if ((server == true) && (channel.Open(identifier) != Core::ERROR_NONE)) {
             printf("Something wrong with the identifier path to the server: %s\n", identifier.c_str());
