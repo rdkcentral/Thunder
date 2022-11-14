@@ -116,11 +116,10 @@ class Undefined(BaseType):
     def Proto(self):
         proto = self.comment
         if isinstance(self.type, list):
-            if (type(self.type[0]) is str):
-                proto += " ".join(self.type).replace(" < ", "<").replace(" :: ", "::").replace(
-                    " >", ">").replace(" *", "*").replace(" &", "&").replace(" &&", "&&").replace(" ,",",")
-            else:
-                proto += " ".join([str(x) for x in self.type])
+            for e in self.type:
+                proto += " " + (e if isinstance(e, str) else str(e))
+            proto = proto.replace(" < ", "<").replace(" :: ", "::").replace(" >", ">")
+            proto = proto.replace(" *", "*").replace(" &", "&").replace(" &&", "&&").replace(" ,",",").strip()
         else:
             proto += str(self.type)
 
