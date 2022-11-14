@@ -401,25 +401,28 @@ private:
         FileSystemMonitor& _parent;
     };
 
+    friend class Core::SingletonType<FileSystemMonitor>;
     FileSystemMonitor()
         : _adminLock()
         , _dispatcher(*this)
         , _observers()
-        , _trigger(::CreateEvent(NULL, FALSE, FALSE, NULL))
-    {
+        , _trigger(::CreateEvent(NULL, FALSE, FALSE, NULL)) {
     }
-
 
 public:
     FileSystemMonitor(const FileSystemMonitor &) = delete;
     FileSystemMonitor &operator=(const FileSystemMonitor &) = delete;
 
-    static FileSystemMonitor &Instance()
+    static FileSystemMonitor& Instance()
     {
-        static FileSystemMonitor _singleton;
-        return (_singleton);
+        static Core::SingletonType<FileSystemMonitor> singleton;
+        return (singleton.Instance());
     }
     ~FileSystemMonitor() {
+        // Make sure all is stopped before we destruct..
+        _dispatcher.Stop();
+        Trigger();
+        _dispatcher.Wait(Core::Thread::BLOCKED | Core::Thread::STOPPED, Core::infinite);
         ::CloseHandle(_trigger);
     }
 
@@ -438,7 +441,7 @@ public:
 
         if (Core::File(filename).IsDirectory() == true) {
             ObserveMap::iterator index = _observers.find(filename);
-            if (index != _observers.end()) {
+            if (index == _observers.end()) {
                 index = _observers.emplace(std::piecewise_construct,
                     std::forward_as_tuple(filename),
                     std::forward_as_tuple(filename)).first;
@@ -452,6 +455,9 @@ public:
                     Trigger();
                 }
             }
+
+            ASSERT(index != _observers.end());
+
             index->second.Register(callback);
         }
         _adminLock.Unlock();
