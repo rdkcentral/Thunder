@@ -230,7 +230,7 @@ namespace RPC {
             {
                 return (_className[0] == '\0') && (_className[1] == REQUEST);
             }
-            bool IsAquire() const
+            bool IsAcquire() const
             {
                 return (IsRevoke() == false) && (IsOffer() == false) && (IsRequested() == false);
             }

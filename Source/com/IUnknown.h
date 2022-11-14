@@ -166,7 +166,7 @@ namespace ProxyStub {
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy/Stub (both) environment calls
         // -------------------------------------------------------------------------------------------------------------------------------
-        void* Aquire(const bool outbound, const uint32_t id) {
+        void* Acquire(const bool outbound, const uint32_t id) {
 
             void* result = nullptr;
 
