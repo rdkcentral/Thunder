@@ -35,7 +35,7 @@
 namespace WPEFramework {
 
 namespace Core {
-    class PriviligedRequest {
+    class PrivilegedRequest {
     private:
         class Connection : public Core::IResource {
         private:
@@ -50,7 +50,7 @@ namespace Core {
             Connection(const Connection&) = delete;
             Connection& operator=(const Connection&) = delete;
 
-            Connection(PriviligedRequest& parent)
+            Connection(PrivilegedRequest& parent)
                 : _parent(parent)
                 , _state(IDLE)
                 , _domainSocket(-1)
@@ -316,7 +316,7 @@ namespace Core {
             }
 
         private:
-            PriviligedRequest& _parent;
+            PrivilegedRequest& _parent;
             std::atomic<state> _state;
             int _domainSocket;
             uint32_t _id;
@@ -325,17 +325,17 @@ namespace Core {
         };
 
     public:
-        PriviligedRequest(const PriviligedRequest&) = delete;
-        PriviligedRequest& operator=(const PriviligedRequest&) = delete;
+        PrivilegedRequest(const PrivilegedRequest&) = delete;
+        PrivilegedRequest& operator=(const PrivilegedRequest&) = delete;
 
-        PriviligedRequest()
+        PrivilegedRequest()
             : _link(*this)
         {
         }
-        virtual ~PriviligedRequest()
+        virtual ~PrivilegedRequest()
         {
             Close();
-        };
+        }
 
     public:
         uint32_t Open(const string& identifier)
@@ -350,13 +350,13 @@ namespace Core {
         {
             Core::IResource::handle result = -1;
             if (_link.Request(waitTime, identifier, requestId, result) != Core::ERROR_NONE) {
-                TRACE_L1("Could not get a priviliged request answered.");
+                TRACE_L1("Could not get a privileged request answered.");
             }
             return (result);
         }
 
     private:
-        // ToDo: Create seperate client 
+        // ToDo: Create separate client 
         virtual int Service(const uint32_t /* id */) {return -1;}
 
     private:
