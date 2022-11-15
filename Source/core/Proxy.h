@@ -266,7 +266,7 @@ PUSH_WARNING(DISABLE_WARNING_MULTPILE_INHERITENCE_OF_BASE_CLASS)
             }
 
             // -----------------------------------------------------
-            // Check for Aquire method on Object
+            // Check for Acquire method on Object
             // -----------------------------------------------------
             IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Acquire, hasAcquire);
 
@@ -1329,7 +1329,7 @@ POP_WARNING()
             }
 
             // -----------------------------------------------------
-            // Check for Aquire method on Object
+            // Check for Acquire method on Object
             // -----------------------------------------------------
 
             IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Acquire, hasAcquire);

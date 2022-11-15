@@ -97,7 +97,7 @@ namespace Core {
 
             _adminLock.Unlock();
         }
-        uint32_t Aquire(const uint32_t duration)
+        uint32_t Acquire(const uint32_t duration)
         {
             uint32_t result = _signal.Lock(duration);
 

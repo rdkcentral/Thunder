@@ -187,7 +187,7 @@ namespace RPC {
                     entry++;
                 }
                 if (entry != index->second.end()) {
-                    interface = (*entry)->Aquire(outbound, id);
+                    interface = (*entry)->Acquire(outbound, id);
 
                     // The implementation could be found, but the current implemented proxy is not
                     // for the given interface. If that cae, the interface == nullptr and we still 

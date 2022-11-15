@@ -321,7 +321,7 @@ POP_WARNING()
         return (result);
     }
 
-    static void* AquireInterfaces(ConsoleOptions& options)
+    static void* AcquireInterfaces(ConsoleOptions& options)
     {
         void* result = nullptr;
 
@@ -670,7 +670,7 @@ int main(int argc, char** argv)
             process.Startup(options.Threads, remoteNode, callsign);
 
             // Register an interface to handle incoming requests for interfaces.
-            if ((base = Process::AquireInterfaces(options)) != nullptr) {
+            if ((base = Process::AcquireInterfaces(options)) != nullptr) {
 
                 TRACE_L1("Allright time to start running");
                 process.Run(options.ProxyStubPath, options.InterfaceId, base, options.Exchange);

@@ -409,7 +409,7 @@ namespace RPC {
         return (_id);
     }
 
-    /* virtual */ void* Communicator::RemoteConnection::Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version)
+    /* virtual */ void* Communicator::RemoteConnection::Acquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version)
     {
         void* result(nullptr);
 

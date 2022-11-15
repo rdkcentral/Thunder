@@ -274,7 +274,7 @@ POP_WARNING()
                 controller->Release();
             }
             if (_controller == nullptr) {
-                _controller = _administrator.template Aquire<PluginHost::IShell>(waitTime, node, _T(""), ~0);
+                _controller = _administrator.template Acquire<PluginHost::IShell>(waitTime, node, _T(""), ~0);
             }
             if (_controller != nullptr) {
                 _monitor.Register(_controller, callsign);
@@ -293,9 +293,9 @@ POP_WARNING()
             return (Core::ERROR_NONE);
         }
         template <typename EXPECTED_INTERFACE>
-        EXPECTED_INTERFACE* Aquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version = ~0)
+        EXPECTED_INTERFACE* Acquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version = ~0)
         {
-            return (_administrator.template Aquire<EXPECTED_INTERFACE>(waitTime, nodeId, className, version));
+            return (_administrator.template Acquire<EXPECTED_INTERFACE>(waitTime, nodeId, className, version));
         }
 
         INTERFACE* Interface()
