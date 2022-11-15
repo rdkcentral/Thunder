@@ -203,7 +203,7 @@ namespace RPC {
 
         public:
             enum type : uint8_t {
-                AQUIRE = 0,
+                ACQUIRE = 0,
                 OFFER = 1,
                 REVOKE = 2,
                 REQUEST = 3
@@ -249,7 +249,7 @@ namespace RPC {
                 _versionId = ~0;
                 _id = myId;
                 _className[0] = '\0';
-                _className[1] = AQUIRE;
+                _className[1] = ACQUIRE;
             }
             void Set(const uint32_t myId, const uint32_t interfaceId, Core::instance_id implementation, const uint32_t exchangeId)
             {
@@ -263,7 +263,7 @@ namespace RPC {
             }
             void Set(const uint32_t myId, const uint32_t interfaceId, Core::instance_id implementation, const type whatKind)
             {
-                ASSERT((whatKind != AQUIRE) && (whatKind != REQUEST));
+                ASSERT((whatKind != ACQUIRE) && (whatKind != REQUEST));
 
                 _exchangeId = ParentId();
                 _implementation = implementation;
