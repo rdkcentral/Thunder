@@ -406,7 +406,7 @@ POP_WARNING()
 
                 _channel.Trigger();
 
-                result = _responses.Aquire(allowedTime);
+                result = _responses.Acquire(allowedTime);
 
                 _responses.Lock();
 

@@ -326,7 +326,7 @@ namespace PluginHost
 
             // Load the interfaces, If we did not load them yet...
             if (_handler == nullptr) {
-                AquireInterfaces();
+                AcquireInterfaces();
             }
 
             const string callSign(PluginHost::Service::Configuration().Callsign.Value());

@@ -121,14 +121,14 @@ namespace RPC {
 
     public:
         template <typename INTERFACE>
-        INTERFACE* Aquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version)
+        INTERFACE* Acquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version)
         {
             INTERFACE* result = nullptr;
 
             Core::ProxyType<Channel> channel = _comChannels.template Instance<Channel>(nodeId, nodeId, ENGINE());
 
             if (channel.IsValid() == true) {
-                result = channel->template Aquire<INTERFACE>(waitTime, className, version);
+                result = channel->template Acquire<INTERFACE>(waitTime, className, version);
             }
 
             return (result);

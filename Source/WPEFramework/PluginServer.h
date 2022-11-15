@@ -1172,7 +1172,7 @@ namespace PluginHost {
 
                 return (result);
             }
-            void AquireInterfaces()
+            void AcquireInterfaces()
             {
                 ASSERT((State() == DEACTIVATED) || (State() == PRECONDITION));
 
@@ -1797,9 +1797,9 @@ namespace PluginHost {
                     return result;
                 }
 
-                void* Aquire(const string& className, const uint32_t interfaceId, const uint32_t version) override
+                void* Acquire(const string& className, const uint32_t interfaceId, const uint32_t version) override
                 {
-                    return (_parent.Aquire(interfaceId, className, version));
+                    return (_parent.Acquire(interfaceId, className, version));
                 }
 
                 void Cleanup(const Core::IUnknown* source, const uint32_t interfaceId) override
@@ -2471,7 +2471,7 @@ POP_WARNING()
                     _instantiators.erase(index);
                 }
             }
-            void* Aquire(const uint32_t interfaceId, const string& className, const uint32_t version)
+            void* Acquire(const uint32_t interfaceId, const string& className, const uint32_t version)
             {
                 void* result = nullptr;
 

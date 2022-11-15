@@ -45,7 +45,7 @@ namespace WarningReporting {
 
         void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
         {
-            visitor = (_T("It took suspiciously long to aquire a critical section"));
+            visitor = (_T("It took suspiciously long to acquire a critical section"));
             visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, maxValue);
         };
 

@@ -502,7 +502,7 @@ namespace RPC {
         public:
             uint32_t Id() const override;
             uint32_t RemoteId() const override;
-            void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) override;
+            void* Acquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) override;
             void Terminate() override;
             void PostMortem() override
             {
@@ -1090,7 +1090,7 @@ namespace RPC {
                 } else if (info.InterfaceId() != static_cast<uint32_t>(~0)) {
 
                     // See if we have something we can return right away, if it has been requested..
-                    result = _parent.Aquire(info.ClassName(), info.InterfaceId(), info.VersionId());
+                    result = _parent.Acquire(info.ClassName(), info.InterfaceId(), info.VersionId());
 
                     if (result != nullptr) {
                         Administrator::Instance().RegisterInterface(baseChannel, result, info.InterfaceId());
@@ -1390,7 +1390,7 @@ POP_WARNING()
                 loop++;
             }
         }
-        virtual void* Aquire(const string& /* className */, const uint32_t /* interfaceId */, const uint32_t /* version */)
+        virtual void* Acquire(const string& /* className */, const uint32_t /* interfaceId */, const uint32_t /* version */)
         {
             return (nullptr);
         }
@@ -1442,7 +1442,7 @@ POP_WARNING()
                 const uint32_t interfaceId(message->Parameters().InterfaceId());
                 const uint32_t versionId(message->Parameters().VersionId());
 
-                Core::instance_id implementation = instance_cast<void*>(_parent.Aquire(className, interfaceId, versionId));
+                Core::instance_id implementation = instance_cast<void*>(_parent.Acquire(className, interfaceId, versionId));
                 message->Response().Implementation(implementation);
 
                 channel.ReportResponse(data);
@@ -1512,7 +1512,7 @@ POP_WARNING()
         uint32_t Open(const uint32_t waitTime, const uint32_t interfaceId, void* implementation, const uint32_t exchangeId);
 
         template <typename INTERFACE>
-        INTERFACE* Aquire(const uint32_t waitTime, const string& className, const uint32_t versionId)
+        INTERFACE* Acquire(const uint32_t waitTime, const string& className, const uint32_t versionId)
         {
             INTERFACE* result(nullptr);
 
@@ -1590,7 +1590,7 @@ POP_WARNING()
 
         uint32_t Close(const uint32_t waitTime);
 
-        virtual void* Aquire(const string& className, const uint32_t interfaceId, const uint32_t versionId)
+        virtual void* Acquire(const string& className, const uint32_t interfaceId, const uint32_t versionId)
         {
             Core::Library emptyLibrary;
             // Allright, respond with the interface.
