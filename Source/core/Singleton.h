@@ -83,8 +83,7 @@ namespace Core {
     template <class SINGLETON>
     class SingletonType : public Singleton, public SINGLETON {
     private:
-        SingletonType(const SingletonType<SINGLETON>&) = delete;
-        SingletonType<SINGLETON> operator=(const SingletonType<SINGLETON>&) = delete;
+        using available = std::is_default_constructible<SINGLETON>;
 
     protected:
         template <typename... Args>
@@ -97,6 +96,9 @@ namespace Core {
         }
 
     public:
+        SingletonType(const SingletonType<SINGLETON>&) = delete;
+        SingletonType<SINGLETON> operator=(const SingletonType<SINGLETON>&) = delete;
+
         virtual ~SingletonType()
         {
            ListInstance().Unregister(this);
@@ -110,7 +112,7 @@ namespace Core {
         }
 
         template <typename... Args>
-        inline static SINGLETON& Instance(Args&&... args)
+        DEPRECATED inline static SINGLETON& Instance(Args&&... args)
         {
             static CriticalSection g_AdminLock;
 
@@ -125,6 +127,71 @@ namespace Core {
 
                 g_AdminLock.Unlock();
             }
+
+            ASSERT(g_TypedSingleton != nullptr);
+
+            return *(g_TypedSingleton);
+        }
+
+        inline static SINGLETON& Instance() {
+            return (GetObject(TemplateIntToType<available::value>()));
+        }
+
+        // The Create() and Dispose() methods should only be used if the lifetime of 
+        // the singleton is well defined. Create() marks the begining. The first instance
+        // of the singleton will only be retrieved after the Create() is completed. The
+        // Dispose() marks the end of the singleton. This call can only be issued if 
+        // the singleton is not being used anymore and will not be requested anymore
+        // at the start of the call to Dispose()
+        template <typename... Args>
+        inline static void Create(Args&&... args)
+        {
+            ASSERT(g_TypedSingleton == nullptr);
+
+            if (g_TypedSingleton == nullptr) {
+
+                // Create a singleton
+                g_TypedSingleton = static_cast<SINGLETON*>(new SingletonType<SINGLETON>(std::forward<Args>(args)...));
+            }
+
+            ASSERT(g_TypedSingleton != nullptr);
+        }
+        inline static void Dispose()
+        {
+            // Unprotected. Make sure the dispose is *ONLY* called
+            // after all usage of the singlton is completed!!!
+            if (g_TypedSingleton != nullptr) {
+
+                delete g_TypedSingleton;
+            }
+        }
+
+    private:
+        static SINGLETON& GetObject(const TemplateIntToType<true>& /* For compile time diffrentiation */)
+        {
+            static CriticalSection g_AdminLock;
+
+            // Hmm Double Lock syndrom :-)
+            if (g_TypedSingleton == nullptr) {
+                g_AdminLock.Lock();
+
+                if (g_TypedSingleton == nullptr) {
+                    // Create a singleton
+                    g_TypedSingleton = static_cast<SINGLETON*>(new SingletonType<SINGLETON>());
+                }
+
+                g_AdminLock.Unlock();
+            }
+
+            ASSERT(g_TypedSingleton != nullptr);
+
+            return *(g_TypedSingleton);
+        }
+        static SINGLETON& GetObject(const TemplateIntToType<false>& /* For compile time diffrentiation */)
+        {
+            // If the Singleton needs to be constructed with a parameter, the Create() method
+            // should have been called prior to the instance..
+            ASSERT(g_TypedSingleton != nullptr);
 
             return *(g_TypedSingleton);
         }
@@ -150,8 +217,12 @@ namespace Core {
         SingletonProxyType(const SingletonProxyType<PROXYTYPE>&) = delete;
         SingletonProxyType& operator=(const SingletonProxyType<PROXYTYPE>&) = delete;
 
+        static ProxyType<PROXYTYPE> Instance()
+        {
+            return (SingletonType<SingletonProxyType<PROXYTYPE>>::Instance()._wrapped);
+        }
         template <typename... Args>
-        static ProxyType<PROXYTYPE> Instance(Args&&... args)
+        DEPRECATED static ProxyType<PROXYTYPE> Instance(Args&&... args)
         {
             return (SingletonType<SingletonProxyType<PROXYTYPE>>::Instance(std::forward<Args>(args)...)._wrapped);
         }
