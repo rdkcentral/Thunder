@@ -311,6 +311,94 @@
         }
       ]
     },
+    "Controller.1.resume": {
+      "summary": "Resumes a plugin",
+      "description": "This is a more intelligent method, compared to the Activate, on the controller to move a plugin to a *resumed* state depending on its current state. If required, it will activate and move to the resumed state, regardless of the flags in the config (AutoStart/Resumed)",
+      "events": [
+        "statechange"
+      ],
+      "params": {
+        "type": "object",
+        "properties": {
+          "callsign": {
+            "description": "Plugin callsign",
+            "type": "string",
+            "example": "Netflix"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "The plugin will be activated once its activation preconditions are met",
+          "$ref": "#/common/errors/pendingconditions"
+        },
+        {
+          "description": "The plugin is currently being activated",
+          "$ref": "#/common/errors/inprogress"
+        },
+        {
+          "description": "The plugin does not exist",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Failed to activate the plugin",
+          "$ref": "#/common/errors/openingfailed"
+        },
+        {
+          "description": "Current state of the plugin does not allow activation",
+          "$ref": "#/common/errors/illegalstate"
+        },
+        {
+          "description": "Activation of the plugin is not allowed (e.g. Controller)",
+          "$ref": "#/common/errors/privilegedrequest"
+        }
+      ]
+    },
+    "Controller.1.suspend": {
+      "summary": "Suspends a plugin",
+      "description": "This is a more intelligent method, compared to the Deactivate, on the controller to move a plugin to a *suspended* state depending on its current state. Depending on the AutoStart flag, this method will Deactivate the plugin [AutoStart == false] or only Suspend the plugin [AutoStart == true]",
+      "events": [
+        "statechange"
+      ],
+      "params": {
+        "type": "object",
+        "properties": {
+          "callsign": {
+            "description": "Callsign of the plugin",
+            "type": "string",
+            "example": "Amazon"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "The plugin is currently being deactivated",
+          "$ref": "#/common/errors/inprogress"
+        },
+        {
+          "description": "The plugin does not exist",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Current state of the plugin does not allow deactivation",
+          "$ref": "#/common/errors/illegalstate"
+        },
+        {
+          "description": "Failed to activate the plugin",
+          "$ref": "#/common/errors/closingfailed"
+        },
+        {
+          "description": "Deactivation of the plugin is not allowed (e.g. Controller)",
+          "$ref": "#/common/errors/privilegedrequest"
+        }
+      ]
+    },
     "Controller.1.unavailable": {
       "summary": "Set a plugin unavailable for interaction",
       "description": "Use this method to mark a plugin as unavailable, i.e. move from Deactivated to Unavailable state. If a plugin is Unavailable, the actual plugin (.so) is no longer loaded into the memory of the process. The plugin will not respond to any JSON-RPC requests and it can not be startedunless it is first deactivated (which triggers a state transition.",
