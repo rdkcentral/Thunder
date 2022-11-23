@@ -401,7 +401,7 @@ private:
         FileSystemMonitor& _parent;
     };
 
-    friend class Core::SingletonType<FileSystemMonitor>;
+    friend class SingletonType<FileSystemMonitor>;
     FileSystemMonitor()
         : _adminLock()
         , _dispatcher(*this)
@@ -415,8 +415,7 @@ public:
 
     static FileSystemMonitor& Instance()
     {
-        static Core::SingletonType<FileSystemMonitor> singleton;
-        return (singleton.Instance());
+        return (SingletonType<FileSystemMonitor>::Instance());
     }
     ~FileSystemMonitor() {
         // Make sure all is stopped before we destruct..

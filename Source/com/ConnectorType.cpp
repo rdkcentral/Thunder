@@ -96,16 +96,13 @@ Core::ProxyType<RPC::IIPCServer> WorkerPoolInvokeServer()
         {
             Announcements(&_sink);
         }
-
-        ~Engine() override
-        {
-        }
+        ~Engine() override = default;
 
     private:
         AnnouncementSink _sink;
     };
 
-    return Core::ProxyType<RPC::IIPCServer>(Core::SingletonProxyType<Engine>::Instance(&Core::IWorkerPool::Instance()));
+    return (Core::ProxyType<RPC::IIPCServer>(Core::ProxyType<Engine>::Create(&Core::IWorkerPool::Instance())));
 };
 
 ConnectorController::ConnectorController() : _controller(nullptr) {
