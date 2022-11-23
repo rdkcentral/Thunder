@@ -134,7 +134,11 @@ namespace Core {
         }
 
         inline static SINGLETON& Instance() {
-            return (GetObject(TemplateIntToType<available::value>()));
+            // As available does not see through friend clas/protected 
+            // declarations, we can not rely on the output of it.
+            // If this Instance method id called, assume it has a
+            // default constructor..
+            return (GetObject(TemplateIntToType<true>()));
         }
 
         // The Create() and Dispose() methods should only be used if the lifetime of 

@@ -117,13 +117,13 @@ namespace Core {
                 Core::FrameType<0>::Reader frameReader(frame, 0);
 
                 _type = frameReader.Number<type>();
+
+                _category = frameReader.NullTerminatedText();
+                _module = frameReader.NullTerminatedText();
+
                 ASSERT(_type != Metadata::type::INVALID);
 
-                if (_type != type::INVALID) {
-                    _category = frameReader.NullTerminatedText();
-                    _module = frameReader.NullTerminatedText();
-                    length = (sizeof(_type) + (static_cast<uint16_t>(_category.size()) + 1) + (static_cast<uint16_t>(_module.size()) + 1));
-                }
+                length = std::min<uint16_t>(bufferSize, static_cast<uint16_t>(sizeof(_type) + (static_cast<uint16_t>(_category.size()) + 1) + (static_cast<uint16_t>(_module.size()) + 1)));
             }
 
             return (length);
