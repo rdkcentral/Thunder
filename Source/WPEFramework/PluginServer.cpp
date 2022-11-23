@@ -346,7 +346,7 @@ namespace PluginHost
                 State(PRECONDITION);
 
 #ifdef __CORE_MESSAGING__
-                if (TRACE_ENABLED(Activity) == true) {
+                if (WPEFramework::Messaging::LocalLifetimeType<Activity, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
                     string feedback;
                     uint8_t index = 1;
                     uint32_t delta(_precondition.Delta(_administrator.SubSystemInfo()));
