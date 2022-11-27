@@ -146,5 +146,3 @@ if(EXECUTABLE)
     add_subdirectory(WPEFramework)
 endif()
 
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake
-        DESTINATION include/${NAMESPACE})
