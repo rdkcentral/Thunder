@@ -24,8 +24,10 @@ set(GENERATOR_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/sbin")
 if(NOT DEFINED GENERIC_CMAKE_MODULE_PATH)
    find_path(GENERIC_CMAKE_MODULE_PATH CMake.cmake
        PATHS
+           "/usr/local/share/cmake/Modules/"
            "/usr/share/cmake/Modules/"
-           "/usr/share/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules/"
+           "/usr/local/share/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules/"
+	   "/usr/share/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules/"
    )
 endif()
 
