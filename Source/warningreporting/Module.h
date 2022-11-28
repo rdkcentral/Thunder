@@ -24,7 +24,12 @@
 #endif
 
 #include <core/core.h>
+
+#ifdef __CORE_MESSAGING__
+#include <messaging/messaging.h>
+#else
 #include <tracing/tracing.h>
+#endif
 
 #if defined(__WINDOWS__) && defined(WARNINGREPORTING_EXPORTS)
 #undef EXTERNAL
