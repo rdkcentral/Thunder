@@ -209,17 +209,16 @@ namespace PluginHost {
 
         class Location : public PluginHost::ISubSystem::ILocation {
         public:
-            Location() = delete;
             Location(const Location&) = delete;
             Location& operator=(const Location&) = delete;
 
-            Location(const int32_t latitude, const int32_t longitude)
+            Location()
                 : _timeZone()
                 , _country()
                 , _region()
                 , _city()
-                , _latitude(latitude)
-                , _longitude(longitude)
+                , _latitude(51977956)
+                , _longitude(5726384)
             {
             }
             ~Location() override = default;
@@ -455,31 +454,21 @@ namespace PluginHost {
             case LOCATION: {
                 PluginHost::ISubSystem::ILocation* info = (information != nullptr ? information->QueryInterface<PluginHost::ISubSystem::ILocation>() : nullptr);
 
-                if (info == nullptr) {
-                    _adminLock.Lock();
+                Location* location = Core::Service<Location>::Create<Location>();
 
-                    if (_location != nullptr) {
-                        _location->Release();
-                    }
-
-                    _location = Core::Service<Location>::Create<Location>(_config.Latitude(), _config.Longitude());
-
-                    _adminLock.Unlock();
-                } else {
-                    Location* location = Core::Service<Location>::Create<Location>(_config.Latitude(), _config.Longitude());
+                if (info != nullptr) {
                     sendUpdate = location->Set(info) || sendUpdate;
-
                     info->Release();
-
-                    _adminLock.Lock();
-
-                    if (_location != nullptr) {
-                        _location->Release();
-                    }
-
-                    _location = location;
-                    _adminLock.Unlock();
                 }
+
+                _adminLock.Lock();
+
+                if (_location != nullptr) {
+                    _location->Release();
+                }
+
+                _location = location;
+                _adminLock.Unlock();
 
                 SYSLOG(Logging::Startup, (_T("EVENT: TimeZone: %s, Country: %s, Region: %s, City: %s"), _location->TimeZone().c_str(), _location->Country().c_str(), _location->Region().c_str(), _location->City().c_str()));
 

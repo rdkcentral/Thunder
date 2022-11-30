@@ -591,8 +591,6 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             , _softKillCheckWaitTime(3)
             , _hardKillCheckWaitTime(10)
             , _stackSize(0)
-            , _latitude()
-            , _longitude()
             , _messagingPort()
             , _inputInfo()
             , _processInfo()
@@ -644,8 +642,9 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 _inputInfo.Set(config.Input);
                 _processInfo.Set(config.Process);
                 _ethernetCard = config.EthernetCard.Value();
-                _latitude = config.Latitude.Value();
-                _longitude = config.Longitude.Value();
+                if( config.Latitude.IsSet() || config.Longitude.IsSet() ) {
+                    SYSLOG(Logging::Error, (_T("Support for Latitude and Longitude moved from Thunder configuration to plugin providing ILocation support")));
+                }
                 _messagingPort = config.MessagingPort.Value();
 
                 _messagingCategoriesFile = config.DefaultMessagingCategories.IsQuoted();
@@ -850,24 +849,8 @@ POP_WARNING()
         inline string EthernetCard() const {
             return _ethernetCard;
         }
-        inline int32_t Latitude() const {
-            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            return (_latitude);
-        }
-        inline void SetLatitude(const int32_t newValue){
-            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            _latitude = newValue;
-        }
-        inline int32_t Longitude() const {
-            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            return (_longitude);
-        }
         inline uint16_t MessagingPort() const {
             return (_messagingPort);
-        }
-        inline void SetLongitude(const int32_t newValue){
-            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            _longitude = newValue;
         }
         inline const InputInfo& Input() const {
             return(_inputInfo);
@@ -1041,8 +1024,6 @@ POP_WARNING()
         uint8_t _softKillCheckWaitTime;
         uint8_t _hardKillCheckWaitTime;
         uint32_t _stackSize;
-        int32_t _latitude;
-        int32_t _longitude;
         uint16_t _messagingPort;
         InputInfo _inputInfo;
         ProcessInfo _processInfo;
