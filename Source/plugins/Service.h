@@ -197,6 +197,7 @@ namespace PluginHost {
             Lock();
 
             if (State() == PluginHost::IShell::DEACTIVATED || 
+                State() == PluginHost::IShell::PRECONDITION ||
                 State() == PluginHost::IShell::DEACTIVATION ||
                 State() == PluginHost::IShell::UNAVAILABLE ) {
 
