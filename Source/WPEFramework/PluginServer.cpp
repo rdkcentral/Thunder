@@ -399,10 +399,7 @@ namespace PluginHost
 #endif
 
             } else {
-
-                State(ACTIVATION);
-
-                Unlock();
+                // note state ACTIVATION will only be set until the Initialize notification has been handled to have the possibility in that call to change the configuration of the plugin
 
                 // Before we dive into the "new" initialize lets see if this has a pending OOP running, if so forcefully kill it now, no time to wait !
                 if (_lastId != 0) {
@@ -412,12 +409,20 @@ namespace PluginHost
 
                 TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
+                _administrator.Initialize(callSign, this);
+
+                State(ACTIVATION);
+
+                Unlock();
+
                 REPORT_DURATION_WARNING( { ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
 
                 if (HasError() == true) {
                     result = Core::ERROR_GENERAL;
 
                     SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
+
+                    _administrator.Deinitialized(callSign, this);
 
                     Lock();
                     ReleaseInterfaces();
@@ -547,6 +552,9 @@ namespace PluginHost
                 if (dispatcher != nullptr) {
                     dispatcher->Deactivate();
                 }
+
+                _administrator.Deinitialized(callSign, this);
+
             }
 
             SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));

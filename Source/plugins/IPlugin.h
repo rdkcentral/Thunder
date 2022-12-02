@@ -55,6 +55,12 @@ namespace PluginHost {
             virtual void Activated(const string& callsign, IShell* plugin) = 0;
             virtual void Deactivated(const string& callsign, IShell* plugin) = 0;
             virtual void Unavailable(const string& callsign, IShell* plugin) = 0;
+
+            // these notifications will be calles just before the Initialize of the plugin is called and after the Deinitiale of the plugin is handled.
+            // Note the execution time of the implementation should be short (<100ms) not to block the plugin handling
+            // Also note that during the Initialize notifcation the plugin state can be DEACTIVATED or PRECONDTION (so it will NOT be ACTIVATION)
+            virtual void Initialize(VARIABLE_IS_NOT_USED const string& callsign, VARIABLE_IS_NOT_USED IShell* plugin) {};
+            virtual void Deinitialized(VARIABLE_IS_NOT_USED const string& callsign, VARIABLE_IS_NOT_USED IShell* plugin) {};
         };
 
         ~IPlugin() override = default;
