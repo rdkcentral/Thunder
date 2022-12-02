@@ -483,7 +483,13 @@ namespace PluginHost
         } else if ((currentState == IShell::DEACTIVATION) || (currentState == IShell::DESTROYED)) {
             result = Core::ERROR_ILLEGAL_STATE;
         } else if (currentState == IShell::DEACTIVATED) {
+
+            Unlock();
+
             result = Activate(why);
+
+            Lock();
+
             currentState = State();
         }
 
