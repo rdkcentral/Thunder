@@ -326,7 +326,7 @@ namespace PluginHost
 
             // Load the interfaces, If we did not load them yet...
             if (_handler == nullptr) {
-                AquireInterfaces();
+                AcquireInterfaces();
             }
 
             const string callSign(PluginHost::Service::Configuration().Callsign.Value());
@@ -346,7 +346,7 @@ namespace PluginHost
                 State(PRECONDITION);
 
 #ifdef __CORE_MESSAGING__
-                if (TRACE_ENABLED(Activity) == true) {
+                if (WPEFramework::Messaging::LocalLifetimeType<Activity, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
                     string feedback;
                     uint8_t index = 1;
                     uint32_t delta(_precondition.Delta(_administrator.SubSystemInfo()));
@@ -822,7 +822,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                     }
                 }
             } else {
-                _services.Insert(entry);
+                _services.Insert(entry, Service::mode::CONFIGURED);
             }
         }
 
@@ -845,7 +845,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         Channel::Initialize(_config.WebPrefix());
 
         // Add the controller as a service to the services.
-        _controller = _services.Insert(metaDataConfig);
+        _controller = _services.Insert(metaDataConfig, Service::mode::CONFIGURED);
 
 #ifdef PROCESSCONTAINERS_ENABLED
         // turn on ProcessContainer logging

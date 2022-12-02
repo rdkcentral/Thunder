@@ -18,11 +18,14 @@ set(PUBLIC_HEADERS
         Module.h
         MessageClient.h
         messaging.h
+        MessageDispatcher.h
+        MessageUnit.h
         TraceCategories.h
         TraceControl.h
         Control.h
         Logging.h
         LoggingCategories.h
+        DirectOutput.h
         Module.h
         TraceFactory.h
         TextMessage.h
@@ -32,8 +35,10 @@ set(PUBLIC_HEADERS
 set(SOURCES 
         Module.cpp
         MessageClient.cpp
+        MessageUnit.cpp
         TraceCategories.cpp
         Logging.cpp
+        DirectOutput.cpp
 )
 
 
@@ -44,9 +49,8 @@ add_library(${TARGET} SHARED ${SOURCES})
 target_compile_definitions(${TARGET} PRIVATE MESSAGING_EXPORTS)
 
 target_link_libraries(${TARGET}
-        PUBLIC
-          ${NAMESPACE}Core::${NAMESPACE}Core
         PRIVATE
+          ${NAMESPACE}Core::${NAMESPACE}Core
           CompileSettingsDebug::CompileSettingsDebug
         )
 

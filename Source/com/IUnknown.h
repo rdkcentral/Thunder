@@ -166,7 +166,7 @@ namespace ProxyStub {
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy/Stub (both) environment calls
         // -------------------------------------------------------------------------------------------------------------------------------
-        void* Aquire(const bool outbound, const uint32_t id) {
+        void* Acquire(const bool outbound, const uint32_t id) {
 
             void* result = nullptr;
 
@@ -300,14 +300,18 @@ namespace ProxyStub {
                 ASSERT(reader.Length() >= (sizeof(Core::instance_id)));  // IMPLEMENTATION SIZE !!!!
                 void* impl = reinterpret_cast<void*>(reader.Number<Core::instance_id>());
                 uint32_t id = reader.Number<uint32_t>();
+                RPC::Data::Output::mode how = reader.Number<RPC::Data::Output::mode>();
 
-                if ((id & 0x80000000) == 0) {
+                if (how == RPC::Data::Output::mode::CACHED_ADDREF) {
                     // Just AddRef this implementation
                     RPC::Administrator::Instance().AddRef(_channel, impl, id);
-                } else {
+                } else if (how == RPC::Data::Output::mode::CACHED_RELEASE) {
                     // Just Release this implementation
-                    id = id ^ 0x80000000;
                     RPC::Administrator::Instance().Release(_channel, impl, id, 1);
+                }
+                else {
+                    // No clue what tp do now......
+                    ASSERT(false);
                 }
             }
         }
@@ -341,7 +345,7 @@ namespace ProxyStub {
                 _mode ^= CACHING_ADDREF;
 
                 if (_refCount >= 1) {
-                    response.AddImplementation(_implementation, _interfaceId);
+                    response.AddImplementation(_implementation, _interfaceId, RPC::Data::Output::mode::CACHED_ADDREF);
                 }
             }
             else if ((_mode & CACHING_RELEASE) != 0)  {
@@ -350,7 +354,7 @@ namespace ProxyStub {
                 _mode ^= CACHING_RELEASE;
 
                 if (_refCount == 0) {
-                    response.AddImplementation(_implementation, _interfaceId | 0x80000000);
+                    response.AddImplementation(_implementation, _interfaceId, RPC::Data::Output::mode::CACHED_RELEASE);
                 }
             }
 

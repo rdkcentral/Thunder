@@ -321,7 +321,7 @@ POP_WARNING()
         return (result);
     }
 
-    static void* AquireInterfaces(ConsoleOptions& options)
+    static void* AcquireInterfaces(ConsoleOptions& options)
     {
         void* result = nullptr;
 
@@ -636,7 +636,7 @@ int main(int argc, char** argv)
         
         // Due to the LXC container support all ID's get mapped. For the MessageBuffer, use the host given ID.
 #ifdef __CORE_MESSAGING__
-        Core::Messaging::MessageUnit::Instance().Open(options.Exchange);
+        Messaging::MessageUnit::Instance().Open(options.Exchange);
 #else
         Trace::TraceUnit::Instance().Open(options.Exchange);
         // Time to open up the LOG tracings as specified by the caller.
@@ -670,7 +670,7 @@ int main(int argc, char** argv)
             process.Startup(options.Threads, remoteNode, callsign);
 
             // Register an interface to handle incoming requests for interfaces.
-            if ((base = Process::AquireInterfaces(options)) != nullptr) {
+            if ((base = Process::AcquireInterfaces(options)) != nullptr) {
 
                 TRACE_L1("Allright time to start running");
                 process.Run(options.ProxyStubPath, options.InterfaceId, base, options.Exchange);
@@ -679,7 +679,7 @@ int main(int argc, char** argv)
 
 #ifdef __CORE_MESSAGING__
         //close messaging unit before singletons are cleared
-        Core::Messaging::MessageUnit::Instance().Close();
+        Messaging::MessageUnit::Instance().Close();
 #endif
     }
 

@@ -20,6 +20,7 @@
 #pragma once
 
 #include "Module.h"
+#include "MessageUnit.h"
 
 namespace WPEFramework {
 namespace Messaging {
@@ -46,25 +47,25 @@ namespace Messaging {
         void WaitForUpdates(const uint32_t waitTime);
         void SkipWaiting();
 
-        void Enable(const Core::Messaging::MetaData& metaData, const bool enable);
-        void Controls(Core::Messaging::MessageUnit::Iterator& controls) const;
+        void Enable(const Core::Messaging::Metadata& metadata, const bool enable);
+        void Controls(Messaging::MessageUnit::Iterator& controls) const;
 
-        void PopMessagesAndCall(std::function<void(const Core::Messaging::Information& info, const Core::ProxyType<Core::Messaging::IEvent>& message)> function);
+        void PopMessagesAndCall(std::function<void(const Core::Messaging::IStore::Information& info, const Core::ProxyType<Core::Messaging::IEvent>& message)> function);
 
-        void AddFactory(Core::Messaging::MessageType type, Core::Messaging::IEventFactory* factory);
-        void RemoveFactory(Core::Messaging::MessageType type);
+        void AddFactory(Core::Messaging::Metadata::type type, IEventFactory* factory);
+        void RemoveFactory(Core::Messaging::Metadata::type type);
 
     private:
-        using Factories = std::unordered_map<Core::Messaging::MessageType, Core::Messaging::IEventFactory*>;
-        using Clients = std::unordered_map<uint32_t, Core::Messaging::MessageUnit::Client>;
+        using Factories = std::unordered_map<Core::Messaging::Metadata::type, IEventFactory*>;
+        using Clients = std::unordered_map<uint32_t, MessageUnit::Client>;
 
         mutable Core::CriticalSection _adminLock;
         const string _identifier;
         const string _basePath;
         const uint16_t _socketPort;
 
-        mutable uint8_t _readBuffer[Core::Messaging::MessageUnit::DataSize];
-        mutable uint8_t _writeBuffer[Core::Messaging::MessageUnit::MetaDataSize];
+        mutable uint8_t _readBuffer[Messaging::MessageUnit::DataSize];
+        mutable uint8_t _writeBuffer[Messaging::MessageUnit::MetadataSize];
 
         Clients _clients;
         Factories _factories;

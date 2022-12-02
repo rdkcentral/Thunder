@@ -133,7 +133,7 @@ namespace PluginHost {
 
     public:
         //
-        // Factory methods to aquire a JSONRPC Message
+        // Factory methods to acquire a JSONRPC Message
         // ------------------------------------------------------------------------------------------------------------------------------
         Core::ProxyType<Core::JSONRPC::Message> Message() const
         {

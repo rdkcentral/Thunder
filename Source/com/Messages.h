@@ -139,6 +139,12 @@ namespace RPC {
 
         class Output {
         public:
+            enum mode : uint8_t {
+                CACHED_ADDREF   = 0x01,
+                CACHED_RELEASE  = 0x02
+            };
+
+        public:
             Output(const Output&) = delete;
             Output& operator=(const Output&) = delete;
 
@@ -159,10 +165,11 @@ namespace RPC {
             {
                 return (Frame::Reader(_data, 0));
             }
-            inline void AddImplementation(Core::instance_id implementation, const uint32_t id)
+            inline void AddImplementation(Core::instance_id implementation, const uint32_t id, const mode how)
             {
                 _data.SetNumber<Core::instance_id>(_data.Size(), implementation);
                 _data.SetNumber<uint32_t>(_data.Size(), id);
+                _data.SetNumber<mode>(_data.Size(), how);
             }
             inline uint32_t Length() const
             {
@@ -196,7 +203,7 @@ namespace RPC {
 
         public:
             enum type : uint8_t {
-                AQUIRE = 0,
+                ACQUIRE = 0,
                 OFFER = 1,
                 REVOKE = 2,
                 REQUEST = 3
@@ -230,7 +237,7 @@ namespace RPC {
             {
                 return (_className[0] == '\0') && (_className[1] == REQUEST);
             }
-            bool IsAquire() const
+            bool IsAcquire() const
             {
                 return (IsRevoke() == false) && (IsOffer() == false) && (IsRequested() == false);
             }
@@ -242,7 +249,7 @@ namespace RPC {
                 _versionId = ~0;
                 _id = myId;
                 _className[0] = '\0';
-                _className[1] = AQUIRE;
+                _className[1] = ACQUIRE;
             }
             void Set(const uint32_t myId, const uint32_t interfaceId, Core::instance_id implementation, const uint32_t exchangeId)
             {
@@ -256,7 +263,7 @@ namespace RPC {
             }
             void Set(const uint32_t myId, const uint32_t interfaceId, Core::instance_id implementation, const type whatKind)
             {
-                ASSERT((whatKind != AQUIRE) && (whatKind != REQUEST));
+                ASSERT((whatKind != ACQUIRE) && (whatKind != REQUEST));
 
                 _exchangeId = ParentId();
                 _implementation = implementation;

@@ -167,7 +167,7 @@ class JsonType():
                 log.DocIssue("'%s': use sentence case capitalization and no period for parameter descriptions (\"%s\")" % (self.name,log.Ellipsis(self.description)))
 
     def TempName(self, prefix = ""):
-        return ("_" + prefix + self.json_name)
+        return ("_" + self.json_name + ((prefix[0].upper() + prefix[1:]) if prefix else ""))
 
     def Rename(self, new_name):
         self.new_name = new_name.lower()
@@ -324,32 +324,40 @@ class JsonString(JsonNative, JsonType):
 
 
 class JsonEnum(JsonType):
-    def __init__(self, name, parent, schema, enumType, included=None):
+    def __init__(self, name, parent, schema, enum_type, included=None):
         JsonType.__init__(self, name, parent, schema, included)
         self.print_name = parent.print_name + "/" + name
-        if enumType != "string":
+        if enum_type != "string":
             raise JsonParseError("Only strings are supported in enums")
-        self.type = enumType
+        self.type = enum_type
         if self.do_create:
             self.enum_name = MakeEnum(self.original_name.capitalize() if self.original_name else self.name.capitalize())
+        self.bitmask = "bitmask" in schema and schema["bitmask"]
         self.enumerators = schema["enum"]
         self.cpp_enumerator_values = schema["values"] if "values" in schema else []
         if not self.cpp_enumerator_values:
             self.cpp_enumerator_values = schema["enumvalues"] if "enumvalues" in schema else []
         if self.cpp_enumerator_values:
             same = True
-            biggest = 0;
+            is_bitmap = True
+            biggest = 0
             for idx, e in enumerate(self.cpp_enumerator_values):
+                if (e & (e-1) != 0) and (e != 0):
+                    is_bitmap = False
                 if idx != e:
                     same = False
                 if e > biggest:
                     biggest = e
             if same:
-                log.Warn("'%s': specified enum values are same as automatic" % name)
+                log.Warn("'%s': specified enum values are same as implicit" % name)
                 self.cpp_enumerator_values = []
-            self.size = 32 if biggest > 65536 else 16 if biggest > 256 else 8
+            if self.bitmask and not is_bitmap:
+                raise JsonParseError("Enum tagged @bitmask but values are not a power of 2: '%s'" % self.json_name);
+            self.size = 32 if biggest >= 65536 else 16 if biggest >= 256 else 8
         else:
-            self.size = 16 if len(self.enumerators) > 256 else 8
+            self.size = 16 if len(self.enumerators) >= 256 else 8
+            if self.bitmask:
+                raise JsonParseError("Enum tagged @bitmask but no explicit values are provided: '%s'" % self.json_name);
         if "size" in schema and isinstance(schema["size"], int):
             self.size = schema["size"]
         if self.size not in [8, 16, 32, 64]:
@@ -608,7 +616,7 @@ class JsonArray(JsonType):
 
     @property
     def cpp_native_type(self):
-        return "/* TODO */"
+        return "std::list<%s>" % self._items.cpp_native_type
 
     @property
     def enums(self):
@@ -798,7 +806,7 @@ def JsonItem(name, parent, schema, print_name=None, included=None):
         else:
             raise JsonParseError("unsupported JSON type: %s" % schema["type"])
     else:
-        raise JsonParseError("undefined type for item: %s" % name)
+        raise JsonParseError("missing 'type' for item: %s" % name)
 
 
 def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
@@ -1113,16 +1121,22 @@ def LoadInterface(file, all = False, includePaths = []):
                     # Enums
                     elif isinstance(cppType, ProxyStubGenerator.CppParser.Enum):
                         if len(cppType.items) > 1:
-                            enumValues = [e.autoValue for e in cppType.items]
+                            enum_values = [e.auto_value for e in cppType.items]
                             for i, e in enumerate(cppType.items, 0):
-                                if enumValues[i - 1] != enumValues[i]:
+                                if enum_values[i - 1] != enum_values[i]:
                                     raise CppParseError(var, "enumerator values in an enum must all be explicit or all be implied")
-                        enumSpec = { "enum": [e.meta.text if e.meta.text else e.name.replace("_"," ").title().replace(" ","") for e in cppType.items], "scoped": var.type.Type().scoped  }
-                        enumSpec["ids"] = [e.name for e in cppType.items]
-                        enumSpec["hint"] = var.type.Type().name
-                        if not cppType.items[0].autoValue:
-                            enumSpec["values"] = [e.value for e in cppType.items]
-                        result = [ "string", enumSpec ]
+                        enum_spec = { "enum": [e.meta.text if e.meta.text else e.name.replace("_"," ").title().replace(" ","") for e in cppType.items], "scoped": var.type.Type().scoped  }
+                        enum_spec["ids"] = [e.name for e in cppType.items]
+                        enum_spec["hint"] = var.type.Type().name
+                        if not cppType.items[0].auto_value:
+                            enum_spec["values"] = [e.value for e in cppType.items]
+                        if "bitmask" in var.meta.decorators or "bitmask" in var.type.Type().meta.decorators:
+                            enum_spec["bitmask"] = True
+                            enum_spec["type"] = "string"
+                            enum_spec["original_type"] = StripFrameworkNamespace(var.type.Type().full_name)
+                            result = ["array", { "items": enum_spec } ]
+                        else:
+                            result = ["string", enum_spec]
                     # POD objects
                     elif isinstance(cppType, ProxyStubGenerator.CppParser.Class):
                         def GenerateObject(ctype):
@@ -1205,11 +1219,15 @@ def LoadInterface(file, all = False, includePaths = []):
                 required = []
                 for var in vars:
                     if var.meta.input or not var.meta.output:
-                        if (not var.type.IsConst() or (var.type.IsPointer() and not var.type.IsPointerToConst())) and verify:
-                            if not var.meta.input:
-                                log.WarnLine(var, "'%s': non-const parameter assumed to be input (forgot 'const'?)" % var.name)
-                            elif not var.meta.output:
-                                log.WarnLine(var, "'%s': non-const parameter marked with @in tag (forgot 'const'?)" % var.name)
+                        if verify:
+                            if not var.type.IsConst() and (var.type.IsPointer() and not var.type.IsPointerToConst()):
+                                if not var.meta.input:
+                                    if var.type.IsPointer():
+                                        raise CppParseError(var, "ambiguous non-const pointer parameter without @in/@out tag (forgot 'const'?)")
+                                    else:
+                                        log.WarnLine(var, "'%s': non-const parameter assumed to be input (forgot 'const'?)" % var.name)
+                                elif not var.meta.output:
+                                    log.WarnLine(var, "'%s': non-const parameter marked with @in tag (forgot 'const'?)" % var.name)
                         var_name = "value" if is_property else (var.meta.text if var.meta.text else var.name.lower())
                         if var_name.startswith("__unnamed") and not test:
                             raise CppParseError(var, "unnamed parameter, can't deduce parameter name (*1)")
@@ -1234,7 +1252,7 @@ def LoadInterface(file, all = False, includePaths = []):
                         return None
                 else:
                     if (len(properties) == 0):
-                        return {}
+                        return None
                     elif (len(properties) == 1) and (rpc_format == RpcFormat.COLLAPSED):
                         # collapsed format: if only one parameter present then omit the outer object
                         return list(properties.values())[0]
@@ -1308,14 +1326,17 @@ def LoadInterface(file, all = False, includePaths = []):
                             raise CppParseError(method.vars[0], "index to a property must be an input parameter")
                         if "index" not in obj:
                             obj["index"] = BuildIndex(method.vars[0])
-                            obj["index"]["name"] = method.vars[0].name
-                            if "enum" in obj["index"]:
-                                obj["index"]["example"] = obj["index"]["enum"][0]
-                            if "example" not in obj["index"]:
-                                # example not specified, let's invent something...
-                                obj["index"]["example"] = ("0" if obj["index"]["type"] == "integer" else "xyz")
-                            if obj["index"]["type"] not in ["integer", "string"]:
-                                raise CppParseError(method.vars[0], "index to a property must be integer, enum or string type")
+                            if obj["index"]:
+                                obj["index"]["name"] = method.vars[0].name
+                                if "enum" in obj["index"]:
+                                    obj["index"]["example"] = obj["index"]["enum"][0]
+                                if "example" not in obj["index"]:
+                                    # example not specified, let's invent something...
+                                    obj["index"]["example"] = ("0" if obj["index"]["type"] == "integer" else "xyz")
+                                if obj["index"]["type"] not in ["integer", "string"]:
+                                    raise CppParseError(method.vars[0], "index to a property must be integer, enum or string type")
+                            else:
+                                raise CppParseError(method.vars[0], "failed to determine type of index")
                         else:
                             test = BuildIndex(method.vars[0], True)
                             if not test:
@@ -1375,7 +1396,7 @@ def LoadInterface(file, all = False, includePaths = []):
                                     raise CppParseError(method.vars[value], "setter and getter of the same property must have same type (*2)")
                                 if "ref" in test and test["ref"]:
                                     obj["params"]["ref"] = True
-                            if obj["params"] == None:
+                            if obj["params"] == None or obj["params"]["type"] == "null":
                                 raise CppParseError(method.vars[value], "property setter method must have one input parameter")
                 else:
                     raise CppParseError(method, "property method must have one parameter")
@@ -1384,11 +1405,11 @@ def LoadInterface(file, all = False, includePaths = []):
                 if method.retval.type and ((isinstance(method.retval.type.Type(), ProxyStubGenerator.CppParser.Integer) and (method.retval.type.Type().size == "long")) or not verify):
                     obj = OrderedDict()
                     params = BuildParameters(method.vars, rpc_format)
-                    if "properties" in params and params["properties"]:
-                        if method.name.lower() in [x.lower() for x in params["required"]]:
-                            raise CppParseError(method, "parameters must not use the same name as the method")
                     if params:
                         obj["params"] = params
+                        if "properties" in params and params["properties"]:
+                            if method.name.lower() in [x.lower() for x in params["required"]]:
+                                raise CppParseError(method, "parameters must not use the same name as the method")
                     obj["result"] = BuildResult(method.vars)
                     obj["original_name"] = method_name
                     methods[prefix + method_name_lower] = obj
@@ -1434,12 +1455,15 @@ def LoadInterface(file, all = False, includePaths = []):
                             if not method.vars[0].type.IsConst() and method.vars[0].type.IsReference():
                                 raise CppParseError(method.vars[0], "index to a notification must be an input parameter")
                             obj["id"] = BuildParameters([method.vars[0]], True, True, False)
-                            obj["id"]["name"] = method.vars[0].name
-                            if "example" not in obj["id"]:
-                                obj["id"]["example"] = "0" if obj["id"]["type"] == "integer" else "abc"
-                            if obj["id"]["type"] not in ["integer", "string"]:
-                                raise CppParseError(method.vars[0], "index to a notification must be integer, enum or string type")
-                            varsidx = 1
+                            if obj["id"]:
+                                obj["id"]["name"] = method.vars[0].name
+                                if "example" not in obj["id"]:
+                                    obj["id"]["example"] = "0" if obj["id"]["type"] == "integer" else "abc"
+                                if obj["id"]["type"] not in ["integer", "string"]:
+                                    raise CppParseError(method.vars[0], "id of a notification must be integer, enum or string type")
+                                varsidx = 1
+                            else:
+                                raise CppParseError(method.vars[0], "failed to determine type of notification id parameter")
                     if method.retval.meta.is_listener:
                         obj["statuslistener"] = True
                     params = BuildParameters(method.vars[varsidx:], rpc_format, False)
@@ -1815,6 +1839,13 @@ def EmitEvent(emit, root, event, static=False):
             for p in event.params.properties:
                 if isinstance(p, JsonEnum):
                     emit.Line("_params.%s = static_cast<%s>(%s);" % (p.cpp_name, GetNamespace(root, p, False) + p.cpp_class, p.local_name))
+                elif isinstance(p, JsonArray):
+                    emit.Line("for (auto const& _element : %s) {" % p.local_name)
+                    emit.Indent()
+                    emit.Line("%s& _Element(_params.%s.Add());" % (p.items.cpp_type, p.cpp_name))
+                    emit.Line("_Element = _element;")
+                    emit.Unindent()
+                    emit.Line("}")
                 else:
                     emit.Line("_params.%s = %s;" % (p.cpp_name, p.local_name))
         else:
@@ -1951,8 +1982,8 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                 else:
                     params = copy.deepcopy(m.properties[0])
                     response = copy.deepcopy(m.properties[1])
-                params.Rename("params")
-                response.Rename("result")
+                params.Rename("Params")
+                response.Rename("Result")
                 emit.Line("// %sProperty: %s%s" % ("Indexed " if indexed else "", m.Headline(), " (r/o)" if m.readonly else (" (w/o)" if m.writeonly else "")))
             else:
                 params = copy.deepcopy(m.properties[0])
@@ -2042,7 +2073,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                             arg2 = q[0]
                             arg2_type = q[1]
                             if var == arg.schema["length"]:
-                                emit.Line("%s %s{%s};" % (arg2.cpp_native_type, arg2.TempName(), "%s%s.Value()" % (parent if parent else "", arg2.cpp_name) if arg2_type != WRITE_ONLY else ""))
+                                emit.Line("%s %s{%s};" % (arg2.cpp_native_type, arg2.TempName(), "%s%s" % (parent if parent else "", arg2.cpp_name) if arg2_type != WRITE_ONLY else ""))
                                 break
                         encode = "encode" in arg.schema and arg.schema["encode"]
                         if arg_type == READ_ONLY and not encode:
@@ -2070,12 +2101,12 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                                 emit.Line("auto _Iterator = %s.Elements();" % ((parent if parent else "") + arg.cpp_name))
                                 emit.Line("while (_Iterator.Next() == true) {")
                                 emit.Indent()
-                                emit.Line("_elements.push_back(_Iterator.Current()%s);" % (".Value()" if not isinstance(arg.items, JsonObject) else ""))
+                                emit.Line("_elements.push_back(_Iterator.Current());")
                                 emit.Unindent()
                                 emit.Line("}")
                                 impl = arg.iterator[:arg.iterator.index('<')].replace("IIterator", "Iterator") + "<%s>" % arg.iterator
                                 initializer = "Core::Service<%s>::Create<%s>(_elements)" % (impl, arg.iterator)
-                                emit.Line("%s* %s{%s};" % (arg.iterator, arg.TempName(), initializer))
+                                emit.Line("%s* const %s{%s};" % (arg.iterator, arg.TempName(), initializer))
                                 arg.release = True
                                 if "ref" in arg.schema and arg.schema["ref"]:
                                     arg.cast = "static_cast<%s* const&>(%s)" % (arg.iterator, arg.TempName())
@@ -2083,14 +2114,16 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                                 emit.Line("%s%s* %s{};" % ("const " if "ptrtoconst" in arg.schema else "", arg.iterator, arg.TempName()))
                             else:
                                 raise RuntimeError("Read/write arrays are not supported: %s" % arg.json_name)
+                        elif "bitmask" in arg.items.schema and arg.items.schema["bitmask"]:
+                            emit.Line("%s%s %s{%s};" % ("const " if (arg_type == READ_ONLY) else "", arg.items.cpp_native_type, arg.TempName(), "%s%s" % (parent if parent else "", arg.cpp_name) if arg_type != WRITE_ONLY else ""))
                         else:
                             raise RuntimeError("Arrays need to be iterators: %s" % arg.json_name)
                     # PODs
                     elif isinstance(arg, JsonObject):
-                        emit.Line("%s%s %s%s;" % ("const " if (arg_type == READ_ONLY )else "", arg.cpp_native_type, arg.TempName(), "(%s%s)" % (parent if parent and not isinstance(arg.parent, JsonMethod) else "", arg.cpp_name) if arg_type != WRITE_ONLY else "{}"))
+                        emit.Line("%s%s %s%s;" % ("const " if (arg_type == READ_ONLY) else "", arg.cpp_native_type, arg.TempName(), "(%s%s)" % (parent if parent and not isinstance(arg.parent, JsonMethod) else "", arg.cpp_name) if arg_type != WRITE_ONLY else "{}"))
                     # All Other
                     else:
-                        emit.Line("%s%s %s{%s};" % ("const " if (arg_type == READ_ONLY) else "", arg.cpp_native_type, arg.TempName(), "%s%s.Value()" % (parent if parent else "", arg.cpp_name) if arg_type != WRITE_ONLY else ""))
+                        emit.Line("%s%s %s{%s};" % ("const " if (arg_type == READ_ONLY) else "", arg.cpp_native_type, arg.TempName(), "%s%s" % (parent if parent else "", arg.cpp_name) if arg_type != WRITE_ONLY else ""))
 
                 cond = ""
                 for _, _record in vars.items():
@@ -2166,6 +2199,8 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                                 emit.Line("%s->Release();" % elem.TempName())
                                 emit.Unindent()
                                 emit.Line("}")
+                            elif "bitmask" in elem.items.schema and elem.items.schema["bitmask"]:
+                                emit.Line("%s%s = %s%s;" % (parent, elem.cpp_name, cppParent, elem.TempName() if not cppParent else elem.cpp_name))
                             else:
                                 raise RuntimeError("unable to serialize a non-iterator array: %s" % elem.json_name)
                         # Enums
@@ -2199,7 +2234,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                 elif indexed and isinstance(m.index, JsonEnum):
                     index_converted = True
                     emit.Line("Core::EnumerateType<%s> _value(%s.c_str());" % (m.index.cpp_native_type, m.index.cpp_name))
-                    emit.Line("const %s %s = _value.Value();" % (m.index.cpp_native_type, m.index.TempName()))
+                    emit.Line("const %s %s = _value;" % (m.index.cpp_native_type, m.index.TempName()))
                     emit.Line("if (_value.IsSet() == false) {")
                     emit.Indent()
                     emit.Line("// failed enum look-up")
@@ -2643,7 +2678,7 @@ def EmitObjects(root, emit, if_file, additional_includes, emitCommon=False):
             emit.Indent();
             emit.Line("%s _value{};" % (json_obj.cpp_native_type))
             for prop in json_obj.properties:
-                emit.Line("_value.%s = %s%s;" % ( prop.actual_name, prop.cpp_name, ".Value()" if not isinstance(prop, JsonObject) else ""))
+                emit.Line("_value.%s = %s;" % ( prop.actual_name, prop.cpp_name))
             emit.Line("return (_value);")
             emit.Unindent()
             emit.Line("}")

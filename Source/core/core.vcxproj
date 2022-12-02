@@ -30,6 +30,7 @@
     <ClInclude Include="DoorBell.h" />
     <ClInclude Include="Enumerate.h" />
     <ClInclude Include="Factory.h" />
+    <ClInclude Include="FileObserver.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="Frame.h" />
     <ClInclude Include="IAction.h" />
@@ -50,7 +51,7 @@
     <ClInclude Include="Media.h" />
     <ClInclude Include="MessageDispatcher.h" />
     <ClInclude Include="MessageException.h" />
-    <ClInclude Include="MessageUnit.h" />
+    <ClInclude Include="MessageStore.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="Netlink.h" />
     <ClInclude Include="NetworkInfo.h" />
@@ -112,7 +113,7 @@
     <ClCompile Include="JSONRPC.cpp" />
     <ClCompile Include="Library.cpp" />
     <ClCompile Include="MessageException.cpp" />
-    <ClCompile Include="MessageUnit.cpp" />
+    <ClCompile Include="MessageStore.cpp" />
     <ClCompile Include="NetworkInfo.cpp" />
     <ClCompile Include="NodeId.cpp" />
     <ClCompile Include="Number.cpp" />

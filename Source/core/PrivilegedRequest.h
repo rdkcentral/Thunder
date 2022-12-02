@@ -35,7 +35,7 @@
 namespace WPEFramework {
 
 namespace Core {
-    class PriviligedRequest {
+    class PrivilegedRequest {
     private:
         class Connection : public Core::IResource {
         private:
@@ -50,7 +50,7 @@ namespace Core {
             Connection(const Connection&) = delete;
             Connection& operator=(const Connection&) = delete;
 
-            Connection(PriviligedRequest& parent)
+            Connection(PrivilegedRequest& parent)
                 : _parent(parent)
                 , _state(IDLE)
                 , _domainSocket(-1)
@@ -72,9 +72,8 @@ namespace Core {
 
                     result = Core::ERROR_UNAVAILABLE;
 
+                    #ifndef __WINDOWS__
                     _domainSocket = ::socket(AF_UNIX, SOCK_DGRAM, 0);
-
-                    constexpr int queue_size = 1;
 
                     if (_domainSocket >= 0) {
                         int flags = fcntl(_domainSocket, F_GETFL, 0) | O_NONBLOCK;
@@ -91,22 +90,17 @@ namespace Core {
 
                             ::unlink(clientPath.c_str());
 
-                            struct sockaddr_un clientAddress;
+                            const Core::NodeId client(clientPath.c_str());
+                            const Core::NodeId server(connector.c_str());
 
-                            ::memset(&clientAddress, 0, sizeof(clientAddress));
-                            clientAddress.sun_family = AF_UNIX;
-                            strncpy(clientAddress.sun_path, clientPath.c_str(), sizeof(clientAddress.sun_path));
-
-                            Address(connector);
-
-                            if (::bind(_domainSocket, reinterpret_cast<struct sockaddr*>(&clientAddress), sizeof(clientAddress)) == 0) {
+                            if (::bind(_domainSocket, client, client.Size()) == 0) {
                                 result = Core::ERROR_NONE;
 
                                 ResourceMonitor::Instance().Register(*this);
 
                                 _signal.ResetEvent();
 
-                                ::sendto(_domainSocket, &id, sizeof(id), 0, reinterpret_cast<struct sockaddr*>(&_server), sizeof(_server));
+                                ::sendto(_domainSocket, &id, sizeof(id), 0, server, server.Size());
 
                                 if (_signal.Lock(waitTime) == Core::ERROR_NONE) {
                                     descriptor = _descriptor;
@@ -128,6 +122,7 @@ namespace Core {
                         TRACE_L1("failed to open domain socket: %s\n", connector.c_str());
                     }
 
+                    #endif
                     _state = state::IDLE;
                 }
                 return (result);
@@ -142,6 +137,7 @@ namespace Core {
 
                     result = Core::ERROR_UNAVAILABLE;
 
+                    #ifndef __WINDOWS__
                     _domainSocket = ::socket(AF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC, 0);
 
                     if (_domainSocket >= 0) {
@@ -153,9 +149,9 @@ namespace Core {
                         } else {
                             ::unlink(connector.c_str());
 
-                            Address(connector);
+                            const Core::NodeId server(connector.c_str());
 
-                            if (::bind(_domainSocket, reinterpret_cast<struct sockaddr*>(&_server), sizeof(_server)) == 0) {
+                            if (::bind(_domainSocket, server, server.Size()) == 0) {
                                 result = Core::ERROR_NONE;
                                 ResourceMonitor::Instance().Register(*this);
                             } else {
@@ -177,6 +173,7 @@ namespace Core {
                     } else {
                         TRACE_L1("Server running on fd=%d connector=%s", _domainSocket, connector.c_str());
                     }
+                    #endif      
                 }
                 return (result);
             }
@@ -185,7 +182,9 @@ namespace Core {
             {
                 if (_domainSocket != -1) {
                     ResourceMonitor::Instance().Unregister(*this);
+                    #ifndef __WINDOWS__
                     ::close(_domainSocket);
+                    #endif
                     _domainSocket = -1;
                 }
                 _state = state::IDLE;
@@ -207,17 +206,13 @@ namespace Core {
             }
 
         private:
-            void Address(const string identifier)
-            {
-                ::memset(&_server, 0, sizeof(_server));
-                _server.sun_family = AF_UNIX;
-                strncpy(_server.sun_path, identifier.c_str(), sizeof(_server.sun_path));
-            }
+            #ifndef __WINDOWS__
             uint32_t Write(const uint32_t id, int fd, struct sockaddr& client, socklen_t length)
             {
                 uint32_t result = Core::ERROR_NONE;
 
-                struct msghdr msg = { 0 };
+                struct msghdr msg;
+                memset(&msg, 0, sizeof(msg));
 
                 char buf[CMSG_SPACE(sizeof(fd))];
                 memset(buf, 0, sizeof(buf));
@@ -252,12 +247,14 @@ namespace Core {
 
                 return result;
             }
+            #endif      
             uint32_t Read()
             {
                 ASSERT(_domainSocket != -1);
 
                 uint32_t result = Core::ERROR_NONE;
 
+                #ifndef __WINDOWS__
                 struct msghdr msg;
                 ::memset(&msg, 0, sizeof(msg));
 
@@ -313,31 +310,32 @@ namespace Core {
                         }
                     }
                 }
+                #endif
+                 
                 return result;
             }
 
         private:
-            PriviligedRequest& _parent;
+            PrivilegedRequest& _parent;
             std::atomic<state> _state;
             int _domainSocket;
             uint32_t _id;
             int _descriptor;
             Core::Event _signal;
-            struct sockaddr_un _server;
         };
 
     public:
-        PriviligedRequest(const PriviligedRequest&) = delete;
-        PriviligedRequest& operator=(const PriviligedRequest&) = delete;
+        PrivilegedRequest(const PrivilegedRequest&) = delete;
+        PrivilegedRequest& operator=(const PrivilegedRequest&) = delete;
 
-        PriviligedRequest()
+        PrivilegedRequest()
             : _link(*this)
         {
         }
-        virtual ~PriviligedRequest()
+        virtual ~PrivilegedRequest()
         {
             Close();
-        };
+        }
 
     public:
         uint32_t Open(const string& identifier)
@@ -352,16 +350,14 @@ namespace Core {
         {
             Core::IResource::handle result = -1;
             if (_link.Request(waitTime, identifier, requestId, result) != Core::ERROR_NONE) {
-                TRACE_L1("Could not get a priviliged request answered.");
+                TRACE_L1("Could not get a privileged request answered.");
             }
             return (result);
         }
 
     private:
-        virtual int Service(const uint32_t id)
-        {
-            return -1;
-        }
+        // ToDo: Create separate client 
+        virtual int Service(const uint32_t /* id */) {return -1;}
 
     private:
         Connection _link;

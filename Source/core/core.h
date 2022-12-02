@@ -52,6 +52,7 @@
 #include "Enumerate.h"
 #include "Factory.h"
 #include "FileSystem.h"
+#include "FileObserver.h"
 #include "Frame.h"
 #include "IPCMessage.h"
 #include "IPCChannel.h"
@@ -71,7 +72,7 @@
 #include "NetworkInfo.h"
 #include "Optional.h"
 #include "Parser.h"
-#include "PriviligedRequest.h"
+#include "PrivilegedRequest.h"
 #include "Process.h"
 #include "ProcessInfo.h"
 #include "Proxy.h"
@@ -114,8 +115,7 @@
 #include "WarningReportingCategories.h"
 #include "CallsignTLS.h"
 #include "TokenizedStringList.h"
-#include "MessageDispatcher.h"
-#include "MessageUnit.h"
+#include "MessageStore.h"
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "core.lib")

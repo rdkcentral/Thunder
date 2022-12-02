@@ -266,7 +266,7 @@ PUSH_WARNING(DISABLE_WARNING_MULTPILE_INHERITENCE_OF_BASE_CLASS)
             }
 
             // -----------------------------------------------------
-            // Check for Aquire method on Object
+            // Check for Acquire method on Object
             // -----------------------------------------------------
             IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Acquire, hasAcquire);
 
@@ -1329,7 +1329,7 @@ POP_WARNING()
             }
 
             // -----------------------------------------------------
-            // Check for Aquire method on Object
+            // Check for Acquire method on Object
             // -----------------------------------------------------
 
             IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Acquire, hasAcquire);
@@ -1550,6 +1550,27 @@ POP_WARNING()
             }
 
         public:
+            struct IFind {
+                // Return true if Check is ok
+                virtual bool Check(const PROXYKEY& key, const Core::ProxyType<PROXYELEMENT>& element) const = 0;
+                virtual ~IFind() = default;
+            };
+
+            bool Find(const IFind& callback) const {
+                bool found(false);
+
+                _lock.Lock();
+                for (const auto& entry : _map) {
+                    if(callback.Check(entry.first, entry.second.first) == true){
+                        found = true;
+                        break; 
+                    }
+                }
+                _lock.Unlock();
+
+                return found;
+            }
+
             template <typename ACTUALOBJECT, typename... Args>
             Core::ProxyType<PROXYELEMENT> Instance(const PROXYKEY& key, Args&&... args)
             {

@@ -30,11 +30,11 @@ namespace Core {
     class EXTERNAL ThreadPool {
     public:
         struct EXTERNAL ICallback {
-            ~ICallback() = default;
+            virtual ~ICallback() = default;
             virtual void Idle() = 0;
         };
         struct EXTERNAL IJob : public IDispatch {
-            ~IJob() override = default;
+            virtual ~IJob() override = default;
 
             virtual ProxyType<IDispatch> Resubmit(Time& time) = 0;
         };
