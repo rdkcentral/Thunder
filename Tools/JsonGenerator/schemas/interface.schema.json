@@ -3,18 +3,26 @@
   "type": "object",
   "properties": {
     "jsonrpc": {
-      "description": "Version of the json-rpc protocol.",
+      "description": "Version of the json-rpc protocol",
       "type": "string",
       "enum": [
         "2.0"
       ]
     },
+    "mode": {
+      "description": "Selects code generation mode (e.g. auto)",
+      "type": "string",
+      "enum": [
+        "manual",
+        "auto"
+      ]
+    },
     "info": {
-      "description": "Meta information about the interface.",
+      "description": "Meta information about the interface",
       "type": "object",
       "properties": {
         "title": {
-          "description": "Pretty name of the interface.",
+          "description": "Pretty name of the interface",
           "type": "string"
         },
         "class": {
@@ -31,11 +39,11 @@
       ]
     },
     "definitions": {
-      "description": "Global definitions for use in the spec.",
+      "description": "Global definitions for use in the spec",
       "type": "object"
     },
     "common": {
-      "description": "Common definitions for use in the spec.",
+      "description": "Common definitions for use in the spec",
       "type": "object"
     },
     "include": {
@@ -43,56 +51,60 @@
       "type": "object"
     },
     "methods": {
-      "description": "Definitions of the available procedures in the API. A key equals to the name of a procedure.",
+      "description": "Definitions of the available procedures in the API. A key equals to the name of a procedure",
       "type": "object",
       "patternProperties": {
         "^.*$": {
-          "description": "Definition of an API procedure.",
+          "description": "Definition of an API procedure",
           "type": "object",
           "properties": {
             "summary": {
-              "description": "Short summary of what the procedure does.",
+              "description": "Short summary of what the procedure does",
               "type": "string"
             },
             "description": {
-              "description": "Longer description of what the procedure does.",
+              "description": "Longer description of what the procedure does",
+              "type": "string"
+            },
+            "hint": {
+              "description": "Name of the method to use in C++ generated code",
               "type": "string"
             },
             "params": {
-              "description": "JSON-Schema of the procedure parameters.",
+              "description": "JSON-Schema of the procedure parameters",
               "type": "object",
               "$ref": "http://json-schema.org/draft-07/schema#"
             },
             "result": {
-              "description": "JSON-Schema of the procedure result.",
+              "description": "JSON-Schema of the procedure result",
               "type": "object",
               "$ref": "http://json-schema.org/draft-07/schema#"
             },
             "events": {
-              "description": "Events related.",
+              "description": "Events related",
               "type": "array",
               "items": {
-                "description": "Event.",
+                "description": "Event",
                 "type": "string"
               }
             },
             "errors": {
-              "description": "Definition of possible error responses.",
+              "description": "Definition of possible error responses",
               "type": "array",
               "items": {
-                "description": "Definition of an error response.",
+                "description": "Definition of an error response",
                 "type": "object",
                 "properties": {
                   "description": {
-                    "description": "Description of the failure.",
+                    "description": "Description of the failure",
                     "type": "string"
                   },
                   "code": {
-                    "description": "Error code.",
+                    "description": "Error code",
                     "type": "number"
                   },
                   "message": {
-                    "description": "Error message.",
+                    "description": "Error message",
                     "type": "string"
                   }
                 },
@@ -110,73 +122,77 @@
       }
     },
     "properties": {
-      "description": "Definitions of the available properties in the API. A key equals to the name of a property.",
+      "description": "Definitions of the available properties in the API. A key equals to the name of a property",
       "type": "object",
       "patternProperties": {
         "^.*$": {
-          "description": "Definition of an API property.",
+          "description": "Definition of an API property",
           "type": "object",
           "properties": {
             "summary": {
-              "description": "Short summary of the property.",
+              "description": "Short summary of the property",
               "type": "string"
             },
             "description": {
-              "description": "Longer description of the property.",
+              "description": "Longer description of the property",
+              "type": "string"
+            },
+            "hint": {
+              "description": "Name of the method to use in C++ generated code",
               "type": "string"
             },
             "readonly": {
-              "description": "Denotes if the property is read-only.",
+              "description": "Denotes if the property is read-only",
               "type": "boolean"
             },
             "writeonly": {
-              "description": "Denotes if the property is write-only.",
+              "description": "Denotes if the property is write-only",
               "type": "boolean"
             },
             "index": {
-              "description": "Specifies if the property needs an index (child property).",
+              "description": "Specifies if the property needs an index (child property)",
               "type": "object",
               "properties": {
                 "name": {
                   "type": "string",
-                  "description": "Name of the ID."
+                  "description": "Name of the ID"
                 },
                 "example": {
                   "type": "string",
-                  "description": "ID example."
+                  "description": "ID example"
                 }
               }
             },
             "params": {
-              "description": "JSON-Schema of the property value.",
+              "description": "JSON-Schema of the property value",
               "type": "object",
               "$ref": "http://json-schema.org/draft-07/schema#"
             },
             "events": {
-              "description": "Events related.",
+              "description": "Events related",
               "type": "array",
               "items": {
-                "description": "Event.",
+                "description": "Event",
                 "type": "string"
               }
             },
             "errors": {
-              "description": "Definition of possible error responses.",
+              "description": "Definition of possible error responses",
               "type": "array",
               "items": {
-                "description": "Definition of an error response.",
+                "description": "Definition of an error response",
                 "type": "object",
                 "properties": {
                   "description": {
-                    "description": "Description of the failure.",
+                    "description": "Description of the failure",
                     "type": "string"
                   },
                   "code": {
-                    "description": "Error code.",
+                    "description": "Error code",
                     "type": "number"
                   },
                   "message": {
-                    "description": "Error message.",
+                    "description": "Error message",
                     "type": "string"
                   }
                 },
@@ -189,43 +205,51 @@
           },
           "required": [
             "summary",
-            "value"
+            "params"
           ]
         }
       }
     },
     "events": {
-      "description": "Definitions of the available events. A key equals to the name of the event.",
+      "description": "Definitions of the available events. A key equals to the name of the event",
       "type": "object",
       "patternProperties": {
         "^.*$": {
-          "description": "Definition of an event.",
+          "description": "Definition of an event",
           "type": "object",
           "properties": {
             "summary": {
-              "description": "Short summary of the event.",
+              "description": "Short summary of the event",
               "type": "string"
             },
             "description": {
-              "description": "Longer description of the event.",
+              "description": "Longer description of the event",
+              "type": "string"
+            },
+            "hint": {
+              "description": "Name of the method to use in C++ generated code",
               "type": "string"
             },
             "id": {
-              "description": "Specifies if sending the notification is conditional.",
+              "description": "Specifies if sending the notification is conditional",
               "type": "object",
               "properties": {
                 "name": {
                   "type": "string",
-                  "description": "Name of the ID."
+                  "description": "Name of the ID"
                 },
                 "example": {
                   "type": "string",
-                  "description": "ID example."
+                  "description": "ID example"
                 }
               }
             },
+            "statuslistener": {
+              "description": "Determines if the event supports status listening",
+              "type": "boolean"
+            },
             "params": {
-              "description": "JSON-Schema of the event params.",
+              "description": "JSON-Schema of the event params",
               "type": "object",
               "$ref": "http://json-schema.org/draft-07/schema#"
             }
