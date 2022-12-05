@@ -1606,7 +1606,7 @@ namespace Core {
             inline const string Value() const
             {
                 if ((_scopeCount & (SetBit | QuoteFoundBit | QuotedSerializeBit)) == (SetBit | QuoteFoundBit)) {
-                    return ('\"' + Core::ToString(_value.c_str()) + '\"');
+                    return (Core::ToQuotedString('\"', _value));
                 }
                 return (((_scopeCount & (SetBit | NullBit)) == SetBit) ? Core::ToString(_value.c_str()) : Core::ToString(_default.c_str()));
             }

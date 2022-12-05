@@ -265,6 +265,8 @@ namespace Core {
 
     uint16_t EXTERNAL FromString(const string& newValue, uint8_t object[], uint16_t& length, const TCHAR* ignoreList = nullptr);
 
+    string EXTERNAL ToQuotedString(const TCHAR quote, const string& input);
+
     namespace Serialize {
         template <typename TEXTTERMINATOR, typename HANDLER>
         class ParserType {
