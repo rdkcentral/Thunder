@@ -398,5 +398,20 @@ POP_WARNING()
         return (following + 1);
     }
 
+    // If we are going to mark the length of a string by quotes, make 
+    // sure that the internal quotes are escaped...
+    string EXTERNAL ToQuotedString(const TCHAR quote, const string& input) {
+        string result;
+        result += quote;
+        for (auto entry : input) {
+            if (entry == quote) {
+                result += '\\';
+            }
+            result += entry;
+        }
+        result += quote;
+        return (result);
+    }
+
 }
 } // namespace Core
