@@ -6,7 +6,7 @@
 
 **Status: :black_circle::black_circle::black_circle:**
 
-A Controller plugin for Thunder framework.
+Controller plugin for Thunder framework.
 
 ### Table of Contents
 
@@ -91,7 +91,7 @@ The table below lists configuration options of the plugin.
 
 This plugin implements the following interfaces:
 
-- [Controller.json](https://github.com/rdkcentral/Thunder/blob/master/Source/WPEFramework/json/Controller.json)
+- [Controller.json](https://github.com/rdkcentral/Thunder/blob/master/Source/WPEFramework/json/Controller.json) (version 1.0.0)
 
 <a name="head.Methods"></a>
 # Methods
@@ -104,6 +104,8 @@ Controller interface methods:
 | :-------- | :-------- |
 | [activate](#method.activate) | Activates a plugin |
 | [deactivate](#method.deactivate) | Deactivates a plugin |
+| [resume](#method.resume) | Resumes a plugin |
+| [suspend](#method.suspend) | Suspends a plugin |
 | [unavailable](#method.unavailable) | Set a plugin unavailable for interaction |
 | [startdiscovery](#method.startdiscovery) | Starts the network discovery |
 | [storeconfig](#method.storeconfig) | Stores the configuration |
@@ -216,6 +218,125 @@ Also see: [statechange](#event.statechange)
     "method": "Controller.1.deactivate",
     "params": {
         "callsign": "DeviceInfo"
+    }
+}
+```
+
+#### Response
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "result": null
+}
+```
+
+<a name="method.resume"></a>
+## *resume [<sup>method</sup>](#head.Methods)*
+
+Resumes a plugin.
+
+### Description
+
+This is a more intelligent method, compared to the Activate, on the controller to move a plugin to a *resumed* state depending on its current state. If required, it will activate and move to the resumed state, regardless of the flags in the config (AutoStart/Resumed)
+
+Also see: [statechange](#event.statechange)
+
+### Parameters
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| params | object |  |
+| params.callsign | string | Plugin callsign |
+
+### Result
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| result | null | Always null |
+
+### Errors
+
+| Code | Message | Description |
+| :-------- | :-------- | :-------- |
+| 31 | ```ERROR_PENDING_CONDITIONS``` | The plugin will be activated once its activation preconditions are met |
+| 12 | ```ERROR_INPROGRESS``` | The plugin is currently being activated |
+| 22 | ```ERROR_UNKNOWN_KEY``` | The plugin does not exist |
+| 6 | ```ERROR_OPENING_FAILED``` | Failed to activate the plugin |
+| 5 | ```ERROR_ILLEGAL_STATE``` | Current state of the plugin does not allow activation |
+| 24 | ```ERROR_PRIVILEGED_REQUEST``` | Activation of the plugin is not allowed (e.g. Controller) |
+
+### Example
+
+#### Request
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "method": "Controller.1.resume",
+    "params": {
+        "callsign": "Netflix"
+    }
+}
+```
+
+#### Response
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "result": null
+}
+```
+
+<a name="method.suspend"></a>
+## *suspend [<sup>method</sup>](#head.Methods)*
+
+Suspends a plugin.
+
+### Description
+
+This is a more intelligent method, compared to the Deactivate, on the controller to move a plugin to a *suspended* state depending on its current state. Depending on the AutoStart flag, this method will Deactivate the plugin [AutoStart == false] or only Suspend the plugin [AutoStart == true]
+
+Also see: [statechange](#event.statechange)
+
+### Parameters
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| params | object |  |
+| params.callsign | string | Callsign of the plugin |
+
+### Result
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| result | null | Always null |
+
+### Errors
+
+| Code | Message | Description |
+| :-------- | :-------- | :-------- |
+| 12 | ```ERROR_INPROGRESS``` | The plugin is currently being deactivated |
+| 22 | ```ERROR_UNKNOWN_KEY``` | The plugin does not exist |
+| 5 | ```ERROR_ILLEGAL_STATE``` | Current state of the plugin does not allow deactivation |
+| 19 | ```ERROR_CLOSING_FAILED``` | Failed to activate the plugin |
+| 24 | ```ERROR_PRIVILEGED_REQUEST``` | Deactivation of the plugin is not allowed (e.g. Controller) |
+
+### Example
+
+#### Request
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 42,
+    "method": "Controller.1.suspend",
+    "params": {
+        "callsign": "Amazon"
     }
 }
 ```

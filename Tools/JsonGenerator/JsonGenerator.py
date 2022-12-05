@@ -1219,11 +1219,15 @@ def LoadInterface(file, all = False, includePaths = []):
                 required = []
                 for var in vars:
                     if var.meta.input or not var.meta.output:
-                        if (not var.type.IsConst() or (var.type.IsPointer() and not var.type.IsPointerToConst())) and verify:
-                            if not var.meta.input:
-                                log.WarnLine(var, "'%s': non-const parameter assumed to be input (forgot 'const'?)" % var.name)
-                            elif not var.meta.output:
-                                log.WarnLine(var, "'%s': non-const parameter marked with @in tag (forgot 'const'?)" % var.name)
+                        if verify:
+                            if not var.type.IsConst() and (var.type.IsPointer() and not var.type.IsPointerToConst()):
+                                if not var.meta.input:
+                                    if var.type.IsPointer():
+                                        raise CppParseError(var, "ambiguous non-const pointer parameter without @in/@out tag (forgot 'const'?)")
+                                    else:
+                                        log.WarnLine(var, "'%s': non-const parameter assumed to be input (forgot 'const'?)" % var.name)
+                                elif not var.meta.output:
+                                    log.WarnLine(var, "'%s': non-const parameter marked with @in tag (forgot 'const'?)" % var.name)
                         var_name = "value" if is_property else (var.meta.text if var.meta.text else var.name.lower())
                         if var_name.startswith("__unnamed") and not test:
                             raise CppParseError(var, "unnamed parameter, can't deduce parameter name (*1)")
@@ -2096,7 +2100,7 @@ def EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                                 emit.Line("}")
                                 impl = arg.iterator[:arg.iterator.index('<')].replace("IIterator", "Iterator") + "<%s>" % arg.iterator
                                 initializer = "Core::Service<%s>::Create<%s>(_elements)" % (impl, arg.iterator)
-                                emit.Line("%s* %s{%s};" % (arg.iterator, arg.TempName(), initializer))
+                                emit.Line("%s* const %s{%s};" % (arg.iterator, arg.TempName(), initializer))
                                 arg.release = True
                                 if "ref" in arg.schema and arg.schema["ref"]:
                                     arg.cast = "static_cast<%s* const&>(%s)" % (arg.iterator, arg.TempName())

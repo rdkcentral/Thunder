@@ -1368,8 +1368,6 @@ namespace PluginHost {
                 : Services()
                 , Prefix(serverconfig.Prefix())
                 , IdleTime(serverconfig.IdleTime())
-                , Latitude(serverconfig.Latitude())
-                , Longitude(serverconfig.Longitude())
                 , _services(services)
                 , _serverconfig(serverconfig)
                 , _fileName(persitentFile)
@@ -1392,8 +1390,6 @@ namespace PluginHost {
 
                 Add(_T("prefix"), &Prefix);
                 Add(_T("idletime"), &IdleTime);
-                Add(_T("latitude"), &Latitude);
-                Add(_T("longitude"), &Longitude);
 
             }
             ~Override()
@@ -1420,8 +1416,6 @@ namespace PluginHost {
 
                     _serverconfig.SetPrefix(Prefix.Value());
                     _serverconfig.SetIdleTime(IdleTime.Value());
-                    _serverconfig.SetLatitude(Latitude.Value());
-                    _serverconfig.SetLongitude(Longitude.Value());
                     // Convey the real JSON struct information into the specific services.
                     ServiceMap::Iterator index(_services.Services());
 
@@ -1470,8 +1464,6 @@ namespace PluginHost {
 
                     Prefix    = _serverconfig.Prefix();
                     IdleTime  = _serverconfig.IdleTime();
-                    Latitude  = _serverconfig.Latitude();
-                    Longitude = _serverconfig.Longitude();
 
                     // Convey the real information from he specific services into the JSON struct.
                     ServiceMap::Iterator index(_services.Services());
@@ -1510,8 +1502,6 @@ namespace PluginHost {
 
             Core::JSON::String Prefix;
             Core::JSON::DecUInt16 IdleTime;
-            Core::JSON::DecSInt32 Latitude;
-            Core::JSON::DecSInt32 Longitude;
 
         private:
             ServiceMap& _services;

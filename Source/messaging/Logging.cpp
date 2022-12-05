@@ -34,16 +34,25 @@ namespace Logging {
     SYSLOG_ANNOUNCE(Error);
     SYSLOG_ANNOUNCE(ParsingError);
     SYSLOG_ANNOUNCE(Notification);
- 
+
+    static const TCHAR* UnknownCallsign = {_T("NoTLSCallsign") };
+
+    // force linkage of UnknownCallsign so it can be used as template argument (seems that C++17 onwards it should no longer be needed)
+    extern void Force(const TCHAR**);
+    template<typename DUMMY> 
+    void ForceLinkage() {
+        Force(&UnknownCallsign);
+    }
+
     void DumpException(const string& exceptionType)
     {
-        static const TCHAR* UnknownCallsign = _T("NoTLSCallsign");
 
         uint8_t counter = 0;
         std::list<Core::callstack_info> stack;
         DumpCallStack(Core::Thread::ThreadId(), stack);
 
 #if defined(__CORE_EXCEPTION_CATCHING__) || defined(__CORE_WARNING_REPORTING__)
+
         const TCHAR* callsign = Core::CallsignTLS::CallsignAccess<&UnknownCallsign>::Callsign();
 #else
         const TCHAR* callsign = UnknownCallsign;
