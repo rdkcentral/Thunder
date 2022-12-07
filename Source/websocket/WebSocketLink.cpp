@@ -142,17 +142,17 @@ namespace Web {
                 if ((_controlStatus & REQUEST_CLOSE) != 0) {
                     dataFrame[result++] = FINISHING_FRAME | Protocol::CLOSE;
                     _controlStatus &= (~REQUEST_CLOSE);
-                    dataFrame[result++] = 0;
+                    dataFrame[result++] = (_setFlags & MASKING_FRAME);
                 }
                 if (((_controlStatus & REQUEST_PING) != 0) && ((result + 1) < maxSendSize)) {
                     dataFrame[result++] = FINISHING_FRAME | Protocol::PING;
                     _controlStatus &= (~REQUEST_PING);
-                    dataFrame[result++] = 0;
+                    dataFrame[result++] = (_setFlags & MASKING_FRAME);
                 }
                 if (((_controlStatus & REQUEST_PONG) != 0) && ((result + 1) < maxSendSize)) {
                     dataFrame[result++] = FINISHING_FRAME | Protocol::PONG;
                     _controlStatus &= (~REQUEST_PONG);
-                    dataFrame[result++] = 0;
+                    dataFrame[result++] = (_setFlags & MASKING_FRAME);
                 }
             }
 
