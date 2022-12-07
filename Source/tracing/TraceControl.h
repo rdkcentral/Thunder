@@ -52,6 +52,76 @@
             &__message__);                                                             \
     }
 
+// ---- Additional Plugin specific macros ----
+
+#ifdef MODULE_NAME  // The following API targets specifically WPEFramework Plugins, which should all define MODULE_NAME
+
+#ifdef __GNUC__ // Be aware: ##__VA_ARGS__ is not portable as it is a GCC extension.
+#define STRINGFY_MODULE_NAME(s) #s
+#define STRINGFY_2_MODULE_NAME(s) STRINGFY_MODULE_NAME(s)
+#define TRACING_PREFIX STRINGFY_2_MODULE_NAME(MODULE_NAME)"::"
+
+#define TRACE_PLUGIN(CATEGORY, FORMATTER, ...)                                                                                    \
+    if (WPEFramework::Trace::TraceType<CATEGORY, &WPEFramework::Core::System::MODULE_NAME>::IsEnabled() == true) { \
+        std::string __temp_string__{ TRACING_PREFIX };                                                             \
+        __temp_string__ += FORMATTER;                                                                              \
+        CATEGORY __data__(__temp_string__.c_str(), ##__VA_ARGS__);                                                 \
+        WPEFramework::Trace::TraceType<CATEGORY, &WPEFramework::Core::System::MODULE_NAME> __message__(__data__);  \
+        WPEFramework::Trace::TraceUnit::Instance().Trace(                                                          \
+            __FILE__,                                                                                              \
+            __LINE__,                                                                                              \
+            typeid(*this).name(),                                                                                  \
+            &__message__);                                                                                         \
+    }
+
+#define TRACE_PLUGIN_INFO(FORMATTER, ...) TRACE_PLUGIN(Trace::Information, FORMATTER, ##__VA_ARGS__)
+
+#define TRACE_PLUGIN_WARNING(FORMATTER, ...) TRACE_PLUGIN(Trace::Warning, FORMATTER, ##__VA_ARGS__)
+
+#define TRACE_PLUGIN_ERROR(FORMATTER, ...) TRACE_PLUGIN(Trace::Error, FORMATTER, ##__VA_ARGS__)
+
+#define TRACE_PLUGIN_FATAL(FORMATTER, ...) TRACE_PLUGIN(Trace::Fatal, FORMATTER, ##__VA_ARGS__)
+
+#define TRACE_PLUGIN_FUNCTION_EXIT(TRACE_TYPE)                                                                       \
+    if (WPEFramework::Trace::TraceType<TRACE_TYPE, &WPEFramework::Core::System::MODULE_NAME>::IsEnabled() == true) { \
+        std::string __temp_string__{ TRACING_PREFIX };                                                               \
+        __temp_string__ += "Exit Method:";                                                                           \
+        __temp_string__ += static_cast<const char*>(__func__);                                                       \
+        TRACE_TYPE __data__(__temp_string__.c_str());                                                                \
+        WPEFramework::Trace::TraceType<TRACE_TYPE, &WPEFramework::Core::System::MODULE_NAME> __message__(__data__);  \
+        WPEFramework::Trace::TraceUnit::Instance().Trace(                                                            \
+            __FILE__,                                                                                                \
+            __LINE__,                                                                                                \
+            typeid(*this).name(),                                                                                    \
+            &__message__);                                                                                           \
+    }
+
+#define TRACE_PLUGIN_FUNCTION_ENTRY(TRACE_TYPE)                                                                      \
+    if (WPEFramework::Trace::TraceType<TRACE_TYPE, &WPEFramework::Core::System::MODULE_NAME>::IsEnabled() == true) { \
+        std::string __temp_string__{ TRACING_PREFIX };                                                               \
+        __temp_string__ += "Entered Method:";                                                                        \
+        __temp_string__ += static_cast<const char*>(__func__);                                                       \
+        TRACE_TYPE __data__(__temp_string__.c_str());                                                                \
+        WPEFramework::Trace::TraceType<TRACE_TYPE, &WPEFramework::Core::System::MODULE_NAME> __message__(__data__);  \
+        WPEFramework::Trace::TraceUnit::Instance().Trace(                                                            \
+            __FILE__,                                                                                                \
+            __LINE__,                                                                                                \
+            typeid(*this).name(),                                                                                    \
+            &__message__);                                                                                           \
+    }
+
+#else
+#warning "Currently, custom tracing is only available for GCC compilers. Tracing calls will resolve to NOPs.\n\
+          for future development, one may consider compiler specific extensions as well."
+#define TRACE_PLUGIN_INFO(...)
+#define TRACE_PLUGIN_ERROR(...)
+#define TRACE_PLUGIN_WARNING(...)
+#define TRACE_PLUGIN_FUNCTION_ENTRY(...)
+#define TRACE_PLUGIN_FUNCTION_EXIT(...)
+#endif // __GNUC__
+
+#endif // MODULE_NAME
+
 // ---- Helper functions ----
 
 // ---- Class Definition ----
