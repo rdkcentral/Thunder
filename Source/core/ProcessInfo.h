@@ -107,10 +107,10 @@ namespace Core {
             Iterator(const string& parentname, const string& childname, const bool removepath);
 
             // Get the Child Processes with a name name from a Parent pid
-            Iterator(const uint32_t parentPID, const string& childname, const bool removepath);
+            Iterator(const process_t parentPID, const string& childname, const bool removepath);
 
             // Get the Children of the given PID.
-            Iterator(const uint32_t parentPID);
+            Iterator(const process_t parentPID);
 
             Iterator(const Iterator& copy)
                 : _pids(copy._pids)

@@ -320,6 +320,7 @@ namespace RPC {
 
         Process(const uint32_t sequenceNumber, const Config& config, const Object& instance)
             : _options(config.HostApplication())
+            , _id(0)
         {
             ASSERT(instance.Locator().empty() == false);
             ASSERT(instance.ClassName().empty() == false);
@@ -410,6 +411,7 @@ namespace RPC {
             Core::Process fork(false);
 
             uint32_t result = fork.Launch(_options, &id);
+            _id = id;
 
             //restore the original value
             if (_systemRootPath.empty() == false) {
@@ -424,6 +426,9 @@ namespace RPC {
             }
 
             return (result);
+        }
+        Core::process_t Id() const {
+            return(_id);
         }
 
     private:
@@ -456,6 +461,7 @@ namespace RPC {
         Core::Process::Options _options;
         int8_t _priority;
         string _systemRootPath;
+        Core::process_t _id;
         static Core::CriticalSection _ldLibLock;
     };
 
@@ -465,6 +471,7 @@ namespace RPC {
         ~IMonitorableProcess() override = default;
 
         virtual string Callsign() const = 0;
+        virtual Core::instance_id ParentPID() const = 0;
     };
 
     class EXTERNAL Communicator {
@@ -588,6 +595,10 @@ namespace RPC {
             {
                 return (_process.Options());
             }
+            Core::instance_id ParentPID() const override {
+                return (static_cast<const Core::instance_id>(_process.Id()));
+            }
+
             void PostMortem() override;
 
         private:
