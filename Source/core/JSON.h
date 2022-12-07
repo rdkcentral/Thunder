@@ -562,7 +562,6 @@ namespace Core {
                 _value = 0;
             }
 
-        private:
             // IElement iface:
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
@@ -813,6 +812,7 @@ namespace Core {
                 return (loaded);
             }
 
+        private:
             uint16_t Convert(char stream[], const uint16_t maxLength, uint32_t& offset, const TYPE serialize) const
             {
                 uint8_t parsed = 4;
@@ -1070,30 +1070,6 @@ namespace Core {
                 _value = 0;
             }
 
-        private:
-            uint16_t Convert(char stream[], const uint16_t maxLength, uint32_t& offset) const
-            {
-                uint16_t loaded = 0;
-
-                if (_strValue.empty() == true) {
-                    char str[16];
-                    std::sprintf(str, "%g", _value);
-                    const_cast<FloatType*>(this)->_strValue = str;
-                }
-
-                while ((loaded < maxLength) && (offset < _strValue.size())) {
-                    stream[loaded] = _strValue[offset];
-                    loaded++;
-                    offset++;
-                }
-                if (offset == _strValue.size()) {
-                    offset = 0;
-                    const_cast<FloatType*>(this)->_strValue.clear();
-                }
-
-                return loaded;
-            }
-
             // IElement iface:
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
@@ -1256,6 +1232,31 @@ namespace Core {
             }
 
         private:
+            uint16_t Convert(char stream[], const uint16_t maxLength, uint32_t& offset) const
+            {
+                uint16_t loaded = 0;
+
+                if (_strValue.empty() == true) {
+                    char str[16];
+                    std::sprintf(str, "%g", _value);
+                    const_cast<FloatType*>(this)->_strValue = str;
+                }
+
+                while ((loaded < maxLength) && (offset < _strValue.size())) {
+                    stream[loaded] = _strValue[offset];
+                    loaded++;
+                    offset++;
+                }
+                if (offset == _strValue.size()) {
+                    offset = 0;
+                    const_cast<FloatType*>(this)->_strValue.clear();
+                }
+
+                return loaded;
+            }
+
+
+        private:
             uint16_t _set;
             TYPE _value;
             TYPE _default;
@@ -1350,7 +1351,6 @@ namespace Core {
                 _value = (_value & DefaultBit);
             }
 
-        private:
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
@@ -1623,7 +1623,7 @@ namespace Core {
             inline const string Value() const
             {
                 if ((_flagsAndCounters & (SetBit | QuoteFoundBit | QuotedSerializeBit)) == (SetBit | QuoteFoundBit)) {
-                    return ('\"' + Core::ToString(_value.c_str()) + '\"');
+                    return (Core::ToQuotedString('\"', _value));
                 }
                 return (((_flagsAndCounters & (SetBit | NullBit)) == SetBit) ? Core::ToString(_value.c_str()) : Core::ToString(_default.c_str()));
             }
@@ -1631,6 +1631,11 @@ namespace Core {
             inline const string& Default() const
             {
                 return (_default);
+            }
+
+            inline operator const string() const
+            {
+                return (Value());
             }
 
             void Null(const bool enabled)
@@ -1677,7 +1682,6 @@ namespace Core {
                 }
             }
 
-        protected:
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
@@ -1810,30 +1814,6 @@ namespace Core {
 
                 return (result);
             }
-            bool InScope(const ScopeBracket mode) {
-                bool added = false;
-                uint8_t depth = (_flagsAndCounters & 0x1F);
-
-                if ( ((depth != 0) || (_value.empty() == true)) && ((depth + 1) <= 31) ) {
-                    _storage <<= 1;
-                    _storage |= static_cast<uint8_t>(mode);
-                    _flagsAndCounters++;
-                    added = true;
-                }
-                return (added);
-            }
-            bool OutScope(const ScopeBracket mode) {
-                bool succcesfull = false;
-                ScopeBracket bracket = static_cast<ScopeBracket>(_storage & 0x1);
-                uint8_t depth = (_flagsAndCounters & 0x1F);
-                if ((depth > 0) && (bracket == mode)) {
-                    _storage >>= 1;
-                    _flagsAndCounters--;
-                    succcesfull = true;
-                }
-                return (succcesfull);
-            }
-
             uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 bool finished = false;
@@ -1872,7 +1852,7 @@ namespace Core {
                         else if ((_flagsAndCounters & 0x1F) == 0) {
                             // If we did not open an object, the only thing we allow are whitespaces as they can 
                             // always be dropped!
-                            finished = (((_flagsAndCounters & EscapeFoundBit) == 0) && ((current == ',') || (current == '}') || (current == ']')));
+                            finished = (((_flagsAndCounters & EscapeFoundBit) == 0) && ((current == ',') || (current == '}') || (current == ']') || (current == '\0')));
                         }
                         else if (current == '}') {
                             if (OutScope(ScopeBracket::CURLY_BRACKET) == false) {
@@ -2086,6 +2066,32 @@ namespace Core {
             }
 
         private:
+            bool InScope(const ScopeBracket mode) {
+                bool added = false;
+                uint8_t depth = (_flagsAndCounters & 0x1F);
+
+                if ( ((depth != 0) || (_value.empty() == true)) && ((depth + 1) <= 31) ) {
+                    _storage <<= 1;
+                    _storage |= static_cast<uint8_t>(mode);
+                    _flagsAndCounters++;
+                    added = true;
+                }
+                return (added);
+            }
+            bool OutScope(const ScopeBracket mode) {
+                bool succcesfull = false;
+                ScopeBracket bracket = static_cast<ScopeBracket>(_storage & 0x1);
+                uint8_t depth = (_flagsAndCounters & 0x1F);
+                if ((depth > 0) && (bracket == mode)) {
+                    _storage >>= 1;
+                    _flagsAndCounters--;
+                    succcesfull = true;
+                }
+                return (succcesfull);
+            }
+
+
+        private:
             std::string _default;
             std::string _value;
 
@@ -2153,7 +2159,6 @@ namespace Core {
                 _length = 0;
             }
 
-        protected:
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
@@ -2522,7 +2527,6 @@ namespace Core {
                 _state = 0;
             }
 
-        private:
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
@@ -2616,6 +2620,7 @@ namespace Core {
         private:
             enum modus : uint8_t {
                 ERROR = 0x80,
+                SET = 0x20,
                 UNDEFINED = 0x40
             };
 
@@ -2893,13 +2898,23 @@ namespace Core {
             // IElement and IMessagePack iface:
             bool IsSet() const override
             {
-                return (Length() > 0);
+                return ( (Length() > 0) || ((_state & modus::SET) != 0) );
             }
 
             bool IsNull() const override
             {
                 //TODO: Implement null for Arrays
                 return ((_state & UNDEFINED) != 0);
+            }
+
+            void Set(const bool enabled)
+            {
+                if (enabled == true) {
+                    _state |= (modus::SET);
+                }
+                else {
+                    _state &= (~modus::SET);
+                }
             }
 
             void Clear() override
@@ -2998,7 +3013,6 @@ namespace Core {
                 return (*this);
             }
 
-        private:
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
@@ -3368,13 +3382,6 @@ namespace Core {
                 }
             }
 
-        protected:
-            void Reset()
-            {
-                _data.clear();
-            }
-
-        private:
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
@@ -3703,6 +3710,12 @@ namespace Core {
                 }
 
                 return (loaded);
+            }
+
+        protected:
+            void Reset()
+            {
+                _data.clear();
             }
 
             IElement* Find(const char label[])
