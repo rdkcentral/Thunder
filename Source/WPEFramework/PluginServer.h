@@ -1055,6 +1055,8 @@ namespace PluginHost {
             uint32_t Activate(const reason) override;
             uint32_t Deactivate(const reason) override;
             uint32_t Unavailable(const reason) override;
+            uint32_t Hibernate(const reason) override;
+
             reason Reason() const override
             {
                 return (_reason);
@@ -1076,6 +1078,7 @@ namespace PluginHost {
             }
 
         private:
+            void Wakeup();
             virtual std::vector<string> GetLibrarySearchPaths(const string& locator) const override
             {
                 std::vector<string> all_paths;

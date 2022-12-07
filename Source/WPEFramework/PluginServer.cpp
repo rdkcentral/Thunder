@@ -316,13 +316,22 @@ namespace PluginHost
 
         IShell::state currentState(State());
 
-        if (currentState == IShell::ACTIVATION) {
+        if (currentState == IShell::state::ACTIVATION) {
             Unlock();
             result = Core::ERROR_INPROGRESS;
-        } else if ((currentState == IShell::UNAVAILABLE) || (currentState == IShell::DEACTIVATION) || (currentState == IShell::DESTROYED)) {
+        }
+        else if ((currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED)) {
             Unlock();
             result = Core::ERROR_ILLEGAL_STATE;
-        } else if ((currentState == IShell::DEACTIVATED) || (currentState == IShell::PRECONDITION)) {
+        }
+        else if (currentState == IShell::state::HIBERNATED) {
+            // Wake up the Hibernated process..
+            Wakeup();
+            State(ACTIVATED);
+            Unlock();
+            result = Core::ERROR_NONE;
+
+        } else if ((currentState == IShell::state::DEACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
 
             // Load the interfaces, If we did not load them yet...
             if (_handler == nullptr) {
@@ -397,10 +406,6 @@ namespace PluginHost
 
             } else {
 
-                State(ACTIVATION);
-
-                Unlock();
-
                 // Before we dive into the "new" initialize lets see if this has a pending OOP running, if so forcefully kill it now, no time to wait !
                 if (_lastId != 0) {
                     _administrator.Destroy(_lastId);
@@ -410,6 +415,10 @@ namespace PluginHost
                 TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
                 _administrator.Initialize(callSign, this);
+                
+                State(ACTIVATION);
+
+                Unlock();
 
                 REPORT_DURATION_WARNING( { ErrorMessage(_handler->Initialize(this)); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::ACTIVATION, callSign.c_str());
 
@@ -478,18 +487,12 @@ namespace PluginHost
 
         IShell::state currentState(State());
 
-        if (currentState == IShell::ACTIVATION) {
+        if (currentState == IShell::state::ACTIVATION) {
             result = Core::ERROR_INPROGRESS;
-        } else if ((currentState == IShell::DEACTIVATION) || (currentState == IShell::DESTROYED)) {
+        } else if ((currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED)) {
             result = Core::ERROR_ILLEGAL_STATE;
-        } else if (currentState == IShell::DEACTIVATED) {
-
-            Unlock();
-
+        } else if ( (currentState == IShell::state::DEACTIVATED) || (currentState == IShell::state::HIBERNATED) ) {
             result = Activate(why);
-
-            Lock();
-
             currentState = State();
         }
 
@@ -521,11 +524,11 @@ namespace PluginHost
 
         IShell::state currentState(State());
 
-        if (currentState == IShell::DEACTIVATION) {
+        if (currentState == IShell::state::DEACTIVATION) {
             result = Core::ERROR_INPROGRESS;
-        } else if ((currentState == IShell::ACTIVATION && why != IShell::INITIALIZATION_FAILED) || (currentState == IShell::DESTROYED)) {
+        } else if ( ((currentState == IShell::state::ACTIVATION) && (why != IShell::reason::INITIALIZATION_FAILED)) || (currentState == IShell::state::HIBERNATED) || (currentState == IShell::state::DESTROYED)) {
             result = Core::ERROR_ILLEGAL_STATE;
-        } else if ( (currentState == IShell::ACTIVATION && why == IShell::INITIALIZATION_FAILED) || (currentState == IShell::UNAVAILABLE) || (currentState == IShell::ACTIVATED) || (currentState == IShell::PRECONDITION)) {
+        } else if ( ((currentState == IShell::state::ACTIVATION) && (why == IShell::reason::INITIALIZATION_FAILED)) || (currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::ACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
             const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
 
             const string className(PluginHost::Service::Configuration().ClassName.Value());
@@ -552,7 +555,7 @@ namespace PluginHost
                     DisableWebServer();
                 }
 
-                if( currentState == IShell::ACTIVATED ) {
+                if( currentState == IShell::state::ACTIVATED ) {
                 TRACE(Activity, (_T("Deactivation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
                 }
 
@@ -570,7 +573,7 @@ namespace PluginHost
 
             }
 
-            if( currentState != IShell::ACTIVATION ) {
+            if( currentState != IShell::state::ACTIVATION ) {
 
             SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
@@ -609,11 +612,11 @@ namespace PluginHost
 
             IShell::state currentState(State());
 
-            if (currentState == IShell::DEACTIVATION) {
+            if (currentState == IShell::state::DEACTIVATION) {
                 result = Core::ERROR_INPROGRESS;
-            } else if ((currentState == IShell::ACTIVATION) || (currentState == IShell::DESTROYED)) {
+            } else if ((currentState == IShell::state::ACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::HIBERNATED)) {
                 result = Core::ERROR_ILLEGAL_STATE;
-            } else if ((currentState == IShell::ACTIVATED) || (currentState == IShell::PRECONDITION)) {
+            } else if ((currentState == IShell::state::ACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
                 // See if we need can and should SUSPEND.
                 IStateControl* stateControl = _handler->QueryInterface<PluginHost::IStateControl>();
                 if (stateControl == nullptr) {
@@ -641,14 +644,15 @@ namespace PluginHost
 
         IShell::state currentState(State());
 
-        if ((currentState == IShell::DEACTIVATION) ||
-            (currentState == IShell::ACTIVATION)   ||
-            (currentState == IShell::DESTROYED)    ||
-            (currentState == IShell::ACTIVATED)    ||
-            (currentState == IShell::PRECONDITION)) {
+        if ((currentState == IShell::state::DEACTIVATION) ||
+            (currentState == IShell::state::ACTIVATION)   ||
+            (currentState == IShell::state::DESTROYED)    ||
+            (currentState == IShell::state::ACTIVATED)    ||
+            (currentState == IShell::state::PRECONDITION) ||
+            (currentState == IShell::state::HIBERNATED)   ) {
             result = Core::ERROR_ILLEGAL_STATE;
         }
-        else if (currentState == IShell::DEACTIVATED) {
+        else if (currentState == IShell::state::DEACTIVATED) {
 
             const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
 
@@ -676,6 +680,40 @@ namespace PluginHost
         return (result);
 
     }
+
+    uint32_t Server::Service::Hibernate(const PluginHost::IShell::reason why) {
+        uint32_t result = Core::ERROR_NONE;
+
+        Lock();
+
+        IShell::state currentState(State());
+
+        if (currentState != IShell::state::ACTIVATED) {
+            result = Core::ERROR_ILLEGAL_STATE;
+        }
+        else if (_connection != nullptr) {
+            result = Core::ERROR_BAD_REQUEST;
+        }
+        else {
+            // Oke we have an Connection so there is something to Hibernate..
+            RPC::IMonitorableProcess* local = _connection->QueryInterface< RPC::IMonitorableProcess>();
+
+            if (local == nullptr) {
+                result = Core::ERROR_BAD_REQUEST;
+            }
+            else {
+                local->Release();
+            }
+        }
+        Unlock();
+
+        return (result);
+
+    }
+
+    void Server::Service::Wakeup() {
+    }
+
 
     /* virtual */ uint32_t Server::Service::Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response)
     {
