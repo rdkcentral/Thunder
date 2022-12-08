@@ -214,6 +214,7 @@ namespace PluginHost {
 
             if (State() == PluginHost::IShell::DEACTIVATED || 
                 State() == PluginHost::IShell::DEACTIVATION ||
+                State() == PluginHost::IShell::PRECONDITION ||
                 State() == PluginHost::IShell::UNAVAILABLE ) {
 
                 // Time to update the config line...
