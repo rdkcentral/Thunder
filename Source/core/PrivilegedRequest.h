@@ -36,6 +36,10 @@ namespace WPEFramework {
 
 namespace Core {
     class PrivilegedRequest {
+    public:
+        using Container = std::vector<int>;
+        static constexpr int maxFdsPerRequest = 22; // just an arbitrary number.
+
     private:
         class Connection : public Core::IResource {
         private:
@@ -55,14 +59,14 @@ namespace Core {
                 , _state(IDLE)
                 , _domainSocket(-1)
                 , _id(~0)
-                , _descriptor(-1)
+                , _descriptors()
                 , _signal(true, true)
             {
             }
             ~Connection() override = default;
 
         public:
-            uint32_t Request(const uint32_t waitTime, const string& connector, const uint32_t id, int& descriptor)
+            uint32_t Request(const uint32_t waitTime, const string& connector, const uint32_t id, Container& descriptors)
             {
                 uint32_t result = Core::ERROR_INPROGRESS;
                 state expected = state::IDLE;
@@ -72,7 +76,7 @@ namespace Core {
 
                     result = Core::ERROR_UNAVAILABLE;
 
-                    #ifndef __WINDOWS__
+#ifndef __WINDOWS__
                     _domainSocket = ::socket(AF_UNIX, SOCK_DGRAM, 0);
 
                     if (_domainSocket >= 0) {
@@ -103,11 +107,11 @@ namespace Core {
                                 ::sendto(_domainSocket, &id, sizeof(id), 0, server, server.Size());
 
                                 if (_signal.Lock(waitTime) == Core::ERROR_NONE) {
-                                    descriptor = _descriptor;
+                                    descriptors = _descriptors;
                                     result = Core::ERROR_NONE;
                                 }
 
-                                _descriptor = -1;
+                                _descriptors.clear();
 
                                 ResourceMonitor::Instance().Unregister(*this);
                             } else {
@@ -122,7 +126,7 @@ namespace Core {
                         TRACE_L1("failed to open domain socket: %s\n", connector.c_str());
                     }
 
-                    #endif
+#endif
                     _state = state::IDLE;
                 }
                 return (result);
@@ -137,7 +141,7 @@ namespace Core {
 
                     result = Core::ERROR_UNAVAILABLE;
 
-                    #ifndef __WINDOWS__
+#ifndef __WINDOWS__
                     _domainSocket = ::socket(AF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC, 0);
 
                     if (_domainSocket >= 0) {
@@ -173,7 +177,7 @@ namespace Core {
                     } else {
                         TRACE_L1("Server running on fd=%d connector=%s", _domainSocket, connector.c_str());
                     }
-                    #endif      
+#endif
                 }
                 return (result);
             }
@@ -182,9 +186,9 @@ namespace Core {
             {
                 if (_domainSocket != -1) {
                     ResourceMonitor::Instance().Unregister(*this);
-                    #ifndef __WINDOWS__
+#ifndef __WINDOWS__
                     ::close(_domainSocket);
-                    #endif
+#endif
                     _domainSocket = -1;
                 }
                 _state = state::IDLE;
@@ -206,15 +210,21 @@ namespace Core {
             }
 
         private:
-            #ifndef __WINDOWS__
-            uint32_t Write(const uint32_t id, int fd, struct sockaddr& client, socklen_t length)
+#ifndef __WINDOWS__
+            uint32_t Write(const uint32_t id, const uint8_t nFds, const int fds[], struct sockaddr& client, socklen_t length)
             {
                 uint32_t result = Core::ERROR_NONE;
 
                 struct msghdr msg;
                 memset(&msg, 0, sizeof(msg));
 
-                char buf[CMSG_SPACE(sizeof(fd))];
+                if (nFds > maxFdsPerRequest) {
+                    TRACE_L1("Too much descriptors, sending the first %d.", maxFdsPerRequest);
+                }
+
+                const uint16_t payloadSize((nFds <= maxFdsPerRequest) ? (sizeof(int) * nFds) : (sizeof(int) * maxFdsPerRequest));
+
+                char buf[CMSG_SPACE(payloadSize)];
                 memset(buf, 0, sizeof(buf));
 
                 uint32_t identifier(id);
@@ -230,11 +240,11 @@ namespace Core {
                 struct cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
                 cmsg->cmsg_level = SOL_SOCKET;
                 cmsg->cmsg_type = SCM_RIGHTS;
-                cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
+                cmsg->cmsg_len = CMSG_LEN(payloadSize);
 
-                memmove(CMSG_DATA(cmsg), &fd, sizeof(fd));
+                memmove(CMSG_DATA(cmsg), fds, payloadSize);
 
-                msg.msg_controllen = CMSG_SPACE(sizeof(fd));
+                msg.msg_controllen = CMSG_SPACE(payloadSize);
 
                 ASSERT(_domainSocket != -1);
 
@@ -247,14 +257,14 @@ namespace Core {
 
                 return result;
             }
-            #endif      
+#endif
             uint32_t Read()
             {
                 ASSERT(_domainSocket != -1);
 
                 uint32_t result = Core::ERROR_NONE;
 
-                #ifndef __WINDOWS__
+#ifndef __WINDOWS__
                 struct msghdr msg;
                 ::memset(&msg, 0, sizeof(msg));
 
@@ -270,11 +280,12 @@ namespace Core {
                         TRACE_L1("Error on port socket recvfrom call. Error: %s", strerror(errno));
                         result = Core::ERROR_UNAVAILABLE;
                     } else {
-                        int fd = _parent.Service(id);
-                        Write(id, fd, reinterpret_cast<sockaddr&>(client), clientLen);
+                        Container fds;
+                        uint8_t nFds = _parent.Service(id, fds);
+                        Write(id, fds.size(), fds.data(), reinterpret_cast<sockaddr&>(client), clientLen);
                     }
                 } else {
-                    char buf[CMSG_SPACE(sizeof(int))];
+                    char buf[CMSG_SPACE(sizeof(int) * maxFdsPerRequest)];
                     memset(buf, 0, sizeof(buf));
 
                     uint32_t identifier;
@@ -295,13 +306,21 @@ namespace Core {
                     } else {
                         struct cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
 
-                        if ((cmsg != nullptr) && (cmsg->cmsg_len == CMSG_LEN(sizeof(int)))) {
+                        if ((cmsg != nullptr) && (cmsg->cmsg_len >= CMSG_LEN(sizeof(int)))) {
                             if (cmsg->cmsg_level != SOL_SOCKET) {
                                 result = Core::ERROR_BAD_REQUEST;
                             } else if (cmsg->cmsg_type != SCM_RIGHTS) {
                                 result = Core::ERROR_GENERAL;
                             } else {
-                                _descriptor = *((int*)CMSG_DATA(cmsg));
+                                unsigned char* const cmsgData = CMSG_DATA(cmsg);
+                                const uint8_t nFds = ((cmsg->cmsg_len - sizeof(cmsghdr)) / sizeof(int));
+
+                                for (uint8_t i = 0; i < nFds; i++) {
+                                    int fd;
+                                    ::memmove(&fd, cmsgData + sizeof(int) * i, sizeof(int));
+                                    _descriptors.push_back(fd);
+                                }
+
                                 _id = identifier;
                                 _signal.SetEvent();
                             }
@@ -310,8 +329,8 @@ namespace Core {
                         }
                     }
                 }
-                #endif
-                 
+#endif
+
                 return result;
             }
 
@@ -320,7 +339,7 @@ namespace Core {
             std::atomic<state> _state;
             int _domainSocket;
             uint32_t _id;
-            int _descriptor;
+            Container _descriptors;
             Core::Event _signal;
         };
 
@@ -346,18 +365,18 @@ namespace Core {
         {
             return (_link.Close());
         }
-        Core::IResource::handle Request(const uint32_t waitTime, const string& identifier, const uint32_t requestId)
+        uint32_t Request(const uint32_t waitTime, const string& identifier, const uint32_t requestId, Container& fds)
         {
-            Core::IResource::handle result = -1;
-            if (_link.Request(waitTime, identifier, requestId, result) != Core::ERROR_NONE) {
+            uint32_t result;
+            if (result = _link.Request(waitTime, identifier, requestId, fds) != Core::ERROR_NONE) {
                 TRACE_L1("Could not get a privileged request answered.");
             }
             return (result);
         }
 
     private:
-        // ToDo: Create separate client 
-        virtual int Service(const uint32_t /* id */) {return -1;}
+        // ToDo: Create separate client
+        virtual uint8_t Service(const uint32_t /* id */, Container& /*container*/) { return 0; }
 
     private:
         Connection _link;
