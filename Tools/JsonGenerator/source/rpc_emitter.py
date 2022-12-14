@@ -335,7 +335,7 @@ def _EmitRpcCode(root, emit, header_file, source_file, data_emitted):
             if not response.is_void:
                 lambda_params.append("%s& %s" % (response.cpp_type, response.local_name))
 
-            emit.Line("[&%s](%s) -> uint32_t {" % (impl_var, ", ".join(lambda_params)))
+            emit.Line("[%s%s](%s) -> uint32_t {" % ("&" if json_source else "", impl_var, ", ".join(lambda_params)))
 
             def _Invoke(params, response, use_prefix = True, const_cast = False, parent = "", repsonse_parent = ""):
                 vars = OrderedDict()
