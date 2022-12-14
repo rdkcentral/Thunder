@@ -279,6 +279,8 @@ POP_WARNING()
     int8_t EXTERNAL ToCodePoint(const TCHAR* data, const uint8_t length, uint32_t& codePoint);
     int8_t EXTERNAL FromCodePoint(uint32_t codePoint, TCHAR* data, const uint8_t length);
 
+    string EXTERNAL ToQuotedString(const TCHAR quote, const string& input);
+
     namespace Serialize {
         template <typename TEXTTERMINATOR, typename HANDLER>
         class ParserType {

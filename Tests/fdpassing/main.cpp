@@ -24,6 +24,8 @@
 
 using namespace WPEFramework;
 
+constexpr char fileNameTemplate[] = "/tmp/shared_file_test_XXXXXX";
+
 bool ParseOptions(int argc, char** argv, string& identifier, bool& server)
 {
     int index = 1;
@@ -50,52 +52,74 @@ public:
     Server(const Server&) = delete;
     Server& operator=(const Server&) = delete;
 
-    Server()
-        : _sharedFile(fileName)
+    Server(const uint8_t nFiles)
+        : _sharedFiles()
     {
-        _sharedFile.Destroy();
+        _sharedFiles.clear();
 
-        _sharedFile.Create();
-        _sharedFile.Open(false);
+        for (uint8_t i = 0; i < nFiles; i++) {
+            char tmpfile[sizeof(fileNameTemplate) + 1];
+            strcpy(tmpfile, fileNameTemplate);
 
-        printf("Opened shared file %d\n", int(_sharedFile));
+            _sharedFiles.emplace_back(mktemp(tmpfile));
 
-        std::stringstream line;
+            Core::File& newFile = _sharedFiles.back();
 
-        line << "(" << Core::Time::Now().Ticks() << ") opened from PID=" << getpid() << "!" << std::endl;
+            newFile.Create();
+            newFile.Open(false);
 
-        _sharedFile.Write(reinterpret_cast<const uint8_t*>(line.str().c_str()), line.str().size());
+            printf("Server opened shared file [%d] %s\n", int(newFile), newFile.FileName().c_str());
+
+            std::stringstream line;
+
+            line << "(" << Core::Time::Now().Ticks() << ") opened from PID=" << getpid() << "!" << std::endl;
+
+            newFile.Write(reinterpret_cast<const uint8_t*>(line.str().c_str()), line.str().size());
+        }
+
+        printf("Server for %d file%s\n", nFiles, (nFiles == 1) ? "" : "s");
     }
 
     ~Server()
     {
-        std::stringstream line;
+        for (auto& file : _sharedFiles) {
+            std::stringstream line;
 
-        line << "(" << Core::Time::Now().Ticks() << ") closed from PID=" << getpid() << "!" << std::endl;
+            line << "(" << Core::Time::Now().Ticks() << ") closed from PID=" << getpid() << "!" << std::endl;
 
-        _sharedFile.Write(reinterpret_cast<const uint8_t*>(line.str().c_str()), line.str().size());
+            file.Write(reinterpret_cast<const uint8_t*>(line.str().c_str()), line.str().size());
 
-        _sharedFile.Close();
+            file.Close();
 
-        printf("Closed shared file.\n");
+            printf("Closed shared file.\n");
+        }
+
+        _sharedFiles.clear();
     }
 
-    int Service(const uint32_t id) override
+    uint8_t Service(const uint32_t id, Core::PrivilegedRequest::Container& container) override
     {
-        TRACE_L1("FDPassing %s, %d identifier=%d", __FUNCTION__, int(_sharedFile), id);
-        return int(_sharedFile);
+        container.clear();
+
+        for (auto& file : _sharedFiles) {
+            TRACE_L1("identifier=%d -> %s fd=%d ", id, file.FileName().c_str(), int(file));
+            container.emplace_back(int(file));
+        }
+
+        TRACE_L1("Service passed nFd=%d", uint16_t(container.size()));
+
+        return container.size();
     }
 
 private:
-    static constexpr char const* fileName = "/tmp/shared_file";
-
-    Core::File _sharedFile;
+    std::vector<Core::File> _sharedFiles;
 };
 }
 
 int main(int argc, char** argv)
 {
-    bool server = false;
+    bool server(false);
+    uint8_t nFiles(20);
     string identifier;
 
     if ((ParseOptions(argc, argv, identifier, server) == true) || (identifier.empty() == true)) {
@@ -103,7 +127,7 @@ int main(int argc, char** argv)
     } else {
         int keyPress;
 
-        Core::PrivilegedRequest& channel = (server == true) ? *new Server() : *new Core::PrivilegedRequest();
+        Core::PrivilegedRequest& channel = (server == true) ? *new Server(nFiles) : *new Core::PrivilegedRequest();
 
         if ((server == true) && (channel.Open(identifier) != Core::ERROR_NONE)) {
             printf("Something wrong with the identifier path to the server: %s\n", identifier.c_str());
@@ -119,21 +143,25 @@ int main(int argc, char** argv)
                 switch (keyPress) {
                 case 'R': {
                     uint32_t id = 1;
-                    int fd = channel.Request(1000, identifier, id);
+                    Core::PrivilegedRequest::Container fds;
 
-                    if (fd > 0) {
-                        printf("descriptor: %d\n", fd);
+                    channel.Request(1000, identifier, id, fds);
 
-                        FILE* file = fdopen(fd, "w");
+                    for (auto& fd : fds) {
+                        if (fd > 0) {
+                            printf("descriptor: %d\n", fd);
 
-                        if (file) {
-                            fprintf(file, "(%" PRIu64 ") write from PID=%d!\n", Core::Time::Now().Ticks(), getpid());
-                            fclose(file);
-                        } else {
-                            printf("fdopen failed\n");
+                            FILE* file = fdopen(fd, "w");
+
+                            if (file) {
+                                fprintf(file, "(%" PRIu64 ") write from PID=%d!\n", Core::Time::Now().Ticks(), getpid());
+                                fclose(file);
+                            } else {
+                                printf("fdopen failed\n");
+                            }
+
+                            close(fd);
                         }
-
-                        close(fd);
                     }
                     break;
                 }

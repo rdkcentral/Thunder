@@ -1623,7 +1623,7 @@ namespace Core {
             inline const string Value() const
             {
                 if ((_flagsAndCounters & (SetBit | QuoteFoundBit | QuotedSerializeBit)) == (SetBit | QuoteFoundBit)) {
-                    return ('\"' + Core::ToString(_value.c_str()) + '\"');
+                    return (Core::ToQuotedString('\"', _value));
                 }
                 return (((_flagsAndCounters & (SetBit | NullBit)) == SetBit) ? Core::ToString(_value.c_str()) : Core::ToString(_default.c_str()));
             }
