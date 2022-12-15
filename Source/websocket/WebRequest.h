@@ -670,7 +670,7 @@ POP_WARNING()
                 end = buffer.find_first_of(DELIMETERS, start);
                 if (end - start > 0) {
                     string word = string(buffer, start, end - start);
-                    std::transform(word.begin(), word.end(), word.begin(), std::ptr_fun<int, int>(std::toupper));
+                    std::transform(word.begin(), word.end(), word.begin(), [](char c){ return std::toupper(c); } );
                     if (word == strValue) {
                         status = true;
                         break;
