@@ -946,7 +946,7 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
             return data
 
         def _FindCpp(element, schema):
-            if isinstance(schema, OrderedDict):
+            if isinstance(schema, dict):
                 if "original_type" in schema:
                     if schema["original_type"] == element:
                         return schema
@@ -984,7 +984,7 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
             else:
                 schema["@ref"] = schema.__reference__["$ref"]
 
-        if isinstance(schema, OrderedDict):
+        if isinstance(schema, dict):
             for elem, item in schema.items():
                 if isinstance(item, list):
                     for i, e in enumerate(item):
@@ -1071,7 +1071,7 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
                                     ref_file = ref_file.replace("{interfacedir}", cpp_include_path).replace("{cppinterfacedir}", cpp_include_path)
 
                                 if os.path.exists(ref_file):
-                                    cppif, _ = header_loader.LoadInterface(ref_file, True, header_include_paths)
+                                    cppif, _ = header_loader.LoadInterface(ref_file, log, True, header_include_paths)
 
                                     if cppif:
                                         if ref_file not in additional_includes:
