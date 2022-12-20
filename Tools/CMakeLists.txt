@@ -17,18 +17,21 @@
 
 cmake_minimum_required(VERSION 3.3)
 
-project(WPEFrameworkGenerators)
+project(Generators)
 
 set(GENERATOR_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/sbin")
 
 if(NOT DEFINED GENERIC_CMAKE_MODULE_PATH)
-   find_path(GENERIC_CMAKE_MODULE_PATH CMake.cmake
-       PATHS
-           "/usr/local/share/cmake/Modules/"
-           "/usr/share/cmake/Modules/"
-           "/usr/local/share/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules/"
-	   "/usr/share/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules/"
-   )
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../src/bridge")
+        set(NAMESPACE bridge)
+    else()
+        set(NAMESPACE WPEFramework)
+    endif()
+    if(DEFINED ENV{STAGING_DIR})
+        set(GENERIC_CMAKE_MODULE_PATH "$ENV{STAGING_DIR}/usr/include/${NAMESPACE}/Modules")
+    else()
+        set(GENERIC_CMAKE_MODULE_PATH "${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/Modules")
+    endif()
 endif()
 
 configure_file( "${CMAKE_SOURCE_DIR}/cmake/FindProxyStubGenerator.cmake.in"
