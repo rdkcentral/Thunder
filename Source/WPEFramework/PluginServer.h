@@ -1192,7 +1192,7 @@ namespace PluginHost {
                 } else {
                     _library = LoadLibrary(locator);
                     if (_library.IsLoaded() == true) {
-                        if ((newIF = Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(myLib, className, version)) == nullptr) {
+                        if ((newIF = Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(_library, className, version)) == nullptr) {
                             ErrorMessage(_T("class definitions does not exist"));
                             _library = Core::Library();
                         }
