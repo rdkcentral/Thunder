@@ -93,10 +93,10 @@ namespace Core {
         return (result);
     }
 
-    void ServiceAdministrator::ReleaseLibrary(Library& reference)
+    void ServiceAdministrator::ReleaseLibrary(Library&& reference)
     {
         _adminLock.Lock();
-        _unreferencedLibraries.push_back(reference);
+        _unreferencedLibraries.emplace_back(reference);
         reference.Release();
         _adminLock.Unlock();
     }
@@ -105,6 +105,13 @@ namespace Core {
     {
         _adminLock.Lock();
         while (_unreferencedLibraries.size() != 0) {
+            // A few closing code instructions might still be required for 
+            // that thread that submitted the librray to complete, so at 
+            // least give that thread a slice to complete the last few 
+            // instructions before we close down the librray (if it is 
+            // the last reference)
+            std::this_thread::yield();
+
             _unreferencedLibraries.pop_front();
         }
         _adminLock.Unlock();
