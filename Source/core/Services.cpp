@@ -96,8 +96,7 @@ namespace Core {
     void ServiceAdministrator::ReleaseLibrary(Library&& reference)
     {
         _adminLock.Lock();
-        _unreferencedLibraries.emplace_back(reference);
-        reference.Release();
+        _unreferencedLibraries.emplace_back(std::move(reference));
         _adminLock.Unlock();
     }
 
