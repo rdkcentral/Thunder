@@ -65,11 +65,11 @@ namespace Logging {
 #ifndef __WINDOWS__
         if (_syslogging == true) {
             string time(now.ToRFC1123(true));
-            syslog(LOG_NOTICE, "[%s]:[%s:%d]: %s: %s\n", time.c_str(), Core::FileNameOnly(fileName), lineNumber, information->Category(), information->Data());
+            syslog(LOG_NOTICE, "[%s]:[%s]:[%s:%d]: %s: %s\n", time.c_str(), information->Module(), Core::FileNameOnly(fileName), lineNumber, information->Category(), information->Data());
         } else
 #endif
         {
-            printf("[%11ju us] %s\n", static_cast<uintmax_t>(now.Ticks() - _baseTime), information->Data());
+            printf("[%11ju us]:[%s]:[%s:%d]: %s: %s\n", static_cast<uintmax_t>(now.Ticks() - _baseTime), information->Module(), Core::FileNameOnly(fileName), lineNumber, information->Category(), information->Data());
         }
     }
 
