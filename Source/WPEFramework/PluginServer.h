@@ -585,6 +585,7 @@ namespace PluginHost {
                 , _connection(nullptr)
                 , _lastId(0)
                 , _metadata()
+                , _library()
                 , _administrator(administrator)
             {
             }
@@ -1189,10 +1190,11 @@ namespace PluginHost {
                     Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
                     newIF = admin.Instantiate<IPlugin>(Core::Library(), className, version);
                 } else {
-                    Core::Library myLib = LoadLibrary(locator);
-                    if (myLib.IsLoaded() == true) {
-                        if ((newIF = Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(myLib, className, version)) == nullptr) {
+                    _library = LoadLibrary(locator);
+                    if (_library.IsLoaded() == true) {
+                        if ((newIF = Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(_library, className, version)) == nullptr) {
                             ErrorMessage(_T("class definitions does not exist"));
+                            _library = Core::Library();
                         }
                     }
                 }
@@ -1280,6 +1282,10 @@ namespace PluginHost {
 
                     currentIF->Release();
                 }
+
+                if (_library.IsLoaded() == true) {
+                    Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_library));
+                }
             }
 
         private:
@@ -1302,6 +1308,7 @@ namespace PluginHost {
             RPC::IRemoteConnection* _connection;
             uint32_t _lastId;
             Metadata _metadata;
+            Core::Library _library;
 
             ServiceMap& _administrator;
             static Core::ProxyType<Web::Response> _unavailableHandler;
