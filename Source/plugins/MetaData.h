@@ -277,7 +277,6 @@ namespace Plugin {
                 ASSERT(dynamic_cast<const IMetadata*>(metadata) != nullptr);
             }
             ~PluginImplementation() override {
-                Core::ServiceAdministrator::Instance().ReleaseLibrary(_referenceLib);
             }
 
         public:
@@ -306,8 +305,23 @@ namespace Plugin {
                 return (_info->Control());
             }
 
+        protected:
+            // Destructed is a method called through SFINAE just before the memory 
+            // associated with the object is freed from a Core::ProxyObject. If this
+            // method is called, be aware that the destructor of the object has run
+            // to completion!!!
+            void Destructed() {
+                Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_referenceLib));
+            }
+
         private:
-            Core::Library _referenceLib;
+            // The union here is used to avoid the destruction of the _referenceLib during
+            // the destructor call. That is required to make sure that the whole object,
+            // the actual service, is first fully destructed before we offer it to the
+            // service destructor (done in the Destructed call). This avoids the unloading
+            // of the refernced library before the object (part of this lirary) is fully 
+            // destructed...
+            union { Core::Library _referenceLib; };
             const IMetadata* _info;
         };
 

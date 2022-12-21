@@ -101,6 +101,12 @@ namespace Core {
     {
         AddRef();
     }
+    Library::Library(Library&& move)
+        : _refCountedHandle(move._refCountedHandle)
+    {
+        move._refCountedHandle = nullptr;
+    }
+
     Library::~Library()
     {
         Release();
