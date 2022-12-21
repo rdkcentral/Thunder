@@ -53,7 +53,11 @@ namespace WPEFramework {
 #define TRACE_THREAD_ID syscall(SYS_gettid)
 #else
 #include <unistd.h>
-#define TRACE_THREAD_ID ::gettid()
+#if INTPTR_MAX == INT64_MAX
+#define TRACE_THREAD_ID static_cast<uint64_t>(::gettid())
+#else
+#define TRACE_THREAD_ID static_cast<uint32_t>(::gettid())
+#endif
 #endif
 #endif
 
