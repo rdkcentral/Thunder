@@ -2419,6 +2419,7 @@ POP_WARNING()
 
                 return (result);
             }
+
             uint32_t FromLocator(const string& identifier, Core::ProxyType<Service>& service, bool& serviceCall);
 
             void Destroy();
@@ -2577,6 +2578,16 @@ POP_WARNING()
                 {
                     return (_service.IsValid());
                 }
+                const Service& GetService() const
+                {
+                    ASSERT(HasService() == true);
+                    return *_service;
+                }
+                Service& GetService()
+                {
+                    ASSERT(HasService() == true);
+                    return *_service;
+                }
                 void Clear()
                 {
                     _ID = ~0;
@@ -2685,6 +2696,9 @@ POP_WARNING()
                     if (_jsonrpc == true) {
                         if(_request->Verb == Request::HTTP_POST){
                             Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
+                            if (HasService() == true) {
+                                message->ImplicitCallsign(GetService().Callsign());
+                            }
 
                             if (message->IsSet()) {
                                 Core::ProxyType<Core::JSONRPC::Message> body = Job::Process(_token, message);
@@ -2800,6 +2814,9 @@ POP_WARNING()
 #endif
                         Core::ProxyType<Core::JSONRPC::Message> message(_element);
                         ASSERT(message.IsValid() == true);
+                        if (HasService() == true) {
+                            message->ImplicitCallsign(GetService().Callsign());
+                        }
 
                         _element = Core::ProxyType<Core::JSON::IElement>(Job::Process(_token, message));
 
@@ -3044,8 +3061,12 @@ POP_WARNING()
                         request->Service(status, Core::ProxyType<PluginHost::Service>(service), serviceCall);
                     } else if ((request->State() == Request::COMPLETE) && (request->HasBody() == true)) {
                         Core::ProxyType<Core::JSONRPC::Message> message(request->Body<Core::JSONRPC::Message>());
-                        if ((message.IsValid() == true) && (security->Allowed(*message) == false)) {
-                            request->Unauthorized();
+                        if (message.IsValid() == true) {
+                            ASSERT(request->Service().IsValid() == true);
+                            message->ImplicitCallsign(request->Service()->Callsign());
+                            if (security->Allowed(*message) == false) {
+                                request->Unauthorized();
+                        }
                         }
                     }
                 }
@@ -3091,7 +3112,11 @@ POP_WARNING()
 
                     ASSERT(service.IsValid());
 
-                    Core::ProxyType<Web::Response> response(service->Evaluate(*request));
+                    Core::ProxyType<Web::Response> response;
+                    
+                    if (request->ServiceCall() == true) {
+                        response = service->Evaluate(*request);
+                    }
 
                     if (response.IsValid() == true) {
                         // Report that the calls sign could not be found !!
@@ -3157,6 +3182,9 @@ POP_WARNING()
                 if (securityClearance == false) {
                     Core::ProxyType<Core::JSONRPC::Message> message(element);
                     if (message.IsValid()) {
+
+                        message->ImplicitCallsign(_service->Callsign());
+
                         PluginHost::Channel::Lock();
                         securityClearance = _security->Allowed(*message);
                         PluginHost::Channel::Unlock();
