@@ -121,6 +121,7 @@ namespace Core {
                 , Parameters(false)
                 , Result(false)
                 , Error()
+                , _implicitCallsign()
             {
                 Add(_T("jsonrpc"), &JSONRPC);
                 Add(_T("id"), &Id);
@@ -138,7 +139,9 @@ namespace Core {
                 , Designator(copy.Designator)
                 , Parameters(copy.Parameters)
                 , Result(copy.Result)
-                , Error(copy.Error) {
+                , Error(copy.Error)
+                , _implicitCallsign(copy._implicitCallsign)
+            {
                 Add(_T("jsonrpc"), &JSONRPC);
                 Add(_T("id"), &Id);
                 Add(_T("method"), &Designator);
@@ -163,11 +166,6 @@ namespace Core {
                         pos = string::npos;
                     }
                 }
-                return (pos == string::npos ? EMPTY_STRING : designator.substr(0, pos));
-            }
-            static string FullCallsign(const string& designator)
-            {
-                size_t pos = designator.find_last_of('.', designator.find_last_of('@'));
                 return (pos == string::npos ? EMPTY_STRING : designator.substr(0, pos));
             }
             static string Method(const string& designator)
@@ -247,6 +245,51 @@ namespace Core {
 
                 return result;
             }
+            static string TryGetVersionAsString(const string& designator, string::size_type pos) {
+                string result;
+
+                while ((isdigit(designator[pos]))) {
+                    result.insert(0, 1, designator[pos]);
+                    if (pos-- == 0) {
+                        pos = string::npos;
+                        break;
+                    }
+                }
+
+                return result;
+            }
+            static string VersionAsString(const string& designator, const bool fulldesignator = false)
+            {
+                string result;
+                string::size_type pos = designator.find_last_of('@');
+                // optimization, no need to parse behind index. Biggest chance index would be a full number so parsing back to
+                // find out when hitting @ it is not the version would be useless
+
+                if ((pos == string::npos) && (fulldesignator == false)) { // when not found and no fulldesignator version can be at the end
+                    pos = designator.size();
+                    pos = ((pos > 1) && (designator[pos - 1] == '.') ? pos - 1 : pos); // this line caters for a possible '.' as last character,
+                    // can be removed probably
+                    if (pos-- > 2) { // smallest possible valid string would be "1.a" or "b.1" (a methodname, 1 version, b callsign), -- to set pos
+                        // at last char (note not --pos > 1  to cater for pos == 0)
+                        result = TryGetVersion(designator, pos);
+                        // if no match at the end of the designator, then only one possibilty remains it is before the '.' before the current
+                        // position, will be picked up below
+                    }
+                }
+
+                if ((fulldesignator == true) || ((pos != string::npos) && (pos > 1) && (result.empty() == true)))
+                {
+                    // 1) we have an index then we must also have a full designator. Then version (if avaialble) must be before the previous '.'
+                    //    and that is the only possible option, otherwise it is not there and we found the callsign
+                    // 2) we could not find the version at the end of the designator, search before the . before that
+                    pos = designator.find_last_of('.', pos); // if pos == npos (could be in case of fulldesignator) then will search from the end as it should
+                    if ((pos != string::npos) && (pos > 0)) {
+                        result = TryGetVersion(designator, --pos);
+                    }
+                }
+
+                return result;
+            }
             static string Index(const string& designator)
             {
                 size_t end = designator.find_last_of('@');
@@ -261,14 +304,12 @@ namespace Core {
                 Parameters.Clear();
                 Result.Clear();
                 Error.Clear();
+                _implicitCallsign.erase();
             }
             string Callsign() const
             {
-                return (Callsign(Designator.Value()));
-            }
-            string FullCallsign() const
-            {
-                return (FullCallsign(Designator.Value()));
+                string result(Callsign(Designator.Value()));
+                return (result.empty() == true ? _implicitCallsign : result);
             }
             string Method() const
             {
@@ -286,16 +327,28 @@ namespace Core {
             {
                 return (Version(Designator.Value()));
             }
+            string VersionAsString() const
+            {
+                return (VersionAsString(Designator.Value()));
+            }
             string Index() const
             {
                 return (Index(Designator.Value()));
             }
+            void ImplicitCallsign(const string& implicitCallsign) 
+            {
+                _implicitCallsign = implicitCallsign;
+            }
+
             Core::JSON::String JSONRPC;
             Core::JSON::DecUInt32 Id;
             Core::JSON::String Designator;
             Core::JSON::String Parameters;
             Core::JSON::String Result;
             Info Error;
+
+        private:
+            string _implicitCallsign;
         };
 
         class EXTERNAL Context {

@@ -1070,7 +1070,14 @@ namespace WPEFramework {
 				}
 				else {
 					// check if we understand this message (correct callsign?)
-					string callsign(inbound->FullCallsign());
+					string callsign(inbound->Callsign());
+					string version(inbound->VersionAsString());
+					if (version.empty() == false) {
+						if (callsign.empty() == false) {
+							callsign += _T('.');
+						}
+						callsign += version;
+					}
 
 					if (callsign == _localSpace) {
 						// Looks like this is an event.
