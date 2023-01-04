@@ -37,7 +37,57 @@ namespace WPEFramework {
 namespace Core {
     class PrivilegedRequest {
     public:
-        using Container = std::vector<int>;
+        class Descriptor {
+        public:
+            Descriptor& operator= (const Descriptor&) = delete;
+
+            Descriptor() 
+                : _descriptor(-1) {
+            }
+            explicit Descriptor(int&& descriptor) 
+                : _descriptor(descriptor) {
+                ASSERT(descriptor != -1);
+                descriptor = -1;
+            }
+            Descriptor(Descriptor&& move) 
+                : _descriptor(move._descriptor) {
+                move._descriptor = -1;
+            }
+            Descriptor(const Descriptor& copy) 
+                : _descriptor(-1) {
+                if (copy._descriptor != -1) {
+                    _descriptor = ::dup(copy._descriptor);
+                }
+            }
+            ~Descriptor() {
+                if (_descriptor != -1) {
+                    ::close(_descriptor);
+                }
+            }
+
+        public:
+            operator int() const {
+                return (_descriptor);
+            }
+            int Move() {
+                int result = _descriptor;
+                _descriptor = -1;
+                return (result);
+            }
+            void Move(int&& descriptor) {
+                if (_descriptor != -1) {
+                    ::close(_descriptor);
+                }
+                _descriptor = descriptor;
+                descriptor = -1;
+            }
+
+        private:
+            int _descriptor;
+        };
+
+    public:
+        using Container = std::vector<Descriptor>;
         static constexpr int maxFdsPerRequest = 22; // just an arbitrary number.
 
     private:
@@ -59,7 +109,7 @@ namespace Core {
                 , _state(IDLE)
                 , _domainSocket(-1)
                 , _id(~0)
-                , _descriptors()
+                , _descriptors(nullptr)
                 , _signal(true, true)
             {
             }
@@ -104,14 +154,15 @@ namespace Core {
 
                                 _signal.ResetEvent();
 
+                                _descriptors = &descriptors;
+
                                 ::sendto(_domainSocket, &id, sizeof(id), 0, server, server.Size());
 
                                 if (_signal.Lock(waitTime) == Core::ERROR_NONE) {
-                                    descriptors = _descriptors;
                                     result = Core::ERROR_NONE;
                                 }
 
-                                _descriptors.clear();
+                                _descriptors = nullptr;
 
                                 ResourceMonitor::Instance().Unregister(*this);
                             } else {
@@ -280,9 +331,9 @@ namespace Core {
                         TRACE_L1("Error on port socket recvfrom call. Error: %s", strerror(errno));
                         result = Core::ERROR_UNAVAILABLE;
                     } else {
-                        Container fds;
-                        uint8_t nFds = _parent.Service(id, fds);
-                        Write(id, fds.size(), fds.data(), reinterpret_cast<sockaddr&>(client), clientLen);
+                        int descriptors[64];
+                        uint8_t entries = _parent.Service(id, sizeof(descriptors)/sizeof(int), descriptors);
+                        Write(id, entries, descriptors, reinterpret_cast<sockaddr&>(client), clientLen);
                     }
                 } else {
                     char buf[CMSG_SPACE(sizeof(int) * maxFdsPerRequest)];
@@ -315,10 +366,12 @@ namespace Core {
                                 unsigned char* const cmsgData = CMSG_DATA(cmsg);
                                 const uint8_t nFds = ((cmsg->cmsg_len - sizeof(cmsghdr)) / sizeof(int));
 
+                                _descriptors->resize(nFds);
+
                                 for (uint8_t i = 0; i < nFds; i++) {
                                     int fd;
                                     ::memmove(&fd, cmsgData + sizeof(int) * i, sizeof(int));
-                                    _descriptors.push_back(fd);
+                                    (*_descriptors)[i].Move(std::move(fd));
                                 }
 
                                 _id = identifier;
@@ -339,7 +392,7 @@ namespace Core {
             std::atomic<state> _state;
             int _domainSocket;
             uint32_t _id;
-            Container _descriptors;
+            Container* _descriptors;
             Core::Event _signal;
         };
 
@@ -376,7 +429,7 @@ namespace Core {
 
     private:
         // ToDo: Create separate client
-        virtual uint8_t Service(const uint32_t /* id */, Container& /*container*/) { return 0; }
+        virtual uint8_t Service(const uint32_t /* id */, const uint8_t maxSize, int[] /*container*/) { return 0; }
 
     private:
         Connection _link;
