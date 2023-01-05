@@ -508,11 +508,8 @@ POP_WARNING()
                     myself.Priority(_config->Process().Priority());
                 }
 
-                Core::Directory persistentPath(_config->PersistentPath().c_str());
-
                 if (_config->Process().Group().empty() == false) {
                     myself.Group(_config->Process().Group());
-                    persistentPath.Group(_config->Process().Group());
                 }
 
                 if (_config->Process().User().empty() == false) {
