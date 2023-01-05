@@ -509,7 +509,6 @@ POP_WARNING()
                 }
 
                 Core::Directory persistentPath(_config->PersistentPath().c_str());
-                persistentPath.Permission( Core::File::Mode::USER_READ | Core::File::Mode::USER_WRITE | Core::File::Mode::USER_EXECUTE | Core::File::Mode::GROUP_READ | Core::File::Mode::GROUP_WRITE | Core::File::Mode::GROUP_EXECUTE);
 
                 if (_config->Process().Group().empty() == false) {
                     myself.Group(_config->Process().Group());
