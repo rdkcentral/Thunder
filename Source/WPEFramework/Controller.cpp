@@ -122,7 +122,12 @@ namespace Plugin {
         }
 
         _service->Register(&_systemInfoReport);
-        _service->EnableWebServer(_T("UI"), EMPTY_STRING);
+
+        if ((config.Ui.IsSet() == true) && (config.Ui.Value() == true)) {
+            _service->EnableWebServer(_T("UI"), EMPTY_STRING);
+        } else {
+            _service->DisableWebServer();
+        }
 
         Register(this);
         Exchange::IController::JConfiguration::Register(*this, this);
