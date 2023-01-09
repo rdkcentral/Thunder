@@ -357,9 +357,9 @@ namespace Core {
 #endif
     }
 
-    void SystemInfo::SetTimeZone(const string& tz)
+    void SystemInfo::SetTimeZone(const string& tz, const bool forcedupdate)
     {
-       SetEnvironment(_T("TZ"), tz);
+       SetEnvironment(_T("TZ"), tz, forcedupdate);
 #ifdef __LINUX__
        ::tzset();
 #endif
