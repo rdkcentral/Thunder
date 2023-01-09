@@ -340,7 +340,7 @@ namespace PluginHost {
                 , SoftKillCheckWaitTime(10)
                 , HardKillCheckWaitTime(4)
                 , IPV6(false)
-                , LegacyInitialize(true)
+                , LegacyInitialize(false)
                 , DefaultMessagingCategories(false)
                 , DefaultWarningReportingCategories(false)
                 , Process()
