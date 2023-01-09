@@ -38,6 +38,9 @@ set(KEY_OUTPUT_DISABLED false CACHE STRING "New outputs on the VirtualInput will
 set(EXIT_REASONS "Failure;MemoryExceeded;WatchdogExpired" CACHE STRING "Process exit reason list for which the postmortem is required")
 set(ETHERNETCARD_NAME "" CACHE STRING "Ethernet Card name which has to be associated for the Raw Device Id creation")
 
+# Controller Plugin Settings.
+set(PLUGIN_CONTROLLER_UI_ENABLED true CACHE STRING "Enable the Controller's UI")
+
 map()
   key(plugins)
   key(tracing)
@@ -84,6 +87,7 @@ ans(PLUGIN_CONTROLLER)
 map()
     kv(subsystems)
     key(resumes)
+    kv(ui ${PLUGIN_CONTROLLER_UI_ENABLED})
 end()
 ans(PLUGIN_CONTROLLER_CONFIGURATION)
 

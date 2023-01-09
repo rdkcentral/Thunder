@@ -142,10 +142,12 @@ namespace Plugin {
                 , Probe()
                 , Resumes()
                 , SubSystems()
+                , Ui(true)
             {
                 Add(_T("probe"), &Probe);
                 Add(_T("resumes"), &Resumes);
                 Add(_T("subsystems"), &SubSystems);
+                Add(_T("ui"), &Ui);
             }
             ~Config()
             {
@@ -155,6 +157,7 @@ namespace Plugin {
             ProbeConfig Probe;
             Core::JSON::ArrayType<Core::JSON::String> Resumes;
             Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> SubSystems;
+            Core::JSON::Boolean Ui;
         };
 
     private:

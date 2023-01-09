@@ -111,7 +111,11 @@ namespace Plugin {
 
         _service->Register(&_systemInfoReport);
 
-        _service->EnableWebServer(_T("UI"), EMPTY_STRING);
+        if ((config.Ui.IsSet() == true) && (config.Ui.Value() == true)) {
+            _service->EnableWebServer(_T("UI"), EMPTY_STRING);
+        } else {
+            _service->DisableWebServer();
+        }
 
         // On succes return a name as a Callsign to be used in the URL, after the "service"prefix
         return (_T(""));
