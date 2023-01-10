@@ -75,7 +75,7 @@ namespace Core {
         ~SystemInfo();
 
         void SetTime(const Time& time);
-        void SetTimeZone(const string& tz);
+        void SetTimeZone(const string& tz, const bool forcedupdate = true);
 
         inline const string& GetHostName() const
         {

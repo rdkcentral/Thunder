@@ -427,7 +427,7 @@ namespace Core {
         uint32_t Request(const uint32_t waitTime, const string& identifier, const uint32_t requestId, Container& fds)
         {
             uint32_t result;
-            if (result = _link.Request(waitTime, identifier, requestId, fds) != Core::ERROR_NONE) {
+            if ( (result = _link.Request(waitTime, identifier, requestId, fds)) != Core::ERROR_NONE) {
                 TRACE_L1("Could not get a privileged request answered.");
             }
             return (result);
@@ -435,7 +435,7 @@ namespace Core {
 
     private:
         // ToDo: Create separate client
-        virtual uint8_t Service(const uint32_t /* id */, const uint8_t maxSize, int[] /*container*/) { return 0; }
+        virtual uint8_t Service(const uint32_t /* id */, const uint8_t /* maxSize */ , int[] /*container*/) { return 0; }
 
     private:
         Connection _link;
