@@ -596,7 +596,7 @@ namespace RPC {
                 return (_process.Options());
             }
             Core::instance_id ParentPID() const override {
-                return (static_cast<const Core::instance_id>(_process.Id()));
+                return (static_cast<Core::instance_id>(_process.Id()));
             }
 
             void PostMortem() override;
