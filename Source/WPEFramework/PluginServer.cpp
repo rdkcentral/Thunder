@@ -681,7 +681,7 @@ namespace PluginHost
 
     }
 
-    uint32_t Server::Service::Hibernate(const PluginHost::IShell::reason why) {
+    uint32_t Server::Service::Hibernate(const PluginHost::IShell::reason /* why */) {
         uint32_t result = Core::ERROR_NONE;
 
         Lock();
