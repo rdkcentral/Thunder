@@ -56,12 +56,16 @@ namespace Core {
             Descriptor(const Descriptor& copy) 
                 : _descriptor(-1) {
                 if (copy._descriptor != -1) {
+                    #ifndef __WINDOWS__
                     _descriptor = ::dup(copy._descriptor);
+                    #endif
                 }
             }
             ~Descriptor() {
                 if (_descriptor != -1) {
+                    #ifndef __WINDOWS__
                     ::close(_descriptor);
+                    #endif
                 }
             }
 
@@ -76,7 +80,9 @@ namespace Core {
             }
             void Move(int&& descriptor) {
                 if (_descriptor != -1) {
+                    #ifndef __WINDOWS__
                     ::close(_descriptor);
+                    #endif
                 }
                 _descriptor = descriptor;
                 descriptor = -1;
