@@ -97,18 +97,23 @@ public:
         _sharedFiles.clear();
     }
 
-    uint8_t Service(const uint32_t id, Core::PrivilegedRequest::Container& container) override
+    uint8_t Service(const uint32_t id, const uint8_t maxSize, int container[]) override
     {
-        container.clear();
+        // container.clear();
+        memset(container, -1, maxSize);
+
+        uint8_t i(0);
 
         for (auto& file : _sharedFiles) {
-            TRACE_L1("identifier=%d -> %s fd=%d ", id, file.FileName().c_str(), int(file));
-            container.emplace_back(int(file));
+            if (i < maxSize) {
+                TRACE_L1("identifier=%d -> %s fd=%d nFd=%d", id, file.FileName().c_str(), int(file), i);
+                container[i++] = int(file);
+            }
         }
 
-        TRACE_L1("Service passed nFd=%d", uint16_t(container.size()));
+        TRACE_L1("Service passed nFd=%d", i);
 
-        return container.size();
+        return i;
     }
 
 private:
@@ -149,7 +154,7 @@ int main(int argc, char** argv)
 
                     for (auto& fd : fds) {
                         if (fd > 0) {
-                            printf("descriptor: %d\n", fd);
+                            printf("descriptor: %d\n", int(fd));
 
                             FILE* file = fdopen(fd, "w");
 
