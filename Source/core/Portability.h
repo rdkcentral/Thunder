@@ -342,47 +342,48 @@ typedef std::string string;
 
 #ifdef __LINUX__
 
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cassert>
+#include <string>
 #include <algorithm>
 #include <atomic>
 #include <array>
 #include <map>
+#include <unordered_map>
 #include <list>
-#include <alloca.h>
-#include <arpa/inet.h>
-#include <assert.h>
-#include <cxxabi.h>
+#include <typeinfo>
 #include <cmath>
+#include <thread>
+
+#include <string.h>
+#include <termios.h>
+#include <unistd.h>
+#include <stdarg.h> /* va_list, va_start, va_arg, va_end */
+#include <alloca.h>
+#include <cxxabi.h>
 #include <dirent.h>
 #include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <getopt.h>
-#include <list>
 #include <math.h>
-#include <map>
 #include <poll.h>
 #include <pthread.h>
 #include <sched.h>
 #include <signal.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <string>
-#include <strings.h>
+
 #include <sys/ioctl.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <termios.h>
-#include <typeinfo>
-#include <unistd.h>
-#include <unordered_map>
-#include <thread>
-#include <stdarg.h> /* va_list, va_start, va_arg, va_end */
+
+#include <arpa/inet.h>
 
 #ifdef __APPLE__
 #include <pthread_impl.h>

@@ -24,18 +24,6 @@
 #error "Please define a MODULE_NAME that describes the binary/library you are building."
 #endif
 
-#include <algorithm>
-#include <iostream>
-#include <list>
-#include <map>
-#include <sstream>
-#include <typeinfo>
-#include <vector>
-
-#ifdef WIN32
-#include <xutility>
-#endif
-
 #include "Module.h"
 #include "Portability.h"
 

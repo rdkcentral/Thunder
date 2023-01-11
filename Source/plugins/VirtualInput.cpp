@@ -710,45 +710,40 @@ POP_WARNING()
 
     /* virtual */ VirtualInput::Iterator IPCUserInput::Consumers() const
     {
-        uint16_t index = 0;
         std::list<string> container;
-        Core::ProxyType<const VirtualInputChannelServer::Client> client;
             
-        do {
-            client = _service[index];
-            index++;
-                
-            if (client.IsValid() == true) {
-                container.push_back(client->Extension().Name());
+        _service.Visit(
+            [ &container ](const VirtualInputChannelServer::Client& element)
+            {
+                string result = element.Extension().Name();
+                container.push_back(result);
             }
-        } while (client.IsValid() == true);
-            
+        );
+
         return (VirtualInput::Iterator(std::move(container)));
     }
 
     /* virtual */ bool IPCUserInput::Consumer(const string& name) const {
-        uint16_t index = 0;
-        Core::ProxyType<const VirtualInputChannelServer::Client> client;
-            
-        do {
-            client = _service[index];
-            index++;
-        } while ( (client.IsValid() == true) && (client->Extension().Name() != name) );
+        Core::ProxyType<const VirtualInputChannelServer::Client> result = _service.Find(
+            [name] (const VirtualInputChannelServer::Client& element)
+            {
+                return (element.Extension().Name() == name);
+            }
+        );
 
-        return (client.IsValid() ? client->Extension().Enable() : false); 
+        return(result.IsValid() && result->Extension().Enable());
     }
 
     /* virtual */ void IPCUserInput::Consumer(const string& name, const bool enabled) {
-        uint16_t index = 0;
-        Core::ProxyType<VirtualInputChannelServer::Client> client;
-            
-        do {
-            client = _service[index];
-            index++;
-        } while ( (client.IsValid() == true) && (client->Extension().Name() != name) );
+        Core::ProxyType<VirtualInputChannelServer::Client> result = _service.Find(
+            [name](const VirtualInputChannelServer::Client& element)
+            {
+                return (element.Extension().Name() == name);
+            }
+        );
 
-        if (client.IsValid() == true) {
-            client->Extension().Enable(enabled);
+        if (result.IsValid() == true) {
+            result->Extension().Enable(enabled);
         }
     }
 
@@ -794,15 +789,14 @@ POP_WARNING()
 
     /* virtual */ void IPCUserInput::LookupChanges(const string& linkName)
     {
-        uint16_t index = 0;
-        Core::ProxyType<VirtualInputChannelServer::Client> current(_service[index++]);
-
-        while (current.IsValid() == true) {
-            if (current->Extension().Name() == linkName) {
-                current->Extension().Reload();
+        _service.Visit(
+            [ linkName ](VirtualInputChannelServer::Client& element)
+            {
+                if (element.Extension().Name() == linkName) {
+                    element.Extension().Reload();
+                }
             }
-            current = Core::ProxyType<VirtualInputChannelServer::Client>(_service[index++]);
-        }
+        );
     }
 
 } // Namespace PluginHost
