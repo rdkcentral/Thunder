@@ -180,11 +180,11 @@ namespace WPEFramework {
             }
             inline string LocalId() const
             {
-                return (m_LocalNode.QualifiedName());
+                return (m_LocalNode.HostAddress());
             }
             inline string RemoteId() const
             {
-                return (m_RemoteNode.QualifiedName());
+                return (m_RemoteNode.HostAddress());
             }
             inline const NodeId& ReceivedNode() const
             {
