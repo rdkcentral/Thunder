@@ -698,6 +698,7 @@ POP_WARNING()
     private:
         class EXTERNAL InputDataLink : public Core::IDispatchType<Core::IIPC> {
         public:
+            InputDataLink(InputDataLink&&) = delete;
             InputDataLink(const InputDataLink&) = delete;
             InputDataLink& operator=(const InputDataLink&) = delete;
 
@@ -710,18 +711,18 @@ POP_WARNING()
                 , _replacement(Core::ProxyType<IVirtualInput::KeyMessage>::Create())
             {
             }
-            virtual ~InputDataLink() = default;
+            ~InputDataLink() override = default;
 
         public:
-            inline bool Enable() const
+            bool Enable() const
             {
                 return (_enabled);
             }
-            inline void Enable(const bool enabled)
+            void Enable(const bool enabled)
             {
                 _enabled = enabled;
             }
-            inline Core::ProxyType<Core::IIPC> InvokeAllowed(const Core::ProxyType<Core::IIPC>& element) const
+            Core::ProxyType<Core::IIPC> InvokeAllowed(const Core::ProxyType<Core::IIPC>& element) const
             {
                 Core::ProxyType<Core::IIPC> result;
 
@@ -747,18 +748,18 @@ POP_WARNING()
                 }
                 return (result);
             }
-            inline const string& Name() const
+            const string& Name() const
             {
                 return (_name);
             }
-            inline void Parent(IPCUserInput& parent, const bool enabled)
+            void Parent(IPCUserInput& parent, const bool enabled)
             {
                 // We assume it will only be set, if the client reports it self in, once !
                 ASSERT(_parent == nullptr);
                 _parent = &parent;
                 _enabled = enabled;
             }
-            inline void Reload()
+            void Reload()
             {
                 _postLookup = _parent->FindPostLookup(_name);
             }
@@ -770,7 +771,7 @@ POP_WARNING()
 
                 return ((index & _mode) != 0);
             }
-            virtual void Dispatch(Core::IIPC& element) override
+            void Dispatch(Core::IIPC& element) override
             {
                 ASSERT(dynamic_cast<IVirtualInput::NameMessage*>(&element) != nullptr);
 
@@ -790,16 +791,22 @@ POP_WARNING()
 
         class EXTERNAL VirtualInputChannelServer : public Core::IPCChannelServerType<InputDataLink, true> {
         private:
-            typedef Core::IPCChannelServerType<InputDataLink, true> BaseClass;
+            using BaseClass = Core::IPCChannelServerType<InputDataLink, true>;
 
         public:
+            VirtualInputChannelServer() = delete;
+            VirtualInputChannelServer(VirtualInputChannelServer&&) = delete;
+            VirtualInputChannelServer(const VirtualInputChannelServer&) = delete;
+            VirtualInputChannelServer& operator= (const VirtualInputChannelServer&) = delete;
+
             VirtualInputChannelServer(IPCUserInput& parent, const Core::NodeId& sourceName)
                 : BaseClass(sourceName, 32)
                 , _parent(parent)
             {
             }
+            ~VirtualInputChannelServer() override = default;
 
-            virtual void Added(Core::ProxyType<Client>& client) override
+            void Added(Core::ProxyType<Client>& client) override
             {
                 TRACE_L1("VirtualInputChannelServer::Added -- %d", __LINE__);
 
@@ -844,17 +851,13 @@ POP_WARNING()
     };
 
     class EXTERNAL InputHandler {
-    private:
+    public:
+        InputHandler(InputHandler&&) = delete;
         InputHandler(const InputHandler&) = delete;
         InputHandler& operator=(const InputHandler&) = delete;
 
-    public:
-        InputHandler()
-        {
-        }
-        ~InputHandler()
-        {
-        }
+        InputHandler() = default;
+        ~InputHandler() = default;
 
         enum type {
             DEVICE,

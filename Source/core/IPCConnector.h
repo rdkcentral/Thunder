@@ -135,7 +135,7 @@ namespace Core {
             virtual void Serialized(const IMessage& element) = 0;
 
         private:
-            inline uint32_t CommandSize() const
+            uint32_t CommandSize() const
             {
                 return (_current->Label() > 0x1FFFFF ? 4 : (_current->Label() > 0xCFFF ? 3 : (_current->Label() > 0x7F ? 2 : 1)));
             }
@@ -291,11 +291,11 @@ namespace Core {
             uint32_t Release() const override {
                 return(_parent.Release());
             }
-            inline void Clear()
+            void Clear()
             {
                 __Clear();
             }
-            inline PACKAGE& Package()
+            PACKAGE& Package()
             {
                 return (_package);
             }
@@ -323,14 +323,14 @@ namespace Core {
             IS_MEMBER_AVAILABLE(Clear, hasClear);
 
             template <typename SUBJECT=PACKAGE>
-            inline typename Core::TypeTraits::enable_if<hasClear<SUBJECT, void>::value, void>::type
+            typename Core::TypeTraits::enable_if<hasClear<SUBJECT, void>::value, void>::type
             __Clear()
             {
                 _package.Clear();
             }
 
             template <typename SUBJECT=PACKAGE>
-            inline typename Core::TypeTraits::enable_if<!hasClear<SUBJECT, void>::value, void>::type
+            typename Core::TypeTraits::enable_if<!hasClear<SUBJECT, void>::value, void>::type
             __Clear()
             {
             }
@@ -341,14 +341,14 @@ namespace Core {
             IS_MEMBER_AVAILABLE(Length, hasLength);
 
             template <typename SUBJECT=PACKAGE>
-            inline typename Core::TypeTraits::enable_if<hasLength<const SUBJECT, uint32_t>::value, uint32_t>::type
+            typename Core::TypeTraits::enable_if<hasLength<const SUBJECT, uint32_t>::value, uint32_t>::type
             _Length() const
             {
                 return (_package.Length());
             }
 
             template <typename SUBJECT=PACKAGE>
-            inline typename Core::TypeTraits::enable_if<!hasLength<const SUBJECT, uint32_t>::value, uint32_t>::type
+            typename Core::TypeTraits::enable_if<!hasLength<const SUBJECT, uint32_t>::value, uint32_t>::type
             _Length() const
             {
                 return (sizeof(PACKAGE));
@@ -357,14 +357,14 @@ namespace Core {
             IS_MEMBER_AVAILABLE(Serialize, hasSerialize);
 
             template <typename SUBJECT= PACKAGE>
-            inline typename Core::TypeTraits::enable_if<hasSerialize<const SUBJECT, uint16_t, uint8_t[], const uint16_t, const uint32_t>::value, uint16_t>::type
+            typename Core::TypeTraits::enable_if<hasSerialize<const SUBJECT, uint16_t, uint8_t[], const uint16_t, const uint32_t>::value, uint16_t>::type
             _Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
             {
                 return (_package.Serialize(stream, maxLength, offset));
             }
 
             template <typename SUBJECT= PACKAGE>
-            inline typename Core::TypeTraits::enable_if<!hasSerialize<const SUBJECT, uint16_t, uint8_t[], const uint16_t, const uint32_t>::value, uint16_t>::type
+            typename Core::TypeTraits::enable_if<!hasSerialize<const SUBJECT, uint16_t, uint8_t[], const uint16_t, const uint32_t>::value, uint16_t>::type
             _Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
             {
                 uint16_t result = 0;
@@ -380,14 +380,14 @@ namespace Core {
             IS_MEMBER_AVAILABLE(Deserialize, hasDeserialize);
 
             template <typename SUBJECT=PACKAGE>
-            inline typename Core::TypeTraits::enable_if<hasDeserialize<SUBJECT, uint16_t, const uint8_t[], const uint16_t, const uint32_t>::value, uint16_t>::type
+            typename Core::TypeTraits::enable_if<hasDeserialize<SUBJECT, uint16_t, const uint8_t[], const uint16_t, const uint32_t>::value, uint16_t>::type
             _Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset)
             {
                 return (_package.Deserialize(stream, maxLength, offset));
             }
 
             template <typename SUBJECT=PACKAGE>
-            inline typename Core::TypeTraits::enable_if<!hasDeserialize<SUBJECT, uint16_t, const uint8_t[], const uint16_t, const uint32_t>::value, uint16_t>::type
+            typename Core::TypeTraits::enable_if<!hasDeserialize<SUBJECT, uint16_t, const uint8_t[], const uint16_t, const uint32_t>::value, uint16_t>::type
             _Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset)
             {
                 uint16_t result = 0;
@@ -428,20 +428,20 @@ POP_WARNING()
         }
 
     public:
-        static inline uint32_t Id()
+        static uint32_t Id()
         {
             return (IDENTIFIER);
         }
-        inline void Clear()
+        void Clear()
         {
             _parameters.Clear();
             _response.Clear();
         }
-        inline PARAMETERS& Parameters()
+        PARAMETERS& Parameters()
         {
             return (_parameters.Package());
         }
-        inline RESPONSE& Response()
+        RESPONSE& Response()
         {
             return (_response.Package());
         }
@@ -478,7 +478,7 @@ POP_WARNING()
                 , _handlers()
             {
             }
-            inline void Factory(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
+            void Factory(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
             {
                 ASSERT((_factory.IsValid() == false) && (factory.IsValid() == true));
 
@@ -517,7 +517,7 @@ POP_WARNING()
             }
 
         public:
-            inline void Register(const uint32_t id, const ProxyType<IIPCServer>& handler)
+            void Register(const uint32_t id, const ProxyType<IIPCServer>& handler)
             {
                 _lock.Lock();
 
@@ -529,7 +529,7 @@ POP_WARNING()
                 _lock.Unlock();
             }
 
-            inline void Unregister(const uint32_t id)
+            void Unregister(const uint32_t id)
             {
                 _lock.Lock();
 
@@ -544,12 +544,12 @@ POP_WARNING()
                 _lock.Unlock();
             }
 
-            inline bool InProgress() const
+            bool InProgress() const
             {
                 return (_outbound.IsValid());
             }
 
-            inline ProxyType<IMessage> Element(const uint32_t& identifier)
+            ProxyType<IMessage> Element(const uint32_t& identifier)
             {
                 ProxyType<IMessage> result;
                 uint32_t searchIdentifier(identifier >> 1);
@@ -580,7 +580,7 @@ POP_WARNING()
                 return (result);
             }
 
-            inline void Flush()
+            void Flush()
             {
                 _lock.Lock();
 
@@ -598,7 +598,7 @@ POP_WARNING()
                 _lock.Unlock();
             }
 
-            inline ProxyType<IIPCServer> ReceivedMessage(const Core::ProxyType<IMessage>& rhs, Core::ProxyType<IIPC>& inbound)
+            ProxyType<IIPCServer> ReceivedMessage(const Core::ProxyType<IMessage>& rhs, Core::ProxyType<IIPC>& inbound)
             {
                 ProxyType<IIPCServer> procedure;
 
@@ -638,7 +638,7 @@ POP_WARNING()
                 return (procedure);
             }
 
-            inline void SetOutbound(const Core::ProxyType<IIPC>& outbound, IDispatchType<IIPC>* callback)
+            void SetOutbound(const Core::ProxyType<IIPC>& outbound, IDispatchType<IIPC>* callback)
             {
                 _lock.Lock();
 
@@ -651,7 +651,7 @@ POP_WARNING()
                 _lock.Unlock();
             }
 
-            inline bool AbortOutbound()
+            bool AbortOutbound()
             {
                 bool result = false;
 
@@ -690,7 +690,7 @@ POP_WARNING()
             : _administration()
         {
         }
-        inline void Factory(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
+        void Factory(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
         {
             _administration.Factory(factory);
         }
@@ -706,37 +706,37 @@ POP_WARNING()
         virtual ~IPCChannel() = default;
 
     public:
-        inline void Register(const uint32_t id, const ProxyType<IIPCServer>& handler)
+        void Register(const uint32_t id, const ProxyType<IIPCServer>& handler)
         {
             _administration.Register(id, handler);
         }
 
-        inline void Unregister(const uint32_t id)
+        void Unregister(const uint32_t id)
         {
             _administration.Unregister(id);
         }
 
-        inline void Abort()
+        void Abort()
         {
             _administration.AbortOutbound();
         }
         template <typename ACTUALELEMENT>
-        inline uint32_t Invoke(ProxyType<ACTUALELEMENT>& command, IDispatchType<IIPC>* completed)
+        uint32_t Invoke(ProxyType<ACTUALELEMENT>& command, IDispatchType<IIPC>* completed)
         {
             Core::ProxyType<IIPC> base(command);
             return (Execute(base, completed));
         }
         template <typename ACTUALELEMENT>
-        inline uint32_t Invoke(ProxyType<ACTUALELEMENT>& command, const uint32_t waitTime)
+        uint32_t Invoke(ProxyType<ACTUALELEMENT>& command, const uint32_t waitTime)
         {
             Core::ProxyType<IIPC> base(command);
             return (Execute(base, waitTime));
         }
-        inline uint32_t Invoke(ProxyType<Core::IIPC>& command, IDispatchType<IIPC>* completed)
+        uint32_t Invoke(ProxyType<Core::IIPC>& command, IDispatchType<IIPC>* completed)
         {
             return (Execute(command, completed));
         }
-        inline uint32_t Invoke(ProxyType<Core::IIPC>& command, const uint32_t waitTime)
+        uint32_t Invoke(ProxyType<Core::IIPC>& command, const uint32_t waitTime)
         {
             return (Execute(command, waitTime));
         }
@@ -773,7 +773,7 @@ POP_WARNING()
             ~IPCLink() override = default;
 
         public:
-            inline bool SendResponse(Core::ProxyType<IIPC>& inbound)
+            bool SendResponse(Core::ProxyType<IIPC>& inbound)
             {
                 ASSERT(inbound.IsValid() == true);
 
@@ -878,23 +878,23 @@ POP_WARNING()
         ~IPCChannelType() override = default;
 
     public:
-        inline EXTENSION& Extension()
+        EXTENSION& Extension()
         {
             return (_extension);
         }
-        inline const EXTENSION& Extension() const
+        const EXTENSION& Extension() const
         {
             return (_extension);
         }
-        inline ACTUALSOURCE& Source()
+        ACTUALSOURCE& Source()
         {
             return (_link.Link());
         }
-        inline const ACTUALSOURCE& Source() const
+        const ACTUALSOURCE& Source() const
         {
             return (_link.Link());
         }
-        inline bool InProgress() const
+        bool InProgress() const
         {
             return (_administration.InProgress());
         }
@@ -915,7 +915,7 @@ POP_WARNING()
         IS_MEMBER_AVAILABLE(StateChange, hasStateChange);
 
         template <typename T=EXTENSION>
-        inline typename Core::TypeTraits::enable_if<hasStateChange<T, void> ::value, void>::type
+        typename Core::TypeTraits::enable_if<hasStateChange<T, void> ::value, void>::type
         __StateChange()
         {
             _extension.StateChange();
@@ -923,7 +923,7 @@ POP_WARNING()
 
 
         template <typename T=EXTENSION>
-        inline typename Core::TypeTraits::enable_if<!hasStateChange<T, void> ::value, void>::type
+        typename Core::TypeTraits::enable_if<!hasStateChange<T, void> ::value, void>::type
         __StateChange()
         {
         }
@@ -974,7 +974,7 @@ POP_WARNING()
 
             return (success);
         }
-        inline void CallProcedure(ProxyType<IIPCServer>& procedure, ProxyType<IIPC>& message)
+        void CallProcedure(ProxyType<IIPCServer>& procedure, ProxyType<IIPC>& message)
         {
             procedure->Procedure(*this, message);
         }
