@@ -60,7 +60,6 @@
 #include "NetworkInfo.h"
 #include "Optional.h"
 #include "Parser.h"
-#include "PrivilegedRequest.h"
 #include "Process.h"
 #include "ProcessInfo.h"
 #include "Proxy.h"
