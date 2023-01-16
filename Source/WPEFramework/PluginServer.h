@@ -1534,17 +1534,18 @@ namespace PluginHost {
                 private:
                     friend class Core::Service<RemoteHost>;
 
+                public:
+                    RemoteHost(RemoteHost&&) = delete;
                     RemoteHost(const RemoteHost&) = delete;
                     RemoteHost& operator=(const RemoteHost&) = delete;
 
-                public:
                     RemoteHost(const RPC::Object& instance, const RPC::Config& config)
                         : RemoteConnection()
                         , _object(instance)
                         , _config(config)
                     {
                     }
-                    virtual ~RemoteHost()
+                    ~RemoteHost() override
                     {
                         TRACE_L1("Destructor for RemoteHost process for %d", Id());
                     }
@@ -1802,15 +1803,17 @@ namespace PluginHost {
                     return (_parent.Acquire(interfaceId, className, version));
                 }
 
-                void Cleanup(const Core::IUnknown* source, const uint32_t interfaceId) override
+                void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) override
                 {
                     _adminLock.Lock();
 
                     for (auto& observer : _requestObservers) {
-                        observer->CleanedUp(source, interfaceId);
+                        observer->Dangling(source, interfaceId);
                     }
 
                     _adminLock.Unlock();
+
+                    TRACE(Activity, (T("Dangling resource cleanup of interface: 0x%X"), interfaceId));
                 }
 
                 void Revoke(const Core::IUnknown* remote, const uint32_t interfaceId) override

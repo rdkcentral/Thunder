@@ -44,7 +44,7 @@ namespace PluginHost {
 
             struct INotification : virtual public Core::IUnknown {
                 virtual ~INotification() = default;
-                virtual void CleanedUp(const Core::IUnknown* source, const uint32_t interfaceId) = 0;
+                virtual void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) = 0;
                 virtual void Revoked(const Core::IUnknown* remote, const uint32_t interfaceId) = 0;
             };
 
@@ -368,18 +368,20 @@ namespace PluginHost {
             Core::File path(storagePath);
 
             if (path.IsDirectory() == false) {
-                if (Core::Directory(PersistentPath().c_str()).Create() != true) {
+                if (Core::Directory(storagePath.c_str()).Create() != true) {
                     result = Core::ERROR_BAD_REQUEST;
                 }
             }
-            if (permission) {
-                path.Permission(permission);
-            }
-            if (user.empty() != true) {
-                path.User(user);
-            }
-            if (group.empty() != true) {
-                path.Group(group);
+            if (result == Core::ERROR_NONE) {
+                if (permission) {
+                    path.Permission(permission);
+                }
+                if (user.empty() != true) {
+                    path.User(user);
+                }
+                if (group.empty() != true) {
+                    path.Group(group);
+                }
             }
 
             return (result);
