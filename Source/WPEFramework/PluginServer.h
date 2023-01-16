@@ -1522,13 +1522,15 @@ namespace PluginHost {
 
         class ServiceMap {
         public:
-            using Iterator = Core::IteratorMapType<std::map<const string, Core::ProxyType<Service>>, Core::ProxyType<Service>, const string&>;
+            using ServiceContainer = std::map<const string, Core::ProxyType<Service>>;
+            using Notifiers = std::vector<PluginHost::IPlugin::INotification*>;
+            using Iterator = Core::IteratorMapType<ServiceContainer, Core::ProxyType<Service>, const string&>;
             using RemoteInstantiators = std::map<const string, IRemoteInstantiation*>;
 
         private:
             class CommunicatorServer : public RPC::Communicator {
             private:
-                using ObserverList = std::list<IShell::ICOMLink::INotification*>;
+                using Observers = std::vector<IShell::ICOMLink::INotification*>;
 
                 class RemoteHost : public RPC::Communicator::RemoteConnection {
                 private:
@@ -1672,10 +1674,12 @@ namespace PluginHost {
                 virtual ~CommunicatorServer()
                 {
                     ASSERT(_requestObservers.size() == 0 && "Sink for ICOMLink::INotifications not unregistered!");
-                    while (_requestObservers.size() != 0) {
-                        _requestObservers.front()->Release();
-                        _requestObservers.pop_front();
+                    Observers::iterator index(_requestObservers.begin());
+                    while (index != _requestObservers.end()) {
+                        (*index)->Release();
+                        index++;
                     }
+                    _requestObservers.clear();
                 }
 
             public:
@@ -1731,7 +1735,7 @@ namespace PluginHost {
 
                         _adminLock.Lock();
 
-                        ObserverList::iterator index = std::find(_requestObservers.begin(), _requestObservers.end(), sink);
+                        Observers::iterator index = std::find(_requestObservers.begin(), _requestObservers.end(), sink);
 
                         ASSERT(index == _requestObservers.end());
 
@@ -1751,7 +1755,7 @@ namespace PluginHost {
 
                         _adminLock.Lock();
 
-                        ObserverList::iterator index = std::find(_requestObservers.begin(), _requestObservers.end(), sink);
+                        Observers::iterator index = std::find(_requestObservers.begin(), _requestObservers.end(), sink);
 
                         ASSERT(index != _requestObservers.end());
 
@@ -1813,7 +1817,7 @@ namespace PluginHost {
 
                     _adminLock.Unlock();
 
-                    TRACE(Activity, (T("Dangling resource cleanup of interface: 0x%X"), interfaceId));
+                    TRACE(Activity, (_T("Dangling resource cleanup of interface: 0x%X"), interfaceId));
                 }
 
                 void Revoke(const Core::IUnknown* remote, const uint32_t interfaceId) override
@@ -1847,7 +1851,7 @@ namespace PluginHost {
                 const string _postMortemPath;
                 const string _application;
                 mutable Core::CriticalSection _adminLock;
-                ObserverList _requestObservers;
+                Observers _requestObservers;
                 ProxyStubObserver _proxyStubObserver;
             };
             class RemoteInstantiation : public IRemoteInstantiation {
@@ -2130,11 +2134,11 @@ POP_WARNING()
             {
                 _notificationLock.Lock();
 
-                std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
+                Notifiers::iterator index(_notifiers.begin());
 
-                while (currentlist.size()) {
-                    currentlist.front()->Initialize(callsign, entry);
-                    currentlist.pop_front();
+                while (index != _notifiers.end()) {
+                    (*index)->Initialize(callsign, entry);
+                    index++;
                 }
 
                 _notificationLock.Unlock();
@@ -2143,11 +2147,11 @@ POP_WARNING()
             {
                 _notificationLock.Lock();
 
-                std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
+                Notifiers::iterator index(_notifiers.begin());
 
-                while (currentlist.size()) {
-                    currentlist.front()->Activated(callsign, entry);
-                    currentlist.pop_front();
+                while (index != _notifiers.end()) {
+                    (*index)->Activated(callsign, entry);
+                    index++;
                 }
 
                 _notificationLock.Unlock();
@@ -2157,11 +2161,11 @@ POP_WARNING()
             {
                 _notificationLock.Lock();
 
-                std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
+                Notifiers::iterator index(_notifiers.begin());
 
-                while (currentlist.size()) {
-                    currentlist.front()->Deactivated(callsign, entry);
-                    currentlist.pop_front();
+                while (index != _notifiers.end()) {
+                    (*index)->Deactivated(callsign, entry);
+                    index++;
                 }
 
                 _notificationLock.Unlock();
@@ -2171,11 +2175,11 @@ POP_WARNING()
             {
                 _notificationLock.Lock();
 
-                std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
+                Notifiers::iterator index(_notifiers.begin());
 
-                while (currentlist.size()) {
-                    currentlist.front()->Deinitialized(callsign, entry);
-                    currentlist.pop_front();
+                while (index != _notifiers.end()) {
+                    (*index)->Deinitialized(callsign, entry);
+                    index++;
                 }
 
                 _notificationLock.Unlock();
@@ -2185,11 +2189,11 @@ POP_WARNING()
             {
                 _notificationLock.Lock();
 
-                std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
+                Notifiers::iterator index(_notifiers.begin());
 
-                while (currentlist.size()) {
-                    currentlist.front()->Unavailable(callsign, entry);
-                    currentlist.pop_front();
+                while (index != _notifiers.end()) {
+                    (*index)->Unavailable(callsign, entry);
+                    index++;
                 }
 
                 _notificationLock.Unlock();
@@ -2204,7 +2208,7 @@ POP_WARNING()
                 _notifiers.push_back(sink);
 
                 // Tell this "new" sink all our actived plugins..
-                std::map<const string, Core::ProxyType<Service>>::iterator index(_services.begin());
+                ServiceContainer::iterator index(_services.begin());
 
                 // Notifty all plugins that we have sofar..
                 while (index != _services.end()) {
@@ -2227,7 +2231,7 @@ POP_WARNING()
             {
                 _notificationLock.Lock();
 
-                std::list<PluginHost::IPlugin::INotification*>::iterator index(std::find(_notifiers.begin(), _notifiers.end(), sink));
+                Notifiers::iterator index(std::find(_notifiers.begin(), _notifiers.end(), sink));
 
                 if (index != _notifiers.end()) {
                     (*index)->Release();
@@ -2284,7 +2288,7 @@ POP_WARNING()
                 _adminLock.Lock();
 
                 // First stop all services running ...
-                std::map<const string, Core::ProxyType<Service>>::iterator index(_services.begin());
+                ServiceContainer::iterator index(_services.begin());
 
                 while (index != _services.end()) {
                     index->second->Closed(id);
@@ -2343,7 +2347,7 @@ POP_WARNING()
                 _adminLock.Lock();
 
                 // First stop all services running ...
-                std::map<const string, Core::ProxyType<Service>>::iterator index(_services.find(callSign));
+                ServiceContainer::iterator index(_services.find(callSign));
 
                 if (index != _services.end()) {
                     index->second->Destroy();
@@ -2371,7 +2375,7 @@ POP_WARNING()
                 _adminLock.Lock();
 
                 std::list<Core::ProxyType<Service>> duplicates;
-                std::map<const string, Core::ProxyType<Service>>::const_iterator index(_services.begin());
+                ServiceContainer::const_iterator index(_services.begin());
 
                 while (index != _services.end()) {
                     duplicates.push_back(index->second);
@@ -2506,7 +2510,7 @@ POP_WARNING()
 
                 return (result);
             }
-            void RecursiveNotification(std::map<const string, Core::ProxyType<Service>>::iterator& index)
+            void RecursiveNotification(ServiceContainer::iterator& index)
             {
                 if (index != _services.end()) {
                     Core::ProxyType<Service> element(index->second);
@@ -2522,7 +2526,7 @@ POP_WARNING()
                 _adminLock.Lock();
 
                 // First stop all services running ...
-                std::map<const string, Core::ProxyType<Service>>::iterator index(_services.begin());
+                ServiceContainer::iterator index(_services.begin());
 
                 RecursiveNotification(index);
             }
@@ -2535,9 +2539,9 @@ POP_WARNING()
             Config& _webbridgeConfig;
             mutable Core::CriticalSection _adminLock;
             Core::CriticalSection _notificationLock;
-            std::map<const string, Core::ProxyType<Service>> _services;
+            ServiceContainer _services;
             mutable RemoteInstantiators _instantiators;
-            std::list<IPlugin::INotification*> _notifiers;
+            Notifiers _notifiers;
             Core::ProxyType<RPC::InvokeServer> _engine;
             CommunicatorServer _processAdministrator;
             Server& _server;
