@@ -380,7 +380,7 @@ namespace ProxyStub {
     class UnknownProxyType : public INTERFACE {
     public:
         using BaseClass = UnknownProxyType<INTERFACE>;
-        using IPCMessgae = Core::ProxyType<RPC::InvokeMessage>;
+        using IPCMessage = Core::ProxyType<RPC::InvokeMessage>;
 
     public:
         UnknownProxyType(const UnknownProxyType<INTERFACE>&) = delete;

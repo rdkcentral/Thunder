@@ -215,7 +215,7 @@ namespace PluginHost
     {
         _adminLock.Lock();
 
-        std::map<const string, Core::ProxyType<Service>>::iterator index(_services.begin());
+        ServiceContainer::iterator index(_services.begin());
         std::list< Core::ProxyType<Service> > deactivationList;
 
         // First, move them all to deactivated except Controller
