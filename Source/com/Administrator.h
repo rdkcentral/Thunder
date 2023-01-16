@@ -98,18 +98,15 @@ namespace RPC {
 
         template <typename PROXY>
         class ProxyType : public IMetadata {
-        private:
-            ProxyType(const ProxyType<PROXY>& copy) = delete;
-            ProxyType<PROXY>& operator=(const ProxyType<PROXY>& copy) = delete;
-
         public:
-            ProxyType()
-            {
-            }
+            ProxyType(ProxyType<PROXY>&& ) = delete;
+            ProxyType(const ProxyType<PROXY>&) = delete;
+            ProxyType<PROXY>& operator=(const ProxyType<PROXY>&) = delete;
+
+            ProxyType() = default;
             ~ProxyType() override = default;
 
-        private:
-            virtual ProxyStub::UnknownProxy* CreateProxy(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const bool remoteRefCounted)
+            ProxyStub::UnknownProxy* CreateProxy(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const bool remoteRefCounted) override
             {
                 return (new PROXY(channel, implementation, remoteRefCounted))->Administration();
             }

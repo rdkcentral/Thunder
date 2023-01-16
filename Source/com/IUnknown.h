@@ -123,12 +123,7 @@ namespace ProxyStub {
     // Inbound proxies can cache a pending AddRef if required.
     // Inbound and Outbound do require a remote Release on a transaition from 1 -> 0 AddRef.
     // -------------------------------------------------------------------------------------------
-
     class UnknownProxy {
-    private:
-        UnknownProxy(const UnknownProxy&) = delete;
-        UnknownProxy& operator=(const UnknownProxy&) = delete;
-
     private:
         enum mode : uint8_t {
             CACHING_ADDREF   = 0x01,
@@ -137,6 +132,11 @@ namespace ProxyStub {
         };
 
     public:
+        UnknownProxy() = delete;
+        UnknownProxy(UnknownProxy&&) = delete;
+        UnknownProxy(const UnknownProxy&) = delete;
+        UnknownProxy& operator=(const UnknownProxy&) = delete;
+
         UnknownProxy(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const uint32_t interfaceId, const bool outbound, Core::IUnknown& parent)
             : _adminLock()
             , _refCount(0)
@@ -151,7 +151,7 @@ namespace ProxyStub {
         virtual ~UnknownProxy() = default;
 
     public:
-	bool Invalidate() {
+    	bool Invalidate() {
             bool invalidated = false;
             _adminLock.Lock();
             if (_refCount > 0) {
@@ -378,21 +378,20 @@ namespace ProxyStub {
 
     template <typename INTERFACE>
     class UnknownProxyType : public INTERFACE {
-    private:
+    public:
+        using BaseClass = UnknownProxyType<INTERFACE>;
+        using IPCMessgae = Core::ProxyType<RPC::InvokeMessage>;
+
+    public:
         UnknownProxyType(const UnknownProxyType<INTERFACE>&) = delete;
         UnknownProxyType<INTERFACE>& operator=(const UnknownProxyType<INTERFACE>&) = delete;
 
-    public:
-        typedef UnknownProxyType<INTERFACE> BaseClass;
-        typedef Core::ProxyType<RPC::InvokeMessage> IPCMessage;
-
-    public:
-PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
+        PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST);
         UnknownProxyType(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const bool outbound)
             : _unknown(channel, implementation, INTERFACE::ID, outbound, *this)
         {
         }
-POP_WARNING()
+        POP_WARNING();
         ~UnknownProxyType() override = default;
 
     public:
@@ -404,21 +403,21 @@ POP_WARNING()
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy environment calls
         // -------------------------------------------------------------------------------------------------------------------------------
-        inline IPCMessage Message(const uint8_t methodId) const
+        IPCMessage Message(const uint8_t methodId) const
         {
             return (_unknown.Message(methodId));
         }
-        inline uint32_t Invoke(Core::ProxyType<RPC::InvokeMessage>& message, const uint32_t waitTime = RPC::CommunicationTimeOut) const
+        uint32_t Invoke(Core::ProxyType<RPC::InvokeMessage>& message, const uint32_t waitTime = RPC::CommunicationTimeOut) const
         {
             return (_unknown.Invoke(message, waitTime));
         }
-        inline void* Interface(const Core::instance_id& implementation, const uint32_t id) const
+        void* Interface(const Core::instance_id& implementation, const uint32_t id) const
         {
             void* result = nullptr;
             RPC::Administrator::Instance().ProxyInstance(_unknown.Channel(),implementation,true,id,result);
             return (result);
         }
-        inline void Complete(RPC::Data::Frame::Reader& reader) const
+        void Complete(RPC::Data::Frame::Reader& reader) const
         {
             return (_unknown.Complete(reader));
         }
@@ -426,11 +425,11 @@ POP_WARNING()
         // -------------------------------------------------------------------------------------------------------------------------------
         // Applications calls to the Proxy
         // -------------------------------------------------------------------------------------------------------------------------------
-        virtual void AddRef() const override
+        void AddRef() const override
         {
             _unknown.AddRef();
         }
-        virtual uint32_t Release() const override
+        uint32_t Release() const override
         {
             uint32_t result = _unknown.Release();
 
@@ -440,7 +439,7 @@ POP_WARNING()
 
             return (result);
         }
-        virtual void* QueryInterface(const uint32_t interfaceNumber) override
+        void* QueryInterface(const uint32_t interfaceNumber) override
         {
             void* result = nullptr;
 
@@ -458,6 +457,7 @@ POP_WARNING()
 
             return (result);
         }
+
     private:
         UnknownProxy _unknown;
     };
