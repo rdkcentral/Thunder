@@ -1390,7 +1390,7 @@ POP_WARNING()
 
             std::list<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
             while (loop != deadProxies.end()) {
-                Revoke((*loop)->Parent(), (*loop)->InterfaceId());
+                Dangling((*loop)->Parent(), (*loop)->InterfaceId());
 
                 // To avoid race conditions, the creation of the deadProxies took a reference
                 // on the interfaces, we presented here. Do not forget to release this reference.
@@ -1405,15 +1405,11 @@ POP_WARNING()
         {
             return (nullptr);
         }
-        virtual void Offer(Core::IUnknown* /* remote */, const uint32_t /* interfaceId */)
-        {
+        virtual void Offer(Core::IUnknown* /* remote */, const uint32_t /* interfaceId */) {
         }
-        // note: do NOT do a QueryInterface on the IUnknown pointer (or any other method for that matter), the object it points to might already be destroyed
-        virtual void Revoke(const Core::IUnknown* /* remote */, const uint32_t /* interfaceId */)
-        {
+        virtual void Revoke(const Core::IUnknown* /* remote */, const uint32_t /* interfaceId */) {
         }
-        virtual void Cleanup(const Core::IUnknown* /* source */, const uint32_t /* interfaceid */)
-        {
+        virtual void Dangling(const Core::IUnknown* /* remote */, const uint32_t /* interfaceId */) {
         }
 
     private:
