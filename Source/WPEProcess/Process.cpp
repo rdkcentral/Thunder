@@ -631,6 +631,10 @@ int main(int argc, char** argv)
         // Any remote connection that will be spawned from here, will have this ExchangeId as its parent ID.
         Core::SystemInfo::SetEnvironment(_T("COM_PARENT_EXCHANGE_ID"), Core::NumberType<uint32_t>(options.Exchange).Text());
 
+        if (callsign.empty() == false) {
+            Core::SystemInfo::SetEnvironment(_T("COM_CALLSIGN"), callsign);
+        }
+
         TRACE_L1("Opening a message file with ID: [%d].", options.Exchange);
 
         

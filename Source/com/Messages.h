@@ -190,15 +190,24 @@ namespace RPC {
 
         class Init {
         private:
-            uint32_t ParentId() const 
+            uint32_t ParentId() const
             {
                 uint32_t exchangeId = 0;
-                string value; Core::SystemInfo::GetEnvironment(_T("COM_PARENT_EXCHANGE_ID"), value);
+                string value;
+                Core::SystemInfo::GetEnvironment(_T("COM_PARENT_EXCHANGE_ID"), value);
+
                 if (value.empty() == false) {
                     exchangeId = Core::NumberType<uint32_t>(value.c_str(), static_cast<uint32_t>(value.length())).Value();
                 }
 
                 return (exchangeId);
+            }
+            string Callsign() const
+            {
+                string value;
+                Core::SystemInfo::GetEnvironment(_T("COM_CALLSIGN"), value);
+
+                return (value);
             }
 
         public:
@@ -214,107 +223,134 @@ namespace RPC {
             Init& operator=(const Init&) = delete;
 
             Init()
-                : _id(0)
-                , _implementation(0)
-                , _interfaceId(~0)
-                , _exchangeId(~0)
-                , _versionId(0)
+                : _data()
             {
-                _className[0] = '\0';
             }
             ~Init() = default;
+
+        private:
+            static constexpr uint8_t IMPLEMENTATION_OFFSET = 0;
+            static constexpr uint8_t ID_OFFSET = (IMPLEMENTATION_OFFSET + sizeof(Core::instance_id));
+            static constexpr uint8_t INTERFACEID_OFFSET = (ID_OFFSET + sizeof(uint32_t));
+            static constexpr uint8_t EXCHANGEID_OFFSET = (INTERFACEID_OFFSET + sizeof(uint32_t));
+            static constexpr uint8_t VERSIONID_OFFSET = (EXCHANGEID_OFFSET + sizeof(uint32_t));
+            static constexpr uint8_t TYPE_OFFSET = (VERSIONID_OFFSET + sizeof(uint32_t));
+            static constexpr uint8_t STRINGS_OFFSET = (TYPE_OFFSET + sizeof(type));
+
+        private:
+            template<typename TYPE>
+            TYPE GetNumber(const uint8_t offset) const
+            {
+                ASSERT(_data.Size() >= (offset + sizeof(TYPE)));
+
+                TYPE result;
+                _data.GetNumber<TYPE>(offset, result);
+
+                return (result);
+            }
+            string GetText(const uint8_t offset) const
+            {
+                ASSERT(_data.Size() >= (offset + sizeof(uint16_t)));
+
+                string result;
+                _data.GetText(offset, result);
+
+                return (result);
+            }
+            void Set(const uint32_t myId, const string& className, const Core::instance_id implementation,
+                     const uint32_t interfaceId, const uint32_t exchangeId, const uint32_t versionId, const type whatKind)
+            {
+                _data.SetNumber<Core::instance_id>(IMPLEMENTATION_OFFSET, implementation);
+                _data.SetNumber<uint32_t>(ID_OFFSET, myId);
+                _data.SetNumber<uint32_t>(INTERFACEID_OFFSET, interfaceId);
+                _data.SetNumber<uint32_t>(EXCHANGEID_OFFSET, exchangeId);
+                _data.SetNumber<uint32_t>(VERSIONID_OFFSET, versionId);
+                _data.SetNumber<type>(TYPE_OFFSET, whatKind);
+                const uint16_t classNameLength = _data.SetText(STRINGS_OFFSET, className);
+                _data.SetText((STRINGS_OFFSET + classNameLength), Callsign());
+            }
+
+        private:
+            type Type() const
+            {
+                return (GetNumber<type>(TYPE_OFFSET));
+            }
 
         public:
             bool IsOffer() const
             {
-                return (_className[0] == '\0') && (_className[1] == OFFER);
+                return (Type() == OFFER);
             }
             bool IsRevoke() const
             {
-                return (_className[0] == '\0') && (_className[1] == REVOKE);
+                return (Type() == REVOKE);
             }
             bool IsRequested() const
             {
-                return (_className[0] == '\0') && (_className[1] == REQUEST);
+                return (Type() == REQUEST);
             }
             bool IsAcquire() const
             {
-                return (IsRevoke() == false) && (IsOffer() == false) && (IsRequested() == false);
+                return (Type() == ACQUIRE);
             }
             void Set(const uint32_t myId)
             {
-                _exchangeId = ParentId();
-                _implementation = 0;
-                _interfaceId = ~0;
-                _versionId = ~0;
-                _id = myId;
-                _className[0] = '\0';
-                _className[1] = ACQUIRE;
+                Set(myId, _T(""), 0, ~0, ~0, ~0, ACQUIRE);
             }
             void Set(const uint32_t myId, const uint32_t interfaceId, Core::instance_id implementation, const uint32_t exchangeId)
             {
-                _exchangeId = exchangeId;
-                _implementation = implementation;
-                _interfaceId = interfaceId;
-                _versionId = 0;
-                _id = myId;
-                _className[0] = '\0';
-                _className[1] = REQUEST;
+                Set(myId, _T(""), implementation, interfaceId, exchangeId, 0, REQUEST);
             }
             void Set(const uint32_t myId, const uint32_t interfaceId, Core::instance_id implementation, const type whatKind)
             {
                 ASSERT((whatKind != ACQUIRE) && (whatKind != REQUEST));
-
-                _exchangeId = ParentId();
-                _implementation = implementation;
-                _interfaceId = interfaceId;
-                _versionId = 0;
-                _id = myId;
-                _className[0] = '\0';
-                _className[1] = whatKind;
+                Set(myId, _T(""), implementation, interfaceId, ParentId(), 0, whatKind);
             }
             void Set(const uint32_t myId, const string& className, const uint32_t interfaceId, const uint32_t versionId)
             {
-                _exchangeId = ParentId();
-                _implementation = 0;
-                _interfaceId = interfaceId;
-                _versionId = versionId;
-                _id = myId;
-                const std::string converted(Core::ToString(className));
-                ::strncpy(_className, converted.c_str(), sizeof(_className));
+                Set(myId, className, 0, interfaceId, ParentId(), versionId, ACQUIRE);
             }
             uint32_t Id() const
             {
-                return (_id);
+                return (GetNumber<uint32_t>(ID_OFFSET));
             }
             Core::instance_id Implementation() const
             {
-                return (_implementation);
+                return (GetNumber<Core::instance_id>(IMPLEMENTATION_OFFSET));
             }
             uint32_t InterfaceId() const
             {
-                return (_interfaceId);
+                return (GetNumber<uint32_t>(INTERFACEID_OFFSET));
             }
             uint32_t ExchangeId() const
             {
-                return (_exchangeId);
+                return (GetNumber<uint32_t>(EXCHANGEID_OFFSET));
             }
             uint32_t VersionId() const
             {
-                return (_versionId);
+                return (GetNumber<uint32_t>(VERSIONID_OFFSET));
             }
             const string ClassName() const
             {
-                return (Core::ToString(std::string(_className)));
+                return GetText(STRINGS_OFFSET);
+            }
+
+        public:
+            uint32_t Length() const
+            {
+                return (_data.Size());
+            }
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
+            {
+                return(_data.Serialize(offset, stream, maxLength));
+            }
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t length, const uint32_t offset)
+            {
+                return(_data.Deserialize(offset, stream, length));
             }
 
         private:
-            uint32_t _id;
-            Core::instance_id _implementation;
-            uint32_t _interfaceId;
-            uint32_t _exchangeId;
-            uint32_t _versionId;
-            char _className[64];
+            Frame _data;
         };
 
         class Setup {
@@ -336,7 +372,7 @@ namespace RPC {
                 uint16_t length = 0;
                 _data.SetNumber<Core::instance_id>(0, implementation);
                 _data.SetNumber<uint32_t>(sizeof(Core::instance_id), sequenceNumber);
-                
+
                 length = _data.SetText(sizeof(Core::instance_id) + sizeof(uint32_t), proxyStubPath);
                 length += _data.SetText(sizeof(Core::instance_id)+ sizeof(uint32_t) + length, messagingSettings);
                 _data.SetText(sizeof(Core::instance_id)+ sizeof(uint32_t) + length, warningReportingSettings);
@@ -356,35 +392,33 @@ namespace RPC {
 
                 uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) ;   // skip implentation and sequencenumber
 
-                _data.GetText(length, value); 
-                
+                _data.GetText(length, value);
+
                 return (value);
             }
             string MessagingCategories() const
             {
                 string value;
 
-                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) ;   // skip implentation and sequencenumber 
+                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) ;   // skip implentation and sequencenumber
                 length += _data.GetText(length, value);  // skip proxyStub path
 
-                _data.GetText(length, value); 
+                _data.GetText(length, value);
 
                 return (value);
             }
-
             string WarningReportingCategories() const
             {
                 string value;
 
-                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) ;   // skip implentation and sequencenumber 
+                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) ;   // skip implentation and sequencenumber
                 length += _data.GetText(length, value);  // skip proxyStub path
-                length += _data.GetText(length, value);  // skip messagingcategories 
+                length += _data.GetText(length, value);  // skip messagingcategories
 
-                _data.GetText(length, value); 
+                _data.GetText(length, value);
 
                 return (value);
             }
-
             Core::instance_id Implementation() const
             {
                 Core::instance_id result = 0;
