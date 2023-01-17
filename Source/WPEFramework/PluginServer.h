@@ -1678,7 +1678,7 @@ namespace PluginHost {
                     while (index != _requestObservers.end()) {
                         (*index)->Release();
                         index++;
-                    }
+                }
                     _requestObservers.clear();
                 }
 
@@ -2137,7 +2137,11 @@ POP_WARNING()
                 Notifiers::iterator index(_notifiers.begin());
 
                 while (index != _notifiers.end()) {
-                    (*index)->Initialize(callsign, entry);
+                    PluginHost::IPlugin::ILifeTime* lifetime = (*index)->QueryInterface<PluginHost::IPlugin::ILifeTime>();
+                    if (lifetime != nullptr) {
+                        lifetime->Initialize(callsign, entry);
+                        lifetime->Release();
+                    }
                     index++;
                 }
 
@@ -2178,7 +2182,11 @@ POP_WARNING()
                 Notifiers::iterator index(_notifiers.begin());
 
                 while (index != _notifiers.end()) {
-                    (*index)->Deinitialized(callsign, entry);
+                    PluginHost::IPlugin::ILifeTime* lifetime = (*index)->QueryInterface<PluginHost::IPlugin::ILifeTime>();
+                    if (lifetime != nullptr) {
+                        lifetime->Deinitialized(callsign, entry);
+                        lifetime->Release();
+                    }
                     index++;
                 }
 
