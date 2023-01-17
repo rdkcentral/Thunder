@@ -196,8 +196,8 @@ namespace ProxyStub {
             _refCount++;
             _adminLock.Unlock();
         }
-        uint32_t Release() const {
-            uint32_t result = Core::ERROR_NONE;
+        Core::hresult Release() const {
+            Core::hresult result = Core::ERROR_NONE;
 
             _adminLock.Lock();
             _refCount--;
@@ -429,9 +429,9 @@ namespace ProxyStub {
         {
             _unknown.AddRef();
         }
-        uint32_t Release() const override
+        Core::hresult Release() const override
         {
-            uint32_t result = _unknown.Release();
+            Core::hresult result = _unknown.Release();
 
             if (result != Core::ERROR_NONE) {
                 delete (this);

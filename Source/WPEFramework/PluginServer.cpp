@@ -308,9 +308,9 @@ namespace PluginHost
     }
 
     // Methods to stop/start/update the service.
-    uint32_t Server::Service::Activate(const PluginHost::IShell::reason why)
+    /* virtual */ Core::hresult Server::Service::Activate(const PluginHost::IShell::reason why)
     {
-        uint32_t result = Core::ERROR_NONE;
+        Core::hresult result = Core::ERROR_NONE;
 
         Lock();
 
@@ -480,8 +480,8 @@ namespace PluginHost
         return (result);
     }
 
-    uint32_t Server::Service::Resume(const reason why) {
-        uint32_t result = Core::ERROR_NONE;
+   Core::hresult Server::Service::Resume(const reason why) {
+        Core::hresult result = Core::ERROR_NONE;
 
         Lock();
 
@@ -516,9 +516,9 @@ namespace PluginHost
         return (result);
     }
 
-    uint32_t Server::Service::Deactivate(const reason why)
+    /* virtual */ Core::hresult Server::Service::Deactivate(const reason why)
     {
-        uint32_t result = Core::ERROR_NONE;
+        Core::hresult result = Core::ERROR_NONE;
 
         Lock();
 
@@ -599,9 +599,9 @@ namespace PluginHost
         return (result);
     }
 
-    uint32_t Server::Service::Suspend(const reason why) {
+    Core::hresult Server::Service::Suspend(const reason why) {
 
-        uint32_t result = Core::ERROR_NONE;
+        Core::hresult result = Core::ERROR_NONE;
 
         if (Startup() == PluginHost::IShell::startup::DEACTIVATED) {
             // We need to shutdown completely
@@ -637,8 +637,8 @@ namespace PluginHost
         return (result);
     }
 
-    uint32_t Server::Service::Unavailable(const reason why) {
-        uint32_t result = Core::ERROR_NONE;
+    /* virtual */ Core::hresult Server::Service::Unavailable(const reason why) {
+        Core::hresult result = Core::ERROR_NONE;
 
         Lock();
 
@@ -681,8 +681,8 @@ namespace PluginHost
 
     }
 
-    uint32_t Server::Service::Hibernate(const PluginHost::IShell::reason /* why */) {
-        uint32_t result = Core::ERROR_NONE;
+    /* virtual */ Core::hresult Server::Service::Hibernate(const PluginHost::IShell::reason /* why */) {
+        Core::hresult result = Core::ERROR_NONE;
 
         Lock();
 
@@ -715,7 +715,7 @@ namespace PluginHost
     }
 
 
-    /* virtual */ uint32_t Server::Service::Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response)
+    /* virtual */ Core::hresult Server::Service::Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response)
     {
         return (_administrator.Submit(id, response));
     }

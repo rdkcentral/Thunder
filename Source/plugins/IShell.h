@@ -218,24 +218,24 @@ namespace PluginHost {
         virtual string SystemRootPath() const = 0;
 
         //! SystemRootPath: Set <config:systemrootpath>/
-        virtual uint32_t SystemRootPath(const string& systemRootPath) = 0;
+        virtual Core::hresult SystemRootPath(const string& systemRootPath) = 0;
 
         //! Startup: <config:startup>/
         virtual PluginHost::IShell::startup Startup() const = 0;
 
         //! Startup: Set<startup,autostart,resumed states>/
-        virtual uint32_t Startup(const startup value) = 0;
+        virtual Core::hresult Startup(const startup value) = 0;
 
         //! Substituted Config value
         virtual string Substitute(const string& input) const = 0;
 
         virtual bool Resumed() const = 0;
-        virtual uint32_t Resumed(const bool value) = 0;
+        virtual Core::hresult Resumed(const bool value) = 0;
 
         virtual string HashKey() const = 0;
         
         virtual string ConfigLine() const = 0;
-        virtual uint32_t ConfigLine(const string& config) = 0;
+        virtual Core::hresult ConfigLine(const string& config) = 0;
 
         //! Return whether the given version is supported by this IShell instance.
         virtual bool IsSupported(const uint8_t version) const = 0;
@@ -259,16 +259,16 @@ namespace PluginHost {
 
         // Methods to Activate/Deactivate and Unavailable the aggregated Plugin to this shell.
         // NOTE: These are Blocking calls!!!!!
-        virtual uint32_t Activate(const reason) = 0;
-        virtual uint32_t Deactivate(const reason) = 0;
-        virtual uint32_t Unavailable(const reason) = 0;
-        virtual uint32_t Hibernate(const reason) = 0;
+        virtual Core::hresult Activate(const reason) = 0;
+        virtual Core::hresult Deactivate(const reason) = 0;
+        virtual Core::hresult Unavailable(const reason) = 0;
+        virtual Core::hresult Hibernate(const reason) = 0;
         virtual reason Reason() const = 0;
 
         // Method to access, in the main process space, the channel factory to submit JSON objects to be send.
         // This method will return a error if it is NOT in the main process.
         /* @stubgen:stub */
-        virtual uint32_t Submit(const uint32_t Id, const Core::ProxyType<Core::JSON::IElement>& response) = 0;
+        virtual Core::hresult Submit(const uint32_t Id, const Core::ProxyType<Core::JSON::IElement>& response) = 0;
 
         // Method to access, in the main space, a COM factory to instantiate objects out-of-process.
         // This method will return a nullptr if it is NOT in the main process.
@@ -326,11 +326,11 @@ namespace PluginHost {
 
             return (handler == nullptr ? nullptr : handler->RemoteConnection(connectionId));
         }
-        inline uint32_t EnablePersistentStorage(uint32_t permission = 0, const string& user = {}, const string& group = {})
+        inline Core::hresult EnablePersistentStorage(uint32_t permission = 0, const string& user = {}, const string& group = {})
         {
             return (EnableStoragePath(PersistentPath(), permission, user, group));
         }
-        inline uint32_t EnableVolatileStorage(uint32_t permission = 0, const string& user = {}, const string& group = {})
+        inline Core::hresult EnableVolatileStorage(uint32_t permission = 0, const string& user = {}, const string& group = {})
         {
             return (EnableStoragePath(VolatilePath(), permission, user, group));
         }
@@ -360,9 +360,9 @@ namespace PluginHost {
         }
 
     private:
-        inline uint32_t EnableStoragePath(const string& storagePath, uint32_t permission, const string& user, const string& group)
+        inline Core::hresult EnableStoragePath(const string& storagePath, uint32_t permission, const string& user, const string& group)
         {
-            uint32_t result = Core::ERROR_NONE;
+            Core::hresult result = Core::ERROR_NONE;
 
             // Make sure there is a path to the persitent infmration
             Core::File path(storagePath);

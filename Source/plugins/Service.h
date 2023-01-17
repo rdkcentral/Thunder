@@ -206,9 +206,9 @@ namespace PluginHost {
             Core::SafeSyncType<Core::CriticalSection> sync(_adminLock);
             return (_config.Configuration().Configuration.Value());
         }
-        uint32_t ConfigLine(const string& newConfiguration) override
+        Core::hresult ConfigLine(const string& newConfiguration) override
         {
-            uint32_t result = Core::ERROR_ILLEGAL_STATE;
+            Core::hresult result = Core::ERROR_ILLEGAL_STATE;
 
             Lock();
 
@@ -243,7 +243,7 @@ namespace PluginHost {
         {
             return (_config.Configuration().SystemRootPath.Value());
         }
-        uint32_t SystemRootPath(const string& systemRootPath) override
+        Core::hresult SystemRootPath(const string& systemRootPath) override
         {
             _config.SystemRootPath(systemRootPath);
             return (Core::ERROR_NONE);
@@ -256,7 +256,7 @@ namespace PluginHost {
         {
             return ((_config.Configuration().Resumed.IsSet() ? _config.Configuration().Resumed.Value() : (_config.Configuration().Startup.Value() == PluginHost::IShell::startup::ACTIVATED)));
         }
-        uint32_t Resumed(const bool resumed) override
+        Core::hresult Resumed(const bool resumed) override
         {
             _config.Resumed(resumed);
             return (Core::ERROR_NONE);
@@ -265,7 +265,7 @@ namespace PluginHost {
         {
             return _config.Configuration().Startup.Value();
         }
-        uint32_t Startup(const PluginHost::IShell::startup value) override
+        Core::hresult Startup(const PluginHost::IShell::startup value) override
         {
             _config.Startup(value);
             _config.AutoStart(value == PluginHost::IShell::startup::ACTIVATED);

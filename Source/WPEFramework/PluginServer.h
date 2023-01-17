@@ -961,7 +961,7 @@ namespace PluginHost {
             virtual uint8_t Minor() const override;
             virtual uint8_t Patch() const override;
 
-            uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
+            Core::hresult Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
             ISubSystem* SubSystems() override;
             void Notify(const string& message) override;
             void* QueryInterface(const uint32_t id) override;
@@ -1053,10 +1053,10 @@ namespace PluginHost {
 
             // Methods to Activate and Deactivate the aggregated Plugin to this shell.
             // These are Blocking calls!!!!!
-            uint32_t Activate(const reason) override;
-            uint32_t Deactivate(const reason) override;
-            uint32_t Unavailable(const reason) override;
-            uint32_t Hibernate(const reason) override;
+            Core::hresult Activate(const reason) override;
+            Core::hresult Deactivate(const reason) override;
+            Core::hresult Unavailable(const reason) override;
+            Core::hresult Hibernate(const reason) override;
 
             reason Reason() const override
             {
