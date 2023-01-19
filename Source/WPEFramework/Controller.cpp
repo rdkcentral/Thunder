@@ -301,7 +301,7 @@ namespace Plugin {
 
         ASSERT(_pluginServer != nullptr);
 
-        if ((basecallsign.empty() == false) && (basecallsign.empty() == false) && (basecallsign != controllerName) && (newcallsign != controllerName)) {
+        if ((basecallsign.empty() == false) && (basecallsign != controllerName) && (newcallsign != controllerName)) {
             Core::ProxyType<PluginHost::Server::Service> baseService, newService;
 
             if (_pluginServer->Services().FromIdentifier(basecallsign, baseService) != Core::ERROR_NONE) {
