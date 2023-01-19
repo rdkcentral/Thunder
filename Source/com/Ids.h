@@ -46,6 +46,7 @@ namespace RPC {
         ID_CHANNEL                      = (ID_OFFSET_INTERNAL + 0x0028),
         ID_SECURITY                     = (ID_OFFSET_INTERNAL + 0x0029),
         ID_AUTHENTICATE                 = (ID_OFFSET_INTERNAL + 0x002A),
+        ID_PLUGIN_LIFETIME              = (ID_OFFSET_INTERNAL + 0x002B),
 
         ID_SHELL                        = (ID_OFFSET_INTERNAL + 0x0030),
         ID_STATECONTROL                 = (ID_OFFSET_INTERNAL + 0x0031),
