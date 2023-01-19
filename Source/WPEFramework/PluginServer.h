@@ -1136,7 +1136,12 @@ namespace PluginHost {
                         if (progressedState == 0) {
                             progressedState = 1;
                         }
-                        Core::Library newLib = Core::Library(iter->c_str());
+
+                        // Loading a library, in the static initializers, might register Service::MetaData structures. As
+                        // the dlopen has a process wide system lock, make sure that the, during open used lock of the 
+                        // ServiceAdministrator, is already taken before entering the dlopen. This can only be achieved
+                        // by forwarding this call to the ServiceAdministrator, so please so...
+                        Core::Library newLib = Core::ServiceAdministrator::Instance().LoadLibrary(iter->c_str());
 
                         if (newLib.IsLoaded() == true) {
                             if (progressedState == 1) {
