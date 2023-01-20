@@ -273,7 +273,8 @@ namespace PluginHost
         if (id == Core::IUnknown::ID) {
             AddRef();
             result = static_cast<IUnknown*>(this);
-        } if (id == PluginHost::IShell::ID) {
+        } 
+        else if (id == PluginHost::IShell::ID) {
             AddRef();
             result = static_cast<PluginHost::IShell*>(this);
         }
