@@ -507,7 +507,7 @@ class Identifier():
                     self.type[i] = Type(String(True))
                 elif type == "__stubgen_integer":
                     self.type[i] = Type(BuiltinInteger(True))
-                elif type == "__stubgen_unspecified_integer":
+                elif type == "__stubgen_undetermined_integer":
                     self.type[i] = Type(BuiltinInteger(False))
                 else:
                     found = []
@@ -609,7 +609,7 @@ def Evaluate(identifiers_):
 
     # attempt to parse the arithmetics...
     try:
-        x = [str(v.value) if (isinstance(v, (Variable, Enumerator)) and v.value) else str(v) for v in val]
+        x = [str(v.value) if (isinstance(v, (Variable, Enumerator)) and v.value != None) else str(v) for v in val]
         value = eval("".join(x))
     except:
         try:
@@ -801,7 +801,7 @@ def TypeStr(s):
 
 
 def ValueStr(s):
-    return str(s) if isinstance(s, int) else str(Undefined(s, "/* unparsable expression */ ")) if not isinstance(s, str) else s
+    return str(s) if isinstance(s, int) else (str(Undefined(s, "/* unparsable expression */ ")) if not isinstance(s, str) else s)
 
 
 # Holds typedef definition
@@ -920,6 +920,11 @@ class Enum(Identifier, Block):
     def GetValue(self):
         return self._last_value
 
+    def Enumerator(self, name):
+        for item in self.items:
+            if item.name == name:
+                return item
+        return None
 
 # Holds functions
 class Function(Block, Name):
@@ -2161,6 +2166,7 @@ def ParseFiles(source_files, includePaths = [], log = None):
         if source_file:
             quiet = (source_file[0] == "@")
             contents += ReadFile((source_file[1:] if quiet else source_file), includePaths, quiet, "")
+
     return Parse(contents,log)
 
 

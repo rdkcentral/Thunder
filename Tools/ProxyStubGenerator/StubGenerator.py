@@ -54,16 +54,16 @@ PROXYSTUB_CPP_NAME = "ProxyStubs_%s.cpp"
 
 MIN_INTERFACE_ID = 64
 INSTANCE_ID = "Core::instance_id"
+HRESULT = "Core::hresult"
 
 DEFAULT_DEFINITIONS_FILE = "default.h"
 IDS_DEFINITIONS_FILE = "Ids.h"
 
+log = Log.Log(NAME, BE_VERBOSE, SHOW_WARNINGS)
 
-log = Log.Log(NAME,BE_VERBOSE,SHOW_WARNINGS)
 
 # -------------------------------------------------------------------------
 # Exception classes
-
 
 class NotModifiedException(RuntimeError):
     pass
@@ -86,66 +86,391 @@ class TypenameError(RuntimeError):
 
 # -------------------------------------------------------------------------
 
-
 def CreateName(ns):
     return ns.replace("::I", "").replace("::", "")[1 if ns[0] == "I" else 0:]
 
 
-def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan_only=False):
-    class Interface():
-        def __init__(self, obj, iid, file):
-            self.obj = obj
-            self.id = iid
-            self.file = file
+class Emitter:
+    def __init__(self, file, size=2):
+        self.indent = ""
+        self.size = size
+        self.file = file
 
-    # Looks for interface classes (ie. classes inheriting from Core::Unknown and specifying ID enum).
-    def FindInterfaceClasses(tree):
-        interfaces = []
+    def IndentInc(self):
+        self.indent += ' ' * self.size
 
-        def __Traverse(tree, faces):
-            if isinstance(tree, CppParser.Namespace) or isinstance(tree, CppParser.Class):
-                for c in tree.classes:
-                    if not isinstance(c, CppParser.TemplateClass):
-                        if (c.full_name.find(INTERFACE_NAMESPACE + "::")) == 0:
-                            inherits_iunknown = False
-                            for a in c.ancestors:
-                                if CLASS_IUNKNOWN in str(a[0]):
-                                    inherits_iunknown = True
+    def IndentDec(self):
+        self.indent = self.indent[:-INDENT_SIZE]
+
+    def String(self, string):
+        self.file.write(string)
+
+    def Line(self, string=""):
+        self.String(((self.indent + string) if len((self.indent + string).strip()) else "") + "\n")
+
+
+class Interface():
+    def __init__(self, obj, iid, file):
+        self.obj = obj
+        self.id = iid
+        self.file = file
+
+
+# Looks for interface classes (ie. classes inheriting from Core::Unknown and specifying ID enum).
+def FindInterfaceClasses(tree):
+    interfaces = []
+
+    def __Traverse(tree, faces):
+        if isinstance(tree, CppParser.Namespace) or isinstance(tree, CppParser.Class):
+            for c in tree.classes:
+                if not isinstance(c, CppParser.TemplateClass):
+                    if (c.full_name.find(INTERFACE_NAMESPACE + "::")) == 0:
+                        inherits_iunknown = False
+                        for a in c.ancestors:
+                            if CLASS_IUNKNOWN in str(a[0]):
+                                inherits_iunknown = True
+                                break
+
+                        if inherits_iunknown:
+                            has_id = False
+                            for e in c.enums:
+                                if not e.scoped:
+                                    for item in e.items:
+                                        if item.name == "ID":
+                                            faces.append(Interface(c, item.value, source_file))
+                                            has_id = True
+                                            break
+
+                            if not has_id and not c.omit:
+                                log.Warn("class %s does not have ID enumerator" % c.full_name, source_file)
+
+                    elif not c.omit:
+                        log.Info("class %s not in %s namespace" % (c.full_name, INTERFACE_NAMESPACE), source_file)
+
+                __Traverse(c, faces)
+
+        if isinstance(tree, CppParser.Namespace):
+            for n in tree.namespaces:
+                __Traverse(n, faces)
+
+    __Traverse(tree, interfaces)
+    return interfaces
+
+
+# Cut out interface namespace from all identifiers found in a string
+def Strip(string, iface_namespace_l, index=0):
+    pos = 0
+    idx = index
+    length = 0
+
+    for p in iface_namespace_l:
+
+        def _FindIdentifier(string, ps, pos, idx, length):
+            while (True):
+                i = string.find(ps, idx)
+                if i != -1:
+                    if (((length == 0) and (i == 0 or string[i - 1] in [" ", "(", ",", "<"])) or (i == pos + length)):
+                        if length == 0:
+                            pos = i
+                        length += len(ps)
+                        idx = i + 1
+                        break
+                    else:
+                        idx = i + 1
+                else:
+                    if length != 0:
+                        return [pos, idx, length, True]
+                    break
+            return [pos, idx, length, False]
+
+        [pos, idx, length, finish] = _FindIdentifier(string, p + "::", pos, idx, length)
+        if finish:
+            break
+
+    string = Strip(string, iface_namespace_l, pos + length + 1) if (length > 0) else string
+    if length > 2:
+        string = string[0:pos] + string[pos + length:]
+
+    return string
+
+
+# Generate interface information in lua
+def GenerateLuaData(emit, interfaces_list, enums_list, source_file, includePaths = [], defaults = "", extra_includes = []):
+
+    if not source_file:
+        emit.Line("-- enums")
+
+        for k,v in lua_enums.items():
+            emit.Line("ENUMS[\"%s\"] = {" % k)
+            emit.IndentInc()
+            text = []
+            size = len(v)
+            idx = 1
+
+            for val,name in v.items():
+                emit.Line("[%s] = \"%s\"%s" % (val, name, "," if idx != size else ""))
+                idx += 1
+
+            emit.IndentDec()
+            emit.Line("}")
+            emit.Line()
+
+        return
+
+    files = []
+
+    if defaults:
+        files.append(defaults)
+
+    files.extend(extra_includes)
+    files.append(source_file)
+
+    tree = CppParser.ParseFiles(files, includePaths, log)
+
+    if not isinstance(tree, CppParser.Namespace):
+        raise SkipFileError(source_file)
+
+    interfaces = FindInterfaceClasses(tree)
+    if not interfaces:
+        raise NoInterfaceError(source_file)
+
+    if not interfaces_list:
+        emit.Line("-- Interfaces definition data file")
+        emit.Line("-- Generated automatically. DO NOT EDIT")
+        emit.Line()
+        emit.Line("INTERFACES, METHODS, ENUMS, Type = ...")
+        emit.Line()
+
+    emit.Line("--  %s" % os.path.basename(source_file))
+
+    iface_namespace_l = INTERFACE_NAMESPACE.split("::")
+    iface_namespace = iface_namespace_l[-1]
+
+    for iface in interfaces:
+        iface_name = Strip(iface.obj.type.split(iface_namespace + "::", 1)[1], iface_namespace_l)
+
+        interfaces_var_name = "INTERFACES"
+        methods_var_name = "METHODS"
+
+        assume_hresult = iface.obj.is_json
+
+        if (iface_namespace + "::") not in iface.obj.full_name:
+            continue # interface in other namespace
+
+        if iface.obj.omit:
+            continue
+
+        id_enumerator = None
+
+        for e in iface.obj.enums:
+            id_enumerator = e.Enumerator("ID")
+            if id_enumerator:
+                break
+
+        id_value = id_enumerator.value
+
+        if id_value in interfaces_list:
+            log.Info("Skipping duplicate interface definition %s (%s)" % (iface_name, id_value))
+            continue
+
+        interfaces_list[id_value] = True
+
+        emit.Line("%s[%s] = \"%s\"" % (interfaces_var_name, id_value, iface_name))
+        emit.Line("%s[%s] = {" % (methods_var_name, id_value))
+        emit.IndentInc()
+        emit_methods = [m for m in iface.obj.methods if m.IsPureVirtual()]
+
+        for idx, m in enumerate(emit_methods):
+            name = "name = \"%s\"" % m.name
+            params = []
+            retval = []
+            items = [ name ]
+
+            def Convert(paramtype, retval, vars, hresult=False):
+                if isinstance(paramtype.type, list):
+                    return
+
+                param = paramtype.type.Resolve()
+                meta = paramtype.meta
+                p = param.Type()
+
+                if isinstance(p, CppParser.Integer):
+                    if param.IsPointer():
+                        value = "16"
+                        if meta.length:
+                            for v in vars:
+                                if v.name == meta.length[0]:
+                                    if v.type.Type().size == "char":
+                                        value = "8"
+                                    elif v.type.Type().size == "long":
+                                        value = "32"
+                                    break
+                        value = "BUFFER" + value
+                    else:
+                        if paramtype.type.TypeName().endswith(HRESULT):
+                            value = "HRESULT"
+                        elif p.size == "char" and "signed" not in p.type and "unsigned" not in p.type and "_t" not in p.type:
+                            value = "CHAR"
+                        else:
+                            if p.size == "char":
+                                value = "INT8"
+                            elif p.size == "short":
+                                value = "INT16"
+                            elif p.size == "long":
+                                value = "INT32"
+                            elif p.size == "long long":
+                                value = "INT64"
+                            if not p.signed:
+                                value = "U" + value
+
+                    if value == "UINT32":
+                        if hresult:
+                           value = "HRESULT"
+                        else:
+                            if retval and retval.meta.interface and retval.meta.interface[0] == paramtype.name:
+                                value = "INTERFACE"
+                            else:
+                                for v in vars:
+                                    if v.meta.interface and v.meta.interface[0] == paramtype.name:
+                                        value = "INTERFACE"
+                                        break
+
+
+                    return ["type = Type." + value]
+
+                elif isinstance(p, CppParser.String):
+                    return ["type = Type.STRING"]
+
+                elif isinstance(p, CppParser.Bool):
+                    return ["type = Type.BOOL"]
+
+                elif isinstance(p, CppParser.Class):
+                    if param.IsPointer():
+                        return ["type = Type.OBJECT", "class = \"%s\"" % Strip(param.TypeName(), iface_namespace_l)]
+                    else:
+                        value = ["type = Type.POD", "class = \"%s\"" % Strip(param.type.full_name, iface_namespace_l)]
+                        pod_params = []
+                        for v in p.vars:
+                            param_info = Convert(v, None, p.vars)
+                            text = []
+                            text.append("name = " + v.name)
+                            if param_info:
+                                text.extend(param_info)
+                            pod_params.append("{ %s }" % ", ".join(text))
+
+                        if pod_params:
+                            value.append("pod = { %s }" % ", ".join(pod_params))
+                        return value
+
+                elif isinstance(p, CppParser.Enum):
+                    value = "32"
+                    signed = "U"
+                    if p.type.Type().size == "char":
+                        value = "8"
+                    elif p.type.Type().size == "short":
+                        value = "16"
+                    if p.type.Type().signed:
+                        signed = ""
+
+                    name = Strip(param.type.full_name, iface_namespace_l)
+                    if name not in enums_list:
+                        data = dict()
+                        for e in p.items:
+                            data[e.value] = e.name
+                        enums_list[name] = data
+
+                    value =  ["type = Type.ENUM" + signed + value, "enum = \"%s\"" % name]
+
+                    if "bitmask" in meta.decorators or "bitmask" in paramtype.meta.decorators:
+                        value.append("bitmask = true")
+
+                    return value
+
+                elif isinstance(p, CppParser.BuiltinInteger) and paramtype.type.TypeName().endswith(INSTANCE_ID):
+                    return ["type = Type.OBJECT" ] # but without a class
+
+                elif isinstance(p, CppParser.Void):
+                    if param.IsPointer():
+                        index = 0
+
+                        if meta.interface:
+                            counter = 0
+                            for v in vars:
+                                if v.meta.input or not v.meta.output:
+                                    counter += 1
+
+                                if meta.interface[0] == v.name:
+                                    index = counter
                                     break
 
-                            if inherits_iunknown:
-                                has_id = False
-                                for e in c.enums:
-                                    if not e.scoped:
-                                        for item in e.items:
-                                            if item.name == "ID":
-                                                faces.append(Interface(c, item.value, source_file))
-                                                has_id = True
-                                                break
-                                if not has_id and not c.omit:
-                                    log.Warn("class %s does not have ID enumerator" % c.full_name, source_file)
-                            elif not c.omit:
-                                log.Info("class %s not does not inherit from %s" % (c.full_name, CLASS_IUNKNOWN), source_file)
-                        elif not c.omit:
-                            log.Info("class %s not in %s namespace" % (c.full_name, INTERFACE_NAMESPACE), source_file)
+                        value = ["type = Type.OBJECT"]
 
-                    __Traverse(c, faces)
+                        if index:
+                            value.append("interface_param = %s" % index)
 
-            if isinstance(tree, CppParser.Namespace):
-                for n in tree.namespaces:
-                    __Traverse(n, faces)
+                        return value
+                    else:
+                        return None
 
-        __Traverse(tree, interfaces)
-        return interfaces
+                return ["type = nil"]
 
+            rv = Convert(m.retval, m.retval, m.vars, assume_hresult)
+            if rv:
+                text = []
+
+                if m.retval.name and "__unnamed" not in m.retval.name:
+                    text.append("name = \"%s\"" % m.retval.name)
+
+                text.extend(rv)
+
+                retval.append(" { %s }" % ", ".join(text))
+
+            for p in m.vars:
+                param = Convert(p, m.retval, m.vars)
+
+                if param:
+                    text = []
+
+                    if p.name and "__unnamed" not in p.name:
+                        text.append("name = \"%s\"" % p.name)
+
+                    text.extend(param)
+
+                    if p.meta.input or not p.meta.output:
+                        params.append(" { %s }" % ", ".join(text))
+
+                    if p.meta.output:
+                        retval.append(" { %s }" % ", ".join(text))
+
+            if retval:
+                items.append("retvals = { %s }" % ", ".join(retval))
+
+            if params:
+                items.append("params = { %s }" % ", ".join(params))
+
+            # emit.Line("-- %s" % m.Proto())
+            emit.Line("[%s] = { %s }%s " % (idx + 3, ", ".join(items), "," if idx != len(emit_methods) - 1 else ""))
+
+        emit.IndentDec()
+        emit.Line("}")
+        emit.Line()
+
+
+def GenerateStubs(output_file, source_file, includePaths = [], defaults = "", extra_includes = [], scan_only=False):
     log.Info("Parsing '%s'..." % source_file)
 
     if not FORCE and (os.path.exists(output_file) and (os.path.getmtime(source_file) < os.path.getmtime(output_file))):
         raise NotModifiedException(output_file)
 
-    ids = os.path.join("@" + os.path.dirname(source_file), IDS_DEFINITIONS_FILE)
+    files = []
 
-    tree = CppParser.ParseFiles([defaults, ids, source_file], includePaths,log)
+    if defaults:
+        files.append(defaults)
+
+    files.extend(extra_includes)
+    files.append(source_file)
+
+    tree = CppParser.ParseFiles(files, includePaths, log)
     if not isinstance(tree, CppParser.Namespace):
         raise SkipFileError(source_file)
 
@@ -161,24 +486,6 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
     with open(output_file, "w") as file:
         iface_namespace_l = INTERFACE_NAMESPACE.split("::")
         iface_namespace = iface_namespace_l[-1]
-
-        class Emitter:
-            def __init__(self, file, size=2):
-                self.indent = ""
-                self.size = size
-                self.file = file
-
-            def IndentInc(self):
-                self.indent += ' ' * self.size
-
-            def IndentDec(self):
-                self.indent = self.indent[:-INDENT_SIZE]
-
-            def String(self, string):
-                file.write(string)
-
-            def Line(self, string=""):
-                self.String(((self.indent + string) if len((self.indent + string).strip()) else "") + "\n")
 
         def EmitFunctionOrder(methods):
             if methods:
@@ -237,57 +544,20 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
 
         for iface in interfaces:
             if (iface_namespace + "::") not in iface.obj.full_name:
-                continue # inteface in other namespace
-
-            # Cut out interface namespace from all identifiers found in a string
-            def Strip(string, index=0):
-                a = string
-                pos = 0
-                idx = index
-                length = 0
-                bailout = False
-                for p in iface_namespace_l:
-
-                    def _FindIdentifier(string, ps, pos, idx, length):
-                        while (True):
-                            i = string.find(ps, idx)
-                            if i != -1:
-                                if (((length == 0) and (i == 0 or string[i - 1] in [" ", "(", ",", "<"])) or (i == pos + length)):
-                                    if length == 0:
-                                        pos = i
-                                    length += len(ps)
-                                    idx = i + 1
-                                    break
-                                else:
-                                    idx = i + 1
-                            else:
-                                if length != 0:
-                                    return [pos, idx, length, True]
-                                break
-                        return [pos, idx, length, False]
-
-                    [pos, idx, length, finish] = _FindIdentifier(string, p + "::", pos, idx, length)
-                    if finish:
-                        break
-
-                string = Strip(string, pos + length + 1) if (length > 0) else string
-                if length > 2:
-                    string = string[0:pos] + string[pos + length:]
-
-                return string
+                continue # interface in other namespace
 
             name = iface.obj.full_name.split(iface_namespace + "::", 1)[1]
             array_name = CreateName(name) + "StubMethods"
             class_name = CreateName(name) + "Proxy"
             stub_name = CreateName(name) + "Stub"
-            iface_name = Strip(iface.obj.type.split(iface_namespace + "::", 1)[1])
+            iface_name = Strip(iface.obj.type.split(iface_namespace + "::", 1)[1], iface_namespace_l)
 
             # Stringifies a type, omitting outer namespace if necessary
             def TypeStr(type):
                 if isinstance(type, list):
                     return TypeStr(CppParser.Type(CppParser.Undefined(type)))
                 else:
-                    return Strip(str(type))
+                    return Strip(str(type), iface_namespace_l)
 
             class EmitType:
                 def __init__(self, type_, cv=[]):
@@ -301,7 +571,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                         type = copy.copy(type_.type)
 
                     self.proto_long = type.Proto()
-                    self.proto = Strip(self.proto_long)
+                    self.proto = Strip(self.proto_long, iface_namespace_l)
 
                     meta = type_.meta
                     if type.IsValue():
@@ -334,7 +604,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                     self.expanded_typename = self.type.Type()
                     self.obj = self.expanded_typename if isinstance(self.expanded_typename, CppParser.Class) else None
                     self.str = TypeStr(self.unexpanded)
-                    self.str_typename = Strip(type.TypeName())
+                    self.str_typename = Strip(type.TypeName(), iface_namespace_l)
                     self.str_noptrref = TypeStr(self.unexpanded).replace("*", "").replace("&", "")
                     self.str_noptrptrref = TypeStr(self.unexpanded).replace("**", "*").replace("&", "")
                     self.str_nocvref = ("const " if type.IsPointerToConst() else "") + self.str_typename + ("*" if self.is_ptr else "")
@@ -467,7 +737,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
 
             # Stringify a method object to full signature
             def SignatureStr(method, parameters=None):
-                return Strip(str(method))
+                return Strip(str(method), iface_namespace_l)
 
             # Stringify a method object to a prototype
             def PrototypeStr(method, parameters=None, unused=False):
@@ -490,9 +760,6 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
                 for q in method.qualifiers:
                     proto += " " + q
                 return proto
-
-            def _ConstCast(typ, identifier):
-                return "const_cast<%s>(%s)" % (typ, identifier)
 
             if iface.obj.omit:
                 log.Info("omitted class %s" % iface.obj.full_name, source_file)
@@ -973,7 +1240,7 @@ def GenerateStubs(output_file, source_file, includePaths = [], defaults="", scan
         for iface in interfaces:
             if (iface_namespace + "::") not in iface.obj.full_name:
                 continue
-            iface_name = Strip(iface.obj.type.split(INTERFACE_NAMESPACE + "::", 1)[1])
+            iface_name = Strip(iface.obj.type.split(INTERFACE_NAMESPACE + "::", 1)[1], iface_namespace_l)
             if not iface_name in announce_list:
                 continue
 
@@ -1311,14 +1578,19 @@ if __name__ == "__main__":
     argparser.add_argument("--code",
                            dest="code",
                            action="store_true",
-                           default=True,
-                           help="Generate stub and proxy code (default)")
+                           default=False,
+                           help="Generate stub and proxy C++ code (default)")
+    argparser.add_argument("--lua-code",
+                           dest="lua_code",
+                           action="store_true",
+                           default=False,
+                           help="Generate lua code with interface information")
     argparser.add_argument("-i",
-                           dest="extra_include",
+                           dest="extra_includes",
                            metavar="FILE",
-                           action="store",
-                           default=DEFAULT_DEFINITIONS_FILE,
-                           help="include a C++ header file (default: include '%s')" % DEFAULT_DEFINITIONS_FILE)
+                           action='append',
+                           default=[],
+                           help="include a additional C++ header file(s), default: Ids.h")
     argparser.add_argument("--namespace",
                            dest="if_namespace",
                            metavar="NS",
@@ -1373,14 +1645,13 @@ if __name__ == "__main__":
                            help='add an include path (can be used multiple times)')
 
     args = argparser.parse_args(sys.argv[1:])
-    DEFAULT_DEFINITIONS_FILE = args.extra_include
     INDENT_SIZE = args.indent_size if (args.indent_size > 0 and args.indent_size < 32) else INDENT_SIZE
     USE_OLD_CPP = args.old_cpp
     SHOW_WARNINGS = not args.no_warnings
     BE_VERBOSE = args.verbose
     FORCE = args.force
-    log.be_verbose = BE_VERBOSE
-    log.warning = SHOW_WARNINGS
+    log.show_infos = BE_VERBOSE
+    log.show_warnings = SHOW_WARNINGS
     INTERFACE_NAMESPACE = args.if_namespace
     OUTDIR = args.outdir
     EMIT_TRACES = args.traces
@@ -1422,6 +1693,7 @@ if __name__ == "__main__":
         print("   @details {desc}        - sets a detailed description for a JSON-RPC method, property or event")
         print("   @param {name} {desc}   - sets a description for a parameter of a JSON-RPC method or event")
         print("   @retval {desc}         - sets a description for a return value of a JSON-RPC method")
+        print("   @bitmask               - indicates that enumerator lists of an enum can be packed into into a bit mask")
         print("   @index                 - marks a parameter in a JSON-RPC property or event to be an index")
         print("   @deprecated            - marks a JSON-RPC method, property or event as deprecated in documentation")
         print("   @obsolete              - marks a JSON-RPC method, property or event as osbsolete in documentation")
@@ -1430,6 +1702,9 @@ if __name__ == "__main__":
         print("Tags shall be placed inside C++ comments.")
         sys.exit()
 
+    if not args.code and not args.lua_code:
+        # Backwards compatibility if user selects nothing let's build proxystubs
+        args.code = True
 
     if not args.path:
         argparser.print_help()
@@ -1449,30 +1724,49 @@ if __name__ == "__main__":
         faces = []
         skipped = []
         if interface_files:
+            if args.lua_code:
+                name = "protocol-thunder-comrpc.data"
+                lua_file = open(("." if not OUTDIR else OUTDIR) + os.sep + name, "w")
+                emit = Emitter(lua_file, INDENT_SIZE)
+                lua_interfaces = dict()
+                lua_enums = dict()
+
             for source_file in interface_files:
                 try:
-                    log.Header(source_file)
-                    output_file = os.path.join(
-                        os.path.dirname(source_file) if not OUTDIR else OUTDIR,
-                        PROXYSTUB_CPP_NAME % CreateName(os.path.basename(source_file)).split(".", 1)[0])
+                    _extra_includes = [ os.path.join("@" + os.path.dirname(source_file), IDS_DEFINITIONS_FILE) ]
+                    _extra_includes.extend(args.extra_includes)
 
-                    out_dir = os.path.dirname(output_file)
-                    if not os.path.exists(out_dir):
-                        os.makedirs(out_dir)
+                    if args.code:
+                        log.Header(source_file)
 
-                    output = GenerateStubs(
-                        output_file, source_file,
-                        args.includePaths,
-                        os.path.join("@" + os.path.dirname(os.path.realpath(__file__)), DEFAULT_DEFINITIONS_FILE),
-                        scan_only)
-                    faces += output
+                        output_file = os.path.join(os.path.dirname(source_file) if not OUTDIR else OUTDIR,
+                            PROXYSTUB_CPP_NAME % CreateName(os.path.basename(source_file)).split(".", 1)[0])
 
-                    log.Print("created file %s" % os.path.basename(output_file))
+                        out_dir = os.path.dirname(output_file)
+                        if not os.path.exists(out_dir):
+                            os.makedirs(out_dir)
 
-                    # dump interfaces if only scanning
-                    if scan_only:
-                        for f in sorted(output, key=lambda x: str(x.id)):
-                            print(f.id, f.obj.full_name)
+                        output = GenerateStubs(
+                            output_file, source_file,
+                            args.includePaths,
+                            os.path.join("@" + os.path.dirname(os.path.realpath(__file__)), DEFAULT_DEFINITIONS_FILE),
+                            _extra_includes,
+                            scan_only)
+
+                        faces += output
+
+                        log.Print("created file %s" % os.path.basename(output_file))
+
+                        # dump interfaces if only scanning
+                        if scan_only:
+                            for f in sorted(output, key=lambda x: str(x.id)):
+                                print(f.id, f.obj.full_name)
+
+                    if args.lua_code:
+                        log.Print("(lua generator) Scanning %s..." % os.path.basename(source_file))
+                        GenerateLuaData(Emitter(lua_file, INDENT_SIZE), lua_interfaces, lua_enums, source_file, args.includePaths,
+                            os.path.join("@" + os.path.dirname(os.path.realpath(__file__)), DEFAULT_DEFINITIONS_FILE),
+                            _extra_includes)
 
                 except NotModifiedException as err:
                     log.Print("skipped file %s, up-to-date" % os.path.basename(output_file))
@@ -1489,35 +1783,42 @@ if __name__ == "__main__":
                 except (CppParser.ParserError, CppParser.LoaderError) as err:
                     log.Error(err)
 
-            if scan_only:
-                print("\nInterface dump:")
+            if args.code:
+                if scan_only:
+                    print("\nInterface dump:")
 
-            sorted_faces = sorted(faces, key=lambda x: str(x.id))
-            for i, f in enumerate(sorted_faces):
-                if isinstance(f.id, int):
-                    if scan_only:
-                        if i and sorted_faces[i - 1].id < f.id - 1:
-                            print("...")
-                        print("%s (%s) - '%s'" %
-                              (hex(f.id) if isinstance(f.id, int) else "?", str(f.id), f.obj.full_name))
-                    if i and sorted_faces[i - 1].id == f.id:
-                        log.Warn(
-                            "duplicate interface ID %s (%s) of %s" %
-                            (hex(f.id) if isinstance(f.id, int) else "?", str(f.id), f.obj.full_name), f.file)
-                else:
-                    log.Info("can't evaluate interface ID \"%s\" of %s" % (str(f.id), f.obj.full_name), f.file)
+                sorted_faces = sorted(faces, key=lambda x: str(x.id))
+                for i, f in enumerate(sorted_faces):
+                    if isinstance(f.id, int):
+                        if scan_only:
+                            if i and sorted_faces[i - 1].id < f.id - 1:
+                                print("...")
+                            print("%s (%s) - '%s'" %
+                                (hex(f.id) if isinstance(f.id, int) else "?", str(f.id), f.obj.full_name))
+                        if i and sorted_faces[i - 1].id == f.id:
+                            log.Warn(
+                                "duplicate interface ID %s (%s) of %s" %
+                                (hex(f.id) if isinstance(f.id, int) else "?", str(f.id), f.obj.full_name), f.file)
+                    else:
+                        log.Info("can't evaluate interface ID \"%s\" of %s" % (str(f.id), f.obj.full_name), f.file)
 
-            if len(interface_files) > 1 and BE_VERBOSE:
-                print("")
+                if len(interface_files) > 1 and BE_VERBOSE:
+                    print("")
 
-            log.Info(("all done; %i file%s processed" %
-                       (len(interface_files) - len(skipped), "s" if len(interface_files) - len(skipped) > 1 else "")) +
-                      ((" (%i file%s skipped)" % (len(skipped), "s" if len(skipped) > 1 else "")) if skipped else "") +
-                      ("; %i interface%s parsed:" % (len(faces), "s" if len(faces) > 1 else "")) +
-                      ((" %i error%s" %
-                        (len(log.errors), "s" if len(log.errors) > 1 else "")) if log.errors else " no errors") +
-                      ((" (%i warning%s)" %
-                        (len(log.warnings), "s" if len(log.warnings) > 1 else "")) if log.warnings else ""))
+                log.Info(("all done; %i file%s processed" %
+                        (len(interface_files) - len(skipped), "s" if len(interface_files) - len(skipped) > 1 else "")) +
+                        ((" (%i file%s skipped)" % (len(skipped), "s" if len(skipped) > 1 else "")) if skipped else "") +
+                        ("; %i interface%s parsed:" % (len(faces), "s" if len(faces) > 1 else "")) +
+                        ((" %i error%s" %
+                            (len(log.errors), "s" if len(log.errors) > 1 else "")) if log.errors else " no errors") +
+                        ((" (%i warning%s)" %
+                            (len(log.warnings), "s" if len(log.warnings) > 1 else "")) if log.warnings else ""))
+
+            if args.lua_code:
+                # Epilogue
+                GenerateLuaData(Emitter(lua_file, INDENT_SIZE), lua_interfaces, lua_enums, None)
+                log.Print("Created %s (%s interfaces, %s enums)" % (lua_file.name, len(lua_interfaces), len(lua_enums)))
+
         else:
             log.Print("Nothing to do")
 
