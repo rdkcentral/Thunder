@@ -524,7 +524,9 @@ def LoadInterface(file, log, all = False, includePaths = []):
                     raise CppParseError(method, "property method must have one parameter")
 
             elif method.IsPureVirtual() and not event_params:
-                if method.retval.type and ((isinstance(method.retval.type.Type(), CppParser.Integer) and (method.retval.type.Type().size == "long")) or not verify):
+                var_type = ResolveTypedef(method.retval.type)
+
+                if var_type and ((isinstance(var_type.Type(), CppParser.Integer) and (var_type.Type().size == "long")) or not verify):
                     obj = OrderedDict()
                     params = BuildParameters(method.vars, rpc_format)
 
