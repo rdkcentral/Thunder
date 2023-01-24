@@ -624,20 +624,21 @@ int main(int argc, char** argv)
             NULL, true, -1);
         #endif
 
+        // Any remote connection that will be spawned from here, will have this ExchangeId as its parent ID.
+        string parentInfo(Core::NumberType<uint32_t>(options.Exchange).Text());
+
+        if (callsign.empty() == false) {
+            parentInfo += ("," + callsign);
+        }
+
+        Core::SystemInfo::SetEnvironment(_T("COM_PARENT_INFO"), parentInfo);
+
         Process::ProcessFlow process;
 
         Core::NodeId remoteNode(options.RemoteChannel);
 
-        // Any remote connection that will be spawned from here, will have this ExchangeId as its parent ID.
-        Core::SystemInfo::SetEnvironment(_T("COM_PARENT_EXCHANGE_ID"), Core::NumberType<uint32_t>(options.Exchange).Text());
-
-        if (callsign.empty() == false) {
-            Core::SystemInfo::SetEnvironment(_T("COM_CALLSIGN"), callsign);
-        }
-
         TRACE_L1("Opening a message file with ID: [%d].", options.Exchange);
 
-        
         // Due to the LXC container support all ID's get mapped. For the MessageBuffer, use the host given ID.
 #ifdef __CORE_MESSAGING__
         Messaging::MessageUnit::Instance().Open(options.Exchange);

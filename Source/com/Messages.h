@@ -35,7 +35,7 @@ namespace RPC {
 
         class Frame : public Core::FrameType<IPC_BLOCK_SIZE, true, uint32_t> {
         private:
-            using BaseClass = Core::FrameType < IPC_BLOCK_SIZE, true, uint32_t>;
+            using BaseClass = Core::FrameType<IPC_BLOCK_SIZE, true, uint32_t>;
 
         public:
             Frame(Frame&) = delete;
@@ -189,27 +189,6 @@ namespace RPC {
         };
 
         class Init {
-        private:
-            uint32_t ParentId() const
-            {
-                uint32_t exchangeId = 0;
-                string value;
-                Core::SystemInfo::GetEnvironment(_T("COM_PARENT_EXCHANGE_ID"), value);
-
-                if (value.empty() == false) {
-                    exchangeId = Core::NumberType<uint32_t>(value.c_str(), static_cast<uint32_t>(value.length())).Value();
-                }
-
-                return (exchangeId);
-            }
-            string Callsign() const
-            {
-                string value;
-                Core::SystemInfo::GetEnvironment(_T("COM_CALLSIGN"), value);
-
-                return (value);
-            }
-
         public:
             enum type : uint8_t {
                 ACQUIRE = 0,
@@ -258,8 +237,26 @@ namespace RPC {
                 return (result);
             }
             void Set(const uint32_t myId, const string& className, const Core::instance_id implementation,
-                     const uint32_t interfaceId, const uint32_t exchangeId, const uint32_t versionId, const type whatKind)
+                     const uint32_t interfaceId, const uint32_t myExchangeId, const uint32_t versionId, const type whatKind)
             {
+                uint32_t exchangeId = myExchangeId;
+                string callsign;
+
+                string parentInfo;
+                Core::SystemInfo::GetEnvironment(_T("COM_PARENT_INFO"), parentInfo);
+
+                if (parentInfo.empty() == false) {
+                    const size_t delimiter = std::min(parentInfo.find(','), parentInfo.length());
+
+                    if (exchangeId == ~0UL) {
+                        exchangeId = Core::NumberType<uint32_t>(parentInfo.c_str(), static_cast<uint32_t>(delimiter)).Value();
+                    }
+
+                    if (delimiter != parentInfo.length()) {
+                        callsign = parentInfo.substr(delimiter + 1);
+                    }
+                }
+
                 _data.SetNumber<Core::instance_id>(IMPLEMENTATION_OFFSET, implementation);
                 _data.SetNumber<uint32_t>(ID_OFFSET, myId);
                 _data.SetNumber<uint32_t>(INTERFACEID_OFFSET, interfaceId);
@@ -267,7 +264,7 @@ namespace RPC {
                 _data.SetNumber<uint32_t>(VERSIONID_OFFSET, versionId);
                 _data.SetNumber<type>(TYPE_OFFSET, whatKind);
                 const uint16_t classNameLength = _data.SetText(STRINGS_OFFSET, className);
-                _data.SetText((STRINGS_OFFSET + classNameLength), Callsign());
+                _data.SetText((STRINGS_OFFSET + classNameLength), callsign);
             }
 
         private:
@@ -299,16 +296,17 @@ namespace RPC {
             }
             void Set(const uint32_t myId, const uint32_t interfaceId, Core::instance_id implementation, const uint32_t exchangeId)
             {
+                ASSERT(exchangeId != 0);
                 Set(myId, _T(""), implementation, interfaceId, exchangeId, 0, REQUEST);
             }
             void Set(const uint32_t myId, const uint32_t interfaceId, Core::instance_id implementation, const type whatKind)
             {
                 ASSERT((whatKind != ACQUIRE) && (whatKind != REQUEST));
-                Set(myId, _T(""), implementation, interfaceId, ParentId(), 0, whatKind);
+                Set(myId, _T(""), implementation, interfaceId, ~0, 0, whatKind);
             }
             void Set(const uint32_t myId, const string& className, const uint32_t interfaceId, const uint32_t versionId)
             {
-                Set(myId, className, 0, interfaceId, ParentId(), versionId, ACQUIRE);
+                Set(myId, className, 0, interfaceId, ~0, versionId, ACQUIRE);
             }
             uint32_t Id() const
             {
@@ -336,6 +334,10 @@ namespace RPC {
             }
 
         public:
+            void Clear()
+            {
+                _data.Clear();
+            }
             uint32_t Length() const
             {
                 return (_data.Size());
