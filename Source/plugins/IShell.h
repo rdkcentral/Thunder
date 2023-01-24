@@ -326,11 +326,11 @@ namespace PluginHost {
 
             return (handler == nullptr ? nullptr : handler->RemoteConnection(connectionId));
         }
-        inline Core::hresult EnablePersistentStorage(uint32_t permission = 0, const string& user = {}, const string& group = {})
+        inline uint32_t EnablePersistentStorage(uint32_t permission = 0, const string& user = {}, const string& group = {})
         {
             return (EnableStoragePath(PersistentPath(), permission, user, group));
         }
-        inline Core::hresult EnableVolatileStorage(uint32_t permission = 0, const string& user = {}, const string& group = {})
+        inline uint32_t EnableVolatileStorage(uint32_t permission = 0, const string& user = {}, const string& group = {})
         {
             return (EnableStoragePath(VolatilePath(), permission, user, group));
         }
@@ -360,9 +360,9 @@ namespace PluginHost {
         }
 
     private:
-        inline Core::hresult EnableStoragePath(const string& storagePath, uint32_t permission, const string& user, const string& group)
+        inline uint32_t EnableStoragePath(const string& storagePath, uint32_t permission, const string& user, const string& group)
         {
-            Core::hresult result = Core::ERROR_NONE;
+            uint32_t result = Core::ERROR_NONE;
 
             // Make sure there is a path to the persitent infmration
             Core::File path(storagePath);

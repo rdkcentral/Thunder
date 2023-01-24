@@ -480,8 +480,8 @@ namespace PluginHost
         return (result);
     }
 
-   Core::hresult Server::Service::Resume(const reason why) {
-        Core::hresult result = Core::ERROR_NONE;
+    uint32_t Server::Service::Resume(const reason why) {
+        uint32_t result = Core::ERROR_NONE;
 
         Lock();
 
@@ -599,9 +599,9 @@ namespace PluginHost
         return (result);
     }
 
-    Core::hresult Server::Service::Suspend(const reason why) {
+    uint32_t Server::Service::Suspend(const reason why) {
 
-        Core::hresult result = Core::ERROR_NONE;
+        uint32_t result = Core::ERROR_NONE;
 
         if (Startup() == PluginHost::IShell::startup::DEACTIVATED) {
             // We need to shutdown completely
