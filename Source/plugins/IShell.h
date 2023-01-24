@@ -268,7 +268,7 @@ namespace PluginHost {
         // Method to access, in the main process space, the channel factory to submit JSON objects to be send.
         // This method will return a error if it is NOT in the main process.
         /* @stubgen:stub */
-        virtual Core::hresult Submit(const uint32_t Id, const Core::ProxyType<Core::JSON::IElement>& response) = 0;
+        virtual uint32_t Submit(const uint32_t Id, const Core::ProxyType<Core::JSON::IElement>& response) = 0;
 
         // Method to access, in the main space, a COM factory to instantiate objects out-of-process.
         // This method will return a nullptr if it is NOT in the main process.

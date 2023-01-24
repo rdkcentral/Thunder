@@ -715,7 +715,7 @@ namespace PluginHost
     }
 
 
-    /* virtual */ Core::hresult Server::Service::Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response)
+    /* virtual */ uint32_t Server::Service::Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response)
     {
         return (_administrator.Submit(id, response));
     }

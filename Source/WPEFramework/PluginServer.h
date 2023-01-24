@@ -961,7 +961,7 @@ namespace PluginHost {
             virtual uint8_t Minor() const override;
             virtual uint8_t Patch() const override;
 
-            Core::hresult Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
+            uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
             ISubSystem* SubSystems() override;
             void Notify(const string& message) override;
             void* QueryInterface(const uint32_t id) override;
