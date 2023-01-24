@@ -1136,7 +1136,12 @@ namespace PluginHost {
                         if (progressedState == 0) {
                             progressedState = 1;
                         }
-                        Core::Library newLib = Core::Library(iter->c_str());
+
+                        // Loading a library, in the static initializers, might register Service::MetaData structures. As
+                        // the dlopen has a process wide system lock, make sure that the, during open used lock of the 
+                        // ServiceAdministrator, is already taken before entering the dlopen. This can only be achieved
+                        // by forwarding this call to the ServiceAdministrator, so please so...
+                        Core::Library newLib = Core::ServiceAdministrator::Instance().LoadLibrary(iter->c_str());
 
                         if (newLib.IsLoaded() == true) {
                             if (progressedState == 1) {
@@ -1678,7 +1683,7 @@ namespace PluginHost {
                     while (index != _requestObservers.end()) {
                         (*index)->Release();
                         index++;
-                    }
+                }
                     _requestObservers.clear();
                 }
 
@@ -2137,7 +2142,11 @@ POP_WARNING()
                 Notifiers::iterator index(_notifiers.begin());
 
                 while (index != _notifiers.end()) {
-                    (*index)->Initialize(callsign, entry);
+                    PluginHost::IPlugin::ILifeTime* lifetime = (*index)->QueryInterface<PluginHost::IPlugin::ILifeTime>();
+                    if (lifetime != nullptr) {
+                        lifetime->Initialize(callsign, entry);
+                        lifetime->Release();
+                    }
                     index++;
                 }
 
@@ -2178,7 +2187,11 @@ POP_WARNING()
                 Notifiers::iterator index(_notifiers.begin());
 
                 while (index != _notifiers.end()) {
-                    (*index)->Deinitialized(callsign, entry);
+                    PluginHost::IPlugin::ILifeTime* lifetime = (*index)->QueryInterface<PluginHost::IPlugin::ILifeTime>();
+                    if (lifetime != nullptr) {
+                        lifetime->Deinitialized(callsign, entry);
+                        lifetime->Release();
+                    }
                     index++;
                 }
 

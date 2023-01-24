@@ -55,9 +55,16 @@ namespace PluginHost {
             virtual void Activated(const string& callsign, IShell* plugin) = 0;
             virtual void Deactivated(const string& callsign, IShell* plugin) = 0;
             virtual void Unavailable(const string& callsign, IShell* plugin) = 0;
+        };
 
-            virtual void Initialize(VARIABLE_IS_NOT_USED const string& callsign, VARIABLE_IS_NOT_USED IShell* plugin) {};
-            virtual void Deinitialized(VARIABLE_IS_NOT_USED const string& callsign, VARIABLE_IS_NOT_USED IShell* plugin) {};
+        struct ILifeTime : virtual public Core::IUnknown {
+
+            enum { ID = RPC::ID_PLUGIN_LIFETIME };
+
+            ~ILifeTime() override = default;
+
+            virtual void Initialize(const string& callsign, IShell* plugin) = 0;
+            virtual void Deinitialized(const string& callsign, IShell* plugin) = 0;
         };
 
         ~IPlugin() override = default;
