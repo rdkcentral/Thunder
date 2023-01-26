@@ -318,7 +318,7 @@ namespace Core {
                     uint16_t value = index.Number();
 
                     while (value > 0) {
-                        textValue += static_cast<char>((value % 10) + '0') + textValue;
+                        textValue = static_cast<char>((value % 10) + '0') + textValue;
                         value /= 10;
                     }
 
