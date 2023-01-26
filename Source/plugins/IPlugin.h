@@ -229,7 +229,7 @@ namespace PluginHost {
 
         ~IAuthenticate() override = default;
 
-        virtual uint32_t CreateToken(const uint16_t length/* @in */, const uint8_t buffer[]/*  @in @length:length  */, string& token/* @out */) = 0;
+        virtual Core::hresult CreateToken(const uint16_t length /* @in */, const uint8_t buffer[] /* @in @length:length */, string& token /* @out */) = 0;
         virtual ISecurity* Officer(const string& token) = 0;
     };
 

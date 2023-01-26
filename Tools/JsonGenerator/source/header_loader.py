@@ -36,10 +36,15 @@ class CppParseError(RuntimeError):
             super(CppParseError, self).__init__(msg)
         except:
             super(CppParseError, self).__init__("unknown parsing failure: %s(%i): %s" % (obj.parser_file, obj.parser_line, msg))
+    def __init__(self, msg):
+        super(CppParseError, self).__init__(msg)
 
 def LoadInterface(file, log, all = False, includePaths = []):
-    tree = CppParser.ParseFiles([os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                posixpath.normpath(config.DEFAULT_DEFINITIONS_FILE)), file], includePaths, log)
+    try:
+        tree = CppParser.ParseFiles([os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                    posixpath.normpath(config.DEFAULT_DEFINITIONS_FILE)), file], includePaths, log)
+    except CppParser.ParserError as ex:
+        raise CppParseError(str(ex))
 
     interfaces = [i for i in CppInterface.FindInterfaceClasses(tree, config.INTERFACE_NAMESPACE, file) if (i.obj.is_json or (all and not i.obj.is_event))]
 
@@ -391,14 +396,17 @@ def LoadInterface(file, log, all = False, includePaths = []):
                     void["description"] = "Always null"
                     return void
 
+            event_params = EventParameters(method.vars)
+
             if method.is_excluded:
+                if event_params:
+                    log.WarnLine(method, "'%s()': @json:omit is redundant for notification registration methods" % method.name)
+
                 continue
 
             prefix = (face.obj.parent.name.lower() + "_") if face.obj.parent.full_name != config.INTERFACE_NAMESPACE else ""
             method_name = method.retval.meta.text if method.retval.meta.text else method.name
             method_name_lower = method_name.lower()
-
-            event_params = EventParameters(method.vars)
 
             for e in event_params:
                 exists = any(x.obj.type == e.type.type for x in event_interfaces)

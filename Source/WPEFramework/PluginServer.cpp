@@ -309,9 +309,9 @@ namespace PluginHost
     }
 
     // Methods to stop/start/update the service.
-    uint32_t Server::Service::Activate(const PluginHost::IShell::reason why)
+    /* virtual */ Core::hresult Server::Service::Activate(const PluginHost::IShell::reason why)
     {
-        uint32_t result = Core::ERROR_NONE;
+        Core::hresult result = Core::ERROR_NONE;
 
         Lock();
 
@@ -517,9 +517,9 @@ namespace PluginHost
         return (result);
     }
 
-    uint32_t Server::Service::Deactivate(const reason why)
+    /* virtual */ Core::hresult Server::Service::Deactivate(const reason why)
     {
-        uint32_t result = Core::ERROR_NONE;
+        Core::hresult result = Core::ERROR_NONE;
 
         Lock();
 
@@ -638,8 +638,8 @@ namespace PluginHost
         return (result);
     }
 
-    uint32_t Server::Service::Unavailable(const reason why) {
-        uint32_t result = Core::ERROR_NONE;
+    /* virtual */ Core::hresult Server::Service::Unavailable(const reason why) {
+        Core::hresult result = Core::ERROR_NONE;
 
         Lock();
 
@@ -682,8 +682,8 @@ namespace PluginHost
 
     }
 
-    uint32_t Server::Service::Hibernate(const PluginHost::IShell::reason /* why */) {
-        uint32_t result = Core::ERROR_NONE;
+    /* virtual */ Core::hresult Server::Service::Hibernate(const PluginHost::IShell::reason /* why */) {
+        Core::hresult result = Core::ERROR_NONE;
 
         Lock();
 

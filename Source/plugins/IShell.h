@@ -218,24 +218,24 @@ namespace PluginHost {
         virtual string SystemRootPath() const = 0;
 
         //! SystemRootPath: Set <config:systemrootpath>/
-        virtual uint32_t SystemRootPath(const string& systemRootPath) = 0;
+        virtual Core::hresult SystemRootPath(const string& systemRootPath) = 0;
 
         //! Startup: <config:startup>/
         virtual PluginHost::IShell::startup Startup() const = 0;
 
         //! Startup: Set<startup,autostart,resumed states>/
-        virtual uint32_t Startup(const startup value) = 0;
+        virtual Core::hresult Startup(const startup value) = 0;
 
         //! Substituted Config value
         virtual string Substitute(const string& input) const = 0;
 
         virtual bool Resumed() const = 0;
-        virtual uint32_t Resumed(const bool value) = 0;
+        virtual Core::hresult Resumed(const bool value) = 0;
 
         virtual string HashKey() const = 0;
         
         virtual string ConfigLine() const = 0;
-        virtual uint32_t ConfigLine(const string& config) = 0;
+        virtual Core::hresult ConfigLine(const string& config) = 0;
 
         //! Return whether the given version is supported by this IShell instance.
         virtual bool IsSupported(const uint8_t version) const = 0;
@@ -259,10 +259,10 @@ namespace PluginHost {
 
         // Methods to Activate/Deactivate and Unavailable the aggregated Plugin to this shell.
         // NOTE: These are Blocking calls!!!!!
-        virtual uint32_t Activate(const reason) = 0;
-        virtual uint32_t Deactivate(const reason) = 0;
-        virtual uint32_t Unavailable(const reason) = 0;
-        virtual uint32_t Hibernate(const reason) = 0;
+        virtual Core::hresult Activate(const reason) = 0;
+        virtual Core::hresult Deactivate(const reason) = 0;
+        virtual Core::hresult Unavailable(const reason) = 0;
+        virtual Core::hresult Hibernate(const reason) = 0;
         virtual reason Reason() const = 0;
 
         // Method to access, in the main process space, the channel factory to submit JSON objects to be send.

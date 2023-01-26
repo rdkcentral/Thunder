@@ -656,6 +656,7 @@ namespace Core {
     typedef uint32_t instance_id;
     #endif
 
+    typedef uint32_t hresult;
 
     struct callstack_info {
         void*    address;
