@@ -1422,10 +1422,10 @@ def __Tokenize(contents,log = None):
                     tagtokens.append("@DEPRECATED")
                 if _find("@obsolete", token):
                     tagtokens.append("@OBSOLETE")
-                if _find("@json", token):
-                    tagtokens.append(__ParseParameterValue(token, "@json"))
                 if _find("@json:omit", token):
                     tagtokens.append("@JSON_OMIT")
+                elif _find("@json", token):
+                    tagtokens.append(__ParseParameterValue(token, "@json"))
                 if _find("@event", token):
                     tagtokens.append("@EVENT")
                 if _find("@extended", token):
@@ -1632,10 +1632,12 @@ def Parse(contents,log = None):
             i += 2
         elif tokens[i] == "@JSON_OMIT":
             exclude_next = True
+            json_next = False
             tokens[i] = ';'
             i += 1
         elif tokens[i] == "@EVENT":
             event_next = True
+            json_next = False
             tokens[i] = ";"
             i += 1
         elif tokens[i] == "@EXTENDED":
@@ -1703,6 +1705,9 @@ def Parse(contents,log = None):
 
         # Parse type alias...
         elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == "typedef":
+            if json_next or event_next or omit_next or stub_next or exclude_next:
+                raise ParserError("@json, @event and @stubgen tags are invalid here")
+
             j = i + 1
             while tokens[j] != ";":
                 j += 1
@@ -1722,6 +1727,9 @@ def Parse(contents,log = None):
 
         # Parse "using"...
         elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == "using":
+            if json_next or event_next or omit_next or stub_next or exclude_next:
+                raise ParserError("@json, @event and @stubgen tags are invalid here")
+
             if tokens[i + 1] != "namespace" and tokens[i + 2] == "=":
                 i += 2
                 j = i + 1
@@ -1858,6 +1866,9 @@ def Parse(contents,log = None):
 
         # Parse enum definition...
         elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == "enum":
+            if json_next or event_next or omit_next or stub_next or exclude_next:
+                raise ParserError("@json, @event and @stubgen tags are invalid here")
+
             enum_name = ""
             enum_type = "int"
             enum_bitmask = False
@@ -1890,6 +1901,11 @@ def Parse(contents,log = None):
 
         # Parse function/method definition...
         elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == "(":
+            if event_next:
+                raise ParserError("@event tag is invalid here")
+
+            json_next = False
+
             # concatenate tokens to handle operators and destructors
             j = i - 1
             k = i - 1
@@ -2027,6 +2043,9 @@ def Parse(contents,log = None):
 
         # Parse variables and member attributes
         elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == ';':
+            if json_next or event_next or omit_next or stub_next or exclude_next:
+                raise ParserError("@json, @event and @stubgen tags are invalid here")
+
             j = i - 1
             while j >= min_index and tokens[j] not in ['{', '}', ';', ":"]:
                 j -= 1
@@ -2040,6 +2059,9 @@ def Parse(contents,log = None):
 
         # Parse constants and member constants
         elif isinstance(current_block[-1], (Namespace, Class)) and (tokens[i] == '=') and (tokens[i - 1] != "operator"):
+            if json_next or event_next or omit_next or stub_next or exclude_next:
+                raise ParserError("@json, @event and @stubgen tags are invalid here")
+
             j = i - 1
             k = i + 1
             while tokens[j] not in ['{', '}', ';', ":"]:
