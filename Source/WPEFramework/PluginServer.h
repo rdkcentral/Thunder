@@ -25,10 +25,12 @@
 #include "Config.h"
 #include "IRemoteInstantiation.h"
 #include "WarningReportingCategories.h"
-
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
 #endif
+#include <ostream>
+#include <fstream>
+#include <iostream>
 
 #ifndef HOSTING_COMPROCESS
 #error "Please define the name of the COM process!!!"
@@ -38,6 +40,11 @@
 
 namespace WPEFramework {
 
+#ifdef DUMPREQUEST_ENABLED
+extern string gRequestsDumpPath;
+extern std::ostream gDumpFile;
+extern bool gDumpRequestsEnabled;
+#endif
 namespace Core {
     namespace System {
         extern "C" {
@@ -2651,6 +2658,11 @@ POP_WARNING()
                     ASSERT(_service.IsValid() == true);
                     return _service->Callsign();
                 }
+
+                #ifdef DUMPREQUEST_ENABLED
+		virtual void DumpRequest() = 0;
+                #endif
+
             private:
                 uint32_t _ID;
                 Server* _server;
@@ -2770,6 +2782,13 @@ POP_WARNING()
                     return(_T("PluginServer::Channel::WebRequestJob::") + Callsign());
                 }
 
+                #ifdef DUMPREQUEST_ENABLED
+		void DumpRequest() override
+		{
+                    Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
+                    gDumpFile << "Request:{Id: " <<  message->Id.Value() << ", Method: " <<  message->Designator.Value() << ", Parameters: " << message->Parameters.Value() << " } " << std::endl;
+		}
+                #endif
             private:
                 Core::ProxyType<Web::Request> _request;
                 string _token;
@@ -2847,6 +2866,14 @@ POP_WARNING()
                     return(_T("PluginServer::Channel::JSONElementJob::") + Callsign());
                 }
 
+                #ifdef DUMPREQUEST_ENABLED
+		void DumpRequest() override
+		{
+                    std::string text;		
+                    bool isvalid = _element->ToString(text);
+                    gDumpFile << "Request: {" <<  text << "}" << std::endl;
+		}
+                #endif
             private:
                 Core::ProxyType<Core::JSON::IElement> _element;
                 string _token;
@@ -2890,6 +2917,12 @@ POP_WARNING()
                     return(_T("PluginServer::Channel::TextJob::") + Callsign());
                 }
 
+                #ifdef DUMPREQUEST_ENABLED
+		void DumpRequest() override
+		{
+                    gDumpFile << "Request: {" <<  _text  << "} " << std::endl;
+		}
+                #endif
             private:
                 string _text;
             };
@@ -3545,6 +3578,70 @@ POP_WARNING()
             return (_config);
         }
 
+        #ifdef DUMPREQUEST_ENABLED
+        bool DumpRequests()
+	{
+            if (!gDumpRequestsEnabled)
+	    {
+                gDumpFile << "Dump requests feature is disabled " <<  std::endl;
+		return false;
+	    }	    
+            std::ofstream file;
+            if (gRequestsDumpPath.empty())
+	    {
+                gDumpFile.rdbuf(std::cout.rdbuf());
+            }
+	    else
+	    {
+		file = std::ofstream(gRequestsDumpPath, std::ios::out);    
+                gDumpFile.rdbuf(file.rdbuf());
+	    }
+            gDumpFile << "Waiting requests " <<  std::endl;
+            std::vector<Core::ProxyType<Core::IDispatch>> pendingJobs;
+            _dispatcher.DumpRequestLock();
+            _dispatcher.GetPendingJobDetails(pendingJobs);
+            int numberOfPendingJobs = pendingJobs.size();
+	    if (numberOfPendingJobs == 0)
+	    {
+                gDumpFile << "NIL" <<  std::endl;
+	    }
+            else
+            {		    
+                gDumpFile << "================ " <<  std::endl;
+            }
+            for (int i=0; i<pendingJobs.size(); i++)
+            {
+		Core::ProxyType<Core::IDispatch>& dispatch = pendingJobs[i];
+                if (dispatch.IsValid())
+		{	
+                    Channel::Job& job = (Channel::Job&)(*dispatch);
+                    job.DumpRequest();
+                }
+            }		    
+
+
+            std::vector<Core::ProxyType<Core::IDispatch>> jobs;
+            _dispatcher.GetRunningJobDetails(jobs);
+            gDumpFile << std::endl << "Running requests" << std::endl;
+            gDumpFile << "================ " <<  std::endl;
+            for (int i=0; i<jobs.size(); i++)
+            {
+		Core::ProxyType<Core::IDispatch>& dispatch = jobs[i];
+                if (dispatch.IsValid())
+		{	
+                    Channel::Job& job = (Channel::Job&)(*dispatch);
+                    job.DumpRequest();
+                }
+            }		    
+            _dispatcher.DumpRequestUnlock();
+            if (!gRequestsDumpPath.empty())
+	    {
+                gDumpFile.rdbuf(std::cout.rdbuf());
+                file.close();
+            }
+	    return true;
+        }
+        #endif
         void Notification(const ForwardMessage& message);
         void Open();
         void Close();

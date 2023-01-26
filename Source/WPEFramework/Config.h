@@ -357,6 +357,9 @@ namespace PluginHost {
 #endif
                 , LinkerPluginPaths()
                 , Observe()
+#ifdef DUMPREQUEST_ENABLED
+                , RequestsDumpPath()   
+#endif
             {
                 // No IdleTime
                 Add(_T("version"), &Version);
@@ -401,6 +404,9 @@ namespace PluginHost {
 #endif
                 Add(_T("linkerpluginpaths"), &LinkerPluginPaths);
                 Add(_T("observe"), &Observe);
+#ifdef DUMPREQUEST_ENABLED
+                Add(_T("requestsdumppath"), &RequestsDumpPath);
+#endif
             }
             ~JSONConfig() override = default;
 
@@ -443,6 +449,9 @@ namespace PluginHost {
 #endif
             Core::JSON::ArrayType<Core::JSON::String> LinkerPluginPaths;
             Observables Observe;
+#ifdef DUMPREQUEST_ENABLED
+            Core::JSON::String RequestsDumpPath;
+#endif
         };
 
     public:
@@ -602,6 +611,9 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             , _ProcessContainersLogging()
             #endif
             , _linkerPluginPaths()
+#ifdef DUMPREQUEST_ENABLED
+	    , _requestsDumpPath()
+#endif
         {
             JSONConfig config;
 
@@ -642,6 +654,9 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 _inputInfo.Set(config.Input);
                 _processInfo.Set(config.Process);
                 _ethernetCard = config.EthernetCard.Value();
+#ifdef DUMPREQUEST_ENABLED
+                _requestsDumpPath = config.RequestsDumpPath.Value();
+#endif
                 if( config.Latitude.IsSet() || config.Longitude.IsSet() ) {
                     SYSLOG(Logging::Error, (_T("Support for Latitude and Longitude moved from Thunder configuration to plugin providing ILocation support")));
                 }
@@ -956,6 +971,13 @@ POP_WARNING()
             return _linkerPluginPaths;
         }
 
+#ifdef DUMPREQUEST_ENABLED
+        inline const std::string& RequestsDumpPath() const
+        {
+            return _requestsDumpPath;
+        }
+#endif
+
     private:
         friend class Server;
 
@@ -1035,6 +1057,9 @@ POP_WARNING()
         string _ProcessContainersLogging;
 #endif
         std::vector<std::string> _linkerPluginPaths;
+#ifdef DUMPREQUEST_ENABLED
+        string _requestsDumpPath;
+#endif
     };
 }
 }

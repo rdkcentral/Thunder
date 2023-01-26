@@ -22,6 +22,9 @@
 #include "Thread.h"
 #include "ResourceMonitor.h"
 #include "Number.h"
+#ifdef DUMPREQUEST_ENABLED
+#include <vector>
+#endif
 
 namespace WPEFramework {
 
@@ -402,6 +405,23 @@ POP_WARNING()
 		            _adminLock.Unlock();
                 }
             }
+
+#ifdef DUMPREQUEST_ENABLED
+            void DumpRequestLock()
+	    {
+                _adminLock.Lock();
+	    }
+
+	    void DumpRequestUnlock()
+	    {
+                _adminLock.Unlock();
+	    }
+
+	    ProxyType<IDispatch>& GetJob()
+	    {
+                return _currentRequest;		    
+	    }
+#endif
             uint32_t Completed (const ProxyType<IDispatch>& job, const uint32_t waitTime) {
                 uint32_t result = ERROR_UNKNOWN_KEY;
 
@@ -523,6 +543,13 @@ POP_WARNING()
                 _minion.Info(info);
                 info.WorkerId = Id();
             }
+
+#ifdef DUMPREQUEST_ENABLED
+	    ProxyType<IDispatch>& GetJob()
+	    {
+                return _minion.GetJob();		    
+            }
+#endif
             void Run () {
                 Thread::Run();
             }
@@ -533,6 +560,17 @@ POP_WARNING()
                 return (_minion);
             }
 
+#ifdef DUMPREQUEST_ENABLED
+            void DumpRequestLock()
+	    {
+                _minion.DumpRequestLock();
+	    }
+
+	    void DumpRequestUnlock()
+	    {
+                _minion.DumpRequestUnlock();
+	    }
+#endif
         private:
             uint32_t Worker() override
             {
@@ -587,6 +625,44 @@ POP_WARNING()
                 count++; 
             }
         }
+
+#ifdef DUMPREQUEST_ENABLED
+        void DumpRequestLock()
+	{
+            _queue.Lock();
+            for (std::list<Executor>::iterator ptr = _units.begin(); ptr != _units.end(); ptr++)
+	    {
+                ptr->DumpRequestLock();
+            }
+	}
+
+	void DumpRequestUnlock()
+	{
+            _queue.Unlock();
+            for (std::list<Executor>::iterator ptr = _units.begin(); ptr != _units.end(); ptr++)
+	    {
+                ptr->DumpRequestUnlock();
+            }
+	}
+
+        // get all pending job details
+	void GetPendingJobDetails(std::vector<ProxyType<IDispatch>>& jobs)
+	{
+            for (int i=0; i<Pending(); i++)
+	    {
+                jobs.push_back(_queue.Get(i));
+	    } 
+	}
+
+        // get job details allocated to particular thread
+	void GetRunningJobDetails(std::vector<ProxyType<IDispatch>>& jobs)
+	{
+            for (std::list<Executor>::iterator ptr = _units.begin(); ptr != _units.end(); ptr++)
+	    {
+                jobs.push_back(ptr->GetJob());
+	    } 
+	}
+#endif
         ::ThreadId Id(const uint8_t index) const
         {
             uint8_t count = 0;

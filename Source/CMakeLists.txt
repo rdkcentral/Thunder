@@ -57,10 +57,15 @@ option(DEADLOCK_DETECTION
         "Enable deadlock detection tooling." OFF)
 option(WARNING_REPORTING
         "Include warning reporting in the build." OFF)
-
+option(DUMPREQUEST_ENABLED
+        "Include support for dumping active requests on need." OFF)
 if(HIDE_NON_EXTERNAL_SYMBOLS)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
     set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+endif()
+
+if(DUMPREQUEST_ENABLED)
+    add_definitions (-DDUMPREQUEST_ENABLED)
 endif()
 
 if(ENABLE_STRICT_COMPILER_SETTINGS)

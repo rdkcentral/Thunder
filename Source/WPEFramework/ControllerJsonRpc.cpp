@@ -38,6 +38,9 @@ namespace Plugin {
         Register<ActivateParamsInfo,void>(_T("unavailable"), &Controller::endpoint_unavailable, this);
         Register<ActivateParamsInfo,void>(_T("suspend"), &Controller::endpoint_suspend, this);
         Register<ActivateParamsInfo,void>(_T("resume"), &Controller::endpoint_resume, this);
+#ifdef DUMPREQUEST_ENABLED
+        Register<ActivateParamsInfo,void>(_T("requests"), &Controller::endpoint_requests, this);
+#endif
         Register<StartdiscoveryParamsData,void>(_T("startdiscovery"), &Controller::endpoint_startdiscovery, this);
         Register<void,void>(_T("storeconfig"), &Controller::endpoint_storeconfig, this);
         Register<DeleteParamsData,void>(_T("delete"), &Controller::endpoint_delete, this);
@@ -62,6 +65,9 @@ namespace Plugin {
         Unregister(_T("startdiscovery"));
         Unregister(_T("suspend"));
         Unregister(_T("resume"));
+#ifdef DUMPREQUEST_ENABLED
+        Unregister(_T("requests"));
+#endif
         Unregister(_T("unavailable"));
         Unregister(_T("deactivate"));
         Unregister(_T("activate"));
@@ -230,6 +236,24 @@ namespace Plugin {
 
         return result;
     }
+
+#ifdef DUMPREQUEST_ENABLED
+    // Method: requests
+    // Return codes:
+    //  - ERROR_NONE: Success
+    uint32_t Controller::endpoint_requests(const ActivateParamsInfo& params)
+    {
+        uint32_t result = Core::ERROR_NONE;
+        ASSERT(_pluginServer != nullptr);
+        //print all pending yet to be pushed to threads
+        bool ret = _pluginServer->DumpRequests();
+	if (!ret)
+	{
+            result = Core::ERROR_NOT_SUPPORTED;
+	}	
+        return result;
+    }
+#endif
 
     // Method: suspend - Suspends a plugin
     // Return codes:

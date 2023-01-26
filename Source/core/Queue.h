@@ -305,6 +305,18 @@ namespace Core {
             _adminLock.Unlock();
         }
 
+        
+#ifdef DUMPREQUEST_ENABLED
+        CONTEXT& Get(int index)
+	{
+	    std::list<ProxyType<IDispatch>>::iterator it = _queue.begin();
+            for(int i=0; i<index; i++)
+	    {
+                ++it;
+            }
+            return *it;
+        }
+#endif
     private:
         std::list<CONTEXT> _queue;
         StateTrigger<enumQueueState> _state;

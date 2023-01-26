@@ -421,6 +421,27 @@ POP_WARNING()
             _threadPool.Stop();
         }
 
+#ifdef DUMPREQUEST_ENABLED
+        void DumpRequestLock()
+	{
+           _threadPool.DumpRequestLock();
+	}
+
+        void DumpRequestUnlock()
+	{
+           _threadPool.DumpRequestUnlock();
+	}
+
+	void GetPendingJobDetails(std::vector<ProxyType<IDispatch>>& jobs)
+        {
+           _threadPool.GetPendingJobDetails(jobs);
+        }
+
+	void GetRunningJobDetails(std::vector<ProxyType<IDispatch>>& jobs)
+        {
+           _threadPool.GetRunningJobDetails(jobs);
+        }
+#endif
     private:
         Scheduler _scheduler;
         ThreadPool _threadPool;

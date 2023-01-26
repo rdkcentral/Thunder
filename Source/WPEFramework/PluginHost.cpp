@@ -24,6 +24,9 @@
 #include <dlfcn.h> // for dladdr
 #include <syslog.h>
 #endif
+#ifdef DUMPREQUEST_ENABLED
+#include <ostream>
+#endif
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
@@ -32,7 +35,11 @@ namespace WPEFramework {
     static PluginHost::Server* _dispatcher = nullptr;
     static bool _background = false;
     static bool _atExitActive = true;
-
+#ifdef DUMPREQUEST_ENABLED
+    std::string gRequestsDumpPath("");
+    std::ostream gDumpFile(nullptr);
+    bool gDumpRequestsEnabled = true;
+#endif
 namespace PluginHost {
 
     class ConsoleOptions : public Core::Options {
@@ -407,6 +414,23 @@ POP_WARNING()
         ExitHandler::Destruct();
     }
 
+#ifdef DUMPREQUEST_ENABLED
+void DumpRequestsHandler(int signal)
+{
+    std::cout << "signal (" << signal  << ") received. Trying to dump active requests \n";
+  
+    if (_dispatcher)
+    { 
+        bool ret = _dispatcher->DumpRequests();
+	std::cout << "dump requests result - " << ret << std::endl;
+    }
+    else
+    {
+        std::cout << "wpeframework is not in initialized state " << std::endl;
+    }	    
+}
+#endif
+
 #ifdef __WINDOWS__
     int _tmain(int argc, _TCHAR* argv[])
 #else
@@ -528,6 +552,9 @@ POP_WARNING()
                 myself.Policy(_config->Process().Policy());
             }
 
+#ifdef DUMPREQUEST_ENABLED
+            gRequestsDumpPath = _config->RequestsDumpPath();
+#endif
             // Time to start loading the config of the plugins.
             string pluginPath(_config->ConfigsPath());
 
@@ -635,6 +662,21 @@ POP_WARNING()
                 SYSLOG_GLOBAL(Logging::Startup, (_T("SystemId:      %s"), id.c_str()));
             }
 
+#ifdef DUMPREQUEST_ENABLED
+            char* dumpRequestsEnabled = getenv("THUNDER_DUMPREQUESTS_ENABLED");
+	    if (dumpRequestsEnabled && (strcmp(dumpRequestsEnabled, "1") != 0))
+            {
+                gDumpRequestsEnabled = false;
+            }		    
+	    if (gDumpRequestsEnabled)
+            {		    
+                signal(SIGUSR1, DumpRequestsHandler);
+            }
+	    else
+            {
+                std::cout << "dump requests is not enabled" << std::endl;
+            }		    
+#endif
 #ifndef __WINDOWS__
             if (_background == true) {
                 Core::WorkerPool::Instance().Join();

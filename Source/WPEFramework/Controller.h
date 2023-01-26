@@ -397,6 +397,9 @@ POP_WARNING()
         void UnregisterAll();
         uint32_t endpoint_suspend(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_resume(const JsonData::Controller::ActivateParamsInfo& params);
+#ifdef DUMPREQUEST_ENABLED
+        uint32_t endpoint_requests(const JsonData::Controller::ActivateParamsInfo& params);
+#endif
         uint32_t endpoint_activate(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_clone(const JsonData::Controller::CloneParamsInfo& params, Core::JSON::String& response);
         uint32_t endpoint_deactivate(const JsonData::Controller::ActivateParamsInfo& params);
