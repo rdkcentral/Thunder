@@ -568,7 +568,7 @@ struct TemplateIntToType {
 
 extern "C" {
 
-void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
+EXTERNAL void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
 {
     return (::memmove(_Dst, _Src, _MaxCount));
 }
