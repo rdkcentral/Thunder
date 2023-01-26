@@ -1053,10 +1053,10 @@ namespace PluginHost {
 
             // Methods to Activate and Deactivate the aggregated Plugin to this shell.
             // These are Blocking calls!!!!!
-            uint32_t Activate(const reason) override;
-            uint32_t Deactivate(const reason) override;
-            uint32_t Unavailable(const reason) override;
-            uint32_t Hibernate(const reason) override;
+            Core::hresult Activate(const reason) override;
+            Core::hresult Deactivate(const reason) override;
+            Core::hresult Unavailable(const reason) override;
+            Core::hresult Hibernate(const reason) override;
 
             reason Reason() const override
             {
