@@ -57,9 +57,9 @@ namespace PluginHost {
         static const TCHAR* ToString(const state value);
         static const TCHAR* ToString(const command value);
 
-        virtual uint32_t Configure(PluginHost::IShell* framework) = 0;
+        virtual Core::hresult Configure(PluginHost::IShell* framework) = 0;
         virtual state State() const = 0;
-        virtual uint32_t Request(const command state) = 0;
+        virtual Core::hresult Request(const command state) = 0;
 
         virtual void Register(IStateControl::INotification* notification) = 0;
         virtual void Unregister(IStateControl::INotification* notification) = 0;

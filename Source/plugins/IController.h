@@ -30,18 +30,18 @@ namespace PluginHost {
 
         ~IController() override = default;
 
-        virtual uint32_t Persist() = 0;
+        virtual Core::hresult Persist() = 0;
 
-        virtual uint32_t Delete(const string& path) = 0;
+        virtual Core::hresult Delete(const string& path) = 0;
 
-        virtual uint32_t Reboot() = 0;
+        virtual Core::hresult Reboot() = 0;
 
-        virtual uint32_t Environment(const string& index, string& environment /* @out */ ) const = 0;
+        virtual Core::hresult Environment(const string& index, string& environment /* @out */ ) const = 0;
 
-        virtual uint32_t Configuration(const string& callsign, string& configuration /* @out */) const = 0;
-        virtual uint32_t Configuration(const string& callsign, const string& configuration) = 0;
+        virtual Core::hresult Configuration(const string& callsign, string& configuration /* @out */) const = 0;
+        virtual Core::hresult Configuration(const string& callsign, const string& configuration) = 0;
 
-        virtual uint32_t Clone(const string& basecallsign, const string& newcallsign) = 0;
+        virtual Core::hresult Clone(const string& basecallsign, const string& newcallsign) = 0;
     };
 
 } // namespace PluginHost

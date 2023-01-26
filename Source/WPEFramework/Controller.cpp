@@ -195,11 +195,11 @@ namespace Plugin {
         return (result);
     }
 
-    uint32_t Controller::Persist()
+    Core::hresult Controller::Persist()
     {
         ASSERT(_pluginServer != nullptr);
 
-        uint32_t result = _pluginServer->Persist();
+        Core::hresult result = _pluginServer->Persist();
 
         // Normalise return code
         if (result != Core::ERROR_NONE) {
@@ -210,9 +210,9 @@ namespace Plugin {
 
     }
 
-    uint32_t Controller::Delete(const string& path)
+    Core::hresult Controller::Delete(const string& path)
     {
-        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
         bool valid;
         string normalized_path = Core::File::Normalize(path, valid);
 
@@ -238,9 +238,9 @@ namespace Plugin {
         return result;
     }
 
-    uint32_t Controller::Reboot()
+    Core::hresult Controller::Reboot()
     {
-        uint32_t result =  Core::System::Reboot();
+        Core::hresult result =  Core::System::Reboot();
 
         if ((result != Core::ERROR_NONE) && (result != Core::ERROR_UNAVAILABLE) && (result != Core::ERROR_PRIVILIGED_REQUEST) && (result != Core::ERROR_GENERAL)) {
             result = Core::ERROR_GENERAL;
@@ -249,9 +249,9 @@ namespace Plugin {
         return result;
     }
 
-    uint32_t Controller::Environment(const string& index, string& environment) const
+    Core::hresult Controller::Environment(const string& index, string& environment) const
     {
-        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
 
         if (Core::SystemInfo::GetEnvironment(index, environment) == true) {
             result = Core::ERROR_NONE;
@@ -260,9 +260,9 @@ namespace Plugin {
         return result;
     }
 
-    uint32_t Controller::Configuration(const string& callsign, string& configuration) const 
+    Core::hresult Controller::Configuration(const string& callsign, string& configuration) const
     {
-        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
         Core::ProxyType<PluginHost::Server::Service> service;
 
         ASSERT(_pluginServer != nullptr);
@@ -275,9 +275,9 @@ namespace Plugin {
         return result;
     }
 
-    uint32_t Controller::Configuration(const string& callsign, const string& configuration)
+    Core::hresult Controller::Configuration(const string& callsign, const string& configuration)
     {
-        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
         Core::ProxyType<PluginHost::Server::Service> service;
 
         ASSERT(_pluginServer != nullptr);
@@ -294,9 +294,9 @@ namespace Plugin {
         return result;
     }
 
-    uint32_t Controller::Clone(const string& basecallsign, const string& newcallsign) 
+    Core::hresult Controller::Clone(const string& basecallsign, const string& newcallsign)
     {
-        uint32_t result = Core::ERROR_NONE;
+        Core::hresult result = Core::ERROR_NONE;
         const string controllerName = _pluginServer->Controller()->Callsign();
 
         ASSERT(_pluginServer != nullptr);

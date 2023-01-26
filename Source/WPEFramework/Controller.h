@@ -346,18 +346,18 @@ namespace Plugin {
 
         //  IController methods
         // -------------------------------------------------------------------------------------------------------
-        uint32_t Persist() override;
+        Core::hresult Persist() override;
 
-        uint32_t Delete(const string& path) override;
+        Core::hresult Delete(const string& path) override;
 
-        uint32_t Reboot() override;
+        Core::hresult Reboot() override;
 
-        uint32_t Environment(const string& index, string& environment) const override;
+        Core::hresult Environment(const string& index, string& environment) const override;
 
-        uint32_t Configuration(const string& callsign, string& configuration) const override;
-        uint32_t Configuration(const string& callsign, const string& configuration) override;
+        Core::hresult Configuration(const string& callsign, string& configuration) const override;
+        Core::hresult Configuration(const string& callsign, const string& configuration) override;
 
-        uint32_t Clone(const string& basecallsign, const string& newcallsign) override;
+        Core::hresult Clone(const string& basecallsign, const string& newcallsign) override;
 
         //  IUnknown methods
         // -------------------------------------------------------------------------------------------------------
