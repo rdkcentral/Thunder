@@ -191,19 +191,6 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
 
 #endif // BACKTRACE
 
-void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
-{
-    unsigned char* destination = static_cast<unsigned char*>(_Dst) + _MaxCount - 1;
-    const unsigned char* source = static_cast<const unsigned char*>(_Src) + _MaxCount - 1;
-
-    while (_MaxCount) {
-        *destination-- = *source--;
-        --_MaxCount;
-    }
-
-    return (destination);
-}
-
 extern "C" {
 
 void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<WPEFramework::Core::callstack_info>& stackList VARIABLE_IS_NOT_USED)
