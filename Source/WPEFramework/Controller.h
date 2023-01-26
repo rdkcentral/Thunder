@@ -28,7 +28,11 @@
 namespace WPEFramework {
 namespace Plugin {
 
-    class Controller : public PluginHost::IController, public PluginHost::IPlugin, public PluginHost::IWeb, public PluginHost::JSONRPC {
+    class Controller 
+        : public PluginHost::IController
+        , public PluginHost::IPlugin
+        , public PluginHost::IWeb
+        , public PluginHost::JSONRPC {
     public:
         class CallstackData : public Core::JSON::Container {
         public:
@@ -98,8 +102,9 @@ namespace Plugin {
         };
 
     private:
-        class Sink : public PluginHost::IPlugin::INotification,
-                     public PluginHost::ISubSystem::INotification {
+        class Sink 
+            : public PluginHost::IPlugin::INotification
+            , public PluginHost::ISubSystem::INotification {
         private:
             class Job {
             public:
@@ -128,7 +133,7 @@ namespace Plugin {
                 : _parent(parent)
                 , _job(parent) {
             }
-            virtual ~Sink() {
+            ~Sink() override {
                 _job.Revoke();
             }
 
@@ -139,15 +144,19 @@ namespace Plugin {
             }
             void Activated(const string& callsign, PluginHost::IShell* plugin) override
             {
-                _parent.Activated(callsign, plugin);
+                _parent.event_statechange(callsign, PluginHost::IShell::ACTIVATED, plugin->Reason());
+
+                // Make sure the resumes 
+                _parent.StartupResume(callsign, plugin);
+
             }
             void Deactivated(const string& callsign, PluginHost::IShell* plugin) override
             {
-                _parent.Deactivated(callsign, plugin);
+                _parent.event_statechange(callsign, PluginHost::IShell::DEACTIVATED, plugin->Reason());
             }
             void Unavailable(const string& callsign, PluginHost::IShell* plugin) override
             {
-                _parent.Unavailable(callsign, plugin);
+                _parent.event_statechange(callsign, PluginHost::IShell::UNAVAILABLE, plugin->Reason());
             }
 
             BEGIN_INTERFACE_MAP(Sink)
@@ -217,7 +226,7 @@ namespace Plugin {
         Controller& operator=(const Controller&);
 
     protected:
-        PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
+        PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST);
             Controller()
             : _adminLock()
             , _skipURL(0)
@@ -232,7 +241,7 @@ namespace Plugin {
         {
             RegisterAll();
         }
-POP_WARNING()
+        POP_WARNING();
 
     public:
         virtual ~Controller()
@@ -389,9 +398,7 @@ POP_WARNING()
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;
         Core::ProxyType<Web::Response> PutMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
-        void Activated(const string& callsign, PluginHost::IShell* plugin);
-        void Deactivated(const string& callsign, PluginHost::IShell* plugin);
-        void Unavailable(const string& callsign, PluginHost::IShell* plugin);
+        void StartupResume(const string& callsign, PluginHost::IShell* plugin);
 
         void RegisterAll();
         void UnregisterAll();

@@ -113,6 +113,24 @@ namespace PluginHost {
         virtual void Detach(PluginHost::Channel& channel) = 0;
     };
 
+    struct EXTERNAL ICompositPlugin : public virtual Core::IUnknown {
+        enum { ID = RPC::ID_COMPOSIT_PLUGIN };
+
+        struct EXTERNAL INotification : public virtual Core::IUnknown {
+            enum { ID = RPC::ID_COMPOSIT_PLUGIN_NOTIFICATION };
+
+            ~INotification() override = default;
+
+            virtual uint32_t Activated(const string& callsign, IShell* plugin) = 0;
+            virtual uint32_t Deactivated(const string& callsign, IShell* plugin) = 0;
+        };
+
+        ~ICompositPlugin() override = default;
+
+        virtual uint32_t Register(INotification*) = 0;
+        virtual uint32_t Unregister(INotification*) = 0;
+    };
+
     /* @stubgen:omit */
     struct IWeb : virtual public Core::IUnknown {
 

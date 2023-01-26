@@ -357,6 +357,555 @@ namespace PluginHost {
             std::string _text;
         };
 
+        class CompositPlugin : public PluginHost::ICompositPlugin::INotification {
+        private:
+            static constexpr TCHAR RemotePluginDelimiter = '@';
+
+            class ShellProxy : public PluginHost::IShell {
+            public:
+                ShellProxy() = delete;
+                ShellProxy(ShellProxy&&) = delete;
+                ShellProxy(const ShellProxy&) = delete;
+                ShellProxy& operator= (const ShellProxy&) = delete;
+
+                ShellProxy(PluginHost::IShell* real, const string& callsign)
+                    : _adminLock()
+                    , _shell(real)
+                    , _callsign(real->Callsign() + RemotePluginDelimiter + callsign) {
+                    _shell->AddRef();
+                }
+                ~ShellProxy() override {
+                    _adminLock.Lock();
+                    if (_shell != nullptr) {
+                        _shell->Release();
+                        _shell = nullptr;
+                    }
+                    _adminLock.Unlock();
+                }
+
+            public:
+                bool IsActive() const {
+                    return (_shell != nullptr);
+                }
+                void EnableWebServer(const string& URLPath, const string& fileSystemPath) override {
+                    PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        source->EnableWebServer(URLPath, fileSystemPath);
+                        source->Release();
+                    }
+                }
+                void DisableWebServer() override {
+                    PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        source->DisableWebServer();
+                        source->Release();
+                    }
+                }
+                //! Version: Returns the version of the application hosting the plugin
+                string Version() const override {
+                    string result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Version();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! Version: Returns the Major version of the plugin
+                uint8_t Major() const override {
+                    uint8_t result = ~0;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Major();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! Version: Returns the Minor version of the plugin
+                uint8_t Minor() const override {
+                    uint8_t result = ~0;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Minor();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! Version: Returns the Patch version of the plugin
+                uint8_t Patch() const override {
+                    uint8_t result = ~0;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Patch();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! Model: Returns a Human Readable name for the platform it is running on.
+                string Model() const override {
+                    string result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Model();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! Background: If enabled, the PluginHost is running in daemon mode
+                bool Background() const override {
+                    bool result = true;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Background();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! Accessor: Identifier that can be used for Core:NodeId to connect to the webbridge.
+                string Accessor() const override {
+                    string result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Accessor();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! WebPrefix: First part of the pathname in the HTTP request to select the webbridge components.
+                string WebPrefix() const override {
+                    string result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->WebPrefix();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! Locator: The name of the binary (so) that holds the given ClassName code.
+                string Locator() const override {
+                    string result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Locator();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! ClassName: Name of the class to be instantiated for this IShell
+                string ClassName() const override {
+                    string result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->ClassName();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! Versions: Returns a JSON Array of versions (JSONRPC interfaces) supported by this plugin.
+                string Versions() const override {
+                    string result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Versions();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! Callsign: Instantiation name of this specific plugin. It is the name given in the config for the classname.
+                string Callsign() const override {
+                    return (_callsign);
+                }
+                //! PersistentPath: <config:persistentpath>/<plugin:callsign>/
+                string PersistentPath() const override {
+                    string result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->PersistentPath();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! VolatilePath: <config:volatilepath>/<plugin:callsign>/
+                string VolatilePath() const override {
+                    string result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->VolatilePath();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! DataPath: <config:datapath>/<plugin:classname>/
+                string DataPath() const override {
+                    string result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->DataPath();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! ProxyStubPath: <config:proxystubpath>/
+                string ProxyStubPath() const override {
+                    string result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->ProxyStubPath();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! SystemPath: <config:systempath>/
+                string SystemPath() const override {
+                    string result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->SystemPath();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! SystemPath: <config:apppath>/Plugins/
+                string PluginPath() const override {
+                    string result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->PluginPath();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! SystemPath: <config:systemrootpath>/
+                string SystemRootPath() const override {
+                    string result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->SystemRootPath();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! SystemRootPath: Set <config:systemrootpath>/
+                uint32_t SystemRootPath(const string& systemRootPath) override {
+                    uint32_t result;
+                    PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->SystemRootPath(systemRootPath);
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! Startup: <config:startup>/
+                PluginHost::IShell::startup Startup() const override {
+                    PluginHost::IShell::startup result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Startup();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! Startup: Set<startup,autostart,resumed states>/
+                uint32_t Startup(const startup value) override {
+                    uint32_t result;
+                    PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Startup(value);
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! Substituted Config value
+                string Substitute(const string& input) const override {
+                    string result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Substitute(input);
+                        source->Release();
+                    }
+                    return (result);
+                }
+                bool Resumed() const override {
+                    bool result = true;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Resumed();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                uint32_t Resumed(const bool value) override {
+                    uint32_t result;
+                    PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Resumed(value);
+                        source->Release();
+                    }
+                    return (result);
+                }
+                string HashKey() const override {
+                    string result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->HashKey();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                string ConfigLine() const override {
+                    string result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->SystemRootPath();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                uint32_t ConfigLine(const string& config) override {
+                    uint32_t result;
+                    PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->ConfigLine(config);
+                        source->Release();
+                    }
+                    return (result);
+                }
+                //! Return whether the given version is supported by this IShell instance.
+                bool IsSupported(const uint8_t version) const override {
+                    bool result = true;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->IsSupported(version);
+                        source->Release();
+                    }
+                    return (result);
+                }
+                // Get access to the SubSystems and their corrresponding information. Information can be set or get to see what the
+                // status of the sub systems is.
+                PluginHost::ISubSystem* SubSystems() override {
+                    PluginHost::ISubSystem* result = nullptr;
+                    PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->SubSystems();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                // Notify all subscribers of this service with the given string.
+                // It is expected to be JSON formatted strings as it is assumed that this is for reaching websockets clients living in
+                // the web world that have build in functionality to parse JSON structs.
+                void Notify(const string& message) override {
+                    PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        source->Notify(message);
+                        source->Release();
+                    }
+                }
+                // Allow access to the Shells, configured for the different Plugins found in the configuration.
+                // Calling the QueryInterfaceByCallsign with an empty callsign will query for interfaces located
+                // on the controller.
+                void Register(IPlugin::INotification* sink) override {
+                    PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        source->Register(sink);
+                        source->Release();
+                    }
+                }
+                void Unregister(IPlugin::INotification* sink) override {
+                    PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        source->Unregister(sink);
+                        source->Release();
+                    }
+                }
+                state State() const override {
+                    state result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->State();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                void* /* @interface:id */ QueryInterfaceByCallsign(const uint32_t id, const string& name) override {
+                    void* result = nullptr;
+                    PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->QueryInterfaceByCallsign(id, name);
+                        source->Release();
+                    }
+                    return (result);
+                }
+                // Methods to Activate/Deactivate and Unavailable the aggregated Plugin to this shell.
+                // NOTE: These are Blocking calls!!!!!
+                uint32_t Activate(const reason why) override {
+                    uint32_t result;
+                    PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Activate(why);
+                        source->Release();
+                    }
+                    return (result);
+                }
+                uint32_t Deactivate(const reason why) override {
+                    uint32_t result;
+                    PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Deactivate(why);
+                        source->Release();
+                    }
+                    return (result);
+                }
+                uint32_t Unavailable(const reason why) override {
+                    uint32_t result;
+                    PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Unavailable(why);
+                        source->Release();
+                    }
+                    return (result);
+                }
+                uint32_t Hibernate(const reason why) override {
+                    uint32_t result;
+                    PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Hibernate(why);
+                        source->Release();
+                    }
+                    return (result);
+                }
+                reason Reason() const override {
+                    reason result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Reason();
+                        source->Release();
+                    }
+                    return (result);
+                }
+
+                // Method to access, in the main process space, the channel factory to submit JSON objects to be send.
+                // This method will return a error if it is NOT in the main process.
+                /* @stubgen:stub */
+                uint32_t Submit(const uint32_t Id, const Core::ProxyType<Core::JSON::IElement>& response) override {
+                    return (Core::ERROR_NOT_SUPPORTED);
+                }
+
+                // Method to access, in the main space, a COM factory to instantiate objects out-of-process.
+                // This method will return a nullptr if it is NOT in the main process.
+                /* @stubgen:stub */
+                ICOMLink* COMLink() override {
+                    return (nullptr);
+                }
+
+                BEGIN_INTERFACE_MAP(ShellProxy)
+                    INTERFACE_ENTRY(PluginHost::IShell)
+                END_INTERFACE_MAP
+
+            private:
+                PluginHost::IShell* Source() {
+                    _adminLock.Lock();
+                    PluginHost::IShell* result = _shell;
+                    if (result != nullptr) {
+                        result->AddRef();
+                    }
+                    _adminLock.Unlock();
+                    return (result);
+                }
+                const PluginHost::IShell* Source() const {
+                    _adminLock.Lock();
+                    const PluginHost::IShell* result = _shell;
+                    if (result != nullptr) {
+                        result->AddRef();
+                    }
+                    _adminLock.Unlock();
+                    return (result);
+                }
+
+            private:
+                mutable Core::CriticalSection _adminLock;
+                PluginHost::IShell* _shell;
+                const string _callsign;
+            };
+            using CompositPlugins = std::unordered_map<string, ShellProxy*>;
+
+        public:
+            CompositPlugin(ServiceMap& parent, const string& linkPlugin)
+                : _parent(parent)
+                , _adminLock()
+                , _linkPlugin(linkPlugin)
+                , _plugins() {
+            }
+            ~CompositPlugin() override {
+                ASSERT(_plugins.empty() == true);
+            }
+
+        public:
+            const string& Callsign() const {
+                return (_linkPlugin);
+            }
+            uint32_t Activated(const string& callsign, PluginHost::IShell* plugin) override {
+                ShellProxy* entry = nullptr;
+                _adminLock.Lock();
+                CompositPlugins::iterator index(_plugins.find(callsign));
+                if (index == _plugins.end()) {
+                    Core::ProxyType<ShellProxy> object = Core::ProxyType<ShellProxy>::Create(plugin, _linkPlugin);
+                    entry = object.operator->();
+                    entry->AddRef();
+                    _plugins.emplace(std::piecewise_construct,
+                        std::make_tuple(callsign),
+                        std::make_tuple(entry));
+                }
+                _adminLock.Unlock();
+
+                _parent.Activated(entry->Callsign(), entry);
+
+                return (Core::ERROR_NONE);
+            }
+            uint32_t Deactivated(const string& callsign, PluginHost::IShell* plugin) override {
+                ShellProxy* entry = nullptr;
+
+                _adminLock.Lock();
+                CompositPlugins::iterator index(_plugins.find(callsign));
+                if (index != _plugins.end()) {
+                    entry = index->second;
+                    _plugins.erase(index);
+                }
+                _adminLock.Unlock();
+
+                if (entry != nullptr) {
+                    _parent.Deactivated(entry->Callsign(), entry);
+                    entry->Release();
+                }
+
+                return (Core::ERROR_NONE);
+            }
+            void Clear() {
+                std::vector<ShellProxy*> entries;
+
+                _adminLock.Lock();
+                for (auto& entry : _plugins) {
+                    entries.push_back(entry.second);
+                }
+                _plugins.clear();
+                _adminLock.Unlock();
+
+                for (auto& element : entries) {
+                    _parent.Deactivated(element->Callsign(), element);
+                    element->Release();
+                }
+            }
+
+            BEGIN_INTERFACE_MAP(RemoteLink)
+                INTERFACE_ENTRY(PluginHost::ICompositPlugin::INotification)
+            END_INTERFACE_MAP
+
+        private:
+            ServiceMap& _parent;
+            Core::CriticalSection _adminLock;
+            const string _linkPlugin;
+            CompositPlugins _plugins;
+        };
         class Service : public IShell::ICOMLink, public PluginHost::Service {
         public:
             enum mode {
@@ -578,6 +1127,7 @@ namespace PluginHost {
                 , _rawSocket(nullptr)
                 , _webSecurity(nullptr)
                 , _jsonrpc(nullptr)
+                , _composit(nullptr)
                 , _reason(IShell::reason::SHUTDOWN)
                 , _precondition(true, plugin.Precondition)
                 , _termination(false, plugin.Termination)
@@ -1212,6 +1762,10 @@ namespace PluginHost {
                     _rawSocket = newIF->QueryInterface<IChannel>();
                     _webSecurity = newIF->QueryInterface<ISecurity>();
                     _jsonrpc = newIF->QueryInterface<IDispatcher>();
+                    _composit = newIF->QueryInterface<ICompositPlugin>();
+                    if (_composit != nullptr) {
+                        _administrator.AddComposit(Callsign(), _composit);
+                    }
                     if (_webSecurity == nullptr) {
                         _webSecurity = _administrator.Configuration().Security();
                         _webSecurity->AddRef();
@@ -1268,6 +1822,11 @@ namespace PluginHost {
                     _jsonrpc->Release();
                     _jsonrpc = nullptr;
                 }
+                if (_composit != nullptr) {
+                    _administrator.RemoveComposit(Callsign(), _composit);
+                    _composit->Release();
+                    _composit = nullptr;
+                }
                 if (_connection != nullptr) {
                     // Lets record the ID associated with this connection.
                     // If the other end of this connection (indicated by the
@@ -1306,6 +1865,7 @@ namespace PluginHost {
             IChannel* _rawSocket;
             ISecurity* _webSecurity;
             IDispatcher* _jsonrpc;
+            ICompositPlugin* _composit;
             reason _reason;
             Condition _precondition;
             Condition _termination;
@@ -1531,6 +2091,7 @@ namespace PluginHost {
             using Notifiers = std::vector<PluginHost::IPlugin::INotification*>;
             using Iterator = Core::IteratorMapType<ServiceContainer, Core::ProxyType<Service>, const string&>;
             using RemoteInstantiators = std::map<const string, IRemoteInstantiation*>;
+            using CompositPlugins = std::list< Core::Sink<CompositPlugin> >;
 
         private:
             class CommunicatorServer : public RPC::Communicator {
@@ -2082,6 +2643,7 @@ POP_WARNING()
                 , _subSystems(this)
                 , _authenticationHandler(nullptr)
                 , _configObserver(*this, config.PluginConfigPath())
+                , _compositPlugins()
             {
             }
 POP_WARNING()
@@ -2448,6 +3010,29 @@ POP_WARNING()
             {
                 return _server.Configuration();
             }
+            void AddComposit(const string& callsign, ICompositPlugin* composit) {
+                _adminLock.Lock();
+                // Seems this is a plugin that can be a composition of more plugins..
+                _compositPlugins.emplace_back(*this, callsign);
+                composit->Register(&_compositPlugins.back());
+                _adminLock.Unlock();
+            }
+            void RemoveComposit(const string& callsign, ICompositPlugin* composit) {
+                // Seems this is a plugin that can be a composition of more plugins..
+                _adminLock.Lock();
+                CompositPlugins::iterator index(_compositPlugins.begin());
+                while ((index != _compositPlugins.end()) && (callsign != index->Callsign())) {
+                    index++;
+                }
+
+                if (index != _compositPlugins.end()) {
+                    index->Clear();
+                    _compositPlugins.erase(index);
+                    composit->Unregister(&(*index));
+                }
+
+                _adminLock.Unlock();
+            }
 
         private:
             void ConfigReload(const string& configs) {
@@ -2561,6 +3146,7 @@ POP_WARNING()
             Core::Sink<SubSystems> _subSystems;
             IAuthenticate* _authenticationHandler;
             ConfigObserver _configObserver;
+            CompositPlugins _compositPlugins;
         };
 
         // Connection handler is the listening socket and keeps track of all open
