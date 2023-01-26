@@ -321,17 +321,9 @@ namespace PluginHost
             Unlock();
             result = Core::ERROR_INPROGRESS;
         }
-        else if ((currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED)) {
+        else if ((currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::HIBERNATE)) {
             Unlock();
             result = Core::ERROR_ILLEGAL_STATE;
-        }
-        else if (currentState == IShell::state::HIBERNATED) {
-            // Wake up the Hibernated process..
-            Wakeup();
-            State(ACTIVATED);
-            Unlock();
-            result = Core::ERROR_NONE;
-
         } else if ((currentState == IShell::state::DEACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
 
             // Load the interfaces, If we did not load them yet...
@@ -682,7 +674,7 @@ namespace PluginHost
 
     }
 
-    /* virtual */ Core::hresult Server::Service::Hibernate(const PluginHost::IShell::reason /* why */) {
+    Core::hresult Server::Service::Hibernate(const uint32_t timeout) /* override */ {
         Core::hresult result = Core::ERROR_NONE;
 
         Lock();
@@ -703,6 +695,14 @@ namespace PluginHost
                 result = Core::ERROR_BAD_REQUEST;
             }
             else {
+                #ifdef HIBERNATE_SUPPORT_ENABLED
+                result = Hibernate(timeout, local->Pid(), _T(""), _T(""), &_hibernateStorage);
+                #else
+                result = Core::ERROR_NONE;
+                #endif
+                if (result == Core::ERROR_NONE) {
+                    State(HIBERNATE);
+                }
                 local->Release();
             }
         }
@@ -712,7 +712,44 @@ namespace PluginHost
 
     }
 
-    void Server::Service::Wakeup() {
+    Core::hresult Server::Service::Wakeup(const uint32_t timeout) /* override */ {
+        Core::hresult result = Core::ERROR_NONE;
+
+        Lock();
+
+        IShell::state currentState(State());
+
+        if (currentState != IShell::state::HIBERNATE) {
+            result = Core::ERROR_ILLEGAL_STATE;
+        }
+        else {
+            ASSERT(_connection != nullptr);
+
+            // Oke we have an Connection so there is something to Wakeup..
+            RPC::IMonitorableProcess* local = _connection->QueryInterface< RPC::IMonitorableProcess>();
+
+            if (local == nullptr) {
+                result = Core::ERROR_BAD_REQUEST;
+            }
+            else {
+                #ifdef HIBERNATE_SUPPORT_ENABLED
+                ASSERT (_hibernateStorage != nullptr);
+                result = Hibernate(timeout, local->Pid(), _T(""), _T(""), _hibernateStorage);
+                result = Wakeup(); // The actual c-interface found in the hibernate directory
+                #else
+                result = Core::ERROR_NONE;
+                #endif
+                if (result == Core::ERROR_NONE) {
+                    State(ACTIVATED);
+                }
+                local->Release();
+            }
+        }
+        Unlock();
+
+        return (result);
+
+
     }
 
 

@@ -30,6 +30,10 @@
 #include "../processcontainers/ProcessContainer.h"
 #endif
 
+#ifdef HIBERNATE_SUPPORT_ENABLED
+#include "../hibernate/hibernate.h"
+#endif
+
 #ifndef HOSTING_COMPROCESS
 #error "Please define the name of the COM process!!!"
 #endif
@@ -1056,7 +1060,9 @@ namespace PluginHost {
             Core::hresult Activate(const reason) override;
             Core::hresult Deactivate(const reason) override;
             Core::hresult Unavailable(const reason) override;
-            Core::hresult Hibernate(const reason) override;
+
+            Core::hresult Hibernate(const uint32_t timeout) override;
+            Core::hresult Wakeup(const uint32_t timeout) override;
 
             reason Reason() const override
             {
@@ -1067,7 +1073,6 @@ namespace PluginHost {
             uint32_t Resume(const reason);
             bool HasVersionSupport(const string& number) const
             {
-
                 return (number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR item) { return std::isdigit(item); })) && (Service::IsSupported(static_cast<uint8_t>(atoi(number.c_str()))));
             }
 
@@ -1314,7 +1319,7 @@ namespace PluginHost {
             uint32_t _lastId;
             Metadata _metadata;
             Core::Library _library;
-
+            struct state_store* _hibernateStorage;
             ServiceMap& _administrator;
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;

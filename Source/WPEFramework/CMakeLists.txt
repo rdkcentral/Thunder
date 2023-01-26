@@ -74,6 +74,16 @@ if (PROCESSCONTAINERS)
             PROCESSCONTAINERS_ENABLED=1)
 endif(PROCESSCONTAINERS)
 
+if(HIBERNATESUPPORT)
+    add_subdirectory(../hibernate)
+    target_link_libraries(${TARGET}
+        PRIVATE
+            ${NAMESPACE}Hibernate::${NAMESPACE}Hibernate)
+    target_compile_definitions(${TARGET}
+        PUBLIC
+            HIBERNATE_SUPPORT_ENABLED=1)
+endif()
+
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
