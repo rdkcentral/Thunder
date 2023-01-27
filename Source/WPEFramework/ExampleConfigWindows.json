@@ -28,13 +28,16 @@
     "tracing": {
       "settings": [
         {
-          "module": "Plugin_OutOfProcess",
-          "category": "TestTrace",
+          "module": "ZWave",
+          "enabled": true
+        },
+        {
+          "module": "Plugin_ZigbeeControl",
           "enabled": true
         },
         {
           "module": "Plugin_Butler",
-          "enabled":  true
+          "enabled": true
         }
       ]
     }
@@ -104,9 +107,18 @@
       "classname": "ZigbeeControl",
       "autostart": false,
       "configuration": {
-        "port": "\\\\.\\COM6",
+        "port": "\\\\.\\COM4",
         "watchdog": 1442,
         "pan": 65200
+      }
+    },
+    {
+      "callsign": "ZWaveControl",
+      "locator": "libZWaveControl.so",
+      "classname": "ZWaveControl",
+      "autostart": false,
+      "configuration": {
+        "port": "\\\\.\\COM5"
       }
     },
     {
@@ -473,7 +485,7 @@
       "callsign": "Dictionary",
       "locator": "libdictionary.so",
       "classname": "Dictionary",
-      "autostart": true
+      "autostart": false
     },
     {
       "callsign": "DIALServer",
@@ -512,7 +524,7 @@
       "callsign": "MessageControl",
       "locator": "libmessagecontrol.so",
       "classname": "MessageControl",
-      "autostart": true
+      "autostart": false
     },
     {
       "callsign": "TraceControl",
@@ -530,7 +542,7 @@
       }
     },
     {
-      "autostart": true,
+      "autostart": false,
       "callsign": "WebKitBrowser",
       "classname": "OutOfProcessPlugin",
       "locator": "libOutOfProcessPlugin.so",

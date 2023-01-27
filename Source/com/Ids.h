@@ -47,6 +47,8 @@ namespace RPC {
         ID_SECURITY                     = (ID_OFFSET_INTERNAL + 0x0029),
         ID_AUTHENTICATE                 = (ID_OFFSET_INTERNAL + 0x002A),
         ID_PLUGIN_LIFETIME              = (ID_OFFSET_INTERNAL + 0x002B),
+        ID_COMPOSIT_PLUGIN              = (ID_OFFSET_INTERNAL + 0x002C),
+        ID_COMPOSIT_PLUGIN_NOTIFICATION = (ID_OFFSET_INTERNAL + 0x002D),
 
         ID_SHELL                        = (ID_OFFSET_INTERNAL + 0x0030),
         ID_STATECONTROL                 = (ID_OFFSET_INTERNAL + 0x0031),
