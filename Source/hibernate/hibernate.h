@@ -22,8 +22,9 @@ struct state_store {
 };
 
 uint32_t Hibernate(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], struct state_store** storage);
-uint32_t Restore(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], struct state_store* storage);
-
+uint32_t Wakeup(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], struct state_store** storage);
+uint32_t Cleanup(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], struct state_store** storage);
+                 
 #ifdef __cplusplus
 }
 #endif
