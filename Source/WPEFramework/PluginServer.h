@@ -815,8 +815,16 @@ namespace PluginHost {
                     Unlock();
 
                     result = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
-                    result->Error.SetError(Core::ERROR_UNAVAILABLE);
-                    result->Error.Text = _T("Service is not active");
+                    if(IsHibernated() == true)
+                    {
+                        result->Error.SetError(Core::ERROR_HIBERNATED);
+                        result->Error.Text = _T("Service is hibernated");
+                    }
+                    else
+                    {
+                        result->Error.SetError(Core::ERROR_UNAVAILABLE);
+                        result->Error.Text = _T("Service is not active");
+                    }
                     result->Id = message.Id;
                 }
                 else {

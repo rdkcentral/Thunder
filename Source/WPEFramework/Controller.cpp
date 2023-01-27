@@ -324,6 +324,7 @@ namespace Plugin {
     Core::hresult Controller::Hibernate(const string& callsign, const uint32_t timeout)
     {
         Core::hresult result = Core::ERROR_BAD_REQUEST;
+        const string controllerName = _pluginServer->Controller()->Callsign();
 
         if ((callsign.empty() == false) && (callsign != controllerName)) {
             Core::ProxyType<PluginHost::Server::Service> service;
@@ -341,6 +342,7 @@ namespace Plugin {
     Core::hresult Controller::Wakeup(const string& callsign, const uint32_t timeout)
     {
         Core::hresult result = Core::ERROR_BAD_REQUEST;
+        const string controllerName = _pluginServer->Controller()->Callsign();
 
         if ((callsign.empty() == false) && (callsign != controllerName)) {
             Core::ProxyType<PluginHost::Server::Service> service;

@@ -321,7 +321,7 @@ namespace PluginHost
             Unlock();
             result = Core::ERROR_INPROGRESS;
         }
-        else if ((currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::HIBERNATE)) {
+        else if ((currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::HIBERNATED)) {
             Unlock();
             result = Core::ERROR_ILLEGAL_STATE;
         } else if ((currentState == IShell::state::DEACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
@@ -482,9 +482,9 @@ namespace PluginHost
 
         if (currentState == IShell::state::ACTIVATION) {
             result = Core::ERROR_INPROGRESS;
-        } else if ((currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED)) {
+        } else if ((currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::HIBERNATED)) {
             result = Core::ERROR_ILLEGAL_STATE;
-        } else if ( (currentState == IShell::state::DEACTIVATED) || (currentState == IShell::state::HIBERNATED) ) {
+        } else if ( (currentState == IShell::state::DEACTIVATED) ) {
             result = Activate(why);
             currentState = State();
         }
@@ -684,7 +684,7 @@ namespace PluginHost
         if (currentState != IShell::state::ACTIVATED) {
             result = Core::ERROR_ILLEGAL_STATE;
         }
-        else if (_connection != nullptr) {
+        else if (_connection == nullptr) {
             result = Core::ERROR_BAD_REQUEST;
         }
         else {
@@ -701,7 +701,7 @@ namespace PluginHost
                 result = Core::ERROR_NONE;
                 #endif
                 if (result == Core::ERROR_NONE) {
-                    State(HIBERNATE);
+                    State(IShell::state::HIBERNATED);
                 }
                 local->Release();
             }
@@ -719,7 +719,7 @@ namespace PluginHost
 
         IShell::state currentState(State());
 
-        if (currentState != IShell::state::HIBERNATE) {
+        if (currentState != IShell::state::HIBERNATED) {
             result = Core::ERROR_ILLEGAL_STATE;
         }
         else {
@@ -734,8 +734,7 @@ namespace PluginHost
             else {
                 #ifdef HIBERNATE_SUPPORT_ENABLED
                 ASSERT (_hibernateStorage != nullptr);
-                result = Hibernate(timeout, local->Pid(), _T(""), _T(""), _hibernateStorage);
-                result = Wakeup(); // The actual c-interface found in the hibernate directory
+                result = Wakeup(timeout, local->Pid(), _T(""), _T(""), _hibernateStorage);
                 #else
                 result = Core::ERROR_NONE;
                 #endif
@@ -748,8 +747,6 @@ namespace PluginHost
         Unlock();
 
         return (result);
-
-
     }
 
 
