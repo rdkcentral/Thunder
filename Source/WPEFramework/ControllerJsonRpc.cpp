@@ -83,11 +83,13 @@ namespace Plugin {
     //
 
     uint32_t Controller::endpoint_hibernate(const JsonData::Controller::ActivateParamsInfo& params) {
-        return (Hibernate(params.Callsign.Value(), 1000));
+        uint32_t timeoutMs = 10000; //TODO replace with preprocessor define or config
+        return (Hibernate(params.Callsign.Value(), timeoutMs));
     }
 
     uint32_t Controller::endpoint_wakeup(const JsonData::Controller::ActivateParamsInfo& params) {
-        return (Wakeup(params.Callsign.Value(), 1000));
+        uint32_t timeoutMs = 10000; //TODO replace with preprocessor define or config
+        return (Wakeup(params.Callsign.Value(), timeoutMs));
     }
 
     // Method: activate - Activates a plugin
