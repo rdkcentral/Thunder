@@ -312,11 +312,11 @@ namespace RPC {
         string Identifier() const override {
             string identifier;
             Core::ProxyType<InvokeMessage> message(_message);
-            if (message.IsValid() == true) {
-                identifier = _T("COMRPC::Unknown::Request");
+            if (message.IsValid() == false) {
+                identifier = _T("{ \"type\": \"COMRPC\" }");
             }
             else {
-                identifier = Core::Format(_T("COMRPC::Interface[%d]::Method[%d]"), message->Parameters().InterfaceId(), message->Parameters().MethodId());
+                identifier = Core::Format(_T("{ \"type\": \"COMRPC\", \"interface\": %d, \"method\": %d }"), message->Parameters().InterfaceId(), message->Parameters().MethodId());
             }
             return (identifier);
         }

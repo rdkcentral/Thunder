@@ -160,7 +160,13 @@ POP_WARNING()
             Stop();
             Wait(Core::Thread::STOPPED, Core::infinite);
         }
-
+        static void DumpMetadata() {
+            _adminLock.Lock();
+            if (_dispatcher != nullptr) {
+                _dispatcher->DumpMetadata();
+            }
+            _adminLock.Unlock();
+        }
         static void StartShutdown() {
             _adminLock.Lock();
             if ((_dispatcher != nullptr) && (_instance == nullptr)) {
@@ -320,6 +326,10 @@ POP_WARNING()
         }
     }
 
+    void DumpMetadataHandler(int /* signo */) {
+        ExitHandler::DumpMetadata();
+    }
+
 #endif
 
     void LoadPlugins(const string& name, PluginHost::Config& config)
@@ -449,6 +459,10 @@ POP_WARNING()
             sigaction(SIGINT, &sa, nullptr);
             sigaction(SIGTERM, &sa, nullptr);
             sigaction(SIGQUIT, &sa, nullptr);
+
+            sa.sa_handler = DumpMetadataHandler;
+
+            sigaction(SIGUSR1, &sa, nullptr);
         }
 
         if (atexit(ForcedExit) != 0) {

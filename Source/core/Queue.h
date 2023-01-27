@@ -263,23 +263,32 @@ namespace Core {
             _adminLock.Unlock();
         }
 
-        inline void FreeSlot() const
+        void FreeSlot() const
         {
             _state.WaitState(false, DISABLED | ENTRIES | EMPTY, Core::infinite);
         }
-        inline bool IsEmpty() const
+        bool IsEmpty() const
         {
             return (_queue.empty());
         }
-        inline bool IsFull() const
+        bool IsFull() const
         {
             return (_queue.size() >= _maxSlots);
         }
-        inline uint32_t Length() const
+        uint32_t Length() const
         {
             return (static_cast<uint32_t>(_queue.size()));
         }
-        inline bool HasEntry(const CONTEXT& element) const {
+        // void action(const CONTEXT& element)
+        template<typename ACTION>
+        void Visit(ACTION&& action) const {
+            _adminLock.Lock();
+            for (const CONTEXT& entry : _queue) {
+                action(entry);
+            }
+            _adminLock.Unlock();
+        }
+        bool HasEntry(const CONTEXT& element) const {
 
             // This needs to be atomic. Make sure it is.
             _adminLock.Lock();
@@ -298,10 +307,10 @@ namespace Core {
 
             return (found);
         }
-        void Lock() {
+        void Lock() const {
             _adminLock.Lock();
         }
-        void Unlock() {
+        void Unlock() const {
             _adminLock.Unlock();
         }
 

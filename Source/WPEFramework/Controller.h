@@ -381,18 +381,9 @@ namespace Plugin {
 
             return (service);
         }
-	void WorkerPoolMetaData(PluginHost::MetaData::Server& data) const
-	{
-            const Core::WorkerPool::Metadata& snapshot = Core::WorkerPool::Instance().Snapshot();
-
-            data.PendingRequests = snapshot.Pending;
-
-            for (uint8_t teller = 0; teller < snapshot.Slots; teller++) {
-                // Example of why copy-constructor and assignment constructor should be equal...
-                Core::JSON::DecUInt32 newElement;
-                data.ThreadPoolRuns.Add() = snapshot.Slot[teller];
-            }
-	}
+        void WorkerPoolMetaData(PluginHost::MetaData::Server& data) const {
+            _pluginServer->WorkerPool().Snapshot(data);
+        }
         void Callstack(const ThreadId id, Core::JSON::ArrayType<CallstackData>& response) const;
         void SubSystems();
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;
