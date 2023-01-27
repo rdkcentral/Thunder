@@ -82,11 +82,11 @@ namespace Plugin {
     // API implementation
     //
 
-    uint32_t endpoint_hibernate(const JsonData::Controller::ActivateParamsInfo& params) {
+    uint32_t Controller::endpoint_hibernate(const JsonData::Controller::ActivateParamsInfo& params) {
         return (Hibernate(params.Callsign.Value(), 1000));
     }
 
-    uint32_t endpoint_wakeup(const JsonData::Controller::ActivateParamsInfo& params) {
+    uint32_t Controller::endpoint_wakeup(const JsonData::Controller::ActivateParamsInfo& params) {
         return (Wakeup(params.Callsign.Value(), 1000));
     }
 
