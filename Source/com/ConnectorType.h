@@ -90,8 +90,9 @@ namespace RPC {
             Channel(const Channel&) = delete;
             Channel& operator=(const Channel&) = delete;
 
-            Channel(const Core::NodeId& remoteNode, const Core::ProxyType<RPC::IIPCServer>& handler)
+            Channel(ConnectorType<ENGINE>& parent, const Core::NodeId& remoteNode, const Core::ProxyType<RPC::IIPCServer>& handler)
                 : CommunicatorClient(remoteNode, Core::ProxyType<Core::IIPCServer>(handler))
+                , _parent(parent)
             {
             }
             ~Channel() override = default;
@@ -109,15 +110,24 @@ namespace RPC {
             {
                 CommunicatorClient::Close(Core::infinite);
             }
+            void StateChange() override {
+                CommunicatorClient::StateChange();
+                _parent.Operational(CommunicatorClient::Source().IsOpen());
+            }
+
+        private:
+            ConnectorType<ENGINE>& _parent;
         };
+
     public:
+        ConnectorType(ConnectorType<ENGINE>&&) = delete;
         ConnectorType(const ConnectorType<ENGINE>&) = delete;
         ConnectorType<ENGINE>& operator=(const ConnectorType<ENGINE>&) = delete;
 
         ConnectorType()
             : _comChannels() {
         }
-        ~ConnectorType() = default;
+        virtual ~ConnectorType() = default;
 
     public:
         template <typename INTERFACE>
@@ -125,7 +135,7 @@ namespace RPC {
         {
             INTERFACE* result = nullptr;
 
-            Core::ProxyType<Channel> channel = _comChannels.template Instance<Channel>(nodeId, nodeId, ENGINE());
+            Core::ProxyType<Channel> channel = _comChannels.template Instance<Channel>(nodeId, *this, nodeId, ENGINE());
 
             if (channel.IsValid() == true) {
                 result = channel->template Acquire<INTERFACE>(waitTime, className, version);
@@ -139,6 +149,8 @@ namespace RPC {
         RPC::IIPCServer& Engine()
         {
             return *ENGINE();
+        }
+        virtual void Operational(const bool /* operational */ ) {
         }
 
     private:
