@@ -646,8 +646,7 @@ POP_WARNING()
         return (BaseClass::Close(waitTime));
     }
 
-    /* virtual */ void CommunicatorClient::StateChange()
-    {
+    void CommunicatorClient::StateChange() /* override */ {
         BaseClass::StateChange();
 
         if (BaseClass::Source().IsOpen()) {

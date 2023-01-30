@@ -78,6 +78,12 @@ endif()
 
 set(CMAKE_BUILD_TYPE @CMAKE_BUILD_TYPE@ CACHE INTERNAL "" FORCE)
 
+if(INSTANCE_ID_BITS)
+    add_definitions("-DINSTANCE_ID_BITS=@INSTANCE_ID_BITS@")
+else()
+    add_definitions("-DINSTANCE_ID_BITS=0")
+endif()
+
 # FIX_ME: Disable fortify source.
 #         https://jira.rdkcentral.com/jira/browse/METROL-483
 #         Enabled in upstream buildroot, generates a lot of warnings, caused by missing optimalisation flags.
