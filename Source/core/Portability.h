@@ -650,10 +650,22 @@ namespace WPEFramework {
 
 namespace Core {
 
+    #if defined(INSTANCE_ID_BITS) && (INSTANCE_ID_BITS != 0)
+    #if INSTANCE_ID_BITS <= 8
+    typedef uint8_t instance_id;
+    #elif INSTANCE_ID_BITS <= 16
+    typedef uint16_t instance_id;
+    #elif INSTANCE_ID_BITS <= 32 
+    typedef uint32_t instance_id;
+    #elif INSTANCE_ID_BITS <= 64
+    typedef uint64_t instance_id;
+    #endif
+    #else
     #if defined(__SIZEOF_POINTER__) && (__SIZEOF_POINTER__ == 8) 
     typedef uint64_t instance_id;
     #else
     typedef uint32_t instance_id;
+    #endif
     #endif
 
     typedef uint32_t hresult;
