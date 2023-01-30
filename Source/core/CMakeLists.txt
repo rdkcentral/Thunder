@@ -192,6 +192,11 @@ if(NOT WCHAR_SUPPORT)
     message(STATUS "Disabled WCHAR support.")
 endif()
 
+if (INSTANCE_ID_BITS)
+    target_compile_definitions(${TARGET} PUBLIC INSTANCE_ID_BITS=${INSTANCE_ID_BITS})
+    message(STATUS "COMRPC instanceid defined as ${INSTANCE_ID_BITS} bits.")
+endif()
+
 if(BLUETOOTH_SUPPORT)
     target_compile_definitions(${TARGET} PUBLIC __CORE_BLUETOOTH_SUPPORT__)
     message(STATUS "Enable bluetooth support.")

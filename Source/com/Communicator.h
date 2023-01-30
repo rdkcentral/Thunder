@@ -1648,7 +1648,7 @@ POP_WARNING()
         virtual void Dispatch(Core::IIPC& element);
 
     protected:
-        virtual void StateChange();
+        void StateChange() override;
 
     private:
         Core::ProxyType<RPC::AnnounceMessage> _announceMessage;

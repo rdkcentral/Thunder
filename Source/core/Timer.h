@@ -325,7 +325,7 @@ namespace Core {
 
         uint32_t Pending() const
         {
-            return (_pendingQueue.size());
+            return (static_cast<uint32_t>(_pendingQueue.size()));
         }
 
         ::ThreadId ThreadId() const
