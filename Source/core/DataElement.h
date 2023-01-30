@@ -303,7 +303,7 @@ namespace Core {
 
             if (Size(size) == true) {
                 // Shift all data back the beginning in..
-                ::memrcpy(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(offset) + size], static_cast<size_t>(m_Size - offset));
+                ::memmove(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(offset) + size], static_cast<size_t>(m_Size - offset));
 
                 // Now the total size is smaller, adjust
                 m_Size += size;
