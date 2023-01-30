@@ -185,11 +185,12 @@ namespace PluginHost {
             inline void Clear()
             {
                 ThreadPoolRuns.Clear();
+                PendingRequests.Clear();
             }
 
         public:
             Core::JSON::ArrayType<Minion> ThreadPoolRuns;
-            Core::JSON::DecUInt32 PendingRequests;
+            Core::JSON::ArrayType<Core::JSON::String> PendingRequests;
         };
 
         class EXTERNAL SubSystem : public Core::JSON::Container {

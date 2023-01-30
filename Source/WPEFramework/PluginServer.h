@@ -50,7 +50,6 @@ namespace Core {
 
 namespace Plugin {
     class Controller;
-
 }
 
 namespace PluginHost {
@@ -136,6 +135,20 @@ namespace PluginHost {
             void Idle() {
                 // Could be that we can now drop the dynamic library...
                 Core::ServiceAdministrator::Instance().FlushLibraries();
+            }
+            void Snapshot(PluginHost::MetaData::Server& data) const
+            {
+                const Core::WorkerPool::Metadata& snapshot = Core::WorkerPool::Snapshot();
+
+                for (const string& jobInfo : snapshot.Pending) {
+                    data.PendingRequests.Add() = jobInfo;
+                }
+
+                for (uint8_t teller = 0; teller < snapshot.Slots; teller++) {
+                    // Example of why copy-constructor and assignment constructor should be equal...
+                    Core::JSON::DecUInt32 newElement;
+                    data.ThreadPoolRuns.Add() = snapshot.Slot[teller];
+                }
             }
 
         private:
@@ -3366,7 +3379,16 @@ POP_WARNING()
                     
                 }
                 string Identifier() const override {
-                    return(_T("PluginServer::Channel::WebRequestJob::") + Callsign());
+                    string identifier;
+                    if (_jsonrpc == false) {
+                        identifier = _T("{ \"type\": \"JSON\",  }");
+                    }
+                    else {
+                        Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
+
+                        identifier = Core::Format(_T("{ \"type\": \"JSONRPC\", \"id\": %d, \"method\": \"%s\", \"parameters\": %s }"), message->Id.Value(), message->Designator.Value(), message->Parameters.Value());
+                    }
+                    return (identifier);
                 }
 
             private:
@@ -4114,6 +4136,16 @@ POP_WARNING()
         {
             return (_connections);
         }
+        inline void DumpMetadata() {
+            MetaData::Server data;
+            _dispatcher.Snapshot(data);
+
+            // Drop the workerpool info (wht is currently running and what is pending) to a file..
+            Core::File dumpFile(_config.PostMortemPath() + "ThunderInternals.json");
+            if (dumpFile.Create(false) == true) {
+                data.IElement::ToFile(dumpFile);
+            }
+        }
         inline ServiceMap& Services()
         {
             return (_services);
@@ -4134,7 +4166,6 @@ POP_WARNING()
         {
             _dispatcher.Revoke(job);
         }
-
         inline PluginHost::Config& Configuration()
         {
             return (_config);
