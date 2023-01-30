@@ -38,8 +38,8 @@ namespace Plugin {
         Register<ActivateParamsInfo,void>(_T("unavailable"), &Controller::endpoint_unavailable, this);
         Register<ActivateParamsInfo,void>(_T("suspend"), &Controller::endpoint_suspend, this);
         Register<ActivateParamsInfo,void>(_T("resume"), &Controller::endpoint_resume, this);
-        Register<ActivateParamsInfo,void>(_T("hibernate"), &Controller::endpoint_hibernate, this);
-        Register<ActivateParamsInfo,void>(_T("wakeup"), &Controller::endpoint_wakeup, this);
+        Register<HibernateParamsInfo,void>(_T("hibernate"), &Controller::endpoint_hibernate, this);
+        Register<HibernateParamsInfo,void>(_T("wakeup"), &Controller::endpoint_wakeup, this);
         Register<StartdiscoveryParamsData,void>(_T("startdiscovery"), &Controller::endpoint_startdiscovery, this);
         Register<void,void>(_T("storeconfig"), &Controller::endpoint_storeconfig, this);
         Register<DeleteParamsData,void>(_T("delete"), &Controller::endpoint_delete, this);
@@ -82,14 +82,27 @@ namespace Plugin {
     // API implementation
     //
 
-    uint32_t Controller::endpoint_hibernate(const JsonData::Controller::ActivateParamsInfo& params) {
-        uint32_t timeoutMs = 10000; //TODO replace with preprocessor define or config
-        return (Hibernate(params.Callsign.Value(), timeoutMs));
+    // Method: hibernate - Hibernates a plugin
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_BAD_REQUEST: Request is invalid
+    //  - ERROR_UNKNOWN_KEY: The plugin does not exist
+    //  - ERROR_OPENING_FAILED: Failed to activate the plugin
+    //  - ERROR_ILLEGAL_STATE: Current state of the plugin does not allow activation
+    //  - ERROR_INPROC: Plugin running within Thunder process, hibernate not allowed
+    uint32_t Controller::endpoint_hibernate(const JsonData::Controller::HibernateParamsInfo& params) {
+        return (Hibernate(params.Callsign.Value(), params.Timeout.Value()));
     }
 
-    uint32_t Controller::endpoint_wakeup(const JsonData::Controller::ActivateParamsInfo& params) {
-        uint32_t timeoutMs = 10000; //TODO replace with preprocessor define or config
-        return (Wakeup(params.Callsign.Value(), timeoutMs));
+    // Method: wakeup - Wakeups a plugin
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_BAD_REQUEST: Request is invalid
+    //  - ERROR_UNKNOWN_KEY: The plugin does not exist
+    //  - ERROR_OPENING_FAILED: Failed to wakeup the plugin
+    //  - ERROR_ILLEGAL_STATE: Current state of the plugin does not allow wakeup
+    uint32_t Controller::endpoint_wakeup(const JsonData::Controller::HibernateParamsInfo& params) {
+        return (Wakeup(params.Callsign.Value(), params.Timeout.Value()));
     }
 
     // Method: activate - Activates a plugin
