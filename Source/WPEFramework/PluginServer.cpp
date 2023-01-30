@@ -702,10 +702,8 @@ namespace PluginHost
                 result = Core::ERROR_NONE;
                 #endif
                 if (result == Core::ERROR_NONE) {
-                    const string className(PluginHost::Service::Configuration().ClassName.Value());
-                    const string callSign(PluginHost::Service::Configuration().Callsign.Value());
                     State(IShell::state::HIBERNATED);
-                    SYSLOG(Logging::Notification, ("Hibernated plugin [%s]:[%s]", className.c_str(), callSign.c_str()));
+                    SYSLOG(Logging::Notification, ("Hibernated plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
                 }
                 local->Release();
             }
@@ -743,10 +741,8 @@ namespace PluginHost
                 result = Core::ERROR_NONE;
                 #endif
                 if (result == Core::ERROR_NONE) {
-                    const string className(PluginHost::Service::Configuration().ClassName.Value());
-                    const string callSign(PluginHost::Service::Configuration().Callsign.Value());
                     State(ACTIVATED);
-                    SYSLOG(Logging::Notification, ("Activated plugin from hibernation [%s]:[%s]", className.c_str(), callSign.c_str()));
+                    SYSLOG(Logging::Notification, ("Activated plugin from hibernation [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
                 }
                 local->Release();
             }
