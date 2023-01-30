@@ -820,7 +820,7 @@ POP_WARNING()
                             printf("SystemState: UNKNOWN\n");
                             printf("------------------------------------------------------------\n");
                         }
-                        printf("Pending:     %d\n", metaData.Pending);
+                        printf("Pending:     %d\n", static_cast<uint32_t>(metaData.Pending.size()));
                         printf("Poolruns:\n");
                         for (uint8_t index = 0; index < metaData.Slots; index++) {
                            printf("  Thread%02d|0x%08X: %10d", (index + 1), (uint32_t) metaData.Slot[index].WorkerId, metaData.Slot[index].Runs);
