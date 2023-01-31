@@ -680,7 +680,6 @@ namespace PluginHost
         Lock();
 
         IShell::state currentState(State());
-        const string className(PluginHost::Service::Configuration().ClassName.Value());
 
         if (currentState != IShell::state::ACTIVATED) {
             result = Core::ERROR_ILLEGAL_STATE;
