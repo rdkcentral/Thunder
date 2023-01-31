@@ -96,6 +96,17 @@
       }
     },
     {
+      "callsign": "BridgeLink",
+      "locator": "libBridgeLink.so",
+      "classname": "BridgeLink",
+      "autostart": false,
+      "configuration": {
+        "destination": "192.168.1.102:7889",
+        "retries": 255,
+        "delay":  30
+      }
+    },
+    {
       "callsign": "Butler",
       "locator": "libButler.so",
       "classname": "Butler",
