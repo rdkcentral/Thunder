@@ -732,7 +732,7 @@ namespace PluginHost {
                     }
                 }
                 state State() const override {
-                    state result;
+                    state result = state::DEACTIVATED;
                     const PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->State();
@@ -865,6 +865,7 @@ namespace PluginHost {
                     Core::ProxyType<ShellProxy> object = Core::ProxyType<ShellProxy>::Create(plugin, _linkPlugin);
                     entry = object.operator->();
                     entry->AddRef();
+                    TRACE(Activity, (_T("Activated composit plugin [%s]"), entry->Callsign().c_str()));
                     _plugins.emplace(std::piecewise_construct,
                         std::make_tuple(callsign),
                         std::make_tuple(entry));
@@ -888,6 +889,7 @@ namespace PluginHost {
 
                 if (entry != nullptr) {
                     _parent.Deactivated(entry->Callsign(), entry);
+                    TRACE(Activity, (_T("Deactivated composit plugin [%s]"), entry->Callsign().c_str()));
                     entry->Release();
                 }
 
