@@ -286,6 +286,38 @@ def GenerateLuaData(emit, interfaces_list, enums_list, source_file, includePaths
             retval = []
             items = [ name ]
 
+            def ParseLength(param, length, vars):
+                def _Convert(size):
+                    if size == "char":
+                        return "8"
+                    elif size == "long":
+                        return "32"
+                    else:
+                        return "16"
+
+                if len(length) == 1:
+                    if length[0] == "void":
+                        return [_Convert(param.Type().size), None]
+
+                    for v in vars:
+                        if v.name == length[0]:
+                            return [_Convert(v.type.Type().size), v.name]
+
+                size = "8"
+
+                expr = "".join(length)
+                try:
+                    value = eval(expr)
+                    if value > 0xFF:
+                        size = "16"
+                    elif value > 0xFFFF:
+                        size = "32"
+                except:
+                    pass
+
+                return [size, None]
+
+
             def Convert(paramtype, retval, vars, hresult=False):
                 if isinstance(paramtype.type, list):
                     return
@@ -295,17 +327,13 @@ def GenerateLuaData(emit, interfaces_list, enums_list, source_file, includePaths
                 p = param.Type()
 
                 if isinstance(p, CppParser.Integer):
+                    length_param = None
+
                     if param.IsPointer():
-                        value = "16"
-                        if meta.length:
-                            for v in vars:
-                                if v.name == meta.length[0]:
-                                    if v.type.Type().size == "char":
-                                        value = "8"
-                                    elif v.type.Type().size == "long":
-                                        value = "32"
-                                    break
-                        value = "BUFFER" + value
+                        parsed = ParseLength(param, meta.length if meta.length else meta.maxlength, vars)
+                        if parsed[1]:
+                            length_param = parsed[1]
+                        value = "BUFFER" + parsed[0]
                     else:
                         if paramtype.type.TypeName().endswith(HRESULT):
                             value = "HRESULT"
@@ -335,8 +363,11 @@ def GenerateLuaData(emit, interfaces_list, enums_list, source_file, includePaths
                                         value = "INTERFACE"
                                         break
 
+                    rvalue = ["type = Type." + value]
+                    if length_param:
+                        rvalue.append("length_param = \"%s\"" % length_param)
 
-                    return ["type = Type." + value]
+                    return rvalue
 
                 elif isinstance(p, CppParser.String):
                     return ["type = Type.STRING"]
@@ -360,6 +391,7 @@ def GenerateLuaData(emit, interfaces_list, enums_list, source_file, includePaths
 
                         if pod_params:
                             value.append("pod = { %s }" % ", ".join(pod_params))
+
                         return value
 
                 elif isinstance(p, CppParser.Enum):
@@ -436,11 +468,19 @@ def GenerateLuaData(emit, interfaces_list, enums_list, source_file, includePaths
 
                     text.extend(param)
 
-                    if p.meta.input or not p.meta.output:
-                        params.append(" { %s }" % ", ".join(text))
+                    skip = False
+                    for v in m.vars:
+                        if (v.meta.length and (v.meta.length[0] == p.name)) and not v.meta.maxlength:
+                            # Will not be on the wire!
+                            skip = True
 
-                    if p.meta.output:
-                        retval.append(" { %s }" % ", ".join(text))
+                    if not skip:
+                        if p.meta.input or not p.meta.output:
+                            if not skip:
+                                params.append(" { %s }" % ", ".join(text))
+
+                        if p.meta.output:
+                            retval.append(" { %s }" % ", ".join(text))
 
             if retval:
                 items.append("retvals = { %s }" % ", ".join(retval))
