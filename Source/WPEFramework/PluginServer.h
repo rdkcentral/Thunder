@@ -31,7 +31,7 @@
 #endif
 
 #ifdef HIBERNATE_SUPPORT_ENABLED
-#include "../hibernate/hibernate.h"
+#include "hibernate/hibernate.h"
 #endif
 
 #ifndef HOSTING_COMPROCESS

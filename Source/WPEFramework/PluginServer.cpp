@@ -681,7 +681,7 @@ namespace PluginHost
             }
             else {
                 #ifdef HIBERNATE_SUPPORT_ENABLED
-                result = Hibernate(timeout, local->Pid(), _T(""), _T(""), &_hibernateStorage);
+                result = HibernateProcess(timeout, local->ParentPID(), _T(""), _T(""), &_hibernateStorage);
                 #else
                 result = Core::ERROR_NONE;
                 #endif
@@ -720,7 +720,7 @@ namespace PluginHost
             else {
                 #ifdef HIBERNATE_SUPPORT_ENABLED
                 ASSERT (_hibernateStorage != nullptr);
-                result = Wakeup(timeout, local->Pid(), _T(""), _T(""), _hibernateStorage);
+                result = WakeupProcess(timeout, local->ParentPID(), _T(""), _T(""), &_hibernateStorage);
                 #else
                 result = Core::ERROR_NONE;
                 #endif
