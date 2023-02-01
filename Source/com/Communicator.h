@@ -844,7 +844,7 @@ namespace RPC {
                     _adminLock.Unlock();
                 }
             }
-            inline void Unregister(RPC::IRemoteConnection::INotification* sink)
+            inline void Unregister(const RPC::IRemoteConnection::INotification* sink)
             {
                 ASSERT(sink != nullptr);
 
@@ -1360,7 +1360,7 @@ POP_WARNING()
         {
             _connectionMap.Register(sink);
         }
-        inline void Unregister(RPC::IRemoteConnection::INotification* sink)
+        inline void Unregister(const RPC::IRemoteConnection::INotification* sink)
         {
             _connectionMap.Unregister(sink);
         }

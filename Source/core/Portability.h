@@ -650,14 +650,14 @@ namespace WPEFramework {
 
 namespace Core {
 
-    #if defined(INSTANCE_ID_BITS) && (INSTANCE_ID_BITS != 0)
-    #if INSTANCE_ID_BITS <= 8
+    #if defined(__CORE_INSTANCE_BITS__) && (__CORE_INSTANCE_BITS__ != 0)
+    #if __CORE_INSTANCE_BITS__ <= 8
     typedef uint8_t instance_id;
-    #elif INSTANCE_ID_BITS <= 16
+    #elif __CORE_INSTANCE_BITS__ <= 16
     typedef uint16_t instance_id;
-    #elif INSTANCE_ID_BITS <= 32 
+    #elif __CORE_INSTANCE_BITS__ <= 32 
     typedef uint32_t instance_id;
-    #elif INSTANCE_ID_BITS <= 64
+    #elif __CORE_INSTANCE_BITS__ <= 64
     typedef uint64_t instance_id;
     #endif
     #else
@@ -782,12 +782,12 @@ namespace Core {
         }
 
         template <typename REQUESTEDINTERFACE>
-        REQUESTEDINTERFACE* QueryInterface() const
+        const REQUESTEDINTERFACE* QueryInterface() const
         {
             const void* baseInterface(const_cast<IUnknown*>(this)->QueryInterface(REQUESTEDINTERFACE::ID));
 
             if (baseInterface != nullptr) {
-                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
+                return (reinterpret_cast<const REQUESTEDINTERFACE*>(baseInterface));
             }
 
             return (nullptr);
