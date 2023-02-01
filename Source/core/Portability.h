@@ -782,12 +782,12 @@ namespace Core {
         }
 
         template <typename REQUESTEDINTERFACE>
-        REQUESTEDINTERFACE* QueryInterface() const
+        const REQUESTEDINTERFACE* QueryInterface() const
         {
             const void* baseInterface(const_cast<IUnknown*>(this)->QueryInterface(REQUESTEDINTERFACE::ID));
 
             if (baseInterface != nullptr) {
-                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
+                return (reinterpret_cast<const REQUESTEDINTERFACE*>(baseInterface));
             }
 
             return (nullptr);

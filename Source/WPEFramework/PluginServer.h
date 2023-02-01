@@ -381,10 +381,10 @@ namespace PluginHost {
                 ShellProxy(const ShellProxy&) = delete;
                 ShellProxy& operator= (const ShellProxy&) = delete;
 
-                ShellProxy(PluginHost::IShell* real, const string& callsign)
+                ShellProxy(PluginHost::IShell* real, const string callsign, const string& hostPlugin)
                     : _adminLock()
                     , _shell(real)
-                    , _callsign(real->Callsign() + RemotePluginDelimiter + callsign) {
+                    , _callsign(callsign + RemotePluginDelimiter + hostPlugin) {
                     _shell->AddRef();
                 }
                 ~ShellProxy() override {
@@ -600,7 +600,7 @@ namespace PluginHost {
                 }
                 //! SystemRootPath: Set <config:systemrootpath>/
                 uint32_t SystemRootPath(const string& systemRootPath) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->SystemRootPath(systemRootPath);
@@ -610,7 +610,7 @@ namespace PluginHost {
                 }
                 //! Startup: <config:startup>/
                 PluginHost::IShell::startup Startup() const override {
-                    PluginHost::IShell::startup result;
+                    PluginHost::IShell::startup result = PluginHost::IShell::startup::UNAVAILABLE;
                     const PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Startup();
@@ -620,7 +620,7 @@ namespace PluginHost {
                 }
                 //! Startup: Set<startup,autostart,resumed states>/
                 uint32_t Startup(const startup value) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Startup(value);
@@ -648,7 +648,7 @@ namespace PluginHost {
                     return (result);
                 }
                 uint32_t Resumed(const bool value) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Resumed(value);
@@ -675,7 +675,7 @@ namespace PluginHost {
                     return (result);
                 }
                 uint32_t ConfigLine(const string& config) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->ConfigLine(config);
@@ -752,7 +752,7 @@ namespace PluginHost {
                 // Methods to Activate/Deactivate and Unavailable the aggregated Plugin to this shell.
                 // NOTE: These are Blocking calls!!!!!
                 uint32_t Activate(const reason why) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Activate(why);
@@ -761,7 +761,7 @@ namespace PluginHost {
                     return (result);
                 }
                 uint32_t Deactivate(const reason why) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Deactivate(why);
@@ -770,7 +770,7 @@ namespace PluginHost {
                     return (result);
                 }
                 uint32_t Unavailable(const reason why) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Unavailable(why);
@@ -779,7 +779,7 @@ namespace PluginHost {
                     return (result);
                 }
                 uint32_t Hibernate(const reason why) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Hibernate(why);
@@ -788,7 +788,7 @@ namespace PluginHost {
                     return (result);
                 }
                 reason Reason() const override {
-                    reason result;
+                    reason result = reason::FAILURE;
                     const PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Reason();
@@ -862,7 +862,7 @@ namespace PluginHost {
                 _adminLock.Lock();
                 CompositPlugins::iterator index(_plugins.find(callsign));
                 if (index == _plugins.end()) {
-                    Core::ProxyType<ShellProxy> object = Core::ProxyType<ShellProxy>::Create(plugin, _linkPlugin);
+                    Core::ProxyType<ShellProxy> object = Core::ProxyType<ShellProxy>::Create(plugin, callsign, _linkPlugin);
                     entry = object.operator->();
                     entry->AddRef();
                     TRACE(Activity, (_T("Activated composit plugin [%s]"), entry->Callsign().c_str()));
@@ -872,7 +872,9 @@ namespace PluginHost {
                 }
                 _adminLock.Unlock();
 
-                _parent.Activated(entry->Callsign(), entry);
+                if (entry != nullptr) {
+                    _parent.Activated(entry->Callsign(), entry);
+                }
 
                 return (Core::ERROR_NONE);
             }
@@ -1042,6 +1044,7 @@ namespace PluginHost {
                 Metadata& operator=(const Metadata&) = delete;
                 Metadata()
                     : _isExtended(false)
+                    , _state(0)
                     , _major(~0)
                     , _minor(~0)
                     , _patch(~0)
@@ -1583,7 +1586,7 @@ namespace PluginHost {
             {
                 _administrator.Register(sink);
             }
-            void Unregister(RPC::IRemoteConnection::INotification* sink) override
+            void Unregister(const RPC::IRemoteConnection::INotification* sink) override
             {
                 _administrator.Unregister(sink);
             }
@@ -2102,10 +2105,10 @@ namespace PluginHost {
 
         class ServiceMap {
         public:
-            using ServiceContainer = std::map<const string, Core::ProxyType<Service>>;
+            using ServiceContainer = std::map<string, Core::ProxyType<Service>>;
             using Notifiers = std::vector<PluginHost::IPlugin::INotification*>;
             using Iterator = Core::IteratorMapType<ServiceContainer, Core::ProxyType<Service>, const string&>;
-            using RemoteInstantiators = std::map<const string, IRemoteInstantiation*>;
+            using RemoteInstantiators = std::unordered_map<string, IRemoteInstantiation*>;
             using CompositPlugins = std::list< Core::Sink<CompositPlugin> >;
 
         private:
@@ -2304,7 +2307,7 @@ namespace PluginHost {
                 {
                     RPC::Communicator::Register(sink);
                 }
-                void Unregister(RPC::IRemoteConnection::INotification* sink)
+                void Unregister(const RPC::IRemoteConnection::INotification* sink)
                 {
                     RPC::Communicator::Unregister(sink);
                 }
@@ -2391,6 +2394,8 @@ namespace PluginHost {
                 void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) override
                 {
                     _adminLock.Lock();
+
+                    _parent.Dangling(source, interfaceId);
 
                     for (auto& observer : _requestObservers) {
                         observer->Dangling(source, interfaceId);
@@ -2858,7 +2863,7 @@ POP_WARNING()
             {
                 _processAdministrator.Register(sink);
             }
-            void Unregister(RPC::IRemoteConnection::INotification* sink)
+            void Unregister(const RPC::IRemoteConnection::INotification* sink)
             {
                 _processAdministrator.Unregister(sink);
             }
@@ -3050,6 +3055,38 @@ POP_WARNING()
             }
 
         private:
+            void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) {
+                if (interfaceId == RPC::IRemoteConnection::INotification::ID)
+                {
+                    const RPC::IRemoteConnection::INotification* base = source->QueryInterface<RPC::IRemoteConnection::INotification>();
+
+                    ASSERT(base != nullptr);
+
+                    if (base != nullptr) {
+                        TRACE(Activity, (_T("Unregistered the dangling: RPC::IRemoteConnection::INotification")));
+                        _processAdministrator.Unregister(base);
+                        base->Release();
+                    }
+                }
+                else if (interfaceId == PluginHost::IPlugin::INotification::ID) {
+                    const PluginHost::IPlugin::INotification* base = source->QueryInterface<PluginHost::IPlugin::INotification>();
+
+                    ASSERT(base != nullptr);
+
+                    if (base != nullptr) {
+                        _notificationLock.Lock();
+
+                        Notifiers::iterator index(std::find(_notifiers.begin(), _notifiers.end(), base));
+
+                        if (index != _notifiers.end()) {
+                            (*index)->Release();
+                            _notifiers.erase(index);
+                            TRACE(Activity, (_T("Unregistered the dangling: PluginHost::IPlugin::INotification")));
+                        }
+                        _notificationLock.Unlock();
+                    }
+                }
+            }
             void ConfigReload(const string& configs) {
                 // Oke lets check the configs we are observing :-)
                 Core::Directory pluginDirectory(configs.c_str(), _T("*.json"));
