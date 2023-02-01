@@ -193,7 +193,7 @@ if(NOT WCHAR_SUPPORT)
 endif()
 
 if (INSTANCE_ID_BITS)
-    target_compile_definitions(${TARGET} PUBLIC INSTANCE_ID_BITS=${INSTANCE_ID_BITS})
+    target_compile_definitions(${TARGET} PUBLIC __CORE_INSTANCE_BITS__=${INSTANCE_ID_BITS})
     message(STATUS "COMRPC instanceid defined as ${INSTANCE_ID_BITS} bits.")
 endif()
 

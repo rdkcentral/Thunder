@@ -199,6 +199,7 @@ namespace Core {
     template <typename ACTUALSINK>
     class Sink : public ACTUALSINK {
     private:
+        Sink(Sink<ACTUALSINK>&&) = delete;
         Sink(const Sink<ACTUALSINK>&) = delete;
         Sink<ACTUALSINK> operator=(const Sink<ACTUALSINK>&) = delete;
 
