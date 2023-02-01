@@ -50,7 +50,7 @@ namespace PluginHost {
 
             virtual ~ICOMLink() = default;
             virtual void Register(RPC::IRemoteConnection::INotification* sink) = 0;
-            virtual void Unregister(RPC::IRemoteConnection::INotification* sink) = 0;
+            virtual void Unregister(const RPC::IRemoteConnection::INotification* sink) = 0;
 
             virtual void Register(INotification* sink) = 0;
             virtual void Unregister(INotification* sink) = 0;
@@ -286,7 +286,7 @@ namespace PluginHost {
                 handler->Register(sink);
             }
         }
-        inline void Unregister(RPC::IRemoteConnection::INotification* sink)
+        inline void Unregister(const RPC::IRemoteConnection::INotification* sink)
         {
             ICOMLink* handler(COMLink());
 
