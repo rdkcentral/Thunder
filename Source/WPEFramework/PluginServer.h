@@ -1642,7 +1642,10 @@ namespace PluginHost {
             void LoadMetadata() {
                 const string locator(PluginHost::Service::Configuration().Locator.Value());
                 if (locator.empty() == false) {
-                    LoadLibrary(locator);
+                    Core::Library loadedLib = LoadLibrary(locator);
+                    if (loadedLib.IsLoaded() == true) {
+                        Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_library));
+                    }
                 }
             }
 
