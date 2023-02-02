@@ -324,10 +324,9 @@ POP_WARNING()
 
             ExitHandler::StartShutdown();
         }
-    }
-
-    void DumpMetadataHandler(int /* signo */) {
-        ExitHandler::DumpMetadata();
+        else if (signo == SIGUSR1) {
+            ExitHandler::DumpMetadata();
+        }
     }
 
 #endif
@@ -459,9 +458,6 @@ POP_WARNING()
             sigaction(SIGINT, &sa, nullptr);
             sigaction(SIGTERM, &sa, nullptr);
             sigaction(SIGQUIT, &sa, nullptr);
-
-            sa.sa_handler = DumpMetadataHandler;
-
             sigaction(SIGUSR1, &sa, nullptr);
         }
 

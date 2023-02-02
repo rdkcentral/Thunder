@@ -541,11 +541,12 @@ namespace PluginHost
                 ASSERT(_handler != nullptr);
 
                 State(DEACTIVATION);
-                if( currentState == IShell::ACTIVATED ) {
-                _administrator.Deactivated(callSign, this);
-                }
-
                 Unlock();
+
+                if (currentState == IShell::ACTIVATED) {
+                    TRACE(Activity, (_T("Deactivating plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
+                    _administrator.Deactivated(callSign, this);
+                }
 
                 // We might require PostMortem analyses if the reason is not really clear. Call the PostMortum installed so it can generate
                 // required logs/OS information before we start to kill it.
@@ -554,10 +555,6 @@ namespace PluginHost
                 // If we enabled the webserver, we should also disable it.
                 if ((PluginHost::Service::Configuration().WebUI.IsSet()) || (PluginHost::Service::Configuration().WebUI.Value().empty() == false)) {
                     DisableWebServer();
-                }
-
-                if( currentState == IShell::state::ACTIVATED ) {
-                TRACE(Activity, (_T("Deactivation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
                 }
 
                 REPORT_DURATION_WARNING( { _handler->Deinitialize(this); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::DEACTIVATION, callSign.c_str());
@@ -574,17 +571,16 @@ namespace PluginHost
 
             }
 
-            if( currentState != IShell::state::ACTIVATION ) {
+            if (currentState != IShell::state::ACTIVATION) {
 
-            SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
+                SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
-            TRACE(Activity, (Core::Format(_T("Deactivate plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
 
 #if THUNDER_RESTFULL_API
-            _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
+                _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
 #endif
 
-            _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
+                _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
 
             }
 
