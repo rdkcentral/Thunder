@@ -3047,8 +3047,8 @@ POP_WARNING()
 
                 if (index != _compositPlugins.end()) {
                     index->Clear();
-                    _compositPlugins.erase(index);
                     composit->Unregister(&(*index));
+                    _compositPlugins.erase(index);
                 }
 
                 _adminLock.Unlock();
