@@ -385,10 +385,10 @@ namespace PluginHost {
                 ShellProxy(const ShellProxy&) = delete;
                 ShellProxy& operator= (const ShellProxy&) = delete;
 
-                ShellProxy(PluginHost::IShell* real, const string& callsign)
+                ShellProxy(PluginHost::IShell* real, const string callsign, const string& hostPlugin)
                     : _adminLock()
                     , _shell(real)
-                    , _callsign(real->Callsign() + RemotePluginDelimiter + callsign) {
+                    , _callsign(callsign + RemotePluginDelimiter + hostPlugin) {
                     _shell->AddRef();
                 }
                 ~ShellProxy() override {
@@ -417,46 +417,6 @@ namespace PluginHost {
                         source->DisableWebServer();
                         source->Release();
                     }
-                }
-                //! Version: Returns the version of the application hosting the plugin
-                string Version() const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Version();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! Version: Returns the Major version of the plugin
-                uint8_t Major() const override {
-                    uint8_t result = ~0;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Major();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! Version: Returns the Minor version of the plugin
-                uint8_t Minor() const override {
-                    uint8_t result = ~0;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Minor();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! Version: Returns the Patch version of the plugin
-                uint8_t Patch() const override {
-                    uint8_t result = ~0;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Patch();
-                        source->Release();
-                    }
-                    return (result);
                 }
                 //! Model: Returns a Human Readable name for the platform it is running on.
                 string Model() const override {
@@ -604,7 +564,7 @@ namespace PluginHost {
                 }
                 //! SystemRootPath: Set <config:systemrootpath>/
                 uint32_t SystemRootPath(const string& systemRootPath) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->SystemRootPath(systemRootPath);
@@ -614,7 +574,7 @@ namespace PluginHost {
                 }
                 //! Startup: <config:startup>/
                 PluginHost::IShell::startup Startup() const override {
-                    PluginHost::IShell::startup result;
+                    PluginHost::IShell::startup result = PluginHost::IShell::startup::UNAVAILABLE;
                     const PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Startup();
@@ -624,7 +584,7 @@ namespace PluginHost {
                 }
                 //! Startup: Set<startup,autostart,resumed states>/
                 uint32_t Startup(const startup value) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Startup(value);
@@ -652,7 +612,7 @@ namespace PluginHost {
                     return (result);
                 }
                 uint32_t Resumed(const bool value) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Resumed(value);
@@ -679,7 +639,7 @@ namespace PluginHost {
                     return (result);
                 }
                 uint32_t ConfigLine(const string& config) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->ConfigLine(config);
@@ -756,7 +716,7 @@ namespace PluginHost {
                 // Methods to Activate/Deactivate and Unavailable the aggregated Plugin to this shell.
                 // NOTE: These are Blocking calls!!!!!
                 uint32_t Activate(const reason why) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Activate(why);
@@ -765,7 +725,7 @@ namespace PluginHost {
                     return (result);
                 }
                 uint32_t Deactivate(const reason why) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Deactivate(why);
@@ -774,7 +734,7 @@ namespace PluginHost {
                     return (result);
                 }
                 uint32_t Unavailable(const reason why) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Unavailable(why);
@@ -783,7 +743,7 @@ namespace PluginHost {
                     return (result);
                 }
                 uint32_t Hibernate(const reason why) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Hibernate(why);
@@ -792,7 +752,7 @@ namespace PluginHost {
                     return (result);
                 }
                 reason Reason() const override {
-                    reason result;
+                    reason result = reason::FAILURE;
                     const PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Reason();
@@ -866,7 +826,7 @@ namespace PluginHost {
                 _adminLock.Lock();
                 CompositPlugins::iterator index(_plugins.find(callsign));
                 if (index == _plugins.end()) {
-                    Core::ProxyType<ShellProxy> object = Core::ProxyType<ShellProxy>::Create(plugin, _linkPlugin);
+                    Core::ProxyType<ShellProxy> object = Core::ProxyType<ShellProxy>::Create(plugin, callsign, _linkPlugin);
                     entry = object.operator->();
                     entry->AddRef();
                     TRACE(Activity, (_T("Activated composit plugin [%s]"), entry->Callsign().c_str()));
@@ -876,7 +836,9 @@ namespace PluginHost {
                 }
                 _adminLock.Unlock();
 
-                _parent.Activated(entry->Callsign(), entry);
+                if (entry != nullptr) {
+                    _parent.Activated(entry->Callsign(), entry);
+                }
 
                 return (Core::ERROR_NONE);
             }
@@ -1046,6 +1008,7 @@ namespace PluginHost {
                 Metadata& operator=(const Metadata&) = delete;
                 Metadata()
                     : _isExtended(false)
+                    , _state(0)
                     , _major(~0)
                     , _minor(~0)
                     , _patch(~0)
@@ -1487,15 +1450,24 @@ namespace PluginHost {
             }
             inline void GetMetaData(MetaData::Service& metaData) const
             {
-                if (_metadata.Hash().empty() == false) {
-                    metaData.Hash = _metadata.Hash();
-                }
-                
                 _pluginHandling.Lock();
 
+                if (_metadata.Major() != static_cast<uint8_t>(~0)) {
+                    metaData.ServiceVersion.Major = _metadata.Major();
+                }
+                if (_metadata.Minor() != static_cast<uint8_t>(~0)) {
+                    metaData.ServiceVersion.Minor = _metadata.Minor();
+                }
+                if (_metadata.Patch() != static_cast<uint8_t>(~0)) {
+                    metaData.ServiceVersion.Patch = _metadata.Patch();
+                }
+                if (_metadata.Hash().empty() == false) {
+                    metaData.ServiceVersion.Hash = _metadata.Hash();
+                }
                 if (_metadata.IsValid() == true) {
                     metaData.Module = string(_metadata.Module());
                 }
+
                 _pluginHandling.Unlock();
 
                 PluginHost::Service::GetMetaData(metaData);
@@ -1534,10 +1506,6 @@ namespace PluginHost {
                 Unlock();
             }
 
-            virtual uint8_t Major() const override;
-            virtual uint8_t Minor() const override;
-            virtual uint8_t Patch() const override;
-
             uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
             ISubSystem* SubSystems() override;
             void Notify(const string& message) override;
@@ -1546,9 +1514,6 @@ namespace PluginHost {
             void Register(IPlugin::INotification* sink) override;
             void Unregister(IPlugin::INotification* sink) override;
 
-            string Version() const override {
-                return (_administrator.Configuration().Version());
-            }
             string Model() const override {
                 return (_administrator.Configuration().Model());
             }
@@ -1595,7 +1560,7 @@ namespace PluginHost {
             {
                 _administrator.Register(sink);
             }
-            void Unregister(RPC::IRemoteConnection::INotification* sink) override
+            void Unregister(const RPC::IRemoteConnection::INotification* sink) override
             {
                 _administrator.Unregister(sink);
             }
@@ -1652,7 +1617,10 @@ namespace PluginHost {
             void LoadMetadata() {
                 const string locator(PluginHost::Service::Configuration().Locator.Value());
                 if (locator.empty() == false) {
-                    LoadLibrary(locator);
+                    Core::Library loadedLib = LoadLibrary(locator);
+                    if (loadedLib.IsLoaded() == true) {
+                        Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_library));
+                    }
                 }
             }
 
@@ -2115,10 +2083,10 @@ namespace PluginHost {
 
         class ServiceMap {
         public:
-            using ServiceContainer = std::map<const string, Core::ProxyType<Service>>;
+            using ServiceContainer = std::map<string, Core::ProxyType<Service>>;
             using Notifiers = std::vector<PluginHost::IPlugin::INotification*>;
             using Iterator = Core::IteratorMapType<ServiceContainer, Core::ProxyType<Service>, const string&>;
-            using RemoteInstantiators = std::map<const string, IRemoteInstantiation*>;
+            using RemoteInstantiators = std::unordered_map<string, IRemoteInstantiation*>;
             using CompositPlugins = std::list< Core::Sink<CompositPlugin> >;
 
         private:
@@ -2317,7 +2285,7 @@ namespace PluginHost {
                 {
                     RPC::Communicator::Register(sink);
                 }
-                void Unregister(RPC::IRemoteConnection::INotification* sink)
+                void Unregister(const RPC::IRemoteConnection::INotification* sink)
                 {
                     RPC::Communicator::Unregister(sink);
                 }
@@ -2404,6 +2372,8 @@ namespace PluginHost {
                 void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) override
                 {
                     _adminLock.Lock();
+
+                    _parent.Dangling(source, interfaceId);
 
                     for (auto& observer : _requestObservers) {
                         observer->Dangling(source, interfaceId);
@@ -2871,7 +2841,7 @@ POP_WARNING()
             {
                 _processAdministrator.Register(sink);
             }
-            void Unregister(RPC::IRemoteConnection::INotification* sink)
+            void Unregister(const RPC::IRemoteConnection::INotification* sink)
             {
                 _processAdministrator.Unregister(sink);
             }
@@ -3055,14 +3025,46 @@ POP_WARNING()
 
                 if (index != _compositPlugins.end()) {
                     index->Clear();
-                    _compositPlugins.erase(index);
                     composit->Unregister(&(*index));
+                    _compositPlugins.erase(index);
                 }
 
                 _adminLock.Unlock();
             }
 
         private:
+            void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) {
+                if (interfaceId == RPC::IRemoteConnection::INotification::ID)
+                {
+                    const RPC::IRemoteConnection::INotification* base = source->QueryInterface<RPC::IRemoteConnection::INotification>();
+
+                    ASSERT(base != nullptr);
+
+                    if (base != nullptr) {
+                        TRACE(Activity, (_T("Unregistered the dangling: RPC::IRemoteConnection::INotification")));
+                        _processAdministrator.Unregister(base);
+                        base->Release();
+                    }
+                }
+                else if (interfaceId == PluginHost::IPlugin::INotification::ID) {
+                    const PluginHost::IPlugin::INotification* base = source->QueryInterface<PluginHost::IPlugin::INotification>();
+
+                    ASSERT(base != nullptr);
+
+                    if (base != nullptr) {
+                        _notificationLock.Lock();
+
+                        Notifiers::iterator index(std::find(_notifiers.begin(), _notifiers.end(), base));
+
+                        if (index != _notifiers.end()) {
+                            (*index)->Release();
+                            _notifiers.erase(index);
+                            TRACE(Activity, (_T("Unregistered the dangling: PluginHost::IPlugin::INotification")));
+                        }
+                        _notificationLock.Unlock();
+                    }
+                }
+            }
             void ConfigReload(const string& configs) {
                 // Oke lets check the configs we are observing :-)
                 Core::Directory pluginDirectory(configs.c_str(), _T("*.json"));
@@ -3632,8 +3634,7 @@ POP_WARNING()
             // Handle the HTTP Web requests.
             // [INBOUND]  Completed received requests are triggering the Received,
             // [OUTBOUND] Completed send responses are triggering the Send.
-            virtual void
-            LinkBody(Core::ProxyType<Request>& request)
+            void LinkBody(Core::ProxyType<Request>& request) override
             {
                 // This is the time where we determine what body is needed for the incoming request.
                 TRACE(WebFlow, (request));
@@ -3659,7 +3660,7 @@ POP_WARNING()
                     }
                 }
             }
-            virtual void Received(Core::ProxyType<Request>& request)
+            void Received(Core::ProxyType<Request>& request) override
             {
                 ISecurity* security = nullptr;
 
@@ -3785,7 +3786,7 @@ POP_WARNING()
                 }
                 }
             }
-            virtual void Send(const Core::ProxyType<Web::Response>& response)
+            void Send(const Core::ProxyType<Web::Response>& response) override
             {
                 if (_requestClose == true) {
                     PluginHost::Channel::Close(0);
@@ -3796,7 +3797,7 @@ POP_WARNING()
             // Handle the JSON structs flowing over the WebSocket.
             // [INBOUND]  Completed deserialized JSON objects that are Received, will trigger the Received.
             // [OUTBOUND] Completed serialized JSON objects that are send out, will trigger the Send.
-            virtual Core::ProxyType<Core::JSON::IElement> Element(const string& identifier)
+            Core::ProxyType<Core::JSON::IElement> Element(const string& identifier) override
             {
                 Core::ProxyType<Core::JSON::IElement> result;
 
@@ -3810,11 +3811,11 @@ POP_WARNING()
 
                 return (result);
             }
-            virtual void Send(const Core::ProxyType<Core::JSON::IElement>& element)
+            void Send(const Core::ProxyType<Core::JSON::IElement>& element) override
             {
                 TRACE(SocketFlow, (element));
             }
-            virtual void Received(Core::ProxyType<Core::JSON::IElement>& element)
+            void Received(Core::ProxyType<Core::JSON::IElement>& element) override
             {
                 bool securityClearance = ((State() & Channel::JSONRPC) == 0);
 
@@ -3855,7 +3856,7 @@ POP_WARNING()
                     }
                 }
             }
-            virtual void Received(const string& value)
+            void Received(const string& value) override
             {
                 ASSERT(_service.IsValid() == true);
 
@@ -3875,7 +3876,7 @@ POP_WARNING()
 
             // We are in an upgraded mode, we are a websocket. Time to "deserialize and serialize
             // INBOUND and OUTBOUND information.
-            virtual uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize)
+            uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) override
             {
                 uint16_t result = 0;
 
@@ -3887,7 +3888,7 @@ POP_WARNING()
 
                 return (result);
             }
-            virtual uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize)
+            uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize) override
             {
                 uint16_t result = receivedSize;
 
@@ -3900,8 +3901,8 @@ POP_WARNING()
                 return (result);
             }
 
-            // Whenever there is a state change on the link, it is reported here.
-            virtual void StateChange()
+            // Whenever there is  a state change on the link, it is reported here.
+            void StateChange()
             {
                 TRACE(Activity, (_T("State change on [%d] to [%s]"), Id(), (IsSuspended() ? _T("SUSPENDED") : (IsUpgrading() ? _T("UPGRADING") : (IsWebSocket() ? _T("WEBSOCKET") : _T("WEBSERVER"))))));
 
@@ -4164,6 +4165,13 @@ POP_WARNING()
         inline ServiceMap& Services()
         {
             return (_services);
+        }
+        inline void Metadata(PluginHost::MetaData::Version& data)
+        {
+            data.Major = PluginHost::Major;
+            data.Minor = PluginHost::Minor;
+            data.Patch = PluginHost::Patch;
+            data.Hash = string(Core::System::ModuleBuildRef());
         }
         inline Server::WorkerPoolImplementation& WorkerPool()
         {

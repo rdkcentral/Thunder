@@ -50,7 +50,7 @@ namespace PluginHost {
 
             virtual ~ICOMLink() = default;
             virtual void Register(RPC::IRemoteConnection::INotification* sink) = 0;
-            virtual void Unregister(RPC::IRemoteConnection::INotification* sink) = 0;
+            virtual void Unregister(const RPC::IRemoteConnection::INotification* sink) = 0;
 
             virtual void Register(INotification* sink) = 0;
             virtual void Unregister(INotification* sink) = 0;
@@ -159,18 +159,6 @@ namespace PluginHost {
         //! @}
         virtual void EnableWebServer(const string& URLPath, const string& fileSystemPath) = 0;
         virtual void DisableWebServer() = 0;
-
-        //! Version: Returns the version of the application hosting the plugin
-        virtual string Version() const = 0;
-
-        //! Version: Returns the Major version of the plugin
-        virtual uint8_t Major() const = 0;
-
-        //! Version: Returns the Minor version of the plugin
-        virtual uint8_t Minor() const = 0;
-
-        //! Version: Returns the Patch version of the plugin
-        virtual uint8_t Patch() const = 0;
 
         //! Model: Returns a Human Readable name for the platform it is running on.
         virtual string Model() const = 0;
@@ -287,7 +275,7 @@ namespace PluginHost {
                 handler->Register(sink);
             }
         }
-        inline void Unregister(RPC::IRemoteConnection::INotification* sink)
+        inline void Unregister(const RPC::IRemoteConnection::INotification* sink)
         {
             ICOMLink* handler(COMLink());
 

@@ -123,10 +123,7 @@ namespace PluginHost
         , Observers(0)
 #endif
         , Module()
-        , Hash()
-        , Major(0)
-        , Minor(0)
-        , Patch(0)
+        , ServiceVersion()
         , InterfaceVersion()
     {
         Add(_T("state"), &JSONState);
@@ -138,10 +135,13 @@ namespace PluginHost
         Add(_T("observers"), &Observers);
 #endif
         Add(_T("module"), &Module);
-        Add(_T("hash"), &Hash);
-        Add(_T("major"), &Major);
-        Add(_T("minor"), &Minor);
-        Add(_T("patch"), &Patch);
+#ifdef DEPRECATED_CODE 
+        Add(_T("hash"), &(ServiceVersion.Hash));
+        Add(_T("major"), &(ServiceVersion.Major));
+        Add(_T("minor"), &(ServiceVersion.Minor));
+        Add(_T("patch"), &(ServiceVersion.Patch));
+#endif
+        Add(_T("version"), &ServiceVersion);
         Add(_T("interface"), &InterfaceVersion);
     }
     MetaData::Service::Service(const MetaData::Service& copy)
@@ -155,10 +155,7 @@ namespace PluginHost
         , Observers(copy.Observers)
 #endif
         , Module(copy.Module)
-        , Hash(copy.Hash)
-        , Major(copy.Major)
-        , Minor(copy.Minor)
-        , Patch(copy.Patch)
+        , ServiceVersion(copy.ServiceVersion)
         , InterfaceVersion(copy.InterfaceVersion)
     {
         Add(_T("state"), &JSONState);
@@ -170,10 +167,14 @@ namespace PluginHost
         Add(_T("observers"), &Observers);
 #endif
         Add(_T("module"), &Module);
-        Add(_T("hash"), &Hash);
-        Add(_T("major"), &Major);
-        Add(_T("minor"), &Minor);
-        Add(_T("patch"), &Patch);
+#ifdef DEPRECATED_CODE 
+        Add(_T("hash"), &(ServiceVersion.Hash));
+        Add(_T("major"), &(ServiceVersion.Major));
+        Add(_T("minor"), &(ServiceVersion.Minor));
+        Add(_T("patch"), &(ServiceVersion.Patch));
+#endif
+        Add(_T("version"), &ServiceVersion);
+
         Add(_T("interface"), &InterfaceVersion);
     }
     MetaData::Service::~Service()
@@ -297,6 +298,9 @@ namespace PluginHost
     }
 
     MetaData::Server::Server()
+        : Core::JSON::Container()
+        , ThreadPoolRuns()
+        , PendingRequests()
     {
         Core::JSON::Container::Add(_T("threads"), &ThreadPoolRuns);
         Core::JSON::Container::Add(_T("pending"), &PendingRequests);
@@ -306,13 +310,22 @@ namespace PluginHost
     }
 
     MetaData::MetaData()
+        : Core::JSON::Container()
+        , SubSystems()
+        , Plugins()
+        , Channels()
+        , Bridges()
+        , Process()
+        , Value()
+        , AppVersion()
     {
+        Core::JSON::Container::Add(_T("subsystems"), &SubSystems);
         Core::JSON::Container::Add(_T("plugins"), &Plugins);
         Core::JSON::Container::Add(_T("channel"), &Channels);
-        Core::JSON::Container::Add(_T("server"), &Process);
         Core::JSON::Container::Add(_T("bridges"), &Bridges);
+        Core::JSON::Container::Add(_T("server"), &Process);
         Core::JSON::Container::Add(_T("value"), &Value);
-        Core::JSON::Container::Add(_T("subsystems"), &SubSystems);
+        Core::JSON::Container::Add(_T("version"), &AppVersion);
     }
     MetaData::~MetaData()
     {

@@ -359,7 +359,6 @@ namespace PluginHost {
                 , Observe()
             {
                 // No IdleTime
-                Add(_T("version"), &Version);
                 Add(_T("model"), &Model);
                 Add(_T("port"), &Port);
                 Add(_T("binding"), &Binding);
@@ -575,7 +574,6 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             , _binder()
             , _redirect()
             , _security(nullptr)
-            , _version()
             , _model()
             , _messagingCategories()
             , _messagingCategoriesFile()
@@ -629,7 +627,6 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 _hashKey = config.Signature.Value();
                 _communicator = Core::NodeId(config.Communicator.Value().c_str());
                 _redirect = config.Redirect.Value();
-                _version = config.Version.Value();
                 _idleTime = config.IdleTime.Value();
                 _softKillCheckWaitTime = config.SoftKillCheckWaitTime.Value();
                 _hardKillCheckWaitTime = config.HardKillCheckWaitTime.Value();
@@ -712,11 +709,6 @@ POP_WARNING()
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
             _prefix = newValue;
             _webPrefix = '/' + _prefix;
-        }
-        inline const string& Version() const
-        {
-            Core::SafeSyncType<Core::CriticalSection> scopedLock(_configLock);
-            return (_version);
         }
         inline const string& Model() const
         {
@@ -1008,7 +1000,6 @@ POP_WARNING()
         Core::NodeId _binder;
         string _redirect;
         ISecurity* _security;
-        string _version;
         string _model;
         string _messagingCategories;
         bool _messagingCategoriesFile;
