@@ -26,7 +26,7 @@
 namespace WPEFramework {
 namespace PluginHost {
 
-    class SystemInfo : public PluginHost::ISubSystem, public PluginHost::IMetadata {
+    class SystemInfo : public PluginHost::ISubSystem {
     public:
         SystemInfo() = delete;
         SystemInfo(const SystemInfo&) = delete;
@@ -314,11 +314,11 @@ namespace PluginHost {
 
     public:
         SystemInfo(const Config& config, Core::IDispatch* callback);
-        virtual ~SystemInfo();
+        ~SystemInfo() override;
 
     public:
-        virtual void Register(PluginHost::ISubSystem::INotification* notification) override;
-        virtual void Unregister(PluginHost::ISubSystem::INotification* notification) override;
+        void Register(PluginHost::ISubSystem::INotification* notification) override;
+        void Unregister(PluginHost::ISubSystem::INotification* notification) override;
 
         string SecurityCallsign() const
         {
@@ -335,14 +335,8 @@ namespace PluginHost {
             return (result);
         }
 
-        // Software information
-        uint8_t Major() const override;
-        uint8_t Minor() const override;
-        uint8_t Patch() const override;
-        string BuildTreeHash() const override;
-
         // Event methods
-        virtual void Set(const subsystem type, Core::IUnknown* information) override
+        void Set(const subsystem type, Core::IUnknown* information) override
         {
             bool sendUpdate(type < NEGATIVE_START ? IsActive(type) == false : IsActive(static_cast<subsystem>(type - NEGATIVE_START)) == true);
 
@@ -665,7 +659,7 @@ namespace PluginHost {
                 Update();
             }
         }
-        virtual const Core::IUnknown* Get(const subsystem type) const override
+        const Core::IUnknown* Get(const subsystem type) const override
         {
             const Core::IUnknown* result(nullptr);
 
@@ -724,7 +718,7 @@ namespace PluginHost {
 
             return result;
         }
-        virtual bool IsActive(const subsystem type) const override
+        bool IsActive(const subsystem type) const override
         {
             return ((type < END_LIST) && ((_flags & (1 << type)) != 0));
         };
@@ -732,9 +726,12 @@ namespace PluginHost {
         {
             return (_flags);
         }
+
+        string BuildTreeHash() const;
+        string Version() const;
+
         BEGIN_INTERFACE_MAP(SystemInfo)
         INTERFACE_ENTRY(PluginHost::ISubSystem)
-        INTERFACE_ENTRY(PluginHost::IMetadata)
         END_INTERFACE_MAP
 
     private:

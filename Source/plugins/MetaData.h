@@ -29,15 +29,53 @@ namespace PluginHost {
     // Status information
     // this class holds interesting information that can be requested from the Server
     class EXTERNAL MetaData : public Core::JSON::Container {
-    private:
-        MetaData(const MetaData&) = delete;
-        MetaData& operator=(const MetaData&) = delete;
-
     public:
-        class EXTERNAL Service : public Plugin::Config {
-        private:
-            Service& operator=(const Service& RHS) = delete;
+        class EXTERNAL Version : public Core::JSON::Container {
+        public:
+            Version(Version&&) = delete;
 
+            Version()
+                : Core::JSON::Container()
+                , Hash()
+                , Major(1)
+                , Minor(0)
+                , Patch(0) {
+                Add(_T("hash"), &Hash);
+                Add(_T("major"), &Major);
+                Add(_T("minor"), &Minor);
+                Add(_T("patch"), &Patch);
+            }
+            Version(const Version& copy)
+                : Core::JSON::Container() 
+                , Hash(copy.Hash)
+                , Major(copy.Major)
+                , Minor(copy.Minor)
+                , Patch(copy.Patch) {
+                Add(_T("hash"), &Hash);
+                Add(_T("major"), &Major);
+                Add(_T("minor"), &Minor);
+                Add(_T("patch"), &Patch);
+            }
+
+            Version& operator= (const Version& rhs) {
+
+                Hash = rhs.Hash;
+                Major = rhs.Major;
+                Minor = rhs.Minor;
+                Patch = rhs.Patch;
+
+                return (*this);
+            }
+            ~Version() override = default;
+
+        public:
+            Core::JSON::String Hash;
+            Core::JSON::DecUInt8 Major;
+            Core::JSON::DecUInt8 Minor;
+            Core::JSON::DecUInt8 Patch;
+        };        
+        
+        class EXTERNAL Service : public Plugin::Config {
         public:
             enum state {
                 UNAVAILABLE = PluginHost::IShell::UNAVAILABLE,
@@ -73,6 +111,8 @@ namespace PluginHost {
             };
 
         public:
+            Service& operator=(const Service& RHS) = delete;
+
             Service();
             Service(const Service& copy);
             ~Service();
@@ -88,11 +128,8 @@ namespace PluginHost {
 #if THUNDER_RESTFULL_API
             Core::JSON::DecUInt32 Observers;
 #endif
+            Version ServiceVersion;
             Core::JSON::String Module;
-            Core::JSON::String Hash;
-            Core::JSON::DecUInt8 Major;
-            Core::JSON::DecUInt8 Minor;
-            Core::JSON::DecUInt8 Patch;
             Core::JSON::ArrayType<Core::JSON::String> InterfaceVersion;
         };
 
@@ -225,6 +262,10 @@ namespace PluginHost {
         };
 
     public:
+        MetaData(MetaData&&) = delete;
+        MetaData(const MetaData&) = delete;
+        MetaData& operator=(const MetaData&) = delete;
+
         MetaData();
         ~MetaData();
 
@@ -235,6 +276,7 @@ namespace PluginHost {
             Channels.Clear();
             Bridges.Clear();
             Process.Clear();
+            AppVersion.Clear();
         }
 
     public:
@@ -244,6 +286,7 @@ namespace PluginHost {
         Core::JSON::ArrayType<Bridge> Bridges;
         Server Process;
         Core::JSON::String Value;
+        Version AppVersion;
     };
 }
 
