@@ -1606,7 +1606,7 @@ namespace PluginHost {
                 if (locator.empty() == false) {
                     Core::Library loadedLib = LoadLibrary(locator);
                     if (loadedLib.IsLoaded() == true) {
-                        Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_library));
+                        Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(loadedLib));
                     }
                 }
             }
