@@ -738,7 +738,7 @@ namespace PluginHost {
                     return (result);
                 }
                 uint32_t Hibernate(const uint32_t timeout) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Hibernate(timeout);
@@ -756,7 +756,7 @@ namespace PluginHost {
                     return (result);
                 }
                 Core::hresult Metadata(string& info /* @out */) const {
-                    Core::hresult result;
+                    Core::hresult result = Core::ERROR_UNAVAILABLE;
                     const PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Metadata(info);
@@ -768,7 +768,7 @@ namespace PluginHost {
                 // Method to access, in the main process space, the channel factory to submit JSON objects to be send.
                 // This method will return a error if it is NOT in the main process.
                 /* @stubgen:stub */
-                uint32_t Submit(const uint32_t /* Id */, const Core::ProxyType<Core::JSON::IElement>& /* response */) override {
+                uint32_t Submit(const uint32_t Id VARIABLE_IS_NOT_USED, const Core::ProxyType<Core::JSON::IElement>& response VARIABLE_IS_NOT_USED) override {
                     return (Core::ERROR_NOT_SUPPORTED);
                 }
 
@@ -878,7 +878,7 @@ namespace PluginHost {
 
                 return (Core::ERROR_NONE);
             }
-            uint32_t Deactivated(const string& callsign, PluginHost::IShell* /* plugin */) override {
+            uint32_t Deactivated(const string& callsign, PluginHost::IShell* plugin VARIABLE_IS_NOT_USED) override {
                 ShellProxy* entry = nullptr;
 
                 _adminLock.Lock();

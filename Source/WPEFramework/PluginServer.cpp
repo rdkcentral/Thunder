@@ -659,7 +659,7 @@ namespace PluginHost
 
     }
 
-    Core::hresult Server::Service::Hibernate(const uint32_t timeout) /* override */ {
+    Core::hresult Server::Service::Hibernate(const uint32_t timeout VARIABLE_IS_NOT_USED) /* override */ {
         Core::hresult result = Core::ERROR_NONE;
 
         Lock();
@@ -698,7 +698,7 @@ namespace PluginHost
 
     }
 
-    uint32_t Server::Service::Wakeup(const uint32_t timeout) {
+    uint32_t Server::Service::Wakeup(const uint32_t timeout VARIABLE_IS_NOT_USED) {
         Core::hresult result = Core::ERROR_NONE;
 
         Lock();

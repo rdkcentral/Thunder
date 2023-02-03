@@ -34,6 +34,8 @@ namespace RPC {
         ID_STRINGITERATOR               = (ID_OFFSET_INTERNAL + 0x0005),
         ID_VALUEITERATOR                = (ID_OFFSET_INTERNAL + 0x0006),
         ID_MONITORABLE_PROCESS          = (ID_OFFSET_INTERNAL + 0x0007),
+        ID_CONTROLLER_EXT               = (ID_OFFSET_INTERNAL + 0x0008),
+        ID_CONTROLLER_EXT_NOTIFICATION  = (ID_OFFSET_INTERNAL + 0x0009),
 
         ID_CONTROLLER                   = (ID_OFFSET_INTERNAL + 0x0020),
         ID_PLUGIN                       = (ID_OFFSET_INTERNAL + 0x0021),
