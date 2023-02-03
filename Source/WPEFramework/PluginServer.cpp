@@ -255,18 +255,6 @@ namespace PluginHost
         _processAdministrator.Destroy();
     }
 
-    uint8_t Server::Service::Major() const /* override */ {
-        return (_metadata.Major());
-    }
-
-    uint8_t Server::Service::Minor() const /* override */ {
-        return (_metadata.Minor());
-    }
-
-    uint8_t Server::Service::Patch() const /* override */ {
-        return (_metadata.Patch());
-    }
-
     /* virtual */ void* Server::Service::QueryInterface(const uint32_t id)
     {
         void* result = nullptr;

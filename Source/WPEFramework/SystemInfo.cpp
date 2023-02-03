@@ -259,40 +259,14 @@ POP_WARNING()
     }
 
     // Software information
-    /* virtual */ string SystemInfo::BuildTreeHash() const
+    string SystemInfo::BuildTreeHash() const /* override */ 
     {
         return (_T(EXPAND_AND_QUOTE(TREE_REFERENCE)));
     }
 
-    static uint8_t VersionParser(const uint8_t index, const string& version) {
-        uint8_t result = 0;
-        uint8_t count = 0;
-        Core::TextSegmentIterator iterator(Core::TextFragment(version.c_str(), static_cast<uint32_t>(version.length())), false, '.');
-
-        while ((count < index) && (iterator.Next() == true)) {
-            count++;
-        }
-
-        if (iterator.Next() == true) {
-            result = Core::NumberType<uint8_t>(iterator.Current()).Value();
-        }
-
-        return (result);
-    }
-
-    uint8_t SystemInfo::Major() const /* override */
+    string SystemInfo::Version() const /* override */
     {
-        return (VersionParser(0, _config.Version()));
-    }
-
-    uint8_t SystemInfo::Minor() const /* override */
-    {
-        return (VersionParser(1, _config.Version()));
-    }
-
-    uint8_t SystemInfo::Patch() const /* override */
-    {
-        return (VersionParser(2, _config.Version()));
+        return (Core::Format(_T("%d.%d.%d"), PluginHost::Major, PluginHost::Minor, PluginHost::Patch));
     }
 
 } //namspace Plugin

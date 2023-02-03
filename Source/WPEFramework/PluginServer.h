@@ -414,46 +414,6 @@ namespace PluginHost {
                         source->Release();
                     }
                 }
-                //! Version: Returns the version of the application hosting the plugin
-                string Version() const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Version();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! Version: Returns the Major version of the plugin
-                uint8_t Major() const override {
-                    uint8_t result = ~0;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Major();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! Version: Returns the Minor version of the plugin
-                uint8_t Minor() const override {
-                    uint8_t result = ~0;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Minor();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! Version: Returns the Patch version of the plugin
-                uint8_t Patch() const override {
-                    uint8_t result = ~0;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Patch();
-                        source->Release();
-                    }
-                    return (result);
-                }
                 //! Model: Returns a Human Readable name for the platform it is running on.
                 string Model() const override {
                     string result;
@@ -1478,15 +1438,24 @@ namespace PluginHost {
             }
             inline void GetMetaData(MetaData::Service& metaData) const
             {
-                if (_metadata.Hash().empty() == false) {
-                    metaData.Hash = _metadata.Hash();
-                }
-                
                 _pluginHandling.Lock();
 
+                if (_metadata.Major() != static_cast<uint8_t>(~0)) {
+                    metaData.ServiceVersion.Major = _metadata.Major();
+                }
+                if (_metadata.Minor() != static_cast<uint8_t>(~0)) {
+                    metaData.ServiceVersion.Minor = _metadata.Minor();
+                }
+                if (_metadata.Patch() != static_cast<uint8_t>(~0)) {
+                    metaData.ServiceVersion.Patch = _metadata.Patch();
+                }
+                if (_metadata.Hash().empty() == false) {
+                    metaData.ServiceVersion.Hash = _metadata.Hash();
+                }
                 if (_metadata.IsValid() == true) {
                     metaData.Module = string(_metadata.Module());
                 }
+
                 _pluginHandling.Unlock();
 
                 PluginHost::Service::GetMetaData(metaData);
@@ -1525,10 +1494,6 @@ namespace PluginHost {
                 Unlock();
             }
 
-            virtual uint8_t Major() const override;
-            virtual uint8_t Minor() const override;
-            virtual uint8_t Patch() const override;
-
             uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
             ISubSystem* SubSystems() override;
             void Notify(const string& message) override;
@@ -1537,9 +1502,6 @@ namespace PluginHost {
             void Register(IPlugin::INotification* sink) override;
             void Unregister(IPlugin::INotification* sink) override;
 
-            string Version() const override {
-                return (_administrator.Configuration().Version());
-            }
             string Model() const override {
                 return (_administrator.Configuration().Model());
             }
@@ -1642,7 +1604,10 @@ namespace PluginHost {
             void LoadMetadata() {
                 const string locator(PluginHost::Service::Configuration().Locator.Value());
                 if (locator.empty() == false) {
-                    LoadLibrary(locator);
+                    Core::Library loadedLib = LoadLibrary(locator);
+                    if (loadedLib.IsLoaded() == true) {
+                        Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_library));
+                    }
                 }
             }
 
@@ -3656,8 +3621,7 @@ POP_WARNING()
             // Handle the HTTP Web requests.
             // [INBOUND]  Completed received requests are triggering the Received,
             // [OUTBOUND] Completed send responses are triggering the Send.
-            virtual void
-            LinkBody(Core::ProxyType<Request>& request)
+            void LinkBody(Core::ProxyType<Request>& request) override
             {
                 // This is the time where we determine what body is needed for the incoming request.
                 TRACE(WebFlow, (request));
@@ -3683,7 +3647,7 @@ POP_WARNING()
                     }
                 }
             }
-            virtual void Received(Core::ProxyType<Request>& request)
+            void Received(Core::ProxyType<Request>& request) override
             {
                 ISecurity* security = nullptr;
 
@@ -3809,7 +3773,7 @@ POP_WARNING()
                 }
                 }
             }
-            virtual void Send(const Core::ProxyType<Web::Response>& response)
+            void Send(const Core::ProxyType<Web::Response>& response) override
             {
                 if (_requestClose == true) {
                     PluginHost::Channel::Close(0);
@@ -3820,7 +3784,7 @@ POP_WARNING()
             // Handle the JSON structs flowing over the WebSocket.
             // [INBOUND]  Completed deserialized JSON objects that are Received, will trigger the Received.
             // [OUTBOUND] Completed serialized JSON objects that are send out, will trigger the Send.
-            virtual Core::ProxyType<Core::JSON::IElement> Element(const string& identifier)
+            Core::ProxyType<Core::JSON::IElement> Element(const string& identifier) override
             {
                 Core::ProxyType<Core::JSON::IElement> result;
 
@@ -3834,11 +3798,11 @@ POP_WARNING()
 
                 return (result);
             }
-            virtual void Send(const Core::ProxyType<Core::JSON::IElement>& element)
+            void Send(const Core::ProxyType<Core::JSON::IElement>& element) override
             {
                 TRACE(SocketFlow, (element));
             }
-            virtual void Received(Core::ProxyType<Core::JSON::IElement>& element)
+            void Received(Core::ProxyType<Core::JSON::IElement>& element) override
             {
                 bool securityClearance = ((State() & Channel::JSONRPC) == 0);
 
@@ -3879,7 +3843,7 @@ POP_WARNING()
                     }
                 }
             }
-            virtual void Received(const string& value)
+            void Received(const string& value) override
             {
                 ASSERT(_service.IsValid() == true);
 
@@ -3899,7 +3863,7 @@ POP_WARNING()
 
             // We are in an upgraded mode, we are a websocket. Time to "deserialize and serialize
             // INBOUND and OUTBOUND information.
-            virtual uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize)
+            uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) override
             {
                 uint16_t result = 0;
 
@@ -3911,7 +3875,7 @@ POP_WARNING()
 
                 return (result);
             }
-            virtual uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize)
+            uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize) override
             {
                 uint16_t result = receivedSize;
 
@@ -3924,8 +3888,8 @@ POP_WARNING()
                 return (result);
             }
 
-            // Whenever there is a state change on the link, it is reported here.
-            virtual void StateChange()
+            // Whenever there is  a state change on the link, it is reported here.
+            void StateChange()
             {
                 TRACE(Activity, (_T("State change on [%d] to [%s]"), Id(), (IsSuspended() ? _T("SUSPENDED") : (IsUpgrading() ? _T("UPGRADING") : (IsWebSocket() ? _T("WEBSOCKET") : _T("WEBSERVER"))))));
 
@@ -4188,6 +4152,13 @@ POP_WARNING()
         inline ServiceMap& Services()
         {
             return (_services);
+        }
+        inline void Metadata(PluginHost::MetaData::Version& data)
+        {
+            data.Major = PluginHost::Major;
+            data.Minor = PluginHost::Minor;
+            data.Patch = PluginHost::Patch;
+            data.Hash = string(Core::System::ModuleBuildRef());
         }
         inline Server::WorkerPoolImplementation& WorkerPool()
         {

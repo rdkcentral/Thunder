@@ -615,7 +615,7 @@ POP_WARNING()
             SYSLOG_GLOBAL(Logging::Startup, (_T("Process Id:    %d"), Core::ProcessInfo().Id()));
             SYSLOG_GLOBAL(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
             SYSLOG_GLOBAL(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
-            SYSLOG_GLOBAL(Logging::Startup, (_T("Version:       %s"), _config->Version().c_str()));
+            SYSLOG_GLOBAL(Logging::Startup, (_T("Version:       %d:%d:%d"), PluginHost::Major, PluginHost::Minor, PluginHost::Minor));
             SYSLOG_GLOBAL(Logging::Startup, (_T("Messages:        %s"), messagingSettings.c_str()));
 
             // Before we do any translation of IP, make sure we have the right network info...
