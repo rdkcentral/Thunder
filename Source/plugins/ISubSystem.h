@@ -193,13 +193,14 @@ namespace PluginHost {
         virtual void Register(ISubSystem::INotification* notification) = 0;
         virtual void Unregister(ISubSystem::INotification* notification) = 0;
 
-        // Software information
-        virtual string BuildTreeHash() const = 0;
-
         // Events setter and getters.
         virtual void Set(const subsystem type, Core::IUnknown* information) = 0;
         virtual const Core::IUnknown* Get(const subsystem type) const = 0;
         virtual bool IsActive(const subsystem type) const = 0;
+
+        // Report some version info on the Hosting Application
+        virtual string BuildTreeHash() const = 0;
+        virtual string Version() const = 0;
 
         template <typename REQUESTEDINTERFACE>
         const REQUESTEDINTERFACE* Get() const

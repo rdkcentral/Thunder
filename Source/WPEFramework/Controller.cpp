@@ -44,6 +44,7 @@ namespace Plugin {
     // Signing will be done on BackOffice level. The Controller I/F will never be exposed to the outside world.
     static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData>> jsonBodyMetaDataFactory(1);
     static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData::Service>> jsonBodyServiceFactory(1);
+    static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData::Version>> jsonBodyVersionFactory(1);
     static Core::ProxyPoolType<Web::JSONBodyType<Core::JSON::ArrayType<Controller::CallstackData>>> jsonBodyCallstackFactory(1);
     static Core::ProxyPoolType<Web::TextBody> jsonBodyTextFactory(2);
 
@@ -442,6 +443,11 @@ namespace Plugin {
                 subSystem->Release();
             }
 
+            result->Body(Core::ProxyType<Web::IBody>(response));
+        }
+        else if (index.Current() == _T("Version")) {
+            Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData::Version>> response(jsonBodyVersionFactory.Element());
+            _pluginServer->Metadata(*response);
             result->Body(Core::ProxyType<Web::IBody>(response));
         }
 
