@@ -22,11 +22,11 @@
 #
 
 import re
-import uuid
 import sys
 import os
 import argparse
 import copy
+import glob
 import CppParser
 from collections import OrderedDict
 import Log
@@ -1749,15 +1749,23 @@ if __name__ == "__main__":
     if not args.path:
         argparser.print_help()
     else:
+        files = []
         interface_files = []
-        for elem in args.path:
+
+        # Resolve wildcards
+        for p in args.path:
+            if "*" in p or "?" in p:
+                files.extend(glob.glob(p))
+            else:
+                files.append(p)
+
+        for elem in files:
             if os.path.isdir(elem):
-                interface_files += [
-                    os.path.join(elem, f) for f in os.listdir(elem)
-                    if (os.path.isfile(os.path.join(elem, f)) and re.match("I.*\\.h", f) and f != IDS_DEFINITIONS_FILE)
-                ]
+                interface_files += [ os.path.join(elem, f) for f in os.listdir(elem)
+                    if (os.path.isfile(os.path.join(elem, f)) and re.match("I.*\\.h", f) and f != IDS_DEFINITIONS_FILE) ]
             elif os.path.isfile(elem):
-                interface_files += [elem]
+                if re.match(".*I.*\\.h", elem) and not elem.endswith(IDS_DEFINITIONS_FILE):
+                    interface_files += [elem]
             else:
                 log.Error("invalid file or directory", elem)
 
