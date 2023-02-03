@@ -30,10 +30,6 @@
 #include "../processcontainers/ProcessContainer.h"
 #endif
 
-#ifdef HIBERNATE_SUPPORT_ENABLED
-#include "hibernate/hibernate.h"
-#endif
-
 #ifndef HOSTING_COMPROCESS
 #error "Please define the name of the COM process!!!"
 #endif
@@ -742,11 +738,20 @@ namespace PluginHost {
                     }
                     return (result);
                 }
-                uint32_t Hibernate(const reason why) override {
-                    uint32_t result = Core::ERROR_UNAVAILABLE;
+                uint32_t Hibernate(const uint32_t timeout) override {
+                    uint32_t result;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
-                        result = source->Hibernate(why);
+                        result = source->Hibernate(timeout);
+                        source->Release();
+                    }
+                    return (result);
+                }
+                uint32_t Wakeup(const uint32_t timeout) override {
+                    uint32_t result;
+                    PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Wakeup(timeout);
                         source->Release();
                     }
                     return (result);
@@ -1870,7 +1875,7 @@ namespace PluginHost {
             uint32_t _lastId;
             Metadata _metadata;
             Core::Library _library;
-            struct state_store* _hibernateStorage;
+            void* _hibernateStorage;
             ServiceMap& _administrator;
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;

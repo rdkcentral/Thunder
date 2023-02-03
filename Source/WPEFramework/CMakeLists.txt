@@ -19,9 +19,6 @@ find_package(Threads REQUIRED)
 
 get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
-option(HIBERNATESUPPORT
-        "Include hibernate support in the build." ON)#FIXME: default OFF
-
 set(THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool")
 set(ENABLE_INITSCRIPT_SUPPORT ON CACHE STRING "Enable init script(systemd/initd) install support from the thunder source tree")
 
@@ -78,14 +75,10 @@ if (PROCESSCONTAINERS)
 endif(PROCESSCONTAINERS)
 
 if(HIBERNATESUPPORT)
-    add_subdirectory(hibernate)
-
-    get_property(HibernatePackageName GLOBAL PROPERTY HibernatePackage)
-    get_property(HibernateLibName GLOBAL PROPERTY HibernateLib)
-
-    find_package(${HibernatePackageName} REQUIRED)
-    target_link_libraries(${TARGET} PRIVATE ${HibernateLibName})
-    target_compile_definitions(${TARGET} PUBLIC HIBERNATE_SUPPORT_ENABLED=1)
+    target_link_libraries(${TARGET} PRIVATE
+        ${NAMESPACE}Hibernate::${NAMESPACE}Hibernate)
+    target_compile_definitions(${TARGET} PUBLIC
+         HIBERNATE_SUPPORT_ENABLED=1)
 endif()
 
 set_target_properties(${TARGET} PROPERTIES
