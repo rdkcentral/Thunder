@@ -151,6 +151,9 @@ namespace ProxyStub {
         virtual ~UnknownProxy() = default;
 
     public:
+        uint32_t ReferenceCount() const {
+            return(_refCount);
+        }
     	bool Invalidate() {
             bool invalidated = false;
             _adminLock.Lock();

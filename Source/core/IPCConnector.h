@@ -742,6 +742,7 @@ POP_WARNING()
         }
 
         virtual uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) = 0;
+        virtual string Identifier() const = 0;
 
     private:
         virtual uint32_t Execute(ProxyType<IIPC>& command, IDispatchType<IIPC>* completed) = 0;
@@ -900,7 +901,6 @@ POP_WARNING()
         }
         uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) override
         {
-
             // We got the event, start the invoke, wait for the event to be set again..
             _link.SendResponse(inbound);
 
@@ -909,6 +909,9 @@ POP_WARNING()
         virtual void StateChange()
         {
             __StateChange();
+        }
+        string Identifier() const override {
+            return (_link.RemoteId());
         }
 
     private:

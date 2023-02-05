@@ -41,11 +41,11 @@ namespace RPC {
     enum { CommunicationBufferSize = 8120 }; // 8K :-)
 
     class EXTERNAL Administrator {
+    public:
+        typedef std::vector<ProxyStub::UnknownProxy*> Proxies;
+
     private:
         Administrator();
-        Administrator(const Administrator&) = delete;
-        Administrator& operator=(const Administrator&) = delete;
-
         class RecoverySet {
         public:
             RecoverySet() = delete;
@@ -86,8 +86,7 @@ namespace RPC {
             uint32_t _referenceCount;
         };
 
-        typedef std::list<ProxyStub::UnknownProxy*> ProxyList;
-        typedef std::map<const Core::IPCChannel*, ProxyList> ChannelMap;
+        typedef std::map<const Core::IPCChannel*, Proxies> ChannelMap;
         typedef std::map<const Core::IPCChannel*, std::list< RecoverySet > > ReferenceMap;
 
         struct EXTERNAL IMetadata {
@@ -113,11 +112,33 @@ namespace RPC {
         };
 
     public:
+        Administrator(Administrator&&) = delete;
+        Administrator(const Administrator&) = delete;
+        Administrator& operator=(const Administrator&) = delete;
+
         virtual ~Administrator();
 
         static Administrator& Instance();
 
     public:
+        // void action(const Client& client)
+        template<typename ACTION>
+        void Visit(ACTION&& action) {
+            _adminLock.Lock();
+            for (auto& entry : _channelProxyMap) {
+                action(entry.first->Identifier(), entry.second);
+            }
+            _adminLock.Unlock();
+        }
+        // void action(const Client& client)
+        template<typename ACTION>
+        void Visit(ACTION&& action) const {
+            _adminLock.Lock();
+            for (const auto& entry : _channelProxyMap) {
+                action(entry.first->Identifier(), entry.second);
+            }
+            _adminLock.Unlock();
+        }
         template <typename ACTUALINTERFACE, typename PROXY, typename STUB>
         void Announce()
         {
@@ -254,7 +275,7 @@ namespace RPC {
 
     private:
         // Seems like we have enough information, open up the Process communcication Channel.
-        Core::CriticalSection _adminLock;
+        mutable Core::CriticalSection _adminLock;
         std::map<uint32_t, ProxyStub::UnknownStub*> _stubs;
         std::map<uint32_t, IMetadata*> _proxy;
         Core::ProxyPoolType<InvokeMessage> _factory;

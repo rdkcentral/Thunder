@@ -46,6 +46,8 @@ namespace Plugin {
     static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData::Service>> jsonBodyServiceFactory(1);
     static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData::Version>> jsonBodyVersionFactory(1);
     static Core::ProxyPoolType<Web::JSONBodyType<Core::JSON::ArrayType<Controller::CallstackData>>> jsonBodyCallstackFactory(1);
+    static Core::ProxyPoolType<Web::JSONBodyType<Core::JSON::ArrayType<PluginHost::MetaData::COMRPC>>> jsonBodyProxiesFactory(1);
+
     static Core::ProxyPoolType<Web::TextBody> jsonBodyTextFactory(2);
 
     void Controller::Callstack(const ThreadId id, Core::JSON::ArrayType<CallstackData>& response) const {
@@ -332,6 +334,7 @@ namespace Plugin {
 
             // No more parameters, flush it all..
             _pluginServer->Dispatcher().GetMetaData(response->Channels);
+            _pluginServer->Services().GetMetaData(response->Channels);
             _pluginServer->Services().GetMetaData(response->Plugins);
             WorkerPoolMetaData(response->Process);
 
@@ -340,6 +343,7 @@ namespace Plugin {
             Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData>> response(jsonBodyMetaDataFactory.Element());
 
             _pluginServer->Dispatcher().GetMetaData(response->Channels);
+            _pluginServer->Services().GetMetaData(response->Channels);
 
             result->Body(Core::ProxyType<Web::IBody>(response));
         } else if (index.Current() == _T("Plugins")) {
@@ -448,6 +452,11 @@ namespace Plugin {
         else if (index.Current() == _T("Version")) {
             Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData::Version>> response(jsonBodyVersionFactory.Element());
             _pluginServer->Metadata(*response);
+            result->Body(Core::ProxyType<Web::IBody>(response));
+        }
+        else if (index.Current() == _T("Proxies")) {
+            Core::ProxyType<Web::JSONBodyType<Core::JSON::ArrayType<PluginHost::MetaData::COMRPC>>> response(jsonBodyProxiesFactory.Element());
+            Proxies(*response);
             result->Body(Core::ProxyType<Web::IBody>(response));
         }
 
@@ -651,6 +660,21 @@ namespace Plugin {
                 _resumes.erase(index);
             }
         }
+    }
+
+    void Controller::Proxies(Core::JSON::ArrayType<PluginHost::MetaData::COMRPC>& response) const {
+        RPC::Administrator::Instance().Visit([&](const string& remoteId, const RPC::Administrator::Proxies& proxies)
+            {
+                PluginHost::MetaData::COMRPC& entry(response.Add());
+                entry.Remote = remoteId;
+                for (const auto& proxy : proxies) {
+                    PluginHost::MetaData::COMRPC::Proxy& info(entry.Proxies.Add());
+                    info.InstanceId = proxy->Implementation();
+                    info.InterfaceId = proxy->InterfaceId();
+                    info.RefCount = proxy->ReferenceCount();
+                }
+            }
+        );
     }
 
     void Controller::SubSystems()

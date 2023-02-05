@@ -42,6 +42,8 @@ namespace Plugin {
         Register<void,void>(_T("storeconfig"), &Controller::endpoint_storeconfig, this);
         Register<DeleteParamsData,void>(_T("delete"), &Controller::endpoint_delete, this);
         Register<void,void>(_T("harakiri"), &Controller::endpoint_harakiri, this);
+        Register<void, Core::JSON::ArrayType<PluginHost::MetaData::COMRPC>>(_T("proxies"), &Controller::endpoint_proxies, this);
+        Register<CloneParamsInfo, Core::JSON::String>(_T("clone"), &Controller::endpoint_clone, this);
         Property<Core::JSON::ArrayType<PluginHost::MetaData::Service>>(_T("status"), &Controller::get_status, nullptr, this);
         Property<Core::JSON::ArrayType<PluginHost::MetaData::Channel>>(_T("links"), &Controller::get_links, nullptr, this);
         Property<PluginHost::MetaData::Server>(_T("processinfo"), &Controller::get_processinfo, nullptr, this);
@@ -49,12 +51,12 @@ namespace Plugin {
         Property<Core::JSON::ArrayType<PluginHost::MetaData::Bridge>>(_T("discoveryresults"), &Controller::get_discoveryresults, nullptr, this);
         Property<Core::JSON::String>(_T("environment"), &Controller::get_environment, nullptr, this);
         Property<Core::JSON::String>(_T("configuration"), &Controller::get_configuration, &Controller::set_configuration, this);
-        Register<CloneParamsInfo,Core::JSON::String>(_T("clone"), &Controller::endpoint_clone, this);
         Property<Core::JSON::ArrayType<CallstackData>>(_T("callstack"), &Controller::get_callstack, nullptr, this);
     }
 
     void Controller::UnregisterAll()
     {
+        Unregister(_T("proxies"));
         Unregister(_T("callstack"));
         Unregister(_T("harakiri"));
         Unregister(_T("delete"));
@@ -330,7 +332,12 @@ namespace Plugin {
     //  - ERROR_GENERAL: Failed to reboot the device
     uint32_t Controller::endpoint_harakiri()
     {
-        return Reboot();
+        return (Reboot());
+    }
+
+    uint32_t Controller::endpoint_proxies(Core::JSON::ArrayType<PluginHost::MetaData::COMRPC>& response) {
+        Proxies(response);
+        return(Core::ERROR_NONE);
     }
 
 
@@ -347,7 +354,7 @@ namespace Plugin {
             response = params.NewCallsign.Value();
         }
 
-        return result;
+        return(result);
     }
 
     // Property: status - Information about plugins, including their configurations
@@ -389,6 +396,7 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
 
         _pluginServer->Dispatcher().GetMetaData(response);
+        _pluginServer->Services().GetMetaData(response);
 
         return Core::ERROR_NONE;
     }

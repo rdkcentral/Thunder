@@ -1606,7 +1606,7 @@ namespace PluginHost {
                 if (locator.empty() == false) {
                     Core::Library loadedLib = LoadLibrary(locator);
                     if (loadedLib.IsLoaded() == true) {
-                        Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_library));
+                        Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(loadedLib));
                     }
                 }
             }
@@ -2950,6 +2950,31 @@ POP_WARNING()
                     metaData.Add(newInfo);
                     duplicates.pop_front();
                 }
+            }
+            void GetMetaData(Core::JSON::ArrayType<MetaData::Channel>& metaData) const
+            {
+                _adminLock.Lock();
+                _processAdministrator.Visit([&](const RPC::Communicator::Client& element)
+                    {
+                        MetaData::Channel& entry = metaData.Add();
+                        entry.ID = element.Extension().Id();
+                        
+                        entry.Activity = element.Source().IsOpen();
+                        entry.JSONState = MetaData::Channel::state::COMRPC;
+                        entry.Name = string(EXPAND_AND_QUOTE(APPLICATION_NAME) "::Communicator");
+
+                        const Core::NodeId& localNode(element.Source().LocalNode());
+
+                        if ((localNode.Type() == Core::NodeId::enumType::TYPE_IPV4) || ((localNode.Type() == Core::NodeId::enumType::TYPE_IPV6))) {
+                            // It is using TCP/IP (4 or 6) connectivity..
+                            entry.Remote = element.Source().RemoteNode().HostName() + '@' + Core::NumberType<uint16_t>(localNode.PortNumber()).Text();
+                        }
+                        else {
+                            // It's not a network connection, let report to whom it hooked up..
+                            entry.Remote = localNode.HostName() + '@' + Core::NumberType<Core::IResource::handle>(static_cast<const Core::IResource&>(element.Source()).Descriptor()).Text();
+                        }
+                    });
+                _adminLock.Unlock();
             }
             uint32_t FromIdentifier(const string& callSign, Core::ProxyType<Service>& service)
             {
