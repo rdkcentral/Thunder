@@ -53,6 +53,9 @@ namespace Plugin {
 }
 
 namespace PluginHost {
+
+    EXTERNAL string ChannelIdentifier (const Core::SocketPort& input);
+
     class Server {
     private:
         Server() = delete;
@@ -2963,15 +2966,10 @@ POP_WARNING()
                         entry.JSONState = MetaData::Channel::state::COMRPC;
                         entry.Name = string(EXPAND_AND_QUOTE(APPLICATION_NAME) "::Communicator");
 
-                        const Core::NodeId& localNode(element.Source().LocalNode());
+                        string identifier = ChannelIdentifier(element.Source());
 
-                        if ((localNode.Type() == Core::NodeId::enumType::TYPE_IPV4) || ((localNode.Type() == Core::NodeId::enumType::TYPE_IPV6))) {
-                            // It is using TCP/IP (4 or 6) connectivity..
-                            entry.Remote = element.Source().RemoteNode().HostName() + '@' + Core::NumberType<uint16_t>(localNode.PortNumber()).Text();
-                        }
-                        else {
-                            // It's not a network connection, let report to whom it hooked up..
-                            entry.Remote = localNode.HostName() + '@' + Core::NumberType<Core::IResource::handle>(static_cast<const Core::IResource&>(element.Source()).Descriptor()).Text();
+                        if (identifier.empty() == false) {
+                            entry.Remote = identifier;
                         }
                     });
                 _adminLock.Unlock();

@@ -659,10 +659,18 @@ POP_WARNING()
                     switch (keyPress) {
                     case 'A': {
                         Core::JSON::ArrayType<MetaData::COMRPC> proxyChannels;
-                        RPC::Administrator::Instance().Visit([&](const string& remoteId, const RPC::Administrator::Proxies& proxies)
-                            {
+                        RPC::Administrator::Instance().Visit([&](const Core::IPCChannel& channel, const RPC::Administrator::Proxies& proxies) {
                                 MetaData::COMRPC& entry(proxyChannels.Add());
-                                entry.Remote = remoteId;
+                                const RPC::Communicator::Client* comchannel = dynamic_cast<const RPC::Communicator::Client*>(&channel);
+
+                                if (comchannel != nullptr) {
+                                    string identifier = PluginHost::ChannelIdentifier(comchannel->Source());
+
+                                    if (identifier.empty() == false) {
+                                        entry.Remote = identifier;
+                                    }
+                                }
+
                                 for (const auto& proxy : proxies) {
                                     MetaData::COMRPC::Proxy& info(entry.Proxies.Add());
                                     info.InstanceId = proxy->Implementation();
@@ -682,8 +690,10 @@ POP_WARNING()
                             Core::JSON::ArrayType<MetaData::COMRPC::Proxy>::Iterator loop(index.Current().Proxies.Elements());
 
                             while (loop.Next() == true) {
-                                printf("InstanceId: 0x%p, RefCount: %d, InterfaceId %d [0x%X]\n", loop.Current().InstanceId.Value(), loop.Current().RefCount.Value(), loop.Current().InterfaceId.Value(), loop.Current().InterfaceId.Value());
+                                uint64_t instanceId = loop.Current().InstanceId.Value();
+                                printf("InstanceId: 0x%" PRIx64 ", RefCount: %d, InterfaceId %d [0x%X]\n", instanceId, loop.Current().RefCount.Value(), loop.Current().InterfaceId.Value(), loop.Current().InterfaceId.Value());
                             }
+                            printf("\n");
                         }
                         break;
                     }

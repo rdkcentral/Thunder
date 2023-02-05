@@ -126,7 +126,7 @@ namespace RPC {
         void Visit(ACTION&& action) {
             _adminLock.Lock();
             for (auto& entry : _channelProxyMap) {
-                action(entry.first->Identifier(), entry.second);
+                action(*entry.first, entry.second);
             }
             _adminLock.Unlock();
         }
@@ -135,7 +135,7 @@ namespace RPC {
         void Visit(ACTION&& action) const {
             _adminLock.Lock();
             for (const auto& entry : _channelProxyMap) {
-                action(entry.first->Identifier(), entry.second);
+                action(*entry.first, entry.second);
             }
             _adminLock.Unlock();
         }
