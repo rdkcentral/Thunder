@@ -261,8 +261,7 @@ namespace Core {
         void Visit(ACTION&& action) {
             _adminLock.Lock();
             for (const std::pair< EXTENSION*, ProxyType<Client>>& entry : _clients) {
-                ProxyType<Client> client(entry.second);
-                action(client.operator*());
+                action(*(entry.second));
             }
             _adminLock.Unlock();
         }
@@ -271,8 +270,7 @@ namespace Core {
         void Visit(ACTION&& action) const {
             _adminLock.Lock();
             for (const std::pair< EXTENSION*, ProxyType<Client>>& entry : _clients) {
-                ProxyType<Client> client(entry.second);
-                action(client.operator*());
+                action(*(entry.second));
             }
             _adminLock.Unlock();
         }
