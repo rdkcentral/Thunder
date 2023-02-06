@@ -109,7 +109,7 @@ namespace RPC {
         ChannelMap::iterator index(_channelProxyMap.find(proxy.Channel().operator->()));
 
         if (index != _channelProxyMap.end()) {
-            ProxyList::iterator entry(index->second.begin());
+            Proxies::iterator entry(index->second.begin());
             while ((entry != index->second.end()) && ((*entry) != &proxy)) {
                 entry++;
             }
@@ -152,7 +152,7 @@ namespace RPC {
         ChannelMap::iterator index(_channelProxyMap.find(channel.operator->()));
 
         if (index != _channelProxyMap.end()) {
-            ProxyList::iterator entry(index->second.begin());
+            Proxies::iterator entry(index->second.begin());
             while ((entry != index->second.end()) && (((*entry)->InterfaceId() != id) || ((*entry)->Implementation() != impl))) {
                 entry++;
             }
@@ -182,7 +182,7 @@ namespace RPC {
             ChannelMap::iterator index(_channelProxyMap.find(channel.operator->()));
 
             if (index != _channelProxyMap.end()) {
-                ProxyList::iterator entry(index->second.begin());
+                Proxies::iterator entry(index->second.begin());
                 while ((entry != index->second.end()) && (((*entry)->InterfaceId() != id) || ((*entry)->Implementation() != impl))) {
                     entry++;
                 }
@@ -310,7 +310,7 @@ namespace RPC {
         ChannelMap::iterator index(_channelProxyMap.find(channel.operator->()));
 
         if (index != _channelProxyMap.end()) {
-            ProxyList::iterator loop(index->second.begin());
+            Proxies::iterator loop(index->second.begin());
             while (loop != index->second.end()) {
                 // There is a small possibility that the last reference to this proxy
                 // interface is released in the same time before we report this interface

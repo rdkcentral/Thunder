@@ -900,7 +900,6 @@ POP_WARNING()
         }
         uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) override
         {
-
             // We got the event, start the invoke, wait for the event to be set again..
             _link.SendResponse(inbound);
 

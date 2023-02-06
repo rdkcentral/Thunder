@@ -53,6 +53,9 @@ namespace Plugin {
 }
 
 namespace PluginHost {
+
+    EXTERNAL string ChannelIdentifier (const Core::SocketPort& input);
+
     class Server {
     private:
         Server() = delete;
@@ -2950,6 +2953,26 @@ POP_WARNING()
                     metaData.Add(newInfo);
                     duplicates.pop_front();
                 }
+            }
+            void GetMetaData(Core::JSON::ArrayType<MetaData::Channel>& metaData) const
+            {
+                _adminLock.Lock();
+                _processAdministrator.Visit([&](const RPC::Communicator::Client& element)
+                    {
+                        MetaData::Channel& entry = metaData.Add();
+                        entry.ID = element.Extension().Id();
+                        
+                        entry.Activity = element.Source().IsOpen();
+                        entry.JSONState = MetaData::Channel::state::COMRPC;
+                        entry.Name = string(EXPAND_AND_QUOTE(APPLICATION_NAME) "::Communicator");
+
+                        string identifier = ChannelIdentifier(element.Source());
+
+                        if (identifier.empty() == false) {
+                            entry.Remote = identifier;
+                        }
+                    });
+                _adminLock.Unlock();
             }
             uint32_t FromIdentifier(const string& callSign, Core::ProxyType<Service>& service)
             {
