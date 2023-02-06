@@ -657,9 +657,50 @@ POP_WARNING()
                     keyPress = toupper(getchar());
 
                     switch (keyPress) {
+                    case 'A': {
+                        Core::JSON::ArrayType<MetaData::COMRPC> proxyChannels;
+                        RPC::Administrator::Instance().Visit([&](const Core::IPCChannel& channel, const RPC::Administrator::Proxies& proxies) {
+                                MetaData::COMRPC& entry(proxyChannels.Add());
+                                const RPC::Communicator::Client* comchannel = dynamic_cast<const RPC::Communicator::Client*>(&channel);
+
+                                if (comchannel != nullptr) {
+                                    string identifier = PluginHost::ChannelIdentifier(comchannel->Source());
+
+                                    if (identifier.empty() == false) {
+                                        entry.Remote = identifier;
+                                    }
+                                }
+
+                                for (const auto& proxy : proxies) {
+                                    MetaData::COMRPC::Proxy& info(entry.Proxies.Add());
+                                    info.InstanceId = proxy->Implementation();
+                                    info.InterfaceId = proxy->InterfaceId();
+                                    info.RefCount = proxy->ReferenceCount();
+                                }
+                            }
+                        );
+                        Core::JSON::ArrayType<MetaData::COMRPC>::Iterator index(proxyChannels.Elements());
+
+                        printf("COMRPC Links:\n");
+                        printf("============================================================\n");
+                        while (index.Next() == true) {
+                            printf("Link: %s\n", index.Current().Remote.Value().c_str());
+                            printf("------------------------------------------------------------\n");
+
+                            Core::JSON::ArrayType<MetaData::COMRPC::Proxy>::Iterator loop(index.Current().Proxies.Elements());
+
+                            while (loop.Next() == true) {
+                                uint64_t instanceId = loop.Current().InstanceId.Value();
+                                printf("InstanceId: 0x%" PRIx64 ", RefCount: %d, InterfaceId %d [0x%X]\n", instanceId, loop.Current().RefCount.Value(), loop.Current().InterfaceId.Value(), loop.Current().InterfaceId.Value());
+                            }
+                            printf("\n");
+                        }
+                        break;
+                    }
                     case 'C': {
                         Core::JSON::ArrayType<MetaData::Channel> metaData;
                         _dispatcher->Dispatcher().GetMetaData(metaData);
+                        _dispatcher->Services().GetMetaData(metaData);
                         Core::JSON::ArrayType<MetaData::Channel>::Iterator index(metaData.Elements());
 
                         printf("\nChannels:\n");
@@ -935,6 +976,7 @@ POP_WARNING()
                     }
                     case '?':
                         printf("\nOptions are: \n");
+                        printf("  [A]ctive Proxy list\n");
                         printf("  [P]lugins\n");
                         printf("  [C]hannels\n");
                         printf("  [S]erver stats\n");
