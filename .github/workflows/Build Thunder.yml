@@ -5,7 +5,8 @@ on:
     branches: ["master"]
   pull_request:
     branches: ["master"]
-    
+  workflow_call:
+ 
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,30 +19,52 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
+      with:
+        path: Thunder
+        repository: ${{github.repository_owner}}/Thunder
 
     - name: Install necessary packages
-      run: |
-        sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev python3-pip
-        pip install jsonref
+      uses: nick-fields/retry@v2
+      with:
+        timeout_minutes: 10
+        max_attempts: 10
+        command: |
+          sudo gem install apt-spy2
+          sudo apt-spy2 check
+          sudo apt-spy2 fix --commit
+          sudo apt-get update
+          sudo apt install python3-pip
+          pip install jsonref
+          sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
         
     - name: Install generators
       run: |
-        cmake -G Ninja -S Tools -B build/tools -DCMAKE_INSTALL_PREFIX=install/usr
-        cmake --build build/tools --target install
+        cmake -G Ninja -S Thunder/Tools -B ${{matrix.build_type}}/build/ThunderTools \
+        -DCMAKE_INSTALL_PREFIX=${{matrix.build_type}}/install/usr
+        cmake --build ${{matrix.build_type}}/build/ThunderTools --target install
         
     - name: Build Thunder
       run: |
-        cmake -G Ninja -S . -B build/thunder \
+        cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
         -DBINDING="127.0.0.1" \
         -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
-        -DCMAKE_INSTALL_PREFIX="install/usr" \
-        -DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules" \
-        -DDATA_PATH="${PWD}/install/usr/share/WPEFramework" \
+        -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
+        -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/WPEFramework/Modules" \
+        -DDATA_PATH="${PWD}/${{matrix.build_type}}/install/usr/share/WPEFramework" \
         -DMESSAGING=ON \
-        -DPERSISTENT_PATH="${PWD}/install/var/wpeframework" \
+        -DPERSISTENT_PATH="${PWD}/${{matrix.build_type}}/install/var/wpeframework" \
         -DPORT="55555" \
-        -DPROXYSTUB_PATH="${PWD}/install/usr/lib/wpeframework/proxystubs" \
-        -DSYSTEM_PATH="${PWD}/install/usr/lib/wpeframework/plugins" \
+        -DPROXYSTUB_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/proxystubs" \
+        -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
         -DTRACING=OFF \
-        -DVOLATILE_PATH="/tmp"
-        cmake --build build/thunder --target install
+        -DVOLATILE_PATH="tmp"
+        cmake --build ${{matrix.build_type}}/build/Thunder --target install
+    
+    - name: Tar files
+      run: tar -czvf ${{matrix.build_type}}.tar.gz ${{matrix.build_type}}
+    
+    - name: Upload
+      uses: actions/upload-artifact@v3
+      with:
+        name: Thunder-${{matrix.build_type}}-artifact
+        path: ${{matrix.build_type}}.tar.gz
