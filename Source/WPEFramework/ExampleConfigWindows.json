@@ -8,7 +8,7 @@
   "datapath": "D:/Domotica/artifacts/Debug/Plugins",
   "systempath": "D:/Domotica/artifacts/Debug",
   "proxystubpath": "D:/Domotica/artifacts/ProxyStubs/Debug",
-  "communicator": "0.0.0.0:62000",
+  "communicator": "127.0.0.1:62000",
   "redirect": "Service/Controller/UI",
   "messagingport": 63000,
   "observe": {
@@ -435,7 +435,7 @@
         "port": 8080,
         "binding": "0.0.0.0",
         "root": {
-          "mode": "Off"
+          "mode": "Local"
         }
       }
     },
