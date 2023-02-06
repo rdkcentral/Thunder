@@ -89,8 +89,12 @@ def EmitEvent(emit, root, event, params_type, legacy = False):
             if params.properties and params.do_create:
                 for p in event.params.properties:
                     emit.Line("%s.%s = %s;" % (params_var, p.cpp_name, p.local_name))
+                    if p.schema.get("opaque"):
+                        emit.Line("%s.%s.SetQuoted(false);" % (params_var, p.cpp_name))
             else:
                 emit.Line("%s = %s;" % (params_var, event.params.local_name))
+                if params.schema.get("opaque"):
+                    emit.Line("%s.SetQuoted(false);" % params_var)
 
             emit.Line()
 
@@ -611,6 +615,9 @@ def _EmitRpcCode(root, emit, header_file, source_file, data_emitted):
                         # All others...
                         else:
                             emit.Line("%s = %s;" % (cpp_name, arg.TempName()))
+
+                            if arg.schema.get("opaque"):
+                                emit.Line("%s.SetQuoted(false);" % (cpp_name))
 
                     emit.Unindent()
                     emit.Line("}")
