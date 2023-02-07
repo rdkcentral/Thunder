@@ -18,6 +18,7 @@
 import sys
 import os
 import json
+import copy
 import posixpath
 from collections import OrderedDict
 
@@ -535,7 +536,7 @@ def LoadInterface(file, log, all = False, includePaths = []):
                 else:
                     raise CppParseError(method, "property method must have one parameter")
 
-            elif method.IsPureVirtual() and not event_params:
+            elif method.IsVirtual() and not event_params:
                 var_type = ResolveTypedef(method.retval.type)
 
                 if var_type and ((isinstance(var_type.Type(), CppParser.Integer) and (var_type.Type().size == "long")) or not verify):
@@ -552,6 +553,11 @@ def LoadInterface(file, log, all = False, includePaths = []):
                     obj["result"] = BuildResult(method.vars)
                     obj["original_name"] = method_name
                     methods[prefix + method_name_lower] = obj
+
+                    if method.retval.meta.alt:
+                        methods[prefix + method.retval.meta.alt] = copy.deepcopy(obj)
+                        methods[prefix + method.retval.meta.alt]["original_name"] = method.retval.meta.alt
+                        methods[prefix + method.retval.meta.alt]["deprecated"] = True
                 else:
                     raise CppParseError(method, "method return type must be uint32_t (error code), i.e. pass other return values by a reference")
 
@@ -585,7 +591,7 @@ def LoadInterface(file, log, all = False, includePaths = []):
             for method in f.obj.methods:
                 EventParameters(method.vars) # just to check for undefined types...
 
-                if method.IsPureVirtual() and method.is_excluded == False:
+                if method.IsVirtual() and method.is_excluded == False:
                     obj = OrderedDict()
                     obj["original_name"] = method.name
                     varsidx = 0

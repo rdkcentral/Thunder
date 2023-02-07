@@ -190,18 +190,20 @@ def _EmitRpcPrologue(root, emit, header_file, source_file, data_emitted, prototy
         emit.Line("#endif // _IMPLEMENTATION_STUB")
 
     emit.Line()
-    emit.Line("#include \"Module.h\"")
 
-    if data_emitted:
-        emit.Line("#include \"%s_%s.h\"" % (config.DATA_NAMESPACE, header_file))
+    if not config.NO_INCLUDES:
+        emit.Line("#include \"Module.h\"")
 
-    if not json_source:
-        emit.Line("#include <%s%s>" % (config.CPP_INTERFACE_PATH, source_file))
+        if data_emitted:
+            emit.Line("#include \"%s%s_%s.h\"" % (config.JSON_INTERFACE_PATH, config.DATA_NAMESPACE, header_file))
+
+        if not json_source:
+            emit.Line("#include <%s%s>" % (config.CPP_INTERFACE_PATH, source_file))
 
     emit.Line()
     emit.Line("namespace %s {" % config.FRAMEWORK_NAMESPACE)
     emit.Line()
-    emit.Line("namespace %s {" % "Exchange")
+    emit.Line("namespace %s {" % config.INTERFACE_NAMESPACE.split("::")[-1])
     emit.Indent()
     emit.Line()
     namespace = root.json_name
@@ -228,7 +230,7 @@ def _EmitRpcEpilogue(root, emit):
         emit.Line()
 
     emit.Unindent()
-    emit.Line("} // namespace %s" % "Exchange")
+    emit.Line("} // namespace %s" % config.INTERFACE_NAMESPACE.split("::")[-1])
     emit.Line()
     emit.Line("}")
 

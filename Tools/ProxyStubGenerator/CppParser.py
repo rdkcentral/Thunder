@@ -92,6 +92,7 @@ class Metadata:
         self.length = None
         self.maxlength = None
         self.interface = None
+        self.alt = None
         self.text = None
         self.param = OrderedDict()
         self.retval = OrderedDict()
@@ -327,11 +328,11 @@ class Identifier():
                 elif token[1:] == "BITMASK":
                     self.meta.decorators.append("bitmask")
                 elif token[1:] == "TEXT":
-                    if tags_allowed:
-                        self.meta.text = "".join(string[i + 1])
-                        skip = 1
-                    else:
-                        raise ParserError("@text tag not allowed on return value")
+                    self.meta.text = "".join(string[i + 1])
+                    skip = 1
+                elif token[1:] == "ALT":
+                    self.meta.alt = "".join(string[i + 1])
+                    skip = 1
                 else:
                     raise ParserError("invalid tag: " + token)
 
@@ -1451,6 +1452,8 @@ def __Tokenize(contents,log = None):
                     tagtokens.append("@BITMASK")
                 if _find("@sourcelocation", token):
                     tagtokens.append(__ParseParameterValue(token, "@sourcelocation"))
+                if _find("@alt", token):
+                    tagtokens.append(__ParseParameterValue(token, "@alt"))
                 if _find("@text", token):
                     tagtokens.append(__ParseParameterValue(token, "@text"))
                 if _find("@length", token):
