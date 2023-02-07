@@ -26,11 +26,12 @@ namespace WPEFramework {
 
 ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Channel::state)
 
-    { PluginHost::MetaData::Channel::WEBSERVER, _TXT("WebServer") },
-    { PluginHost::MetaData::Channel::WEBSOCKET, _TXT("WebSocket") },
-    { PluginHost::MetaData::Channel::RAWSOCKET, _TXT("RawSocket") },
-    { PluginHost::MetaData::Channel::CLOSED, _TXT("Closed") },
-    { PluginHost::MetaData::Channel::SUSPENDED, _TXT("Suspended") },
+    { PluginHost::MetaData::Channel::state::WEBSERVER, _TXT("WebServer") },
+    { PluginHost::MetaData::Channel::state::WEBSOCKET, _TXT("WebSocket") },
+    { PluginHost::MetaData::Channel::state::RAWSOCKET, _TXT("RawSocket") },
+    { PluginHost::MetaData::Channel::state::CLOSED,    _TXT("Closed")    },
+    { PluginHost::MetaData::Channel::state::COMRPC,    _TXT("COMRPC")    },
+    { PluginHost::MetaData::Channel::state::SUSPENDED, _TXT("Suspended") },
 
     ENUM_CONVERSION_END(PluginHost::MetaData::Channel::state)
 

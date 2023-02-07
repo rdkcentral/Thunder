@@ -141,6 +141,7 @@ namespace PluginHost {
                 WEBSERVER,
                 WEBSOCKET,
                 RAWSOCKET,
+                COMRPC,
                 SUSPENDED
             };
             class EXTERNAL State : public Core::JSON::EnumType<state> {
@@ -261,7 +262,66 @@ namespace PluginHost {
         private:
             SubSystemContainer _subSystems;
         };
+        class EXTERNAL COMRPC : public Core::JSON::Container {
+        public:
+            class EXTERNAL Proxy : public Core::JSON::Container {
+            public:
+                Proxy& operator=(const Proxy&) = delete;
 
+                Proxy()
+                    : Core::JSON::Container()
+                    , InterfaceId()
+                    , InstanceId()
+                    , RefCount() {
+                    Add(_T("interface"), &InterfaceId);
+                    Add(_T("instance"), &InstanceId);
+                    Add(_T("count"), &RefCount);
+                }
+                Proxy(const Proxy& copy)
+                    : Core::JSON::Container()
+                    , InterfaceId(copy.InterfaceId)
+                    , InstanceId(copy.InstanceId)
+                    , RefCount(copy.RefCount) {
+                    Add(_T("interface"), &InterfaceId);
+                    Add(_T("instance"), &InstanceId);
+                    Add(_T("count"), &RefCount);
+                }
+                ~Proxy() override = default;
+
+            public:
+                Core::JSON::DecUInt32 InterfaceId;
+                Core::JSON::InstanceId InstanceId;
+                Core::JSON::DecUInt32 RefCount;
+            };
+
+        public:
+            COMRPC& operator= (const COMRPC&) = delete;
+
+            COMRPC()
+                : Core::JSON::Container()
+                , Remote()
+                , Proxies() {
+                Add(_T("link"), &Remote);
+                Add(_T("proxies"), &Proxies);
+            }
+            COMRPC(const COMRPC& copy)
+                : Core::JSON::Container()
+                , Remote(copy.Remote)
+                , Proxies(copy.Proxies) {
+                Add(_T("link"), &Remote);
+                Add(_T("proxies"), &Proxies);
+            }
+            ~COMRPC() override = default;
+
+            void Clear() {
+                Remote.Clear();
+                Proxies.Clear();
+            }
+
+        public:
+            Core::JSON::String Remote;
+            Core::JSON::ArrayType<Proxy> Proxies;
+        };
     public:
         MetaData(MetaData&&) = delete;
         MetaData(const MetaData&) = delete;

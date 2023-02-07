@@ -388,6 +388,7 @@ namespace Plugin {
         }
         void Callstack(const ThreadId id, Core::JSON::ArrayType<CallstackData>& response) const;
         void SubSystems();
+        void Proxies(Core::JSON::ArrayType<PluginHost::MetaData::COMRPC>& info) const;
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;
         Core::ProxyType<Web::Response> PutMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
@@ -407,6 +408,7 @@ namespace Plugin {
         uint32_t endpoint_storeconfig();
         uint32_t endpoint_delete(const JsonData::Controller::DeleteParamsData& params);
         uint32_t endpoint_harakiri();
+        uint32_t endpoint_proxies(Core::JSON::ArrayType<PluginHost::MetaData::COMRPC>& response);
         uint32_t get_callstack(const string& index, Core::JSON::ArrayType<CallstackData>& response) const;
         uint32_t get_status(const string& index, Core::JSON::ArrayType<PluginHost::MetaData::Service>& response) const;
         uint32_t get_links(Core::JSON::ArrayType<PluginHost::MetaData::Channel>& response) const;
