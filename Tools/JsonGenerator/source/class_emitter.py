@@ -37,12 +37,14 @@ def EmitEnumRegs(root, emit, header_file, if_file):
     emit.Line()
 
     # Enumeration conversion code
+    emit.Line("#include <core/Enumerate.h>")
+    emit.Line()
     emit.Line("#include \"definitions.h\"")
 
-    if if_file.endswith(".h"):
-        emit.Line("#include <%s%s>" % (config.CPP_INTERFACE_PATH, if_file))
+    if not config.NO_INCLUDES:
+        if if_file.endswith(".h"):
+            emit.Line("#include <%s%s>" % (config.CPP_INTERFACE_PATH, if_file))
 
-    emit.Line("#include <core/Enumerate.h>")
     emit.Line("#include \"%s_%s.h\"" % (config.DATA_NAMESPACE, header_file))
     emit.Line()
     emit.Line("namespace %s {" % config.FRAMEWORK_NAMESPACE)
@@ -251,11 +253,12 @@ def EmitObjects(log, root, emit, if_file, additional_includes, emitCommon = Fals
     emit.Line()
     emit.Line("#include <core/JSON.h>")
 
-    if if_file.endswith(".h"):
-        emit.Line("#include <%s%s>" % (config.CPP_INTERFACE_PATH, if_file))
+    if not config.NO_INCLUDES:
+        if if_file.endswith(".h"):
+            emit.Line("#include <%s%s>" % (config.CPP_INTERFACE_PATH, if_file))
 
-    for ai in additional_includes:
-        emit.Line("#include <%s%s>" % (config.CPP_INTERFACE_PATH, os.path.basename(ai)))
+        for ai in additional_includes:
+            emit.Line("#include <%s%s>" % (config.CPP_INTERFACE_PATH, os.path.basename(ai)))
 
     if count:
         emit.Line("#include <core/Enumerate.h>")
