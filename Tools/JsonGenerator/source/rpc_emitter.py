@@ -195,7 +195,7 @@ def _EmitRpcPrologue(root, emit, header_file, source_file, data_emitted, prototy
         emit.Line("#include \"Module.h\"")
 
         if data_emitted:
-            emit.Line("#include \"%s%s_%s.h\"" % (config.JSON_INTERFACE_PATH, config.DATA_NAMESPACE, header_file))
+            emit.Line("#include \"%s_%s.h\"" % (config.DATA_NAMESPACE, header_file))
 
         if not json_source:
             emit.Line("#include <%s%s>" % (config.CPP_INTERFACE_PATH, source_file))
