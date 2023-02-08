@@ -92,6 +92,7 @@ class Metadata:
         self.length = None
         self.maxlength = None
         self.interface = None
+        self.alt = None
         self.text = None
         self.param = OrderedDict()
         self.retval = OrderedDict()
@@ -298,6 +299,8 @@ class Identifier():
                 elif token[1:] == "INTERFACE":
                     self.meta.interface = string[i + 1]
                     skip = 1
+                elif token[1:] == "OPAQUE":
+                    self.meta.decorators.append("opaque")
                 elif token[1:] == "PROPERTY":
                     self.meta.is_property = True
                 elif token[1:] == "BRIEF":
@@ -323,14 +326,13 @@ class Identifier():
                 elif token[1:] == "OBSOLETE":
                     self.meta.is_obsolete = True
                 elif token[1:] == "BITMASK":
-                    self.meta.is_bitmask = True
                     self.meta.decorators.append("bitmask")
                 elif token[1:] == "TEXT":
-                    if tags_allowed:
-                        self.meta.text = "".join(string[i + 1])
-                        skip = 1
-                    else:
-                        raise ParserError("@text tag not allowed on return value")
+                    self.meta.text = "".join(string[i + 1])
+                    skip = 1
+                elif token[1:] == "ALT":
+                    self.meta.alt = "".join(string[i + 1])
+                    skip = 1
                 else:
                     raise ParserError("invalid tag: " + token)
 
@@ -1450,6 +1452,8 @@ def __Tokenize(contents,log = None):
                     tagtokens.append("@BITMASK")
                 if _find("@sourcelocation", token):
                     tagtokens.append(__ParseParameterValue(token, "@sourcelocation"))
+                if _find("@alt", token):
+                    tagtokens.append(__ParseParameterValue(token, "@alt"))
                 if _find("@text", token):
                     tagtokens.append(__ParseParameterValue(token, "@text"))
                 if _find("@length", token):
@@ -1458,6 +1462,8 @@ def __Tokenize(contents,log = None):
                     tagtokens.append(__ParseParameterValue(token, "@maxlength"))
                 if _find("@interface", token):
                     tagtokens.append(__ParseParameterValue(token, "@interface"))
+                if _find("@opaque", token):
+                    tagtokens.append(__ParseParameterValue(token, "@opaque"))
                 if _find("@define", token):
                     defines.append(__ParseParameterValue(token, "@define", False))
 

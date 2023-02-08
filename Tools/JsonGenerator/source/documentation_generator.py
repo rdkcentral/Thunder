@@ -127,7 +127,7 @@ def Create(log, schema, path, indent_size = 4):
                     if optional and "default" in obj:
                         row += " (default: " + (italics("%s") % str(obj["default"]) + ")")
 
-                    MdRow([prefix, obj["type"], row])
+                    MdRow([prefix, "opaque object" if obj.get("opaque") else obj["type"], row])
 
                 if obj["type"] == "object":
                     if "required" not in obj and name and len(obj["properties"]) > 1:
@@ -171,7 +171,7 @@ def Create(log, schema, path, indent_size = 4):
             json_data = '"%s": ' % name if name else ''
 
             if obj_type == "string":
-                json_data += '"%s"' % (default if default else "...")
+                json_data += "{  }" if obj.get("opaque") else ('"%s"' % (default if default else "..."))
             elif obj_type in ["integer", "number"]:
                 json_data += '%s' % (default if default else 0)
             elif obj_type in ["float", "double"]:

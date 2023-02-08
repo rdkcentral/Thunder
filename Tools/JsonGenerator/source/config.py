@@ -41,13 +41,14 @@ INTERFACE_NAMESPACE = FRAMEWORK_NAMESPACE + "::Exchange"
 INTERFACES_SECTION = True
 INTERFACE_SOURCE_LOCATION = None
 INTERFACE_SOURCE_REVISION = None
+NO_INCLUDES = False
 DEFAULT_INTERFACE_SOURCE_REVISION = "main"
-GLOBAL_DEFINITIONS = "../global.json"
+GLOBAL_DEFINITIONS = ".." + os.sep + "global.json"
 INDENT_SIZE = 4
 ALWAYS_EMIT_COPY_CTOR = False
 KEEP_EMPTY = False
 CPP_INTERFACE_PATH = "interfaces" + os.sep
-JSON_INTERFACE_PATH = CPP_INTERFACE_PATH + "json"
+JSON_INTERFACE_PATH = CPP_INTERFACE_PATH + "json"  + os.sep
 DUMP_JSON = False
 FORCE = False
 GENERATED_JSON = False
@@ -65,6 +66,7 @@ def Parse(cmdline):
     global DEFAULT_DEFINITIONS_FILE
     global INTERFACE_NAMESPACE
     global JSON_INTERFACE_PATH
+    global NO_INCLUDES
     global DEFAULT_INT_SIZE
     global INDENT_SIZE
     global DOC_ISSUES
@@ -186,6 +188,12 @@ def Parse(cmdline):
             type=str,
             default=JSON_INTERFACE_PATH,
             help="relative path for #include'ing JsonData header file (default: 'interfaces/json', '.' for no path)")
+    data_group.add_argument(
+            "--no-includes",
+            dest="no_includes",
+            action="store_true",
+            default=False,
+            help="do not emit #includes (default: include data and interface headers)")
     data_group.add_argument("--copy-ctor",
             dest="copy_ctor",
             action="store_true",
@@ -277,9 +285,12 @@ def Parse(cmdline):
     if "force" in args.format:
         RPC_FORMAT_FORCED = True
 
+    NO_INCLUDES = args.no_includes
+
     if args.if_path and args.if_path != ".":
         JSON_INTERFACE_PATH = args.if_path
     JSON_INTERFACE_PATH = posixpath.normpath(JSON_INTERFACE_PATH) + os.sep
+
 
     if args.if_dir:
         args.if_dir = os.path.abspath(os.path.normpath(args.if_dir))
