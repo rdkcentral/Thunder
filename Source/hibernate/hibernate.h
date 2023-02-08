@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -19,14 +19,19 @@
 
 #pragma once
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Hibernate
+#include <sys/types.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" { 
 #endif
 
-#include <core/core.h>
+#define HIBERNATE_ERROR_NONE        0
+#define HIBERNATE_ERROR_GENERAL     1
 
-#if defined(__WINDOWS__) && defined(HIBERNATE_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
+uint32_t HibernateProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], void** storage);
+uint32_t WakeupProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], void** storage);
+
+#ifdef __cplusplus
+} 
 #endif
-

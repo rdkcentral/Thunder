@@ -22,30 +22,20 @@ option(HIBERNATE_CHECKPOINTLIB "Use checkpoint lib implementation." OFF)
 option(HIBERNATE_CHECKPOINTSERVER "Use checkpoint server implementation." OFF)
 
 # Construct a library object
-add_library(${TARGET} SHARED
-        Module.cpp
-        )
+add_library(${TARGET} SHARED )
 
 # Selects implementation
 if (HIBERNATE_CHECKPOINTLIB)
-    target_sources(${TARGET} PRIVATE checkpointlib/CheckpointLib.cpp)
+    target_sources(${TARGET} PRIVATE checkpointlib/CheckpointLib.c)
 elseif(HIBERNATE_CHECKPOINTSERVER)
-    target_sources(${TARGET} PRIVATE checkpointserver/CheckpointServer.cpp)
+    target_sources(${TARGET} PRIVATE checkpointserver/CheckpointServer.c)
 endif()
 
 set(PUBLIC_HEADERS
-        Hibernate.h
-        Module.h
-        )
-
-target_link_libraries(${TARGET}
-        PUBLIC
-        ${NAMESPACE}Core::${NAMESPACE}Core
+        hibernate.h
         )
 
 set_target_properties(${TARGET} PROPERTIES
-        CXX_STANDARD 11
-        CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}"
         VERSION ${VERSION}

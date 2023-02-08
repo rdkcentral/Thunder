@@ -1604,8 +1604,8 @@ namespace PluginHost {
             Core::hresult Deactivate(const reason) override;
             Core::hresult Unavailable(const reason) override;
 
-            Core::hresult Hibernate(const uint32_t timeout) override;
-            Core::hresult Wakeup(const uint32_t timeout) override;
+            Core::hresult Hibernate(const uint32_t timeout = 10000 /*ms*/) override;
+            Core::hresult Wakeup(const uint32_t timeout = 10000 /*ms*/) override;
 
             reason Reason() const override
             {
@@ -1630,7 +1630,6 @@ namespace PluginHost {
             }
 
         private:
-            void Wakeup();
             virtual std::vector<string> GetLibrarySearchPaths(const string& locator) const override
             {
                 std::vector<string> all_paths;
