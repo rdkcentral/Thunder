@@ -28,6 +28,10 @@
 #include "../processcontainers/ProcessContainer.h"
 #endif
 
+#ifdef HIBERNATE_SUPPORT_ENABLED
+#include "../hibernate/hibernate.h"
+#endif
+
 namespace WPEFramework {
 
 ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
@@ -522,15 +526,25 @@ namespace PluginHost
 
         if (currentState == IShell::state::DEACTIVATION) {
             result = Core::ERROR_INPROGRESS;
-        } else if ( ((currentState == IShell::state::ACTIVATION) && (why != IShell::reason::INITIALIZATION_FAILED)) || (currentState == IShell::state::HIBERNATED) || (currentState == IShell::state::DESTROYED)) {
+        } else if ( ((currentState == IShell::state::ACTIVATION) && (why != IShell::reason::INITIALIZATION_FAILED)) || (currentState == IShell::state::DESTROYED)) {
             result = Core::ERROR_ILLEGAL_STATE;
-        } else if ( ((currentState == IShell::state::ACTIVATION) && (why == IShell::reason::INITIALIZATION_FAILED)) || (currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::ACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
+        } else if ( ((currentState == IShell::state::ACTIVATION) && (why == IShell::reason::INITIALIZATION_FAILED)) || (currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::ACTIVATED) || (currentState == IShell::state::PRECONDITION) || (currentState == IShell::state::HIBERNATED) ) {
             const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
 
             const string className(PluginHost::Service::Configuration().ClassName.Value());
             const string callSign(PluginHost::Service::Configuration().Callsign.Value());
 
             _reason = why;
+
+            if(currentState == IShell::state::HIBERNATED)
+            {
+                Unlock();
+                if(Wakeup() != Core::ERROR_NONE)
+                {
+                    //TODO: should we force termination?
+                }
+                Lock();
+            }
 
             if ( (currentState == IShell::ACTIVATION) || (currentState == IShell::ACTIVATED)) {
                 ASSERT(_handler != nullptr);
@@ -679,6 +693,7 @@ namespace PluginHost
         Lock();
 
         IShell::state currentState(State());
+        const string className(PluginHost::Service::Configuration().ClassName.Value());
 
         if (currentState != IShell::state::ACTIVATED) {
             result = Core::ERROR_ILLEGAL_STATE;
@@ -695,7 +710,7 @@ namespace PluginHost
             }
             else {
                 #ifdef HIBERNATE_SUPPORT_ENABLED
-                result = Hibernate(timeout, local->Pid(), _T(""), _T(""), &_hibernateStorage);
+                result = HibernateProcess(timeout, local->ParentPID(), _T(""), _T(""), &_hibernateStorage);
                 #else
                 result = Core::ERROR_NONE;
                 #endif
@@ -734,7 +749,7 @@ namespace PluginHost
             else {
                 #ifdef HIBERNATE_SUPPORT_ENABLED
                 ASSERT (_hibernateStorage != nullptr);
-                result = Wakeup(timeout, local->Pid(), _T(""), _T(""), _hibernateStorage);
+                result = WakeupProcess(timeout, local->ParentPID(), _T(""), _T(""), &_hibernateStorage);
                 #else
                 result = Core::ERROR_NONE;
                 #endif

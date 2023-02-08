@@ -57,6 +57,8 @@ option(DEADLOCK_DETECTION
         "Enable deadlock detection tooling." OFF)
 option(WARNING_REPORTING
         "Include warning reporting in the build." OFF)
+option(HIBERNATESUPPORT
+        "Include hibernate support in the build." OFF)
 
 if(HIDE_NON_EXTERNAL_SYMBOLS)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
@@ -144,5 +146,9 @@ endif()
 
 if(EXECUTABLE)
     add_subdirectory(WPEFramework)
+endif()
+
+if(HIBERNATESUPPORT)
+    add_subdirectory(hibernate)
 endif()
 
