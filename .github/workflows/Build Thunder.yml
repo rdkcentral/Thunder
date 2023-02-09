@@ -30,8 +30,7 @@ jobs:
         max_attempts: 10
         command: |
           sudo gem install apt-spy2
-          sudo apt-spy2 check
-          sudo apt-spy2 fix --commit
+          sudo apt-spy2 fix --commit --launchpad --country=US
           sudo apt-get update
           sudo apt install python3-pip
           pip install jsonref
