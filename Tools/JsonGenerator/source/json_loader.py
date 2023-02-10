@@ -485,7 +485,9 @@ class JsonObject(JsonRefCounted, JsonType):
             idx = 0
             for prop_name, prop in schema["properties"].items():
                 new_obj = JsonItem(prop_name, self, prop, included=included)
-                new_obj.schema["position"] = idx
+                if "position" not in new_obj.schema:
+                    new_obj.schema["position"] = idx
+
                 idx += 1
                 self._properties.append(new_obj)
 
