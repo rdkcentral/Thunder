@@ -485,7 +485,9 @@ class JsonObject(JsonRefCounted, JsonType):
             idx = 0
             for prop_name, prop in schema["properties"].items():
                 new_obj = JsonItem(prop_name, self, prop, included=included)
-                new_obj.schema["position"] = idx
+                if "position" not in new_obj.schema:
+                    new_obj.schema["position"] = idx
+
                 idx += 1
                 self._properties.append(new_obj)
 
@@ -1057,7 +1059,7 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
                                     ref_file = ref[0].replace("{interfacedir}", include_path)
 
                                     if os.path.exists(ref_file):
-                                        pairs[i] = (k, ("file://" + ref_file + "#" + ref[1]))
+                                        pairs[i] = (k, os.path.normpath("file://" + ref_file + "#" + ref[1]))
                                     else:
                                         raise IOError("$ref file '%s' not found" % ref_file)
                                 else:
@@ -1066,7 +1068,7 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
                                     if not os.path.exists(ref_file):
                                         ref_file = v
                                     else:
-                                        pairs[i] = (k, ("file://" + ref_file + "#" + ref[1]))
+                                        pairs[i] = (k, os.path.normpath("file://" + ref_file + "#" + ref[1]))
 
                             elif v.endswith(".h") or v.endswith(".h#"):
                                 ref_file = v.replace("#", "")
@@ -1083,7 +1085,7 @@ def LoadSchema(file, include_path, cpp_include_path, header_include_paths):
 
                                         with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp_json_file:
                                             temp_json_file.write(json.dumps(cppif))
-                                            pairs[i] = (k, "file://" + temp_json_file.name + "#")
+                                            pairs[i] = (k, os.path.normpath("file://" + temp_json_file.name + "#"))
                                             temp_files.append(temp_json_file.name)
                                 else:
                                     raise IOError("$ref file '%s' not found" % ref_file)
