@@ -449,11 +449,8 @@ namespace PluginHost
                         EnableWebServer(webUI, EMPTY_STRING);
                     }
 
-                    IDispatcher* dispatcher = _handler->QueryInterface<IDispatcher>();
-
-                    if (dispatcher != nullptr) {
-                        dispatcher->Activate(this);
-                        dispatcher->Release();
+                    if (_jsonrpc != nullptr) {
+                        _jsonrpc->Activate(this);
                     }
 
                     SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
@@ -564,10 +561,8 @@ namespace PluginHost
 
                 Lock();
 
-                PluginHost::IDispatcher* dispatcher = dynamic_cast<PluginHost::IDispatcher*>(_handler);
-
-                if (dispatcher != nullptr) {
-                    dispatcher->Deactivate();
+                if (_jsonrpc != nullptr) {
+                    _jsonrpc->Deactivate();
                 }
 
                 _administrator.Deinitialized(callSign, this);

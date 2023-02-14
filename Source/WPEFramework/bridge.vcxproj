@@ -26,6 +26,7 @@
     <None Include="ConfigBuildroot.json" />
     <None Include="ExampleConfigAll.json" />
     <None Include="ExampleConfigLinux.json" />
+    <None Include="ExampleConfigMinimal.json" />
     <None Include="ExampleConfigWindows.json" />
     <None Include="ExampleConfigZigBee.json" />
   </ItemGroup>

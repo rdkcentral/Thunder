@@ -18,5 +18,6 @@
  */
 
 #include "Module.h"
+#include "IController.h"
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)

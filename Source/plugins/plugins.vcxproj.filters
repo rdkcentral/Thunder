@@ -31,21 +31,6 @@
     <ClCompile Include="System.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="generated\ProxyStubs_Controller.cpp">
-      <Filter>Generated Files</Filter>
-    </ClCompile>
-    <ClCompile Include="generated\ProxyStubs_Plugin.cpp">
-      <Filter>Generated Files</Filter>
-    </ClCompile>
-    <ClCompile Include="generated\ProxyStubs_Shell.cpp">
-      <Filter>Generated Files</Filter>
-    </ClCompile>
-    <ClCompile Include="generated\ProxyStubs_StateControl.cpp">
-      <Filter>Generated Files</Filter>
-    </ClCompile>
-    <ClCompile Include="generated\ProxyStubs_SubSystem.cpp">
-      <Filter>Generated Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Channel.h">
@@ -93,14 +78,17 @@
     <ClInclude Include="Types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="IRemoteInstantiation.h">
-      <Filter>Interface Files</Filter>
-    </ClInclude>
     <ClInclude Include="System.h">
       <Filter>Interface Files</Filter>
     </ClInclude>
     <ClInclude Include="SubSystem.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IDispatcher.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IController.h">
+      <Filter>Interface Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -112,9 +100,6 @@
     </Filter>
     <Filter Include="Interface Files">
       <UniqueIdentifier>{4ca8a196-74dd-4e20-98ef-051e5a446b67}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Generated Files">
-      <UniqueIdentifier>{09855975-a4b7-44e1-a4f4-f9fc631e2d98}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
