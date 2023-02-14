@@ -1414,7 +1414,7 @@ namespace PluginHost {
                                 response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
                                 response->Error.Text = _T("Unregister was already done!!!.");
                                 break;
-                            case ~0:
+                            case static_cast<uint32_t>(~0):
                                 response.Release();
                                 break;
                             default:
