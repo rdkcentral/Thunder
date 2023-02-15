@@ -456,7 +456,7 @@ namespace WPEFramework {
 				: _adminLock()
 				, _connectId(RemoteNodeId())
 				, _channel(CommunicationChannel::Instance(_connectId, string("/jsonrpc/") + connectingCallsign, query))
-				, _handler([&](const uint32_t, const string&, const string&) {}, { DetermineVersion(callsign) })
+				, _handler({ DetermineVersion(callsign) })
 				, _callsign(callsign.empty() ? string() : Core::JSONRPC::Message::Callsign(callsign + '.'))
 				, _localSpace()
 				, _pendingQueue()

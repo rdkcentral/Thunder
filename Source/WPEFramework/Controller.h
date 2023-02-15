@@ -369,9 +369,10 @@ namespace Plugin {
         END_INTERFACE_MAP
 
     private:
-        //  IDispatch methods
+        //  ILocalDispatcher methods
         // -------------------------------------------------------------------------------------------------------
-        Core::ProxyType<Core::JSONRPC::Message> Invoke(const Core::JSONRPC::Context& token, const Core::JSONRPC::Message& inbound) override;
+        uint32_t Validate(const string& token, const string& method, const string& paramaters) const override;
+        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) override;
 
         inline Core::ProxyType<PluginHost::Server::Service> FromIdentifier(const string& callsign) const
         {

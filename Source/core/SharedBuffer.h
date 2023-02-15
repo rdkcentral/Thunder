@@ -41,7 +41,7 @@ namespace Core {
     // This class allows to share data over process boundaries. This is a simple version of the
     // CyclicBuffer.
     // The rationale behind this buffer is to share buffer space (SharedMemory file) between two
-    // porocesses. One process produces data, the othere process consumes it. The signalling
+    // processes. One process produces data, the othere process consumes it. The signalling
     // between the two processes is based on a semaphore (binairy semaphore) The Producer creates
     // the SharedBuffer object, indicting it has the Producer role. It will automatically own
     // the producer lock. If the producer has placed the data in the buffer and would like the

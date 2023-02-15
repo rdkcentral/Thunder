@@ -1332,36 +1332,102 @@ namespace PluginHost {
 
                 return (result);
             }
-            Core::ProxyType<Core::JSONRPC::Message> Invoke(const Core::JSONRPC::Context& context, const Core::JSONRPC::Message& message)
+            Core::ProxyType<Core::JSONRPC::Message> Invoke(const uint32_t channelId, const string& token, const Core::JSONRPC::Message& message)
             {
-                Core::ProxyType<Core::JSONRPC::Message> result;
+                Core::ProxyType<Core::JSONRPC::Message> response;
 
                 Lock();
 
                 if ( (_jsonrpc == nullptr) || (IsActive() == false) ) {
                     Unlock();
 
-                    result = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
-                    result->Error.SetError(Core::ERROR_UNAVAILABLE);
-                    result->Error.Text = _T("Service is not active");
-                    result->Id = message.Id;
+                    response = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
+                    response->Error.SetError(Core::ERROR_UNAVAILABLE);
+                    response->Error.Text = _T("Service is not active");
+                    response->Id = message.Id;
                 }
                 else {
-                    IDispatcher* service(_jsonrpc);
-                    service->AddRef();
                     Unlock();
 
 #if THUNDER_RUNTIME_STATISTICS
                     IncrementProcessedRequests();
 #endif
                     Core::InterlockedIncrement(_activity);
-                    result = service->Invoke(context, message);
+                    uint32_t result;
+                    string method(message.Designator.Value());
+
+                    if (message.Id.IsSet() == true) {
+                        response = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
+                        response->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
+                        response->Id = message.Id.Value();
+                    }
+
+                    if ((result = _jsonrpc->Validate(token, method, message.Parameters.Value())) == Core::ERROR_PRIVILIGED_REQUEST) {
+                        if (response.IsValid() == true) {
+                            response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
+                            response->Error.Text = _T("method invokation not allowed.");
+                        }
+                    }
+                    else if (result == Core::ERROR_UNAVAILABLE) {
+                        if (response.IsValid() == true) {
+                            response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
+                            response->Error.Text = _T("method invokation is deferred, Currently not allowed.");
+                        }
+                    }
+                    else if (result != Core::ERROR_NONE) {
+                        if (response.IsValid() == true) {
+                            response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
+                            response->Error.Text = _T("method invokation could not be validated.");
+                        }
+                    }
+                    else {
+                        string output;
+                        result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, method, message.Parameters.Value(), output);
+
+                        if (response.IsValid() == true) {
+                            switch (result) {
+                            case Core::ERROR_NONE:
+                                if (output.empty() == true) {
+                                    response->Result.Null(true);
+                                }
+                                else {
+                                    response->Result = output;
+                                }
+                                break;
+                            case Core::ERROR_INVALID_RANGE:
+                                response->Error.SetError(Core::ERROR_INVALID_RANGE);
+                                response->Error.Text = _T("Requested version is not supported.");
+                                break;
+                            case Core::ERROR_INCORRECT_URL:
+                                response->Error.SetError(Core::ERROR_INVALID_DESIGNATOR);
+                                response->Error.Text = _T("Dessignator is invalid.");
+                                break;
+                            case Core::ERROR_BAD_REQUEST:
+                                response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
+                                response->Error.Text = _T("Unknown method.");
+                                break;
+                            case Core::ERROR_FAILED_REGISTERED:
+                                response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
+                                response->Error.Text = _T("Registration already done!!!.");
+                                break;
+                            case Core::ERROR_FAILED_UNREGISTERED:
+                                response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
+                                response->Error.Text = _T("Unregister was already done!!!.");
+                                break;
+                            case static_cast<uint32_t>(~0):
+                                response.Release();
+                                break;
+                            default:
+                                response->Error.Code = result;
+                                response->Error.Text = Core::ErrorToString(result);
+                                break;
+                            }
+                        }
+                    }
                     Core::InterlockedDecrement(_activity);
+                }
 
-                    service->Release();
-                } 
-
-                return (result);
+                return (response);
             }
             inline Core::ProxyType<Core::JSON::IElement> Inbound(const uint32_t ID, const Core::ProxyType<Core::JSON::IElement>& element)
             {
@@ -1575,13 +1641,17 @@ namespace PluginHost {
                 _pluginHandling.Lock();
                 if (_handler != nullptr) {
                     dispatcher = _handler->QueryInterface<IDispatcher>();
+                    if (dispatcher != nullptr) {
+                        ILocalDispatcher* localDispatcher = dispatcher->Local();
+
+                        if (localDispatcher) {
+                            localDispatcher->Dropped(id);
+                        }
+                        dispatcher->Release();
+                    }
                 }
                 _pluginHandling.Unlock();
 
-                if (dispatcher != nullptr) {
-                    dispatcher->Close(id);
-                    dispatcher->Release();
-                }
             }
 
             // Methods to Activate and Deactivate the aggregated Plugin to this shell.
@@ -1747,7 +1817,7 @@ namespace PluginHost {
                     _textSocket = newIF->QueryInterface<ITextSocket>();
                     _rawSocket = newIF->QueryInterface<IChannel>();
                     _webSecurity = newIF->QueryInterface<ISecurity>();
-                    _jsonrpc = newIF->QueryInterface<IDispatcher>();
+                    _jsonrpc = dynamic_cast<ILocalDispatcher*>(newIF->QueryInterface<IDispatcher>());
                     _composit = newIF->QueryInterface<ICompositPlugin>();
                     if (_composit != nullptr) {
                         _administrator.AddComposit(Callsign(), _composit);
@@ -1850,7 +1920,7 @@ namespace PluginHost {
             ITextSocket* _textSocket;
             IChannel* _rawSocket;
             ISecurity* _webSecurity;
-            IDispatcher* _jsonrpc;
+            ILocalDispatcher* _jsonrpc;
             ICompositPlugin* _composit;
             reason _reason;
             Condition _precondition;
@@ -2149,6 +2219,7 @@ namespace PluginHost {
                 class ProxyStubObserver : public Core::FileSystemMonitor::ICallback {
                 public:
                     ProxyStubObserver() = delete;
+                    ProxyStubObserver(ProxyStubObserver&&) = delete;
                     ProxyStubObserver(const ProxyStubObserver&) = delete;
                     ProxyStubObserver& operator= (const ProxyStubObserver&) = delete;
 
@@ -2156,23 +2227,28 @@ namespace PluginHost {
                         : _parent(parent)
                         , _observerPath(observableProxyStubPath)  {
                         if (_observerPath.empty() == false) {
-                            Core::FileSystemMonitor::Instance().Register(this, _observerPath);
+                            if (Core::FileSystemMonitor::Instance().Register(this, _observerPath) == false) {
+                                _observerPath.clear();
+                            }
                         }
                     }
-                    virtual ~ProxyStubObserver() {
+                    ~ProxyStubObserver() override {
                         if (_observerPath.empty() == false) {
                             Core::FileSystemMonitor::Instance().Unregister(this, _observerPath);
                         }
                     }
 
                 public:
-                    virtual void Updated() {
+                    bool IsValid() const {
+                        return (_observerPath.empty() == false);
+                    }
+                    void Updated() override {
                         _parent.Reload(_observerPath);
                     }
 
                 private:
                     CommunicatorServer& _parent;
-                    const string _observerPath;
+                    string _observerPath;
                 };
 
             public:
@@ -2221,6 +2297,10 @@ namespace PluginHost {
                         // not being started by the rpcprocess...
                         Core::SystemInfo::SetEnvironment(string(CommunicatorConnector), RPC::Communicator::Connector());
                         RPC::Communicator::ForcedDestructionTimes(softKillCheckWaitTime, hardKillCheckWaitTime);
+                    }
+
+                    if (_proxyStubObserver.IsValid() == false) {
+                        SYSLOG(Logging::Startup, (_T("Dynamic COMRPC failed. Can not observe: [%s]"), observableProxyStubPath.c_str()));
                     }
                 }
                 virtual ~CommunicatorServer()
@@ -2574,6 +2654,7 @@ POP_WARNING()
             class ConfigObserver : public Core::FileSystemMonitor::ICallback {
             public:
                 ConfigObserver() = delete;
+                ConfigObserver(ConfigObserver&&) = delete;
                 ConfigObserver(const ConfigObserver&) = delete;
                 ConfigObserver& operator= (const ConfigObserver&) = delete;
 
@@ -2581,23 +2662,28 @@ POP_WARNING()
                     : _parent(parent)
                     , _observerPath(observableConfigPath) {
                     if (_observerPath.empty() == false) {
-                        Core::FileSystemMonitor::Instance().Register(this, _observerPath);
+                        if (Core::FileSystemMonitor::Instance().Register(this, _observerPath) == false) {
+                            _observerPath.clear();
+                        }
                     }
                 }
-                virtual ~ConfigObserver() {
+                ~ConfigObserver() override {
                     if (_observerPath.empty() == false) {
                         Core::FileSystemMonitor::Instance().Unregister(this, _observerPath);
                     }
                 }
 
             public:
-                virtual void Updated() {
+                bool IsValid() const {
+                    return (_observerPath.empty() == false);
+                }
+                void Updated() override {
                     _parent.ConfigReload(_observerPath);
                 }
 
             private:
                 ServiceMap& _parent;
-                const string _observerPath;
+                string _observerPath;
             };
 
         public:
@@ -2605,8 +2691,8 @@ POP_WARNING()
             ServiceMap(const ServiceMap&) = delete;
             ServiceMap& operator=(const ServiceMap&) = delete;
 
-            PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-                ServiceMap(Server& server, Config& config)
+            PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST);
+            ServiceMap(Server& server, Config& config)
                 : _webbridgeConfig(config)
                 , _adminLock()
                 , _notificationLock()
@@ -2633,8 +2719,11 @@ POP_WARNING()
                 , _configObserver(*this, config.PluginConfigPath())
                 , _compositPlugins()
             {
+                if (_configObserver.IsValid() == false) {
+                    SYSLOG(Logging::Startup, (_T("Dynamic configs failed. Can not observe: [%s]"), config.PluginConfigPath().c_str()));
+                }
             }
-POP_WARNING()
+            POP_WARNING();
             ~ServiceMap()
             {
                 // Make sure all services are deactivated before we are killed (call Destroy on this object);
@@ -3260,8 +3349,7 @@ POP_WARNING()
                 Core::ProxyType<Core::JSONRPC::Message> Process(const string& token, const Core::ProxyType<Core::JSONRPC::Message>& message)
                 {
                     Core::ProxyType<Core::JSONRPC::Message> result;
-                    Core::JSONRPC::Context context (_ID, message->Id.Value(), token);
-                    REPORT_DURATION_WARNING( { result = _service->Invoke(context, *message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    REPORT_DURATION_WARNING( { result = _service->Invoke(_ID, token, *message); }, WarningReporting::TooLongInvokeMessage, *message);  
                     return result;
                 }
                 Core::ProxyType<Web::Response> Process(const Core::ProxyType<Web::Request>& message)
