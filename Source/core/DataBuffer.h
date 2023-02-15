@@ -35,27 +35,20 @@ namespace Core {
     // ---- Helper functions ----
     template <const unsigned int BLOCKSIZE>
     class ScopedStorage {
-    private:
-        // ----------------------------------------------------------------
-        // Never, ever allow reference counted objects to be assigned.
-        // Create a new object and modify it. If the assignement operator
-        // is used, give a compile error.
-        // ----------------------------------------------------------------
-        ScopedStorage(const ScopedStorage<BLOCKSIZE>& a_Copy) = delete;
-        ScopedStorage<BLOCKSIZE>& operator=(const ScopedStorage<BLOCKSIZE>& a_RHS) = delete;
+    public:
+        ScopedStorage(ScopedStorage<BLOCKSIZE>&&) = delete;
+        ScopedStorage(const ScopedStorage<BLOCKSIZE>&) = delete;
+        ScopedStorage<BLOCKSIZE>& operator=(const ScopedStorage<BLOCKSIZE>&) = delete;
+
+        ScopedStorage() = default;
+        ~ScopedStorage() = default;
 
     public:
-        ScopedStorage()
-        {
-        }
-        virtual ~ScopedStorage() = default;
-
-    public:
-        uint8_t* Buffer()
+        inline uint8_t* Buffer()
         {
             return &(m_Buffer[0]);
         }
-        uint32_t Size() const
+        inline uint32_t Size() const
         {
             return (BLOCKSIZE);
         }
@@ -64,25 +57,20 @@ namespace Core {
         uint8_t m_Buffer[BLOCKSIZE];
     };
 
-    template <typename BUFFER>
-    class CyclicDataBuffer : public BUFFER {
-    private:
-        // ----------------------------------------------------------------
-        // Never, ever allow cyclicDataBuffer objects to be copied/assigned
-        // ----------------------------------------------------------------
-        CyclicDataBuffer(const CyclicDataBuffer<BUFFER>& a_Copy);
-        CyclicDataBuffer<BUFFER>& operator=(const CyclicDataBuffer<BUFFER>& a_RHS);
-
+    class EXTERNAL CyclicDataBuffer {
     public:
-        CyclicDataBuffer()
-            : BUFFER()
-            , _head(0)
+        CyclicDataBuffer() = delete;
+        CyclicDataBuffer(CyclicDataBuffer&&) = delete;
+        CyclicDataBuffer(const CyclicDataBuffer&) = delete;
+        CyclicDataBuffer& operator=(const CyclicDataBuffer&) = delete;
+
+        CyclicDataBuffer(const uint32_t size, uint8_t buffer[])
+            : _head(0)
             , _tail(0)
-            , _size(static_cast<uint32_t>(BUFFER::Size()))
-            , _buffer(BUFFER::Buffer())
-        {
+            , _size(size)
+            , _buffer(buffer) {
         }
-        ~CyclicDataBuffer() override = default;
+        ~CyclicDataBuffer() = default;
 
     public:
         inline uint32_t Filled() const

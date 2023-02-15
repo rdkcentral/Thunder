@@ -1,6 +1,6 @@
 {
   "port": 25555,
-  "binding": "127.0.0.1",
+  "interface": "WiFi",
   "idletime": 60,
   "ipv6": false,
   "persistentpath": "D:/Domotica/artifacts/Persistent",
@@ -8,7 +8,7 @@
   "datapath": "D:/Domotica/artifacts/Debug/Plugins",
   "systempath": "D:/Domotica/artifacts/Debug",
   "proxystubpath": "D:/Domotica/artifacts/ProxyStubs/Debug",
-  "communicator": "127.0.0.1:62000",
+  "communicator": "0.0.0.0:62000",
   "redirect": "Service/Controller/UI",
   "messagingport": 63000,
   "observe": {

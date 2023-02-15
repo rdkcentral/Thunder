@@ -49,6 +49,7 @@ namespace RPC {
         ID_PLUGIN_LIFETIME              = (ID_OFFSET_INTERNAL + 0x002B),
         ID_COMPOSIT_PLUGIN              = (ID_OFFSET_INTERNAL + 0x002C),
         ID_COMPOSIT_PLUGIN_NOTIFICATION = (ID_OFFSET_INTERNAL + 0x002D),
+        ID_DISPATCHER_CALLBACK          = (ID_OFFSET_INTERNAL + 0x002E),
 
         ID_SHELL                        = (ID_OFFSET_INTERNAL + 0x0030),
         ID_STATECONTROL                 = (ID_OFFSET_INTERNAL + 0x0031),
