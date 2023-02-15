@@ -20,11 +20,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Channel.cpp" />
-    <ClCompile Include="generated\ProxyStubs_Controller.cpp" />
-    <ClCompile Include="generated\ProxyStubs_Plugin.cpp" />
-    <ClCompile Include="generated\ProxyStubs_Shell.cpp" />
-    <ClCompile Include="generated\ProxyStubs_StateControl.cpp" />
-    <ClCompile Include="generated\ProxyStubs_SubSystem.cpp" />
     <ClCompile Include="MetaData.cpp" />
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="Service.cpp" />
@@ -41,7 +36,6 @@
     <ClInclude Include="Configuration.h" />
     <ClInclude Include="IDispatcher.h" />
     <ClInclude Include="IPlugin.h" />
-    <ClInclude Include="IRemoteInstantiation.h" />
     <ClInclude Include="IShell.h" />
     <ClInclude Include="IStateControl.h" />
     <ClInclude Include="ISubSystem.h" />

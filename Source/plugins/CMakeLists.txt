@@ -26,6 +26,7 @@ ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_S
 ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IController.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IStateControl.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ISubSystem.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IDispatcher.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 add_library(${TARGET} SHARED
         Channel.cpp
@@ -46,6 +47,7 @@ add_library(${TARGET_PROXYSTUBS} SHARED
         ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Controller.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_StateControl.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_SubSystem.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Dispatcher.cpp
         Module.cpp
         )
 
@@ -60,6 +62,7 @@ set(PUBLIC_HEADERS
         IStateControl.h
         StateControl.h
         ISubSystem.h
+        IDispatcher.h
         SubSystem.h
         JSONRPC.h
         MetaData.h

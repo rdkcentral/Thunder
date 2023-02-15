@@ -434,6 +434,8 @@ public:
     }
     bool Register(ICallback *callback, const string &filename)
     {
+        bool subscribed = false;
+
         ASSERT(callback != nullptr);
 
         _adminLock.Lock();
@@ -458,10 +460,11 @@ public:
             ASSERT(index != _observers.end());
 
             index->second.Register(callback);
+            subscribed = true;
         }
         _adminLock.Unlock();
 
-        return (IsValid());
+        return (subscribed);
     }
     void Unregister(ICallback *callback, const string &filename)
     {

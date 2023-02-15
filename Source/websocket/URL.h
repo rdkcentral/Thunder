@@ -44,29 +44,54 @@ namespace Core {
 
         class KeyValue {
         public:
+            enum class status : uint8_t {
+                UNAVAILABLE = 0,
+                KEY_ONLY    = 1,
+                KEY_VALUE   = 3
+            };
+
+        public:
+            KeyValue() = delete;
+
             KeyValue(const string& data)
-                : _data(data)
-            {
+                : _data(data) {
             }
             KeyValue(const Core::TextFragment& data)
-                : _data(data)
-            {
+                : _data(data) {
             }
-            ~KeyValue() {}
+            KeyValue(KeyValue&& move)
+                : _data(move._data) {
+            }
+            KeyValue(const KeyValue& copy)
+                : _data(copy._data) {
+            }
+            ~KeyValue() = default;
 
-            inline bool Exists(const TCHAR key[], const bool caseSensitive = true) const
+            KeyValue& operator= (const KeyValue& RHS) {
+                _data = RHS._data;
+                return (*this);
+            }
+
+        public:
+            // Please use the HasKey method...
+            DEPRECATED inline bool Exists(const TCHAR key[], const bool caseSensitive = true) const
+            {
+                Core::TextFragment result;
+                return (LoadKey(key, result, caseSensitive) != status::UNAVAILABLE);
+            }
+            inline status HasKey(const TCHAR key[], const bool caseSensitive = true) const
             {
                 Core::TextFragment result;
                 return (LoadKey(key, result, caseSensitive));
             }
             // By definition is this method case sensitive..
-            const Core::TextFragment operator[](const TCHAR key[]) const
+            inline const Core::TextFragment operator[](const TCHAR key[]) const
             {
                 Core::TextFragment result;
                 LoadKey(key, result, true);
                 return (result);
             }
-            const Core::TextFragment Value(const TCHAR key[], const bool caseSensitive = true) const
+            inline const Core::TextFragment Value(const TCHAR key[], const bool caseSensitive = true) const
             {
                 Core::TextFragment result;
                 LoadKey(key, result, caseSensitive);
@@ -76,7 +101,7 @@ namespace Core {
             NUMBERTYPE Number(const TCHAR key[], NUMBERTYPE defaultValue = Core::NumberType<NUMBERTYPE>::Max(), const bool caseSensitive = true) const
             {
                 Core::TextFragment result;
-                if (LoadKey(key, result, caseSensitive) == true) {
+                if (LoadKey(key, result, caseSensitive) == status::KEY_VALUE) {
                     return (Core::NumberType<NUMBERTYPE>(result).Value());
                 }
                 return (defaultValue);
@@ -85,21 +110,15 @@ namespace Core {
             ENUMERATE Enumerate(const TCHAR key[], ENUMERATE defaultValue, const bool caseSensitive = true) const
             {
                 Core::TextFragment result;
-                if (LoadKey(key, result, caseSensitive) == true) {
+                if (LoadKey(key, result, caseSensitive) == status::KEY_VALUE) {
                     return (Core::EnumerateType<ENUMERATE>(result).Value());
                 }
                 return (defaultValue);
             }
-
-            bool HasKey(const TCHAR key[], const bool caseSensitive = true) const
+            inline bool Boolean(const TCHAR key[], const bool defaultValue, const bool caseSensitive = true) const
             {
                 Core::TextFragment result;
-                return (LoadKey(key, result, caseSensitive));
-            }
-            bool Boolean(const TCHAR key[], const bool defaultValue, const bool caseSensitive = true) const
-            {
-                Core::TextFragment result;
-                if (LoadKey(key, result, caseSensitive) == true) {
+                if (LoadKey(key, result, caseSensitive) == status::KEY_VALUE) {
                     if (result.Length() == 1) {
                         TCHAR value = ::toupper(*(result.Data()));
                         if ((value == '0') || (value == 'F')) {
@@ -121,27 +140,28 @@ namespace Core {
             }
 
         private:
-            bool LoadKey(const TCHAR key[], Core::TextFragment& data, const bool caseSensitive) const
+            status LoadKey(const TCHAR key[], Core::TextFragment& data, const bool caseSensitive) const
             {
-                bool found = false;
+                status current = status::UNAVAILABLE;
                 const Core::TextFragment comparator(key, static_cast<uint32_t>(strlen(key)));
                 Core::TextSegmentIterator options(_data, false, '&');
 
-                while ((options.Next() == true) && (found == false)) {
+                while ((options.Next() == true) && (current == status::UNAVAILABLE)) {
                     Core::TextSegmentIterator keyvalue(options.Current(), false, '=');
 
                     if (keyvalue.Next() == true) {
                         if (keyvalue.Current().EqualText(comparator, caseSensitive) == true) {
-                            found = true;
                             if (keyvalue.Next() == true) {
+                                current = status::KEY_VALUE;
                                 data = keyvalue.Current();
                             } else {
+                                current = status::KEY_ONLY;
                                 data.Clear();
                             }
                         }
                     }
                 }
-                return (found);
+                return (current);
             }
 
         private:

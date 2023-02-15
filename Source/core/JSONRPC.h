@@ -495,47 +495,7 @@ namespace Core {
                 Functions _info;
             };
 
-            class Observer {
-            private:
-                Observer(const Observer&) = delete;
-                Observer& operator=(const Observer&) = delete;
-
-            public:
-                Observer(const uint32_t id, const string& designator)
-                    : _id(id)
-                    , _designator(designator)
-                {
-                }
-                ~Observer()
-                {
-                }
-
-                bool operator==(const Observer& rhs) const
-                {
-                    return ((rhs._id == _id) && (rhs._designator == _designator));
-                }
-                bool operator!=(const Observer& rhs) const
-                {
-                    return (!operator==(rhs));
-                }
-
-                uint32_t Id() const
-                {
-                    return (_id);
-                }
-                const string& Designator() const
-                {
-                    return (_designator);
-                }
-
-            private:
-                uint32_t _id;
-                string _designator;
-            };
-
-            typedef std::map<const string, Entry> HandlerMap;
-            typedef std::list<Observer> ObserverList;
-            typedef std::map<string, ObserverList> ObserverMap;
+            using HandlerMap = std::unordered_map<string, Entry>;
 
             typedef std::function<void(const uint32_t id, const string& designator, const string& data)> NotificationFunction;
 
@@ -560,9 +520,7 @@ namespace Core {
                     , _position(copy._position)
                 {
                 }
-                ~EventIterator()
-                {
-                }
+                ~EventIterator() = default;
 
                 EventIterator& operator=(const EventIterator& rhs)
                 {
@@ -612,30 +570,21 @@ namespace Core {
             Handler(const Handler&) = delete;
             Handler& operator=(const Handler&) = delete;
 
-            Handler(const NotificationFunction& notificationFunction, const std::vector<uint8_t>& versions)
+            Handler(const std::vector<uint8_t>& versions)
                 : _adminLock()
                 , _handlers()
-                , _observers()
-                , _notificationFunction(notificationFunction)
                 , _versions(versions)
             {
             }
-            Handler(const NotificationFunction& notificationFunction, const std::vector<uint8_t>& versions, const Handler& copy)
+            Handler(const std::vector<uint8_t>& versions, const Handler& copy)
                 : _adminLock()
                 , _handlers(copy._handlers)
-                , _observers()
-                , _notificationFunction(notificationFunction)
                 , _versions(versions)
             {
             }
-            ~Handler()
-            {
-            }
+            ~Handler() = default;
 
         public:
-            inline uint32_t Observers() const {
-                return (static_cast<uint32_t>(_observers.size()));
-            }
             inline EventIterator Events() const
             {
                 return (EventIterator(_handlers));
@@ -796,108 +745,6 @@ namespace Core {
                     result = index->second.Invoke(context, method, parameters, response);
                 }
                 return (result);
-            }
-            void Subscribe(const uint32_t id, const string& eventId, const string& callsign, Core::JSONRPC::Message& response)
-            {
-                _adminLock.Lock();
-
-                ObserverMap::iterator index = _observers.find(eventId);
-
-                if (index == _observers.end()) {
-                    _observers[eventId].emplace_back(id, callsign);
-                    response.Result = _T("0");
-                } else if (std::find(index->second.begin(), index->second.end(), Observer(id, callsign)) == index->second.end()) {
-                    index->second.emplace_back(id, callsign);
-                    response.Result = _T("0");
-                } else {
-                    response.Error.SetError(Core::ERROR_DUPLICATE_KEY);
-                    response.Error.Text = _T("Duplicate registration. Only 1 remains!!!");
-                }
-
-                _adminLock.Unlock();
-            }
-            void Unsubscribe(const uint32_t id, const string& eventId, const string& callsign, Core::JSONRPC::Message& response)
-            {
-                _adminLock.Lock();
-
-                ObserverMap::iterator index = _observers.find(eventId);
-
-                if (index != _observers.end()) {
-                    ObserverList& clients = index->second;
-                    ObserverList::iterator loop = clients.begin();
-                    Observer key(id, callsign);
-
-                    while ((loop != clients.end()) && (*loop != key)) {
-                        loop++;
-                    }
-
-                    if (loop != clients.end()) {
-                        clients.erase(loop);
-                        if (clients.empty() == true) {
-                            _observers.erase(index);
-                        }
-                        response.Result = _T("0");
-                    }
-                }
-
-                if (response.Result.IsSet() == false) {
-                    response.Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                    response.Error.Text = _T("Registration not found!!!");
-                }
-
-                _adminLock.Unlock();
-            }
-            uint32_t Notify(const string& event) const
-            {
-                return (InternalNotify(event, _T("")));
-            }
-            template <typename JSONOBJECT>
-            uint32_t Notify(const string& event, const JSONOBJECT& parameters) const
-            {
-                string subject;
-                parameters.ToString(subject);
-                return (InternalNotify(event, subject));
-            }
-            template <typename JSONOBJECT, typename SENDIFMETHOD>
-            uint32_t Notify(const string& event, const JSONOBJECT& parameters, SENDIFMETHOD method) const
-            {
-                string subject;
-                parameters.ToString(subject);
-                return InternalNotify(event, subject, std::move(method));
-            }
-            void Close(const uint32_t id)
-            {
-                _adminLock.Lock();
-
-                ObserverMap::iterator index = _observers.begin();
-
-                while (index != _observers.end()) {
-                    ObserverList& clients = index->second;
-                    ObserverList::iterator loop = clients.begin();
-
-                    while (loop != clients.end()) {
-                        if (loop->Id() != id) {
-                            loop++;
-                        } else {
-                            loop = clients.erase(loop);
-                        }
-                    }
-                    if (clients.empty() == true) {
-                        index = _observers.erase(index);
-                    } else {
-                        index++;
-                    }
-                }
-
-                _adminLock.Unlock();
-            }
-            void Close()
-            {
-                _adminLock.Lock();
-
-                _observers.clear();
-
-                _adminLock.Unlock();
             }
 
         private:
@@ -1368,42 +1215,9 @@ namespace Core {
                 };
                 Register(methodName, implementation);
             }
-            uint32_t InternalNotify(const string& event, const string& parameters, std::function<bool(const string&)>&& sendifmethod = std::function<bool(const string&)>()) const
-            {
-                uint32_t result = Core::ERROR_UNKNOWN_KEY;
-
-                _adminLock.Lock();
-
-                ObserverMap::const_iterator index = _observers.find(event);
-
-                if (index != _observers.end()) {
-                    const ObserverList& clients = index->second;
-                    ObserverList::const_iterator loop = clients.begin();
-
-                    result = Core::ERROR_NONE;
-
-                    while (loop != clients.end()) {
-                        const string& designator(loop->Designator());
-
-                        if (!sendifmethod || sendifmethod(designator)) {
-
-                            _notificationFunction(loop->Id(), (designator.empty() == false ? designator + '.' + event : event), parameters);
-                        }
-
-                        loop++;
-                    }
-                }
-
-                _adminLock.Unlock();
-
-                return (result);
-            }
-
         private:
             mutable Core::CriticalSection _adminLock;
             HandlerMap _handlers;
-            ObserverMap _observers;
-            NotificationFunction _notificationFunction;
             const std::vector<uint8_t> _versions;
         };
 
