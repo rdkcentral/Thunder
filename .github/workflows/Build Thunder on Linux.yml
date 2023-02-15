@@ -1,11 +1,10 @@
-name: CMake Thunder
+name: Build Thunder on Linux
 
-# CHANGE TO MASTER
 on:
   push:
-    branches: ["development/update-windows-build"]
+    branches: ["master"]
   pull_request:
-    branches: ["development/update-windows-build"]
+    branches: ["master"]
   workflow_call:
  
 jobs:
@@ -18,12 +17,10 @@ jobs:
     
     name: Build type - ${{matrix.build_type}}
     steps:
-# CHANGE TO MASTER
     - name: Checkout
       uses: actions/checkout@v3
       with:
         path: Thunder
-        ref: development/update-windows-build
         repository: ${{github.repository_owner}}/Thunder
 
     - name: Install necessary packages
