@@ -38,16 +38,16 @@ namespace WPEFramework {
 
                 enum { ID = RPC::ID_DISPATCHER_CALLBACK };
 
-                virtual Core::hresult Event(const string& event, const string& parameters) = 0;
+                virtual Core::hresult Event(const string& event, const ccstring& parameters) = 0;
                 virtual Core::hresult Error(const uint32_t channel, const uint32_t id, const uint32_t code, const string& message) = 0;
-                virtual Core::hresult Response(const uint32_t channel, const uint32_t id, const string& response) = 0;
+                virtual Core::hresult Response(const uint32_t channel, const uint32_t id, const ccstring& response) = 0;
 
                 virtual Core::hresult Subscribe(const uint32_t channel, const string& event, const string& designator) = 0;
                 virtual Core::hresult Unsubscribe(const uint32_t channel, const string& event, const string& designator) = 0;
             };
 
-            virtual Core::hresult Validate(const string& token, const string& method, const string& paramaters) const = 0;
-            virtual Core::hresult Invoke(ICallback* callback, const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) = 0;
+            virtual Core::hresult Validate(const string& token, const string& method, const ccstring& paramaters) const = 0;
+            virtual Core::hresult Invoke(ICallback* callback, const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& ccparameters, string& ccresponse /* @out */) = 0;
             virtual Core::hresult Revoke(ICallback* callback) = 0;
 
             // If we need to activate this locally, we can get access to the base..
