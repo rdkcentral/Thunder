@@ -22,34 +22,40 @@ jobs:
       matrix:
         build_type: ["Debug|x64", "Debug|x86", "Release|x64", "Release|x86"]
 
+# CHANGE THE BRANCHES
     steps:
     - name: Checkout ThunderOnWindows
       uses: actions/checkout@v3
       with:
+        ref: development/update-windows-build
         repository: ${{github.repository_owner}}/ThunderOnWindows
 
     - name: Checkout Thunder
       uses: actions/checkout@v3
       with:
         path: Thunder
+        ref: development/update-windows-build
         repository: ${{github.repository_owner}}/Thunder
 
     - name: Checkout ThunderClientLibraries
       uses: actions/checkout@v3
       with:
         path: ThunderClientLibraries
+        ref: development/update-windows-build
         repository: ${{github.repository_owner}}/ThunderClientLibraries
 
     - name: Checkout ThunderInterfaces
       uses: actions/checkout@v3
       with:
         path: ThunderInterfaces
+        ref: development/update-windows-build
         repository: ${{github.repository_owner}}/ThunderInterfaces
 
     - name: Checkout ThunderNanoServices
       uses: actions/checkout@v3
       with:
         path: ThunderNanoServices
+        ref: development/update-windows-build
         repository: ${{github.repository_owner}}/ThunderNanoServices
 
 # CHANGE REPO OWNER
@@ -57,6 +63,7 @@ jobs:
       uses: actions/checkout@v3
       with:
         path: ThunderNanoServicesRDK
+        ref: development/update-windows-build
         repository: VeithMetro/ThunderNanoServicesRDK
 
     - name: Install jsonref
