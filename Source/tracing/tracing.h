@@ -17,20 +17,4 @@
  * limitations under the License.
  */
 
-#pragma once
-
-#ifndef MODULE_NAME
-#error "Please define a MODULE_NAME that describes the binary/library you are building."
-#endif
-
-#include "ITraceControl.h"
-#include "ITraceMedia.h"
-#include "Logging.h"
-#include "TraceCategories.h"
-#include "TraceControl.h"
-#include "TraceMedia.h"
-#include "TraceUnit.h"
-
-#ifdef __WINDOWS__
-#pragma comment(lib, "tracing.lib")
-#endif
+#include <messaging/messaging.h>
