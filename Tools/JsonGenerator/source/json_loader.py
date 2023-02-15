@@ -485,7 +485,10 @@ class JsonObject(JsonRefCounted, JsonType):
             idx = 0
             for prop_name, prop in schema["properties"].items():
                 new_obj = JsonItem(prop_name, self, prop, included=included)
-                if "position" not in new_obj.schema:
+
+                # Use the declared parameter position only if the interface comes from a C++ header,
+                # otherwise order parameters as seen in the JSON meta file.
+                if ("@generated" not in self.root.schema) or ("position" not in new_obj.schema):
                     new_obj.schema["position"] = idx
 
                 idx += 1
