@@ -590,9 +590,9 @@ namespace WPEFramework {
 
                         // Block new data from coming in, signal the other side that we close !!
 #ifdef __WINDOWS__
-                        shutdown(m_Socket, SD_BOTH);
+                        shutdown(m_Socket, SD_SEND);
 #else
-                        shutdown(m_Socket, SHUT_RDWR);
+                        shutdown(m_Socket, SHUT_RD);
 #endif
                     }
 
@@ -1038,7 +1038,11 @@ namespace WPEFramework {
                         Accepted();
                     }
                 }
-                else if (IsOpen()) {
+                else if ((flagsSet & FD_CONNECT) != 0) {
+                    Opened();
+                    m_State |= UPDATE;
+                }
+                else {
                     if (((flagsSet & FD_WRITE) != 0) || (breakIssued == true)) {
                         Write();
                     }
@@ -1046,11 +1050,6 @@ namespace WPEFramework {
                         Read();
                     }
                 }
-                else if ((flagsSet & FD_CONNECT) != 0) {
-                    Opened();
-                    m_State |= UPDATE;
-                }
-
 #else
                 if ((flagsSet & POLLHUP) != 0) {
                     Closed();

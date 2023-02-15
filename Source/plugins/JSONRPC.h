@@ -749,5 +749,66 @@ namespace PluginHost {
         ObserverMap _observers;
     };
 
+    class EXTERNAL JSONRPCSupportsEventStatus : public PluginHost::JSONRPC {
+    public:
+        JSONRPCSupportsEventStatus(const JSONRPCSupportsEventStatus&) = delete;
+        JSONRPCSupportsEventStatus& operator=(const JSONRPCSupportsEventStatus&) = delete;
+
+        JSONRPCSupportsEventStatus() = default;
+        JSONRPCSupportsEventStatus(const PluginHost::JSONRPC::TokenCheckFunction& validation) : JSONRPC(validation) {}
+        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions) : JSONRPC(versions) {}
+        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation) : JSONRPC(versions, validation) {}
+        virtual ~JSONRPCSupportsEventStatus() = default;
+
+        enum class Status {
+            registered,
+            unregistered
+        };
+
+    public:
+        template <typename METHOD>
+        void RegisterEventStatusListener(const string& event, METHOD method)
+        {
+            _adminLock.Lock();
+
+            ASSERT(_observers.find(event) == _observers.end());
+
+            _observers[event] = method;
+
+            _adminLock.Unlock();
+        }
+
+        void UnregisterEventStatusListener(const string& event)
+        {
+            _adminLock.Lock();
+
+            ASSERT(_observers.find(event) != _observers.end());
+
+            _observers.erase(event);
+
+            _adminLock.Unlock();
+        }
+
+    protected:
+        void NotifyObservers(const string& event, const string& client, const Status status) const
+        {
+            _adminLock.Lock();
+
+            StatusCallbackMap::const_iterator it = _observers.find(event);
+            if (it != _observers.cend()) {
+                it->second(client, status);
+            }
+
+            _adminLock.Unlock();
+        }
+
+    private:
+        using EventStatusCallback = std::function<void(const string&, Status status)>;
+        using StatusCallbackMap = std::map<string, EventStatusCallback>;
+
+        mutable Core::CriticalSection _adminLock;
+        StatusCallbackMap _observers;
+    };
+
 } // namespace WPEFramework::PluginHost
 }
