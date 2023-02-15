@@ -1,10 +1,11 @@
 name: CMake Thunder
 
+# CHANGE TO MASTER
 on:
   push:
-    branches: ["master"]
+    branches: ["development/update-windows-build"]
   pull_request:
-    branches: ["master"]
+    branches: ["development/update-windows-build"]
   workflow_call:
  
 jobs:
@@ -50,12 +51,10 @@ jobs:
         -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
         -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/WPEFramework/Modules" \
         -DDATA_PATH="${PWD}/${{matrix.build_type}}/install/usr/share/WPEFramework" \
-        -DMESSAGING=ON \
         -DPERSISTENT_PATH="${PWD}/${{matrix.build_type}}/install/var/wpeframework" \
         -DPORT="55555" \
         -DPROXYSTUB_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/proxystubs" \
         -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
-        -DTRACING=OFF \
         -DVOLATILE_PATH="tmp"
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
     
