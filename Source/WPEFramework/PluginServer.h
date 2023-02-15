@@ -741,11 +741,20 @@ namespace PluginHost {
                     }
                     return (result);
                 }
-                uint32_t Hibernate(const reason why) override {
-                    uint32_t result = Core::ERROR_UNAVAILABLE;
+                uint32_t Hibernate(const uint32_t timeout) override {
+                    uint32_t result;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
-                        result = source->Hibernate(why);
+                        result = source->Hibernate(timeout);
+                        source->Release();
+                    }
+                    return (result);
+                }
+                uint32_t Wakeup(const uint32_t timeout) override {
+                    uint32_t result;
+                    PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Wakeup(timeout);
                         source->Release();
                     }
                     return (result);
@@ -1342,8 +1351,16 @@ namespace PluginHost {
                     Unlock();
 
                     response = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
-                    response->Error.SetError(Core::ERROR_UNAVAILABLE);
-                    response->Error.Text = _T("Service is not active");
+                    if(IsHibernated() == true)
+                    {
+                        response->Error.SetError(Core::ERROR_HIBERNATED);
+                        response->Error.Text = _T("Service is hibernated");
+                    }
+                    else
+                    {
+                        response->Error.SetError(Core::ERROR_UNAVAILABLE);
+                        response->Error.Text = _T("Service is not active");
+                    }
                     response->Id = message.Id;
                 }
                 else {
@@ -1659,7 +1676,9 @@ namespace PluginHost {
             Core::hresult Activate(const reason) override;
             Core::hresult Deactivate(const reason) override;
             Core::hresult Unavailable(const reason) override;
-            Core::hresult Hibernate(const reason) override;
+
+            Core::hresult Hibernate(const uint32_t timeout = 10000 /*ms*/) override;
+            Core::hresult Wakeup(const uint32_t timeout = 10000 /*ms*/) override;
 
             reason Reason() const override
             {
@@ -1670,7 +1689,6 @@ namespace PluginHost {
             uint32_t Resume(const reason);
             bool HasVersionSupport(const string& number) const
             {
-
                 return (number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR item) { return std::isdigit(item); })) && (Service::IsSupported(static_cast<uint8_t>(atoi(number.c_str()))));
             }
 
@@ -1685,7 +1703,6 @@ namespace PluginHost {
             }
 
         private:
-            void Wakeup();
             virtual std::vector<string> GetLibrarySearchPaths(const string& locator) const override
             {
                 std::vector<string> all_paths;
@@ -1930,7 +1947,7 @@ namespace PluginHost {
             uint32_t _lastId;
             Metadata _metadata;
             Core::Library _library;
-
+            void* _hibernateStorage;
             ServiceMap& _administrator;
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;
