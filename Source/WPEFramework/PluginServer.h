@@ -1834,7 +1834,10 @@ namespace PluginHost {
                     _textSocket = newIF->QueryInterface<ITextSocket>();
                     _rawSocket = newIF->QueryInterface<IChannel>();
                     _webSecurity = newIF->QueryInterface<ISecurity>();
-                    _jsonrpc = dynamic_cast<ILocalDispatcher*>(newIF->QueryInterface<IDispatcher>());
+                    IDispatcher* jsonrpc = newIF->QueryInterface<IDispatcher>();
+                    if (jsonrpc != nullptr) {
+                        _jsonrpc = jsonrpc->Local();
+                    }
                     _composit = newIF->QueryInterface<ICompositPlugin>();
                     if (_composit != nullptr) {
                         _administrator.AddComposit(Callsign(), _composit);
