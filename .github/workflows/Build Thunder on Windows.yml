@@ -28,42 +28,13 @@ jobs:
       with:
         repository: ${{github.repository_owner}}/ThunderOnWindows
 
+# CHANGE TO MASTER
     - name: Checkout Thunder
       uses: actions/checkout@v3
       with:
         path: Thunder
+        ref: master
         repository: ${{github.repository_owner}}/Thunder
-
-    - name: Checkout ThunderTools
-      uses: actions/checkout@v3
-      with:
-        path: ThunderTools
-        repository: ${{github.repository_owner}}/ThunderTools
-
-    - name: Checkout ThunderClientLibraries
-      uses: actions/checkout@v3
-      with:
-        path: ThunderClientLibraries
-        repository: ${{github.repository_owner}}/ThunderClientLibraries
-
-    - name: Checkout ThunderInterfaces
-      uses: actions/checkout@v3
-      with:
-        path: ThunderInterfaces
-        repository: ${{github.repository_owner}}/ThunderInterfaces
-
-    - name: Checkout ThunderNanoServices
-      uses: actions/checkout@v3
-      with:
-        path: ThunderNanoServices
-        repository: ${{github.repository_owner}}/ThunderNanoServices
-
-# CHANGE REPO OWNER
-    - name: Checkout ThunderNanoServicesRDK
-      uses: actions/checkout@v3
-      with:
-        path: ThunderNanoServicesRDK
-        repository: VeithMetro/ThunderNanoServicesRDK
 
     - name: Install jsonref
       run: pip install jsonref
