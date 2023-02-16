@@ -354,7 +354,6 @@ namespace PluginHost
                 _reason = why;
                 State(PRECONDITION);
 
-#ifdef __CORE_MESSAGING__
                 if (WPEFramework::Messaging::LocalLifetimeType<Activity, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
                     string feedback;
                     uint8_t index = 1;
@@ -376,31 +375,6 @@ namespace PluginHost
 
                     TRACE(Activity, (_T("Delta preconditions: %s"), feedback.c_str()));
                 }
-#else
-                if (Trace::TraceType<Activity, &Core::System::MODULE_NAME>::IsEnabled() == true) {
-                    string feedback;
-                    uint8_t index = 1;
-                    uint32_t delta(_precondition.Delta(_administrator.SubSystemInfo()));
-
-                    while (delta != 0) {
-                        if ((delta & 0x01) != 0) {
-                            if (feedback.empty() == false) {
-                                feedback += ',';
-                            }
-
-                            PluginHost::ISubSystem::subsystem element(static_cast<PluginHost::ISubSystem::subsystem>(index));
-                            feedback += string(Core::EnumerateType<PluginHost::ISubSystem::subsystem>(element).Data());
-                        }
-
-                        delta = (delta >> 1);
-                        index++;
-                    }
-
-                    Activity newData(_T("Delta preconditions: %s"), feedback.c_str());
-                    Trace::TraceType<Activity, &Core::System::MODULE_NAME> traceData(newData);
-                    Trace::TraceUnit::Instance().Trace(__FILE__, __LINE__, className.c_str(), &traceData);
-                }
-#endif
 
                 Unlock();
 
