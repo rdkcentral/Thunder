@@ -9,10 +9,10 @@ on:
   workflow_call:
 
 env:
-  bridge: D:\a\Thunder\Thunder\Thunder\Source\WPEFramework\bridge.vcxproj
-  comProcess: D:\a\Thunder\Thunder\Thunder\Source\WPEProcess\comprocess.vcxproj
+  bridge: Thunder\Source\WPEFramework\bridge.vcxproj
+  comProcess: Thunder\Source\WPEProcess\comprocess.vcxproj
   devEnv: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\devenv.com
-  solution: D:\a\Thunder\Thunder\Thunder.sln
+  solution: Thunder.sln
 
 jobs:
   build:
