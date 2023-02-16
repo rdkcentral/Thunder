@@ -1,9 +1,8 @@
 name: Build Thunder on Linux
 
-# CHANGE BACK TO MASTER
 on:
   push:
-    branches: ["actions-tools-fix"]
+    branches: ["master"]
   pull_request:
     branches: ["master"]
   workflow_call:
