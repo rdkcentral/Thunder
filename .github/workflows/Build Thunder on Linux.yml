@@ -1,8 +1,9 @@
 name: Build Thunder on Linux
 
+# CHANGE BACK TO MASTER
 on:
   push:
-    branches: ["master"]
+    branches: ["actions-tools-fix"]
   pull_request:
     branches: ["master"]
   workflow_call:
@@ -17,11 +18,17 @@ jobs:
     
     name: Build type - ${{matrix.build_type}}
     steps:
-    - name: Checkout
+    - name: Checkout Thunder
       uses: actions/checkout@v3
       with:
         path: Thunder
         repository: ${{github.repository_owner}}/Thunder
+
+    - name: Checkout ThunderTools
+      uses: actions/checkout@v3
+      with:
+        path: ThunderTools
+        repository: ${{github.repository_owner}}/ThunderTools
 
     - name: Install necessary packages
       uses: nick-fields/retry@v2
@@ -38,7 +45,7 @@ jobs:
         
     - name: Install generators
       run: |
-        cmake -G Ninja -S Thunder/Tools -B ${{matrix.build_type}}/build/ThunderTools \
+        cmake -G Ninja -S ThunderTools -B ${{matrix.build_type}}/build/ThunderTools \
         -DCMAKE_INSTALL_PREFIX=${{matrix.build_type}}/install/usr
         cmake --build ${{matrix.build_type}}/build/ThunderTools --target install
         
