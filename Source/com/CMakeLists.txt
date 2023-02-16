@@ -42,7 +42,6 @@ set(PUBLIC_HEADERS
     IUnknown.h
     Messages.h
     Module.h
-    Module.h
 )
 
 target_link_libraries(${TARGET}
