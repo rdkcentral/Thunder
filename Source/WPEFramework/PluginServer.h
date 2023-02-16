@@ -772,7 +772,7 @@ namespace PluginHost {
                 // Method to access, in the main process space, the channel factory to submit JSON objects to be send.
                 // This method will return a error if it is NOT in the main process.
                 /* @stubgen:stub */
-                uint32_t Submit(const uint32_t Id, const Core::ProxyType<Core::JSON::IElement>& response) override {
+                uint32_t Submit(const uint32_t /* Id */, const Core::ProxyType<Core::JSON::IElement>& /* response */) override {
                     return (Core::ERROR_NOT_SUPPORTED);
                 }
 
@@ -850,7 +850,7 @@ namespace PluginHost {
 
                 return (Core::ERROR_NONE);
             }
-            uint32_t Deactivated(const string& callsign, PluginHost::IShell* plugin) override {
+            uint32_t Deactivated(const string& callsign, PluginHost::IShell* /* plugin */) override {
                 ShellProxy* entry = nullptr;
 
                 _adminLock.Lock();
