@@ -47,7 +47,7 @@ namespace WPEFramework {
             };
 
             virtual Core::hresult Validate(const string& token, const string& method, const ccstring& paramaters) const = 0;
-            virtual Core::hresult Invoke(ICallback* callback, const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& ccparameters, string& ccresponse /* @out */) = 0;
+            virtual Core::hresult Invoke(ICallback* callback, const uint32_t channelId, const uint32_t id, const string& token, const string& method, const ccstring& parameters, ccstring& response /* @out */) = 0;
             virtual Core::hresult Revoke(ICallback* callback) = 0;
 
             // If we need to activate this locally, we can get access to the base..
