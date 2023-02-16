@@ -40,9 +40,7 @@ namespace PluginHost {
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
             : Core::Options(argumentCount, arguments, _T(":bhc:fF"))
             , configFile(Server::ConfigFile)
-#if defined(__CORE_MESSAGING__)
             , flushMode(Messaging::MessageUnit::flush::OFF)
-#endif
         {
             Parse();
         }
@@ -52,9 +50,7 @@ namespace PluginHost {
 
     public:
         const TCHAR* configFile;
-#if defined(__CORE_MESSAGING__)
         Messaging::MessageUnit::flush flushMode;
-#endif
 
     private:
         virtual void Option(const TCHAR option, const TCHAR* argument)
@@ -63,14 +59,12 @@ namespace PluginHost {
             case 'c':
                 configFile = argument;
                 break;
-#if defined(__CORE_MESSAGING__)
             case 'f':
                 flushMode = Messaging::MessageUnit::flush::FLUSH;
                 break;
             case 'F':
                 flushMode = Messaging::MessageUnit::flush::FLUSH_ABBREVIATED;
                 break;
-#endif
 #ifndef __WINDOWS__
             case 'b':
                 _background = true;
@@ -231,9 +225,7 @@ POP_WARNING()
             closelog();
 #endif
 
-#if defined(__CORE_MESSAGING__)
             Messaging::MessageUnit::Instance().Close();
-#endif
 
 #ifdef __CORE_WARNING_REPORTING__
             WarningReporting::WarningReportingUnit::Instance().Close();
@@ -440,10 +432,8 @@ POP_WARNING()
                 fprintf(stderr, "Usage: " EXPAND_AND_QUOTE(APPLICATION_NAME) " [-c <config file>] [-b] [-fF]\n");
                 fprintf(stderr, "       -c <config file>  Define the configuration file to use.\n");
                 fprintf(stderr, "       -b                Run " EXPAND_AND_QUOTE(APPLICATION_NAME) " in the background.\n");
-#if defined(__CORE_MESSAGING__)
                 fprintf(stderr, "       -f                Flush messaging information also to syslog/console, none abbreviated\n");
                 fprintf(stderr, "       -F                Flush messaging information also to syslog/console, abbreviated\n");
-#endif
             }
             exit(EXIT_FAILURE);
         }
@@ -477,9 +467,6 @@ POP_WARNING()
 #endif
 
         std::set_terminate(UncaughtExceptions);
-#if !defined(__CORE_MESSAGING__)
-        Logging::SysLog(!_background);
-#endif
 
         // Read the config file, to instantiate the proper plugins and for us to open up the right listening ear.
         Core::File configFile(string(options.configFile));
@@ -561,35 +548,19 @@ POP_WARNING()
 
                 messagingSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + _config->MessagingCategories();
 
-#if defined(__CORE_MESSAGING__)
                 std::ifstream inputFile (messagingSettings, std::ifstream::in);
                 std::stringstream buffer;
                 buffer << inputFile.rdbuf();
                 messagingSettings = buffer.str();
-#else
-                Core::File input(messagingSettings);
-
-                if (input.Open(true)) {
-                    Trace::TraceUnit::Instance().Defaults(input);
-                }
-#endif
             }
             else {
-#if defined(__CORE_MESSAGING__)
                 messagingSettings = _config->MessagingCategories();
-#else
-                Trace::TraceUnit::Instance().Defaults(_config->MessagingCategories());
-#endif
             }
 
             // Time to open up, the message buffer for this process and define it for the out-of-proccess systems
             // Define the environment variable for Messaging files, if it is not already set.
             uint32_t messagingErrorCode = Core::ERROR_GENERAL;
-#if defined(__CORE_MESSAGING__)
             messagingErrorCode = Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), _config->MessagingPort(), messagingSettings, _background, options.flushMode);
-#else
-            messagingErrorCode = Trace::TraceUnit::Instance().Open(_config->VolatilePath());
-#endif
 
             if ( messagingErrorCode != Core::ERROR_NONE){
 #ifndef __WINDOWS__
