@@ -54,6 +54,7 @@ namespace Plugin {
         Property<Core::JSON::String>(_T("environment"), &Controller::get_environment, nullptr, this);
         Property<Core::JSON::String>(_T("configuration"), &Controller::get_configuration, &Controller::set_configuration, this);
         Property<Core::JSON::ArrayType<CallstackData>>(_T("callstack"), &Controller::get_callstack, nullptr, this);
+        Property<PluginHost::MetaData::Version>(_T("version"), &Controller::get_version, nullptr, this);
     }
 
     void Controller::UnregisterAll()
@@ -69,6 +70,7 @@ namespace Plugin {
         Unregister(_T("unavailable"));
         Unregister(_T("deactivate"));
         Unregister(_T("activate"));
+        Unregister(_T("version"));
         Unregister(_T("hibernate"));
         Unregister(_T("wakeup"));
         Unregister(_T("configuration"));
@@ -520,6 +522,15 @@ namespace Plugin {
     {
         return Configuration(index, params.Value());
     }
+    
+    // Property: version - Version of WPEFramework hash and human readable
+    // Return codes:
+    //  - ERROR_NONE: Success
+    uint32_t Controller::get_version(PluginHost::MetaData::Version& response) const
+    {
+        _pluginServer->Metadata(response);
+        return Core::ERROR_NONE;
+    }
 
     // Event: statechange - Signals a plugin state change
     void Controller::event_statechange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason)
@@ -537,4 +548,5 @@ namespace Plugin {
 } // namespace Plugin
 
 }
+
 
