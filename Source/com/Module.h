@@ -24,12 +24,7 @@
 #endif
 
 #include <core/core.h>
-
-#ifdef __CORE_MESSAGING__
 #include <messaging/messaging.h>
-#else
-#include <tracing/tracing.h>
-#endif
 
 #ifdef __CORE_WARNING_REPORTING__
 #include <warningreporting/warningreporting.h>
