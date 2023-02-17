@@ -27,42 +27,43 @@ jobs:
     - name: Checkout ThunderOnWindows
       uses: actions/checkout@v3
       with:
+        path: ThunderOnWindows
         repository: WebPlatformForEmbedded/ThunderOnWindows
 
     - name: Checkout Thunder
       uses: actions/checkout@v3
       with:
-        path: Thunder
+        path: ThunderOnWindows/Thunder
         repository: ${{github.repository_owner}}/Thunder
 
     - name: Checkout ThunderTools
       uses: actions/checkout@v3
       with:
-        path: ThunderTools
+        path: ThunderOnWindows/ThunderTools
         repository: ${{github.repository_owner}}/ThunderTools
 
     - name: Checkout ThunderClientLibraries
       uses: actions/checkout@v3
       with:
-        path: ThunderClientLibraries
+        path: ThunderOnWindows/ThunderClientLibraries
         repository: ${{github.repository_owner}}/ThunderClientLibraries
 
     - name: Checkout ThunderInterfaces
       uses: actions/checkout@v3
       with:
-        path: ThunderInterfaces
+        path: ThunderOnWindows/ThunderInterfaces
         repository: ${{github.repository_owner}}/ThunderInterfaces
 
     - name: Checkout ThunderNanoServices
       uses: actions/checkout@v3
       with:
-        path: ThunderNanoServices
+        path: ThunderOnWindows/ThunderNanoServices
         repository: ${{github.repository_owner}}/ThunderNanoServices
 
     - name: Checkout ThunderNanoServicesRDK
       uses: actions/checkout@v3
       with:
-        path: ThunderNanoServicesRDK
+        path: ThunderOnWindows/ThunderNanoServicesRDK
         repository: WebPlatformForEmbedded/ThunderNanoServicesRDK
 
     - name: Install jsonref
@@ -71,11 +72,12 @@ jobs:
     - name: Build Thunder
       shell: cmd
       run: |
+        cd ThunderOnWindows
         "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
         "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"  "%solution%"
-
+        
     - name: Tar files
-      run: tar -czvf ${{matrix.type}}${{matrix.version}}.tar.gz ..\artifacts
+      run: tar -czvf ${{matrix.type}}${{matrix.version}}.tar.gz artifacts
     
     - name: Upload
       uses: actions/upload-artifact@v3
