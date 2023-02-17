@@ -78,7 +78,7 @@ jobs:
     - name: Build Thunder
       shell: cmd
       run: |
-        msbuild "%solution%" /t:comprocess /p:Configuration="${{matrix.type}}" /p:Platform="x${{matrix.version}}" /p:BuildProjectReferences=false
+        msbuild "%solution%" /t:bridge\bridge /p:Configuration="${{matrix.type}}" /p:Platform="x${{matrix.version}}" /p:BuildProjectReferences=false
 
 #     - name: Build Thunder
 #       shell: cmd
