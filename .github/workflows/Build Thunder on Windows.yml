@@ -20,7 +20,8 @@ jobs:
 
     strategy:
       matrix:
-        build_type: ["Debug|x64", "Debug|x86", "Release|x64", "Release|x86"]
+        type: [Debug, Release]
+        version: [64, 86]
 
     steps:
     - name: Checkout ThunderOnWindows
@@ -73,14 +74,14 @@ jobs:
     - name: Build Thunder
       shell: cmd
       run: |
-        "%devEnv%" /Build "${{matrix.build_type}}" /Project "%bridge%"  "%solution%"
-        "%devEnv%" /Build "${{matrix.build_type}}" /Project "%comProcess%"  "%solution%"
+        "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
+        "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"  "%solution%"
 
     - name: Tar files
-      run: tar -czvf "${{matrix.build_type}}.tar.gz" ..\artifacts
+      run: tar -czvf ${{matrix.type}}${{matrix.version}}.tar.gz ..\artifacts
     
     - name: Upload
       uses: actions/upload-artifact@v3
       with:
-        name: "Thunder-${{matrix.build_type}}-artifact"
-        path: "${{matrix.build_type}}.tar.gz"
+        name: Thunder-${{matrix.type}}${{matrix.version}}-artifact
+        path: ${{matrix.type}}${{matrix.version}}.tar.gz
