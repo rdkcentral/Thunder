@@ -23,13 +23,14 @@ jobs:
         type: [Debug, Release]
         version: [64, 86]
 
+    name: Build type - ${{matrix.type}}${{matrix.version}}
     steps:
     - name: Checkout ThunderOnWindows
       uses: actions/checkout@v3
       with:
         repository: ${{github.repository_owner}}/ThunderOnWindows
 
-# CHANGE TO MASTER
+# DELETE REF WHEN PUSHING TO MASTER
     - name: Checkout Thunder
       uses: actions/checkout@v3
       with:
@@ -74,6 +75,7 @@ jobs:
     - name: Build Thunder
       shell: cmd
       run: |
+        "%devEnv%" /updateconfiguration
         "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
         "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"  "%solution%"
 
