@@ -1,9 +1,8 @@
 name: Build Thunder on Windows
 
-# CHANGE TO MASTER
 on:
   push:
-    branches: ["development/actions-windows"]
+    branches: ["master"]
   pull_request:
     branches: ["master"]
   workflow_call:
@@ -28,14 +27,12 @@ jobs:
     - name: Checkout ThunderOnWindows
       uses: actions/checkout@v3
       with:
-        repository: ${{github.repository_owner}}/ThunderOnWindows
+        repository: WebPlatformForEmbedded/ThunderOnWindows
 
-# DELETE REF WHEN PUSHING TO MASTER
     - name: Checkout Thunder
       uses: actions/checkout@v3
       with:
         path: Thunder
-        ref: master
         repository: ${{github.repository_owner}}/Thunder
 
     - name: Checkout ThunderTools
@@ -62,29 +59,20 @@ jobs:
         path: ThunderNanoServices
         repository: ${{github.repository_owner}}/ThunderNanoServices
 
-# CHANGE REPO OWNER
     - name: Checkout ThunderNanoServicesRDK
       uses: actions/checkout@v3
       with:
         path: ThunderNanoServicesRDK
-        repository: VeithMetro/ThunderNanoServicesRDK
+        repository: WebPlatformForEmbedded/ThunderNanoServicesRDK
 
     - name: Install jsonref
       run: pip install jsonref
 
-    - name: Setup MSbuild
-      uses: microsoft/setup-msbuild@v1.1
-        
     - name: Build Thunder
       shell: cmd
       run: |
-        msbuild "%solution%" /t:bridge\bridge /p:Configuration="${{matrix.type}}" /p:Platform="x${{matrix.version}}" /p:BuildProjectReferences=false
-
-#     - name: Build Thunder
-#       shell: cmd
-#       run: |
-#         "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
-#         "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"  "%solution%"
+        "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
+        "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"  "%solution%"
 
     - name: Tar files
       run: tar -czvf ${{matrix.type}}${{matrix.version}}.tar.gz ..\artifacts
