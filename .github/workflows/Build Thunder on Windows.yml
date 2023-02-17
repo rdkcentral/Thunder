@@ -72,12 +72,24 @@ jobs:
     - name: Install jsonref
       run: pip install jsonref
 
+    - name: Setup MSbuild
+      uses: microsoft/setup-msbuild@v1.1
+      
+    - name: MSbuild restore
+      shell: cmd
+      run: |
+        msbuild /t:restore "%solution%"
+        
     - name: Build Thunder
       shell: cmd
       run: |
-        "%devEnv%" /updateconfiguration
-        "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
-        "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"  "%solution%"
+        msbuild "%solution%" /t:"%bridge%";"%comProcess%" /p:Configuration="${{matrix.type}}" /p:Platform="x{{matrix.version}}" /p:BuildProjectReferences=false
+
+#     - name: Build Thunder
+#       shell: cmd
+#       run: |
+#         "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
+#         "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"  "%solution%"
 
     - name: Tar files
       run: tar -czvf ${{matrix.type}}${{matrix.version}}.tar.gz ..\artifacts
