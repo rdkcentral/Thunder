@@ -209,9 +209,6 @@ POP_WARNING()
         const TCHAR* User;
         const TCHAR* Group;
         uint8_t Threads;
-#ifndef __CORE_MESSAGING__
-        uint32_t EnabledLoggings{ 0 };
-#endif
 
     private:
         string Strip(const TCHAR text[]) const
@@ -274,11 +271,6 @@ POP_WARNING()
             case 'i':
                 InterfaceId = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
                 break;
-#ifndef __CORE_MESSAGING__
-            case 'e':
-                EnabledLoggings = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
-                break;
-#endif
             case 'V':
                 Version = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
                 break;
@@ -581,9 +573,6 @@ int main(int argc, char** argv)
         printf("        [-v <volatile path>]\n");
         printf("        [-a <app path>]\n");
         printf("        [-m <proxy stub library path>]\n");
-#ifndef __CORE_MESSAGING__
-        printf("        [-e <enabled SYSLOG categories>]\n");
-#endif
         printf("        [-P <post mortem path>]\n\n");
         printf("        [-S <system root path>]\n\n");
         printf("This application spawns a seperate process space for a plugin. The plugins");
@@ -640,19 +629,7 @@ int main(int argc, char** argv)
         TRACE_L1("Opening a message file with ID: [%d].", options.Exchange);
 
         // Due to the LXC container support all ID's get mapped. For the MessageBuffer, use the host given ID.
-#ifdef __CORE_MESSAGING__
         Messaging::MessageUnit::Instance().Open(options.Exchange);
-#else
-        Trace::TraceUnit::Instance().Open(options.Exchange);
-        // Time to open up the LOG tracings as specified by the caller.
-        Logging::LoggingType<Logging::Startup>::Enable((options.EnabledLoggings & 0x00000001) != 0);
-        Logging::LoggingType<Logging::Shutdown>::Enable((options.EnabledLoggings & 0x00000002) != 0);
-        Logging::LoggingType<Logging::Notification>::Enable((options.EnabledLoggings & 0x00000004) != 0);
-        Logging::LoggingType<Logging::Crash>::Enable((options.EnabledLoggings & 0x00000008) != 0);
-        Logging::LoggingType<Logging::ParsingError>::Enable((options.EnabledLoggings & 0x00000010) != 0);
-        Logging::LoggingType<Logging::Error>::Enable((options.EnabledLoggings & 0x00000020) != 0);
-        Logging::LoggingType<Logging::Fatal>::Enable((options.EnabledLoggings & 0x00000040) != 0);
-#endif
 
 #ifdef __CORE_WARNING_REPORTING__
         WarningReporting::WarningReportingUnit::Instance().Open(options.Exchange);
@@ -682,10 +659,8 @@ int main(int argc, char** argv)
             }
         }
 
-#ifdef __CORE_MESSAGING__
         //close messaging unit before singletons are cleared
         Messaging::MessageUnit::Instance().Close();
-#endif
     }
 
     TRACE_L1("End of Process!!!!");
