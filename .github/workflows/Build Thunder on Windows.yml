@@ -74,11 +74,6 @@ jobs:
 
     - name: Setup MSbuild
       uses: microsoft/setup-msbuild@v1.1
-      
-    - name: MSbuild restore
-      shell: cmd
-      run: |
-        msbuild /t:restore "%solution%"
         
     - name: Build Thunder
       shell: cmd
