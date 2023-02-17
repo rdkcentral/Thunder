@@ -36,6 +36,12 @@ jobs:
         ref: master
         repository: ${{github.repository_owner}}/Thunder
 
+    - name: Checkout ThunderTools
+      uses: actions/checkout@v3
+      with:
+        path: ThunderTools
+        repository: ${{github.repository_owner}}/ThunderTools
+
     - name: Checkout ThunderClientLibraries
       uses: actions/checkout@v3
       with:
