@@ -77,10 +77,10 @@ jobs:
         "%devEnv%" /Build "${{matrix.build_type}}" /Project "%comProcess%"  "%solution%"
 
     - name: Tar files
-      run: tar -czvf ${{matrix.build_type}}.tar.gz ..\artifacts
+      run: tar -czvf "${{matrix.build_type}}.tar.gz" ..\artifacts
     
     - name: Upload
       uses: actions/upload-artifact@v3
       with:
-        name: Thunder-${{matrix.build_type}}-artifact
-        path: ${{matrix.build_type}}.tar.gz
+        name: "Thunder-${{matrix.build_type}}-artifact"
+        path: "${{matrix.build_type}}.tar.gz"
