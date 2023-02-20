@@ -513,8 +513,11 @@ namespace PluginHost {
             _adminLock.Lock();
             _observers.clear();
             _adminLock.Unlock();
-            _service->Release();
-            _service = nullptr;
+
+            if (_service != nullptr) {
+                _service->Release();
+                _service = nullptr;
+            }
         }
         void Dropped(const uint32_t channelId) override
         {

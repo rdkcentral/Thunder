@@ -419,6 +419,7 @@ namespace Plugin {
         uint32_t get_environment(const string& index, Core::JSON::String& response) const;
         uint32_t get_configuration(const string& index, Core::JSON::String& response) const;
         uint32_t set_configuration(const string& index, const Core::JSON::String& params);
+        uint32_t get_version(PluginHost::MetaData::Version& response) const;
 
         void event_statechange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
 
