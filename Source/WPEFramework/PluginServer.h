@@ -2195,7 +2195,7 @@ namespace PluginHost {
 
         class ServiceMap {
         public:
-            using ServiceContainer = std::unordered_map<string, Core::ProxyType<Service>>;
+            using ServiceContainer = std::map<string, Core::ProxyType<Service>>;
             using Notifiers = std::vector<PluginHost::IPlugin::INotification*>;
             using Iterator = Core::IteratorMapType<ServiceContainer, Core::ProxyType<Service>, const string&>;
             using RemoteInstantiators = std::unordered_map<string, IRemoteInstantiation*>;
