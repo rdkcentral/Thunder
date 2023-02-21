@@ -57,11 +57,6 @@ namespace PluginHost {
     EXTERNAL string ChannelIdentifier (const Core::SocketPort& input);
 
     class Server {
-    private:
-        Server() = delete;
-        Server(const Server&) = delete;
-        Server& operator=(const Server&) = delete;
-
     public:
         static const TCHAR* ConfigFile;
         static const TCHAR* PluginOverrideFile;
@@ -1997,15 +1992,10 @@ namespace PluginHost {
         };
         class Override : public Core::JSON::Container {
         private:
-            Override(const Override&) = delete;
-            Override& operator=(const Override&) = delete;
-
-        public:
             class Plugin : public Core::JSON::Container {
-            private:
+            public:
                 Plugin& operator=(Plugin const& other) = delete;
 
-            public:
                 Plugin()
                     : Core::JSON::Container()
                     , Configuration(_T("{}"), false)
@@ -2052,9 +2042,12 @@ namespace PluginHost {
                 Core::JSON::Boolean Resumed;
             };
 
-            typedef std::map<string, Plugin>::iterator Iterator;
+            using Callsigns = std::unordered_map<string, Plugin>;
 
         public:
+            Override(const Override&) = delete;
+            Override& operator=(const Override&) = delete;
+
             Override(PluginHost::Config& serverconfig, ServiceMap& services, const string& persitentFile)
                 : Services()
                 , Prefix(serverconfig.Prefix())
@@ -2072,25 +2065,25 @@ namespace PluginHost {
                 while (service.Next() == true) {
                     const string& name(service->Callsign());
 
-                    // Create an element for this service with its callsign
-                    std::pair<Iterator, bool> index(_callsigns.insert(std::pair<string, Plugin>(name, Plugin(_T("{}"), "", PluginHost::IShell::startup::UNAVAILABLE, false))));
+                    // Create an element for this service with its callsign.
+                    Callsigns::iterator index(_callsigns.emplace(
+                        std::piecewise_construct,
+                        std::forward_as_tuple(name),
+                        std::forward_as_tuple(_T("{}"), "", PluginHost::IShell::startup::UNAVAILABLE, false)).first);
 
                     // Store the override config in the JSON String created in the map
-                    Services.Add(index.first->first.c_str(), &(index.first->second));
+                    Services.Add(index->first.c_str(), &(index->second));
                 }
 
                 Add(_T("prefix"), &Prefix);
                 Add(_T("idletime"), &IdleTime);
 
             }
-            ~Override()
-            {
-            }
+            ~Override() = default;
 
         public:
             uint32_t Load()
             {
-
                 uint32_t result = Core::ERROR_NONE;
 
                 Core::File storage(_fileName);
@@ -2112,7 +2105,7 @@ namespace PluginHost {
 
                     while (index.Next() == true) {
 
-                        std::map<string, Plugin>::const_iterator current(_callsigns.find(index->Callsign()));
+                        Callsigns::const_iterator current(_callsigns.find(index->Callsign()));
 
                         // ServiceMap should *NOT* change runtime...
                         ASSERT(current != _callsigns.end());
@@ -2143,7 +2136,6 @@ namespace PluginHost {
 
             bool Save()
             {
-
                 uint32_t result = Core::ERROR_NONE;
 
                 Core::File storage(_fileName);
@@ -2161,7 +2153,7 @@ namespace PluginHost {
 
                     while (index.Next() == true) {
 
-                        std::map<string, Plugin>::iterator current(_callsigns.find(index->Callsign()));
+                        Callsigns::iterator current(_callsigns.find(index->Callsign()));
 
                         // ServiceMap should *NOT* change runtime...
                         ASSERT(current != _callsigns.end());
@@ -2197,13 +2189,13 @@ namespace PluginHost {
         private:
             ServiceMap& _services;
             PluginHost::Config& _serverconfig;
-            Core::string _fileName;
-            std::map<string, Plugin> _callsigns;
+            string _fileName;
+            Callsigns _callsigns;
         };
 
         class ServiceMap {
         public:
-            using ServiceContainer = std::map<string, Core::ProxyType<Service>>;
+            using ServiceContainer = std::unordered_map<string, Core::ProxyType<Service>>;
             using Notifiers = std::vector<PluginHost::IPlugin::INotification*>;
             using Iterator = Core::IteratorMapType<ServiceContainer, Core::ProxyType<Service>, const string&>;
             using RemoteInstantiators = std::unordered_map<string, IRemoteInstantiation*>;
@@ -4210,14 +4202,14 @@ POP_WARNING()
         };
         class ChannelMap : public Core::SocketServerType<Channel> {
         private:
-            typedef Core::SocketServerType<Channel> BaseClass;
+            using BaseClass = Core::SocketServerType<Channel>;
 
         public:
             ChannelMap() = delete;
             ChannelMap(const ChannelMap&) = delete;
             ChannelMap& operator=(const ChannelMap&) = delete;
 
-PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
+            PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST);
             ChannelMap(Server& parent, const Core::NodeId& listeningNode, const uint16_t connectionCheckTimer)
                 : Core::SocketServerType<Channel>(listeningNode)
                 , _parent(parent)
@@ -4235,7 +4227,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                     }
                 }
             }
-POP_WARNING()
+            POP_WARNING();
             ~ChannelMap()
             {
                 Core::ProxyType<Core::IDispatch> job(_job.Revoke());
@@ -4343,10 +4335,17 @@ POP_WARNING()
         };
 
     public:
+        Server() = delete;
+        Server(Server&&) = delete;
+        Server(const Server&) = delete;
+        Server& operator=(const Server&) = delete;
+
         Server(Config& configuration, const bool background);
         virtual ~Server();
 
     public:
+        static void PostMortem(Service& service, const IShell::reason why, RPC::IRemoteConnection* connection);
+
         inline void Statistics(uint32_t& requests, uint32_t& responses, uint32_t& fileBodies, uint32_t& jsonrpc) const {
             _factoriesImplementation.Statistics(requests, responses, fileBodies, jsonrpc);
         }
@@ -4403,8 +4402,6 @@ POP_WARNING()
         void Notification(const ForwardMessage& message);
         void Open();
         void Close();
-
-        static void PostMortem(Service& service, const IShell::reason why, RPC::IRemoteConnection* connection);
 
         uint32_t Persist()
         {
