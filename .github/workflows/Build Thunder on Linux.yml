@@ -8,7 +8,7 @@ on:
   workflow_call:
  
 jobs:
-  build:
+  Thunder:
     runs-on: ubuntu-latest
     
     strategy:
