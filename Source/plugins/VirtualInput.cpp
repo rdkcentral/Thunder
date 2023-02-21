@@ -369,7 +369,7 @@ POP_WARNING()
     {
         IVirtualInput::TouchData event;
         event.Action = (state == 0 ? IVirtualInput::TouchData::MOTION: 
-                       (state == 1 ? IVirtualInput::TouchData::PRESSED : IVirtualInput::TouchData::RELEASED));
+                       (state == 1 ? IVirtualInput::TouchData::RELEASED : IVirtualInput::TouchData::PRESSED));
         event.Index = index;
         event.X = x;
         event.Y = y;
