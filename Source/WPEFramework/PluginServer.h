@@ -374,9 +374,10 @@ namespace PluginHost {
         };
 
         class CompositPlugin : public PluginHost::ICompositPlugin::INotification {
-        private:
-            static constexpr TCHAR RemotePluginDelimiter = '@';
+        public:
+            static constexpr TCHAR RemotePluginDelimiter = '/';
 
+        private:
             class ShellProxy : public PluginHost::IShell {
             public:
                 ShellProxy() = delete;
@@ -387,7 +388,7 @@ namespace PluginHost {
                 ShellProxy(PluginHost::IShell* real, const string callsign, const string& hostPlugin)
                     : _adminLock()
                     , _shell(real)
-                    , _callsign(callsign + RemotePluginDelimiter + hostPlugin) {
+                    , _callsign(hostPlugin + RemotePluginDelimiter + callsign) {
                     _shell->AddRef();
                 }
                 ~ShellProxy() override {
@@ -750,20 +751,20 @@ namespace PluginHost {
                     }
                     return (result);
                 }
-                uint32_t Wakeup(const uint32_t timeout) override {
-                    uint32_t result;
-                    PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Wakeup(timeout);
-                        source->Release();
-                    }
-                    return (result);
-                }
                 reason Reason() const override {
                     reason result = reason::FAILURE;
                     const PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Reason();
+                        source->Release();
+                    }
+                    return (result);
+                }
+                Core::hresult Metadata(string& info /* @out */) const {
+                    Core::hresult result;
+                    const PluginHost::IShell* source = Source();
+                    if (source != nullptr) {
+                        result = source->Metadata(info);
                         source->Release();
                     }
                     return (result);
@@ -829,6 +830,38 @@ namespace PluginHost {
             const string& Callsign() const {
                 return (_linkPlugin);
             }
+            template<typename ACTION>
+            void Visit(ACTION&& action) {
+                _adminLock.Lock();
+                for (std::pair<const string, ShellProxy*>& entry : _plugins) {
+                    action(entry.first, entry.second);
+                }
+                _adminLock.Unlock();
+            }
+            template<typename ACTION>
+            void Visit(ACTION&& action) const {
+                _adminLock.Lock();
+                for (const std::pair<const string, const ShellProxy*>& entry : _plugins) {
+                    action(entry.first, entry.second);
+                }
+                _adminLock.Unlock();
+            }
+            void* QueryInterfaceByCallsign(const uint32_t id, const string& name) {
+                void* result = nullptr;
+
+                _adminLock.Lock();
+                CompositPlugins::iterator index(_plugins.find(name));
+                if (index != _plugins.end()) {
+                    result = index->second->QueryInterfaceByCallsign(id, name);
+                }
+                _adminLock.Unlock();
+
+                return (result);
+            }
+            template<typename INTERFACE>
+            INTERFACE* QueryInterfaceByCallsign(const string& name) {
+                return (reinterpret_cast<INTERFACE*>(QueryInterfaceByCallsign(INTERFACE::ID, name)));
+            }
             uint32_t Activated(const string& callsign, PluginHost::IShell* plugin) override {
                 ShellProxy* entry = nullptr;
                 _adminLock.Lock();
@@ -884,6 +917,11 @@ namespace PluginHost {
                     element->Release();
                 }
             }
+            void Reporting(PluginHost::IPlugin::INotification* sink) {
+                for (std::pair<const string, ShellProxy*>& entry : _plugins ) {
+                    sink->Activated(entry.second->Callsign(), entry.second);
+                }
+            }
 
             BEGIN_INTERFACE_MAP(RemoteLink)
                 INTERFACE_ENTRY(PluginHost::ICompositPlugin::INotification)
@@ -891,7 +929,7 @@ namespace PluginHost {
 
         private:
             ServiceMap& _parent;
-            Core::CriticalSection _adminLock;
+            mutable Core::CriticalSection _adminLock;
             const string _linkPlugin;
             CompositPlugins _plugins;
         };
@@ -1010,11 +1048,11 @@ namespace PluginHost {
                 uint32_t _mask;
                 state _state;
             };
-            class Metadata {
+            class ControlData {
             public:
-                Metadata(const Metadata&) = delete;
-                Metadata& operator=(const Metadata&) = delete;
-                Metadata()
+                ControlData(const ControlData&) = delete;
+                ControlData& operator=(const ControlData&) = delete;
+                ControlData()
                     : _isExtended(false)
                     , _state(0)
                     , _major(~0)
@@ -1026,9 +1064,9 @@ namespace PluginHost {
                     , _control()
                     , _versionHash() {
                 }
-                ~Metadata() = default;
+                ~ControlData() = default;
 
-                Metadata& operator= (const Core::IServiceMetadata* info) {
+                ControlData& operator= (const Core::IServiceMetadata* info) {
                     if (info != nullptr) {
                         const Plugin::IMetadata* extended = dynamic_cast<const Plugin::IMetadata*>(info);
 
@@ -1615,7 +1653,12 @@ namespace PluginHost {
             bool PostMortemAllowed(PluginHost::IShell::reason why) const {
                 return (_administrator.Configuration().PostMortemAllowed(why));
             }
-
+            Core::hresult Metadata(string& info /* @out */) const {
+                MetaData::Service result;
+                GetMetaData(result);
+                result.ToString(info);
+                return (Core::ERROR_NONE);
+            }
             // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
             IShell::ICOMLink* COMLink() override {
                 return (this);
@@ -1678,15 +1721,15 @@ namespace PluginHost {
             Core::hresult Unavailable(const reason) override;
 
             Core::hresult Hibernate(const uint32_t timeout = 10000 /*ms*/) override;
-            Core::hresult Wakeup(const uint32_t timeout = 10000 /*ms*/) override;
+
+            uint32_t Suspend(const reason why);
+            uint32_t Resume(const reason why);
 
             reason Reason() const override
             {
                 return (_reason);
             }
 
-            uint32_t Suspend(const reason);
-            uint32_t Resume(const reason);
             bool HasVersionSupport(const string& number) const
             {
                 return (number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR item) { return std::isdigit(item); })) && (Service::IsSupported(static_cast<uint8_t>(atoi(number.c_str()))));
@@ -1703,6 +1746,8 @@ namespace PluginHost {
             }
 
         private:
+            uint32_t Wakeup(const uint32_t timeout);
+
             virtual std::vector<string> GetLibrarySearchPaths(const string& locator) const override
             {
                 std::vector<string> all_paths;
@@ -1948,7 +1993,7 @@ namespace PluginHost {
             uint32_t _activity;
             RPC::IRemoteConnection* _connection;
             uint32_t _lastId;
-            Metadata _metadata;
+            ControlData _metadata;
             Core::Library _library;
             void* _hibernateStorage;
             ServiceMap& _administrator;
@@ -2824,7 +2869,6 @@ POP_WARNING()
 
                 _notificationLock.Unlock();
             }
-
             void Deactivated(const string& callsign, PluginHost::IShell* entry)
             {
                 _notificationLock.Lock();
@@ -2838,7 +2882,6 @@ POP_WARNING()
 
                 _notificationLock.Unlock();
             }
-
             void Deinitialized(const string& callsign, PluginHost::IShell* entry)
             {
                 _notificationLock.Lock();
@@ -2856,7 +2899,6 @@ POP_WARNING()
 
                 _notificationLock.Unlock();
             }
-
             void Unavailable(const string& callsign, PluginHost::IShell* entry)
             {
                 _notificationLock.Lock();
@@ -2896,6 +2938,9 @@ POP_WARNING()
 
                     index++;
                 }
+                for (Core::Sink<CompositPlugin>& entry : _compositPlugins) {
+                    entry.Reporting(sink);
+                }
 
                 _notificationLock.Unlock();
             }
@@ -2918,7 +2963,7 @@ POP_WARNING()
 
                 const string callsign(name.empty() == true ? _server.Controller()->Callsign() : name);
 
-                Core::ProxyType<Service> service;
+                Core::ProxyType<IShell> service;
 
                 FromIdentifier(callsign, service);
 
@@ -2926,6 +2971,7 @@ POP_WARNING()
 
                     result = service->QueryInterface(id);
                 }
+
                 return (result);
             }
 
@@ -2986,25 +3032,32 @@ POP_WARNING()
                 return (newService);
             }
 
-            inline uint32_t Clone(const Core::ProxyType<Service>& original, const string& newCallsign, Core::ProxyType<Service>& newService)
+            inline uint32_t Clone(const Core::ProxyType<IShell>& originalShell, const string& newCallsign, Core::ProxyType<IShell>& newService)
             {
                 uint32_t result = Core::ERROR_GENERAL;
+                const Core::ProxyType<Service> original = Core::ProxyType<Service>(originalShell);
 
                 ASSERT(original.IsValid());
 
                 _adminLock.Lock();
-                if (_services.find(newCallsign) == _services.end()) {
+
+                if ((original.IsValid() == true) && (_services.find(newCallsign) == _services.end())) {
                     // Copy original configuration
-                    Plugin::Config newConfiguration = original->PluginHost::Service::Configuration();
+                    Plugin::Config newConfiguration;
+                    newConfiguration.FromString(original->Configuration());
                     newConfiguration.Callsign = newCallsign;
 
-                    newService = Core::ProxyType<Service>::Create(_webbridgeConfig, newConfiguration, *this, Service::mode::CLONED);
+                    Core::ProxyType<Service> clone = Core::ProxyType<Service>::Create(_webbridgeConfig, newConfiguration, *this, Service::mode::CLONED);
 
                     if (newService.IsValid() == true) {
                         // Fire up the interface. Let it handle the messages.
-                        _services.insert(std::pair<const string, Core::ProxyType<Service>>(newConfiguration.Callsign.Value(), newService));
+                        _services.emplace(
+                            std::piecewise_construct,
+                            std::forward_as_tuple(newConfiguration.Callsign.Value()),
+                            std::forward_as_tuple(clone));
 
-                        newService->Evaluate();
+                        clone->Evaluate();
+                        newService = Core::ProxyType<IShell>(clone);
 
                         result = Core::ERROR_NONE;
                     }
@@ -3046,21 +3099,33 @@ POP_WARNING()
             {
                 _adminLock.Lock();
 
-                std::list<Core::ProxyType<Service>> duplicates;
+                std::vector<Core::ProxyType<Service>> duplicates;
+                duplicates.reserve(_services.size());
                 ServiceContainer::const_iterator index(_services.begin());
 
                 while (index != _services.end()) {
-                    duplicates.push_back(index->second);
+                    duplicates.emplace_back(index->second);
                     index++;
                 }
 
                 _adminLock.Unlock();
 
-                while (duplicates.size() > 0) {
-                    MetaData::Service newInfo;
-                    duplicates.front()->GetMetaData(newInfo);
-                    metaData.Add(newInfo);
-                    duplicates.pop_front();
+                for (Core::ProxyType<Service> info : duplicates) {
+                    string data;
+                    info->Metadata(data);
+                    MetaData::Service&  entry = metaData.Add();
+                    entry.FromString(data);
+                }
+
+                for (const Core::Sink<CompositPlugin>& entry : _compositPlugins) {
+                    entry.Visit([&](const string& callsign, const IShell* proxy)
+                        {
+                            string data;
+                            proxy->Metadata(data);
+                            MetaData::Service& entry = metaData.Add();
+                            entry.FromString(data);
+                            entry.Callsign = callsign;
+                    });
                 }
             }
             void GetMetaData(Core::JSON::ArrayType<MetaData::Channel>& metaData) const
@@ -3083,38 +3148,60 @@ POP_WARNING()
                     });
                 _adminLock.Unlock();
             }
-            uint32_t FromIdentifier(const string& callSign, Core::ProxyType<Service>& service)
+            uint32_t FromIdentifier(const string& callSign, Core::ProxyType<IShell>& service)
             {
                 uint32_t result = Core::ERROR_UNAVAILABLE;
+                size_t pos;
 
-                _adminLock.Lock();
+                if ((pos = callSign.find_first_of(CompositPlugin::RemotePluginDelimiter)) != string::npos) {
+                    // This is a Composit plugin identifier..
+                    string linkingPin = callSign.substr(0, pos);
+                    _adminLock.Lock();
+                    CompositPlugins::iterator index(_compositPlugins.begin());
+                    while ((index != _compositPlugins.end()) && (index->Callsign() != linkingPin)) {
+                        index++;
+                    }
+                    if (index != _compositPlugins.end()) {
+                        IShell* found = index->QueryInterfaceByCallsign<IShell>(callSign.substr(pos + 1));
 
-                for (auto index : _services) {
-                    const string& source(index.first);
-                    uint32_t length = static_cast<uint32_t>(source.length());
-
-                    if (callSign.compare(0, source.length(), source) == 0) {
-                        if (callSign.length() == length) {
-                            // Service found, did not requested specific version
-                            service = index.second;
-                            result = Core::ERROR_NONE;
-                            break;
-                        } else if (callSign[length] == '.') {
-                            // Requested specific version of a plugin
-                            if (index.second->HasVersionSupport(callSign.substr(length + 1)) == true) {
-                                // Requested version of service is supported!
-                                service = index.second;
-                                result = Core::ERROR_NONE;
-                            } else {
-                                // Requested version is not supported
-                                result = Core::ERROR_INVALID_SIGNATURE;
-                            }
-                            break;
+                        if (found != nullptr) {
+                            service = Core::ProxyType<IShell>(static_cast<Core::IReferenceCounted&>(*found), *found);
                         }
                     }
+                    _adminLock.Unlock();
                 }
+                else {
+                    _adminLock.Lock();
 
-                _adminLock.Unlock();
+                    for (auto index : _services) {
+                        const string& source(index.first);
+                        uint32_t length = static_cast<uint32_t>(source.length());
+
+                        if (callSign.compare(0, source.length(), source) == 0) {
+                            if (callSign.length() == length) {
+                                // Service found, did not requested specific version
+                                service = index.second;
+                                result = Core::ERROR_NONE;
+                                break;
+                            }
+                            else if (callSign[length] == '.') {
+                                // Requested specific version of a plugin
+                                if (index.second->HasVersionSupport(callSign.substr(length + 1)) == true) {
+                                    // Requested version of service is supported!
+                                    service = index.second;
+                                    result = Core::ERROR_NONE;
+                                }
+                                else {
+                                    // Requested version is not supported
+                                    result = Core::ERROR_INVALID_SIGNATURE;
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    _adminLock.Unlock();
+                }
 
                 return (result);
             }
