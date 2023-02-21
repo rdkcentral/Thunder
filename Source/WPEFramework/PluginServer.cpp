@@ -28,6 +28,10 @@
 #include "../processcontainers/ProcessContainer.h"
 #endif
 
+#ifdef HIBERNATE_SUPPORT_ENABLED
+#include "../hibernate/hibernate.h"
+#endif
+
 namespace WPEFramework {
 
 ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
@@ -324,17 +328,9 @@ namespace PluginHost
             Unlock();
             result = Core::ERROR_INPROGRESS;
         }
-        else if ((currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED)) {
+        else if ((currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::HIBERNATED)) {
             Unlock();
             result = Core::ERROR_ILLEGAL_STATE;
-        }
-        else if (currentState == IShell::state::HIBERNATED) {
-            // Wake up the Hibernated process..
-            Wakeup();
-            State(ACTIVATED);
-            Unlock();
-            result = Core::ERROR_NONE;
-
         } else if ((currentState == IShell::state::DEACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
 
             // Load the interfaces, If we did not load them yet...
@@ -358,7 +354,6 @@ namespace PluginHost
                 _reason = why;
                 State(PRECONDITION);
 
-#ifdef __CORE_MESSAGING__
                 if (WPEFramework::Messaging::LocalLifetimeType<Activity, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
                     string feedback;
                     uint8_t index = 1;
@@ -380,31 +375,6 @@ namespace PluginHost
 
                     TRACE(Activity, (_T("Delta preconditions: %s"), feedback.c_str()));
                 }
-#else
-                if (Trace::TraceType<Activity, &Core::System::MODULE_NAME>::IsEnabled() == true) {
-                    string feedback;
-                    uint8_t index = 1;
-                    uint32_t delta(_precondition.Delta(_administrator.SubSystemInfo()));
-
-                    while (delta != 0) {
-                        if ((delta & 0x01) != 0) {
-                            if (feedback.empty() == false) {
-                                feedback += ',';
-                            }
-
-                            PluginHost::ISubSystem::subsystem element(static_cast<PluginHost::ISubSystem::subsystem>(index));
-                            feedback += string(Core::EnumerateType<PluginHost::ISubSystem::subsystem>(element).Data());
-                        }
-
-                        delta = (delta >> 1);
-                        index++;
-                    }
-
-                    Activity newData(_T("Delta preconditions: %s"), feedback.c_str());
-                    Trace::TraceType<Activity, &Core::System::MODULE_NAME> traceData(newData);
-                    Trace::TraceUnit::Instance().Trace(__FILE__, __LINE__, className.c_str(), &traceData);
-                }
-#endif
 
                 Unlock();
 
@@ -449,11 +419,8 @@ namespace PluginHost
                         EnableWebServer(webUI, EMPTY_STRING);
                     }
 
-                    IDispatcher* dispatcher = _handler->QueryInterface<IDispatcher>();
-
-                    if (dispatcher != nullptr) {
-                        dispatcher->Activate(this);
-                        dispatcher->Release();
+                    if (_jsonrpc != nullptr) {
+                        _jsonrpc->Activate(this);
                     }
 
                     SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
@@ -493,9 +460,9 @@ namespace PluginHost
 
         if (currentState == IShell::state::ACTIVATION) {
             result = Core::ERROR_INPROGRESS;
-        } else if ((currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED)) {
+        } else if ((currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::HIBERNATED)) {
             result = Core::ERROR_ILLEGAL_STATE;
-        } else if ( (currentState == IShell::state::DEACTIVATED) || (currentState == IShell::state::HIBERNATED) ) {
+        } else if ( (currentState == IShell::state::DEACTIVATED) ) {
             result = Activate(why);
             currentState = State();
         }
@@ -530,15 +497,25 @@ namespace PluginHost
 
         if (currentState == IShell::state::DEACTIVATION) {
             result = Core::ERROR_INPROGRESS;
-        } else if ( ((currentState == IShell::state::ACTIVATION) && (why != IShell::reason::INITIALIZATION_FAILED)) || (currentState == IShell::state::HIBERNATED) || (currentState == IShell::state::DESTROYED)) {
+        } else if ( ((currentState == IShell::state::ACTIVATION) && (why != IShell::reason::INITIALIZATION_FAILED)) || (currentState == IShell::state::DESTROYED)) {
             result = Core::ERROR_ILLEGAL_STATE;
-        } else if ( ((currentState == IShell::state::ACTIVATION) && (why == IShell::reason::INITIALIZATION_FAILED)) || (currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::ACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
+        } else if ( ((currentState == IShell::state::ACTIVATION) && (why == IShell::reason::INITIALIZATION_FAILED)) || (currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::ACTIVATED) || (currentState == IShell::state::PRECONDITION) || (currentState == IShell::state::HIBERNATED) ) {
             const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
 
             const string className(PluginHost::Service::Configuration().ClassName.Value());
             const string callSign(PluginHost::Service::Configuration().Callsign.Value());
 
             _reason = why;
+
+            if(currentState == IShell::state::HIBERNATED)
+            {
+                Unlock();
+                if(Wakeup() != Core::ERROR_NONE)
+                {
+                    //TODO: should we force termination?
+                }
+                Lock();
+            }
 
             if ( (currentState == IShell::ACTIVATION) || (currentState == IShell::ACTIVATED)) {
                 ASSERT(_handler != nullptr);
@@ -564,10 +541,8 @@ namespace PluginHost
 
                 Lock();
 
-                PluginHost::IDispatcher* dispatcher = dynamic_cast<PluginHost::IDispatcher*>(_handler);
-
-                if (dispatcher != nullptr) {
-                    dispatcher->Deactivate();
+                if (_jsonrpc != nullptr) {
+                    _jsonrpc->Deactivate();
                 }
 
                 _administrator.Deinitialized(callSign, this);
@@ -681,7 +656,7 @@ namespace PluginHost
 
     }
 
-    /* virtual */ Core::hresult Server::Service::Hibernate(const PluginHost::IShell::reason /* why */) {
+    Core::hresult Server::Service::Hibernate(const uint32_t timeout) /* override */ {
         Core::hresult result = Core::ERROR_NONE;
 
         Lock();
@@ -691,8 +666,8 @@ namespace PluginHost
         if (currentState != IShell::state::ACTIVATED) {
             result = Core::ERROR_ILLEGAL_STATE;
         }
-        else if (_connection != nullptr) {
-            result = Core::ERROR_BAD_REQUEST;
+        else if (_connection == nullptr) {
+            result = Core::ERROR_INPROC;
         }
         else {
             // Oke we have an Connection so there is something to Hibernate..
@@ -702,6 +677,15 @@ namespace PluginHost
                 result = Core::ERROR_BAD_REQUEST;
             }
             else {
+                #ifdef HIBERNATE_SUPPORT_ENABLED
+                result = HibernateProcess(timeout, local->ParentPID(), _T(""), _T(""), &_hibernateStorage);
+                #else
+                result = Core::ERROR_NONE;
+                #endif
+                if (result == Core::ERROR_NONE) {
+                    State(IShell::state::HIBERNATED);
+                    SYSLOG(Logging::Notification, ("Hibernated plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
+                }
                 local->Release();
             }
         }
@@ -711,7 +695,42 @@ namespace PluginHost
 
     }
 
-    void Server::Service::Wakeup() {
+    Core::hresult Server::Service::Wakeup(const uint32_t timeout) /* override */ {
+        Core::hresult result = Core::ERROR_NONE;
+
+        Lock();
+
+        IShell::state currentState(State());
+
+        if (currentState != IShell::state::HIBERNATED) {
+            result = Core::ERROR_ILLEGAL_STATE;
+        }
+        else {
+            ASSERT(_connection != nullptr);
+
+            // Oke we have an Connection so there is something to Wakeup..
+            RPC::IMonitorableProcess* local = _connection->QueryInterface< RPC::IMonitorableProcess>();
+
+            if (local == nullptr) {
+                result = Core::ERROR_BAD_REQUEST;
+            }
+            else {
+                #ifdef HIBERNATE_SUPPORT_ENABLED
+                ASSERT (_hibernateStorage != nullptr);
+                result = WakeupProcess(timeout, local->ParentPID(), _T(""), _T(""), &_hibernateStorage);
+                #else
+                result = Core::ERROR_NONE;
+                #endif
+                if (result == Core::ERROR_NONE) {
+                    State(ACTIVATED);
+                    SYSLOG(Logging::Notification, ("Activated plugin from hibernation [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
+                }
+                local->Release();
+            }
+        }
+        Unlock();
+
+        return (result);
     }
 
 

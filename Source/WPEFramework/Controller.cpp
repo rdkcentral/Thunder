@@ -324,6 +324,43 @@ namespace Plugin {
         return result;
     }
 
+    Core::hresult Controller::Hibernate(const string& callsign, const uint32_t timeout)
+    {
+        Core::hresult result = Core::ERROR_BAD_REQUEST;
+        const string controllerName = _pluginServer->Controller()->Callsign();
+
+        if ((callsign.empty() == false) && (callsign != controllerName)) {
+            Core::ProxyType<PluginHost::Server::Service> service;
+
+            if (_pluginServer->Services().FromIdentifier(callsign, service) != Core::ERROR_NONE) {
+                result = Core::ERROR_UNKNOWN_KEY;
+            }
+            else {
+                result = service->Hibernate(timeout);
+            }
+        }
+        return (result);
+    }
+
+    Core::hresult Controller::Wakeup(const string& callsign, const uint32_t timeout)
+    {
+        Core::hresult result = Core::ERROR_BAD_REQUEST;
+        const string controllerName = _pluginServer->Controller()->Callsign();
+
+        if ((callsign.empty() == false) && (callsign != controllerName)) {
+            Core::ProxyType<PluginHost::Server::Service> service;
+
+            if (_pluginServer->Services().FromIdentifier(callsign, service) != Core::ERROR_NONE) {
+                result = Core::ERROR_UNKNOWN_KEY;
+            }
+            else {
+                result = service->Wakeup(timeout);
+            }
+        }
+        return (result);
+ 
+    }
+
     Core::ProxyType<Web::Response> Controller::GetMethod(Core::TextSegmentIterator& index) const
     {
         Core::ProxyType<Web::Response> result(PluginHost::IFactories::Instance().Response());
@@ -632,7 +669,6 @@ namespace Plugin {
     void Controller::StartupResume(const string& callsign, PluginHost::IShell* plugin)
     {
         if (_resumes.size() > 0) {
-            string callsign(plugin->Callsign());
             std::list<string>::iterator index(_resumes.begin());
 
             ASSERT(_service != nullptr);
@@ -741,56 +777,42 @@ namespace Plugin {
             Notify("subsystemchange", responseJsonRpc);
         }
     }
-    /* virtual */ Core::ProxyType<Core::JSONRPC::Message> Controller::Invoke(const Core::JSONRPC::Context& context, const Core::JSONRPC::Message& inbound)
+
+    uint32_t Controller::Validate(const string& token, const string& method, const string& paramaters) const /* override */ {
+        return(PluginHost::JSONRPC::Validate(token, Core::JSONRPC::Message::Method(method), paramaters));
+    }
+
+    uint32_t Controller::Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) /* override */
     {
-        uint32_t result = Core::ERROR_BAD_REQUEST;
-        bool asyncCall = false;
-        string callsign(inbound.Callsign());
-        Core::ProxyType<Core::JSONRPC::Message> response;
+        Core::hresult result = Core::ERROR_BAD_REQUEST;
+        string callsign(Core::JSONRPC::Message::Callsign(method));
 
         if (callsign.empty() || (callsign == PluginHost::JSONRPC::Callsign())) {
-            response = PluginHost::JSONRPC::Invoke(context, inbound);
+            result = PluginHost::JSONRPC::Invoke(channelId, id, token, method, parameters, response);
 		} else {
-			Core::ProxyType<PluginHost::Server::Service> service;
+            Core::ProxyType<PluginHost::Server::Service> service;
 
-            uint32_t result = _pluginServer->Services().FromIdentifier(callsign, service);
+            result = _pluginServer->Services().FromIdentifier(callsign, service);
 
             if (result == Core::ERROR_NONE) {
                 ASSERT(service.IsValid());
 
-                Core::JSONRPC::Message forwarder;
+                PluginHost::IDispatcher* dispatcher = reinterpret_cast<PluginHost::IDispatcher*>(service->QueryInterface(PluginHost::IDispatcher::ID));
 
-                forwarder.Id = inbound.Id;
-                forwarder.Parameters = inbound.Parameters;
-                    
-                forwarder.Designator = inbound.VersionedFullMethod();
-                response = service->Invoke(context, forwarder);
-                asyncCall = (response.IsValid() == false);
+                if (dispatcher != nullptr) {
+                    PluginHost::ILocalDispatcher* localDispatcher = dispatcher->Local();
+
+                    ASSERT(localDispatcher != nullptr);
+
+                    if (localDispatcher != nullptr) {
+                        result = localDispatcher->Invoke(channelId, id, token, Core::JSONRPC::Message::VersionedFullMethod(method), parameters, response);
+                    }
+                    dispatcher->Release();
+                }
             }
         }
 
-        if ((inbound.Id.Value() != static_cast<uint32_t>(~0)) && (response.IsValid() == false) && (asyncCall == false)) {
-            response = Message();
-            response->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
-            response->Id = inbound.Id.Value();
-            response->Error.SetError(result);
-
-            switch (result) {
-                case Core::ERROR_UNAVAILABLE:
-                    response->Error.Text = "Requested service is not available";
-                    break;
-                case Core::ERROR_INVALID_SIGNATURE:
-                    response->Error.Text = "Invalid service name or version";
-                    break;
-                case Core::ERROR_BAD_REQUEST:
-                    response->Error.Text = "Could not access requested service";
-                    break;
-                default:
-                    response->Error.Text = "Invalid JSONRPC Request";
-            }
-        }
-
-        return (response);
+        return (result);
     }
 }
 }

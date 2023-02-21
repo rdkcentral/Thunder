@@ -1,4 +1,4 @@
-name: CMake Thunder
+name: Build Thunder on Linux
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
   workflow_call:
  
 jobs:
-  build:
+  Thunder:
     runs-on: ubuntu-latest
     
     strategy:
@@ -17,11 +17,17 @@ jobs:
     
     name: Build type - ${{matrix.build_type}}
     steps:
-    - name: Checkout
+    - name: Checkout Thunder
       uses: actions/checkout@v3
       with:
         path: Thunder
         repository: ${{github.repository_owner}}/Thunder
+
+    - name: Checkout ThunderTools
+      uses: actions/checkout@v3
+      with:
+        path: ThunderTools
+        repository: ${{github.repository_owner}}/ThunderTools
 
     - name: Install necessary packages
       uses: nick-fields/retry@v2
@@ -38,7 +44,7 @@ jobs:
         
     - name: Install generators
       run: |
-        cmake -G Ninja -S Thunder/Tools -B ${{matrix.build_type}}/build/ThunderTools \
+        cmake -G Ninja -S ThunderTools -B ${{matrix.build_type}}/build/ThunderTools \
         -DCMAKE_INSTALL_PREFIX=${{matrix.build_type}}/install/usr
         cmake --build ${{matrix.build_type}}/build/ThunderTools --target install
         
@@ -50,12 +56,10 @@ jobs:
         -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
         -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/WPEFramework/Modules" \
         -DDATA_PATH="${PWD}/${{matrix.build_type}}/install/usr/share/WPEFramework" \
-        -DMESSAGING=ON \
         -DPERSISTENT_PATH="${PWD}/${{matrix.build_type}}/install/var/wpeframework" \
         -DPORT="55555" \
         -DPROXYSTUB_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/proxystubs" \
         -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
-        -DTRACING=OFF \
         -DVOLATILE_PATH="tmp"
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
     

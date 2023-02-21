@@ -23,33 +23,144 @@
 #include "System.h"
 #include "IShell.h"
 #include "IPlugin.h"
+#include "IDispatcher.h"
 
 namespace WPEFramework {
 
 namespace PluginHost {
 
-    struct EXTERNAL IDispatcher : public virtual Core::IUnknown {
-        virtual ~IDispatcher() override = default;
+    struct EXTERNAL ILocalDispatcher : public IDispatcher {
+        virtual ~ILocalDispatcher() override = default;
 
-        enum { ID = RPC::ID_DISPATCHER };
+        virtual uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) = 0;
 
-        virtual Core::ProxyType<Core::JSONRPC::Message> Invoke(const Core::JSONRPC::Context& context, const Core::JSONRPC::Message& message) = 0;
-
-        // Methods used directly by the Framework to handle MetaData requirements.
-        // There should be no need to call these methods from the implementation directly.
         virtual void Activate(IShell* service) = 0;
         virtual void Deactivate() = 0;
-        virtual void Close(const uint32_t id) = 0;
+        virtual void Dropped(const uint32_t channelId) = 0;
     };
 
-    class EXTERNAL JSONRPC : public IDispatcher {
+    class EXTERNAL JSONRPC : public ILocalDispatcher, public IDispatcher::ICallback {
     private:
+        class Observer {
+        private:
+            using Destination = std::pair<uint32_t, string>;
+            using Destinations = std::vector<Destination>;
+            using Remotes = std::vector<IDispatcher::ICallback*>;
+
+        public:
+            Observer& operator= (const Observer& copy) = delete;
+
+            Observer()
+                : _callbacks()
+                , _designators() {
+            }
+            Observer(Observer&& move)
+                : _callbacks(move._callbacks)
+                , _designators(move._designators) {
+            }
+            Observer(const Observer& copy)
+                : _callbacks(copy._callbacks)
+                , _designators(copy._designators) {
+                for (IDispatcher::ICallback*& callback : _callbacks) {
+                    callback->AddRef();
+                }
+            }
+            ~Observer() {
+                for (IDispatcher::ICallback*& callback : _callbacks) {
+                    callback->Release();
+                }
+            }
+
+        public:
+            bool IsEmpty() const {
+                return ( (_designators.empty()) && (_callbacks.empty()) );
+            }
+            uint32_t Subscribe(const uint32_t id, const string& event) {
+                uint32_t result = Core::ERROR_NONE;
+
+                Destinations::iterator index(_designators.begin());
+                while ((index != _designators.end()) && ((index->first != id) || (index->second != event))) {
+                    index++;
+                }
+                ASSERT(index == _designators.end());
+                if (index == _designators.end()) {
+                    _designators.emplace_back(Destination(id, event));
+                }
+                else {
+                    result = Core::ERROR_DUPLICATE_KEY;
+                }
+
+                return (result);
+            }
+            uint32_t Unsubscribe(const uint32_t id, const string& event) {
+                uint32_t result = Core::ERROR_NONE;
+
+                Destinations::iterator index(_designators.begin());
+                while ((index != _designators.end()) && ((index->first != id) || (index->second != event))) {
+                    index++;
+                }
+                ASSERT(index != _designators.end());
+                if (index != _designators.end()) {
+                    _designators.erase(index);
+                }
+                else {
+                    result = Core::ERROR_BAD_REQUEST;
+                }
+
+                return (result);
+            }
+            void Subscribe(IDispatcher::ICallback* callback) {
+                Remotes::iterator index = std::find(_callbacks.begin(), _callbacks.end(), callback);
+
+                ASSERT(index == _callbacks.end());
+
+                if (index == _callbacks.end()) {
+                    callback->AddRef();
+                    _callbacks.emplace_back(callback);
+                }
+            }
+            void Unsubscribe(const IDispatcher::ICallback* callback) {
+                Remotes::iterator index = std::find(_callbacks.begin(), _callbacks.end(), callback);
+                
+                ASSERT(index != _callbacks.end());
+
+                if (index != _callbacks.end()) {
+                    (*index)->Release();
+                    _callbacks.erase(index);
+                }
+            }
+            void Dropped(const uint32_t channelId) {
+                Destinations::iterator index = _designators.begin();
+                while (index != _designators.end()) {
+                    if (index->first == channelId) {
+                        index = _designators.erase(index);
+                    }
+                    else {
+                        index++;
+                    }
+                }
+            }
+            void Event(JSONRPC& parent, const string event, const string& parameter, std::function<bool(const string&)>&& sendifmethod) {
+                for (const Destination& entry : _designators) {
+                    if (!sendifmethod || sendifmethod(entry.second)) {
+                        parent.Notify(entry.first, entry.second, parameter);
+                    }
+                }
+                for (IDispatcher::ICallback*& callback : _callbacks) {
+                    callback->Event(event, parameter);
+                }
+            }
+
+        private:
+            Remotes _callbacks;
+            Destinations _designators;
+        };
         using HandlerList = std::list<Core::JSONRPC::Handler>;
+        using ObserverMap = std::unordered_map<string, Observer>;
 
         class VersionInfo {
         public:
             VersionInfo() = delete;
-            VersionInfo(const VersionInfo&) = delete;
             VersionInfo& operator= (const VersionInfo&) = delete;
 
             VersionInfo(const string& interfaceName, const uint8_t major, const uint8_t minor, const uint8_t patch)
@@ -57,6 +168,18 @@ namespace PluginHost {
                 , _major(major)
                 , _minor(minor)
                 , _patch(patch) {
+            }
+            VersionInfo(VersionInfo&& move)
+                : _name(move._name)
+                , _major(move._major)
+                , _minor(move._minor)
+                , _patch(move._patch) {
+            }
+            VersionInfo(const VersionInfo& copy)
+                : _name(copy._name)
+                , _major(copy._major)
+                , _minor(copy._minor)
+                , _patch(copy._patch) {
             }
             ~VersionInfo() = default;
 
@@ -81,7 +204,7 @@ namespace PluginHost {
             const uint8_t _patch;
         };
 
-        using VersionList = std::list<VersionInfo>;
+        using VersionList = std::vector<VersionInfo>;
 
         class Registration : public Core::JSON::Container {
         public:
@@ -133,14 +256,6 @@ namespace PluginHost {
 
     public:
         //
-        // Factory methods to acquire a JSONRPC Message
-        // ------------------------------------------------------------------------------------------------------------------------------
-        Core::ProxyType<Core::JSONRPC::Message> Message() const
-        {
-            return (Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC()));
-        }
-
-        //
         // Get metadata for this handler. What is the callsign associated with this handler.
         // ------------------------------------------------------------------------------------------------------------------------------
         const string& Callsign() const
@@ -161,12 +276,12 @@ namespace PluginHost {
         }
         Core::JSONRPC::Handler& CreateHandler(const std::vector<uint8_t>& versions)
         {
-            _handlers.emplace_back([&](const uint32_t id, const string& designator, const string& data) { Notify(id, designator, data); }, versions);
+            _handlers.emplace_back(versions);
             return (_handlers.back());
         }
         Core::JSONRPC::Handler& CreateHandler(const std::vector<uint8_t>& versions, const Core::JSONRPC::Handler& source)
         {
-            _handlers.emplace_back([&](const uint32_t id, const string& designator, const string& data) { Notify(id, designator, data); }, versions, source);
+            _handlers.emplace_back(versions, source);
             return (_handlers.back());
         }
         Core::JSONRPC::Handler* GetHandler(uint8_t version)
@@ -222,11 +337,11 @@ namespace PluginHost {
         void Register(const string& methodName, const Core::JSONRPC::InvokeFunction& lambda) 
         { 
             _handlers.front().Register(methodName, lambda);
-        } 
-        void Register(const string& methodName, const Core::JSONRPC::CallbackFunction& lambda) 
-        { 
+        }
+        void Register(const string& methodName, const Core::JSONRPC::CallbackFunction& lambda)
+        {
             _handlers.front().Register(methodName, lambda);
-        } 
+        }
         void Unregister(const string& methodName)
         {
             _handlers.front().Unregister(methodName);
@@ -244,17 +359,21 @@ namespace PluginHost {
         // ------------------------------------------------------------------------------------------------------------------------------
         uint32_t Notify(const string& event) const
         {
-            return (_handlers.front().Notify(event, Core::JSON::String()));
+            return (InternalNotify(event, _T("")));
         }
         template <typename JSONOBJECT>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters) const
         {
-            return (_handlers.front().Notify(event, parameters));
+            string subject;
+            parameters.ToString(subject);
+            return (InternalNotify(event, subject));
         }
         template <typename JSONOBJECT, typename SENDIFMETHOD>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters, SENDIFMETHOD method) const
         {
-            return (_handlers.front().Notify(event, parameters, method));
+            string subject;
+            parameters.ToString(subject);
+            return InternalNotify(event, subject, std::move(method));
         }
 
         //
@@ -267,17 +386,17 @@ namespace PluginHost {
             parameters.ToString(subject);
             return (Response(channel, subject));
         }
-        uint32_t Response(const Core::JSONRPC::Context& channel, const string& result)
+        uint32_t Response(const Core::JSONRPC::Context& context, const string& result)
         {
             Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = IFactories::Instance().JSONRPC();
 
             ASSERT(_service != nullptr);
 
             message->Result = result;
-            message->Id = channel.Sequence();
+            message->Id = context.Sequence();
             message->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
 
-            return (_service->Submit(channel.ChannelId(), Core::ProxyType<Core::JSON::IElement>(message)));
+            return (_service->Submit(context.ChannelId(), Core::ProxyType<Core::JSON::IElement>(message)));
         }
         uint32_t Response(const Core::JSONRPC::Context& channel, const Core::JSONRPC::Error& result)
         {
@@ -291,138 +410,325 @@ namespace PluginHost {
 
             return (_service->Submit(channel.ChannelId(), Core::ProxyType<Core::JSON::IElement>(message)));
         }
-
-    protected:
-        virtual bool Exists(Core::JSONRPC::Handler& handler, const string& parameters)
-        {
-            return (handler.Exists(parameters));
-        }
-        virtual void Subscribe(Core::JSONRPC::Handler& handler, const uint32_t channelId, const string& eventName, const string& callsign, Core::JSONRPC::Message& response)
-        {
-            handler.Subscribe(channelId, eventName, callsign, response);
-        }
-        virtual void Unsubscribe(Core::JSONRPC::Handler& handler, const uint32_t channelId, const string& eventName, const string& callsign, Core::JSONRPC::Message& response)
-        {
-            handler.Unsubscribe(channelId, eventName, callsign, response);
-        }
-        Core::ProxyType<Core::JSONRPC::Message> Invoke(const Core::JSONRPC::Context& context, const Core::JSONRPC::Message& inbound) override
-        {
-            classification result = classification::VALID;
-            Registration info;
-            Core::ProxyType<Core::JSONRPC::Message> response(Message());
-            Core::JSONRPC::Handler* source = nullptr;
-            string method(inbound.Designator.Value());
-
-            if (inbound.Id.IsSet() == true) {
-                response->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
-                response->Id = inbound.Id.Value();
-            }
-
-            if ((_validate != nullptr) && ( (result = _validate(context.Token(), Core::JSONRPC::Message::Method(method), inbound.Parameters.Value())) == classification::INVALID)) {
-                response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
-                response->Error.Text = _T("method invokation not allowed.");
-            } 
-            else if (result == classification::DEFERRED) {
-                response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
-                response->Error.Text = _T("method invokation is deferred, Currently nit allowed.");
-            }
-            else {
-                switch (Destination(method, source)) {
-                case STATE_INCORRECT_HANDLER:
-                    response->Error.SetError(Core::ERROR_INVALID_DESIGNATOR);
-                    response->Error.Text = _T("Destined invoke failed.");
-                    break;
-                case STATE_INCORRECT_VERSION:
-                    response->Error.SetError(Core::ERROR_INVALID_SIGNATURE);
-                    response->Error.Text = _T("Requested version is not supported.");
-                    break;
-                case STATE_UNKNOWN_METHOD:
-                    response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                    response->Error.Text = _T("Unknown method.");
-                    break;
-                case STATE_REGISTRATION:
-                    info.FromString(inbound.Parameters.Value());
-                    Subscribe(*source, context.ChannelId(), info.Event.Value(), info.Callsign.Value(), *response);
-                    break;
-                case STATE_UNREGISTRATION:
-                    info.FromString(inbound.Parameters.Value());
-                    Unsubscribe(*source, context.ChannelId(), info.Event.Value(), info.Callsign.Value(), *response);
-                    break;
-                case STATE_EXISTS:
-                    if (Exists(*source, inbound.Parameters.Value()) == true) {
-                        response->Result = Core::NumberType<uint32_t>(Core::ERROR_NONE).Text();
-                    } else {
-                        response->Result = Core::NumberType<uint32_t>(Core::ERROR_UNKNOWN_KEY).Text();
-                    }
-                    break;
-                case STATE_CUSTOM:
-                    string result;
-                    uint32_t code = source->Invoke(context, inbound.FullMethod(), inbound.Parameters.Value(), result);
-                    if (response.IsValid() == true) {
-                        if (code == static_cast<uint32_t>(~0)) {
-                            response.Release();
-                        } else if (code == Core::ERROR_NONE) {
-                            if (result.empty() == true) {
-                                response->Result.Null(true);
-                            } else {
-                                response->Result = result;
-                            }
-                        } else {
-                            response->Error.Code = code;
-                            response->Error.Text = Core::ErrorToString(code);
-                        }
-                    }
+ 
+        // Inherited via IDispatcher
+        // ---------------------------------------------------------------------------------
+        Core::hresult Validate(const string& token, const string& method, const string& parameters) const override {
+            classification result;
+            if (_validate != nullptr) {
+                result = _validate(token, method, parameters);
+                if (result == classification::INVALID) {
+                    return (Core::ERROR_PRIVILIGED_REQUEST);
+                }
+                else if (result == classification::DEFERRED) {
+                    return (Core::ERROR_UNAVAILABLE);
                 }
             }
-
-            return response;
+            return (Core::ERROR_NONE);
         }
+        Core::hresult Invoke(IDispatcher::ICallback*, const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override {
+            uint32_t result(Core::ERROR_BAD_REQUEST);
+            Core::JSONRPC::Handler* handler(Handler(method));
+            string realMethod(Core::JSONRPC::Message::Method(method));
 
-    private:
-        state Destination(const string& designator, Core::JSONRPC::Handler*& source)
-        {
-            state result = STATE_INCORRECT_HANDLER;
-            string callsign(Core::JSONRPC::Message::Callsign(designator));
-
-            if (callsign.empty() || (callsign == _callsign)) {
-                // Seems we are on the right handler..
-                // now see if someone supports this version
-                uint8_t version = Core::JSONRPC::Message::Version(designator);
-                HandlerList::iterator index(_handlers.begin());
-
-                if (version != static_cast<uint8_t>(~0)) {
-                    while ((index != _handlers.end()) && (index->HasVersionSupport(version) == false)) {
-                        index++;
-                    }
+            if (handler == nullptr) {
+                result = Core::ERROR_INVALID_RANGE;
+            }
+            else if (realMethod == _T("exists")) {
+                result = Core::ERROR_NONE;
+                if (handler->Exists(realMethod) == Core::ERROR_NONE) {
+                    response = _T("1");
                 }
-
-                if (index == _handlers.end()) {
-                    result = STATE_INCORRECT_VERSION;
-                } else {
-                    string method(Core::JSONRPC::Message::Method(designator));
-
-                    if (method == _T("register")) {
-                        result = STATE_REGISTRATION;
-                        source = &(*index);
-                    } else if (method == _T("unregister")) {
-                        result = STATE_UNREGISTRATION;
-                        source = &(*index);
-                    } else if (method == _T("exists")) {
-                        result = STATE_EXISTS;
-                        source = &(*index);
-                    } else if (index->Exists(method) == Core::ERROR_NONE) {
-                        source = &(*index);
-                        result = STATE_CUSTOM;
-                    } else {
-                        result = STATE_UNKNOWN_METHOD;
-                    }
+                else {
+                    response = _T("0");
                 }
+            }
+            else if (handler->Exists(realMethod) == Core::ERROR_NONE) {
+                Core::JSONRPC::Context context(channelId, id, token);
+                result = handler->Invoke(context, Core::JSONRPC::Message::FullMethod(method), parameters, response);
             }
             return (result);
         }
-        void Notify(const uint32_t id, const string& designator, const string& parameters)
+        Core::hresult Revoke(IDispatcher::ICallback* callback) override {
+            // See if we re using this callback, we need to abort its use..
+            for (std::pair<const string, Observer>& entry : _observers) {
+                entry.second.Unsubscribe(callback);
+            }
+            return (Core::ERROR_NONE);
+        }
+        ILocalDispatcher* Local() override {
+            return (this);
+        }
+
+        // Inherited via ILocalDispatcher
+        // ---------------------------------------------------------------------------------
+        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override {
+            uint32_t result = Core::ERROR_INCORRECT_URL;
+
+            ASSERT(Core::JSONRPC::Message::Callsign(method).empty() || (Core::JSONRPC::Message::Callsign(method) == _callsign));
+
+            // Seems we are on the right handler..
+            // now see if someone supports this version
+            string realMethod(Core::JSONRPC::Message::Method(method));
+
+            if (realMethod == _T("register")) {
+                Registration info;  info.FromString(parameters);
+
+                result = Subscribe(this, channelId, info.Event.Value(), info.Callsign.Value());
+                if (result == Core::ERROR_NONE) {
+                    response = _T("0");
+                }
+                else {
+                    result = Core::ERROR_FAILED_REGISTERED;
+                }
+            }
+            else if (realMethod == _T("unregister")) {
+                Registration info;  info.FromString(parameters);
+
+                result = Unsubscribe(this, channelId, info.Event.Value(), info.Callsign.Value());
+                if (result == Core::ERROR_NONE) {
+                    response = _T("0");
+                }
+                else {
+                    result = Core::ERROR_FAILED_UNREGISTERED;
+                }
+            }
+            else {
+                result = Invoke(this, channelId, id, token, method, parameters, response);
+            }
+
+            return (result);
+        }
+        void Activate(IShell* service) override
         {
-            Core::ProxyType<Core::JSONRPC::Message> message(Message());
+            ASSERT(_service == nullptr);
+            ASSERT(service != nullptr);
+
+            _service = service;
+            _service->AddRef();
+            _callsign = _service->Callsign();
+        }
+        void Deactivate() override
+        {
+            _adminLock.Lock();
+            _observers.clear();
+            _adminLock.Unlock();
+
+            if (_service != nullptr) {
+                _service->Release();
+                _service = nullptr;
+            }
+        }
+        void Dropped(const uint32_t channelId) override
+        {
+            _adminLock.Lock();
+
+            ObserverMap::iterator index = _observers.begin();
+
+            while (index != _observers.end()) {
+
+                index->second.Dropped(channelId);
+
+                if (index->second.IsEmpty() == true) {
+                    index = _observers.erase(index);
+                }
+                else {
+                    index++;
+                }
+            }
+
+
+            _adminLock.Unlock();
+        }
+
+        // Inherited via IDispatcher::ICallback
+        // ---------------------------------------------------------------------------------
+        Core::hresult Event(const string& eventId, const string& parameters) override {
+            _adminLock.Lock();
+
+            ObserverMap::iterator index = _observers.find(eventId);
+
+            if (index != _observers.end()) {
+                index->second.Event(*this, eventId, parameters, std::function<bool(const string&)>());
+            }
+
+            _adminLock.Unlock();
+
+            return (Core::ERROR_NONE);
+
+        }
+        Core::hresult Error(const uint32_t channel, const uint32_t id, const uint32_t code, const string& errorText) override {
+            Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = IFactories::Instance().JSONRPC();
+
+            ASSERT(_service != nullptr);
+
+            message->Error.Text = errorText;
+            message->Error.Code = code;
+            message->Id = id;
+            message->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
+
+            return (_service->Submit(channel, Core::ProxyType<Core::JSON::IElement>(message)));
+        }
+        Core::hresult Response(const uint32_t channel, const uint32_t id, const string& response) override {
+            Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = IFactories::Instance().JSONRPC();
+
+            ASSERT(_service != nullptr);
+
+            message->Result = response;
+            message->Id = id;
+            message->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
+
+            return (_service->Submit(channel, Core::ProxyType<Core::JSON::IElement>(message)));
+        }
+        Core::hresult Subscribe(const uint32_t channel, const string& eventId, const string& designator) override
+        {
+            uint32_t result;
+
+            _adminLock.Lock();
+
+            ObserverMap::iterator index = _observers.find(eventId);
+
+            if (index == _observers.end()) {
+                index = _observers.emplace(std::piecewise_construct,
+                    std::forward_as_tuple(eventId),
+                    std::forward_as_tuple()).first;
+            }
+
+            result = index->second.Subscribe(channel, designator);
+
+            _adminLock.Unlock();
+
+            return (result);
+        }
+        Core::hresult Unsubscribe(const uint32_t channel, const string& eventId, const string& designator) override
+        {
+            uint32_t result = Core::ERROR_UNKNOWN_KEY;
+
+            _adminLock.Lock();
+
+            ObserverMap::iterator index = _observers.find(eventId);
+
+            if (index != _observers.end()) {
+                result = index->second.Unsubscribe(channel, designator);
+
+                if ((result == Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
+                    _observers.erase(index);
+                }
+            }
+            _adminLock.Unlock();
+
+            return (result);
+        }
+
+    protected:
+        uint32_t RegisterMethod(const uint8_t version, const string& methodName) {
+            _adminLock.Lock();
+
+            HandlerList::iterator index(_handlers.begin());
+
+            if (version != static_cast<uint8_t>(~0)) {
+                while ((index != _handlers.end()) && (index->HasVersionSupport(version) == false)) {
+                    index++;
+                }
+            }
+            if (index == _handlers.end()) {
+                std::vector<uint8_t> versions({ version });
+                _handlers.emplace_front(versions);
+                index = _handlers.begin();
+            } 
+            index->Register(methodName, Core::JSONRPC::InvokeFunction());
+
+            _adminLock.Unlock();
+
+            return (Core::ERROR_NONE);
+        }
+        Core::JSONRPC::Handler* Handler(const string& methodName) {
+            uint8_t version(Core::JSONRPC::Message::Version(methodName));
+
+            Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
+
+            HandlerList::iterator index(_handlers.begin());
+
+            if (version != static_cast<uint8_t>(~0)) {
+                while ((index != _handlers.end()) && (index->HasVersionSupport(version) == false)) {
+                    index++;
+                }
+            }
+            return (index == _handlers.end() ? nullptr : &(*index));
+        }
+
+    private:
+        uint32_t Subscribe(IDispatcher::ICallback* callback, const uint32_t channelId, const string& event, const string& designator) {
+            uint32_t result = Core::ERROR_UNKNOWN_KEY;
+
+            // This is to make sure that the actuall location (there weher the channels really end) are
+            // aware of distributing the event.
+            if (callback->Subscribe(channelId, event, designator) == Core::ERROR_NONE) {
+
+                if (callback != this) {
+                    // Oops the real location is somewhere else. Register this event also for callbacks
+                    // to be forwarded to that actual location
+                    _adminLock.Lock();
+
+                    ObserverMap::iterator index = _observers.find(event);
+
+                    if (index == _observers.end()) {
+                        index = _observers.emplace(std::piecewise_construct,
+                            std::forward_as_tuple(event),
+                            std::forward_as_tuple()).first;
+                    }
+
+                    index->second.Subscribe(callback);
+
+                    _adminLock.Unlock();
+                }
+                result = Core::ERROR_NONE;
+            }
+            return (result);
+        }
+        uint32_t Unsubscribe(IDispatcher::ICallback* callback, const uint32_t channelId, const string& event, const string& designator) {
+            uint32_t result = Core::ERROR_UNKNOWN_KEY;
+
+            if (callback->Unsubscribe(channelId, event, designator) == Core::ERROR_NONE) {
+
+                if (callback != this) {
+                    // Oops the real location was somewhere else. Unregister this event also for callbacks
+                    // to be forwarded to that actual location
+                    _adminLock.Lock();
+
+                    ObserverMap::iterator index = _observers.find(event);
+
+                    if (index != _observers.end()) {
+                        index->second.Unsubscribe(callback);
+
+                        if ((result == Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
+                            _observers.erase(index);
+                        }
+                    }
+                }
+                result = Core::ERROR_NONE;
+            }
+            return (result);
+        }
+        uint32_t InternalNotify(const string& event, const string& parameters, std::function<bool(const string&)>&& sendifmethod = std::function<bool(const string&)>()) const
+        {
+            uint32_t result = Core::ERROR_UNKNOWN_KEY;
+
+            _adminLock.Lock();
+
+            ObserverMap::const_iterator index = _observers.find(event);
+
+            if (index != _observers.end()) {
+                const_cast<Observer&>(index->second).Event(const_cast<JSONRPC&>(*this), event, parameters, std::move(sendifmethod));
+            }
+
+            _adminLock.Unlock();
+
+            return (result);
+        }
+        void Notify(const uint32_t channelId, const string& designator, const string& parameters)
+        {
+            Core::ProxyType<Core::JSONRPC::Message> message(Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC()));
 
             ASSERT(_service != nullptr);
 
@@ -433,60 +739,36 @@ namespace PluginHost {
             message->Designator = designator;
             message->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
 
-            _service->Submit(id, Core::ProxyType<Core::JSON::IElement>(message));
-        }
-        void Activate(IShell* service) override
-        {
-            ASSERT(_service == nullptr);
-            ASSERT(service != nullptr);
-
-            _service = service;
-            _callsign = _service->Callsign();
-        }
-        void Deactivate() override
-        {
-            HandlerList::iterator index(_handlers.begin());
-
-            while (index != _handlers.end()) {
-                index->Close();
-                index++;
-            }
-
-            _service = nullptr;
-        }
-        void Close(const uint32_t id) override
-        {
-            HandlerList::iterator index(_handlers.begin());
-
-            while (index != _handlers.end()) {
-                index->Close(id);
-                index++;
-            }
+            _service->Submit(channelId, Core::ProxyType<Core::JSON::IElement>(message));
         }
 
     private:
         mutable Core::CriticalSection _adminLock;
-        std::list<Core::JSONRPC::Handler> _handlers;
+        HandlerList _handlers;
         IShell* _service;
         string _callsign;
         TokenCheckFunction _validate;
         VersionList _versions;
+        ObserverMap _observers;
     };
 
-    class EXTERNAL JSONRPCSupportsEventStatus : public JSONRPC {
+    class EXTERNAL JSONRPCSupportsEventStatus : public PluginHost::JSONRPC {
     public:
         JSONRPCSupportsEventStatus(const JSONRPCSupportsEventStatus&) = delete;
         JSONRPCSupportsEventStatus& operator=(const JSONRPCSupportsEventStatus&) = delete;
 
         JSONRPCSupportsEventStatus() = default;
-        JSONRPCSupportsEventStatus(const TokenCheckFunction& validation) : JSONRPC(validation) {}
+        JSONRPCSupportsEventStatus(const PluginHost::JSONRPC::TokenCheckFunction& validation) : JSONRPC(validation) {}
         JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions) : JSONRPC(versions) {}
         JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation) : JSONRPC(versions, validation) {}
         virtual ~JSONRPCSupportsEventStatus() = default;
 
-        enum class Status { registered,
-            unregistered };
+        enum class Status {
+            registered,
+            unregistered
+        };
 
+    public:
         template <typename METHOD>
         void RegisterEventStatusListener(const string& event, METHOD method)
         {
@@ -522,16 +804,6 @@ namespace PluginHost {
 
             _adminLock.Unlock();
         }
-        virtual void Subscribe(Core::JSONRPC::Handler& handler, const uint32_t channelId, const string& eventName, const string& callsign, Core::JSONRPC::Message& response)
-        {
-            JSONRPC::Subscribe(handler, channelId, eventName, callsign, response);
-            NotifyObservers(eventName, callsign, Status::registered);
-        }
-        virtual void Unsubscribe(Core::JSONRPC::Handler& handler, const uint32_t channelId, const string& eventName, const string& callsign, Core::JSONRPC::Message& response)
-        {
-            NotifyObservers(eventName, callsign, Status::unregistered);
-            JSONRPC::Unsubscribe(handler, channelId, eventName, callsign, response);
-        }
 
     private:
         using EventStatusCallback = std::function<void(const string&, Status status)>;
@@ -540,5 +812,6 @@ namespace PluginHost {
         mutable Core::CriticalSection _adminLock;
         StatusCallbackMap _observers;
     };
+
 } // namespace WPEFramework::PluginHost
 }

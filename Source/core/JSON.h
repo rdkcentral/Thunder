@@ -4143,7 +4143,7 @@ namespace Core {
 
         class EXTERNAL VariantContainer : public Container {
         private:
-            typedef std::list<std::pair<string, WPEFramework::Core::JSON::Variant>> Elements;
+            using Elements = std::unordered_map<string, WPEFramework::Core::JSON::Variant>;
 
         public:
             class Iterator {
@@ -4269,17 +4269,15 @@ namespace Core {
                 Elements::const_iterator index(values.begin());
 
                 while (index != values.end()) {
-                    _elements.emplace_back(std::piecewise_construct,
+                    Elements::iterator index = _elements.emplace(std::piecewise_construct,
                         std::forward_as_tuple(index->first),
-                        std::forward_as_tuple(index->second));
-                    Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
+                        std::forward_as_tuple(index->second)).first;
+                    Container::Add(index->first.c_str(), &(index->second));
                     index++;
                 }
             }
 
-            ~VariantContainer() override
-            {
-            }
+            ~VariantContainer() override = default;
 
         public:
             VariantContainer& operator=(const VariantContainer& rhs)
@@ -4308,10 +4306,10 @@ namespace Core {
                 // Now add the ones we are missing from the RHS
                 while (rhs_index != rhs._elements.end()) {
                     if (Find(rhs_index->first.c_str()) == _elements.end()) {
-                        _elements.emplace_back(std::piecewise_construct,
+                        index = _elements.emplace(std::piecewise_construct,
                             std::forward_as_tuple(rhs_index->first),
-                            std::forward_as_tuple(rhs_index->second));
-                        Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
+                            std::forward_as_tuple(rhs_index->second)).first;
+                        Container::Add(index->first.c_str(), &index->second);
                     }
                     rhs_index++;
                 }
@@ -4325,10 +4323,10 @@ namespace Core {
                 if (index != _elements.end()) {
                     index->second = value;
                 } else {
-                    _elements.emplace_back(std::piecewise_construct,
+                    index = _elements.emplace(std::piecewise_construct,
                         std::forward_as_tuple(fieldName),
-                        std::forward_as_tuple(value));
-                    Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
+                        std::forward_as_tuple(value)).first;
+                    Container::Add(index->first.c_str(), &(index->second));
                 }
             }
 
@@ -4350,12 +4348,10 @@ namespace Core {
                 Elements::iterator index(Find(fieldName));
 
                 if (index == _elements.end()) {
-                    _elements.emplace_back(std::piecewise_construct,
+                    index = _elements.emplace(std::piecewise_construct,
                         std::forward_as_tuple(fieldName),
-                        std::forward_as_tuple());
-                    Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
-                    index = _elements.end();
-                    index--;
+                        std::forward_as_tuple()).first;
+                    Container::Add(index->first.c_str(), &(index->second));
                 }
 
                 return (index->second);
@@ -4390,20 +4386,12 @@ namespace Core {
         private:
             Elements::iterator Find(const TCHAR fieldName[])
             {
-                Elements::iterator index(_elements.begin());
-                while ((index != _elements.end()) && (index->first != fieldName)) {
-                    index++;
-                }
-                return (index);
+                return (_elements.find(fieldName));
             }
 
             Elements::const_iterator Find(const TCHAR fieldName[]) const
             {
-                Elements::const_iterator index(_elements.begin());
-                while ((index != _elements.end()) && (index->first != fieldName)) {
-                    index++;
-                }
-                return (index);
+                return (_elements.find(fieldName));
             }
 
             // Container iface:
@@ -4411,11 +4399,11 @@ namespace Core {
             {
                 // Whetever comes in and has no counter part, we need to create a Variant for it, so
                 // it can be filled.
-                _elements.emplace_back(std::piecewise_construct,
+                Elements::iterator  index = _elements.emplace(std::piecewise_construct,
                     std::forward_as_tuple(label),
-                    std::forward_as_tuple());
+                    std::forward_as_tuple()).first;
 
-                Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
+                Container::Add(index->first.c_str(), &(index->second));
 
                 return (true);
             }

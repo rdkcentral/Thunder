@@ -326,6 +326,7 @@ typedef std::string string;
 #undef min
 #undef max
 #undef ERROR_NOT_SUPPORTED
+#undef ERROR_HIBERNATED
 
 //#if _MSC_VER >= 1600
 //const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) - 1;
@@ -858,7 +859,12 @@ namespace Core {
         ERROR_CODE(ERROR_UNAUTHENTICATED, 42) \
         ERROR_CODE(ERROR_NOT_EXIST, 43) \
         ERROR_CODE(ERROR_NOT_SUPPORTED, 44) \
-        ERROR_CODE(ERROR_INVALID_RANGE, 45)
+        ERROR_CODE(ERROR_INVALID_RANGE, 45) \
+        ERROR_CODE(ERROR_HIBERNATED, 46) \
+        ERROR_CODE(ERROR_INPROC, 47) \
+        ERROR_CODE(ERROR_FAILED_REGISTERED, 48) \
+        ERROR_CODE(ERROR_FAILED_UNREGISTERED, 49) 
+
 
     #define ERROR_CODE(CODE, VALUE) CODE = VALUE,
 

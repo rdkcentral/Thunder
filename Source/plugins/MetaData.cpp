@@ -45,6 +45,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Channel::state)
     { PluginHost::MetaData::Service::SUSPENDED, _TXT("suspended") },
     { PluginHost::MetaData::Service::RESUMED, _TXT("resumed") },
     { PluginHost::MetaData::Service::PRECONDITION, _TXT("precondition") },
+    { PluginHost::MetaData::Service::HIBERNATED, _TXT("hibernated") },
 
     ENUM_CONVERSION_END(PluginHost::MetaData::Service::state)
 

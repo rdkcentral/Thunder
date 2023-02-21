@@ -358,6 +358,8 @@ namespace Plugin {
         Core::hresult Configuration(const string& callsign, const string& configuration) override;
 
         Core::hresult Clone(const string& basecallsign, const string& newcallsign) override;
+        Core::hresult Hibernate(const string& callsign, const uint32_t timeout);
+        Core::hresult Wakeup(const string& callsign, const uint32_t timeout);
 
         //  IUnknown methods
         // -------------------------------------------------------------------------------------------------------
@@ -369,9 +371,10 @@ namespace Plugin {
         END_INTERFACE_MAP
 
     private:
-        //  IDispatch methods
+        //  ILocalDispatcher methods
         // -------------------------------------------------------------------------------------------------------
-        Core::ProxyType<Core::JSONRPC::Message> Invoke(const Core::JSONRPC::Context& token, const Core::JSONRPC::Message& inbound) override;
+        uint32_t Validate(const string& token, const string& method, const string& paramaters) const override;
+        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) override;
 
         inline Core::ProxyType<PluginHost::Server::Service> FromIdentifier(const string& callsign) const
         {
@@ -399,6 +402,8 @@ namespace Plugin {
         uint32_t endpoint_activate(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_clone(const JsonData::Controller::CloneParamsInfo& params, Core::JSON::String& response);
         uint32_t endpoint_deactivate(const JsonData::Controller::ActivateParamsInfo& params);
+        uint32_t endpoint_hibernate(const JsonData::Controller::HibernateParamsInfo& params);
+        uint32_t endpoint_wakeup(const JsonData::Controller::HibernateParamsInfo& params);
         uint32_t endpoint_unavailable(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_startdiscovery(const JsonData::Controller::StartdiscoveryParamsData& params);
         uint32_t endpoint_storeconfig();
@@ -414,6 +419,7 @@ namespace Plugin {
         uint32_t get_environment(const string& index, Core::JSON::String& response) const;
         uint32_t get_configuration(const string& index, Core::JSON::String& response) const;
         uint32_t set_configuration(const string& index, const Core::JSON::String& params);
+        uint32_t get_version(PluginHost::MetaData::Version& response) const;
 
         void event_statechange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
 

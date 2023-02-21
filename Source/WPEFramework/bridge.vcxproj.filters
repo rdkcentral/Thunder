@@ -37,6 +37,9 @@
     <None Include="ExampleConfigZigBee.json">
       <Filter>Configurations</Filter>
     </None>
+    <None Include="ExampleConfigMinimal.json">
+      <Filter>Configurations</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Controller.cpp">

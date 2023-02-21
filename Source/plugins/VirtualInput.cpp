@@ -33,7 +33,76 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
     { PluginHost::VirtualInput::KeyMap::LEFTCTRL, _TXT("leftctrl") },
     { PluginHost::VirtualInput::KeyMap::RIGHTCTRL, _TXT("rightctrl") },
 
-    ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
+ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
+
+namespace {
+    class InputEvent {
+    public:
+        InputEvent(InputEvent&&) = delete;
+        InputEvent(const InputEvent&) = delete;
+        InputEvent& operator=(const InputEvent&) = delete;
+
+        InputEvent(const IVirtualInput::KeyData& data) {
+            switch (data.Action) {
+            case IVirtualInput::KeyData::type::RELEASED:
+                _text = Core::ToString(Core::Format(_T("KeyData: RELEASED [0x%X]"), data.Code));
+                break;
+            case IVirtualInput::KeyData::type::PRESSED:
+                _text = Core::ToString(Core::Format(_T("KeyData: PRESSED [0x%X]"), data.Code));
+                break;
+            case IVirtualInput::KeyData::type::REPEAT:
+                _text = Core::ToString(Core::Format(_T("KeyData: REPEAT [0x%X]"), data.Code));
+                break;
+            case IVirtualInput::KeyData::type::COMPLETED:
+                _text = Core::ToString(Core::Format(_T("KeyData: COMPLETED [0x%X]"), data.Code));
+                break;
+            }
+        }
+        InputEvent(const IVirtualInput::MouseData& data) {
+            switch (data.Action) {
+            case IVirtualInput::MouseData::type::RELEASED:
+                _text = Core::ToString(Core::Format(_T("MouseData: RELEASED%d (x=%d,y=%d)"), data.Button, data.Horizontal, data.Vertical));
+                break;
+            case IVirtualInput::MouseData::type::PRESSED:
+                _text = Core::ToString(Core::Format(_T("MouseData: PRESSED%d (x=%d,y=%d)"), data.Button, data.Horizontal, data.Vertical));
+                break;
+            case IVirtualInput::MouseData::type::MOTION:
+                _text = Core::ToString(Core::Format(_T("MouseData: MOTION (x=%d,y=%d)"), data.Horizontal, data.Vertical));
+                break;
+            case IVirtualInput::MouseData::type::SCROLL:
+                _text = Core::ToString(Core::Format(_T("MouseData: SCROLL (x=%d,y=%d)"), data.Horizontal, data.Vertical));
+                break;
+            }
+        }
+        InputEvent(const IVirtualInput::TouchData& data) {
+            switch (data.Action) {
+            case IVirtualInput::TouchData::type::RELEASED:
+                _text = Core::ToString(Core::Format(_T("TouchData: RELEASED (index=%d,x=%d,y=%d)"), data.Index, data.X, data.Y));
+                break;
+            case IVirtualInput::TouchData::type::PRESSED:
+                _text = Core::ToString(Core::Format(_T("TouchData: PRESSED (index=%d,x=%d,y=%d)"), data.Index, data.X, data.Y));
+                break;
+            case IVirtualInput::TouchData::type::MOTION:
+                _text = Core::ToString(Core::Format(_T("TouchData: MOTION (index=%d,x=%d,y=%d)"), data.Index, data.X, data.Y));
+                break;
+            }
+        }
+        ~InputEvent() = default;
+
+    public:
+        const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
+
+    private:
+        std::string _text;
+    };
+}
 
 namespace PluginHost
 {
@@ -300,7 +369,7 @@ POP_WARNING()
     {
         IVirtualInput::TouchData event;
         event.Action = (state == 0 ? IVirtualInput::TouchData::MOTION: 
-                       (state == 1 ? IVirtualInput::TouchData::PRESSED : IVirtualInput::TouchData::RELEASED));
+                       (state == 1 ? IVirtualInput::TouchData::RELEASED : IVirtualInput::TouchData::PRESSED));
         event.Index = index;
         event.X = x;
         event.Y = y;
@@ -764,6 +833,7 @@ POP_WARNING()
 
         message->Parameters() = data;
         Core::ProxyType<Core::IIPC> base(message);
+        TRACE(InputEvent, (data));
         _service.Invoke(base, RPC::CommunicationTimeOut);
     }
 
@@ -773,6 +843,7 @@ POP_WARNING()
 
         message->Parameters() = data;
         Core::ProxyType<Core::IIPC> base(message);
+        TRACE(InputEvent, (data));
         _service.Invoke(base, RPC::CommunicationTimeOut);
     }
 
@@ -782,6 +853,7 @@ POP_WARNING()
 
         message->Parameters() = data;
         Core::ProxyType<Core::IIPC> base(message);
+        TRACE(InputEvent, (data));
         _service.Invoke(base, RPC::CommunicationTimeOut);
     }
 

@@ -19,64 +19,30 @@ set(TARGET ${NAMESPACE}COM)
 
 ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ICOM.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
-if(MESSAGING)
-  add_library(${TARGET} SHARED
-          Administrator.cpp
-          Communicator.cpp
-          IUnknown.cpp
-          ConnectorType.cpp
-          Module.cpp
-          ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_COM.cpp
-          )
+add_library(${TARGET} SHARED
+    Administrator.cpp
+    Communicator.cpp
+    IUnknown.cpp
+    ConnectorType.cpp
+    Module.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_COM.cpp
+)
   
-  set(PUBLIC_HEADERS
-          Administrator.h
-          com.h
-          Communicator.h
-          ConnectorType.h
-          Ids.h
-          IteratorType.h
-          IIteratorType.h
-          IStringIterator.h
-          IValueIterator.h
-          ICOM.h
-          IUnknown.h
-          Messages.h
-          Module.h
-          Module.h
-          )
-else()
-  ProxyStubGenerator(NAMESPACE "WPEFramework::Trace" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ITrace.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
-  add_library(${TARGET} SHARED
-          Administrator.cpp
-          Communicator.cpp
-          ITracing.cpp
-          IUnknown.cpp
-          ConnectorType.cpp
-          Module.cpp
-          ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_COM.cpp
-          ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Trace.cpp
-          )
-  
-  set(PUBLIC_HEADERS
-          Administrator.h
-          com.h
-          Communicator.h
-          ConnectorType.h
-          Ids.h
-          IteratorType.h
-          IIteratorType.h
-          IStringIterator.h
-          IValueIterator.h
-          ICOM.h
-          ITrace.h
-          IUnknown.h
-          Messages.h
-          Module.h
-          Module.h
-          )
-endif()
-
+set(PUBLIC_HEADERS
+    Administrator.h
+    com.h
+    Communicator.h
+    ConnectorType.h
+    Ids.h
+    IteratorType.h
+    IIteratorType.h
+    IStringIterator.h
+    IValueIterator.h
+    ICOM.h
+    IUnknown.h
+    Messages.h
+    Module.h
+)
 
 target_link_libraries(${TARGET}
         PRIVATE

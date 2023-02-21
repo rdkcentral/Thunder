@@ -24,10 +24,8 @@ option(CRYPTALGO
         "Include the encyption algorithm library." ON)
 option(WEBSOCKET
         "Include the websocket library." ON)
-option(TRACING
-        "Include the tracing library." ON)
 option(MESSAGING
-        "Include the messaging library." OFF)
+        "Include the messaging library." ON)
 option(PROFILER
         "Include the profiler library." OFF)
 option(COM
@@ -57,6 +55,8 @@ option(DEADLOCK_DETECTION
         "Enable deadlock detection tooling." OFF)
 option(WARNING_REPORTING
         "Include warning reporting in the build." OFF)
+option(HIBERNATESUPPORT
+        "Include hibernate support in the build." OFF)
 
 if(HIDE_NON_EXTERNAL_SYMBOLS)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
@@ -87,11 +87,6 @@ set(EXTERN_EVENTS ${EXTERN_EVENTS} CACHE INTERNAL
 string(REPLACE " " ";" EXTERN_EVENT_LIST "${EXTERN_EVENTS}")
 message(STATUS "Assuming external events: ${EXTERN_EVENT_LIST}")
 
-if(TRACING AND MESSAGING)
-    message(WARNING "Disabled Tracing, because Messaging and Tracing are mutually exclusive.")
-    set(TRACING OFF)
-endif()
-
 if(CORE)
     add_subdirectory(core)
 endif()
@@ -106,10 +101,6 @@ endif()
 
 if(WEBSOCKET)
     add_subdirectory(websocket)
-endif()
-
-if(TRACING)
-    add_subdirectory(tracing)
 endif()
 
 if(MESSAGING)
@@ -144,5 +135,9 @@ endif()
 
 if(EXECUTABLE)
     add_subdirectory(WPEFramework)
+endif()
+
+if(HIBERNATESUPPORT)
+    add_subdirectory(hibernate)
 endif()
 
