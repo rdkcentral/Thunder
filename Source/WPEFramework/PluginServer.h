@@ -917,11 +917,6 @@ namespace PluginHost {
                     element->Release();
                 }
             }
-            void Reporting(PluginHost::IPlugin::INotification* sink) {
-                for (std::pair<const string, ShellProxy*>& entry : _plugins ) {
-                    sink->Activated(entry.second->Callsign(), entry.second);
-                }
-            }
 
             BEGIN_INTERFACE_MAP(RemoteLink)
                 INTERFACE_ENTRY(PluginHost::ICompositPlugin::INotification)
@@ -2939,7 +2934,9 @@ POP_WARNING()
                     index++;
                 }
                 for (Core::Sink<CompositPlugin>& entry : _compositPlugins) {
-                    entry.Reporting(sink);
+                    entry.Visit([&](const string& callsign, IShell* proxy) {
+                        sink->Activated(callsign, proxy);
+                    });
                 }
 
                 _notificationLock.Unlock();
