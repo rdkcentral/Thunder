@@ -510,7 +510,7 @@ namespace PluginHost
             if(currentState == IShell::state::HIBERNATED)
             {
                 Unlock();
-                if(Wakeup() != Core::ERROR_NONE)
+                if(Wakeup(3000) != Core::ERROR_NONE)
                 {
                     //TODO: should we force termination?
                 }
@@ -695,7 +695,7 @@ namespace PluginHost
 
     }
 
-    Core::hresult Server::Service::Wakeup(const uint32_t timeout) /* override */ {
+    uint32_t Server::Service::Wakeup(const uint32_t timeout) {
         Core::hresult result = Core::ERROR_NONE;
 
         Lock();
@@ -756,7 +756,7 @@ namespace PluginHost
         _administrator.Notification(forwarder);
     }
 
-    uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<PluginHost::Server::Service>& service, bool& serviceCall)
+    uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<Service>& service, bool& serviceCall)
     {
         uint32_t result = Core::ERROR_BAD_REQUEST;
         const string& serviceHeader(_webbridgeConfig.WebPrefix());
@@ -771,12 +771,18 @@ namespace PluginHost
                 service = _server.Controller();
                 result = Core::ERROR_NONE;
             } else {
+                Core::ProxyType<IShell> actualService;
                 size_t length;
                 uint32_t offset = static_cast<uint32_t>(serviceHeader.length()) + 1; /* skip the slash after */
 
                 const string callSign(identifier.substr(offset, ((length = identifier.find_first_of('/', offset)) == string::npos ? string::npos : length - offset)));
 
-                result = FromIdentifier(callSign, service);
+                if ( (result = FromIdentifier(callSign, actualService)) == Core::ERROR_NONE) {
+                    service = Core::ProxyType<Service>(actualService);
+                    if (service.IsValid() == false) {
+                        result = Core::ERROR_BAD_REQUEST;
+                    }
+                }
             }
         } else if (identifier.compare(0, JSONRPCHeader.length(), JSONRPCHeader.c_str()) == 0) {
 
@@ -786,12 +792,18 @@ namespace PluginHost
                 service = _server.Controller();
                 result = Core::ERROR_NONE;
             } else {
+                Core::ProxyType<IShell> actualService;
                 size_t length;
                 uint32_t offset = static_cast<uint32_t>(JSONRPCHeader.length()) + 1; /* skip the slash after */
 
                 const string callSign(identifier.substr(offset, ((length = identifier.find_first_of('/', offset)) == string::npos ? string::npos : length - offset)));
 
-                result = FromIdentifier(callSign, service);
+                if ((result = FromIdentifier(callSign, actualService)) == Core::ERROR_NONE) {
+                    service = Core::ProxyType<Service>(actualService);
+                    if (service.IsValid() == false) {
+                        result = Core::ERROR_BAD_REQUEST;
+                    }
+                }
             }
         }
 
