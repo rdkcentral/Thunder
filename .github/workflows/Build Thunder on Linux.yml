@@ -21,13 +21,13 @@ jobs:
       uses: actions/checkout@v3
       with:
         path: Thunder
-        repository: ${{github.repository_owner}}/Thunder
+        repository: rdkcentral/Thunder
 
     - name: Checkout ThunderTools
       uses: actions/checkout@v3
       with:
         path: ThunderTools
-        repository: ${{github.repository_owner}}/ThunderTools
+        repository: rdkcentral/ThunderTools
 
     - name: Install necessary packages
       uses: nick-fields/retry@v2
