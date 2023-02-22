@@ -1,8 +1,6 @@
 project(LocalTracer LANGUAGES CXX)
 cmake_minimum_required(VERSION 3.7)
 
-project_version(1.0.0)
-
 set(MODULE_NAME ${NAMESPACE}LocalTracer)
 
 message("Setup ${MODULE_NAME} v${PROJECT_VERSION}")
@@ -35,6 +33,4 @@ HeaderOnlyInstallPackageConfig(TARGET ${MODULE_NAME}
 
 HeaderOnlyInstallCMakeConfig(TARGET ${MODULE_NAME} TREAT_AS_NORMAL)
 
-if(EXAMPLE_LOCALTRACER)
-    add_subdirectory(example)
-endif()
+add_subdirectory(example)

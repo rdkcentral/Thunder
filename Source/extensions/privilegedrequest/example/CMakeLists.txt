@@ -15,11 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-find_package(WPEFramework REQUIRED)
-
-find_package(${NAMESPACE}Core REQUIRED)
-find_package(CompileSettingsDebug REQUIRED)
-
 add_executable(fdpassing main.cpp)
 
 target_link_libraries(fdpassing PRIVATE
@@ -28,6 +23,6 @@ target_link_libraries(fdpassing PRIVATE
     ${NAMESPACE}PrivilegedRequest::${NAMESPACE}PrivilegedRequest
 )
 
-if(INSTALL_EXAMPLES)
+if(EXAMPLE_PRIVILEGEDREQUEST)
 install(TARGETS fdpassing DESTINATION bin)
 endif()
