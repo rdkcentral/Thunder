@@ -7,4 +7,6 @@ target_link_libraries(local_trace_test PRIVATE
     ${NAMESPACE}Core::${NAMESPACE}Core
     ${NAMESPACE}LocalTracer::${NAMESPACE}LocalTracer)
 
-install(TARGETS local_trace_test DESTINATION bin)
+if(EXAMPLE_LOCALTRACER)
+    install(TARGETS local_trace_test DESTINATION bin)
+endif()
