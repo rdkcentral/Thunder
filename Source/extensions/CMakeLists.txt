@@ -15,8 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-option(COMPOSITORBUFFER,
-        "Include the compositor buffer support in the build." OFF)
+option(LOCALTRACER
+        "Include local tracing support library in the build." OFF)
 option(HIBERNATESUPPORT
         "Include hibernate support in the build." OFF)
 option(PRIVILEGEDREQUEST
@@ -26,8 +26,8 @@ option(PROCESSCONTAINERS
 option(WARNING_REPORTING
         "Include warning reporting in the build." OFF)
 
-if(COMPOSITORBUFFER)
-    add_subdirectory(compositorbuffer)
+if(LOCALTRACER)
+    add_subdirectory(localtracer)
 endif()
 
 if(HIBERNATESUPPORT)
