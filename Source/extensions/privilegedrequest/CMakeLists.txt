@@ -19,13 +19,11 @@ project(PrivilegedRequest LANGUAGES CXX)
 
 cmake_minimum_required(VERSION 3.12)
 
-project_version(1.0.0)
-
 set(MODULE_NAME ${NAMESPACE}${PROJECT_NAME})
 
 message("Setup ${MODULE_NAME} v${PROJECT_VERSION}")
 
-option(INSTALL_EXAMPLES "Install the examples." OFF)
+option(EXAMPLE_PRIVILEGEDREQUEST "Install the examples." ON)
 
 add_library(${MODULE_NAME} INTERFACE)
 add_library(${MODULE_NAME}::${MODULE_NAME} ALIAS ${MODULE_NAME})
