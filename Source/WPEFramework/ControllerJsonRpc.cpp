@@ -399,7 +399,7 @@ namespace Plugin {
             string info;
             result = Core::ERROR_BAD_REQUEST;
 
-            if (service->Metadata(info) != Core::ERROR_NONE) {
+            if (service->Metadata(info) == Core::ERROR_NONE) {
                 PluginHost::MetaData::Service status;
                 status.FromString(info);
                 response.Add(status);

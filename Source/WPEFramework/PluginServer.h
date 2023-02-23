@@ -1459,6 +1459,14 @@ namespace PluginHost {
                                 response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
                                 response->Error.Text = _T("Unregister was already done!!!.");
                                 break;
+                            case Core::ERROR_HIBERNATED:
+                                response->Error.SetError(Core::ERROR_HIBERNATED);
+                                response->Error.Text = _T("The service is in an Hibernated state!!!.");
+                                break;
+                            case Core::ERROR_ILLEGAL_STATE:
+                                response->Error.SetError(Core::ERROR_ILLEGAL_STATE);
+                                response->Error.Text = _T("The service is in an illegal state!!!.");
+                                break;
                             case static_cast<uint32_t>(~0):
                                 response.Release();
                                 break;
