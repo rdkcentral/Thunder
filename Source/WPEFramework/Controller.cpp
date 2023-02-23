@@ -770,25 +770,34 @@ namespace Plugin {
 
         if (callsign.empty() || (callsign == PluginHost::JSONRPC::Callsign())) {
             result = PluginHost::JSONRPC::Invoke(channelId, id, token, method, parameters, response);
-		} else {
+        } 
+	else {
             Core::ProxyType<PluginHost::IShell> service;
-
+	    
             result = _pluginServer->Services().FromIdentifier(callsign, service);
 
             if (result == Core::ERROR_NONE) {
-                ASSERT(service.IsValid());
+	        ASSERT(service.IsValid());
+                PluginHost::IShell::state currrentState = service->State();
+                if (currrentState != PluginHost::IShell::state::ACTIVATED)
+                {
+                    result = (currrentState == PluginHost::IShell::state::HIBERNATED ? Core::ERROR_HIBERNATED : Core::ERROR_ILLEGAL_STATE);
+                }
+                else {
+                    ASSERT(service.IsValid());
 
-                PluginHost::IDispatcher* dispatcher = reinterpret_cast<PluginHost::IDispatcher*>(service->QueryInterface(PluginHost::IDispatcher::ID));
+                    PluginHost::IDispatcher* dispatcher = reinterpret_cast<PluginHost::IDispatcher*>(service->QueryInterface(PluginHost::IDispatcher::ID));
 
-                if (dispatcher != nullptr) {
-                    PluginHost::ILocalDispatcher* localDispatcher = dispatcher->Local();
+                    if (dispatcher != nullptr) {
+                        PluginHost::ILocalDispatcher* localDispatcher = dispatcher->Local();
 
-                    ASSERT(localDispatcher != nullptr);
+                        ASSERT(localDispatcher != nullptr);
 
-                    if (localDispatcher != nullptr) {
-                        result = localDispatcher->Invoke(channelId, id, token, Core::JSONRPC::Message::VersionedFullMethod(method), parameters, response);
+                        if (localDispatcher != nullptr) {
+                            result = localDispatcher->Invoke(channelId, id, token, Core::JSONRPC::Message::VersionedFullMethod(method), parameters, response);
+                        }
+                        dispatcher->Release();
                     }
-                    dispatcher->Release();
                 }
             }
         }
