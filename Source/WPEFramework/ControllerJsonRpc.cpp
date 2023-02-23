@@ -39,7 +39,6 @@ namespace Plugin {
         Register<ActivateParamsInfo,void>(_T("suspend"), &Controller::endpoint_suspend, this);
         Register<ActivateParamsInfo,void>(_T("resume"), &Controller::endpoint_resume, this);
         Register<HibernateParamsInfo,void>(_T("hibernate"), &Controller::endpoint_hibernate, this);
-        Register<HibernateParamsInfo,void>(_T("wakeup"), &Controller::endpoint_wakeup, this);
         Register<StartdiscoveryParamsData,void>(_T("startdiscovery"), &Controller::endpoint_startdiscovery, this);
         Register<void,void>(_T("storeconfig"), &Controller::endpoint_storeconfig, this);
         Register<DeleteParamsData,void>(_T("delete"), &Controller::endpoint_delete, this);
@@ -54,6 +53,7 @@ namespace Plugin {
         Property<Core::JSON::String>(_T("environment"), &Controller::get_environment, nullptr, this);
         Property<Core::JSON::String>(_T("configuration"), &Controller::get_configuration, &Controller::set_configuration, this);
         Property<Core::JSON::ArrayType<CallstackData>>(_T("callstack"), &Controller::get_callstack, nullptr, this);
+        Property<PluginHost::MetaData::Version>(_T("version"), &Controller::get_version, nullptr, this);
     }
 
     void Controller::UnregisterAll()
@@ -69,8 +69,8 @@ namespace Plugin {
         Unregister(_T("unavailable"));
         Unregister(_T("deactivate"));
         Unregister(_T("activate"));
+        Unregister(_T("version"));
         Unregister(_T("hibernate"));
-        Unregister(_T("wakeup"));
         Unregister(_T("configuration"));
         Unregister(_T("environment"));
         Unregister(_T("discoveryresults"));
@@ -96,17 +96,6 @@ namespace Plugin {
         return (Hibernate(params.Callsign.Value(), params.Timeout.Value()));
     }
 
-    // Method: wakeup - Wakeups a plugin
-    // Return codes:
-    //  - ERROR_NONE: Success
-    //  - ERROR_BAD_REQUEST: Request is invalid
-    //  - ERROR_UNKNOWN_KEY: The plugin does not exist
-    //  - ERROR_OPENING_FAILED: Failed to wakeup the plugin
-    //  - ERROR_ILLEGAL_STATE: Current state of the plugin does not allow wakeup
-    uint32_t Controller::endpoint_wakeup(const JsonData::Controller::HibernateParamsInfo& params) {
-        return (Wakeup(params.Callsign.Value(), params.Timeout.Value()));
-    }
-
     // Method: activate - Activates a plugin
     // Return codes:
     //  - ERROR_NONE: Success
@@ -124,7 +113,7 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
 
         if (callsign != Callsign()) {
-            Core::ProxyType<PluginHost::Server::Service> service;
+            Core::ProxyType<PluginHost::IShell> service;
 
             if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
                 ASSERT(service.IsValid());
@@ -162,7 +151,7 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
 
         if (callsign != Callsign()) {
-            Core::ProxyType<PluginHost::Server::Service> service;
+            Core::ProxyType<PluginHost::IShell> service;
 
             if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
                 ASSERT(service.IsValid());
@@ -199,7 +188,7 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
 
         if (callsign != Callsign()) {
-            Core::ProxyType<PluginHost::Server::Service> service;
+            Core::ProxyType<PluginHost::IShell> service;
 
             if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
                 ASSERT(service.IsValid());
@@ -238,23 +227,26 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
 
         if (callsign != Callsign()) {
-            Core::ProxyType<PluginHost::Server::Service> service;
-
-            if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
-                ASSERT(service.IsValid());
-                result = service->Resume(PluginHost::IShell::REQUESTED);
-
-                // Normalise return code
-                if ((result != Core::ERROR_NONE) && (result != Core::ERROR_ILLEGAL_STATE) && (result !=  Core::ERROR_INPROGRESS) && (result != Core::ERROR_PENDING_CONDITIONS)) {
-                    result = Core::ERROR_OPENING_FAILED;
-                }
-            }
-            else {
-                result = Core::ERROR_UNKNOWN_KEY;
-            }
+            result = Core::ERROR_PRIVILIGED_REQUEST;
         }
         else {
-            result = Core::ERROR_PRIVILIGED_REQUEST;
+            Core::ProxyType<PluginHost::IShell> service;
+
+            if (_pluginServer->Services().FromIdentifier(callsign, service) != Core::ERROR_NONE) {
+                result = Core::ERROR_UNKNOWN_KEY;
+            }
+            else {
+                ASSERT(service.IsValid());
+                PluginHost::IStateControl* stateControl = service->QueryInterface<PluginHost::IStateControl>();
+
+                if (stateControl == nullptr) {
+                    result = Core::ERROR_UNAVAILABLE;
+                }
+                else {
+                    result = stateControl->Request(PluginHost::IStateControl::command::RESUME);
+                    stateControl->Release();
+                }
+            }
         }
 
         return result;
@@ -276,23 +268,26 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
 
         if (callsign != Callsign()) {
-            Core::ProxyType<PluginHost::Server::Service> service;
-
-            if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
-                ASSERT(service.IsValid());
-                result = service->Suspend(PluginHost::IShell::REQUESTED);
-
-                // Normalise return code
-                if ((result != Core::ERROR_NONE) && (result != Core::ERROR_ILLEGAL_STATE) && (result !=  Core::ERROR_INPROGRESS)) {
-                    result = Core::ERROR_CLOSING_FAILED;
-                }
-            }
-            else {
-                result = Core::ERROR_UNKNOWN_KEY;
-            }
+            result = Core::ERROR_PRIVILIGED_REQUEST;
         }
         else {
-            result = Core::ERROR_PRIVILIGED_REQUEST;
+            Core::ProxyType<PluginHost::IShell> service;
+
+            if (_pluginServer->Services().FromIdentifier(callsign, service) != Core::ERROR_NONE) {
+                result = Core::ERROR_UNKNOWN_KEY;
+            }
+            else {
+                ASSERT(service.IsValid());
+                PluginHost::IStateControl* stateControl = service->QueryInterface<PluginHost::IStateControl>();
+
+                if (stateControl == nullptr) {
+                    result = Core::ERROR_UNAVAILABLE;
+                }
+                else {
+                    result = stateControl->Request(PluginHost::IStateControl::command::SUSPEND);
+                    stateControl->Release();
+                }
+            }
         }
 
         return result;
@@ -391,7 +386,7 @@ namespace Plugin {
     uint32_t Controller::get_status(const string& index, Core::JSON::ArrayType<PluginHost::MetaData::Service>& response) const
     {
         uint32_t result = Core::ERROR_UNKNOWN_KEY;
-        Core::ProxyType<PluginHost::Server::Service> service;
+        Core::ProxyType<PluginHost::IShell> service;
 
         ASSERT(_pluginServer != nullptr);
 
@@ -399,15 +394,15 @@ namespace Plugin {
             _pluginServer->Services().GetMetaData(response);
             result = Core::ERROR_NONE;
         }
-        else {
-            if (_pluginServer->Services().FromIdentifier(index, service) == Core::ERROR_NONE) {
-                ASSERT(service.IsValid());
+        else if (_pluginServer->Services().FromIdentifier(index, service) == Core::ERROR_NONE) {
+            ASSERT(service.IsValid());
+            string info;
+            result = Core::ERROR_BAD_REQUEST;
 
+            if (service->Metadata(info) != Core::ERROR_NONE) {
                 PluginHost::MetaData::Service status;
-                service->GetMetaData(status);
-
+                status.FromString(info);
                 response.Add(status);
-
                 result = Core::ERROR_NONE;
             }
         }
@@ -520,6 +515,15 @@ namespace Plugin {
     {
         return Configuration(index, params.Value());
     }
+    
+    // Property: version - Version of WPEFramework hash and human readable
+    // Return codes:
+    //  - ERROR_NONE: Success
+    uint32_t Controller::get_version(PluginHost::MetaData::Version& response) const
+    {
+        _pluginServer->Metadata(response);
+        return Core::ERROR_NONE;
+    }
 
     // Event: statechange - Signals a plugin state change
     void Controller::event_statechange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason)
@@ -537,4 +541,5 @@ namespace Plugin {
 } // namespace Plugin
 
 }
+
 

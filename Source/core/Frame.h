@@ -210,13 +210,14 @@ namespace Core {
 
                 return (result);
             }
+            template <typename TYPENAME = uint16_t>
             string Text() const
             {
                 string result;
 
                 ASSERT(_container != nullptr);
 
-                _offset += _container->GetText(_offset, result);
+                _offset += _container->GetText<TYPENAME>(_offset, result);
 
                 return (result);
             }
@@ -239,6 +240,17 @@ namespace Core {
             void Forward (const SIZE_CONTEXT skip) {
                 ASSERT(skip <= Length());
                 _offset += skip;
+            }
+            template <typename TYPENAME>
+            TYPENAME PeekNumber() const
+            {
+                TYPENAME result;
+
+                ASSERT(_container != nullptr);
+
+                _container->GetNumber<TYPENAME>(_offset, result);
+
+                return (result);
             }
 
 #ifdef __DEBUG__
@@ -312,11 +324,12 @@ namespace Core {
 
                 _offset += _container->SetBoolean(_offset, value);
             }
+            template <typename TYPENAME = uint16_t>
             void Text(const string& text)
             {
                 ASSERT(_container != nullptr);
 
-                _offset += _container->SetText(_offset, text);
+                _offset += _container->SetText<TYPENAME>(_offset, text);
             }
             void NullTerminatedText(const string& text)
             {

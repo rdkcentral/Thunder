@@ -359,7 +359,6 @@ namespace Plugin {
 
         Core::hresult Clone(const string& basecallsign, const string& newcallsign) override;
         Core::hresult Hibernate(const string& callsign, const uint32_t timeout);
-        Core::hresult Wakeup(const string& callsign, const uint32_t timeout);
 
         //  IUnknown methods
         // -------------------------------------------------------------------------------------------------------
@@ -376,9 +375,9 @@ namespace Plugin {
         uint32_t Validate(const string& token, const string& method, const string& paramaters) const override;
         uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) override;
 
-        inline Core::ProxyType<PluginHost::Server::Service> FromIdentifier(const string& callsign) const
+        inline Core::ProxyType<PluginHost::IShell> FromIdentifier(const string& callsign) const
         {
-            Core::ProxyType<PluginHost::Server::Service> service;
+            Core::ProxyType<PluginHost::IShell> service;
 
             _pluginServer->Services().FromIdentifier(callsign, service);
 
@@ -419,6 +418,7 @@ namespace Plugin {
         uint32_t get_environment(const string& index, Core::JSON::String& response) const;
         uint32_t get_configuration(const string& index, Core::JSON::String& response) const;
         uint32_t set_configuration(const string& index, const Core::JSON::String& params);
+        uint32_t get_version(PluginHost::MetaData::Version& response) const;
 
         void event_statechange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
 

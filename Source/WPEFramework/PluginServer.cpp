@@ -354,7 +354,6 @@ namespace PluginHost
                 _reason = why;
                 State(PRECONDITION);
 
-#ifdef __CORE_MESSAGING__
                 if (WPEFramework::Messaging::LocalLifetimeType<Activity, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
                     string feedback;
                     uint8_t index = 1;
@@ -376,31 +375,6 @@ namespace PluginHost
 
                     TRACE(Activity, (_T("Delta preconditions: %s"), feedback.c_str()));
                 }
-#else
-                if (Trace::TraceType<Activity, &Core::System::MODULE_NAME>::IsEnabled() == true) {
-                    string feedback;
-                    uint8_t index = 1;
-                    uint32_t delta(_precondition.Delta(_administrator.SubSystemInfo()));
-
-                    while (delta != 0) {
-                        if ((delta & 0x01) != 0) {
-                            if (feedback.empty() == false) {
-                                feedback += ',';
-                            }
-
-                            PluginHost::ISubSystem::subsystem element(static_cast<PluginHost::ISubSystem::subsystem>(index));
-                            feedback += string(Core::EnumerateType<PluginHost::ISubSystem::subsystem>(element).Data());
-                        }
-
-                        delta = (delta >> 1);
-                        index++;
-                    }
-
-                    Activity newData(_T("Delta preconditions: %s"), feedback.c_str());
-                    Trace::TraceType<Activity, &Core::System::MODULE_NAME> traceData(newData);
-                    Trace::TraceUnit::Instance().Trace(__FILE__, __LINE__, className.c_str(), &traceData);
-                }
-#endif
 
                 Unlock();
 
@@ -536,7 +510,7 @@ namespace PluginHost
             if(currentState == IShell::state::HIBERNATED)
             {
                 Unlock();
-                if(Wakeup() != Core::ERROR_NONE)
+                if(Wakeup(3000) != Core::ERROR_NONE)
                 {
                     //TODO: should we force termination?
                 }
@@ -721,7 +695,7 @@ namespace PluginHost
 
     }
 
-    Core::hresult Server::Service::Wakeup(const uint32_t timeout) /* override */ {
+    uint32_t Server::Service::Wakeup(const uint32_t timeout) {
         Core::hresult result = Core::ERROR_NONE;
 
         Lock();
@@ -782,7 +756,7 @@ namespace PluginHost
         _administrator.Notification(forwarder);
     }
 
-    uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<PluginHost::Server::Service>& service, bool& serviceCall)
+    uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<Service>& service, bool& serviceCall)
     {
         uint32_t result = Core::ERROR_BAD_REQUEST;
         const string& serviceHeader(_webbridgeConfig.WebPrefix());
@@ -797,12 +771,18 @@ namespace PluginHost
                 service = _server.Controller();
                 result = Core::ERROR_NONE;
             } else {
+                Core::ProxyType<IShell> actualService;
                 size_t length;
                 uint32_t offset = static_cast<uint32_t>(serviceHeader.length()) + 1; /* skip the slash after */
 
                 const string callSign(identifier.substr(offset, ((length = identifier.find_first_of('/', offset)) == string::npos ? string::npos : length - offset)));
 
-                result = FromIdentifier(callSign, service);
+                if ( (result = FromIdentifier(callSign, actualService)) == Core::ERROR_NONE) {
+                    service = Core::ProxyType<Service>(actualService);
+                    if (service.IsValid() == false) {
+                        result = Core::ERROR_BAD_REQUEST;
+                    }
+                }
             }
         } else if (identifier.compare(0, JSONRPCHeader.length(), JSONRPCHeader.c_str()) == 0) {
 
@@ -812,12 +792,18 @@ namespace PluginHost
                 service = _server.Controller();
                 result = Core::ERROR_NONE;
             } else {
+                Core::ProxyType<IShell> actualService;
                 size_t length;
                 uint32_t offset = static_cast<uint32_t>(JSONRPCHeader.length()) + 1; /* skip the slash after */
 
                 const string callSign(identifier.substr(offset, ((length = identifier.find_first_of('/', offset)) == string::npos ? string::npos : length - offset)));
 
-                result = FromIdentifier(callSign, service);
+                if ((result = FromIdentifier(callSign, actualService)) == Core::ERROR_NONE) {
+                    service = Core::ProxyType<Service>(actualService);
+                    if (service.IsValid() == false) {
+                        result = Core::ERROR_BAD_REQUEST;
+                    }
+                }
             }
         }
 

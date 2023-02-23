@@ -266,7 +266,7 @@ namespace Plugin {
     Core::hresult Controller::Configuration(const string& callsign, string& configuration) const
     {
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
-        Core::ProxyType<PluginHost::Server::Service> service;
+        Core::ProxyType<PluginHost::IShell> service;
 
         ASSERT(_pluginServer != nullptr);
 
@@ -281,7 +281,7 @@ namespace Plugin {
     Core::hresult Controller::Configuration(const string& callsign, const string& configuration)
     {
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
-        Core::ProxyType<PluginHost::Server::Service> service;
+        Core::ProxyType<PluginHost::IShell> service;
 
         ASSERT(_pluginServer != nullptr);
 
@@ -305,7 +305,7 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
 
         if ((basecallsign.empty() == false) && (newcallsign.empty() == false) && (basecallsign != controllerName) && (newcallsign != controllerName)) {
-            Core::ProxyType<PluginHost::Server::Service> baseService, newService;
+            Core::ProxyType<PluginHost::IShell> baseService, newService;
 
             if (_pluginServer->Services().FromIdentifier(basecallsign, baseService) != Core::ERROR_NONE) {
                 result = Core::ERROR_UNKNOWN_KEY;
@@ -330,7 +330,7 @@ namespace Plugin {
         const string controllerName = _pluginServer->Controller()->Callsign();
 
         if ((callsign.empty() == false) && (callsign != controllerName)) {
-            Core::ProxyType<PluginHost::Server::Service> service;
+            Core::ProxyType<PluginHost::IShell> service;
 
             if (_pluginServer->Services().FromIdentifier(callsign, service) != Core::ERROR_NONE) {
                 result = Core::ERROR_UNKNOWN_KEY;
@@ -340,25 +340,6 @@ namespace Plugin {
             }
         }
         return (result);
-    }
-
-    Core::hresult Controller::Wakeup(const string& callsign, const uint32_t timeout)
-    {
-        Core::hresult result = Core::ERROR_BAD_REQUEST;
-        const string controllerName = _pluginServer->Controller()->Callsign();
-
-        if ((callsign.empty() == false) && (callsign != controllerName)) {
-            Core::ProxyType<PluginHost::Server::Service> service;
-
-            if (_pluginServer->Services().FromIdentifier(callsign, service) != Core::ERROR_NONE) {
-                result = Core::ERROR_UNKNOWN_KEY;
-            }
-            else {
-                result = service->Wakeup(timeout);
-            }
-        }
-        return (result);
- 
     }
 
     Core::ProxyType<Web::Response> Controller::GetMethod(Core::TextSegmentIterator& index) const
@@ -669,7 +650,6 @@ namespace Plugin {
     void Controller::StartupResume(const string& callsign, PluginHost::IShell* plugin)
     {
         if (_resumes.size() > 0) {
-            string callsign(plugin->Callsign());
             std::list<string>::iterator index(_resumes.begin());
 
             ASSERT(_service != nullptr);
@@ -791,7 +771,7 @@ namespace Plugin {
         if (callsign.empty() || (callsign == PluginHost::JSONRPC::Callsign())) {
             result = PluginHost::JSONRPC::Invoke(channelId, id, token, method, parameters, response);
 		} else {
-            Core::ProxyType<PluginHost::Server::Service> service;
+            Core::ProxyType<PluginHost::IShell> service;
 
             result = _pluginServer->Services().FromIdentifier(callsign, service);
 

@@ -224,6 +224,7 @@ namespace PluginHost {
         
         virtual string ConfigLine() const = 0;
         virtual Core::hresult ConfigLine(const string& config) = 0;
+        virtual Core::hresult Metadata(string& info /* @out */) const = 0;
 
         //! Return whether the given version is supported by this IShell instance.
         virtual bool IsSupported(const uint8_t version) const = 0;
@@ -251,7 +252,6 @@ namespace PluginHost {
         virtual Core::hresult Deactivate(const reason) = 0;
         virtual Core::hresult Unavailable(const reason) = 0;
         virtual Core::hresult Hibernate(const uint32_t timeout) = 0;
-        virtual Core::hresult Wakeup(const uint32_t timeout) = 0;
         virtual reason Reason() const = 0;
 
         // Method to access, in the main process space, the channel factory to submit JSON objects to be send.
