@@ -328,9 +328,12 @@ namespace PluginHost
             Unlock();
             result = Core::ERROR_INPROGRESS;
         }
-        else if ((currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::HIBERNATED)) {
+        else if ((currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED) ) {
             Unlock();
             result = Core::ERROR_ILLEGAL_STATE;
+        } else if (currentState == IShell::state::HIBERNATED) {
+            Unlock();
+            result = Wakeup(3000);
         } else if ((currentState == IShell::state::DEACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
 
             // Load the interfaces, If we did not load them yet...
