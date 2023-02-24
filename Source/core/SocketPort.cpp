@@ -604,6 +604,7 @@ namespace WPEFramework {
 
                     if (closed == false) {
                         // Make this a forced close !!!
+                        shutdown(m_Socket, SHUT_RDWR);
                         m_State |= EXCEPTION;
 
                         // We probably did not get a response from the otherside on the close
