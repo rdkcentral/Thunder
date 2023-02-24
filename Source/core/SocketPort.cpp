@@ -588,11 +588,11 @@ namespace WPEFramework {
                     else {
                         m_State |= SHUTDOWN;
 
-                        // Block new data from coming in, signal the other side that we close !!
+                        // Signal the other side that we close !!
 #ifdef __WINDOWS__
                         shutdown(m_Socket, SD_SEND);
 #else
-                        shutdown(m_Socket, SHUT_RD);
+                        shutdown(m_Socket, SHUT_WR);
 #endif
                     }
 
@@ -1014,7 +1014,7 @@ namespace WPEFramework {
                         Write();
                     }
 #ifdef __LINUX__
-                    result |= ((m_State & SocketPort::LINK) != 0 ? POLLHUP : 0) | ((m_State & SocketPort::WRITE) != 0 ? POLLOUT : 0);
+                    result |= ((m_State & SocketPort::LINK) != 0 ? (POLLHUP | POLLRDHUP ) : 0) | ((m_State & SocketPort::WRITE) != 0 ? POLLOUT : 0);
 #endif
                 }
             }
@@ -1053,6 +1053,15 @@ namespace WPEFramework {
 #else
                 if ((flagsSet & POLLHUP) != 0) {
                     Closed();
+                }
+                else if ((flagsSet & POLLRDHUP) != 0) {
+                    m_syncAdmin.Lock();
+                    if ((m_State & SHUTDOWN) == 0) {
+                        // The other side signalled it wants to close, let's do the same.
+                        m_State |= SHUTDOWN;
+                        shutdown(m_Socket, SHUT_WR);
+                    }
+                    m_syncAdmin.Unlock();
                 }
                 else if (IsListening()) {
                     if ((flagsSet & POLLIN) != 0) {
