@@ -71,6 +71,13 @@ if (PROCESSCONTAINERS)
             PROCESSCONTAINERS_ENABLED=1)
 endif(PROCESSCONTAINERS)
 
+if(HIBERNATESUPPORT)
+    target_link_libraries(${TARGET} PRIVATE
+        ${NAMESPACE}Hibernate::${NAMESPACE}Hibernate)
+    target_compile_definitions(${TARGET} PUBLIC
+         HIBERNATE_SUPPORT_ENABLED=1)
+endif()
+
 if (PROTOCOLS)
     target_link_libraries(${TARGET}
             PRIVATE

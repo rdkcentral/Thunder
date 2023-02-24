@@ -74,6 +74,8 @@ option(DEADLOCK_DETECTION
         "Enable deadlock detection tooling." OFF)
 option(WARNING_REPORTING
         "Include warning reporting in the build." OFF)
+option(HIBERNATESUPPORT
+	"Include hibernate support in the build." OFF)
 #
 # Build type specific options
 #
@@ -171,6 +173,10 @@ endif()
 
 if(EXECUTABLE)
     add_subdirectory(WPEFramework)
+endif()
+
+if(HIBERNATESUPPORT)
+    add_subdirectory(hibernate)
 endif()
 
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake

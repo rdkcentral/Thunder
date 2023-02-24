@@ -35,6 +35,7 @@ namespace Plugin {
     {
         Register<ActivateParamsInfo,void>(_T("activate"), &Controller::endpoint_activate, this);
         Register<ActivateParamsInfo,void>(_T("deactivate"), &Controller::endpoint_deactivate, this);
+        Register<HibernateParamsInfo,void>(_T("hibernate"), &Controller::endpoint_hibernate, this);
         Register<ActivateParamsInfo,void>(_T("unavailable"), &Controller::endpoint_unavailable, this);
         Register<StartdiscoveryParamsData,void>(_T("startdiscovery"), &Controller::endpoint_startdiscovery, this);
         Register<void,void>(_T("storeconfig"), &Controller::endpoint_storeconfig, this);
@@ -59,6 +60,7 @@ namespace Plugin {
         Unregister(_T("unavailable"));
         Unregister(_T("deactivate"));
         Unregister(_T("activate"));
+        Unregister(_T("hibernate"));
         Unregister(_T("configuration"));
         Unregister(_T("environment"));
         Unregister(_T("discoveryresults"));
@@ -71,6 +73,18 @@ namespace Plugin {
 
     // API implementation
     //
+
+    // Method: hibernate - Hibernates a plugin
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_BAD_REQUEST: Request is invalid
+    //  - ERROR_UNKNOWN_KEY: The plugin does not exist
+    //  - ERROR_OPENING_FAILED: Failed to activate the plugin
+    //  - ERROR_ILLEGAL_STATE: Current state of the plugin does not allow activation
+    //  - ERROR_INPROC: Plugin running within Thunder process, hibernate not allowed
+    uint32_t Controller::endpoint_hibernate(const JsonData::Controller::HibernateParamsInfo& params) {
+        return (Hibernate(params.Callsign.Value(), params.Timeout.Value()));
+    }
 
     // Method: activate - Activates a plugin
     // Return codes:

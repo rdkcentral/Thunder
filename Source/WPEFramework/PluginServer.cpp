@@ -28,6 +28,10 @@
 #include "../processcontainers/ProcessContainer.h"
 #endif
 
+#ifdef HIBERNATE_SUPPORT_ENABLED
+#include "../hibernate/hibernate.h"
+#endif
+
 namespace WPEFramework {
 
 ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
@@ -321,8 +325,11 @@ namespace PluginHost
 
         if (currentState == IShell::ACTIVATION) {
             result = Core::ERROR_INPROGRESS;
-        } else if ((currentState == IShell::UNAVAILABLE) || (currentState == IShell::DEACTIVATION) || (currentState == IShell::DESTROYED)) {
+        } else if ((currentState == IShell::UNAVAILABLE) || (currentState == IShell::DEACTIVATION) || (currentState == IShell::DESTROYED) ) {
             result = Core::ERROR_ILLEGAL_STATE;
+        } else if (currentState == IShell::HIBERNATED) {
+            Unlock();
+            result = Wakeup(3000);
         } else if ((currentState == IShell::DEACTIVATED) || (currentState == IShell::PRECONDITION)) {
 
             // Load the interfaces, If we did not load them yet...
@@ -440,7 +447,7 @@ namespace PluginHost
             result = Core::ERROR_INPROGRESS;
         } else if ((currentState == IShell::ACTIVATION) || (currentState == IShell::DESTROYED)) {
             result = Core::ERROR_ILLEGAL_STATE;
-        } else if ((currentState == IShell::UNAVAILABLE) || (currentState == IShell::ACTIVATED) || (currentState == IShell::PRECONDITION)) {
+        } else if ((currentState == IShell::UNAVAILABLE) || (currentState == IShell::ACTIVATED) || (currentState == IShell::PRECONDITION) || (currentState == IShell::HIBERNATED) ) {
 
             const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
 
@@ -448,6 +455,16 @@ namespace PluginHost
             const string callSign(PluginHost::Service::Configuration().Callsign.Value());
 
             _reason = why;
+
+            if(currentState == IShell::HIBERNATED)
+            {
+                Unlock();
+                if(Wakeup(3000) != Core::ERROR_NONE)
+                {
+                    //TODO: should we force termination?
+                }
+                Lock();
+            }
 
             if (currentState == IShell::ACTIVATED) {
                 ASSERT(_handler != nullptr);
@@ -509,6 +526,79 @@ namespace PluginHost
         return (result);
     }
 
+    uint32_t Server::Service::Hibernate(const uint32_t timeout) /* override */ {
+        uint32_t result = Core::ERROR_NONE;
+
+        Lock();
+
+        IShell::state currentState(State());
+
+        if (currentState != IShell::state::ACTIVATED) {
+            result = Core::ERROR_ILLEGAL_STATE;
+        }
+        else if (_connection == nullptr) {
+            result = Core::ERROR_INPROC;
+        }
+        else {
+            // Oke we have an Connection so there is something to Hibernate..
+            RPC::IMonitorableProcess* local = _connection->QueryInterface< RPC::IMonitorableProcess>();
+            if (local == nullptr) {
+                result = Core::ERROR_BAD_REQUEST;
+            }
+            else {
+                #ifdef HIBERNATE_SUPPORT_ENABLED
+                result = HibernateProcess(timeout, local->ParentPID(), _T(""), _T(""), &_hibernateStorage);
+                #else
+                result = Core::ERROR_NONE;
+                #endif
+                if (result == Core::ERROR_NONE) {
+                    State(IShell::HIBERNATED);
+                    SYSLOG(Logging::Notification, ("Hibernated plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
+                }
+                local->Release();
+            }
+        }
+        Unlock();
+        return (result);
+    }
+
+    uint32_t Server::Service::Wakeup(const uint32_t timeout) /* override */ {
+        uint32_t result = Core::ERROR_NONE;
+
+        Lock();
+
+        IShell::state currentState(State());
+
+        if (currentState != IShell::HIBERNATED) {
+            result = Core::ERROR_ILLEGAL_STATE;
+        }
+        else {
+            ASSERT(_connection != nullptr);
+
+            // Oke we have an Connection so there is something to Wakeup..
+            RPC::IMonitorableProcess* local = _connection->QueryInterface< RPC::IMonitorableProcess>();
+
+            if (local == nullptr) {
+                result = Core::ERROR_BAD_REQUEST;
+            }
+            else {
+                #ifdef HIBERNATE_SUPPORT_ENABLED
+                result = WakeupProcess(timeout, local->ParentPID(), _T(""), _T(""), &_hibernateStorage);
+                #else
+                result = Core::ERROR_NONE;
+                #endif
+                if (result == Core::ERROR_NONE) {
+                    State(ACTIVATED);
+                    SYSLOG(Logging::Notification, ("Activated plugin from hibernation [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
+                }
+                local->Release();
+            }
+        }
+        Unlock();
+
+        return (result);
+    }
+
     uint32_t Server::Service::Unavailable(const reason why) {
         uint32_t result = Core::ERROR_NONE;
 
@@ -520,7 +610,8 @@ namespace PluginHost
             (currentState == IShell::ACTIVATION)   || 
             (currentState == IShell::DESTROYED)    || 
             (currentState == IShell::ACTIVATED)    ||
-            (currentState == IShell::PRECONDITION)) {
+            (currentState == IShell::PRECONDITION) ||
+            (currentState == IShell::HIBERNATED)) {
             result = Core::ERROR_ILLEGAL_STATE;
         }
         else if (currentState == IShell::DEACTIVATED) {

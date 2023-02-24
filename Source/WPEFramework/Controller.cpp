@@ -324,6 +324,24 @@ namespace Plugin {
         return result;
     }
 
+    uint32_t Controller::Hibernate(const string& callsign, const uint32_t timeout)
+    {
+        uint32_t result = Core::ERROR_BAD_REQUEST;
+        const string controllerName = _pluginServer->Controller()->Callsign();
+
+        if ((callsign.empty() == false) && (callsign != controllerName)) {
+            Core::ProxyType<PluginHost::Server::Service> service;
+
+            if (_pluginServer->Services().FromIdentifier(callsign, service) != Core::ERROR_NONE) {
+                result = Core::ERROR_UNKNOWN_KEY;
+            }
+            else {
+                result = service->Hibernate(timeout);
+            }
+        }
+        return (result);
+    }
+
     Core::ProxyType<Web::Response> Controller::GetMethod(Core::TextSegmentIterator& index) const
     {
         Core::ProxyType<Web::Response> result(PluginHost::IFactories::Instance().Response());
@@ -674,15 +692,22 @@ namespace Plugin {
 
             if (result == Core::ERROR_NONE) {
                 ASSERT(service.IsValid());
+                PluginHost::IShell::state currrentState = service->State();
+                if (currrentState != PluginHost::IShell::state::ACTIVATED)
+                {
+                    result = (currrentState == PluginHost::IShell::state::HIBERNATED ? Core::ERROR_HIBERNATED : Core::ERROR_ILLEGAL_STATE);
+                }
+                else
+                {
+                    Core::JSONRPC::Message forwarder;
 
-                Core::JSONRPC::Message forwarder;
+                    forwarder.Id = inbound.Id;
+                    forwarder.Parameters = inbound.Parameters;
 
-                forwarder.Id = inbound.Id;
-                forwarder.Parameters = inbound.Parameters;
-                    
-                forwarder.Designator = inbound.VersionedFullMethod();
-                response = service->Invoke(token, channelId, forwarder);
-                asyncCall = (response.IsValid() == false);
+                    forwarder.Designator = inbound.VersionedFullMethod();
+                    response = service->Invoke(token, channelId, forwarder);
+                    asyncCall = (response.IsValid() == false);
+                }
             }
         }
 

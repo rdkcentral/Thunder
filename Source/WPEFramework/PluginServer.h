@@ -769,11 +769,20 @@ namespace PluginHost {
                 Lock();
 
                 if ( (_jsonrpc == nullptr) || (IsActive() == false) ) {
+                    bool isHibernated = IsHibernated();
                     Unlock();
 
                     result = Core::proxy_cast<Core::JSONRPC::Message>(Factories::Instance().JSONRPC());
-                    result->Error.SetError(Core::ERROR_UNAVAILABLE);
-                    result->Error.Text = _T("Service is not active");
+                    if(isHibernated == true)
+                    {
+                        result->Error.SetError(Core::ERROR_HIBERNATED);
+                        result->Error.Text = _T("Service is hibernated");
+                    }
+                    else
+                    {
+                        result->Error.SetError(Core::ERROR_UNAVAILABLE);
+                        result->Error.Text = _T("Service is not active");
+                    }
                     result->Id = message.Id;
                 }
                 else {
@@ -986,6 +995,9 @@ namespace PluginHost {
             uint32_t Activate(const reason) override;
             uint32_t Deactivate(const reason) override;
             uint32_t Unavailable(const reason) override;
+            uint32_t Hibernate(const uint32_t timeout = 10000 /*ms*/) override;
+            uint32_t Wakeup(const uint32_t timeout = 10000 /*ms*/) override;
+
             reason Reason() const override
             {
                 return (_reason);
@@ -1218,6 +1230,7 @@ namespace PluginHost {
             uint32_t _activity;
             RPC::IRemoteConnection* _connection;
             Metadata _metadata;
+            void* _hibernateStorage;
 
             ServiceMap& _administrator;
             static Core::ProxyType<Web::Response> _unavailableHandler;

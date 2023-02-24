@@ -211,6 +211,23 @@ namespace JsonData {
             Core::JSON::Boolean Active; // Denotes whether the subsystem is active (true)
         }; // class SubsystemsParamsData
 
+        class HibernateParamsInfo : public Core::JSON::Container {
+        public:
+            HibernateParamsInfo()
+                : Core::JSON::Container()
+            {
+                Add(_T("callsign"), &Callsign);
+                Add(_T("timeout"), &Timeout);
+            }
+
+            HibernateParamsInfo(const HibernateParamsInfo&) = delete;
+            HibernateParamsInfo& operator=(const HibernateParamsInfo&) = delete;
+
+        public:
+            Core::JSON::String Callsign; // Plugin callsign
+            Core::JSON::DecUInt32 Timeout; // Timeoute in ms
+        }; // class HibernateParamsInfo
+
     } // namespace Controller
 
 } // namespace JsonData
