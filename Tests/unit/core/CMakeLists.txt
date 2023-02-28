@@ -31,7 +31,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_hex2strserialization.cpp
    test_filesystem.cpp
    test_frametype.cpp
-   #test_hash.cpp
+   test_hash.cpp
    #test_ipc.cpp
    #test_ipcclient.cpp
    test_iso639.cpp
@@ -54,7 +54,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_rangetype.cpp
    test_readwritelock.cpp
    test_rectangle.cpp
-   #test_rpc.cpp
+   test_rpc.cpp
    test_semaphore.cpp
    test_sharedbuffer.cpp
    test_singleton.cpp
