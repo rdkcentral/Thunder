@@ -269,7 +269,7 @@ namespace Plugin {
 
         uint32_t Clone(const string& basecallsign, const string& newcallsign) override;
         
-        uint32_t Hibernate(const string& callsign, const uint32_t timeout);
+        uint32_t Hibernate(const string& callsign, const uint32_t timeout, const string& processSequence);
 
         //  IUnknown methods
         // -------------------------------------------------------------------------------------------------------

@@ -83,7 +83,16 @@ namespace Plugin {
     //  - ERROR_ILLEGAL_STATE: Current state of the plugin does not allow activation
     //  - ERROR_INPROC: Plugin running within Thunder process, hibernate not allowed
     uint32_t Controller::endpoint_hibernate(const JsonData::Controller::HibernateParamsInfo& params) {
-        return (Hibernate(params.Callsign.Value(), params.Timeout.Value()));
+        string processSequenceString;
+        if ((params.ProcessSequence.IsSet() == true) && (params.ProcessSequence.Length() > 0)) {
+
+            processSequenceString = params.ProcessSequence[0].Value();
+
+            for(int i=1; i<params.ProcessSequence.Length(); ++i) {
+                processSequenceString += " " + params.ProcessSequence[i].Value();
+            }
+        }
+        return (Hibernate(params.Callsign.Value(), params.Timeout.Value(), processSequenceString));
     }
 
     // Method: activate - Activates a plugin

@@ -218,6 +218,7 @@ namespace JsonData {
             {
                 Add(_T("callsign"), &Callsign);
                 Add(_T("timeout"), &Timeout);
+                Add(_T("procsequence"), &ProcessSequence);
             }
 
             HibernateParamsInfo(const HibernateParamsInfo&) = delete;
@@ -226,6 +227,7 @@ namespace JsonData {
         public:
             Core::JSON::String Callsign; // Plugin callsign
             Core::JSON::DecUInt32 Timeout; // Timeoute in ms
+            Core::JSON::ArrayType<Core::JSON::String> ProcessSequence; // Sequence of Hibernation/Wakeup of processes names
         }; // class HibernateParamsInfo
 
     } // namespace Controller

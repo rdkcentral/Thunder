@@ -549,6 +549,8 @@ namespace PluginHost {
                 , _activity(0)
                 , _connection(nullptr)
                 , _metadata()
+                , _hibernateStorage(nullptr)
+                , _wakeupProcessSequence()
                 , _administrator(administrator)
             {
             }
@@ -768,24 +770,21 @@ namespace PluginHost {
 
                 Lock();
 
-                if ( (_jsonrpc == nullptr) || (IsActive() == false) ) {
-                    bool isHibernated = IsHibernated();
+                if ( (_jsonrpc == nullptr) || (IsActive() == false && IsHibernated() == false) ) {
                     Unlock();
 
                     result = Core::proxy_cast<Core::JSONRPC::Message>(Factories::Instance().JSONRPC());
-                    if(isHibernated == true)
-                    {
-                        result->Error.SetError(Core::ERROR_HIBERNATED);
-                        result->Error.Text = _T("Service is hibernated");
-                    }
-                    else
-                    {
-                        result->Error.SetError(Core::ERROR_UNAVAILABLE);
-                        result->Error.Text = _T("Service is not active");
-                    }
+                    result->Error.SetError(Core::ERROR_UNAVAILABLE);
+                    result->Error.Text = _T("Service is not active");
                     result->Id = message.Id;
                 }
                 else {
+                    if (IsHibernated())
+                    {
+                        Unlock();
+                        Wakeup(_wakeupProcessSequence);
+                        Lock();
+                    }
                     IDispatcher* service(_jsonrpc);
                     service->AddRef();
                     Unlock();
@@ -995,8 +994,8 @@ namespace PluginHost {
             uint32_t Activate(const reason) override;
             uint32_t Deactivate(const reason) override;
             uint32_t Unavailable(const reason) override;
-            uint32_t Hibernate(const uint32_t timeout = 10000 /*ms*/) override;
-            uint32_t Wakeup(const uint32_t timeout = 10000 /*ms*/) override;
+            uint32_t Hibernate(const string &processSequence = string(), const uint32_t timeout = 10000 /*ms*/) override;
+            uint32_t Wakeup(const string &processSequence = string(), const uint32_t timeout = 10000 /*ms*/) override;
 
             reason Reason() const override
             {
@@ -1231,6 +1230,7 @@ namespace PluginHost {
             RPC::IRemoteConnection* _connection;
             Metadata _metadata;
             void* _hibernateStorage;
+            string _wakeupProcessSequence;
 
             ServiceMap& _administrator;
             static Core::ProxyType<Web::Response> _unavailableHandler;

@@ -229,6 +229,83 @@ namespace Core {
         }
     }
 
+    static void ProcessNameByCmd(const uint32_t pid, TCHAR buffer[], const uint32_t maxLength)
+    {
+        ASSERT(maxLength > 0);
+
+        if (maxLength > 0) {
+            char procpath[48];
+            int fd;
+
+            snprintf(procpath, sizeof(procpath), "/proc/%u/comm", pid);
+
+            if ((fd = open(procpath, O_RDONLY)) > 0) {
+                ssize_t size;
+                if ((size = read(fd, buffer, maxLength - 1)) > 0) {
+                    if (buffer[size - 1] == '\n') {
+                        buffer[size - 1] = '\0';
+                    } else {
+                        buffer[size] = '\0';
+                    }
+                } else {
+                    buffer[0] = '\0';
+                }
+
+                close(fd);
+            } else {
+                buffer[0] = '\0';
+            }
+        }
+    }
+
+    static bool GetParentPid(const uint32_t &pid, uint32_t &ppid)
+    {
+        char statuspath[64];
+
+        snprintf(statuspath, sizeof(statuspath), "/proc/%u/status", pid);
+
+        std::ifstream input(statuspath);
+        for(std::string line; getline(input, line);)
+        {
+            if (sscanf(line.c_str(), "PPid: %u", &ppid) == 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /*static*/ void ProcessInfo::FindChildrenWithName(uint32_t parentPid, std::map<string, uint32_t>& pidwithName)
+    {
+        DIR* dp;
+        struct dirent* ep;
+        dp = opendir("/proc");
+        if (dp != nullptr) {
+            while (nullptr != (ep = readdir(dp))) {
+                pid_t pid;
+                char* endptr;
+
+                pid = strtol(ep->d_name, &endptr, 10);
+
+                if ('\0' == endptr[0]) {
+                    // We have a valid PID, Find, the parent of this process..
+                    uint32_t ppid = 0;
+                    if(GetParentPid(pid, ppid)
+                        && parentPid == ppid)
+                    {
+                        TCHAR buffer[512];
+                        ProcessNameByCmd(pid, buffer, sizeof(buffer));
+                        pidwithName[string(buffer)] = pid;
+                        //FIXME: remove this log
+                        printf("%s:%s: child Pid found: %u, name: %s\r\n", "ProcessInfo", __FUNCTION__, pid, buffer);fflush(stdout);
+                    }
+                }
+            }
+
+            (void)closedir(dp);
+        }
+    }
+
 #endif
 /*
     // Get the Processes with this name.

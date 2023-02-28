@@ -291,6 +291,10 @@ namespace PluginHost
             if (_handler != nullptr) {
 
                 result = _handler->QueryInterface(id);
+                if(result && IsHibernated())
+                {
+                    Wakeup(_wakeupProcessSequence);
+                }
             }
 
             _pluginHandling.Unlock();
@@ -329,7 +333,7 @@ namespace PluginHost
             result = Core::ERROR_ILLEGAL_STATE;
         } else if (currentState == IShell::HIBERNATED) {
             Unlock();
-            result = Wakeup(3000);
+            result = Wakeup(_wakeupProcessSequence,3000);
         } else if ((currentState == IShell::DEACTIVATED) || (currentState == IShell::PRECONDITION)) {
 
             // Load the interfaces, If we did not load them yet...
@@ -459,7 +463,7 @@ namespace PluginHost
             if(currentState == IShell::HIBERNATED)
             {
                 Unlock();
-                if(Wakeup(3000) != Core::ERROR_NONE)
+                if(Wakeup(_wakeupProcessSequence,3000) != Core::ERROR_NONE)
                 {
                     //TODO: should we force termination?
                 }
@@ -526,8 +530,9 @@ namespace PluginHost
         return (result);
     }
 
-    uint32_t Server::Service::Hibernate(const uint32_t timeout) /* override */ {
+    uint32_t Server::Service::Hibernate(const string &processSequence, const uint32_t timeout) /* override */ {
         uint32_t result = Core::ERROR_NONE;
+        auto start = std::chrono::high_resolution_clock::now();
 
         Lock();
 
@@ -546,8 +551,54 @@ namespace PluginHost
                 result = Core::ERROR_BAD_REQUEST;
             }
             else {
+                _wakeupProcessSequence.clear();
+
                 #ifdef HIBERNATE_SUPPORT_ENABLED
-                result = HibernateProcess(timeout, local->ParentPID(), _T(""), _T(""), &_hibernateStorage);
+
+                std::map<string,uint32_t> pidsWithName;
+
+                Core::ProcessInfo::FindChildrenWithName(local->ParentPID(), pidsWithName);
+                pidsWithName[Callsign()] = local->ParentPID();
+
+                if(processSequence.empty())
+                {
+                    for (auto const& pidWithName : pidsWithName) {
+                        SYSLOG(Logging::Notification, ("Hibernation of [%s]: process [%s, %u]",  Callsign().c_str(), pidWithName.first.c_str(), pidWithName.second));
+                        result = HibernateProcess(timeout, pidWithName.second, _T(""), _T(""), &_hibernateStorage);
+                        if (result != HIBERNATE_ERROR_NONE) {
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    std::list<string> processSequenceList;
+                    std::stringstream input(processSequence);
+                    for(string procName; getline(input, procName, ' ');)
+                    {
+                        processSequenceList.push_back(procName);
+                        if(_wakeupProcessSequence.empty())
+                        {
+                            _wakeupProcessSequence = procName;
+                        }
+                        else
+                        {
+                            _wakeupProcessSequence = procName + " " + _wakeupProcessSequence;
+                        }
+                    }
+
+                    for (auto name : processSequenceList)
+                    {
+                        if(pidsWithName.find(name) != pidsWithName.end())
+                        {
+                            SYSLOG(Logging::Notification, ("Hibernation of [%s]: process [%s, %u]",  Callsign().c_str(), name.c_str(), pidsWithName[name]));
+                            result = HibernateProcess(timeout, pidsWithName[name], _T(""), _T(""), &_hibernateStorage);
+                            if (result != HIBERNATE_ERROR_NONE) {
+                                break;
+                            }
+                        }
+                    }
+                }
                 #else
                 result = Core::ERROR_NONE;
                 #endif
@@ -559,11 +610,17 @@ namespace PluginHost
             }
         }
         Unlock();
+
+        auto stop = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+        SYSLOG(Logging::Notification, (_T("Hibernate of [%s] with seq [%s] took: %d ms"), Callsign().c_str(), processSequence.c_str(), duration.count()/1000));
+
         return (result);
     }
 
-    uint32_t Server::Service::Wakeup(const uint32_t timeout) /* override */ {
+    uint32_t Server::Service::Wakeup(const string &processSequence, const uint32_t timeout) /* override */ {
         uint32_t result = Core::ERROR_NONE;
+        auto start = std::chrono::high_resolution_clock::now();
 
         Lock();
 
@@ -583,7 +640,41 @@ namespace PluginHost
             }
             else {
                 #ifdef HIBERNATE_SUPPORT_ENABLED
-                result = WakeupProcess(timeout, local->ParentPID(), _T(""), _T(""), &_hibernateStorage);
+                std::map<string,uint32_t> pidsWithName;
+
+                Core::ProcessInfo::FindChildrenWithName(local->ParentPID(), pidsWithName);
+                pidsWithName[Callsign()] = local->ParentPID();
+
+                if(processSequence.empty())
+                {
+                    for (auto const& pidWithName : pidsWithName) {
+                        SYSLOG(Logging::Notification, ("Wakeup of [%s]: process [%s, %u]",  Callsign().c_str(), pidWithName.first.c_str(), pidWithName.second));
+                        result = WakeupProcess(timeout, pidWithName.second, _T(""), _T(""), &_hibernateStorage);
+                        if (result != HIBERNATE_ERROR_NONE) {
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    std::list<string> procSequenceList;
+                    std::stringstream input(processSequence);
+                    for(string procName; getline(input, procName, ' ');)
+                    {
+                        procSequenceList.push_back(procName);
+                    }
+                    for (auto name : procSequenceList)
+                    {
+                        if(pidsWithName.find(name) != pidsWithName.end())
+                        {
+                            SYSLOG(Logging::Notification, ("Wakeup of [%s]: process [%s, %u]",  Callsign().c_str(), name.c_str(), pidsWithName[name]));
+                            result = WakeupProcess(timeout, pidsWithName[name], _T(""), _T(""), &_hibernateStorage);
+                            if (result != HIBERNATE_ERROR_NONE) {
+                                break;
+                            }
+                        }
+                    }
+                }
                 #else
                 result = Core::ERROR_NONE;
                 #endif
@@ -595,6 +686,10 @@ namespace PluginHost
             }
         }
         Unlock();
+
+        auto stop = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+        SYSLOG(Logging::Notification, (_T("Wakeup of [%s] with seq [%s] took: %d ms"), Callsign().c_str(), processSequence.c_str(), duration.count()/1000));
 
         return (result);
     }

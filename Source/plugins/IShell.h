@@ -239,8 +239,8 @@ namespace PluginHost {
         virtual uint32_t Activate(const reason) = 0;
         virtual uint32_t Deactivate(const reason) = 0;
         virtual uint32_t Unavailable(const reason) = 0;
-        virtual uint32_t Hibernate(const uint32_t timeout) = 0;
-        virtual uint32_t Wakeup(const uint32_t timeout) = 0;
+        virtual uint32_t Hibernate(const string &processSequence, const uint32_t timeout) = 0;
+        virtual uint32_t Wakeup(const string &processSequence, const uint32_t timeout) = 0;
         virtual reason Reason() const = 0;
 
         // Method to access, in the main process space, the channel factory to submit JSON objects to be send.
