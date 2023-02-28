@@ -9,10 +9,9 @@ on:
     branches: ["master"]
   workflow_call:
  
-# TRY ubuntu-latest
 jobs:
   Thunder:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     
     strategy:
       matrix:
@@ -36,7 +35,6 @@ jobs:
         repository: rdkcentral/ThunderTools
 
 # TRY WITHOUT libcurl4-openssl-dev
-# TRY libgtest-dev=1.10.0-2
     - name: Install necessary packages
       uses: nick-fields/retry@v2
       with:
@@ -48,7 +46,7 @@ jobs:
           sudo apt-get update
           sudo apt install python3-pip
           pip install jsonref
-          sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev libcurl4-openssl-dev libgtest-dev=1.10.0
+          sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev libgtest-dev
         
     - name: Install generators
       run: |
