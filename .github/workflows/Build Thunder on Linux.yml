@@ -15,14 +15,17 @@ jobs:
     strategy:
       matrix:
         build_type: [Debug, Release, MinSizeRel]
-    
+
+# CHANGE TO RDKCENTRAL
+# CHANGE TO MASTER
     name: Build type - ${{matrix.build_type}}
     steps:
     - name: Checkout Thunder
       uses: actions/checkout@v3
       with:
         path: Thunder
-        repository: rdkcentral/Thunder
+        repository: VeithMetro/Thunder
+        ref: development/actions-tests
 
     - name: Checkout ThunderTools
       uses: actions/checkout@v3
