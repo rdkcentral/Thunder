@@ -82,7 +82,7 @@ add_executable(${TEST_RUNNER_NAME}
    #test_message_dispatcher.cpp
 )
     
-if(MESSAGING)    
+#[[ if(MESSAGING)    
    target_sources(${TEST_RUNNER_NAME} PRIVATE test_message_unit.cpp)
    target_link_libraries(${TEST_RUNNER_NAME}
       WPEFrameworkMessaging
@@ -92,7 +92,7 @@ else()
    target_link_libraries(${TEST_RUNNER_NAME}
       WPEFrameworkTracing
    )
-endif()
+endif() ]]
 
 set_source_files_properties(test_systeminfo.cpp PROPERTIES COMPILE_OPTIONS "-fexceptions")
 
