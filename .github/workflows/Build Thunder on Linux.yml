@@ -1,8 +1,9 @@
 name: Build Thunder on Linux
 
+# CHANGE TO MASTER
 on:
   push:
-    branches: ["master"]
+    branches: ["development/actions-tests"]
   pull_request:
     branches: ["master"]
   workflow_call:
@@ -60,8 +61,15 @@ jobs:
         -DPORT="55555" \
         -DPROXYSTUB_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/proxystubs" \
         -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
-        -DVOLATILE_PATH="tmp"
+        -DVOLATILE_PATH="tmp" \
+        -DBUILD_TESTS=ON
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
+    
+    - name: Run unit tests
+      run: |
+        PATH=${PWD}/${{matrix.build_type}}/install/usr/bin:${PATH}
+        LD_LIBRARY_PATH=${PWD}/${{matrix.build_type}}/install/usr/lib:${LD_LIBRARY_PATH}
+        WPEFramework_test_core
     
     - name: Tar files
       run: tar -czvf ${{matrix.build_type}}.tar.gz ${{matrix.build_type}}
