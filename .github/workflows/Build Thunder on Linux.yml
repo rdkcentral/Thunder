@@ -69,7 +69,7 @@ jobs:
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
     
     - name: Run unit tests
-      run: |
+      run: >
         PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:${PATH}
         LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:${LD_LIBRARY_PATH}
         WPEFramework_test_core
