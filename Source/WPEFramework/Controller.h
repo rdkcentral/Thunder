@@ -24,18 +24,20 @@
 #include "PluginServer.h"
 #include "Probe.h"
 #include "IController.h"
-#include "JsonData_ControllerExt.h"
 
 namespace WPEFramework {
 namespace Plugin {
 
     class Controller 
-        : public PluginHost::IController
-        , public PluginHost::IPlugin
+        : public PluginHost::IPlugin
         , public PluginHost::IWeb
         , public PluginHost::JSONRPC
-        , public Exchange::IControllerExt
-        , public Exchange::IControllerExt::INotification {
+        , public Exchange::IController::IConfiguration
+        , public Exchange::IController::IDiscovery
+        , public Exchange::IController::ISystemManagement
+        , public Exchange::IController::IMetadata
+        , public Exchange::IController::ILifeTime
+        , public Exchange::IController::ILifeTime::INotification {
     public:
         class CallstackData : public Core::JSON::Container {
         public:
@@ -380,45 +382,38 @@ namespace Plugin {
         // based on a a request is handled.
         Core::ProxyType<Web::Response> Process(const Web::Request& request) override;
 
-        //  IController methods
+        //  Controller methods
         // -------------------------------------------------------------------------------------------------------
-        Core::hresult Persist() override;
-
         Core::hresult Delete(const string& path) override;
-
         Core::hresult Reboot() override;
-
         Core::hresult Environment(const string& index, string& environment) const override;
+        Core::hresult Clone(const string& callsign, const string& newcallsign, string& response /* @out */) override;
 
+        Core::hresult StartDiscovery(const uint8_t& ttl) override;
+        Core::hresult DiscoveryResults(string& response) const override;
+
+        Core::hresult Persist() override;
         Core::hresult Configuration(const string& callsign, string& configuration) const override;
         Core::hresult Configuration(const string& callsign, const string& configuration) override;
 
-        Core::hresult Clone(const string& basecallsign, const string& newcallsign) override;
-        Core::hresult Hibernate(const string& callsign, const uint32_t timeout);
+        Core::hresult Register(Exchange::IController::ILifeTime::INotification* notification) override;
+        Core::hresult Unregister(Exchange::IController::ILifeTime::INotification* notification) override;
 
-        // IControllerExt methods
-        // -------------------------------------------------------------------------------------------------------
-        uint32_t Register(IControllerExt::INotification* notification) override;
-        uint32_t Unregister(IControllerExt::INotification* notification) override;
+        Core::hresult Activate(const string& callsign) override;
+        Core::hresult Deactivate(const string& callsign) override;
+        Core::hresult Unavailable(const string& callsign) override;
+        Core::hresult Suspend(const string& callsign) override;
+        Core::hresult Resume(const string& callsign) override;
+        Core::hresult Hibernate(const string& callsign, const Core::hresult timeout);
 
-        uint32_t Activate(const string& callsign) override;
-        uint32_t Deactivate(const string& callsign) override;
-        uint32_t Unavailable(const string& callsign) override;
-        uint32_t Suspend(const string& callsign) override;
-        uint32_t Resume(const string& callsign) override;
-        uint32_t Clone(const string& callsign, const string& newcallsign, string& response /* @out */) override;
-        uint32_t Harakiri() override;
-        uint32_t StoreConfig() override;
-        uint32_t Proxies(string& response) const override;
-        uint32_t StartDiscovery(const uint8_t& ttl) override;
+        Core::hresult Proxies(string& response) const override;
+        Core::hresult Status(const string& index, string& response) const override;
+        Core::hresult CallStack(const string& index, string& callstack) const override;
+        Core::hresult Links(string& response) const override;
+        Core::hresult ProcessInfo(string& response) const override;
+        Core::hresult Subsystems(string& response) const override;
+        Core::hresult Version(string& response) const override;
 
-        uint32_t Status(const string& index, string& response) const override;
-        uint32_t CallStack(const string& index, string& callstack) const override;
-        uint32_t Links(string& response) const override;
-        uint32_t ProcessInfo(string& response) const override;
-        uint32_t Subsystems(string& response) const override;
-        uint32_t DiscoveryResults(string& response) const override;
-        uint32_t Version(string& response) const override;
         void StateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason) override;
 
         //  IUnknown methods
@@ -427,9 +422,12 @@ namespace Plugin {
         INTERFACE_ENTRY(PluginHost::IPlugin)
         INTERFACE_ENTRY(PluginHost::IWeb)
         INTERFACE_ENTRY(PluginHost::IDispatcher)
-        INTERFACE_ENTRY(PluginHost::IController)
-        INTERFACE_ENTRY(Exchange::IControllerExt)
-        INTERFACE_ENTRY(Exchange::IControllerExt::INotification)
+        INTERFACE_ENTRY(Exchange::IController::IConfiguration)
+        INTERFACE_ENTRY(Exchange::IController::IDiscovery)
+        INTERFACE_ENTRY(Exchange::IController::ISystemManagement)
+        INTERFACE_ENTRY(Exchange::IController::IMetadata)
+        INTERFACE_ENTRY(Exchange::IController::ILifeTime)
+        INTERFACE_ENTRY(Exchange::IController::ILifeTime::INotification)
         END_INTERFACE_MAP
 
     private:
@@ -451,6 +449,9 @@ namespace Plugin {
         }
         void Callstack(const ThreadId id, Core::JSON::ArrayType<CallstackData>& response) const;
         void SubSystems();
+        uint32_t Harakiri();
+        uint32_t Storeconfig();
+        uint32_t Clone(const string& basecallsign, const string& newcallsign);
         void Proxies(Core::JSON::ArrayType<PluginHost::MetaData::COMRPC>& info) const;
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;
         Core::ProxyType<Web::Response> PutMethod(Core::TextSegmentIterator& index, const Web::Request& request);
@@ -469,7 +470,7 @@ namespace Plugin {
         std::list<string> _resumes;
         uint32_t _lastReported;
         std::vector<PluginHost::ISubSystem::subsystem> _externalSubsystems;
-        std::list<Exchange::IControllerExt::INotification*> _observers;
+        std::list<Exchange::IController::ILifeTime::INotification*> _observers;
     };
 }
 }

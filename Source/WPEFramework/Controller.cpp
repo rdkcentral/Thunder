@@ -19,7 +19,16 @@
 
 #include "Controller.h"
 #include "SystemInfo.h"
-#include "JControllerExt.h"
+
+#include "JsonData_SystemManagement.h"
+#include "JsonData_LifeTime.h"
+#include "JsonData_Discovery.h"
+
+#include "JDiscovery.h"
+#include "JConfiguration.h"
+#include "JSystemManagement.h"
+#include "JLifeTime.h"
+#include "JMetadata.h"
 
 namespace WPEFramework {
 
@@ -116,7 +125,11 @@ namespace Plugin {
         _service->EnableWebServer(_T("UI"), EMPTY_STRING);
 
         Register(this);
-        Exchange::JControllerExt::Register(*this, this);
+        Exchange::IController::JConfiguration::Register(*this, this);
+        Exchange::IController::JDiscovery::Register(*this, this);
+        Exchange::IController::JSystemManagement::Register(*this, this);
+        Exchange::IController::JLifeTime::Register(*this, this);
+        Exchange::IController::JMetadata::Register(*this, this);
 
         // On succes return a name as a Callsign to be used in the URL, after the "service"prefix
         return (_T(""));
@@ -126,7 +139,11 @@ namespace Plugin {
     {
         ASSERT(_service == service);
 
-        Exchange::JControllerExt::Unregister(*this);
+        Exchange::IController::JConfiguration::Unregister(*this);
+        Exchange::IController::JDiscovery::Unregister(*this);
+        Exchange::IController::JSystemManagement::Unregister(*this);
+        Exchange::IController::JLifeTime::Unregister(*this);
+        Exchange::IController::JMetadata::Unregister(*this);
 
         // Detach the SubSystems, we are shutting down..
         PluginHost::ISubSystem* subSystems(_service->SubSystems());
@@ -813,7 +830,7 @@ namespace Plugin {
         return (result);
     }
 
-    uint32_t Controller::Register(Exchange::IControllerExt::INotification* notification)
+    Core::hresult Controller::Register(Exchange::IController::ILifeTime::INotification* notification)
     {
         _adminLock.Lock();
 
@@ -828,11 +845,11 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-    uint32_t Controller::Unregister(Exchange::IControllerExt::INotification* notification)
+    Core::hresult Controller::Unregister(Exchange::IController::ILifeTime::INotification* notification)
     {
         _adminLock.Lock();
 
-        std::list<Exchange::IControllerExt::INotification*>::iterator index(std::find(_observers.begin(), _observers.end(), notification));
+        std::list<Exchange::IController::ILifeTime::INotification*>::iterator index(std::find(_observers.begin(), _observers.end(), notification));
 
         // Make sure you do not unregister something you did not register !!!
         ASSERT(index != _observers.end());
@@ -847,9 +864,9 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-    uint32_t Controller::Activate(const string& callsign)
+    Core::hresult Controller::Activate(const string& callsign)
     {
-        uint32_t result = Core::ERROR_NONE;
+        Core::hresult result = Core::ERROR_NONE;
         ASSERT(_pluginServer != nullptr);
 
         if (callsign != Callsign()) {
@@ -874,9 +891,9 @@ namespace Plugin {
         return result;
     }
 
-    uint32_t Controller::Deactivate(const string& callsign)
+    Core::hresult Controller::Deactivate(const string& callsign)
     {
-        uint32_t result = Core::ERROR_NONE;
+        Core::hresult result = Core::ERROR_NONE;
 
         ASSERT(_pluginServer != nullptr);
 
@@ -903,9 +920,9 @@ namespace Plugin {
         return result;
     }
 
-    uint32_t Controller::Unavailable(const string& callsign)
+    Core::hresult Controller::Unavailable(const string& callsign)
     {
-        uint32_t result = Core::ERROR_NONE;
+        Core::hresult result = Core::ERROR_NONE;
         ASSERT(_pluginServer != nullptr);
 
         if (callsign != Callsign()) {
@@ -930,9 +947,9 @@ namespace Plugin {
         return result;
     }
 
-    uint32_t Controller::Suspend(const string& callsign)
+    Core::hresult Controller::Suspend(const string& callsign)
     {
-        uint32_t result = Core::ERROR_NONE;
+        Core::hresult result = Core::ERROR_NONE;
         ASSERT(_pluginServer != nullptr);
 
         if (callsign != Callsign()) {
@@ -961,9 +978,9 @@ namespace Plugin {
         return result;
     }
 
-    uint32_t Controller::Resume(const string& callsign)
+    Core::hresult Controller::Resume(const string& callsign)
     {
-        uint32_t result = Core::ERROR_NONE;
+        Core::hresult result = Core::ERROR_NONE;
         ASSERT(_pluginServer != nullptr);
 
         if (callsign != Callsign()) {
@@ -992,27 +1009,26 @@ namespace Plugin {
         return result;
     }
 
-
-    uint32_t Controller::Clone(const string& callsign, const string& newcallsign, string& response)
+    Core::hresult Controller::Clone(const string& callsign, const string& newcallsign, string& response)
     {
-        uint32_t result = Clone(callsign, newcallsign);
+        Core::hresult result = Clone(callsign, newcallsign);
         if (result == Core::ERROR_NONE) {
             response = newcallsign;
         }
         return result;
     }
 
-    uint32_t Controller::Harakiri()
+    Core::hresult Controller::Harakiri()
     {
         return (Reboot());
     }
 
-    uint32_t Controller::StoreConfig()
+    Core::hresult Controller::Storeconfig()
     {
         return Persist();
     }
 
-    uint32_t Controller::Proxies(string& response) const
+    Core::hresult Controller::Proxies(string& response) const
     {
         Core::JSON::ArrayType<PluginHost::MetaData::COMRPC> jsonResponse;
         Proxies(jsonResponse);
@@ -1020,7 +1036,7 @@ namespace Plugin {
         return(Core::ERROR_NONE);
     }
 
-    uint32_t Controller::StartDiscovery(const uint8_t& ttl)
+    Core::hresult Controller::StartDiscovery(const uint8_t& ttl)
     {
         if (_probe != nullptr) {
             _probe->Ping(ttl);
@@ -1029,9 +1045,9 @@ namespace Plugin {
         return Core::ERROR_NONE;
     }
 
-    uint32_t Controller::Status(const string& index, string& response) const
+    Core::hresult Controller::Status(const string& index, string& response) const
     {
-        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
 
         Core::JSON::ArrayType<PluginHost::MetaData::Service> jsonResponse;
         Core::ProxyType<PluginHost::IShell> service;
@@ -1061,10 +1077,10 @@ namespace Plugin {
         return result;
     }
 
-    uint32_t Controller::CallStack(const string& index, string& callstack) const
+    Core::hresult Controller::CallStack(const string& index, string& callstack) const
     {
         Core::JSON::ArrayType<CallstackData> jsonResponse;
-        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
 
         if (index.empty() == true) {
             uint8_t indexValue = Core::NumberType<uint8_t>(Core::TextFragment(index)).Value();
@@ -1078,7 +1094,7 @@ namespace Plugin {
         return result;
     }
 
-    uint32_t Controller::Links(string& response) const
+    Core::hresult Controller::Links(string& response) const
     {
         Core::JSON::ArrayType<PluginHost::MetaData::Channel> jsonResponse;
         ASSERT(_pluginServer != nullptr);
@@ -1090,7 +1106,7 @@ namespace Plugin {
         return Core::ERROR_NONE;
     }
 
-    uint32_t Controller::ProcessInfo(string& response) const
+    Core::hresult Controller::ProcessInfo(string& response) const
     {
         PluginHost::MetaData::Server jsonResponse;
         WorkerPoolMetaData(jsonResponse);
@@ -1099,7 +1115,7 @@ namespace Plugin {
         return Core::ERROR_NONE;
     }
 
-    uint32_t Controller::Subsystems(string& response) const
+    Core::hresult Controller::Subsystems(string& response) const
     {
         Core::JSON::ArrayType<SubsystemsData> jsonResponse;
 ASSERT(_service != nullptr);
@@ -1122,7 +1138,7 @@ ASSERT(_service != nullptr);
 
         return Core::ERROR_NONE;
     }
-    uint32_t Controller::DiscoveryResults(string& response) const
+    Core::hresult Controller::DiscoveryResults(string& response) const
     {
         Core::JSON::ArrayType<PluginHost::MetaData::Bridge> jsonResponse;
         if (_probe != nullptr) {
@@ -1138,7 +1154,7 @@ ASSERT(_service != nullptr);
         return Core::ERROR_NONE;
     }
 
-    uint32_t Controller::Version(string& response) const
+    Core::hresult Controller::Version(string& response) const
     {
         PluginHost::MetaData::Version jsonResponse;
         _pluginServer->Metadata(jsonResponse);
@@ -1147,33 +1163,16 @@ ASSERT(_service != nullptr);
         return Core::ERROR_NONE;
     }
 
-#if 0
-    uint32_t Controller::Environment(const string& index, string& environment) const
-    {
-        uint32_t result = Core::ERROR_NONE;
-        return result;
-    }
-    uint32_t Controller::Configuration(const string& callsign, string& configuration) const
-    {
-        uint32_t result = Core::ERROR_NONE;
-        return result;
-    }
-    uint32_t Controller::Configuration(const string& callsign, const string& configuration)
-    {
-        uint32_t result = Core::ERROR_NONE;
-        return result;
-    }
-#endif
     void Controller::StateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason)
     {
-        Exchange::JControllerExt::Event::StateChange(*this, callsign, state, reason);
+        Exchange::IController::JLifeTime::Event::StateChange(*this, callsign, state, reason);
     }
 
     void Controller::NotifyStateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason)
     {
         _adminLock.Lock();
 
-        std::list<Exchange::IControllerExt::INotification*>::const_iterator index = _observers.begin();
+        std::list<Exchange::IController::ILifeTime::INotification*>::const_iterator index = _observers.begin();
 
         while(index != _observers.end()) {
             (*index)->StateChange(callsign, state, reason);
