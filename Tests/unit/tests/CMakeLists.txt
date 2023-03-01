@@ -32,4 +32,8 @@ target_link_libraries(${TEST_RUNNER_NAME}
     WPEFrameworkCOM
 )
 
+install(
+    TARGETS ${TEST_RUNNER_NAME}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+
 add_test(${TEST_RUNNER_NAME} ${TEST_RUNNER_NAME})
