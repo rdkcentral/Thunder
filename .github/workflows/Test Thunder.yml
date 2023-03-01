@@ -75,7 +75,10 @@ jobs:
         WPEFramework_test_core
         
     - name: Run test iptestmanager
-      run: WPEFramework_test_tests
+      run: >
+        PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:${PATH}
+        LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:${LD_LIBRARY_PATH}
+        WPEFramework_test_tests
         
     - name: Tar files
       run: tar -czvf ${{matrix.build_type}}.tar.gz ${{matrix.build_type}}
