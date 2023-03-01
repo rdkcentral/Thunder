@@ -659,7 +659,7 @@ namespace PluginHost
 
     }
 
-    Core::hresult Server::Service::Hibernate(const uint32_t timeout VARIABLE_IS_NOT_USED) /* override */ {
+    Core::hresult Server::Service::Hibernate(const uint32_t timeout) /* override */ {
         Core::hresult result = Core::ERROR_NONE;
 
         Lock();
@@ -681,7 +681,7 @@ namespace PluginHost
             }
             else {
                 #ifdef HIBERNATE_SUPPORT_ENABLED
-                result = HibernateProcess(timeout, local->ParentPID(), _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+                result = HibernateProcess(timeout, local->ParentPID(), _T(""), _T(""), &_hibernateStorage);
                 #else
                 result = Core::ERROR_NONE;
                 #endif
@@ -698,7 +698,7 @@ namespace PluginHost
 
     }
 
-    uint32_t Server::Service::Wakeup(const uint32_t timeout VARIABLE_IS_NOT_USED) {
+    uint32_t Server::Service::Wakeup(const uint32_t timeout) {
         Core::hresult result = Core::ERROR_NONE;
 
         Lock();
@@ -719,7 +719,7 @@ namespace PluginHost
             }
             else {
                 #ifdef HIBERNATE_SUPPORT_ENABLED
-                result = WakeupProcess(timeout, local->ParentPID(), _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+                result = WakeupProcess(timeout, local->ParentPID(), _T(""), _T(""), &_hibernateStorage);
                 #else
                 result = Core::ERROR_NONE;
                 #endif
@@ -761,8 +761,8 @@ namespace PluginHost
     uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<Service>& service, bool& serviceCall)
     {
         uint32_t result = Core::ERROR_BAD_REQUEST;
-        const string& serviceHeader(Configuration().WebPrefix());
-        const string& JSONRPCHeader(Configuration().JSONRPCPrefix());
+        const string& serviceHeader(_webbridgeConfig.WebPrefix());
+        const string& JSONRPCHeader(_webbridgeConfig.JSONRPCPrefix());
 
         // Check the header (prefix part)
         if (identifier.compare(0, serviceHeader.length(), serviceHeader.c_str()) == 0) {
@@ -846,7 +846,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         : _dispatcher(configuration.StackSize())
         , _connections(*this, configuration.Binder(), configuration.IdleTime())
         , _config(configuration)
-        , _services(*this)
+        , _services(*this, _config)
         , _controller()
         , _factoriesImplementation()
     {
