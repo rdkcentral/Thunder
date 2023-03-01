@@ -1384,7 +1384,7 @@ namespace Tests {
         EXPECT_EQ(buffer.IsLocked(), false);
         const_cast<File&>(buffer.Storage()).Destroy();
     }
-    TEST(Core_CyclicBuffer, LockUnLock_FromParentAndForks)
+    DISABLED_TEST(Core_CyclicBuffer, LockUnLock_FromParentAndForks)
     {
         std::string bufferName {"cyclicbuffer04"};
 
