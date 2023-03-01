@@ -695,6 +695,11 @@ namespace RPC {
 
                 return result;
             }
+
+            Core::instance_id ParentPID() const override {
+                return (static_cast<Core::instance_id>(_container->Pid()));
+            }
+
             void PostMortem() override;
 
         private:
