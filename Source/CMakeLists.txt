@@ -106,3 +106,5 @@ endif()
 if(EXECUTABLE)
     add_subdirectory(WPEFramework)
 endif()
+
+add_subdirectory(extensions)
