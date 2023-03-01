@@ -70,11 +70,16 @@ jobs:
         -DBUILD_TESTS=ON
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
     
-    - name: Run tests
+    - name: Run unit tests
       run: >
         PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:${PATH}
         LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:${LD_LIBRARY_PATH}
         WPEFramework_test_core
+        
+    - name: Run test iptestmanager
+      run: >
+        PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:${PATH}
+        LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:${LD_LIBRARY_PATH}
         WPEFramework_test_tests
         
     - name: Tar files
