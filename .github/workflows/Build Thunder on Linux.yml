@@ -67,15 +67,18 @@ jobs:
         -DPROXYSTUB_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/proxystubs" \
         -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
         -DVOLATILE_PATH="tmp" \
-        -DBUILD_TESTS=ON
+        -DBUILD_TESTS=ON \
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
     
-    - name: Run unit tests
+    - name: Run unit tests - core
       run: >
         PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:${PATH}
         LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:${LD_LIBRARY_PATH}
         WPEFramework_test_core
-    
+        
+    - name: Run unit test - iptestmanager
+      run: WPEFramework_test_tests
+        
     - name: Tar files
       run: tar -czvf ${{matrix.build_type}}.tar.gz ${{matrix.build_type}}
     
