@@ -48,7 +48,7 @@ jobs:
           sudo apt-get update
           sudo apt install python3-pip
           pip install jsonref
-          sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev libgtest-dev net-tools
+          sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev libgtest-dev
         
     - name: Install generators
       run: |
@@ -73,7 +73,10 @@ jobs:
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
     - name: Run unit tests
-      run: ${{env.path}} ${{env.lib}} WPEFramework_test_core
+      run: >
+        LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:$LD_LIBRARY_PATH
+        PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:$PATH
+        WPEFramework_test_core
         
     - name: Run test iptestmanager
       run: >
