@@ -17,8 +17,8 @@ jobs:
         build_type: [Debug, Release, MinSizeRel]
       
     env:
-      lib: LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib
-      path: PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin
+      lib: LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:$LD_LIBRARY_PATH
+      path: PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:$PATH
       
 # CHANGE TO RDKCENTRAL
 # CHANGE TO MASTER
