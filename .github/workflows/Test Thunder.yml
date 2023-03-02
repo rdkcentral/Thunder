@@ -72,8 +72,10 @@ jobs:
       run: |
         export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${{github.workspace}}/${{matrix.build_type}}/install/usr/lib"
         export PATH="$PATH:${{github.workspace}}/${{matrix.build_type}}/install/usr/bin"
-        echo LD_LIBRARY_PATH
-        echo PATH
+        echo $LD_LIBRARY_PATH
+        printenv LD_LIBRARY_PATH
+        echo $PATH
+        printenv PATH
 
     - name: Run unit tests
       run: WPEFramework_test_core 
