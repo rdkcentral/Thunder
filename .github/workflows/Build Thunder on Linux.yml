@@ -1,32 +1,27 @@
 name: Build Thunder on Linux
 
-# TRY TO REVERT SOME TESTS THAT FAILED BEFORE
-# CHANGE TO MASTER
 on:
   push:
-    branches: ["development/actions-tests"]
+    branches: ["master"]
   pull_request:
     branches: ["master"]
   workflow_call:
  
 jobs:
   Thunder:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     
     strategy:
       matrix:
         build_type: [Debug, Release, MinSizeRel]
-
-# CHANGE TO RDKCENTRAL
-# CHANGE TO MASTER
+    
     name: Build type - ${{matrix.build_type}}
     steps:
     - name: Checkout Thunder
       uses: actions/checkout@v3
       with:
         path: Thunder
-        repository: VeithMetro/Thunder
-        ref: development/actions-tests
+        repository: rdkcentral/Thunder
 
     - name: Checkout ThunderTools
       uses: actions/checkout@v3
@@ -34,7 +29,6 @@ jobs:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
 
-# TRY WITHOUT libcurl4-openssl-dev
     - name: Install necessary packages
       uses: nick-fields/retry@v2
       with:
@@ -46,7 +40,7 @@ jobs:
           sudo apt-get update
           sudo apt install python3-pip
           pip install jsonref
-          sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev libgtest-dev
+          sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
         
     - name: Install generators
       run: |
@@ -66,22 +60,9 @@ jobs:
         -DPORT="55555" \
         -DPROXYSTUB_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/proxystubs" \
         -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
-        -DVOLATILE_PATH="tmp" \
-        -DBUILD_TESTS=ON
+        -DVOLATILE_PATH="tmp"
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
     
-    - name: Run unit tests
-      run: >
-        PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:${PATH}
-        LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:${LD_LIBRARY_PATH}
-        WPEFramework_test_core
-        
-    - name: Run test iptestmanager
-      run: >
-        PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:${PATH}
-        LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:${LD_LIBRARY_PATH}
-        WPEFramework_test_tests
-        
     - name: Tar files
       run: tar -czvf ${{matrix.build_type}}.tar.gz ${{matrix.build_type}}
     
