@@ -54,7 +54,7 @@ class SingletonTypeThree {
         }
 };
 
-TEST(DISABLED_test_singleton, simple_singleton)
+TEST(test_singleton, simple_singleton)
 {
     static SingletonTypeOne& object1 = SingletonType<SingletonTypeOne>::Instance();
     static SingletonTypeOne& object_sample = SingletonType<SingletonTypeOne>::Instance();
