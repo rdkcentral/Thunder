@@ -8,6 +8,10 @@ on:
     branches: ["master"]
   workflow_call:
  
+env:
+  lib: LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib
+  path: PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin
+ 
 jobs:
   Thunder:
     runs-on: ubuntu-20.04
@@ -68,20 +72,13 @@ jobs:
         -DBUILD_TESTS=ON
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
-    - name: Add to env vars
-      run: |
-        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${{github.workspace}}/${{matrix.build_type}}/install/usr/lib"
-        export PATH="$PATH:${{github.workspace}}/${{matrix.build_type}}/install/usr/bin"
-        echo $LD_LIBRARY_PATH
-        printenv LD_LIBRARY_PATH
-        echo $PATH
-        printenv PATH
-
     - name: Run unit tests
-      run: WPEFramework_test_core 
+      run: |
+        "%lib%"; "%path%"; WPEFramework_test_core 
         
     - name: Run test iptestmanager
-      run: WPEFramework_test_tests
+      run: |
+        "%lib%"; "%path%"; WPEFramework_test_tests
         
     - name: Tar files
       run: tar -czvf ${{matrix.build_type}}.tar.gz ${{matrix.build_type}}
