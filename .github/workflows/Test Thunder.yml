@@ -74,11 +74,11 @@ jobs:
 
     - name: Run unit tests
       run: |
-        set -m; "%lib%"; "%path%"; WPEFramework_test_core 
+        set -m; ${{env.lib}}; ${{env.path}}; WPEFramework_test_core
         
     - name: Run test iptestmanager
       run: |
-        set -m; "%lib%"; "%path%"; WPEFramework_test_tests
+        set -m; ${{env.lib}}; ${{env.path}}; WPEFramework_test_tests
         
     - name: Tar files
       run: tar -czvf ${{matrix.build_type}}.tar.gz ${{matrix.build_type}}
