@@ -65,7 +65,7 @@ private:
     volatile bool _done;
 };
 
-TEST(DISABLED_test_criticalsection, simple_criticalsection)
+TEST(test_criticalsection, simple_criticalsection)
 {
     Core::CriticalSection lock;
     std::thread::id parentId;
@@ -79,7 +79,7 @@ TEST(DISABLED_test_criticalsection, simple_criticalsection)
     EXPECT_EQ(g_shared,2);
 }
 
-TEST(DISABLED_test_binairysemaphore, simple_binairysemaphore_timeout)
+TEST(test_binairysemaphore, simple_binairysemaphore_timeout)
 {
     BinairySemaphore bsem(true);
     uint64_t timeOut(Core::Time::Now().Add(3).Ticks());
@@ -92,7 +92,7 @@ TEST(DISABLED_test_binairysemaphore, simple_binairysemaphore_timeout)
     EXPECT_EQ(g_shared,3);
 }
 
-TEST(DISABLED_test_binairysemaphore, simple_binairysemaphore)
+TEST(test_binairysemaphore, simple_binairysemaphore)
 {
     BinairySemaphore bsem(1,5);
     bsem.Lock();
@@ -101,7 +101,7 @@ TEST(DISABLED_test_binairysemaphore, simple_binairysemaphore)
     EXPECT_EQ(g_shared,4);
 }
 
-TEST(DISABLED_test_countingsemaphore, simple_countingsemaphore_timeout)
+TEST(test_countingsemaphore, simple_countingsemaphore_timeout)
 {
     CountingSemaphore csem(1,5);
     uint64_t timeOut(Core::Time::Now().Add(3).Ticks());
@@ -127,7 +127,7 @@ TEST(DISABLED_test_countingsemaphore, simple_countingsemaphore_timeout)
     EXPECT_EQ(g_shared,6);
 }
 
-TEST(DISABLED_test_countingsemaphore, simple_countingsemaphore)
+TEST(test_countingsemaphore, simple_countingsemaphore)
 {
     CountingSemaphore csem(1,5);
     csem.Lock();
