@@ -592,7 +592,7 @@ namespace WPEFramework {
 #ifdef __WINDOWS__
                         shutdown(m_Socket, SD_SEND);
 #else
-                        shutdown(m_Socket, SHUT_RD);
+                        shutdown(m_Socket, SHUT_RDWR);
 #endif
                     }
 

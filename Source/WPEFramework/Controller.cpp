@@ -770,13 +770,15 @@ namespace Plugin {
 
         if (callsign.empty() || (callsign == PluginHost::JSONRPC::Callsign())) {
             result = PluginHost::JSONRPC::Invoke(channelId, id, token, method, parameters, response);
-		} else {
+        } 
+	else {
             Core::ProxyType<PluginHost::IShell> service;
-
+	    
             result = _pluginServer->Services().FromIdentifier(callsign, service);
 
             if (result == Core::ERROR_NONE) {
-                PluginHost::IShell::state currrentState = service->State();
+      	        ASSERT(service.IsValid());
+                PluginHost::IShell::state currrentState         = service->State();
                 if (currrentState != PluginHost::IShell::state::ACTIVATED)
                 {
                     result = (currrentState == PluginHost::IShell::state::HIBERNATED ? Core::ERROR_HIBERNATED : Core::ERROR_ILLEGAL_STATE);
