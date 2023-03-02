@@ -69,10 +69,9 @@ jobs:
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
     - name: Add to env vars
-      shell: bash
       run: |
-        echo "{LD_LIBRARY_PATH}={%LD_LIBRARY_PATH%;${{github.workspace}}/${{matrix.build_type}}/install/usr/lib}" >> $GITHUB_ENV
-        echo "{PATH}={%PATH%;${{github.workspace}}/${{matrix.build_type}}/install/usr/bin}" >> $GITHUB_ENV
+        LD_LIBRARY_PATH=$LD_LIBRARY_PATH%:${{github.workspace}}/${{matrix.build_type}}/install/usr/lib
+        PATH=$PATH:${{github.workspace}}/${{matrix.build_type}}/install/usr/bin
 
     - name: Run unit tests
       run: WPEFramework_test_core 
