@@ -70,8 +70,8 @@ jobs:
 
     - name: Add to env vars
       run: |
-        LD_LIBRARY_PATH=$LD_LIBRARY_PATH%:${{github.workspace}}/${{matrix.build_type}}/install/usr/lib
-        PATH=$PATH:${{github.workspace}}/${{matrix.build_type}}/install/usr/bin
+        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH%:${{github.workspace}}/${{matrix.build_type}}/install/usr/lib
+        export PATH=$PATH:${{github.workspace}}/${{matrix.build_type}}/install/usr/bin
 
     - name: Run unit tests
       run: WPEFramework_test_core 
