@@ -251,7 +251,7 @@ namespace Tests {
     }
 
     //doorbell (socket) is not quite working inside test suite
-    TEST_F(Core_MessageDispatcher, DISABLED_ReaderShouldWaitUntillRingBells)
+    TEST_F(Core_MessageDispatcher, ReaderShouldWaitUntillRingBells)
     {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
             Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false, this->_basePath);
@@ -354,7 +354,7 @@ namespace Tests {
     }
 
     //socket problems inside test suite
-    TEST_F(Core_MessageDispatcher, DISABLED_WriteAndReadMetaDataAreEqualInDiffrentProcesses)
+    TEST_F(Core_MessageDispatcher, WriteAndReadMetaDataAreEqualInDiffrentProcesses)
     {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
             Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false, this->_basePath);
