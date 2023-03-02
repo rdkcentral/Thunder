@@ -564,7 +564,7 @@ namespace PluginHost
                 {
                     for (auto const& pidWithName : pidsWithName) {
                         SYSLOG(Logging::Notification, ("Hibernation of [%s]: process [%s, %u]",  Callsign().c_str(), pidWithName.first.c_str(), pidWithName.second));
-                        result = HibernateProcess(timeout, pidWithName.second, _T(""), _T(""), &_hibernateStorage);
+                        result = HibernateProcess(timeout, pidWithName.second, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
                         if (result != HIBERNATE_ERROR_NONE) {
                             break;
                         }
@@ -592,7 +592,7 @@ namespace PluginHost
                         if(pidsWithName.find(name) != pidsWithName.end())
                         {
                             SYSLOG(Logging::Notification, ("Hibernation of [%s]: process [%s, %u]",  Callsign().c_str(), name.c_str(), pidsWithName[name]));
-                            result = HibernateProcess(timeout, pidsWithName[name], _T(""), _T(""), &_hibernateStorage);
+                            result = HibernateProcess(timeout, pidsWithName[name], _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
                             if (result != HIBERNATE_ERROR_NONE) {
                                 break;
                             }
@@ -649,7 +649,7 @@ namespace PluginHost
                 {
                     for (auto const& pidWithName : pidsWithName) {
                         SYSLOG(Logging::Notification, ("Wakeup of [%s]: process [%s, %u]",  Callsign().c_str(), pidWithName.first.c_str(), pidWithName.second));
-                        result = WakeupProcess(timeout, pidWithName.second, _T(""), _T(""), &_hibernateStorage);
+                        result = WakeupProcess(timeout, pidWithName.second, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
                         if (result != HIBERNATE_ERROR_NONE) {
                             break;
                         }
@@ -668,7 +668,7 @@ namespace PluginHost
                         if(pidsWithName.find(name) != pidsWithName.end())
                         {
                             SYSLOG(Logging::Notification, ("Wakeup of [%s]: process [%s, %u]",  Callsign().c_str(), name.c_str(), pidsWithName[name]));
-                            result = WakeupProcess(timeout, pidsWithName[name], _T(""), _T(""), &_hibernateStorage);
+                            result = WakeupProcess(timeout, pidsWithName[name], _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
                             if (result != HIBERNATE_ERROR_NONE) {
                                 break;
                             }
