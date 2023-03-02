@@ -73,10 +73,7 @@ jobs:
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
     - name: Run unit tests
-      run: >
-        ${{env.path}}
-        ${{env.lib}}
-        WPEFramework_test_core
+      run: ${{env.path}} ${{env.lib}} WPEFramework_test_core
         
     - name: Run test iptestmanager
       run: >
