@@ -8,10 +8,6 @@ on:
     branches: ["master"]
   workflow_call:
  
-env:
-  lib: LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib
-  path: PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin
- 
 jobs:
   Thunder:
     runs-on: ubuntu-20.04
@@ -19,6 +15,10 @@ jobs:
     strategy:
       matrix:
         build_type: [Debug, Release, MinSizeRel]
+      
+    env:
+      lib: LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib
+      path: PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin
       
 # CHANGE TO RDKCENTRAL
 # CHANGE TO MASTER
