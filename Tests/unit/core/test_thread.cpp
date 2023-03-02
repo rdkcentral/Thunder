@@ -104,7 +104,7 @@ namespace Tests {
     std::condition_variable Job::_cv;
     ::ThreadId Job::_parentTPid = Core::Thread::ThreadId();
 
-    TEST(DISABLED_Core_Thread, SimpleThread)
+    TEST(Core_Thread, SimpleThread)
     {
         ::ThreadId parentTid = Core::Thread::ThreadId();
         volatile bool threadDone = false;
