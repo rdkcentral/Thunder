@@ -78,6 +78,9 @@ jobs:
         
     - name: Run test iptestmanager
       run: ${{env.path}} ${{env.lib}} WPEFramework_test_tests
+      
+    - name: Run WorkerPoolTest
+      run: ${{env.path}} ${{env.lib}} WorkerPoolTest
         
     - name: Tar files
       run: tar -czvf ${{matrix.build_type}}.tar.gz ${{matrix.build_type}}
