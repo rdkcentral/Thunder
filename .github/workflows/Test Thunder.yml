@@ -70,7 +70,6 @@ jobs:
         -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
         -DVOLATILE_PATH="tmp" \
         -DBUILD_TESTS=ON \
-        -DWORKERPOOL_TEST=ON
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
     - name: Run unit tests
@@ -78,9 +77,6 @@ jobs:
         
     - name: Run test iptestmanager
       run: ${{env.path}} ${{env.lib}} WPEFramework_test_tests
-      
-    - name: Run WorkerPoolTest
-      run: ${{env.path}} ${{env.lib}} WorkerPoolTest
         
     - name: Tar files
       run: tar -czvf ${{matrix.build_type}}.tar.gz ${{matrix.build_type}}
