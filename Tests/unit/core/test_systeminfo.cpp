@@ -385,7 +385,7 @@ TEST(Core_SystemInfo, GetEnvironment_SetUsing_SetEnvironment_WithValueTypeAsTCha
 #endif
 }
 #ifdef __POSIX__
-TEST(Core_SystemInfo, DISABLED_HostName)
+TEST(Core_SystemInfo, HostName)
 {
     std::string cmd = "hostname";
     string hostname = ExecuteCmd(cmd.c_str(), Purpose::HOST, Function::NONE).c_str();
