@@ -70,7 +70,7 @@ jobs:
         -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
         -DVOLATILE_PATH="tmp" \
         -DBUILD_TESTS=ON \
-        -DWORKERPOOL_TEST
+        -DWORKERPOOL_TEST=ON
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
     - name: Run unit tests
