@@ -1,9 +1,8 @@
 name: Test Thunder
 
-# CHANGE TO MASTER
 on:
   push:
-    branches: ["development/actions-tests"]
+    branches: ["master"]
   pull_request:
     branches: ["master"]
  
@@ -19,16 +18,13 @@ jobs:
       lib: LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:$LD_LIBRARY_PATH
       path: PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:$PATH
 
-# CHANGE TO MASTER
-# CHANGE TO RDKCENTRAL
     name: Testing - ${{matrix.build_type}}
     steps:
     - name: Checkout Thunder
       uses: actions/checkout@v3
       with:
         path: Thunder
-        repository: VeithMetro/Thunder
-        ref: development/actions-tests
+        repository: rdkcentral/Thunder
 
     - name: Checkout ThunderTools
       uses: actions/checkout@v3
