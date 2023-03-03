@@ -1491,7 +1491,6 @@ namespace Tests {
         Singleton::Dispose();
     }
 //TODO: revisit these test cases after fixing the issues with cyclicbuffer lock/unlock sequence
-#if 0
     TEST(Core_CyclicBuffer, LockUnlock_FromParentAndForks_WithDataPresent)
     {
         std::string bufferName {"cyclicbuffer05"};
