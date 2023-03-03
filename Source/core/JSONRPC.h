@@ -196,99 +196,67 @@ namespace Core {
                 }
                 return (designator.substr(pos == string::npos ? 0 : pos + 1));
             }
-            static uint8_t TryGetVersion(const string& designator, string::size_type pos) {
-                // note: invalid version string will not be detected (> 254) as it is abuse, digits part of a methodname/callsign
-                // bigger will (but not to detect them as names consisting of only digits, see what is not allowed above)
-                uint8_t result = 0;
-                uint8_t multiplier = 1; // probably cheaper then using pow(10, (startpos-pos))
-
-                while ((isdigit(designator[pos]))) {
-                    result += ((designator[pos] - '0') * multiplier);
-                    if (pos-- == 0) {
-                        pos = string::npos;
-                        break;
-                    }
-                    multiplier *= 10;
-                }
-
-                return ((pos == string::npos) || (designator[pos] == '.') ? result : ~0);
-            }
-            static uint8_t Version(const string& designator, const bool fulldesignator = false)
+            static uint8_t Version(const string& designator)
             {
-                uint8_t result = ~0;
-                string::size_type pos = designator.find_last_of('@');
-                // optimization, no need to parse behind index. Biggest chance index would be a full number so parsing back to
-                // find out when hitting @ it is not the version would be useless
+                uint16_t base = 1;
+                uint16_t result = 0;
 
-                if ((pos == string::npos) && (fulldesignator == false)) { // when not found and no fulldesignator version can be at the end
-                    pos = designator.size();
-                    pos = ((pos > 1) && (designator[pos - 1] == '.') ? pos - 1 : pos); // this line caters for a possible '.' as last character,
-                                                                                    // can be removed probably
-                    if (pos-- > 2) { // smallest possible valid string would be "1.a" or "b.1" (a methodname, 1 version, b callsign), -- to set pos
-                                     // at last char (note not --pos > 1  to cater for pos == 0)
-                        result = TryGetVersion(designator, pos);
-                        // if no match at the end of the designator, then only one possibilty remains it is before the '.' before the current
-                        // position, will be picked up below
-                    }
+                // Optimization, no need to parse behind index, all behind the @ is index, before is the method!
+                size_t length = designator.find_last_of('@');
+
+                // Whether we found the indexer or not, looking from the back (or @) for the first dot we find is 
+                // the beginning of the method marker. Before that dot *must* be the version (if applicable).
+                length = designator.find_last_of('.', length);
+
+                // If we did not find a dot, in the previous run, the length available for the version == 0.
+                length = (length == string::npos ? 0 : length);
+
+                // Now by definition we dropped off the method name. We got a "clean" designator without the method
+                // name (before length) and the last character can be found @length. So time to check version..
+                while ((length > 0) && (isdigit(designator[--length])) && (base <= 100)) {
+                    result += ((designator[length] - '0') * base);
+                    base *= 10;
                 }
 
-                if ((fulldesignator == true) || ((pos != string::npos) && (pos > 1) && (result == static_cast<uint8_t>(~0))))
-                {
-                    // 1) we have an index then we must also have a full designator. Then version (if avaialble) must be before the previous '.'
-                    //    and that is the only possible option, otherwise it is not there and we found the callsign
-                    // 2) we could not find the version at the end of the designator, search before the . before that
-                    pos = designator.find_last_of('.', pos); // if pos == npos (could be in case of fulldesignator) then will search from the end as it should
-                    if ((pos != string::npos) && (pos > 0)) {
-                        result = TryGetVersion(designator, --pos);
-                    }
-                }
-
-                return result;
+                // Now do the math, check if the version we calculated is valid..
+                return ( (base > 1) && (result < 0xFF) && ((length == 0) || (designator[length] == '.')) ? static_cast<uint8_t>(result) : ~0);
             }
-            static string TryGetVersionAsString(const string& designator, string::size_type pos) {
-                string result;
-
-                while ((isdigit(designator[pos]))) {
-                    result.insert(0, 1, designator[pos]);
-                    if (pos-- == 0) {
-                        pos = string::npos;
-                        break;
-                    }
-                }
-
-                return result;
-            }
-            static string VersionAsString(const string& designator, const bool fulldesignator = false)
+            static string VersionAsString(const string& designator)
             {
-                string result;
-                string::size_type pos = designator.find_last_of('@');
-                // optimization, no need to parse behind index. Biggest chance index would be a full number so parsing back to
-                // find out when hitting @ it is not the version would be useless
+                string textResult;
+                uint8_t count = 0;
+                uint16_t base = 1;
+                uint16_t result = 0;
 
-                if ((pos == string::npos) && (fulldesignator == false)) { // when not found and no fulldesignator version can be at the end
-                    pos = designator.size();
-                    pos = ((pos > 1) && (designator[pos - 1] == '.') ? pos - 1 : pos); // this line caters for a possible '.' as last character,
-                    // can be removed probably
-                    if (pos-- > 2) { // smallest possible valid string would be "1.a" or "b.1" (a methodname, 1 version, b callsign), -- to set pos
-                        // at last char (note not --pos > 1  to cater for pos == 0)
-                        result = TryGetVersion(designator, pos);
-                        // if no match at the end of the designator, then only one possibilty remains it is before the '.' before the current
-                        // position, will be picked up below
+                // Optimization, no need to parse behind index, all behind the @ is index, before is the method!
+                size_t length = designator.find_last_of('@');
+
+                // Whether we found the indexer or not, looking from the back (or @) for the first dot we find is 
+                // the beginning of the method marker. Before that dot *must* be the version (if applicable).
+                length = designator.find_last_of('.', length);
+
+                // If we did not find a dot, in the previous run, the length available for the version == 0.
+                length = (length == string::npos ? 0 : length);
+
+                // Now by definition we dropped off the method name. We got a "clean" designator without the method
+                // name (before length) and the last character can be found @length. So time to check version..
+                while ((length > 0) && (isdigit(designator[--length])) && (base <= 100)) {
+                    result += ((designator[length] - '0') * base);
+                    base *= 10;
+                    count++;
+                }
+
+                // Now do the math, check if the version we calculated is valid..
+                if ((base > 1) && (result < 0xFF)) {
+                    if (length == 0) {
+                        textResult = designator.substr(0, count);
+                    }
+                    else if (designator[length] == '.') {
+                        textResult = designator.substr(length + 1, count);
                     }
                 }
 
-                if ((fulldesignator == true) || ((pos != string::npos) && (pos > 1) && (result.empty() == true)))
-                {
-                    // 1) we have an index then we must also have a full designator. Then version (if avaialble) must be before the previous '.'
-                    //    and that is the only possible option, otherwise it is not there and we found the callsign
-                    // 2) we could not find the version at the end of the designator, search before the . before that
-                    pos = designator.find_last_of('.', pos); // if pos == npos (could be in case of fulldesignator) then will search from the end as it should
-                    if ((pos != string::npos) && (pos > 0)) {
-                        result = TryGetVersion(designator, --pos);
-                    }
-                }
-
-                return result;
+                return (textResult);
             }
             static string Index(const string& designator)
             {
