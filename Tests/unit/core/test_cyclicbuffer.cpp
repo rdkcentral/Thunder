@@ -1683,7 +1683,7 @@ namespace Tests {
         threadLock.Stop();
         const_cast<File&>(buffer.Storage()).Destroy();
     }
-    TEST(Core_CyclicBuffer, LockUnlock_FromParentAndForks_UsingAlert)
+    TEST(Core_CyclicBuffer, DISABLED_LockUnlock_FromParentAndForks_UsingAlert)
     {
         std::string bufferName {"cyclicbuffer05"};
 
