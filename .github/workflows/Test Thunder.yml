@@ -21,7 +21,7 @@ jobs:
 
 # CHANGE TO MASTER
 # CHANGE TO RDKCENTRAL
-    name: Build type - ${{matrix.build_type}}
+    name: Testing - ${{matrix.build_type}}
     steps:
     - name: Checkout Thunder
       uses: actions/checkout@v3
