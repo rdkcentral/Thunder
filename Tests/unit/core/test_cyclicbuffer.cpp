@@ -1780,7 +1780,6 @@ namespace Tests {
         }
         Singleton::Dispose();
     }
-#endif
 } // Tests
 } // Core
 } // WPEFramework
