@@ -2088,7 +2088,6 @@ TEST(Core_Time, OperatorOverloadingSubtractionWithAssignment)
     (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
     tzset();
 }
-#if 0
 TEST(Core_Time, TimeHandle)
 {
     Time time(2021,1, 1, 12, 00, 00, 333, true);
@@ -2115,4 +2114,3 @@ TEST(Core_Time, TimeHandle)
     EXPECT_EQ(static_cast<uint32_t>(time.TMHandle().tm_min), 0u);
     EXPECT_EQ(static_cast<uint32_t>(time.TMHandle().tm_sec), 0u);
 }
-#endif
