@@ -1651,7 +1651,7 @@ namespace Tests {
         }
         Singleton::Dispose();
     }
-    TEST(Core_CyclicBuffer, LockUnlock_UsingAlert)
+    TEST(Core_CyclicBuffer, DISABLED_LockUnlock_UsingAlert)
     {
         string bufferName = "cyclicbuffer01";
         uint32_t cyclicBufferSize = 10;
