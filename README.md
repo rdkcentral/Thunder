@@ -21,68 +21,99 @@ pip install jsonref
 
 -------------------------------------------------------------------------------------------
 ## Linux (Desktop) Build
----
+These instructions should work on Raspberry PI or any Linux distribution.
 
-These instructions should work on Raspberry PI or any Linux distro. 
+Note: All our projects can be customized with additional cmake options ```-D```. To obtain a list of possible project-specific options, add ```-L``` to the ```cmake``` commands below.
 
-Note: All our projects can be custom configured with extra cmake (```-D```) options. To get a list of the posible project specific options add ```-L``` to the ```cmake``` commands below. 
-
+-------------------------------------------------------------------------------------------
 ### **Build and install**
----
-#### **1. Setup a workspace**
-   
-```shell
-export THUNDER_ROOT=${HOME}/thunder
-export THUNDER_INSTALL_DIR=${THUNDER_ROOT}/install
-mkdir -p ${THUNDER_INSTALL_DIR}
-cd ${THUNDER_ROOT}
+
+#### **1. Install necessary packages**
+```Shell
+sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
 ```
 
-#### **2. Thunder**
-1. Get Source
+-------------------------------------------------------------------------------------------
+#### **2. Build ThunderTools**
+First, create a new folder called ```ThunderTools```, and then clone ThunderTools repo into it:
 
-      ```shell
-      git clone https://github.com/rdkcentral/Thunder.git
-      ```
-
-2. Build and install tools
-
-      Note: Thunder tools need to be installed before building Thunder
-
-      ```shell
-      cmake -HThunder/Tools -Bbuild/ThunderTools \
-            -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}/usr \
-            -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/tools/cmake \
-            -DGENERIC_CMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/tools/cmake 
-
-      make -C build/ThunderTools && make -C build/ThunderTools install
-      ```
-
-3. Build and install Thunder
-
-      Note: -DBUILD_TYPE options are: ```Production/Release/ReleaseSymbols/DebugOptimized/Debug```
-
-      ```shell
-      cmake -HThunder -Bbuild/Thunder \
-            -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}/usr \
-            -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/tools/cmake \
-            -DBUILD_TYPE=Debug -DBINDING=127.0.0.1 -DPORT=55555
-
-      make -C build/Thunder && make -C build/Thunder install
-      ```
-
-#### **3. Thunder Interfaces**
-   
-```shell
-git clone https://github.com/rdkcentral/ThunderInterfaces
-
-cmake -HThunderInterfaces -Bbuild/ThunderInterfaces \
-      -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}/usr \
-      -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/tools/cmake \
-
-make -C build/ThunderInterfaces && make -C build/ThunderInterfaces install
+```Shell
+mkdir ThunderTools
+cd ThunderTools
+git clone https://github.com/rdkcentral/ThunderTools.git
+cd ..
 ```
 
+Next, we just need to run the following commands to build and then install the generators inside ThunderTools:
+
+Note: The cmake commands can contain many options, so it is convenient to format them into separate lines with ```\```.
+
+```Shell
+cmake -G Ninja -S ThunderTools -B build/ThunderTools \
+-DCMAKE_INSTALL_PREFIX="install/usr"
+```
+
+```Shell
+cmake --build build/ThunderTools --target install
+```
+
+-------------------------------------------------------------------------------------------
+#### **3. Build Thunder**
+Create a new folder called ```Thunder```, and then clone the Thunder repo into it:
+
+```Shell
+mkdir Thunder
+cd Thunder
+git clone https://github.com/rdkcentral/Thunder.git
+cd ..
+```
+
+Run the following commands to build and then install Thunder:
+
+Note: The available ```-DBUILD_TYPE``` options are: ```[Debug, Release, MinSizeRel]```.
+
+```Shell
+cmake -G Ninja -S Thunder -B build/Thunder \
+-DBINDING="127.0.0.1" \
+-DCMAKE_BUILD_TYPE="Debug" \
+-DCMAKE_INSTALL_PREFIX="install/usr" \
+-DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules" \
+-DDATA_PATH="${PWD}/install/usr/share/WPEFramework" \
+-DPERSISTENT_PATH="${PWD}/install/var/wpeframework" \
+-DPORT="55555" \
+-DPROXYSTUB_PATH="${PWD}/install/usr/lib/wpeframework/proxystubs" \
+-DSYSTEM_PATH="${PWD}/install/usr/lib/wpeframework/plugins" \
+-DVOLATILE_PATH="tmp"
+```
+
+```Shell
+cmake --build build/Thunder --target install
+```
+
+-------------------------------------------------------------------------------------------
+#### **4. Build ThunderInterfaces**
+Create a new folder called ```ThunderInterfaces```, and then clone the ThunderInterfaces repo into it:
+
+```Shell
+mkdir ThunderInterfaces
+cd ThunderInterfaces
+git clone https://github.com/rdkcentral/ThunderInterfaces.git
+cd ..
+```
+
+Run the following commands to build and then install ThunderInterfaces:
+
+```Shell
+cmake -G Ninja -S ThunderInterfaces -B build/ThunderInterfaces \
+-DCMAKE_INSTALL_PREFIX="install/usr" \
+-DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules"
+```
+
+```Shell
+cmake --build build/ThunderInterfaces --target install
+```
+
+-------------------------------------------------------------------------------------------
 #### **4. Thunder Client Libraries**
    
 ```shell
