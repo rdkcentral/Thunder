@@ -48,9 +48,7 @@ typedef struct {
     ServerResponseCode respCode;
 } __attribute__((packed)) ServerResponse;
 
-static const int MEMCR_SERVER_PORT = 12345;
-
-static bool SendRcvCmd(const ServerRequest* cmd, ServerResponse* resp, uint32_t timeoutMs)
+static bool SendRcvCmd(const ServerRequest* cmd, ServerResponse* resp, uint32_t timeoutMs, const char* serverIpAddr)
 {
     int cd;
     int ret;
@@ -63,9 +61,21 @@ static bool SendRcvCmd(const ServerRequest* cmd, ServerResponse* resp, uint32_t 
 		return false;
 	}
 
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	addr.sin_port = htons(MEMCR_SERVER_PORT);
+    char host[64] = {0};
+    strncpy(host, serverIpAddr, 64);
+    char *port = strstr(host, ":");
+    if(port == NULL)
+    {
+        LOGERR("Invalid Server Ip Address: %s", host);
+        return false;
+    }
+    //Add NULL delimer between host and port
+    *port = 0;
+    port++;    
+
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(host);
+    addr.sin_port = htons(atoi(port));
 
     struct timeval rcvTimeout;
     rcvTimeout.tv_sec = timeoutMs / 1000;
@@ -75,7 +85,7 @@ static bool SendRcvCmd(const ServerRequest* cmd, ServerResponse* resp, uint32_t 
 
     ret = connect(cd, (struct sockaddr*)&addr, sizeof(struct sockaddr_un));
     if (ret < 0) {
-        LOGERR("Socket connect failed: %d with %s", ret, MEMCR_SERVER_PORT);
+        LOGERR("Socket connect failed: %d with %s", ret, serverIpAddr);
         close(cd);
         return false;
     }
@@ -107,7 +117,7 @@ uint32_t HibernateProcess(const uint32_t timeout, const pid_t pid, const char da
     };
     ServerResponse resp;
 
-    if (SendRcvCmd(&req, &resp, timeout)) {
+    if (SendRcvCmd(&req, &resp, timeout, data_dir)) {
         LOGINFO("Hibernate process PID %d success", pid);
         return HIBERNATE_ERROR_NONE;
     } else {
@@ -124,7 +134,7 @@ uint32_t WakeupProcess(const uint32_t timeout, const pid_t pid, const char data_
     };
     ServerResponse resp;
 
-    if (SendRcvCmd(&req, &resp, timeout)) {
+    if (SendRcvCmd(&req, &resp, timeout, data_dir)) {
         LOGINFO("Wakeup process PID %d success", pid);
         return HIBERNATE_ERROR_NONE;
     } else {
