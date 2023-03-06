@@ -761,8 +761,8 @@ namespace PluginHost
     uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<Service>& service, bool& serviceCall)
     {
         uint32_t result = Core::ERROR_BAD_REQUEST;
-        const string& serviceHeader(_webbridgeConfig.WebPrefix());
-        const string& JSONRPCHeader(_webbridgeConfig.JSONRPCPrefix());
+        const string& serviceHeader(Configuration().WebPrefix());
+        const string& JSONRPCHeader(Configuration().JSONRPCPrefix());
 
         // Check the header (prefix part)
         if (identifier.compare(0, serviceHeader.length(), serviceHeader.c_str()) == 0) {
@@ -846,7 +846,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         : _dispatcher(configuration.StackSize())
         , _connections(*this, configuration.Binder(), configuration.IdleTime())
         , _config(configuration)
-        , _services(*this, _config)
+        , _services(*this)
         , _controller()
         , _factoriesImplementation()
     {

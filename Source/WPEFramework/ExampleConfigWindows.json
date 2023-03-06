@@ -1,6 +1,6 @@
 {
   "port": 25555,
-  "interface": "WiFi",
+  "binding": "127.0.0.1",
   "idletime": 60,
   "ipv6": false,
   "persistentpath": "D:/Domotica/artifacts/Persistent",
@@ -29,15 +29,15 @@
       "settings": [
         {
           "module": "ZWave",
-          "enabled": true
+          "enabled": false
         },
         {
           "module": "Plugin_ZigbeeControl",
-          "enabled": true
+          "enabled": false
         },
         {
           "module": "Plugin_Butler",
-          "enabled": true
+          "enabled": false
         },
         {
           "module": "Plugin_BridgeLink",
@@ -114,7 +114,7 @@
       "callsign": "Butler",
       "locator": "libButler.so",
       "classname": "Butler",
-      "autostart": false
+      "autostart": true
     },
     {
       "callsign": "ZigbeeControl",
@@ -291,9 +291,9 @@
       "callsign": "IOControl",
       "locator": "libIOControl.so",
       "classname": "IOControl",
-      "autostart": false,
+      "autostart": true,
       "configuration": {
-        "port": "\\\\.\\COM8",
+        "port": "\\\\.\\COM24",
         "pins": [
           {
             "id": 0,
@@ -338,9 +338,9 @@
       "callsign": "OneWireControl",
       "locator": "libOneWireControl.so",
       "classname": "OneWireControl",
-      "autostart": false,
+      "autostart": true,
       "configuration": {
-        "port": "\\\\.\\COM8",
+        "port": "\\\\.\\COM24",
         "devices": [
           {
             "address": "0x28-0414708B0EFF-FE",
@@ -354,9 +354,9 @@
       "callsign": "I2CControl",
       "locator": "libI2CControl.so",
       "classname": "I2CControl",
-      "autostart": false,
+      "autostart": true,
       "configuration": {
-        "port": "\\\\.\\COM20",
+        "port": "\\\\.\\COM24",
         "devices": [
           {
             "address": 35,
@@ -386,7 +386,7 @@
       "callsign": "JSONRPCPlugin",
       "locator": "libJSONRPCPlugin.so",
       "classname": "JSONRPCPlugin",
-      "autostart": false
+      "autostart": true
     },
     {
       "callsign": "OpenCDMi",
@@ -455,7 +455,7 @@
     },
     {
       "callsign": "TimeSync",
-      "locator": "libtimesync.so",
+      "locator": "1libtimesync.so",
       "classname": "TimeSync",
       "autostart": false,
       "configuration": {
@@ -539,7 +539,7 @@
       "callsign": "MessageControl",
       "locator": "libmessagecontrol.so",
       "classname": "MessageControl",
-      "autostart": false
+      "autostart": true
     },
     {
       "callsign": "TraceControl",
