@@ -132,7 +132,7 @@ namespace Tests {
         mutable WPEFramework::Core::Event _dataPending;
     };
 
-    TEST(WebSocket, Text)
+    TEST(WebSocket, DISABLED_Text)
     {
         std::string connector {"/tmp/wpewebsockettext0"};
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {

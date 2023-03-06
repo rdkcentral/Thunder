@@ -25,7 +25,7 @@
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
-TEST (DISABLED_test_file, file)
+TEST (test_file, file)
 {
     File file;
     File fileObj1("Sample.txt");

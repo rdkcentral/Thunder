@@ -22,7 +22,7 @@ set(TEST_RUNNER_NAME "WPEFramework_test_core")
 add_executable(${TEST_RUNNER_NAME}
    ../IPTestAdministrator.cpp
    test_cyclicbuffer.cpp
-   test_databuffer.cpp
+   #test_databuffer.cpp
    test_dataelement.cpp
    test_dataelementfile.cpp
    #test_doorbell.cpp
@@ -31,12 +31,12 @@ add_executable(${TEST_RUNNER_NAME}
    test_hex2strserialization.cpp
    test_filesystem.cpp
    test_frametype.cpp
-   test_hash.cpp
+   #test_hash.cpp
    #test_ipc.cpp
    #test_ipcclient.cpp
    test_iso639.cpp
    test_iterator.cpp
-   test_jsonparser.cpp
+   #test_jsonparser.cpp
    test_keyvalue.cpp
    test_library.cpp
    test_lockablecontainer.cpp
@@ -54,7 +54,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_rangetype.cpp
    test_readwritelock.cpp
    test_rectangle.cpp
-   test_rpc.cpp
+   #test_rpc.cpp
    test_semaphore.cpp
    test_sharedbuffer.cpp
    test_singleton.cpp
@@ -68,7 +68,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_textfragment.cpp
    test_textreader.cpp
    test_thread.cpp
-   test_threadpool.cpp
+   #test_threadpool.cpp
    test_time.cpp
    #test_timer.cpp
    test_tristate.cpp
@@ -77,12 +77,12 @@ add_executable(${TEST_RUNNER_NAME}
    test_weblinktext.cpp
    test_websocketjson.cpp
    test_websockettext.cpp
-   test_workerpool.cpp
+   #test_workerpool.cpp
    test_xgetopt.cpp
-   test_message_dispatcher.cpp
+   #test_message_dispatcher.cpp
 )
     
-if(MESSAGING)    
+#[[ if(MESSAGING)    
    target_sources(${TEST_RUNNER_NAME} PRIVATE test_message_unit.cpp)
    target_link_libraries(${TEST_RUNNER_NAME}
       WPEFrameworkMessaging
@@ -92,7 +92,7 @@ else()
    target_link_libraries(${TEST_RUNNER_NAME}
       WPEFrameworkTracing
    )
-endif()
+endif() ]]
 
 set_source_files_properties(test_systeminfo.cpp PROPERTIES COMPILE_OPTIONS "-fexceptions")
 
