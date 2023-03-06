@@ -659,7 +659,7 @@ namespace PluginHost
 
     }
 
-    Core::hresult Server::Service::Hibernate(const uint32_t timeout) /* override */ {
+    Core::hresult Server::Service::Hibernate(const uint32_t timeout VARIABLE_IS_NOT_USED) /* override */ {
         Core::hresult result = Core::ERROR_NONE;
 
         Lock();
@@ -681,7 +681,7 @@ namespace PluginHost
             }
             else {
                 #ifdef HIBERNATE_SUPPORT_ENABLED
-                result = HibernateProcess(timeout, local->ParentPID(), _T(""), _T(""), &_hibernateStorage);
+                result = HibernateProcess(timeout, local->ParentPID(), _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
                 #else
                 result = Core::ERROR_NONE;
                 #endif
@@ -698,7 +698,7 @@ namespace PluginHost
 
     }
 
-    uint32_t Server::Service::Wakeup(const uint32_t timeout) {
+    uint32_t Server::Service::Wakeup(const uint32_t timeout VARIABLE_IS_NOT_USED) {
         Core::hresult result = Core::ERROR_NONE;
 
         Lock();
@@ -719,7 +719,7 @@ namespace PluginHost
             }
             else {
                 #ifdef HIBERNATE_SUPPORT_ENABLED
-                result = WakeupProcess(timeout, local->ParentPID(), _T(""), _T(""), &_hibernateStorage);
+                result = WakeupProcess(timeout, local->ParentPID(), _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
                 #else
                 result = Core::ERROR_NONE;
                 #endif
