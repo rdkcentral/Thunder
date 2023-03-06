@@ -1,20 +1,25 @@
 # Thunder
-
 A C++ platform abstraction layer for generic functionality.
 
-#Thunder dependencies
-After the JsonGenerator.py and StubGenerator.py were modified to run with the python 3.5 version, some action might be required. When using buildroot or yocto, no action is necessary. Upon running these scripts manually or on Windows, make sure python 3.5 or higher is used, like so:
-```Shell
-$ python --version
-```
-You might also need to fulfill a requirement of the **jsonref** library, with the following line:
-```Shell
-$ pip install jsonref
-``` 
+-------------------------------------------------------------------------------------------
+## Dependencies
+After JsonGenerator.py and StubGenerator.py were modified to run with the Python 3.5 version, some additional actions might be required. However, no extra actions are necessary while using Buildroot or Yocto. When running these scripts manually or on Windows, make sure that Python 3.5 or higher is used:
 
+```Shell
+python --version
+```
+
+You must also satisfy the requirement of having the **jsonref** library installed. This can be accomplished with the following command:
+
+```Shell
+pip install jsonref
+```
+
+-------------------------------------------------------------------------------------------
 **Internal plugins**
 * [Controller](Source/WPEFramework/doc/ControllerPlugin.md)
 
+-------------------------------------------------------------------------------------------
 ## Linux (Desktop) Build
 ---
 
