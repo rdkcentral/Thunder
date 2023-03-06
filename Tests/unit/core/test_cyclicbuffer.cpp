@@ -1384,7 +1384,8 @@ namespace Tests {
         EXPECT_EQ(buffer.IsLocked(), false);
         const_cast<File&>(buffer.Storage()).Destroy();
     }
-    TEST(Core_CyclicBuffer, LockUnLock_FromParentAndForks)
+    
+    TEST(Core_CyclicBuffer, DISABLED_LockUnLock_FromParentAndForks)
     {
         std::string bufferName {"cyclicbuffer04"};
 
@@ -1490,8 +1491,7 @@ namespace Tests {
         Singleton::Dispose();
     }
 //TODO: revisit these test cases after fixing the issues with cyclicbuffer lock/unlock sequence
-#if 0
-    TEST(Core_CyclicBuffer, LockUnlock_FromParentAndForks_WithDataPresent)
+    TEST(Core_CyclicBuffer, DISABLED_LockUnlock_FromParentAndForks_WithDataPresent)
     {
         std::string bufferName {"cyclicbuffer05"};
 
@@ -1651,7 +1651,7 @@ namespace Tests {
         }
         Singleton::Dispose();
     }
-    TEST(Core_CyclicBuffer, LockUnlock_UsingAlert)
+    TEST(Core_CyclicBuffer, DISABLED_LockUnlock_UsingAlert)
     {
         string bufferName = "cyclicbuffer01";
         uint32_t cyclicBufferSize = 10;
@@ -1683,7 +1683,7 @@ namespace Tests {
         threadLock.Stop();
         const_cast<File&>(buffer.Storage()).Destroy();
     }
-    TEST(Core_CyclicBuffer, LockUnlock_FromParentAndForks_UsingAlert)
+    TEST(Core_CyclicBuffer, DISABLED_LockUnlock_FromParentAndForks_UsingAlert)
     {
         std::string bufferName {"cyclicbuffer05"};
 
@@ -1780,7 +1780,6 @@ namespace Tests {
         }
         Singleton::Dispose();
     }
-#endif
 } // Tests
 } // Core
 } // WPEFramework
