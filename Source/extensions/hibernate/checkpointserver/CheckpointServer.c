@@ -24,13 +24,10 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 #include <sys/un.h>
 #include <stdbool.h>
 #include <unistd.h>
-
-typedef struct {
-    pid_t pid;
-} CheckpointMetadata;
 
 typedef enum {
     MEMCR_CHECKPOINT = 100,
@@ -45,27 +42,40 @@ typedef enum {
 typedef struct {
     ServerRequestCode reqCode;
     pid_t pid;
-    int timeout;
 } __attribute__((packed)) ServerRequest;
 
 typedef struct {
     ServerResponseCode respCode;
 } __attribute__((packed)) ServerResponse;
 
-static const char* MEMCR_SERVER_SOCKET = "/tmp/memcrservice";
-
-static bool SendRcvCmd(const ServerRequest* cmd, ServerResponse* resp, uint32_t timeoutMs)
+static bool SendRcvCmd(const ServerRequest* cmd, ServerResponse* resp, uint32_t timeoutMs, const char* serverIpAddr)
 {
     int cd;
     int ret;
-    struct sockaddr_un addr = { 0 };
+    struct sockaddr_in addr = {0};
     resp->respCode = MEMCR_ERROR;
 
-    cd = socket(PF_UNIX, SOCK_STREAM, 0);
-    if (cd < 0) {
-        LOGERR("Socket create failed: %d", cd);
+	cd = socket(AF_INET, SOCK_STREAM, 0);
+	if (cd < 0) {
+		LOGERR("Socket create failed");
+		return false;
+	}
+
+    char host[64] = {0};
+    strncpy(host, serverIpAddr, 64);
+    char *port = strstr(host, ":");
+    if(port == NULL)
+    {
+        LOGERR("Invalid Server Ip Address: %s", host);
         return false;
     }
+    //Add NULL delimer between host and port
+    *port = 0;
+    port++;    
+
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(host);
+    addr.sin_port = htons(atoi(port));
 
     struct timeval rcvTimeout;
     rcvTimeout.tv_sec = timeoutMs / 1000;
@@ -73,12 +83,9 @@ static bool SendRcvCmd(const ServerRequest* cmd, ServerResponse* resp, uint32_t 
 
     setsockopt(cd, SOL_SOCKET, SO_RCVTIMEO, &rcvTimeout, sizeof(rcvTimeout));
 
-    addr.sun_family = PF_UNIX;
-    strncpy(addr.sun_path, MEMCR_SERVER_SOCKET, sizeof(addr.sun_path));
-
     ret = connect(cd, (struct sockaddr*)&addr, sizeof(struct sockaddr_un));
     if (ret < 0) {
-        LOGERR("Socket connect failed: %d with %s", ret, MEMCR_SERVER_SOCKET);
+        LOGERR("Socket connect failed: %d with %s", ret, serverIpAddr);
         close(cd);
         return false;
     }
@@ -104,21 +111,14 @@ static bool SendRcvCmd(const ServerRequest* cmd, ServerResponse* resp, uint32_t 
 
 uint32_t HibernateProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], void** storage)
 {
-    assert(*storage == NULL);
-
     ServerRequest req = {
         .reqCode = MEMCR_CHECKPOINT,
-        .pid = pid,
-        .timeout = (int)(timeout)
+        .pid = pid
     };
     ServerResponse resp;
 
-    if (SendRcvCmd(&req, &resp, timeout)) {
+    if (SendRcvCmd(&req, &resp, timeout, data_dir)) {
         LOGINFO("Hibernate process PID %d success", pid);
-        CheckpointMetadata* metadata = (CheckpointMetadata*)malloc(sizeof(CheckpointMetadata));
-        assert(metadata);
-        metadata->pid = pid;
-        *storage = (void*)(metadata);
         return HIBERNATE_ERROR_NONE;
     } else {
         LOGERR("Error Hibernate process PID %d ret %d", pid, resp.respCode);
@@ -128,20 +128,13 @@ uint32_t HibernateProcess(const uint32_t timeout, const pid_t pid, const char da
 
 uint32_t WakeupProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], void** storage)
 {
-    assert(*storage != NULL);
-    CheckpointMetadata* metaData = (CheckpointMetadata*)(*storage);
-    assert(metaData->pid == pid);
-    free(metaData);
-    *storage = NULL;
-
     ServerRequest req = {
         .reqCode = MEMCR_RESTORE,
-        .pid = pid,
-        .timeout = (int)(timeout)
+        .pid = pid
     };
     ServerResponse resp;
 
-    if (SendRcvCmd(&req, &resp, timeout)) {
+    if (SendRcvCmd(&req, &resp, timeout, data_dir)) {
         LOGINFO("Wakeup process PID %d success", pid);
         return HIBERNATE_ERROR_NONE;
     } else {

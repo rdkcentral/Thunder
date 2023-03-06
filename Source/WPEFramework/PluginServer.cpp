@@ -29,7 +29,7 @@
 #endif
 
 #ifdef HIBERNATE_SUPPORT_ENABLED
-#include "../hibernate/hibernate.h"
+#include "../extensions/hibernate/hibernate.h"
 #endif
 
 namespace WPEFramework {
@@ -681,7 +681,7 @@ namespace PluginHost
             }
             else {
                 #ifdef HIBERNATE_SUPPORT_ENABLED
-                result = HibernateProcess(timeout, local->ParentPID(), _T(""), _T(""), &_hibernateStorage);
+                result = HibernateProcess(timeout, local->ParentPID(), _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
                 #else
                 result = Core::ERROR_NONE;
                 #endif
@@ -719,8 +719,7 @@ namespace PluginHost
             }
             else {
                 #ifdef HIBERNATE_SUPPORT_ENABLED
-                ASSERT (_hibernateStorage != nullptr);
-                result = WakeupProcess(timeout, local->ParentPID(), _T(""), _T(""), &_hibernateStorage);
+                result = WakeupProcess(timeout, local->ParentPID(), _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
                 #else
                 result = Core::ERROR_NONE;
                 #endif
