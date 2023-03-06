@@ -47,7 +47,7 @@ endif()
 
 target_include_directories( ${TARGET}
         PUBLIC
-	   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Source/plugins/generated/jsonrpc>
+            $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/Source/plugins/generated/jsonrpc>
         )
 
 
