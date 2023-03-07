@@ -67,15 +67,19 @@ namespace Core {
                 index++;
             }
         }
+        IteratorType(IteratorType<CONTAINER, ELEMENT, ITERATOR>&& move)
+            : m_Container(move.m_Container)
+            , m_Iterator(move.m_Iterator)
+            , m_Index(move.m_Index)
+        {
+        }
         IteratorType(const IteratorType<CONTAINER, ELEMENT, ITERATOR>& copy)
             : m_Container(copy.m_Container)
             , m_Iterator(copy.m_Iterator)
             , m_Index(copy.m_Index)
         {
         }
-        ~IteratorType()
-        {
-        }
+        ~IteratorType() = default;
 
         IteratorType<CONTAINER, ELEMENT, ITERATOR>& operator=(const IteratorType<CONTAINER, ELEMENT, ITERATOR>& RHS)
         {
