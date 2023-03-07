@@ -68,8 +68,8 @@ namespace Core {
             }
         }
         IteratorType(IteratorType<CONTAINER, ELEMENT, ITERATOR>&& move)
-            : m_Container(move.m_Container)
-            , m_Iterator(move.m_Iterator)
+            : m_Container(std::move(move.m_Container))
+            , m_Iterator(std::move(move.m_Iterator))
             , m_Index(move.m_Index)
         {
         }
