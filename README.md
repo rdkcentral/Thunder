@@ -35,13 +35,10 @@ sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev l
 
 -------------------------------------------------------------------------------------------
 #### **2. Build ThunderTools**
-First, create a new folder called ```ThunderTools```, and then clone ThunderTools repo into it:
+First, change the directory to where you want to build Thunder, and then clone ThunderTools repo:
 
 ```Shell
-mkdir ThunderTools
-cd ThunderTools
 git clone https://github.com/rdkcentral/ThunderTools.git
-cd ..
 ```
 
 Next, we just need to run the following commands to build and then install the generators inside ThunderTools:
@@ -59,13 +56,10 @@ cmake --build build/ThunderTools --target install
 
 -------------------------------------------------------------------------------------------
 #### **3. Build Thunder**
-Create a new folder called ```Thunder```, and then clone the Thunder repo into it:
+Clone the Thunder repo:
 
 ```Shell
-mkdir Thunder
-cd Thunder
 git clone https://github.com/rdkcentral/Thunder.git
-cd ..
 ```
 
 Run the following commands to build and then install Thunder:
@@ -92,13 +86,10 @@ cmake --build build/Thunder --target install
 
 -------------------------------------------------------------------------------------------
 #### **4. Build ThunderInterfaces**
-Create a new folder called ```ThunderInterfaces```, and then clone the ThunderInterfaces repo into it:
+Clone the ThunderInterfaces repo:
 
 ```Shell
-mkdir ThunderInterfaces
-cd ThunderInterfaces
 git clone https://github.com/rdkcentral/ThunderInterfaces.git
-cd ..
 ```
 
 Run the following commands to build and then install ThunderInterfaces:
@@ -114,44 +105,108 @@ cmake --build build/ThunderInterfaces --target install
 ```
 
 -------------------------------------------------------------------------------------------
-#### **4. Thunder Client Libraries**
-   
-```shell
+#### **5. Build ThunderClientLibraries**
+Clone the ThunderClientLibraries repo:
+
+```Shell
 git clone https://github.com/rdkcentral/ThunderClientLibraries.git
-
-cmake -HThunderClientLibraries -Bbuild/ThunderClientLibraries \
-      -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}/usr \
-      -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/tools/cmake \
-      -DVIRTUALINPUT=ON
-
-make -C build/ThunderClientLibraries && make -C build/ThunderClientLibraries install
-```
-#### **5. Thunder WebUI**
-
-Note: The WebUI is not supporting a full out of tree build. 
-
-```shell
-git clone https://github.com/rdkcentral/ThunderUI.git
-
-cmake -HThunderUI -BThunderUI/build \
-      -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}/usr \
-      -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/tools/cmake \
-
-make -C ThunderUI/build && make -C ThunderUI/build install
 ```
 
-#### **6. Thunder Nano Services**
+Run the following commands to build and then install ThunderClientLibraries:
 
-```shell
+Note: In the command below, there is a complete list of client libraries that do not require any outside dependencies; therefore, each of them can be successfully built in this simple fashion.
+
+```Shell
+cmake -G Ninja -S ThunderClientLibraries -B build/ThunderClientLibraries \
+-DCMAKE_INSTALL_PREFIX="install/usr" \
+-DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules" \
+-DBLUETOOTHAUDIOSINK=ON \
+-DDEVICEINFO=ON \
+-DDISPLAYINFO=ON \
+-DLOCALTRACER=ON \
+-DSECURITYAGENT=ON \
+-DPLAYERINFO=ON \
+-DPROTOCOLS=ON \
+-DVIRTUALINPUT=ON
+```
+
+```Shell
+cmake --build build/ThunderClientLibraries --target install
+```
+
+-------------------------------------------------------------------------------------------
+#### **6. Build ThunderNanoServices**
+Clone the ThunderNanoServices repo:
+
+```Shell
 git clone https://github.com/rdkcentral/ThunderNanoServices.git
-
-cmake -HThunderNanoServices -Bbuild/ThunderNanoServices \
-      -DCMAKE_INSTALL_PREFIX=${THUNDER_INSTALL_DIR}/usr \
-      -DCMAKE_MODULE_PATH=${THUNDER_INSTALL_DIR}/tools/cmake \
-      -DPLUGIN_DICTIONARY=ON
-
-make -C build/ThunderNanoServices && make -C build/ThunderNanoServices install
 ```
+
+Run the following commands to build and then install ThunderNanoServices:
+
+Note: In the command below, there is a complete list of plugins that do not require any outside dependencies; therefore, each of them can be successfully built in this simple fashion.
+
+```Shell
+cmake -G Ninja -S ThunderNanoServices -B build/ThunderNanoServices \
+-DCMAKE_INSTALL_PREFIX="install/usr" \
+-DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules" \
+-DPLUGIN_CECCONTROL=ON \
+-DPLUGIN_COMMANDER=ON \
+-DPLUGIN_DHCPSERVER=ON \
+-DPLUGIN_DIALSERVER=ON \
+-DPLUGIN_DICTIONARY=ON \
+-DPLUGIN_FILETRANSFER=ON \
+-DPLUGIN_IOCONNECTOR=ON \
+-DPLUGIN_INPUTSWITCH=ON \
+-DPLUGIN_NETWORKCONTROL=ON \
+-DPLUGIN_PROCESSMONITOR=ON \
+-DPLUGIN_RESOURCEMONITOR=ON \
+-DPLUGIN_SYSTEMCOMMANDS=ON \
+-DPLUGIN_SWITCHBOARD=ON \
+-DPLUGIN_WEBPROXY=ON \
+-DPLUGIN_WEBSERVER=ON \
+-DPLUGIN_WEBSHELL=ON \
+-DPLUGIN_WIFICONTROL=ON
+```
+
+```Shell
+cmake --build build/ThunderNanoServices --target install
+```
+
+-------------------------------------------------------------------------------------------
+#### **7. Build ThunderNanoServicesRDK**
+Clone the ThunderNanoServicesRDK repo:
+
+```Shell
+git clone https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK.git
+```
+
+Run the following commands to build and then install ThunderNanoServicesRDK:
+
+Note: In the command below, there is a complete list of plugins that do not require any outside dependencies; therefore, each of them can be successfully built in this simple fashion.
+
+```Shell
+cmake -G Ninja -S ThunderNanoServicesRDK -B build/ThunderNanoServicesRDK \
+-DCMAKE_INSTALL_PREFIX="install/usr" \
+-DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules" \
+-DPLUGIN_DEVICEIDENTIFICATION=ON \
+-DPLUGIN_DEVICEINFO=ON \
+-DPLUGIN_LOCATIONSYNC=ON \
+-DPLUGIN_MESSAGECONTROL=ON \
+-DPLUGIN_MESSENGER=ON \
+-DPLUGIN_MONITOR=ON \
+-DPLUGIN_OPENCDMI=ON \
+-DPLUGIN_PERFORMANCEMETRICS=ON
+```
+
+```Shell
+cmake --build build/ThunderNanoServicesRDK --target install
+```
+
+-------------------------------------------------------------------------------------------
+#### **8. Thunder WebUI**
+
+
 ### **Use Thunder**
 ---
 1. Run 
