@@ -487,23 +487,32 @@ namespace Core {
                 , _default(0)
             {
             }
-
             NumberType(const TYPE Value, const bool set = false)
                 : _set(set ? SET : 0)
                 , _value(Value)
                 , _default(Value)
             {
             }
-
+            NumberType(NumberType<TYPE, SIGNED, BASETYPE>&& move)
+                : _set(std::move(move._set))
+                , _value(std::move(move._value))
+                , _default(std::move(move._default))
+            {
+            }
             NumberType(const NumberType<TYPE, SIGNED, BASETYPE>& copy)
                 : _set(copy._set)
                 , _value(copy._value)
                 , _default(copy._default)
             {
             }
+            ~NumberType() override = default;
 
-            ~NumberType() override
+            NumberType<TYPE, SIGNED, BASETYPE>& operator=(NumberType<TYPE, SIGNED, BASETYPE>&& move)
             {
+                _value = std::move(move._value);
+                _set = std::move(move._set);
+
+                return (*this);
             }
 
             NumberType<TYPE, SIGNED, BASETYPE>& operator=(const NumberType<TYPE, SIGNED, BASETYPE>& RHS)
@@ -993,7 +1002,6 @@ namespace Core {
                 , _strValue()
             {
             }
-
             FloatType(const TYPE Value, const bool set = false)
                 : _set(set ? SET : 0)
                 , _value(Value)
@@ -1001,7 +1009,13 @@ namespace Core {
                 , _strValue()
             {
             }
-
+            FloatType(FloatType<TYPE>&& move)
+                : _set(std::move(move._set))
+                , _value(std::move(move._value))
+                , _default(std::move(move._default))
+                , _strValue()
+            {
+            }
             FloatType(const FloatType<TYPE>& copy)
                 : _set(copy._set)
                 , _value(copy._value)
@@ -1009,9 +1023,14 @@ namespace Core {
                 , _strValue()
             {
             }
+            ~FloatType() override = default;
 
-            ~FloatType() override
+            FloatType<TYPE>& operator=(FloatType<TYPE>&& move)
             {
+                _value = std::move(move._value);
+                _set = std::move(move._set);
+
+                return (*this);
             }
 
             FloatType<TYPE>& operator=(const FloatType<TYPE>& RHS)
@@ -1287,13 +1306,24 @@ namespace Core {
             {
             }
 
+            Boolean(Boolean&& move)
+                : _value(std::move(move._value))
+            {
+            }
+
             Boolean(const Boolean& copy)
                 : _value(copy._value)
             {
             }
 
-            ~Boolean()
+            ~Boolean() override = default;
+
+            Boolean& operator=(Boolean&& move)
             {
+                // Do not overwrite the default, if not set...copy if set
+                _value = (move._value & (SetBit | ValueBit)) | ((move._value & (SetBit)) ? (move._value & DefaultBit) : (_value & DefaultBit));
+
+                return (*this);
             }
 
             Boolean& operator=(const Boolean& RHS)
@@ -1521,6 +1551,14 @@ namespace Core {
             }
 #endif // __CORE_NO_WCHAR_SUPPORT__
 
+            String(String&& move)
+                : _default(std::move(move._default))
+                , _value(std::move(move._value))
+                , _storage(std::move(move._storage))
+                , _flagsAndCounters(std::move(move._flagsAndCounters))
+            {
+            }
+
             String(const String& copy)
                 : _default(copy._default)
                 , _value(copy._value)
@@ -1556,6 +1594,15 @@ namespace Core {
                 return (*this);
             }
 #endif // __CORE_NO_WCHAR_SUPPORT__
+
+            String& operator=(String&& move)
+            {
+                _default = std::move(move._default);
+                _value = std::move(move._value);
+                _flagsAndCounters = std::move(move._flagsAndCounters);
+
+                return (*this);
+            }
 
             String& operator=(const String& RHS)
             {
@@ -2127,11 +2174,61 @@ namespace Core {
             {
             }
 
-            ~Buffer() override
+            Buffer(Buffer&& move)
+                : _state(std::move(move._state))
+                , _lastStuff(std::move(move._lastStuff))
+                , _index(std::move(move._index))
+                , _length(std::move(move._length))
+                , _maxLength(std::move(move._maxLength))
+                , _buffer(std::move(move._buffer))
+            {
+                move._buffer = nullptr;
+            }
+
+            Buffer(const Buffer& copy)
+                : _state(copy._state)
+                , _lastStuff(copy._lastStuff)
+                , _index(copy._index)
+                , _length(copy._length)
+                , _maxLength(copy._maxLength)
+                , _buffer(reinterpret_cast<uint8_t*>(::malloc(_maxLength)))
+            {
+                ASSERT(_length <= _maxLength);
+                ::memcpy(_buffer, copy._buffer, _length);
+            }
+
+           ~Buffer() override
             {
                 if (_buffer != nullptr) {
                     ::free(_buffer);
                 }
+            }
+
+            Buffer& operator= (Buffer&& move) {
+                _state = std::move(move._state);
+                _lastStuff = std::move(move._lastStuff);
+                _index = std::move(move._index);
+                _length = std::move(move._length);
+                _maxLength = std::move(move._maxLength);
+                _buffer = std::move(move._buffer);
+
+                move._buffer = nullptr;
+
+                return (*this);
+            }
+
+            Buffer& operator=(const Buffer& copy) {
+                _state = copy._state;
+                _lastStuff = copy._lastStuff;
+                _index = copy._index;
+                _length = copy._length;
+                _maxLength = copy._maxLength;
+                _buffer = reinterpret_cast<uint8_t*>(::malloc(_maxLength));
+
+                ASSERT(_length <= _maxLength);
+                ::memcpy(_buffer, copy._buffer, _length);
+
+                return (*this);
             }
 
             void Null(const bool enabled)
@@ -2458,6 +2555,13 @@ namespace Core {
             {
             }
 
+            EnumType(EnumType<ENUMERATE>&& move)
+                : _state(std::move(move._state))
+                , _value(std::move(move._value))
+                , _default(std::move(move._default))
+            {
+            }
+
             EnumType(const EnumType<ENUMERATE>& copy)
                 : _state(copy._state)
                 , _value(copy._value)
@@ -2465,8 +2569,13 @@ namespace Core {
             {
             }
 
-            ~EnumType() override
+            ~EnumType() override = default;
+
+            EnumType<ENUMERATE>& operator=(EnumType<ENUMERATE>&& move)
             {
+                _value = std::move(move._value);
+                _state = std::move(move._state);
+                return (*this);
             }
 
             EnumType<ENUMERATE>& operator=(const EnumType<ENUMERATE>& RHS)
@@ -2652,8 +2761,15 @@ namespace Core {
 
                 ConstIteratorType(const ArrayContainer& container)
                     : _container(&container)
-                    , _iterator(container.begin())
+                    , _iterator(_container->begin())
                     , _state(AT_BEGINNING)
+                {
+                }
+
+                ConstIteratorType(ConstIteratorType<ARRAYELEMENT>&& move)
+                    : _container(std::move(move._container))
+                    , _iterator(std::move(move._iterator))
+                    , _state(std::move(move._state))
                 {
                 }
 
@@ -2664,7 +2780,16 @@ namespace Core {
                 {
                 }
 
-                virtual ~ConstIteratorType() = default;
+                ~ConstIteratorType() = default;
+
+                ConstIteratorType<ARRAYELEMENT>& operator=(ConstIteratorType<ARRAYELEMENT>&& move)
+                {
+                    _container = std::move(move._container);
+                    _iterator = std::move(move._iterator);
+                    _state = std::move(move._state);
+
+                    return (*this);
+                }
 
                 ConstIteratorType<ARRAYELEMENT>& operator=(const ConstIteratorType<ARRAYELEMENT>& RHS)
                 {
@@ -2681,7 +2806,7 @@ namespace Core {
                     return (_state == AT_ELEMENT);
                 }
 
-                bool Reset(const uint32_t index = ~0)
+                inline bool Reset(const uint32_t index = ~0)
                 {
                     _state = AT_BEGINNING;
 
@@ -2709,7 +2834,7 @@ namespace Core {
                     return (_state == AT_ELEMENT);
                 }
 
-                virtual bool Next()
+                inline bool Next()
                 {
                     if (_container != nullptr) {
                         if (_state != AT_END) {
@@ -2772,6 +2897,13 @@ namespace Core {
                 {
                 }
 
+                IteratorType(IteratorType<ARRAYELEMENT>&& move)
+                    : _container(std::move(move._container))
+                    , _iterator(std::move(move._iterator))
+                    , _state(std::move(move._state))
+                {
+                }
+
                 IteratorType(const IteratorType<ARRAYELEMENT>& copy)
                     : _container(copy._container)
                     , _iterator(copy._iterator)
@@ -2779,8 +2911,15 @@ namespace Core {
                 {
                 }
 
-                ~IteratorType()
+                ~IteratorType() = default;
+
+                IteratorType<ARRAYELEMENT>& operator=(IteratorType<ARRAYELEMENT>&& move)
                 {
+                    _container = std::move(move._container);
+                    _iterator = std::move(move._iterator);
+                    _state = std::move(move._state);
+
+                    return (*this);
                 }
 
                 IteratorType<ARRAYELEMENT>& operator=(const IteratorType<ARRAYELEMENT>& RHS)
@@ -2882,6 +3021,14 @@ namespace Core {
             {
             }
 
+            ArrayType(ArrayType<ELEMENT>&& move)
+                : _state(std::move(move._state))
+                , _count(std::move(move._count))
+                , _data(std::move(move._data))
+                , _iterator(std::move(move._iterator))
+            {
+            }
+
             ArrayType(const ArrayType<ELEMENT>& copy)
                 : _state(copy._state)
                 , _count(copy._count)
@@ -2890,8 +3037,24 @@ namespace Core {
             {
             }
 
-            ~ArrayType() override
+            ~ArrayType() override = default;
+
+            ArrayType<ELEMENT>& operator=(ArrayType<ELEMENT>&& move)
             {
+                _state = std::move(move._state);
+                _data = std::move(move._data);
+                _iterator = IteratorType<ELEMENT>(_data);
+
+                return (*this);
+            }
+
+            ArrayType<ELEMENT>& operator=(const ArrayType<ELEMENT>& RHS)
+            {
+                _state = RHS._state;
+                _data = RHS._data;
+                _iterator = IteratorType<ELEMENT>(_data);
+
+                return (*this);
             }
 
         public:
@@ -2989,15 +3152,6 @@ namespace Core {
             inline ConstIterator Elements() const
             {
                 return (ConstIterator(_data));
-            }
-
-            ArrayType<ELEMENT>& operator=(const ArrayType<ELEMENT>& RHS)
-            {
-                _state = RHS._state;
-                _data = RHS._data;
-                _iterator = IteratorType<ELEMENT>(_data);
-
-                return (*this);
             }
 
             inline operator string() const
@@ -3290,8 +3444,10 @@ namespace Core {
 
             private:
                 Iterator();
-                Iterator(const Iterator& copy);
-                Iterator& operator=(const Iterator& RHS);
+                Iterator(Iterator&&);
+                Iterator(const Iterator&);
+                Iterator& operator=(Iterator&&);
+                Iterator& operator=(const Iterator&);
 
             public:
                 Iterator(Container& parent, JSONElementList& container)
@@ -3302,9 +3458,7 @@ namespace Core {
                 {
                 }
 
-                ~Iterator()
-                {
-                }
+                ~Iterator() = default;
 
             public:
                 void Reset()
@@ -3348,8 +3502,10 @@ namespace Core {
             };
 
         public:
-            Container(const Container& copy) = delete;
-            Container& operator=(const Container& RHS) = delete;
+            Container(Container&&) = delete;
+            Container(const Container&) = delete;
+            Container& operator=(Container&&) = delete;
+            Container& operator=(const Container&) = delete;
 
             Container()
                 : _state(0)
@@ -3914,16 +4070,27 @@ namespace Core {
                 String::operator=(text);
             }
 
+            Variant(Variant&& move)
+                : JSON::String(std::move(move))
+                , _type(std::move(move._type))
+            {
+            }
             Variant(const Variant& copy)
                 : JSON::String(copy)
                 , _type(copy._type)
             {
             }
 
+
             Variant(const VariantContainer& object);
 
-            ~Variant() override
+            ~Variant() override = default;
+
+            Variant& operator=(Variant&& move)
             {
+                JSON::String::operator=(std::move(move));
+                _type = std::move(move._type);
+                return (*this);
             }
 
             Variant& operator=(const Variant& RHS)
@@ -4162,6 +4329,16 @@ namespace Core {
                 {
                 }
 
+                Iterator(Iterator&& move)
+                    : _container(std::move(move._container))
+                    , _index(std::move(move._index))
+                    , _start(std::move(move._start))
+                {
+                    if (_container != nullptr) {
+                        _index = _container->begin();
+                    }
+                }
+
                 Iterator(const Iterator& copy)
                     : _container(copy._container)
                     , _index()
@@ -4172,8 +4349,15 @@ namespace Core {
                     }
                 }
 
-                ~Iterator()
+                ~Iterator() = default;
+
+                Iterator& operator=(Iterator&& move)
                 {
+                    _container = std::move(move._container);
+                    _index = std::move(move._index);
+                    _start = std::move(move._start);
+
+                    return (*this);
                 }
 
                 Iterator& operator=(const Iterator& rhs)
@@ -4184,6 +4368,7 @@ namespace Core {
 
                     return (*this);
                 }
+
 
             public:
                 bool IsValid() const
@@ -4250,6 +4435,19 @@ namespace Core {
                 Container::FromString(serialized);
             }
 
+            VariantContainer(VariantContainer&& move)
+                : Container()
+                , _elements(std::move(move._elements))
+            {
+                Elements::iterator index(_elements.begin());
+
+                while (index != _elements.end()) {
+                    ASSERT (HasLabel(index->first.c_str()));
+                    Container::Add(index->first.c_str(), &(index->second));
+                    index++;
+                }
+            }
+
             VariantContainer(const VariantContainer& copy)
                 : Container()
                 , _elements(copy._elements)
@@ -4257,8 +4455,9 @@ namespace Core {
                 Elements::iterator index(_elements.begin());
 
                 while (index != _elements.end()) {
-                    if (copy.HasLabel(index->first.c_str()))
+                   if (copy.HasLabel(index->first.c_str())) {
                         Container::Add(index->first.c_str(), &(index->second));
+                    }
                     index++;
                 }
             }
@@ -4316,6 +4515,8 @@ namespace Core {
 
                 return (*this);
             }
+
+
 
             void Set(const TCHAR fieldName[], const JSON::Variant& value)
             {
@@ -4479,20 +4680,16 @@ namespace Core {
         template <uint16_t SIZE, typename INSTANCEOBJECT>
         class Tester {
         private:
-            typedef Tester<SIZE, INSTANCEOBJECT> ThisClass;
-
-        private:
-            Tester(const Tester<SIZE, INSTANCEOBJECT>&) = delete;
-            Tester<SIZE, INSTANCEOBJECT>& operator=(const Tester<SIZE, INSTANCEOBJECT>&) = delete;
+            using ThisClass = Tester<SIZE, INSTANCEOBJECT>;
 
         public:
-            Tester()
-            {
-            }
+            Tester(Tester<SIZE, INSTANCEOBJECT>&&) = delete;
+            Tester(const Tester<SIZE, INSTANCEOBJECT>&) = delete;
+            Tester<SIZE, INSTANCEOBJECT>& operator=(Tester<SIZE, INSTANCEOBJECT>&&) = delete;
+            Tester<SIZE, INSTANCEOBJECT>& operator=(const Tester<SIZE, INSTANCEOBJECT>&) = delete;
 
-            ~Tester()
-            {
-            }
+            Tester() = default;
+            ~Tester() = default;
 
             bool FromString(const string& value, Core::ProxyType<INSTANCEOBJECT>& receptor)
             {
@@ -4545,11 +4742,12 @@ namespace Core {
 
         template <typename JSONOBJECT>
         class LabelType : public JSONOBJECT {
-        private:
-            LabelType(const LabelType<JSONOBJECT>&) = delete;
-            LabelType<JSONOBJECT>& operator=(const LabelType<JSONOBJECT>) = delete;
-
         public:
+            LabelType(LabelType<JSONOBJECT>&&) = delete;
+            LabelType(const LabelType<JSONOBJECT>&) = delete;
+            LabelType<JSONOBJECT>& operator=(LabelType<JSONOBJECT>&&) = delete;
+            LabelType<JSONOBJECT>& operator=(const LabelType<JSONOBJECT>&) = delete;
+
             LabelType()
                 : JSONOBJECT()
             {
