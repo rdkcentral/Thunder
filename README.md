@@ -150,7 +150,6 @@ Note: In the command below, there is a complete list of plugins that do not requ
 cmake -G Ninja -S ThunderNanoServices -B build/ThunderNanoServices \
 -DCMAKE_INSTALL_PREFIX="install/usr" \
 -DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules" \
--DPLUGIN_CECCONTROL=ON \
 -DPLUGIN_COMMANDER=ON \
 -DPLUGIN_DHCPSERVER=ON \
 -DPLUGIN_DIALSERVER=ON \
@@ -165,8 +164,7 @@ cmake -G Ninja -S ThunderNanoServices -B build/ThunderNanoServices \
 -DPLUGIN_SWITCHBOARD=ON \
 -DPLUGIN_WEBPROXY=ON \
 -DPLUGIN_WEBSERVER=ON \
--DPLUGIN_WEBSHELL=ON \
--DPLUGIN_WIFICONTROL=ON
+-DPLUGIN_WEBSHELL=ON
 ```
 
 ```Shell
@@ -204,21 +202,50 @@ cmake --build build/ThunderNanoServicesRDK --target install
 ```
 
 -------------------------------------------------------------------------------------------
-#### **8. Thunder WebUI**
+#### **8. Build ThunderUI**
+Clone the ThunderUI repo:
 
+```Shell
+git clone https://github.com/rdkcentral/ThunderUI.git
+```
 
+First, you have to install NodeJS + NPM, and this can be done with the following lines:
+
+```Shell
+sudo apt install nodejs
+sudo apt install npm
+```
+
+Run the following commands to build and then install ThunderUI:
+
+```Shell
+cmake -G Ninja -S ThunderUI -B build/ThunderUI \
+-DCMAKE_INSTALL_PREFIX="install/usr" \
+-DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules"
+```
+
+```Shell
+cmake --build build/ThunderUI --target install
+```
+
+-------------------------------------------------------------------------------------------
 ### **Use Thunder**
----
-1. Run 
-      ```shell
-      PATH=${THUNDER_INSTALL_DIR}/usr/bin:${PATH} \
-      LD_LIBRARY_PATH=${THUNDER_INSTALL_DIR}/usr/lib:${LD_LIBRARY_PATH} \
-      WPEFramework -c ${THUNDER_INSTALL_DIR}/etc/WPEFramework/config.json
-      ```
-2. Open ```http://127.0.0.1:55555``` in a browser.
+After everything built and installed correctly, we can run Thunder and use it.
 
-## WINDOWS Build, using Visual Studio 2019
----
+```Shell
+LD_LIBRARY_PATH=${PWD}/install/usr/lib:${LD_LIBRARY_PATH} \
+PATH=${PWD}/install/usr/bin:${PATH} \
+WPEFramework -c ${PWD}/install/etc/WPEFramework/config.json
+```
+
+Now, the only thing left is to open a browser and connect to Thunder.
+
+```Shell
+http://127.0.0.1:55555
+```
+
+-------------------------------------------------------------------------------------------
+## Windows Build, using Visual Studio 2019
 
 The default solution is setup in such away that it can run and load 
 the Thunder and Thunder Nano Services (capable of running in Windows)
