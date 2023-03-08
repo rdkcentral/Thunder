@@ -588,11 +588,11 @@ namespace WPEFramework {
                     else {
                         m_State |= SHUTDOWN;
 
-                        // Signal the other side that we close !!
+                        // Block new data from coming in, signal the other side that we close !!
 #ifdef __WINDOWS__
-                        shutdown(m_Socket, SD_SEND);
+                        shutdown(m_Socket, SD_BOTH);
 #else
-                        shutdown(m_Socket, SHUT_WR);
+                        shutdown(m_Socket, SHUT_RDWR);
 #endif
                     }
 
@@ -604,7 +604,6 @@ namespace WPEFramework {
 
                     if (closed == false) {
                         // Make this a forced close !!!
-                        shutdown(m_Socket, SHUT_RDWR);
                         m_State |= EXCEPTION;
 
                         // We probably did not get a response from the otherside on the close
@@ -1059,8 +1058,9 @@ namespace WPEFramework {
                     m_syncAdmin.Lock();
                     if ((m_State & SHUTDOWN) == 0) {
                         // The other side signalled it wants to close, let's do the same.
-                        m_State |= SHUTDOWN;
+                        m_State |= (SHUTDOWN | EXCEPTION);
                         shutdown(m_Socket, SHUT_WR);
+                        // Since now both directions are closed, HUP will be signalled.
                     }
                     m_syncAdmin.Unlock();
                 }
