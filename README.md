@@ -29,6 +29,7 @@ Note: All our projects can be customized with additional cmake options ```-D```.
 ### **Build and install**
 
 #### **1. Install necessary packages**
+
 ```Shell
 sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
 ```
@@ -164,7 +165,8 @@ cmake -G Ninja -S ThunderNanoServices -B build/ThunderNanoServices \
 -DPLUGIN_SWITCHBOARD=ON \
 -DPLUGIN_WEBPROXY=ON \
 -DPLUGIN_WEBSERVER=ON \
--DPLUGIN_WEBSHELL=ON
+-DPLUGIN_WEBSHELL=ON \
+-DPLUGIN_WIFICONTROL=ON
 ```
 
 ```Shell
@@ -230,7 +232,7 @@ cmake --build build/ThunderUI --target install
 
 -------------------------------------------------------------------------------------------
 ### **Use Thunder**
-After everything built and installed correctly, we can run Thunder and use it.
+After everything has been built and installed correctly, we can run Thunder.
 
 ```Shell
 LD_LIBRARY_PATH=${PWD}/install/usr/lib:${LD_LIBRARY_PATH} \
