@@ -274,6 +274,8 @@ namespace WPEFramework {
             ::closesocket(socket);
 #endif
 
+            TRACE_L3("Socket %u destroyed", static_cast<uint32_t>(socket));
+
             socket = INVALID_SOCKET;
         }
 
@@ -390,7 +392,7 @@ namespace WPEFramework {
             if ((SetNonBlocking(m_Socket) == false) || (::getsockname(m_Socket, (struct sockaddr*)&localAddress, &localSize) == SOCKET_ERROR)) {
                 DestroySocket(m_Socket);
 
-                TRACE_L5("Error on preparing the port for communication. Error %d", __ERRORRESULT__);
+                TRACE_L1("Error on preparing the port for communication. Error %d", __ERRORRESULT__);
             }
             else {
                 m_LocalNode = localAddress;
@@ -398,6 +400,8 @@ namespace WPEFramework {
                 BufferAlignment(m_Socket);
 
                 m_State.store(SocketPort::LINK | SocketPort::OPEN | SocketPort::READ, Core::memory_order::memory_order_relaxed);
+
+                TRACE_L3("Socket %u constructed", m_Socket);
             }
         }
 
@@ -497,6 +501,8 @@ namespace WPEFramework {
 
                 if ((m_Socket != INVALID_SOCKET) && (Initialize() == Core::ERROR_NONE)) {
 
+                    TRACE_L3("Socket %u constructed", static_cast<uint32_t>(m_Socket));
+
                     if ((m_SocketType == DATAGRAM) || ((m_SocketType == RAW) && (m_RemoteNode.IsValid() == false))) {
                         m_State.store(SocketPort::UPDATE | SocketPort::OPEN | SocketPort::READ, Core::memory_order::memory_order_relaxed);
 
@@ -504,7 +510,7 @@ namespace WPEFramework {
                     }
                     else if (m_SocketType == LISTEN) {
                         if (::listen(m_Socket, MAX_LISTEN_QUEUE) == SOCKET_ERROR) {
-                            TRACE_L5("Error on port socket LISTEN. Error %d", __ERRORRESULT__);
+                            TRACE_L1("Error on port socket LISTEN. Error %d", __ERRORRESULT__);
                         }
                         else {
                             // Trigger state to Open
@@ -525,14 +531,17 @@ namespace WPEFramework {
                                 m_State.store(SocketPort::UPDATE | SocketPort::LINK | SocketPort::WRITE, Core::memory_order::memory_order_relaxed);
                                 nStatus = Core::ERROR_INPROGRESS;
                             }
-                            else if (l_Result == __ERROR_ISCONN__) {
-                                nStatus = Core::ERROR_ALREADY_CONNECTED;
-                            }
-                            else if (l_Result == __ERROR_NETWORK_UNREACHABLE__) {
-                                nStatus = Core::ERROR_UNREACHABLE_NETWORK;
-                            }
                             else {
-                                nStatus = Core::ERROR_ASYNC_FAILED;
+                                if (l_Result == __ERROR_ISCONN__) {
+                                    nStatus = Core::ERROR_ALREADY_CONNECTED;
+                                }
+                                else if (l_Result == __ERROR_NETWORK_UNREACHABLE__) {
+                                    nStatus = Core::ERROR_UNREACHABLE_NETWORK;
+                                }
+                                else {
+                                    nStatus = Core::ERROR_ASYNC_FAILED;
+                                }
+
                                 TRACE_L1("Error on socket connect. Error %d", __ERRORRESULT__);
                             }
                         }
@@ -580,7 +589,10 @@ namespace WPEFramework {
 
                 if ((m_State != 0) && ((m_State & SHUTDOWN) == 0)) {
 
+                    TRACE_L3("Closing socket %u...", static_cast<uint32_t>(m_Socket));
+
                     if ((m_State & (LINK | OPEN)) != (LINK | OPEN)) {
+
                         // This is a connectionless link, do not expect a close from the otherside.
                         // No use to wait on anything !!, Signal a FORCED CLOSURE (EXCEPTION && SHUTDOWN)
                         m_State |= (SHUTDOWN | EXCEPTION);
@@ -597,6 +609,8 @@ namespace WPEFramework {
                     }
 
                     ResourceMonitor::Instance().Break();
+                } else {
+                    TRACE_L3("Socket is already closed or being closed");
                 }
 
                 if (waitTime > 0) {
@@ -615,6 +629,8 @@ namespace WPEFramework {
                         ASSERT(closed == true);
                     }
                 }
+            } else {
+                TRACE_L3("Socket is already closed and destroyed");
             }
 
             m_syncAdmin.Unlock();
@@ -655,7 +671,7 @@ namespace WPEFramework {
             // Kernel doubles the buffer size, take that into account.
             m_SocketReceiveBufferSize /= 2;
             if (origSocketReceiveBufferSize != m_SocketReceiveBufferSize) {
-                TRACE_L2("Adjusted socket receive buffer size (%u->%u)", origSocketReceiveBufferSize, m_SocketReceiveBufferSize);
+                TRACE_L3("Adjusted socket receive buffer size (%u->%u)", origSocketReceiveBufferSize, m_SocketReceiveBufferSize);
             }
 
             if (m_ReceiveBufferSize == static_cast<uint16_t>(~0)) {
@@ -677,7 +693,7 @@ namespace WPEFramework {
             ::getsockopt(socket, SOL_SOCKET, SO_SNDBUF, (char*)&m_SocketSendBufferSize, &valueLength);
             m_SocketSendBufferSize /= 2;
             if (origSocketSendBufferSize != m_SocketSendBufferSize) {
-                TRACE_L2("Adjusted socket send buffer size (%u->%u)", origSocketSendBufferSize, m_SocketSendBufferSize);
+                TRACE_L3("Adjusted socket send buffer size (%u->%u)", origSocketSendBufferSize, m_SocketSendBufferSize);
             }
 
             if (m_SendBufferSize == static_cast<uint16_t>(~0)) {
@@ -870,7 +886,6 @@ namespace WPEFramework {
 
         uint32_t SocketPort::WaitForOpen(const uint32_t time) const
         {
-
             // Make sure the state does not change in the mean time.
             m_syncAdmin.Lock();
 
@@ -920,7 +935,6 @@ namespace WPEFramework {
 
                 // Right, lets sleep in slices of 100 ms
                 SleepMs(sleepSlot);
-
 
                 waiting -= (waiting == Core::infinite ? 0 : sleepSlot);
             }
@@ -977,7 +991,7 @@ namespace WPEFramework {
 #ifdef __WINDOWS__
                 result = FD_CLOSE;
 #else
-                result = POLLHUP;
+                result = (POLLHUP | POLLRDHUP);
 #endif
             }
             else if (m_State != 0) {
@@ -1052,17 +1066,15 @@ namespace WPEFramework {
                 }
 #else
                 if ((flagsSet & POLLHUP) != 0) {
+                    TRACE_L3("HUP event received on socket %u", static_cast<uint32_t>(m_Socket));
                     Closed();
                 }
                 else if ((flagsSet & POLLRDHUP) != 0) {
-                    m_syncAdmin.Lock();
-                    if ((m_State & SHUTDOWN) == 0) {
-                        // The other side signalled it wants to close, let's do the same.
-                        m_State |= (SHUTDOWN | EXCEPTION);
-                        shutdown(m_Socket, SHUT_WR);
-                        // Since now both directions are closed, HUP will be signalled.
-                    }
-                    m_syncAdmin.Unlock();
+                    TRACE_L3("RDHUP event received on socket %u", static_cast<uint32_t>(m_Socket));
+
+                    // The other side wants to shut down the connection. Let's do the same then.
+                    // Once the connection is shut down in both directions, a HUP event will arrive.
+                    Close(0);
                 }
                 else if (IsListening()) {
                     if ((flagsSet & POLLIN) != 0) {
@@ -1290,7 +1302,7 @@ namespace WPEFramework {
                 BufferAlignment(result);
 
                 remoteId = address;
-            }
+         }
             else {
                 int error = __ERRORRESULT__;
                 if ((error != __ERROR_AGAIN__) && (error != __ERROR_WOULDBLOCK__)) {
@@ -1300,7 +1312,7 @@ namespace WPEFramework {
             }
 
             return (result);
-            }
+        }
 
         NodeId SocketPort::Accept()
         {
@@ -1312,6 +1324,8 @@ namespace WPEFramework {
 
                 m_Socket = result;
                 m_State = (SocketPort::UPDATE | SocketPort::MONITOR | SocketPort::LINK | SocketPort::OPEN | SocketPort::READ | SocketPort::WRITESLOT);
+
+                TRACE_L3("Socket %u constructed", static_cast<uint32_t>(m_Socket));
             }
 
             return (newConnection);
@@ -1335,8 +1349,10 @@ namespace WPEFramework {
             if (m_Socket != INVALID_SOCKET) {
                 NodeId remoteId;
 
+                TRACE_L3("Socket %u constructed", static_cast<uint32_t>(m_Socket));
+
                 if (::listen(m_Socket, MAX_LISTEN_QUEUE) == SOCKET_ERROR) {
-                    TRACE_L5("Error on port socket LISTEN. Error %d", __ERRORRESULT__);
+                    TRACE_L1("Error on port socket LISTEN. Error %d", __ERRORRESULT__);
                 }
                 else {
                     // Trigger state to Open
