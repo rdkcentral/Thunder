@@ -247,12 +247,15 @@ http://127.0.0.1:55555
 ```
 
 -------------------------------------------------------------------------------------------
-## Windows Build, using Visual Studio 2019
+## Windows Build
 
-The default solution is setup in such away that it can run and load 
-the Thunder and Thunder Nano Services (capable of running in Windows)
-if both repositories are next to each other. So checkout Thunder on 
-disk and put the ThunderNanoServices next to it.
+In order to build Thunder and its components on Windows, you will need to have Visual Studio installed.
+
+The main solution file with all projects and their dependancies can be found in the ThunderOnWindows repository.
+
+Just like in case of Linux, the first step is to clone everything, but the main difference on Windows will be that you need to checkout ThunderOnWindows first, and then every other repository goes into it. So the structure should be like this:
+
+...
 
 e.g.
 C:\Users\Me\Thunder 
