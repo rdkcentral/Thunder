@@ -291,10 +291,12 @@ namespace PluginHost
             if (_handler != nullptr) {
 
                 result = _handler->QueryInterface(id);
+#ifdef HIBERNATE_SUPPORT_AUTOWAKEUP_ENABLED
                 if(result && IsHibernated())
                 {
                     Wakeup(_wakeupProcessSequence);
                 }
+#endif
             }
 
             _pluginHandling.Unlock();

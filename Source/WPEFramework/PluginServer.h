@@ -770,21 +770,38 @@ namespace PluginHost {
 
                 Lock();
 
-                if ( (_jsonrpc == nullptr) || (IsActive() == false && IsHibernated() == false) ) {
+                if ( (_jsonrpc == nullptr) || (IsActive() == false
+#ifdef HIBERNATE_SUPPORT_AUTOWAKEUP_ENABLED
+                 && IsHibernated() == false
+#endif
+                 ) ) {
+                    bool isHibernated = IsHibernated();
                     Unlock();
 
                     result = Core::proxy_cast<Core::JSONRPC::Message>(Factories::Instance().JSONRPC());
-                    result->Error.SetError(Core::ERROR_UNAVAILABLE);
-                    result->Error.Text = _T("Service is not active");
+
+                    if(isHibernated)
+                    {
+                        result->Error.SetError(Core::ERROR_HIBERNATED);
+                        result->Error.Text = _T("Service is hibernated");
+                    }
+                    else
+                    {
+                        result->Error.SetError(Core::ERROR_UNAVAILABLE);
+                        result->Error.Text = _T("Service is not active");
+                    }
+
                     result->Id = message.Id;
                 }
                 else {
+#ifdef HIBERNATE_SUPPORT_AUTOWAKEUP_ENABLED
                     if (IsHibernated())
                     {
                         Unlock();
                         Wakeup(_wakeupProcessSequence);
                         Lock();
                     }
+#endif
                     IDispatcher* service(_jsonrpc);
                     service->AddRef();
                     Unlock();
