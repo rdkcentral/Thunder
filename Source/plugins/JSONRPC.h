@@ -143,7 +143,7 @@ namespace PluginHost {
             void Event(JSONRPC& parent, const string event, const string& parameter, std::function<bool(const string&)>&& sendifmethod) {
                 for (const Destination& entry : _designators) {
                     if (!sendifmethod || sendifmethod(entry.second)) {
-                        parent.Notify(entry.first, entry.second, parameter);
+                        parent.Notify(entry.first, entry.second + '.' + event, parameter);
                     }
                 }
                 for (IDispatcher::ICallback*& callback : _callbacks) {
@@ -513,8 +513,11 @@ namespace PluginHost {
             _adminLock.Lock();
             _observers.clear();
             _adminLock.Unlock();
-            _service->Release();
-            _service = nullptr;
+
+            if (_service != nullptr) {
+                _service->Release();
+                _service = nullptr;
+            }
         }
         void Dropped(const uint32_t channelId) override
         {

@@ -24,12 +24,8 @@ option(CRYPTALGO
         "Include the encyption algorithm library." ON)
 option(WEBSOCKET
         "Include the websocket library." ON)
-option(TRACING
-        "Include the tracing library." OFF)
 option(MESSAGING
         "Include the messaging library." ON)
-option(PROFILER
-        "Include the profiler library." OFF)
 option(COM
         "Include the COM library." ON)
 option(PROCESS
@@ -38,12 +34,6 @@ option(PLUGINS
         "Include plugins library." ON)
 option(EXECUTABLE
         "Include the hosting executable." ON)
-option(VIRTUALINPUT
-        "Include VirtualInput for external applications." OFF)
-option(PROCESSCONTAINERS
-        "Include containerization in the build." OFF)
-option(TEST_APPS
-        "Include test applications." OFF)
 option(STUB_HARDWARE
         "Use hardware stubs for unittests)." OFF)
 option(WCHAR_SUPPORT
@@ -55,8 +45,6 @@ option(EXCEPTION_CATCHING
         "Enable unhandled exception handling catching." OFF)
 option(DEADLOCK_DETECTION
         "Enable deadlock detection tooling." OFF)
-option(WARNING_REPORTING
-        "Include warning reporting in the build." OFF)
 
 if(HIDE_NON_EXTERNAL_SYMBOLS)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
@@ -87,11 +75,6 @@ set(EXTERN_EVENTS ${EXTERN_EVENTS} CACHE INTERNAL
 string(REPLACE " " ";" EXTERN_EVENT_LIST "${EXTERN_EVENTS}")
 message(STATUS "Assuming external events: ${EXTERN_EVENT_LIST}")
 
-if(TRACING AND MESSAGING)
-    message(WARNING "Disabled Tracing, because Messaging and Tracing are mutually exclusive.")
-    set(TRACING OFF)
-endif()
-
 if(CORE)
     add_subdirectory(core)
 endif()
@@ -100,38 +83,16 @@ if(CRYPTALGO)
     add_subdirectory(cryptalgo)
 endif()
 
-if(PROCESSCONTAINERS)
-    add_subdirectory(processcontainers)
-endif()
-
 if(WEBSOCKET)
     add_subdirectory(websocket)
-endif()
-
-if(TRACING)
-    add_subdirectory(tracing)
 endif()
 
 if(MESSAGING)
     add_subdirectory(messaging)
 endif()
 
-if(WARNING_REPORTING)
-    add_subdirectory(warningreporting)
-endif()
-
-if(PROFILER)
-    message(FATAL_ERROR "PROFILER option does not exist?")
-    set(PROFILER_INCLUDE_DIR "${ROOT}/Source/profiler")
-    add_subdirectory(profiler)
-endif()
-
 if(COM)
     add_subdirectory(com)
-endif()
-
-if(PROTOCOLS)
-    add_subdirectory(protocols)
 endif()
 
 if(PLUGINS)
@@ -146,3 +107,4 @@ if(EXECUTABLE)
     add_subdirectory(WPEFramework)
 endif()
 
+add_subdirectory(extensions)

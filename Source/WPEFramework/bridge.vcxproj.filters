@@ -57,9 +57,6 @@
     <ClCompile Include="SystemInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ControllerJsonRpc.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="PostMortem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

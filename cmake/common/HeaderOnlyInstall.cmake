@@ -1,5 +1,3 @@
-find_package(WPEFramework)
-
 function(HeaderOnlyInstallCMakeConfig)
     set(optionsArgs NO_SKIP_INTERFACE_LIBRARIES, TREAT_AS_NORMAL)
     set(oneValueArgs LOCATION TEMPLATE TARGET)

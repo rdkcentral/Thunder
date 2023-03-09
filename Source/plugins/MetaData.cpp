@@ -45,6 +45,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Channel::state)
     { PluginHost::MetaData::Service::SUSPENDED, _TXT("suspended") },
     { PluginHost::MetaData::Service::RESUMED, _TXT("resumed") },
     { PluginHost::MetaData::Service::PRECONDITION, _TXT("precondition") },
+    { PluginHost::MetaData::Service::HIBERNATED, _TXT("hibernated") },
 
     ENUM_CONVERSION_END(PluginHost::MetaData::Service::state)
 
@@ -122,8 +123,8 @@ namespace PluginHost
 #if THUNDER_RESTFULL_API
         , Observers(0)
 #endif
-        , Module()
         , ServiceVersion()
+        , Module()
         , InterfaceVersion()
     {
         Add(_T("state"), &JSONState);
@@ -154,8 +155,8 @@ namespace PluginHost
 #if THUNDER_RESTFULL_API
         , Observers(copy.Observers)
 #endif
-        , Module(copy.Module)
         , ServiceVersion(copy.ServiceVersion)
+        , Module(copy.Module)
         , InterfaceVersion(copy.InterfaceVersion)
     {
         Add(_T("state"), &JSONState);

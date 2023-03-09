@@ -22,11 +22,8 @@ get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 set(THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool")
 set(ENABLE_INITSCRIPT_SUPPORT ON CACHE STRING "Enable init script(systemd/initd) install support from the thunder source tree")
 
-# JsonGenerator(CODE INPUT ${CMAKE_CURRENT_SOURCE_DIR}/json/Controller.json OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/json")
-
 add_executable(${TARGET}
         Controller.cpp
-        ControllerJsonRpc.cpp
         PluginHost.cpp
         PluginServer.cpp
         Probe.cpp
@@ -47,6 +44,12 @@ if (TREE_REFERENCE)
               -DTREE_REFERENCE=${TREE_REFERENCE}
             )
 endif()
+
+target_include_directories( ${TARGET}
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../plugins/generated/jsonrpc>
+        )
+
 
 if (EXCEPTION_CATCHING)
     set_source_files_properties( PluginServer.cpp PROPERTIES COMPILE_FLAGS "-fexceptions" )
@@ -73,6 +76,13 @@ if (PROCESSCONTAINERS)
         PUBLIC
             PROCESSCONTAINERS_ENABLED=1)
 endif(PROCESSCONTAINERS)
+
+if(HIBERNATESUPPORT)
+    target_link_libraries(${TARGET} PRIVATE
+        ${NAMESPACE}Hibernate::${NAMESPACE}Hibernate)
+    target_compile_definitions(${TARGET} PUBLIC
+         HIBERNATE_SUPPORT_ENABLED=1)
+endif()
 
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11

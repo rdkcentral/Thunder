@@ -260,10 +260,12 @@ EXTERNAL void SleepUs(const uint32_t time);
 
 #ifdef _UNICODE
 typedef std::wstring string;
+typedef std::wstring ccstring;
 #endif
 
 #ifndef _UNICODE
 typedef std::string string;
+typedef std::string ccstring;
 #endif
 
 #define CBR_110 110
@@ -326,6 +328,7 @@ typedef std::string string;
 #undef min
 #undef max
 #undef ERROR_NOT_SUPPORTED
+#undef ERROR_HIBERNATED
 
 //#if _MSC_VER >= 1600
 //const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) - 1;
@@ -622,10 +625,12 @@ typedef enum {
 
 #ifdef _UNICODE
 typedef std::wstring string;
+typedef std::wstring ccstring;
 #endif
 
 #ifndef _UNICODE
 typedef std::string string;
+typedef std::string ccstring;
 #endif
 
 #define STRLEN(STATIC_TEXT) ((sizeof(STATIC_TEXT) / sizeof(TCHAR)) - 1)
@@ -859,8 +864,11 @@ namespace Core {
         ERROR_CODE(ERROR_NOT_EXIST, 43) \
         ERROR_CODE(ERROR_NOT_SUPPORTED, 44) \
         ERROR_CODE(ERROR_INVALID_RANGE, 45) \
-        ERROR_CODE(ERROR_FAILED_REGISTERED, 46) \
-        ERROR_CODE(ERROR_FAILED_UNREGISTERED, 47) 
+        ERROR_CODE(ERROR_HIBERNATED, 46) \
+        ERROR_CODE(ERROR_INPROC, 47) \
+        ERROR_CODE(ERROR_FAILED_REGISTERED, 48) \
+        ERROR_CODE(ERROR_FAILED_UNREGISTERED, 49) 
+
 
     #define ERROR_CODE(CODE, VALUE) CODE = VALUE,
 

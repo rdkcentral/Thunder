@@ -307,6 +307,32 @@ namespace PluginHost {
 
 #endif
 
+#ifdef HIBERNATE_SUPPORT_ENABLED
+            class HibernateConfig : public Core::JSON::Container {
+            public:
+                HibernateConfig()
+                    : Locator(_T("127.0.0.1:12345"))
+                {
+
+                    Add(_T("locator"), &Locator);
+                }
+                HibernateConfig(const HibernateConfig& copy)
+                    : Locator(copy.Locator)
+                {
+                    Add(_T("locator"), &Locator);
+                }
+                ~HibernateConfig() override = default;
+
+                HibernateConfig& operator=(const HibernateConfig& RHS)
+                {
+                    Locator = RHS.Locator;
+                    return (*this);
+                }
+
+                Core::JSON::String Locator;
+            };
+#endif
+
         public:
             JSONConfig(const Config&) = delete;
             JSONConfig& operator=(const Config&) = delete;
@@ -357,6 +383,9 @@ namespace PluginHost {
 #endif
                 , LinkerPluginPaths()
                 , Observe()
+#ifdef HIBERNATE_SUPPORT_ENABLED
+                , Hibernate()
+#endif
             {
                 // No IdleTime
                 Add(_T("model"), &Model);
@@ -377,12 +406,7 @@ namespace PluginHost {
                 Add(_T("hardkillcheckwaittime"), &HardKillCheckWaitTime);
                 Add(_T("ipv6"), &IPV6);
                 Add(_T("legacyinitialize"), &LegacyInitialize);
-                
-#ifdef __CORE_MESSAGING__
                 Add(_T("messaging"), &DefaultMessagingCategories);
-#else
-                Add(_T("tracing"), &DefaultMessagingCategories);
-#endif
                 Add(_T("warningreporting"), &DefaultWarningReportingCategories); 
                 Add(_T("redirect"), &Redirect);
                 Add(_T("process"), &Process);
@@ -400,6 +424,9 @@ namespace PluginHost {
 #endif
                 Add(_T("linkerpluginpaths"), &LinkerPluginPaths);
                 Add(_T("observe"), &Observe);
+#ifdef HIBERNATE_SUPPORT_ENABLED
+                Add(_T("hibernate"), &Hibernate);
+#endif
             }
             ~JSONConfig() override = default;
 
@@ -442,6 +469,9 @@ namespace PluginHost {
 #endif
             Core::JSON::ArrayType<Core::JSON::String> LinkerPluginPaths;
             Observables Observe;
+#ifdef HIBERNATE_SUPPORT_ENABLED
+            HibernateConfig Hibernate;
+#endif
         };
 
     public:
@@ -600,6 +630,9 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             , _ProcessContainersLogging()
             #endif
             , _linkerPluginPaths()
+            #ifdef HIBERNATE_SUPPORT_ENABLED
+            , _hibernateLocator()
+            #endif
         {
             JSONConfig config;
 
@@ -611,6 +644,9 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 _JSONRPCPrefix = '/' + config.JSONRPC.Value();
 #ifdef PROCESSCONTAINERS_ENABLED
                 _ProcessContainersLogging = config.ProcessContainers.Logging.Value();
+#endif
+#ifdef HIBERNATE_SUPPORT_ENABLED
+                _hibernateLocator = config.Hibernate.Locator.Value();
 #endif
                 _volatilePath = Core::Directory::Normalize(config.VolatilePath.Value());
                 _persistentPath = Core::Directory::Normalize(config.PersistentPath.Value());
@@ -742,6 +778,12 @@ POP_WARNING()
 #ifdef PROCESSCONTAINERS_ENABLED
         inline const string& ProcessContainersLogging() const {
             return (_ProcessContainersLogging);
+        }
+#endif
+
+#ifdef HIBERNATE_SUPPORT_ENABLED
+        inline const string& HibernateLocator() const {
+            return (_hibernateLocator);
         }
 #endif
         inline const string& VolatilePath() const
@@ -1026,6 +1068,9 @@ POP_WARNING()
         string _ProcessContainersLogging;
 #endif
         std::vector<std::string> _linkerPluginPaths;
+#ifdef HIBERNATE_SUPPORT_ENABLED
+        string _hibernateLocator;
+#endif
     };
 }
 }
