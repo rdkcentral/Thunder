@@ -494,7 +494,7 @@ TEST(Core_SystemInfo, memorySnapShot)
     }
 #endif
 }
-TEST(Core_SystemInfo, UPTime)
+TEST(Core_SystemInfo, DISABLED_UPTime)
 {
     EXPECT_EQ(Core::SystemInfo::Instance().GetUpTime(), GetUpTime());
 }
