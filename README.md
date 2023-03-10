@@ -249,33 +249,74 @@ http://127.0.0.1:55555
 -------------------------------------------------------------------------------------------
 ## Windows Build
 
-In order to build Thunder and its components on Windows, you will need to have Visual Studio installed.
+In order to build Thunder and its components on Windows, you will need Visual Studio installed.
 
-The main solution file with all projects and their dependancies can be found in the ThunderOnWindows repository.
+The main solution file with all projects and their dependencies can be found in the ThunderOnWindows repo.
 
-Just like in case of Linux, the first step is to clone everything, but the main difference on Windows will be that you need to checkout ThunderOnWindows first, and then every other repository goes into it. So the structure should be like this:
+Just like in case of Linux, the first step is to clone everything. However, the main difference on Windows will be that you need to checkout ThunderOnWindows first, and then every other repo goes into it. So, the structure should be like this:
 
-...
+* ThunderOnWindows
+  + Thunder
+  + ThunderClientLibraries
+  + ThunderInterfaces
+  + ThunderNanoServices
+  + ThunderNanoServicesRDK
+  + ThunderTools
+  + ThunderUI
 
-e.g.
-C:\Users\Me\Thunder 
-C:\Users\Me\ThunderNanoServices
+Make a dedicated folder called ```ThunderWin``` directly on disk ```C:\```, clone ThunderOnWindows into it and change the directory.
 
-Than to run, the config file is assuming that all is installed on W: 
-You can set this by mapping the artifacts directory created, to the 
-W drive. A typical use case would be:
+```Shell
+mkdir C:\ThunderWin
+cd C:\ThunderWin
+git clone https://github.com/WebPlatformForEmbedded/ThunderOnWindows.git
+cd ThunderOnWindows
+```
 
-net use w: "\\localhost\c$\Users\Me\Thunder\artifacts"
+Then, clone the remaining repos.
 
-Before the first run make sure you creat a volatile and a peritent directory
-here mkdir w:\Temp and mkdir w:\Persistent.
+```Shell
+git clone https://github.com/rdkcentral/ThunderTools.git
+git clone https://github.com/rdkcentral/Thunder.git
+git clone https://github.com/rdkcentral/ThunderInterfaces.git
+git clone https://github.com/rdkcentral/ThunderClientLibraries.git
+git clone https://github.com/rdkcentral/ThunderNanoServices.git
+git clone https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK.git
+git clone https://github.com/rdkcentral/ThunderUI.git
+```
 
-If you want to use the Thunder UI page, copy the ThunderUI\build\* to 
-W:\<build type>\Controller\UI
+The next step is to open the solution file ```ThunderOnWindows\Thunder.sln``` in  Visual Studio, click on ```Solution Thunder``` and build it.
 
-Depending on the filesystem used by the windows OS, symbolic links are supported 
-or not. There is 1 Symbolic link in the Thuder repository (Thunder/Source/tools
--> "../Tools"). If this symbolic link does not exist, you will experience build 
-errors (error 2, GenrateProxyStub.py not found). 
-or create a copy of the Tools directory in Source/tools (xcopy /d ..\Tools tools)
-or create the symlink manually (mklink /D tools "..\Tools")
+Note: This will build all project files in a similar order to the Linux cmake build. If you are interested in building only a specific part of Thunder, for example, just ThunderInterfaces, you can build only the ```Interfaces``` project file and it will automatically build its dependencies, so in this case ```bridge```. 
+
+After the building process is finished, you still need to make a few adjustments before running Thunder. One of them is to create a volatile and a persistent directory in a specific location, this can be done with the following commands:
+
+```Shell
+mkdir ..\artifacts\temp
+mkdir ..\artifacts\Persistent
+```
+
+Then, you must move two dlls with libs into the artifacts folder, which can be done with these commands:
+
+```Shell
+move lib\static_x64\libcrypto-1_1-x64.dll ..\artifacts\Debug\libcrypto-1_1-x64.dll
+move lib\static_x64\libssl-1_1-x64.dll ..\artifacts\Debug\libssl-1_1-x64.dll
+```
+
+Next, in order to use ThunderUI on Windows, copy it into the artifacts folder. This can be done with the following line:
+
+```Shell
+robocopy ThunderUI\dist ..\artifacts\Debug\Plugins\Controller\UI /S
+```
+
+Now, right click on ```bridge``` project file and select ```Properties```. Go into ```Debugging``` tab, and put the following line into ```Command Arguments```:
+
+```Shell
+-c "$(ProjectDir)ExampleConfigWindows.json"
+```
+
+Apply the changes, press ```F5``` to start Thunder, and open the link below in your browser.
+
+```Shell
+http://127.0.0.1:25555
+```
