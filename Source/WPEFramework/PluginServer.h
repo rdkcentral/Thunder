@@ -2360,7 +2360,11 @@ namespace PluginHost {
                     }
 
                     if (_proxyStubObserver.IsValid() == false) {
-                        SYSLOG(Logging::Startup, (_T("Dynamic COMRPC failed. Can not observe: [%s]"), observableProxyStubPath.c_str()));
+                        if (observableProxyStubPath.empty() == true) {
+                            SYSLOG(Logging::Startup, (_T("Dynamic COMRPC disabled.")));
+                        } else {
+                            SYSLOG(Logging::Startup, (_T("Dynamic COMRPC failed. Can not observe: [%s]"), observableProxyStubPath.c_str()));
+                        }
                     }
                 }
                 virtual ~CommunicatorServer()
@@ -2779,7 +2783,11 @@ POP_WARNING()
                 , _compositPlugins()
             {
                 if (_configObserver.IsValid() == false) {
-                    SYSLOG(Logging::Startup, (_T("Dynamic configs failed. Can not observe: [%s]"), server._config.PluginConfigPath().c_str()));
+                    if (server._config.PluginConfigPath().empty() == true) {
+                        SYSLOG(Logging::Startup, (_T("Dynamic configs disabled.")));
+                    } else {
+                        SYSLOG(Logging::Startup, (_T("Dynamic configs failed. Can not observe: [%s]"), server._config.PluginConfigPath().c_str()));
+                    }
                 }
             }
             POP_WARNING();
