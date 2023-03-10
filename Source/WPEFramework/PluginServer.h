@@ -2359,12 +2359,10 @@ namespace PluginHost {
                         RPC::Communicator::ForcedDestructionTimes(softKillCheckWaitTime, hardKillCheckWaitTime);
                     }
 
-                    if (_proxyStubObserver.IsValid() == false) {
-                        if (observableProxyStubPath.empty() == true) {
-                            SYSLOG(Logging::Startup, (_T("Dynamic COMRPC disabled.")));
-                        } else {
-                            SYSLOG(Logging::Startup, (_T("Dynamic COMRPC failed. Can not observe: [%s]"), observableProxyStubPath.c_str()));
-                        }
+                    if (observableProxyStubPath.empty() == true) {
+                        SYSLOG(Logging::Startup, (_T("Dynamic COMRPC disabled.")));
+                    } else if (_proxyStubObserver.IsValid() == false) {
+                        SYSLOG(Logging::Startup, (_T("Dynamic COMRPC failed. Can not observe: [%s]"), observableProxyStubPath.c_str()));
                     }
                 }
                 virtual ~CommunicatorServer()
@@ -2782,12 +2780,10 @@ POP_WARNING()
                 , _configObserver(*this, server._config.PluginConfigPath())
                 , _compositPlugins()
             {
-                if (_configObserver.IsValid() == false) {
-                    if (server._config.PluginConfigPath().empty() == true) {
-                        SYSLOG(Logging::Startup, (_T("Dynamic configs disabled.")));
-                    } else {
-                        SYSLOG(Logging::Startup, (_T("Dynamic configs failed. Can not observe: [%s]"), server._config.PluginConfigPath().c_str()));
-                    }
+                if (server._config.PluginConfigPath().empty() == true) {
+                    SYSLOG(Logging::Startup, (_T("Dynamic configs disabled.")));
+                } else if (_configObserver.IsValid() == false) {
+                    SYSLOG(Logging::Startup, (_T("Dynamic configs failed. Can not observe: [%s]"), server._config.PluginConfigPath().c_str()));
                 }
             }
             POP_WARNING();
