@@ -1,9 +1,13 @@
 # Thunder
 A C++ platform abstraction layer for generic functionality.
 
+It can be built successfully on both Linux and Windows. After making sure you have the dependencies sorted out, go to the proper OS section:
+* [Linux Build](#Linux)
+* [Windows Build](#Windows)
+
 -------------------------------------------------------------------------------------------
 ## Dependencies
-After JsonGenerator.py and StubGenerator.py were modified to run with the Python 3.5 version, some additional actions might be required. However, no extra actions are necessary while using Buildroot or Yocto. When running these scripts manually or on Windows, make sure that Python 3.5 or higher is used:
+After JsonGenerator.py and StubGenerator.py were modified to run with the Python 3.5 version, some additional actions might be required. However, no additional actions are necessary while using Buildroot or Yocto. When running these scripts manually or on Windows, make sure that Python 3.5 or higher is used:
 
 ```Shell
 python --version
@@ -17,9 +21,10 @@ pip install jsonref
 
 -------------------------------------------------------------------------------------------
 **Internal plugins**
-* [Controller](Source/WPEFramework/doc/ControllerPlugin.md)
+* [Controller](Source/WPEFramework/doc/ControllerPlugin.md) - activates and deactivates the configured plugins.
 
 -------------------------------------------------------------------------------------------
+<a name="Linux"></a>
 ## Linux (Desktop) Build
 These instructions should work on Raspberry PI or any Linux distribution.
 
@@ -240,20 +245,27 @@ PATH=${PWD}/install/usr/bin:${PATH} \
 WPEFramework -c ${PWD}/install/etc/WPEFramework/config.json
 ```
 
-Now, the only thing left is to open a browser and connect to Thunder.
+Now, the only thing left is to open a browser and connect to Thunder:
 
 ```Shell
 http://127.0.0.1:55555
 ```
 
+You should see a page similar to this one:
+
+<img src="https://i.imgur.com/0zBG9FJ.png" width="700">
+
+Note: All logs will be displayed in the command windows, which can be very useful for debugging purposes. To close the framework, press Q and enter.
+
 -------------------------------------------------------------------------------------------
+<a name="Windows"></a>
 ## Windows Build
 
-In order to build Thunder and its components on Windows, you will need Visual Studio installed.
+To build Thunder and its components on Windows, you will need Visual Studio installed.
 
-The main solution file with all projects and their dependencies can be found in the ThunderOnWindows repo. Besides, this reository holds the binaries and the header files required to build the Thunder framework on Windows.
+The main solution file with all projects and their dependencies can be found in the ThunderOnWindows repo. Besides, this repository holds the binaries and the header files required to build the Thunder framework on Windows.
 
-Just like in case of Linux, the first step is to clone everything. However, the main difference on Windows will be that you need to checkout ThunderOnWindows first, and then every other repo goes into it. So, the structure should be like this:
+Just like in case of Linux, the first step is to clone everything. However, the main difference on Windows will be that you need to checkout ThunderOnWindows first, and then every other repo will go into it. Therefore, the structure should be like this:
 
 * ThunderOnWindows
   + Thunder
@@ -285,7 +297,7 @@ git clone https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK.git
 git clone https://github.com/rdkcentral/ThunderUI.git
 ```
 
-The next step is to open the solution file ```ThunderOnWindows\Thunder.sln``` in  Visual Studio, click on ```Solution Thunder``` and build it.
+The next step is to open the solution file ```ThunderOnWindows\Thunder.sln``` in  Visual Studio, right click on ```Solution Thunder``` and build it.
 
 Note: This will build all project files in a similar order to the Linux cmake build. If you are interested in building only a specific part of Thunder, for example, just ThunderInterfaces, you can build only the ```Interfaces``` project file and it will automatically build its dependencies, so in this case ```bridge```. 
 
@@ -303,7 +315,7 @@ move lib\static_x64\libcrypto-1_1-x64.dll ..\artifacts\Debug\libcrypto-1_1-x64.d
 move lib\static_x64\libssl-1_1-x64.dll ..\artifacts\Debug\libssl-1_1-x64.dll
 ```
 
-Next, in order to use ThunderUI on Windows, copy it into the artifacts folder. This can be done with the following line:
+Next, to use ThunderUI on Windows, copy it into the artifacts folder. This can be done with the following line:
 
 ```Shell
 robocopy ThunderUI\dist ..\artifacts\Debug\Plugins\Controller\UI /S
@@ -315,7 +327,9 @@ Now, right click on ```bridge``` project file and select ```Properties```. Go in
 -c "$(ProjectDir)ExampleConfigWindows.json"
 ```
 
-Apply the changes, press ```F5``` to start Thunder, and open the link below in your browser.
+<img src="https://i.imgur.com/pbgAXSV.png" width="700">
+
+Apply the changes, press ```F5``` to start Thunder, and open the link below in your browser. A page similar to the one in Linux build should be displayed.
 
 ```Shell
 http://127.0.0.1:25555
