@@ -28,6 +28,10 @@
 #include "../processcontainers/ProcessContainer.h"
 #endif
 
+#ifdef HIBERNATE_SUPPORT_ENABLED
+#include "../hibernate/hibernate.h"
+#endif
+
 namespace WPEFramework {
 
 ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
@@ -287,6 +291,12 @@ namespace PluginHost
             if (_handler != nullptr) {
 
                 result = _handler->QueryInterface(id);
+#ifdef HIBERNATE_SUPPORT_AUTOWAKEUP_ENABLED
+                if(result && IsHibernated())
+                {
+                    Wakeup(_wakeupProcessSequence);
+                }
+#endif
             }
 
             _pluginHandling.Unlock();
@@ -321,8 +331,11 @@ namespace PluginHost
 
         if (currentState == IShell::ACTIVATION) {
             result = Core::ERROR_INPROGRESS;
-        } else if ((currentState == IShell::UNAVAILABLE) || (currentState == IShell::DEACTIVATION) || (currentState == IShell::DESTROYED)) {
+        } else if ((currentState == IShell::UNAVAILABLE) || (currentState == IShell::DEACTIVATION) || (currentState == IShell::DESTROYED) ) {
             result = Core::ERROR_ILLEGAL_STATE;
+        } else if (currentState == IShell::HIBERNATED) {
+            Unlock();
+            result = Wakeup(_wakeupProcessSequence,3000);
         } else if ((currentState == IShell::DEACTIVATED) || (currentState == IShell::PRECONDITION)) {
 
             // Load the interfaces, If we did not load them yet...
@@ -440,7 +453,7 @@ namespace PluginHost
             result = Core::ERROR_INPROGRESS;
         } else if ((currentState == IShell::ACTIVATION) || (currentState == IShell::DESTROYED)) {
             result = Core::ERROR_ILLEGAL_STATE;
-        } else if ((currentState == IShell::UNAVAILABLE) || (currentState == IShell::ACTIVATED) || (currentState == IShell::PRECONDITION)) {
+        } else if ((currentState == IShell::UNAVAILABLE) || (currentState == IShell::ACTIVATED) || (currentState == IShell::PRECONDITION) || (currentState == IShell::HIBERNATED) ) {
 
             const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
 
@@ -448,6 +461,16 @@ namespace PluginHost
             const string callSign(PluginHost::Service::Configuration().Callsign.Value());
 
             _reason = why;
+
+            if(currentState == IShell::HIBERNATED)
+            {
+                Unlock();
+                if(Wakeup(_wakeupProcessSequence,3000) != Core::ERROR_NONE)
+                {
+                    //TODO: should we force termination?
+                }
+                Lock();
+            }
 
             if (currentState == IShell::ACTIVATED) {
                 ASSERT(_handler != nullptr);
@@ -509,6 +532,170 @@ namespace PluginHost
         return (result);
     }
 
+    uint32_t Server::Service::Hibernate(const string &processSequence, const uint32_t timeout) /* override */ {
+        uint32_t result = Core::ERROR_NONE;
+        auto start = std::chrono::high_resolution_clock::now();
+
+        Lock();
+
+        IShell::state currentState(State());
+
+        if (currentState != IShell::state::ACTIVATED) {
+            result = Core::ERROR_ILLEGAL_STATE;
+        }
+        else if (_connection == nullptr) {
+            result = Core::ERROR_INPROC;
+        }
+        else {
+            // Oke we have an Connection so there is something to Hibernate..
+            RPC::IMonitorableProcess* local = _connection->QueryInterface< RPC::IMonitorableProcess>();
+            if (local == nullptr) {
+                result = Core::ERROR_BAD_REQUEST;
+            }
+            else {
+                _wakeupProcessSequence.clear();
+
+                #ifdef HIBERNATE_SUPPORT_ENABLED
+
+                std::map<string,uint32_t> pidsWithName;
+
+                Core::ProcessInfo::FindChildrenWithName(local->ParentPID(), pidsWithName);
+                pidsWithName[Callsign()] = local->ParentPID();
+
+                if(processSequence.empty())
+                {
+                    for (auto const& pidWithName : pidsWithName) {
+                        SYSLOG(Logging::Notification, ("Hibernation of [%s]: process [%s, %u]",  Callsign().c_str(), pidWithName.first.c_str(), pidWithName.second));
+                        result = HibernateProcess(timeout, pidWithName.second, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+                        if (result != HIBERNATE_ERROR_NONE) {
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    std::list<string> processSequenceList;
+                    std::stringstream input(processSequence);
+                    for(string procName; getline(input, procName, ' ');)
+                    {
+                        processSequenceList.push_back(procName);
+                        if(_wakeupProcessSequence.empty())
+                        {
+                            _wakeupProcessSequence = procName;
+                        }
+                        else
+                        {
+                            _wakeupProcessSequence = procName + " " + _wakeupProcessSequence;
+                        }
+                    }
+
+                    for (auto name : processSequenceList)
+                    {
+                        if(pidsWithName.find(name) != pidsWithName.end())
+                        {
+                            SYSLOG(Logging::Notification, ("Hibernation of [%s]: process [%s, %u]",  Callsign().c_str(), name.c_str(), pidsWithName[name]));
+                            result = HibernateProcess(timeout, pidsWithName[name], _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+                            if (result != HIBERNATE_ERROR_NONE) {
+                                break;
+                            }
+                        }
+                    }
+                }
+                #else
+                result = Core::ERROR_NONE;
+                #endif
+                if (result == Core::ERROR_NONE) {
+                    State(IShell::HIBERNATED);
+                    SYSLOG(Logging::Notification, ("Hibernated plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
+                }
+                local->Release();
+            }
+        }
+        Unlock();
+
+        auto stop = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+        SYSLOG(Logging::Notification, (_T("Hibernate of [%s] with seq [%s] took: %d ms"), Callsign().c_str(), processSequence.c_str(), duration.count()/1000));
+
+        return (result);
+    }
+
+    uint32_t Server::Service::Wakeup(const string &processSequence, const uint32_t timeout) /* override */ {
+        uint32_t result = Core::ERROR_NONE;
+        auto start = std::chrono::high_resolution_clock::now();
+
+        Lock();
+
+        IShell::state currentState(State());
+
+        if (currentState != IShell::HIBERNATED) {
+            result = Core::ERROR_ILLEGAL_STATE;
+        }
+        else {
+            ASSERT(_connection != nullptr);
+
+            // Oke we have an Connection so there is something to Wakeup..
+            RPC::IMonitorableProcess* local = _connection->QueryInterface< RPC::IMonitorableProcess>();
+
+            if (local == nullptr) {
+                result = Core::ERROR_BAD_REQUEST;
+            }
+            else {
+                #ifdef HIBERNATE_SUPPORT_ENABLED
+                std::map<string,uint32_t> pidsWithName;
+
+                Core::ProcessInfo::FindChildrenWithName(local->ParentPID(), pidsWithName);
+                pidsWithName[Callsign()] = local->ParentPID();
+
+                if(processSequence.empty())
+                {
+                    for (auto const& pidWithName : pidsWithName) {
+                        SYSLOG(Logging::Notification, ("Wakeup of [%s]: process [%s, %u]",  Callsign().c_str(), pidWithName.first.c_str(), pidWithName.second));
+                        result = WakeupProcess(timeout, pidWithName.second, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+                        if (result != HIBERNATE_ERROR_NONE) {
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    std::list<string> procSequenceList;
+                    std::stringstream input(processSequence);
+                    for(string procName; getline(input, procName, ' ');)
+                    {
+                        procSequenceList.push_back(procName);
+                    }
+                    for (auto name : procSequenceList)
+                    {
+                        if(pidsWithName.find(name) != pidsWithName.end())
+                        {
+                            SYSLOG(Logging::Notification, ("Wakeup of [%s]: process [%s, %u]",  Callsign().c_str(), name.c_str(), pidsWithName[name]));
+                            result = WakeupProcess(timeout, pidsWithName[name], _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+                            if (result != HIBERNATE_ERROR_NONE) {
+                                break;
+                            }
+                        }
+                    }
+                }
+                #else
+                result = Core::ERROR_NONE;
+                #endif
+                if (result == Core::ERROR_NONE) {
+                    State(ACTIVATED);
+                    SYSLOG(Logging::Notification, ("Activated plugin from hibernation [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
+                }
+                local->Release();
+            }
+        }
+        Unlock();
+
+        auto stop = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+        SYSLOG(Logging::Notification, (_T("Wakeup of [%s] with seq [%s] took: %d ms"), Callsign().c_str(), processSequence.c_str(), duration.count()/1000));
+
+        return (result);
+    }
+
     uint32_t Server::Service::Unavailable(const reason why) {
         uint32_t result = Core::ERROR_NONE;
 
@@ -520,7 +707,8 @@ namespace PluginHost
             (currentState == IShell::ACTIVATION)   || 
             (currentState == IShell::DESTROYED)    || 
             (currentState == IShell::ACTIVATED)    ||
-            (currentState == IShell::PRECONDITION)) {
+            (currentState == IShell::PRECONDITION) ||
+            (currentState == IShell::HIBERNATED)) {
             result = Core::ERROR_ILLEGAL_STATE;
         }
         else if (currentState == IShell::DEACTIVATED) {

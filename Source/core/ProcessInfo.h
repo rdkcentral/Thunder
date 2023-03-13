@@ -259,6 +259,7 @@ namespace Core {
         void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
 
         static void FindByName(const string& name, const bool exact, std::list<ProcessInfo>& processInfos);
+        static void FindChildrenWithName(uint32_t parentPid, std::map<string, uint32_t>& pidwithName);
 
         void Dump() {
             // The initial customer deploying this functionality sends a Floating Point Exception signal to

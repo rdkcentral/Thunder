@@ -312,6 +312,10 @@ namespace PluginHost {
         {
             return (_state == ACTIVATED);
         }
+        inline bool IsHibernated() const
+        {
+            return (_state == HIBERNATED);
+        }
         inline bool HasError() const
         {
             return (_errorMessage.empty() == false);
