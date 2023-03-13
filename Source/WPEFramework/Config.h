@@ -285,7 +285,7 @@ namespace PluginHost {
             class HibernateConfig : public Core::JSON::Container {
             public:
                 HibernateConfig()
-                    : Locator(_T("127.0.0.1:12345"))
+                    : Locator(_T("/tmp/memcrcom"))
                 {
 
                     Add(_T("locator"), &Locator);
