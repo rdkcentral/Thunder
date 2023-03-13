@@ -251,7 +251,7 @@ http://127.0.0.1:55555
 
 In order to build Thunder and its components on Windows, you will need Visual Studio installed.
 
-The main solution file with all projects and their dependencies can be found in the ThunderOnWindows repo.
+The main solution file with all projects and their dependencies can be found in the ThunderOnWindows repo. Besides, this reository holds the binaries and the header files required to build the Thunder framework on Windows.
 
 Just like in case of Linux, the first step is to clone everything. However, the main difference on Windows will be that you need to checkout ThunderOnWindows first, and then every other repo goes into it. So, the structure should be like this:
 
