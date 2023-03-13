@@ -1,7 +1,7 @@
 # Thunder
 A C++ platform abstraction layer for generic functionality.
 
-It can be built successfully on both Linux and Windows. After making sure you have the dependencies sorted out, go to the proper OS section:
+It can be built successfully on both Linux and Windows. First, make sure you have the dependencies sorted out, and then go to the proper OS section:
 * [Linux Build](#Linux)
 * [Windows Build](#Windows)
 
@@ -28,7 +28,7 @@ pip install jsonref
 ## Linux (Desktop) Build
 These instructions should work on Raspberry PI or any Linux distribution.
 
-Note: All our projects can be customized with additional cmake options ```-D```. To obtain a list of possible project-specific options, add ```-L``` to the ```cmake``` commands below.
+Note: All our projects can be customized with additional cmake options ```-D```. To obtain a list of all possible project-specific options, add ```-L``` to the ```cmake``` commands below.
 
 -------------------------------------------------------------------------------------------
 ### **Build and install**
@@ -245,7 +245,7 @@ PATH=${PWD}/install/usr/bin:${PATH} \
 WPEFramework -c ${PWD}/install/etc/WPEFramework/config.json
 ```
 
-Now, the only thing left is to open a browser and connect to Thunder:
+Now, the only thing left is to open a browser and connect to the framework:
 
 ```Shell
 http://127.0.0.1:55555
@@ -255,7 +255,7 @@ You should see a page similar to this one:
 
 <img src="https://i.imgur.com/0zBG9FJ.png" width="700">
 
-Note: All logs will be displayed in the command window, which can be very useful for debugging purposes. To close the framework, press Q and enter.
+Note: All logs will be displayed in the command window, which can be very useful for debugging purposes. To close the framework, press ```q``` and then ```enter```.
 
 -------------------------------------------------------------------------------------------
 <a name="Windows"></a>
@@ -276,7 +276,7 @@ Just like in case of Linux, the first step is to clone everything. However, the 
   + ThunderTools
   + ThunderUI
 
-Make a dedicated folder called ```ThunderWin``` directly on disk ```C:\```, clone ThunderOnWindows into it and change the directory.
+Make a dedicated folder called ```ThunderWin``` directly on the drive ```C:\```, clone ThunderOnWindows into it and change the directory.
 
 ```Shell
 mkdir C:\ThunderWin
