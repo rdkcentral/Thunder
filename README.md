@@ -255,7 +255,7 @@ You should see a page similar to this one:
 
 <img src="https://i.imgur.com/0zBG9FJ.png" width="700">
 
-Note: All logs will be displayed in the command windows, which can be very useful for debugging purposes. To close the framework, press Q and enter.
+Note: All logs will be displayed in the command window, which can be very useful for debugging purposes. To close the framework, press Q and enter.
 
 -------------------------------------------------------------------------------------------
 <a name="Windows"></a>
