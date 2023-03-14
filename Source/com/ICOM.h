@@ -38,6 +38,7 @@ namespace WPEFramework {
                 virtual ~INotification() = default;
                 virtual void Activated(IRemoteConnection* connection) = 0;
                 virtual void Deactivated(IRemoteConnection* connection) = 0;
+                virtual void Terminated(IRemoteConnection* connection) = 0;
             };
 
             virtual uint32_t Id() const = 0;

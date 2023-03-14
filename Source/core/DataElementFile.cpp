@@ -122,12 +122,12 @@ namespace Core {
         }
     }
 
-    /* virtual */ DataElementFile::~DataElementFile()
+    void DataElementFile::Close()
     {
         if ((IsValid()) && (m_MemoryMappedFile != INVALID_HANDLE_VALUE)) {
             DWORD flags = ((m_Flags & File::USER_READ) != 0 ? FILE_MAP_READ : 0) | ((m_Flags & File::USER_WRITE) != 0 ? FILE_MAP_WRITE : 0);
             // Set the last size...
-            ::MapViewOfFile(m_MemoryMappedFile, flags, 0, 0, static_cast<SIZE_T>(AllocatedSize()));
+            ::UnmapViewOfFile(Buffer());
             ::CloseHandle(m_MemoryMappedFile);
 
             m_MemoryMappedFile = INVALID_HANDLE_VALUE;
@@ -220,7 +220,7 @@ namespace Core {
         OpenMemoryMappedFile(m_File.Size());
     }
 
-    /* virtual */ DataElementFile::~DataElementFile()
+    void DataElementFile::Close()
     {
         if ((IsValid()) && (m_MemoryMappedFile != INVALID_HANDLE_VALUE)) {
 
