@@ -63,6 +63,10 @@ namespace Core {
         {
             return (m_File);
         }
+        inline bool Destroy()
+        {
+            return (m_File.Destroy());
+        }
         inline uint32_t ErrorCode() const
         {
             return (m_File.ErrorCode());
