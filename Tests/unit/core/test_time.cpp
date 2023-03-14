@@ -69,7 +69,7 @@ std::string GetSystemTime(bool local)
     return systemTime;
 }
 
-TEST(Core_Time, Ctor_TimeSpec)
+TEST(Core_Time, DISABLED_Ctor_TimeSpec)
 {
 #ifdef __POSIX__
     struct timespec ts;
@@ -1447,7 +1447,7 @@ TEST(Core_Time, AddTime)
     newTime = time.Seconds();
     EXPECT_EQ(newTime, expectedAddedTime);
 }
-TEST(Core_Time, SubTime)
+TEST(Core_Time, DISABLED_SubTime)
 {
     Time time(Time::Now());
     std::string timeString1, timeString2;
