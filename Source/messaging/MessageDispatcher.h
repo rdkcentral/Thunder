@@ -144,6 +144,7 @@ namespace Messaging {
         }
         ~MessageDataBufferType() {
             _dataBuffer.Relinquish();
+            _dataBuffer.Destroy();
         }
 
         /**

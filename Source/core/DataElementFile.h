@@ -48,7 +48,9 @@ namespace Core {
         DataElementFile(File& fileName, const uint32_t type);
         DataElementFile(const string& fileName, const uint32_t mode, const uint32_t requiredSize = 0);
         DataElementFile(const DataElementFile&);
-        ~DataElementFile() override;
+        ~DataElementFile() override {
+            Close();
+        }
 
     public:
         inline const string& Name() const
@@ -83,10 +85,21 @@ namespace Core {
         {
             return (m_File.Permission(mode));
         }
+        bool Destroy()
+        {
+            bool closed = IsValid();
+
+            if (closed == true) {
+                Close();
+                closed = m_File.Destroy();
+            }
+            return (closed);
+        }
         bool Load();
         void Sync();
 
     protected:
+        void Close();
         virtual void Reallocation(const uint64_t size);
 
         void ReopenMemoryMappedFile();
