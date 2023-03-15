@@ -140,6 +140,10 @@ namespace Core {
         }
 
     public:
+        inline void Destroy()
+        {
+            _buffer.Destroy();
+        }
         inline void Flush()
         {
             std::atomic_store_explicit(&(_administration->_tail), (std::atomic_load(&(_administration->_head))), std::memory_order_relaxed);

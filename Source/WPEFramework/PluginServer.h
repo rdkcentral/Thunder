@@ -1952,7 +1952,7 @@ namespace PluginHost {
                     // ID) is not destructed the next time we start this plugin
                     // again, we will forcefully kill it !!!
                     _lastId = _connection->Id();
-
+                    _connection->Terminate();
                     _connection->Release();
                     _connection = nullptr;
                 }
@@ -2620,7 +2620,7 @@ namespace PluginHost {
                     RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath());
                     RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, systemRootPath, _T(""), configuration);
 
-                    RPC::Process process(requestId, config, instance);
+                    RPC::Communicator::Process process(requestId, config, instance);
 
                     return (process.Launch(id));
                 }
