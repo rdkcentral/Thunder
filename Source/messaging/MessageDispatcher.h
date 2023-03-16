@@ -144,7 +144,9 @@ namespace Messaging {
         }
         ~MessageDataBufferType() {
             _dataBuffer.Relinquish();
+            _dataLock.Lock();
             _dataBuffer.Destroy();
+            _dataLock.Unlock();
         }
 
         /**
@@ -166,16 +168,18 @@ namespace Messaging {
 
             _dataLock.Lock();
 
-            const uint16_t reservedLength = _dataBuffer.Reserve(fullLength);
+            if (_dataBuffer.IsValid() == true) {
+                const uint16_t reservedLength = _dataBuffer.Reserve(fullLength);
 
-            if (reservedLength >= fullLength) {
-                //no need to serialize because we can write to CyclicBuffer step by step
-                _dataBuffer.Write(reinterpret_cast<const uint8_t*>(&fullLength), sizeof(fullLength)); //fullLength
-                _dataBuffer.Write(value, length); //value
-                _dataBuffer.Ring();
-                result = Core::ERROR_NONE;
-            } else {
-                TRACE_L1("Buffer to small to fit message!");
+                if (reservedLength >= fullLength) {
+                    //no need to serialize because we can write to CyclicBuffer step by step
+                    _dataBuffer.Write(reinterpret_cast<const uint8_t*>(&fullLength), sizeof(fullLength)); //fullLength
+                    _dataBuffer.Write(value, length); //value
+                    _dataBuffer.Ring();
+                    result = Core::ERROR_NONE;
+                } else {
+                    TRACE_L1("Buffer to small to fit message!");
+                }
             }
 
             _dataLock.Unlock();
@@ -231,7 +235,11 @@ namespace Messaging {
         }
         void FlushDataBuffer()
         {
-            _dataBuffer.Flush();
+            _dataLock.Lock();
+            if (_dataBuffer.IsValid() == true) {
+                _dataBuffer.Flush();
+            }
+            _dataLock.Lock();
         }
         bool IsValid() const
         {

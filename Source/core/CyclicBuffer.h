@@ -142,8 +142,7 @@ namespace Core {
     public:
         inline void Destroy()
         {
-            Flush();
-            Alert();
+            _administration = nullptr;
             _buffer.Destroy();
         }
         inline void Flush()
