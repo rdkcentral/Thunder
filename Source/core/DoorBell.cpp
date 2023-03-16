@@ -195,6 +195,7 @@ POP_WARNING()
 
     DoorBell::~DoorBell()
     {
+        _signal.SetEvent();
     }
 }
 }
