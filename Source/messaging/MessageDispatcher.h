@@ -95,6 +95,9 @@ namespace Messaging {
                 cursor.Forward(sizeof(entrySize));
                 return entrySize > sizeof(entrySize) ? entrySize - sizeof(entrySize) : 0;
             }
+            void Destroy() {
+                Core::CyclicBuffer::Destroy();
+            }
 
         private:
             Core::DoorBell _doorBell;
@@ -147,6 +150,11 @@ namespace Messaging {
             _dataLock.Lock();
             _dataBuffer.Destroy();
             _dataLock.Unlock();
+        }
+
+    public:
+        inline const string& Name () const {
+            return (_filenames.data);
         }
 
         /**
