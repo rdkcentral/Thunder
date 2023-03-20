@@ -47,6 +47,11 @@ list(APPEND CMAKE_MODULE_PATH
     "${CMAKE_SOURCE_DIR}/cmake/modules"
     "${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/Modules")
 
+if (TOOLS_SYSROOT)
+    list(APPEND CMAKE_MODULE_PATH
+        "${TOOLS_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/Modules")
+endif()
+
 include(platform)
 include(CmakeHelperFunctions)
 

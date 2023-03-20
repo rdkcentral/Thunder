@@ -32,12 +32,14 @@ namespace WPEFramework {
 
             virtual ~IRemoteConnection() = default;
 
-            struct INotification : virtual public Core::IUnknown {
+            struct EXTERNAL INotification : virtual public Core::IUnknown {
                 enum { ID = ID_COMCONNECTION_NOTIFICATION };
 
                 virtual ~INotification() = default;
-                virtual void Activated(IRemoteConnection* connection) = 0;
-                virtual void Deactivated(IRemoteConnection* connection) = 0;
+                
+                virtual void Activated(IRemoteConnection*) = 0;
+                virtual void Deactivated(IRemoteConnection*) = 0;
+                virtual void Terminated(IRemoteConnection*) { };
             };
 
             virtual uint32_t Id() const = 0;

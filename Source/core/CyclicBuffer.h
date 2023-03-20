@@ -245,6 +245,13 @@ namespace Core {
 
         virtual void DataAvailable();
 
+    protected:
+        inline bool Destroy()
+        {
+            _administration = nullptr;
+            return (_buffer.Destroy());
+        }
+ 
     private:
         // If the write occures, this method is called to determine the amount of spaces
         // that should be cleared out. The returned number of bytes must be equal to, or

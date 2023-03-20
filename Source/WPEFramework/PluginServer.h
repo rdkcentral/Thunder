@@ -738,7 +738,7 @@ namespace PluginHost {
                     return (result);
                 }
                 uint32_t Hibernate(const uint32_t timeout) override {
-                    uint32_t result;
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
                     PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Hibernate(timeout);
@@ -756,7 +756,7 @@ namespace PluginHost {
                     return (result);
                 }
                 Core::hresult Metadata(string& info /* @out */) const {
-                    Core::hresult result;
+                    Core::hresult result = Core::ERROR_UNAVAILABLE;
                     const PluginHost::IShell* source = Source();
                     if (source != nullptr) {
                         result = source->Metadata(info);
@@ -768,7 +768,7 @@ namespace PluginHost {
                 // Method to access, in the main process space, the channel factory to submit JSON objects to be send.
                 // This method will return a error if it is NOT in the main process.
                 /* @stubgen:stub */
-                uint32_t Submit(const uint32_t /* Id */, const Core::ProxyType<Core::JSON::IElement>& /* response */) override {
+                uint32_t Submit(const uint32_t Id VARIABLE_IS_NOT_USED, const Core::ProxyType<Core::JSON::IElement>& response VARIABLE_IS_NOT_USED) override {
                     return (Core::ERROR_NOT_SUPPORTED);
                 }
 
@@ -878,7 +878,7 @@ namespace PluginHost {
 
                 return (Core::ERROR_NONE);
             }
-            uint32_t Deactivated(const string& callsign, PluginHost::IShell* /* plugin */) override {
+            uint32_t Deactivated(const string& callsign, PluginHost::IShell* plugin VARIABLE_IS_NOT_USED) override {
                 ShellProxy* entry = nullptr;
 
                 _adminLock.Lock();
@@ -1952,7 +1952,7 @@ namespace PluginHost {
                     // ID) is not destructed the next time we start this plugin
                     // again, we will forcefully kill it !!!
                     _lastId = _connection->Id();
-
+                    _connection->Terminate();
                     _connection->Release();
                     _connection = nullptr;
                 }
@@ -2359,7 +2359,9 @@ namespace PluginHost {
                         RPC::Communicator::ForcedDestructionTimes(softKillCheckWaitTime, hardKillCheckWaitTime);
                     }
 
-                    if (_proxyStubObserver.IsValid() == false) {
+                    if (observableProxyStubPath.empty() == true) {
+                        SYSLOG(Logging::Startup, (_T("Dynamic COMRPC disabled.")));
+                    } else if (_proxyStubObserver.IsValid() == false) {
                         SYSLOG(Logging::Startup, (_T("Dynamic COMRPC failed. Can not observe: [%s]"), observableProxyStubPath.c_str()));
                     }
                 }
@@ -2618,7 +2620,7 @@ namespace PluginHost {
                     RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath());
                     RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, systemRootPath, _T(""), configuration);
 
-                    RPC::Process process(requestId, config, instance);
+                    RPC::Communicator::Process process(requestId, config, instance);
 
                     return (process.Launch(id));
                 }
@@ -2752,8 +2754,8 @@ POP_WARNING()
             ServiceMap& operator=(const ServiceMap&) = delete;
 
             PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST);
-            ServiceMap(Server& server, Config& config)
-                : _webbridgeConfig(config)
+            ServiceMap(Server& server)
+                : _server(server)
                 , _adminLock()
                 , _notificationLock()
                 , _services()
@@ -2761,26 +2763,27 @@ POP_WARNING()
                 , _engine(Core::ProxyType<RPC::InvokeServer>::Create(&(server._dispatcher)))
                 , _processAdministrator(
                     *this,
-                    config.Communicator(),
-                    config.PersistentPath(),
-                    config.SystemPath(),
-                    config.DataPath(),
-                    config.VolatilePath(),
-                    config.AppPath(),
-                    config.ProxyStubPath(),
-                    config.ObservableProxyStubPath(),
-                    config.PostMortemPath(),
-                    config.SoftKillCheckWaitTime(),
-                    config.HardKillCheckWaitTime(),
+                    server._config.Communicator(),
+                    server._config.PersistentPath(),
+                    server._config.SystemPath(),
+                    server._config.DataPath(),
+                    server._config.VolatilePath(),
+                    server._config.AppPath(),
+                    server._config.ProxyStubPath(),
+                    server._config.ObservableProxyStubPath(),
+                    server._config.PostMortemPath(),
+                    server._config.SoftKillCheckWaitTime(),
+                    server._config.HardKillCheckWaitTime(),
                     _engine)
-                , _server(server)
                 , _subSystems(this)
                 , _authenticationHandler(nullptr)
-                , _configObserver(*this, config.PluginConfigPath())
+                , _configObserver(*this, server._config.PluginConfigPath())
                 , _compositPlugins()
             {
-                if (_configObserver.IsValid() == false) {
-                    SYSLOG(Logging::Startup, (_T("Dynamic configs failed. Can not observe: [%s]"), config.PluginConfigPath().c_str()));
+                if (server._config.PluginConfigPath().empty() == true) {
+                    SYSLOG(Logging::Startup, (_T("Dynamic configs disabled.")));
+                } else if (_configObserver.IsValid() == false) {
+                    SYSLOG(Logging::Startup, (_T("Dynamic configs failed. Can not observe: [%s]"), server._config.PluginConfigPath().c_str()));
                 }
             }
             POP_WARNING();
@@ -2801,7 +2804,7 @@ POP_WARNING()
                         _authenticationHandler = reinterpret_cast<IAuthenticate*>(QueryInterfaceByCallsign(IAuthenticate::ID, _subSystems.SecurityCallsign()));
                     } else {
                         // Remove the security from all the channels.
-                        _server.Dispatcher().SecurityRevoke(_webbridgeConfig.Security());
+                        _server.Dispatcher().SecurityRevoke(Configuration().Security());
                     }
                 }
 
@@ -2816,7 +2819,7 @@ POP_WARNING()
                 if (_authenticationHandler != nullptr) {
                     result = _authenticationHandler->Officer(token);
                 } else {
-                    result = _webbridgeConfig.Security();
+                    result = Configuration().Security();
                 }
 
                 _adminLock.Unlock();
@@ -3015,7 +3018,7 @@ POP_WARNING()
             inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration, const Service::mode mode)
             {
                 // Whatever plugin is needse, we at least have our MetaData plugin available (as the first entry :-).
-                Core::ProxyType<Service> newService(Core::ProxyType<Service>::Create(_webbridgeConfig, configuration, *this, mode));
+                Core::ProxyType<Service> newService(Core::ProxyType<Service>::Create(Configuration(), configuration, *this, mode));
 
                 if (newService.IsValid() == true) {
                     _adminLock.Lock();
@@ -3044,7 +3047,7 @@ POP_WARNING()
                     newConfiguration.FromString(original->Configuration());
                     newConfiguration.Callsign = newCallsign;
 
-                    Core::ProxyType<Service> clone = Core::ProxyType<Service>::Create(_webbridgeConfig, newConfiguration, *this, Service::mode::CLONED);
+                    Core::ProxyType<Service> clone = Core::ProxyType<Service>::Create(Configuration(), newConfiguration, *this, Service::mode::CLONED);
 
                     if (newService.IsValid() == true) {
                         // Fire up the interface. Let it handle the messages.
@@ -3367,7 +3370,7 @@ POP_WARNING()
             }
 
         private:
-            Config& _webbridgeConfig;
+            Server& _server;
             mutable Core::CriticalSection _adminLock;
             Core::CriticalSection _notificationLock;
             ServiceContainer _services;
@@ -3375,7 +3378,6 @@ POP_WARNING()
             Notifiers _notifiers;
             Core::ProxyType<RPC::InvokeServer> _engine;
             CommunicatorServer _processAdministrator;
-            Server& _server;
             Core::Sink<SubSystems> _subSystems;
             IAuthenticate* _authenticationHandler;
             ConfigObserver _configObserver;

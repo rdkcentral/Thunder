@@ -1,0 +1,83 @@
+name: Test Thunder
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+ 
+jobs:
+  Thunder:
+    runs-on: ubuntu-20.04
+    
+    strategy:
+      matrix:
+        build_type: [Debug, Release, MinSizeRel]
+      
+    env:
+      lib: LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:$LD_LIBRARY_PATH
+      path: PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:$PATH
+
+    name: Testing - ${{matrix.build_type}}
+    steps:
+    - name: Checkout Thunder
+      uses: actions/checkout@v3
+      with:
+        path: Thunder
+        repository: rdkcentral/Thunder
+
+    - name: Checkout ThunderTools
+      uses: actions/checkout@v3
+      with:
+        path: ThunderTools
+        repository: rdkcentral/ThunderTools
+
+    - name: Install necessary packages
+      uses: nick-fields/retry@v2
+      with:
+        timeout_minutes: 10
+        max_attempts: 10
+        command: |
+          sudo gem install apt-spy2
+          sudo apt-spy2 fix --commit --launchpad --country=US
+          sudo apt-get update
+          sudo apt install python3-pip
+          pip install jsonref
+          sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev libgtest-dev
+        
+    - name: Install generators
+      run: |
+        cmake -G Ninja -S ThunderTools -B ${{matrix.build_type}}/build/ThunderTools \
+        -DCMAKE_INSTALL_PREFIX=${{matrix.build_type}}/install/usr
+        cmake --build ${{matrix.build_type}}/build/ThunderTools --target install
+        
+    - name: Build Thunder
+      run: |
+        cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
+        -DBINDING="127.0.0.1" \
+        -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
+        -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
+        -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/WPEFramework/Modules" \
+        -DDATA_PATH="${PWD}/${{matrix.build_type}}/install/usr/share/WPEFramework" \
+        -DPERSISTENT_PATH="${PWD}/${{matrix.build_type}}/install/var/wpeframework" \
+        -DPORT="55555" \
+        -DPROXYSTUB_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/proxystubs" \
+        -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
+        -DVOLATILE_PATH="tmp" \
+        -DBUILD_TESTS=ON
+        cmake --build ${{matrix.build_type}}/build/Thunder --target install
+
+    - name: Run IPTestAdministrator unit test
+      run: ${{env.path}} ${{env.lib}} WPEFramework_test_tests
+
+    - name: Run core unit tests
+      run: ${{env.path}} ${{env.lib}} WPEFramework_test_core
+        
+    - name: Tar files
+      run: tar -czvf ${{matrix.build_type}}.tar.gz ${{matrix.build_type}}
+    
+    - name: Upload
+      uses: actions/upload-artifact@v3
+      with:
+        name: Thunder-${{matrix.build_type}}-artifact
+        path: ${{matrix.build_type}}.tar.gz

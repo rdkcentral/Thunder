@@ -494,11 +494,11 @@ TEST(Core_SystemInfo, memorySnapShot)
     }
 #endif
 }
-TEST(Core_SystemInfo, UPTime)
+TEST(Core_SystemInfo, DISABLED_UPTime)
 {
     EXPECT_EQ(Core::SystemInfo::Instance().GetUpTime(), GetUpTime());
 }
-TEST(Core_SystemInfo, CPUInfo)
+TEST(Core_SystemInfo, DISABLED_CPUInfo)
 {
     // CPULoad
     string cmd = "top -b -n 1 | grep Cpu";

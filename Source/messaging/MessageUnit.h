@@ -745,6 +745,16 @@ namespace WPEFramework {
             }
 
         public:
+            const string& BasePath() const {
+                return(_settings.BasePath());
+            }
+            const string& Identifier() const {
+                return(_settings.Identifier());
+            }
+            uint16_t SocketPort() const {
+                return (_settings.SocketPort());
+            }
+
             uint32_t Open(const string& pathName, const uint16_t doorbell, const string& configuration, const bool background, const flush flushMode);
             uint32_t Open(const uint32_t instanceId);
             void Close();

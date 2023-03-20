@@ -123,8 +123,8 @@ namespace PluginHost
 #if THUNDER_RESTFULL_API
         , Observers(0)
 #endif
-        , Module()
         , ServiceVersion()
+        , Module()
         , InterfaceVersion()
     {
         Add(_T("state"), &JSONState);
@@ -155,8 +155,8 @@ namespace PluginHost
 #if THUNDER_RESTFULL_API
         , Observers(copy.Observers)
 #endif
-        , Module(copy.Module)
         , ServiceVersion(copy.ServiceVersion)
+        , Module(copy.Module)
         , InterfaceVersion(copy.InterfaceVersion)
     {
         Add(_T("state"), &JSONState);

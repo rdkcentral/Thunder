@@ -109,72 +109,18 @@ namespace RPC {
     /* static */ constexpr TCHAR DynamicLoaderPaths::LoaderConfig[];
     static DynamicLoaderPaths& _LoaderPaths = Core::SingletonType<DynamicLoaderPaths>::Instance();
 
-    /* static */ Core::CriticalSection Process::_ldLibLock ;
+    /* static */ Core::CriticalSection Communicator::Process::_ldLibLock ;
 
     class ProcessShutdown : public Core::Thread {
-    public:
+    private:
         static constexpr uint32_t DestructionStackSize = 64 * 1024;
 
-        class Destructor {
-        private:
-
-        public:
-            Destructor(const Destructor&) = delete;
-            Destructor& operator= (const Destructor&) = delete;
-
-            Destructor()
-                : _cycle(0)
-                , _time(0) {
-            }
-            virtual ~Destructor() = default;
-
-        public:
-            uint8_t Cycle() const {
-                return (_cycle);
-            }
-            const uint64_t& Time() const {
-                return (_time);
-            }
-            void Destruct() {
-                // Unconditionally KILL !!!
-                while (Terminate() != 0) {
-                    ++_cycle;
-                    ::SleepMs(1);
-                }
-            }
-            bool Destruct(uint64_t& timeSlot) {
-                bool destructed = false;
-
-                if (_time <= timeSlot) {
-                    uint32_t delay = Terminate();
-
-                    if (delay == 0) {
-                        destructed = true;
-                    }
-                    else {
-                        timeSlot = Core::Time::Now().Ticks();
-                        _time = timeSlot + (delay * 1000 * Core::Time::TicksPerMillisecond);
-                        ++_cycle;
-                    }
-                }
-
-                return (destructed);
-            }
-
-        private:
-            // Should return 0 if no more iterations are needed.
-            virtual uint32_t Terminate() = 0;
-
-        private:
-            uint8_t _cycle;
-            uint64_t _time; // in Seconds
-        };
-
-        using DestructorMap = std::unordered_map<uint32_t, Destructor* >;
+        using DestructorMap = std::unordered_map<uint32_t, Communicator::MonitorableProcess*>;
 
     public:
-        ProcessShutdown(const ProcessShutdown& copy) = delete;
-        ProcessShutdown& operator=(const ProcessShutdown& RHS) = delete;
+        ProcessShutdown(ProcessShutdown&&) = delete;
+        ProcessShutdown(const ProcessShutdown&) = delete;
+        ProcessShutdown& operator=(const ProcessShutdown&) = delete;
 
         ProcessShutdown()
             : Core::Thread(ProcessShutdown::DestructionStackSize, "COMRPCTerminator")
@@ -186,7 +132,7 @@ namespace RPC {
     public:
         void ForceDestruct(const uint32_t id) {
 
-            Destructor* handler = nullptr;
+            Communicator::MonitorableProcess* handler = nullptr;
 
             _adminLock.Lock();
 
@@ -203,25 +149,41 @@ namespace RPC {
 
                 // Forcefully kill this ID.
                 handler->Destruct();
-
-                delete handler;
+                handler->Release();
             }
-
         }
-        template <class IMPLEMENTATION, typename... Args>
-        void Destruct(const uint32_t id, Args... args)
+        void Destruct(const uint32_t id, Communicator::MonitorableProcess& entry)
         {
             _adminLock.Lock();
 
             if (_destructors.find(id) == _destructors.end()) {
-
-                Destructor* handler = new IMPLEMENTATION(std::forward<Args>(args)...);
-
+                entry.AddRef();
                 _destructors.emplace(std::piecewise_construct,
                     std::forward_as_tuple(id),
-                    std::forward_as_tuple(handler));
+                    std::forward_as_tuple(&entry));
 
                 Run();
+            }
+
+            _adminLock.Unlock();
+        }
+        void WaitForCompletion(Communicator::RemoteConnectionMap& parent) {
+
+            Communicator::MonitorableProcess* handler = nullptr;
+
+            _adminLock.Lock();
+
+            DestructorMap::iterator index(_destructors.begin());
+
+            while (index != _destructors.end() ) {
+                if (index->second->operator==(parent) == true) {
+                    // Forcefully kill this ID.
+                    index->second->Destruct();
+                    index = _destructors.erase(index);
+                }
+                else {
+                    index++;
+                }
             }
 
             _adminLock.Unlock();
@@ -239,14 +201,14 @@ namespace RPC {
 
             while (index != _destructors.end()) {
                 if (index->second->Destruct(now) == false) {
-                    uint64_t newTime = index->second->Time();
+                    const uint64_t& newTime = index->second->Time();
                     if (nextSlot > newTime) {
                         nextSlot = newTime;
                     }
                     index++;
                 }
                 else {
-                    delete index->second;
+                    index->second->Release();
                     index = _destructors.erase(index);
                 }
             }
@@ -254,15 +216,10 @@ namespace RPC {
             _adminLock.Unlock();
 
             if (nextSlot != static_cast<uint64_t>(~0)) {
-                if (now > nextSlot) {
-                    delay = 0;
-                }
-                else {
-                    delay = static_cast<uint32_t>((nextSlot - now) / Core::Time::TicksPerMillisecond);
-                }
+                delay = (now > nextSlot ? 0 : static_cast<uint32_t>((nextSlot - now) / Core::Time::TicksPerMillisecond));
             }
 
-            if (delay > 0) {
+            if (delay != 0) {
                 Core::Thread::Block();
             }
 
@@ -275,105 +232,6 @@ namespace RPC {
     };
 
     static ProcessShutdown& g_destructor = Core::SingletonType<ProcessShutdown>::Instance();
-
-    class LocalClosingInfo : public ProcessShutdown::Destructor {
-    public:
-        LocalClosingInfo() = delete;
-        LocalClosingInfo(const LocalClosingInfo& copy) = delete;
-        LocalClosingInfo& operator=(const LocalClosingInfo& RHS) = delete;
-
-        explicit LocalClosingInfo(const uint32_t pid)
-            : ProcessShutdown::Destructor()
-            , _process(false, pid)
-        {
-        }
-        ~LocalClosingInfo() override = default;
-
-    private:
-        uint32_t Terminate() override
-        {
-            uint32_t nextinterval = 0;
-            if (_process.IsActive() != false) {
-                switch (Cycle()) {
-                case 0:
-                    _process.Kill(false);
-                    nextinterval = Communicator::SoftKillCheckWaitTime();
-                    break;
-                default:
-                    _process.Kill(true);
-                    nextinterval = Communicator::HardKillCheckWaitTime();
-                    break;
-                }
-            }
-            return nextinterval;
-        }
-
-    private:
-        Core::Process _process;
-    };
-
-#ifdef PROCESSCONTAINERS_ENABLED
-
-    class ContainerClosingInfo : public ProcessShutdown::Destructor {
-    public:
-        ContainerClosingInfo() = delete;
-        ContainerClosingInfo(const ContainerClosingInfo& copy) = delete;
-        ContainerClosingInfo& operator=(const ContainerClosingInfo& RHS) = delete;
-
-        explicit ContainerClosingInfo(ProcessContainers::IContainer* container)
-            : ProcessShutdown::Destructor()
-            , _process(static_cast<uint32_t>(container->Pid()))
-            , _container(container)
-        {
-            container->AddRef();
-        }
-        ~ContainerClosingInfo() override
-        {
-            _container->Release();
-        }
-
-    private:
-        uint32_t Terminate() override
-        {
-            uint32_t nextinterval = 0;
-            if (((_process.Id() != 0) && (_process.IsActive() == true)) || ((_process.Id() == 0) && (_container->IsRunning() == true))) {
-                switch (Cycle()) {
-                case 0: if (_process.Id() != 0) {
-                            _process.Kill(false);
-                        } else {
-                            if(_container->Stop(0)) {
-                                nextinterval = 0;
-                                break;
-                            }
-                        }
-                        nextinterval = Communicator::SoftKillCheckWaitTime();
-                        break;
-                case 1: if (_process.Id() != 0) {
-                            _process.Kill(true);
-                            nextinterval = Communicator::HardKillCheckWaitTime();
-                        } else {
-                            ASSERT(false);
-                            nextinterval = 0;
-                        }
-                        break;
-                case 2: _container->Stop(0);
-                        nextinterval = 5;
-                        break;
-                default:
-                    // This should not happen. This is a very stubbern process. Can not be killed.
-                    ASSERT(false);
-                    break;
-                }
-            }
-            return nextinterval;
-        }
-
-    private:
-        Core::Process _process;
-        ProcessContainers::IContainer* _container;
-    };
-
-#endif
 
     /* static */ std::atomic<uint32_t> Communicator::RemoteConnection::_sequenceId(1);
 
@@ -451,8 +309,7 @@ namespace RPC {
         // Just submit our selves for destruction !!!!
 
         // Time to shoot the application, it will trigger a close by definition of the channel, if it is still standing..
-        ASSERT(_id != 0);
-        g_destructor.Destruct<LocalClosingInfo>(Id(), _id);
+        g_destructor.Destruct(Id(), *this);
     }
 
     uint32_t Communicator::LocalProcess::RemoteId() const
@@ -474,7 +331,7 @@ namespace RPC {
     void Communicator::ContainerProcess::Terminate() /* override */
     {
         ASSERT(_container != nullptr);
-        g_destructor.Destruct<ContainerClosingInfo>(Id(), _container);
+        g_destructor.Destruct(Id(), *this);
     }
 
     void Communicator::ContainerProcess::PostMortem() /* override */
@@ -491,12 +348,11 @@ namespace RPC {
     uint8_t Communicator::_softKillCheckWaitTime = 10;
     uint8_t Communicator::_hardKillCheckWaitTime = 4;;
 
-PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
+    PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST);
 
     Communicator::Communicator(const Core::NodeId& node, const string& proxyStubPath)
         : _connectionMap(*this)
-        , _ipcServer(node, _connectionMap, proxyStubPath)
-    {
+        , _ipcServer(node, _connectionMap, proxyStubPath) {
         if (proxyStubPath.empty() == false) {
             RPC::LoadProxyStubs(proxyStubPath);
         }
@@ -510,8 +366,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         const string& proxyStubPath,
         const Core::ProxyType<Core::IIPCServer>& handler)
         : _connectionMap(*this)
-        , _ipcServer(node, _connectionMap, proxyStubPath, handler)
-    {
+        , _ipcServer(node, _connectionMap, proxyStubPath, handler) {
         if (proxyStubPath.empty() == false) {
             RPC::LoadProxyStubs(proxyStubPath);
         }
@@ -530,6 +385,9 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 
         // Warn but we need to clos up existing connections..
         _connectionMap.Destroy();
+
+        // Now there are no more connections pending. Remove my pending IMonitorable::ICallback settings.
+        g_destructor.WaitForCompletion(_connectionMap);
     }
 
     void Communicator::Destroy(const uint32_t id)
@@ -543,7 +401,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         RPC::LoadProxyStubs(pathName);
     }
 
-    const std::vector<string>& Process::DynamicLoaderPaths() const
+    const std::vector<string>& Communicator::Process::DynamicLoaderPaths() const
     {
         return _LoaderPaths.Paths();
     }
