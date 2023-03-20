@@ -40,6 +40,11 @@ namespace RPC {
 #endif
     enum { CommunicationBufferSize = 8120 }; // 8K :-)
 
+    struct InstanceRecord {
+        Core::instance_id instance;
+        uint32_t interface;
+    };
+
     class EXTERNAL Administrator {
     public:
         typedef std::vector<ProxyStub::UnknownProxy*> Proxies;
@@ -208,6 +213,8 @@ namespace RPC {
         }
         ProxyStub::UnknownProxy* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& impl, const bool outbound, const uint32_t id, void*& interface);
 
+        bool IsValid(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& impl, const uint32_t id) const;
+
         // ----------------------------------------------------------------------------------------------------
         // Methods for the Proxy Environment
         // ----------------------------------------------------------------------------------------------------
@@ -229,7 +236,8 @@ namespace RPC {
         {
             RegisterInterface(channel, reference, ACTUALINTERFACE::ID);
         }
-        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const void* source, const uint32_t id) {
+        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const void* source, const uint32_t id)
+        {
             RegisterUnknownInterface(channel, Convert(const_cast<void*>(source), id), id);
         }
 
@@ -253,6 +261,7 @@ namespace RPC {
                         index->second.erase(element);
                         if (index->second.size() == 0) {
                             _channelReferenceMap.erase(index);
+                            TRACE_L3("Unregistered interface %p(%u).", source, interfaceId);
                         }
                     }
                 } else {
@@ -265,12 +274,13 @@ namespace RPC {
             _adminLock.Unlock();
         }
         void UnregisterProxy(const ProxyStub::UnknownProxy& proxy);
-        
+
    private:
         // ----------------------------------------------------------------------------------------------------
         // Methods for the Stub Environment
         // ----------------------------------------------------------------------------------------------------
         Core::IUnknown* Convert(void* rawImplementation, const uint32_t id);
+        const Core::IUnknown* Convert(void* rawImplementation, const uint32_t id) const;
         void RegisterUnknownInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* source, const uint32_t id);
 
     private:

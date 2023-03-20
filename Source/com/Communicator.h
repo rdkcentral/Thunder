@@ -982,11 +982,13 @@ namespace RPC {
 
                 _adminLock.Unlock();
             }
-            void* Announce(Core::ProxyType<Client>& channel, const Data::Init& info)
+            void* Announce(Core::ProxyType<Client>& channel, const Data::Init& info, Data::Setup& response)
             {
                 void* result = nullptr;
 
                 _adminLock.Lock();
+
+                response.Action(Data::Output::NONE);
 
                 if (info.IsRequested() == true) {
 
@@ -1010,7 +1012,7 @@ namespace RPC {
                         Activated(remoteConnection);
                     }
 
-                    result = Handle(channel, info);
+                    result = Handle(channel, info, response);
                 }
 
                 _adminLock.Unlock();
@@ -1056,7 +1058,7 @@ namespace RPC {
                 }
             }
 
-            void* Handle(Core::ProxyType<Client>& channel, const Data::Init& info)
+            void* Handle(Core::ProxyType<Client>& channel, const Data::Init& info, Data::Setup& response)
             {
                 Core::ProxyType<Core::IPCChannel> baseChannel(channel);
 
@@ -1070,12 +1072,14 @@ namespace RPC {
 
                     ASSERT(implementation);
 
-                    ProxyStub::UnknownProxy* base = Administrator::Instance().ProxyInstance(baseChannel, implementation, true, info.InterfaceId(), realIF);
+                    ProxyStub::UnknownProxy* base = Administrator::Instance().ProxyInstance(baseChannel, implementation, false, info.InterfaceId(), realIF);
 
                     if (base != nullptr) {
                         Core::IUnknown* realIFbase = base->Parent();
                         ASSERT(realIFbase != nullptr);
                         _parent.Offer(realIFbase, info.InterfaceId());
+
+                        base->Complete(response);
                     }
 
                 } else if (info.IsRevoke() == true) {
@@ -1087,6 +1091,8 @@ namespace RPC {
                     if (base != nullptr) {
                         Core::IUnknown* realIFbase = base->Parent();
                         _parent.Revoke(realIFbase, info.InterfaceId());
+
+                        base->Complete(response);
                     }
 
                 } else if (info.InterfaceId() != static_cast<uint32_t>(~0)) {
@@ -1195,7 +1201,7 @@ namespace RPC {
                     jsonDefaultWarningReportingSettings = WarningReporting::WarningReportingUnit::Instance().Defaults();
 #endif
 
-                    void* result = _parent.Announce(proxyChannel, message->Parameters());
+                    void* result = _parent.Announce(proxyChannel, message->Parameters(), message->Response());
 
                     message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultMessagingSettings, jsonDefaultWarningReportingSettings);
 
@@ -1275,10 +1281,10 @@ POP_WARNING()
             }
 
         private:
-            inline void* Announce(Core::ProxyType<Client>& channel, const Data::Init& info)
+            inline void* Announce(Core::ProxyType<Client>& channel, const Data::Init& info, Data::Setup& response)
             {
                 // We are in business, register the process with this channel.
-                return (_connections.Announce(channel, info));
+                return (_connections.Announce(channel, info, response));
             }
 
         private:
@@ -1551,6 +1557,13 @@ POP_WARNING()
 
                 _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, instance_cast<void*>(offer), Data::Init::OFFER);
 
+                Core::ProxyType<Core::IPCChannel> baseChannel(*this);
+                ASSERT(baseChannel.IsValid() == true);
+
+                // Ensure the offer instance is known to security if it is used before the call with cached AddRef returns.
+                const RPC::InstanceRecord localInstances[] = { { RPC::instance_cast(offer), INTERFACE::ID }, { 0, 0 } };
+                baseChannel->CustomData(localInstances);
+
                 BaseClass::Invoke(_announceMessage, waitTime);
 
                 // Lock event until Dispatch() sets it.
@@ -1559,9 +1572,17 @@ POP_WARNING()
                     ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
                     ASSERT(_announceMessage->Parameters().Implementation() != 0);
 
+                    const Data::Output::mode action = _announceMessage->Response().Action();
+                    ASSERT((action == Data::Output::mode::NONE) || (action == Data::Output::mode::CACHED_ADDREF));
+
+                    if (action == Data::Output::mode::CACHED_ADDREF) {
+                        Administrator::Instance().AddRef(baseChannel, offer, INTERFACE::ID);
+                    }
                 } else {
                     result = Core::ERROR_BAD_REQUEST;
                 }
+
+                baseChannel->CustomData(nullptr);
             }
 
             return (result);
@@ -1575,6 +1596,12 @@ POP_WARNING()
 
                 _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, instance_cast<void*>(offer), Data::Init::REVOKE);
 
+                Core::ProxyType<Core::IPCChannel> baseChannel(*this);
+                ASSERT(baseChannel.IsValid() == true);
+
+                const RPC::InstanceRecord localInstances[] = { { RPC::instance_cast(offer), INTERFACE::ID }, { 0, 0 } };
+                baseChannel->CustomData(localInstances);
+
                 BaseClass::Invoke(_announceMessage, waitTime);
 
                 // Lock event until Dispatch() sets it.
@@ -1582,9 +1609,18 @@ POP_WARNING()
 
                     ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
                     ASSERT(_announceMessage->Parameters().Implementation() != 0);
+
+                    const Data::Output::mode action = _announceMessage->Response().Action();
+                    ASSERT((action == Data::Output::mode::NONE) || (action == Data::Output::mode::CACHED_RELEASE));
+
+                    if (action == Data::Output::mode::CACHED_RELEASE) {
+                        Administrator::Instance().Release(baseChannel, offer, INTERFACE::ID, 1);
+                    }
                 } else {
                     result = Core::ERROR_BAD_REQUEST;
                 }
+
+                baseChannel->CustomData(nullptr);
             }
 
             return (result);
