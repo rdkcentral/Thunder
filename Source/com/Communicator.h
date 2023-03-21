@@ -1696,7 +1696,7 @@ POP_WARNING()
                     ASSERT(_announceMessage->Parameters().Implementation() != 0);
 
                     const Data::Output::mode action = _announceMessage->Response().Action();
-                    ASSERT((action == Data::Output::mode::NONE) || (action == Data::Output::mode::CACHED_ADDREF));
+                    ASSERT(action != Data::Output::mode::CACHED_RELEASE);
 
                     if (action == Data::Output::mode::CACHED_ADDREF) {
                         Administrator::Instance().AddRef(baseChannel, offer, INTERFACE::ID);
@@ -1734,10 +1734,12 @@ POP_WARNING()
                     ASSERT(_announceMessage->Parameters().Implementation() != 0);
 
                     const Data::Output::mode action = _announceMessage->Response().Action();
-                    ASSERT((action == Data::Output::mode::NONE) || (action == Data::Output::mode::CACHED_RELEASE));
 
                     if (action == Data::Output::mode::CACHED_RELEASE) {
                         Administrator::Instance().Release(baseChannel, offer, INTERFACE::ID, 1);
+                    }
+                    else if (action == Data::Output::mode::CACHED_ADDREF) {
+                        Administrator::Instance().AddRef(baseChannel, offer, INTERFACE::ID);
                     }
                 } else {
                     result = Core::ERROR_BAD_REQUEST;
