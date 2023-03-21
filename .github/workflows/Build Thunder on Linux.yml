@@ -10,7 +10,7 @@ on:
 jobs:
   Thunder:
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         build_type: [Debug, Release, MinSizeRel]
