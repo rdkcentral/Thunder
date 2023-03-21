@@ -260,12 +260,10 @@ EXTERNAL void SleepUs(const uint32_t time);
 
 #ifdef _UNICODE
 typedef std::wstring string;
-typedef std::wstring ccstring;
 #endif
 
 #ifndef _UNICODE
 typedef std::string string;
-typedef std::string ccstring;
 #endif
 
 using uint24_t = uint32_t;
@@ -627,12 +625,10 @@ typedef enum {
 
 #ifdef _UNICODE
 typedef std::wstring string;
-typedef std::wstring ccstring;
 #endif
 
 #ifndef _UNICODE
 typedef std::string string;
-typedef std::string ccstring;
 #endif
 
 using uint24_t = uint32_t;
