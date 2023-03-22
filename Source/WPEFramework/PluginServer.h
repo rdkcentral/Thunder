@@ -4136,7 +4136,10 @@ POP_WARNING()
                     } else {
                         //select supported protocol and let know which one was choosen
                         auto protocol = SelectSupportedProtocol(Protocols());
-                        Protocols(Web::ProtocolsArray(protocol));
+                        if (protocol.empty() == false) {
+                            // if protocol header is not set sending an empty protocol header is not allowed (at least by chrome)
+                            Protocols(Web::ProtocolsArray(protocol));
+                        }
 
                         if (serviceCall == false) {
                             const string& JSONRPCHeader(_parent._config.JSONRPCPrefix());
@@ -4180,6 +4183,9 @@ POP_WARNING()
                         return protocol;
                     } else if (protocol == _T("jsonrpc")) {
                         State(JSONRPC, false);
+                        return protocol;
+                    } else if (protocol == _T("raw")) {
+                        State(RAW, false);
                         return protocol;
                     }
                 }
