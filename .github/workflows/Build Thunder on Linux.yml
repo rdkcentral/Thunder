@@ -34,7 +34,7 @@ jobs:
         regex_flags: 'gim'
         search_string: ${{github.event.pull_request.body}}
         
-    - name: Checkout Thunder - ${{steps.thunder3.outputs.first_match}}
+    - name: Checkout Thunder - ${{steps.thunder.outputs.first_match}}
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
       uses: actions/checkout@v3
       with:
@@ -59,7 +59,7 @@ jobs:
         regex_flags: 'gim'
         search_string: ${{github.event.pull_request.body}}
 
-    - name: Checkout ThunderTools - ${{steps.tools3.outputs.first_match}}
+    - name: Checkout ThunderTools - ${{steps.tools.outputs.first_match}}
       if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
       uses: actions/checkout@v3
       with:
