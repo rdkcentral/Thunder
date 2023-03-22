@@ -48,8 +48,8 @@ namespace RPC {
 
     /* static */ Administrator& Administrator::Instance()
     {
-        // We tried this, but the proxy-stubs are not SingletonType. Turing proxy-stubs in to SingletonType 
-        // make them needless complex and require more memory.  
+        // We tried this, but the proxy-stubs are not SingletonType. Turing proxy-stubs in to SingletonType
+        // make them needless complex and require more memory.
         // static Administrator& systemAdministrator = Core::SingletonType<Administrator>::Instance();
         static Administrator systemAdministrator;
 
@@ -143,6 +143,55 @@ namespace RPC {
             TRACE_L1("Unknown interface. %d", interfaceId);
         }
     }
+
+    bool Administrator::IsValid(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& impl, const uint32_t id) const
+    {
+        // Used by secure stubs.
+
+        bool result = false;
+
+        if (impl != 0) {
+            // Firstly check against the temporarily valid instances (i.e. interfaces currently passed as parameters)
+            const RPC::InstanceRecord* tempInstances = static_cast<const RPC::InstanceRecord*>(channel->CustomData());
+            if (tempInstances != nullptr) {
+                while ((*tempInstances).instance != 0) {
+                    ASSERT((*tempInstances).interface != 0);
+
+                    if ((impl == (*tempInstances).instance) && (id == (*tempInstances).interface)) {
+                        TRACE_L3("Validated instance 0x%08x by local set", impl);
+                        result = true;
+                        break;
+                    }
+
+                    tempInstances++;
+                }
+            }
+
+            // If not there, look in the administration...
+            if (result == false) {
+                _adminLock.Lock();
+
+                ReferenceMap::const_iterator index(_channelReferenceMap.find(channel.operator->()));
+                const Core::IUnknown* unknown = Convert(reinterpret_cast<void*>(impl), id);
+
+                result = ((index != _channelReferenceMap.end()) &&
+                            (std::find_if(index->second.begin(), index->second.end(), [&](const RecoverySet& element) {
+                                    return ((element.Unknown() == unknown) && (element.Id() == id));
+                            }) != index->second.end()));
+
+                _adminLock.Unlock();
+
+                if (result == true) {
+                    TRACE_L3("Validated instance 0x%08x by administration", impl);
+                } else {
+                    TRACE_L1("Failed to validate instance 0x%08x of interface 0x%08x", impl, id);
+                }
+            }
+        }
+
+        return (result);
+    }
+
     ProxyStub::UnknownProxy* Administrator::ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& impl, const uint32_t id, void*& interface)
     {
         ProxyStub::UnknownProxy* result = nullptr;
@@ -190,7 +239,7 @@ namespace RPC {
                     interface = (*entry)->Acquire(outbound, id);
 
                     // The implementation could be found, but the current implemented proxy is not
-                    // for the given interface. If that cae, the interface == nullptr and we still 
+                    // for the given interface. If that cae, the interface == nullptr and we still
                     // need to create a proxy for this specific interface.
                     if (interface != nullptr) {
                         result = (*entry);
@@ -217,7 +266,7 @@ namespace RPC {
                     TRACE_L1("Failed to find a Proxy for %d.", id);
                 }
             }
-		
+
             _adminLock.Unlock();
         }
 
@@ -236,6 +285,7 @@ namespace RPC {
                     std::forward_as_tuple(channel.operator->()),
                     std::forward_as_tuple());
                 result.first->second.emplace_back(id, reference);
+                TRACE_L3("Registered interface %p(0x%08x).", reference, id);
             } else {
                 // See that it does not already exists on this channel, no need to register
                 // it again!!!
@@ -248,22 +298,23 @@ namespace RPC {
                 if (element == index->second.end()) {
                     // Add this element to the list. We are referencing it now with a proxy on the other side..
                     index->second.emplace_back(id, reference);
+                    TRACE_L3("Registered interface %p(0x%08x).", reference, id);
                 }
                 else {
                     // If this happens, it means that the interface we are trying to register, is already handed out, over the same channel.
                     // This means, that on the otherside (the receiving side) that will create a Proxy for this interface, finds this interface as well.
                     // Now two things can happen:
-                    // 1) Everything is stable, when this call arrives on the otherside, the proxy is found, and the externalReferenceCount (the number 
+                    // 1) Everything is stable, when this call arrives on the otherside, the proxy is found, and the externalReferenceCount (the number
                     //    of AddRefs the RemoteSide has on this Real Object is incremented by one).
                     // 2) Corner case, unlikely top happen, but we need to cater for it. If during the return of this reference, that Proxy on the otherside
                     //    might reach the reference 0. That will, on that side, clear out the proxy. That will send a Release for that proxy to this side and
-                    //    that release will not kill the "real" object here becasue we have still a reference on the real object for this interface. When this 
+                    //    that release will not kill the "real" object here becasue we have still a reference on the real object for this interface. When this
                     //    interface reaches the other side, it will simply create a new proxy with an externalReference COunt of 1.
                     //
-                    // However, if the connection dies and scenario 2 took place, and we did *not* reference count this cleanup map, this reference for the newly 
-                    // created proxy in step 2, is in case of a crash never released!!! So to avoid this scenario, we should also reference count the cleanup map 
+                    // However, if the connection dies and scenario 2 took place, and we did *not* reference count this cleanup map, this reference for the newly
+                    // created proxy in step 2, is in case of a crash never released!!! So to avoid this scenario, we should also reference count the cleanup map
                     // interface entry here, than we are good to go, as long as the "dropReleases" count also ends up here :-)
-                    TRACE_L1("The Proxy is existing on the otherside, no need ");
+                    TRACE_L1("Interface 0x%p(0x%08x) is already registered.", reference, id);
                     element->Increment();
                 }
             }
@@ -273,6 +324,12 @@ namespace RPC {
     }
 
     Core::IUnknown* Administrator::Convert(void* rawImplementation, const uint32_t id)
+    {
+        std::map<uint32_t, ProxyStub::UnknownStub*>::const_iterator index (_stubs.find(id));
+        return(index != _stubs.end() ? index->second->Convert(rawImplementation) : nullptr);
+    }
+
+    const Core::IUnknown* Administrator::Convert(void* rawImplementation, const uint32_t id) const
     {
         std::map<uint32_t, ProxyStub::UnknownStub*>::const_iterator index (_stubs.find(id));
         return(index != _stubs.end() ? index->second->Convert(rawImplementation) : nullptr);
@@ -292,7 +349,7 @@ namespace RPC {
                 // We will release on behalf of the other side :-)
                 do {
                     Core::IUnknown* iface = loop->Unknown();
-                    
+
                     ASSERT(iface != nullptr);
 
                     if (iface != nullptr) {
