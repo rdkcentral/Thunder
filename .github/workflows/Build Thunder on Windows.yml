@@ -77,8 +77,8 @@ jobs:
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
       uses: actions/checkout@v3
       with:
-        path: ${{github.repository_owner}}/ThunderTools
-        repository: rdkcentral/ThunderTools
+        path: ThunderOnWindows/ThunderTools
+        repository: ${{github.repository_owner}}/ThunderTools
  
     - name: First regex ThunderTools
       if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
