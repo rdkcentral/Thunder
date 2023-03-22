@@ -20,18 +20,57 @@ jobs:
 
     name: Testing - ${{matrix.build_type}}
     steps:
-    - name: Checkout Thunder
+# ----- Thunder -----
+    - name: Checkout Thunder - default
+      if: ${{ !contains(github.event.pull_request.body, '[DependsOn=Thunder:') }}
       uses: actions/checkout@v3
       with:
         path: Thunder
         repository: rdkcentral/Thunder
-
-    - name: Checkout ThunderTools
+        
+    - name: Regex Thunder
+      if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
+      id: thunder
+      uses: AsasInnab/regex-action@v1
+      with:
+        regex_pattern: '(?<=\[DependsOn=Thunder:).*(?=\])'
+        regex_flags: 'gim'
+        search_string: ${{github.event.pull_request.body}}
+        
+    - name: Checkout Thunder - ${{steps.thunder.outputs.first_match}}
+      if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
+      uses: actions/checkout@v3
+      with:
+        path: Thunder
+        repository: rdkcentral/Thunder
+        ref: ${{steps.thunder.outputs.first_match}}
+    
+# ----- ThunderTools -----
+    - name: Checkout ThunderTools - default
+      if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
       uses: actions/checkout@v3
       with:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
+ 
+    - name: Regex ThunderTools
+      if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
+      id: tools
+      uses: AsasInnab/regex-action@v1
+      with:
+        regex_pattern: '(?<=\[DependsOn=ThunderTools:).*(?=\])'
+        regex_flags: 'gim'
+        search_string: ${{github.event.pull_request.body}}
 
+    - name: Checkout ThunderTools - ${{steps.tools.outputs.first_match}}
+      if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
+      uses: actions/checkout@v3
+      with:
+        path: ThunderTools
+        repository: rdkcentral/ThunderTools
+        ref: ${{steps.tools.outputs.first_match}}
+
+# ----- Building -----
     - name: Install necessary packages
       uses: nick-fields/retry@v2
       with:
