@@ -25,32 +25,14 @@ jobs:
         path: Thunder
         repository: rdkcentral/Thunder
         
-    - name: First regex Thunder
+    - name: Regex Thunder
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
-      id: thunder1
+      id: thunder
       uses: AsasInnab/regex-action@v1
       with:
-        regex_pattern: '\[DependsOn=Thunder:.+\]'
+        regex_pattern: '(?<=\[DependsOn=Thunder:).*(?=\])'
         regex_flags: 'gim'
         search_string: ${{github.event.pull_request.body}}
-    
-    - name: Second regex Thunder
-      if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
-      id: thunder2
-      uses: AsasInnab/regex-action@v1
-      with:
-        regex_pattern: ':.+\]'
-        regex_flags: 'gim'
-        search_string: ${{steps.thunder1.outputs.first_match}}
-    
-    - name: Third regex Thunder
-      if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
-      id: thunder3
-      uses: AsasInnab/regex-action@v1
-      with:
-        regex_pattern: '[^:].+[^\]]'
-        regex_flags: 'gim'
-        search_string: ${{steps.thunder2.outputs.first_match}}
         
     - name: Checkout Thunder - ${{steps.thunder3.outputs.first_match}}
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
@@ -58,7 +40,7 @@ jobs:
       with:
         path: Thunder
         repository: rdkcentral/Thunder
-        ref: ${{steps.thunder3.outputs.first_match}}
+        ref: ${{steps.thunder.outputs.first_match}}
     
 # ----- ThunderTools -----
     - name: Checkout ThunderTools - default
@@ -68,32 +50,14 @@ jobs:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
  
-    - name: First regex ThunderTools
+    - name: Regex ThunderTools
       if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
-      id: tools1
+      id: tools
       uses: AsasInnab/regex-action@v1
       with:
-        regex_pattern: '\[DependsOn=ThunderTools:.+\]'
+        regex_pattern: '(?<=\[DependsOn=ThunderTools:).*(?=\])'
         regex_flags: 'gim'
         search_string: ${{github.event.pull_request.body}}
-    
-    - name: Second regex ThunderTools
-      if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
-      id: tools2
-      uses: AsasInnab/regex-action@v1
-      with:
-        regex_pattern: ':.+\]'
-        regex_flags: 'gim'
-        search_string: ${{steps.tools1.outputs.first_match}}
-    
-    - name: Third regex ThunderTools
-      if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
-      id: tools3
-      uses: AsasInnab/regex-action@v1
-      with:
-        regex_pattern: '[^:].+[^\]]'
-        regex_flags: 'gim'
-        search_string: ${{steps.tools2.outputs.first_match}}
 
     - name: Checkout ThunderTools - ${{steps.tools3.outputs.first_match}}
       if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
@@ -101,7 +65,7 @@ jobs:
       with:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
-        ref: ${{steps.tools3.outputs.first_match}}
+        ref: ${{steps.tools.outputs.first_match}}
 
 # ----- Building -----
     - name: Install necessary packages
