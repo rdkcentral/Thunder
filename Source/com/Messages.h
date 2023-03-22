@@ -140,6 +140,7 @@ namespace RPC {
         class Output {
         public:
             enum mode : uint8_t {
+                NONE            = 0x00,
                 CACHED_ADDREF   = 0x01,
                 CACHED_RELEASE  = 0x02
             };
@@ -369,15 +370,15 @@ namespace RPC {
             {
                 _data.Clear();
             }
-            void Set(Core::instance_id implementation, const uint32_t sequenceNumber, const string& proxyStubPath, const string& messagingSettings, const string& warningReportingSettings)
+            void Set(Core::instance_id implementation, const uint32_t sequenceNumber,const string& proxyStubPath, const string& messagingSettings, const string& warningReportingSettings)
             {
                 uint16_t length = 0;
                 _data.SetNumber<Core::instance_id>(0, implementation);
                 _data.SetNumber<uint32_t>(sizeof(Core::instance_id), sequenceNumber);
 
-                length = _data.SetText(sizeof(Core::instance_id) + sizeof(uint32_t), proxyStubPath);
-                length += _data.SetText(sizeof(Core::instance_id)+ sizeof(uint32_t) + length, messagingSettings);
-                _data.SetText(sizeof(Core::instance_id)+ sizeof(uint32_t) + length, warningReportingSettings);
+                length = _data.SetText(sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(Output::mode), proxyStubPath);
+                length += _data.SetText(sizeof(Core::instance_id)+ sizeof(uint32_t) + sizeof(Output::mode) + length, messagingSettings);
+                _data.SetText(sizeof(Core::instance_id)+ sizeof(uint32_t) + sizeof(Output::mode) + length, warningReportingSettings);
             }
             inline bool IsSet() const {
                 return (_data.Size() > 0);
@@ -388,11 +389,21 @@ namespace RPC {
                 _data.GetNumber<uint32_t>(sizeof(Core::instance_id), result);
                 return (result);
             }
+            void Action(const Output::mode remoteAction)
+            {
+                _data.SetNumber<Output::mode>(sizeof(Core::instance_id) + sizeof(uint32_t), remoteAction);
+            }
+            Output::mode Action() const
+            {
+                Output::mode result;
+                _data.GetNumber<Output::mode>(sizeof(Core::instance_id) + sizeof(uint32_t), result);
+                return (result);
+            }
             string ProxyStubPath() const
             {
                 string value;
 
-                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) ;   // skip implentation and sequencenumber
+                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(Output::mode); // skip implentation and sequencenumber
 
                 _data.GetText(length, value);
 
@@ -402,7 +413,7 @@ namespace RPC {
             {
                 string value;
 
-                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) ;   // skip implentation and sequencenumber
+                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(Output::mode); // skip implentation and sequencenumber
                 length += _data.GetText(length, value);  // skip proxyStub path
 
                 _data.GetText(length, value);
@@ -413,7 +424,7 @@ namespace RPC {
             {
                 string value;
 
-                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) ;   // skip implentation and sequencenumber
+                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(Output::mode); // skip implentation and sequencenumber
                 length += _data.GetText(length, value);  // skip proxyStub path
                 length += _data.GetText(length, value);  // skip messagingcategories
 
