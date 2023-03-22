@@ -6,29 +6,104 @@ on:
   pull_request:
     branches: ["master"]
   workflow_call:
- 
+
 jobs:
   Thunder:
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         build_type: [Debug, Release, MinSizeRel]
     
     name: Build type - ${{matrix.build_type}}
     steps:
-    - name: Checkout Thunder
+# ----- Thunder -----
+    - name: Checkout Thunder - default
+      if: ${{ !contains(github.event.pull_request.body, '[DependsOn=Thunder:') }}
       uses: actions/checkout@v3
       with:
         path: Thunder
         repository: rdkcentral/Thunder
-
-    - name: Checkout ThunderTools
+        
+    - name: First regex Thunder
+      if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
+      id: thunder1
+      uses: AsasInnab/regex-action@v1
+      with:
+        regex_pattern: '\[DependsOn=Thunder:.+\]'
+        regex_flags: 'gim'
+        search_string: ${{github.event.pull_request.body}}
+    
+    - name: Second regex Thunder
+      if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
+      id: thunder2
+      uses: AsasInnab/regex-action@v1
+      with:
+        regex_pattern: ':.+\]'
+        regex_flags: 'gim'
+        search_string: ${{steps.thunder1.outputs.first_match}}
+    
+    - name: Third regex Thunder
+      if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
+      id: thunder3
+      uses: AsasInnab/regex-action@v1
+      with:
+        regex_pattern: '[^:].+[^\]]'
+        regex_flags: 'gim'
+        search_string: ${{steps.thunder2.outputs.first_match}}
+        
+    - name: Checkout Thunder - ${{steps.thunder3.outputs.first_match}}
+      if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
+      uses: actions/checkout@v3
+      with:
+        path: Thunder
+        repository: rdkcentral/Thunder
+        ref: ${{steps.thunder3.outputs.first_match}}
+    
+# ----- ThunderTools -----
+    - name: Checkout ThunderTools - default
+      if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
       uses: actions/checkout@v3
       with:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
+ 
+    - name: First regex ThunderTools
+      if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
+      id: tools1
+      uses: AsasInnab/regex-action@v1
+      with:
+        regex_pattern: '\[DependsOn=ThunderTools:.+\]'
+        regex_flags: 'gim'
+        search_string: ${{github.event.pull_request.body}}
+    
+    - name: Second regex ThunderTools
+      if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
+      id: tools2
+      uses: AsasInnab/regex-action@v1
+      with:
+        regex_pattern: ':.+\]'
+        regex_flags: 'gim'
+        search_string: ${{steps.tools1.outputs.first_match}}
+    
+    - name: Third regex ThunderTools
+      if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
+      id: tools3
+      uses: AsasInnab/regex-action@v1
+      with:
+        regex_pattern: '[^:].+[^\]]'
+        regex_flags: 'gim'
+        search_string: ${{steps.tools2.outputs.first_match}}
 
+    - name: Checkout ThunderTools - ${{steps.tools3.outputs.first_match}}
+      if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
+      uses: actions/checkout@v3
+      with:
+        path: ThunderTools
+        repository: rdkcentral/ThunderTools
+        ref: ${{steps.tools3.outputs.first_match}}
+
+# ----- Building -----
     - name: Install necessary packages
       uses: nick-fields/retry@v2
       with:
@@ -71,3 +146,4 @@ jobs:
       with:
         name: Thunder-${{matrix.build_type}}-artifact
         path: ${{matrix.build_type}}.tar.gz
+        
