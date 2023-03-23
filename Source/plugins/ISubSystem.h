@@ -82,7 +82,7 @@ namespace PluginHost {
                 ID = RPC::ID_SUBSYSTEM_NOTIFICATION
             };
 
-            // Some change happened with respect to the Network..
+            // Some change happened with respect to any of the subsystems
             virtual void Updated() = 0;
         };
 
