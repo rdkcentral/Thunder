@@ -817,6 +817,8 @@ namespace Core {
     #endif
     }
 
+    #define COM_ERROR (0x80000000)
+
     #define ERROR_CODES \
         ERROR_CODE(ERROR_NONE, 0) \
         ERROR_CODE(ERROR_GENERAL, 1) \
@@ -868,7 +870,6 @@ namespace Core {
         ERROR_CODE(ERROR_INPROC, 47) \
         ERROR_CODE(ERROR_FAILED_REGISTERED, 48) \
         ERROR_CODE(ERROR_FAILED_UNREGISTERED, 49) 
-
 
     #define ERROR_CODE(CODE, VALUE) CODE = VALUE,
 

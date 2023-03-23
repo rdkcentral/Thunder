@@ -215,5 +215,3 @@ function(print_target_properties tgt)
         endif()
     endforeach(prop)
 endfunction(print_target_properties)
-
-find_package(ConfigGenerator REQUIRED)
