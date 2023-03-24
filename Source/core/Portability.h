@@ -262,13 +262,13 @@ EXTERNAL void SleepUs(const uint32_t time);
 
 #ifdef _UNICODE
 typedef std::wstring string;
-typedef std::wstring ccstring;
 #endif
 
 #ifndef _UNICODE
 typedef std::string string;
-typedef std::string ccstring;
 #endif
+
+using uint24_t = uint32_t;
 
 #define CBR_110 110
 #define CBR_300 300
@@ -627,13 +627,13 @@ typedef enum {
 
 #ifdef _UNICODE
 typedef std::wstring string;
-typedef std::wstring ccstring;
 #endif
 
 #ifndef _UNICODE
 typedef std::string string;
-typedef std::string ccstring;
 #endif
+
+using uint24_t = uint32_t;
 
 #define STRLEN(STATIC_TEXT) ((sizeof(STATIC_TEXT) / sizeof(TCHAR)) - 1)
 #define EMPTY_STRING _T("")
