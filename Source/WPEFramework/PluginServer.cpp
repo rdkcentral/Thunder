@@ -490,6 +490,7 @@ namespace PluginHost
                 }
 
                 TRACE(Activity, (_T("Deactivation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
+                SYSLOG(Logging::Shutdown, (_T("Deactivation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
                 REPORT_DURATION_WARNING( { _handler->Deinitialize(this); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::DEACTIVATION, callSign.c_str());
 
