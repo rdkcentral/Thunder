@@ -249,6 +249,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             : _controller(nullptr)
             , _administrator()
             , _monitor(*this)
+            , _connectionId(~0)
         {
         }
 POP_WARNING()
@@ -258,6 +259,9 @@ POP_WARNING()
         }
 
     public:
+        uint32_t ConnectionId() const {
+            return (_connectionId);
+        }
         bool IsOperational() const
         {
             return (_monitor.IsOperational());
@@ -278,6 +282,10 @@ POP_WARNING()
             }
             if (_controller != nullptr) {
                 _monitor.Register(_controller, callsign);
+                Core::ProxyType<CommunicatorClient> channel(_administrator.Communicator(node));
+                if (channel.IsValid() == true) {
+                    _connectionId = channel->ConnectionId();
+                }
             }
 
             return (_controller != nullptr ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
@@ -351,6 +359,7 @@ POP_WARNING()
         PluginHost::IShell* _controller;
         ConnectorType<ENGINE> _administrator;
         Monitor _monitor;
+        uint32_t _connectionId;
     };
 }
 }

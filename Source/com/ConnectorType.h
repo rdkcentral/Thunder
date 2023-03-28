@@ -143,8 +143,8 @@ namespace RPC {
 
             return (result);
         }
-        Core::ProxyType<CommunicatorClient> Communicator(const Core::NodeId& nodeId){
-            return _comChannels.Find(nodeId);
+        Core::ProxyType<CommunicatorClient> Communicator(const Core::NodeId& nodeId) {
+            return (Core::ProxyType<CommunicatorClient>(_comChannels.Find(nodeId)));
         }
         RPC::IIPCServer& Engine()
         {
