@@ -184,7 +184,7 @@ namespace RPC {
                 if (result == true) {
                     TRACE_L3("Validated instance 0x%08x by administration", impl);
                 } else {
-                    TRACE_L1("Failed to validate instance 0x%08x of interface 0x%08x", impl, id);
+                    TRACE_L1("Failed to validate instance 0x%08llx of interface 0x%08x", impl, id);
                 }
             }
         }
