@@ -655,7 +655,6 @@ namespace Core {
     private:
         template <typename TYPENAME>
         static constexpr uint8_t RealSize() {
-            const uint8_t response(std::is_same<TYPENAME, uint24_t>::value ? 3 : sizeof(TYPENAME));
             return(sizeof(TYPENAME));
         }
 
