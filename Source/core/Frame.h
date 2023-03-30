@@ -655,7 +655,7 @@ namespace Core {
     private:
         template <typename TYPENAME>
         static constexpr uint8_t RealSize() {
-            return(std::is_same<TYPENAME, uint24_t>::value ? 3 : sizeof(TYPENAME));
+            return(sizeof(TYPENAME));
         }
 
         template <typename TYPENAME>
@@ -695,7 +695,7 @@ namespace Core {
         SIZE_CONTEXT SetNumber(const SIZE_CONTEXT offset, const TYPENAME number, const TemplateIntToType<false>&)
         {
             if ((offset + RealSize<TYPENAME>()) >= _size) {
-                Size(offset + sizeof(TYPENAME));
+                Size(offset + RealSize<TYPENAME>());
             }
 
             if (BIG_ENDIAN_ORDERING == true) {
