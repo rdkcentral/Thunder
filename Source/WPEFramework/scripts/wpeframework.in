@@ -13,10 +13,6 @@ start() {
         ln -sfn /etc/playready /ROOT_PATH/Netflix/dpi/playready
     fi
 
-    export PLAYREADY_CERTIFICATE_LABEL='playready4'
-
-    export TZ=$(wget -qO- http://jsonip.metrological.com/ | sed -e 's/^.*"tz":"\([^"]*\)".*$/\1/')
-
     # needed for wayland/westeros/weston
     export XDG_RUNTIME_DIR=/tmp
 
