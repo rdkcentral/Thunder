@@ -8,7 +8,6 @@ PIDFile=/var/run/WPEFramework.pid
 EnvironmentFile=-/etc/wpeframework/WPEFramework.env
 Environment="WAYLAND_DISPLAY=wayland-0"
 Environment="XDG_RUNTIME_DIR=/run"
-Environment="PLAYREADY_CERTIFICATE_LABEL=playready4"
 ExecStart=-/usr/bin/WPEFramework -b
 ExecStop=/bin/kill $MAINPID
 
