@@ -764,37 +764,35 @@ namespace PluginHost
         Core::ProcessInfo::Iterator children(parentPID);
         std::vector<Core::process_t> childrenPIDs;
 
-        if (children.Count() == 0) {
-            // Nothing to Hibernate
-            return result;
-        }
+        if (children.Count() > 0) {
 
-        while (children.Next()) {
-            childrenPIDs.push_back(children.Current().Id());
-        }
-
-        for (auto iter = childrenPIDs.begin(); iter != childrenPIDs.end(); ++iter) {
-            SYSLOG(Logging::Notification, ("Hibernation of plugin [%s] child process [%u]", Callsign().c_str(), *iter));
-            result = HibernateProcess(timeout, *iter, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
-            if (result == HIBERNATE_ERROR_NONE) {
-                // Hibernate Children of this process
-                result = HibernateChildren(*iter, timeout);
-                if (result != HIBERNATE_ERROR_NONE) {
-                    // revert Hibernation of parent
-                    SYSLOG(Logging::Notification, ("Wakeup plugin [%s] process [%u] on Hibernate error [%d]", Callsign().c_str(), *iter, result));
-                    WakeupProcess(timeout, *iter, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
-                }
+            while (children.Next()) {
+                childrenPIDs.push_back(children.Current().Id());
             }
 
-            if (result != HIBERNATE_ERROR_NONE) {
-                // revert previous Hibernations and break
-                while (iter != childrenPIDs.begin()) {
-                    --iter;
-                    WakeupChildren(*iter, timeout);
-                    SYSLOG(Logging::Notification, ("Wakeup plugin [%s] process [%u] on Hibernate error [%d]", Callsign().c_str(), *iter, result));
-                    WakeupProcess(timeout, *iter, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+            for (auto iter = childrenPIDs.begin(); iter != childrenPIDs.end(); ++iter) {
+                SYSLOG(Logging::Notification, ("Hibernation of plugin [%s] child process [%u]", Callsign().c_str(), *iter));
+                result = HibernateProcess(timeout, *iter, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+                if (result == HIBERNATE_ERROR_NONE) {
+                    // Hibernate Children of this process
+                    result = HibernateChildren(*iter, timeout);
+                    if (result != HIBERNATE_ERROR_NONE) {
+                        // revert Hibernation of parent
+                        SYSLOG(Logging::Notification, ("Wakeup plugin [%s] process [%u] on Hibernate error [%d]", Callsign().c_str(), *iter, result));
+                        WakeupProcess(timeout, *iter, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+                    }
                 }
-                return result;
+
+                if (result != HIBERNATE_ERROR_NONE) {
+                    // revert previous Hibernations and break
+                    while (iter != childrenPIDs.begin()) {
+                        --iter;
+                        WakeupChildren(*iter, timeout);
+                        SYSLOG(Logging::Notification, ("Wakeup plugin [%s] process [%u] on Hibernate error [%d]", Callsign().c_str(), *iter, result));
+                        WakeupProcess(timeout, *iter, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+                    }
+                    break;
+                }
             }
         }
 
@@ -806,18 +804,16 @@ namespace PluginHost
         Core::hresult result = Core::ERROR_NONE;
         Core::ProcessInfo::Iterator children(parentPID);
 
-        if (children.Count() == 0) {
-            // Nothing to Wakeup
-            return result;
-        }
+        if (children.Count() > 0) {
 
-        while (children.Next()) {
-            // Wakeup children of this process
-            // There is no recovery path while doing Wakeup, don't care about errors
-            WakeupChildren(children.Current().Id(), timeout);
+            while (children.Next()) {
+                // Wakeup children of this process
+                // There is no recovery path while doing Wakeup, don't care about errors
+                WakeupChildren(children.Current().Id(), timeout);
 
-            SYSLOG(Logging::Notification, ("Wakeup of plugin [%s] child process [%u]", Callsign().c_str(), children.Current().Id()));
-            result = WakeupProcess(timeout, children.Current().Id(), _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+                SYSLOG(Logging::Notification, ("Wakeup of plugin [%s] child process [%u]", Callsign().c_str(), children.Current().Id()));
+                result = WakeupProcess(timeout, children.Current().Id(), _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+            }
         }
 
         return result;
