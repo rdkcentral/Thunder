@@ -36,7 +36,8 @@ typedef enum {
 
 typedef enum {
     MEMCR_OK = 0,
-    MEMCR_ERROR = -1
+    MEMCR_ERROR = -1,
+    MEMCR_INVALID_PID = -2
 } ServerResponseCode;
 
 typedef struct {
@@ -179,8 +180,11 @@ uint32_t WakeupProcess(const uint32_t timeout, const pid_t pid, const char data_
     if (SendRcvCmd(&req, &resp, timeout, data_dir)) {
         LOGINFO("Wakeup process PID %d success", pid);
         return HIBERNATE_ERROR_NONE;
-    } else {
-        LOGERR("Error Wakeup process PID %d ret %d", pid, resp.respCode);
-        return HIBERNATE_ERROR_GENERAL;
+    } else if (resp.respCode == MEMCR_INVALID_PID) {
+        LOGINFO("Wakeup process PID %d ret %d - INVALID PID, nothing to wakeup", pid, resp.respCode);
+        return HIBERNATE_ERROR_NONE;
     }
+
+    LOGERR("Error Wakeup process PID %d ret %d", pid, resp.respCode);
+    return HIBERNATE_ERROR_GENERAL;
 }
