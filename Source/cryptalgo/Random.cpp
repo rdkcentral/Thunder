@@ -38,27 +38,30 @@ namespace Crypto {
     // --------------------------------------------------------------------------------------------
     void Reseed()
     {
+#ifdef __LINUX__
 #if defined(SECURESOCKETS_ENABLED)
         if (RAND_poll() == 1) {
             return;
         }
-        // RAND_poll() failed, fallback to legacy random.
 #endif // SECURESOCKETS_ENABLED
+        // RAND_poll() failed, fallback to legacy random.
+        srandom(static_cast<unsigned int>(time(nullptr)));
+#endif // __LINUX__
 #ifdef __WINDOWS__
         srand(static_cast<unsigned int>(time(nullptr)));
 #endif // __WINDOWS__
-#ifdef __LINUX__
-        srandom(static_cast<unsigned int>(time(nullptr)));
-#endif // __LINUX__
+
     }
 
     void Random(uint8_t& value)
     {
 #if defined(SECURESOCKETS_ENABLED)
+#ifdef __LINUX__
         if (RAND_bytes(reinterpret_cast<unsigned char*>(&value), sizeof(value)) == 1) {
             return;
         }
         // RAND_bytes() failed, fallback to legacy random.
+#endif // __LINUX__
 #endif // SECURESOCKETS_ENABLED
 #if RAND_MAX >= 0xFF
 #ifdef __WINDOWS__
@@ -75,10 +78,12 @@ namespace Crypto {
     void Random(uint16_t& value)
     {
 #if defined(SECURESOCKETS_ENABLED)
+#ifdef __LINUX__
         if (RAND_bytes(reinterpret_cast<unsigned char*>(&value), sizeof(value)) == 1) {
             return;
         }
         // RAND_bytes() failed, fallback to legacy random.
+#endif // __LINUX__
 #endif // SECURESOCKETS_ENABLED
 #if RAND_MAX >= 0xFFFF
 #ifdef __WINDOWS__
@@ -105,10 +110,12 @@ namespace Crypto {
     void Random(uint32_t& value)
     {
 #if defined(SECURESOCKETS_ENABLED)
+#ifdef __LINUX__
         if (RAND_bytes(reinterpret_cast<unsigned char*>(&value), sizeof(value)) == 1) {
             return;
         }
         // RAND_bytes() failed, fallback to legacy random.
+#endif // __LINUX__
 #endif // SECURESOCKETS_ENABLED
 #if RAND_MAX >= 0xFFFFFFFF
 #ifdef __WINDOWS__
@@ -149,10 +156,12 @@ namespace Crypto {
     void Random(uint64_t& value)
     {
 #if defined(SECURESOCKETS_ENABLED)
+#ifdef __LINUX__
         if (RAND_bytes(reinterpret_cast<unsigned char*>(&value), sizeof(value)) == 1) {
             return;
         }
         // RAND_bytes() failed, fallback to legacy random.
+#endif // __LINUX__
 #endif // SECURESOCKETS_ENABLED
 #if RAND_MAX >= 0xFFFFFFFF
 #ifdef __WINDOWS__
