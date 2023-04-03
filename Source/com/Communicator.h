@@ -1213,6 +1213,7 @@ namespace RPC {
 
                     if (base != nullptr) {
                         Core::IUnknown* realIFbase = base->Parent();
+                        base->AddRef();
                         _parent.Revoke(realIFbase, info.InterfaceId());
 
                         base->Complete(response);
