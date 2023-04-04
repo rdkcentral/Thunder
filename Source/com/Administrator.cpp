@@ -158,7 +158,7 @@ namespace RPC {
                     ASSERT((*tempInstances).interface != 0);
 
                     if ((impl == (*tempInstances).instance) && (id == (*tempInstances).interface)) {
-                        TRACE_L3("Validated instance 0x%08x by local set", impl);
+                        TRACE_L3("Validated instance 0x%08" PRIxPTR " by local set", impl);
                         result = true;
                         break;
                     }
@@ -182,9 +182,9 @@ namespace RPC {
                 _adminLock.Unlock();
 
                 if (result == true) {
-                    TRACE_L3("Validated instance 0x%08x by administration", impl);
+                    TRACE_L3("Validated instance 0x%08" PRIxPTR " by administration", impl);
                 } else {
-                    TRACE_L1("Failed to validate instance 0x%08llx of interface 0x%08x", impl, id);
+                    TRACE_L1("Failed to validate instance 0x%08" PRIxPTR " of interface 0x%08x", impl, id);
                 }
             }
         }
@@ -314,7 +314,7 @@ namespace RPC {
                     // However, if the connection dies and scenario 2 took place, and we did *not* reference count this cleanup map, this reference for the newly
                     // created proxy in step 2, is in case of a crash never released!!! So to avoid this scenario, we should also reference count the cleanup map
                     // interface entry here, than we are good to go, as long as the "dropReleases" count also ends up here :-)
-                    TRACE_L1("Interface 0x%p(0x%08x) is already registered.", reference, id);
+                    TRACE_L3("Interface 0x%p(0x%08x) is already registered.", reference, id);
                     element->Increment();
                 }
             }
