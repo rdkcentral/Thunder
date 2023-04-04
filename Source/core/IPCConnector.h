@@ -691,8 +691,10 @@ POP_WARNING()
             , _customData(nullptr)
         {
         }
+
         void Factory(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
         {
+            ASSERT(_customData == nullptr);
             _administration.Factory(factory);
         }
 

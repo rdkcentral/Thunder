@@ -1184,22 +1184,24 @@ namespace RPC {
             void* Handle(Core::ProxyType<Client>& channel, const Data::Init& info, Data::Setup& response)
             {
                 Core::ProxyType<Core::IPCChannel> baseChannel(channel);
-
-                Core::instance_id implementation = info.Implementation();
-                void* realIF = nullptr;
-                void* result = nullptr;
-
                 ASSERT(baseChannel.IsValid() == true);
+
+                void* result = nullptr;
 
                 if (info.IsOffer() == true) {
 
-                    ASSERT(implementation);
+                    Core::instance_id implementation = info.Implementation();
+                    ASSERT(implementation != 0);
+
+                    void* realIF = nullptr;
 
                     ProxyStub::UnknownProxy* base = Administrator::Instance().ProxyInstance(baseChannel, implementation, false, info.InterfaceId(), realIF);
+                    ASSERT(base != nullptr);
 
                     if (base != nullptr) {
                         Core::IUnknown* realIFbase = base->Parent();
                         ASSERT(realIFbase != nullptr);
+
                         _parent.Offer(realIFbase, info.InterfaceId());
 
                         base->Complete(response);
@@ -1207,12 +1209,17 @@ namespace RPC {
 
                 } else if (info.IsRevoke() == true) {
 
-                    ASSERT(implementation);
+                    Core::instance_id implementation = info.Implementation();
+                    ASSERT(implementation != 0);
+
+                    void* realIF = nullptr;
 
                     ProxyStub::UnknownProxy* base = Administrator::Instance().ProxyFind(baseChannel, implementation, info.InterfaceId(), realIF);
 
                     if (base != nullptr) {
                         Core::IUnknown* realIFbase = base->Parent();
+                        ASSERT(realIFbase != nullptr);
+
                         base->AddRef();
                         _parent.Revoke(realIFbase, info.InterfaceId());
 
