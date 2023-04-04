@@ -44,7 +44,11 @@ set(GROUP "" CACHE STRING "Define which system group will be used")
 set(UMASK "" CACHE STRING "Set the permission mask for the creation of new files. e.g. 0760")
 
 # Controller Plugin Settings.
-set(PLUGIN_CONTROLLER_UI_ENABLED true CACHE STRING "Enable the Controller's UI")
+set(PLUGIN_CONTROLLER_UI_ENABLED "true" CACHE STRING "Enable the Controller's UI")
+
+if (PLUGIN_CONTROLLER_UI_ENABLED STREQUAL "false")
+    set (BINDING "127.0.0.1")
+endif()
 
 if(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
 map()
