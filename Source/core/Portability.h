@@ -268,8 +268,6 @@ typedef std::wstring string;
 typedef std::string string;
 #endif
 
-using uint24_t = uint32_t;
-
 #define CBR_110 110
 #define CBR_300 300
 #define CBR_600 600
@@ -632,8 +630,6 @@ typedef std::wstring string;
 #ifndef _UNICODE
 typedef std::string string;
 #endif
-
-using uint24_t = uint32_t;
 
 #define STRLEN(STATIC_TEXT) ((sizeof(STATIC_TEXT) / sizeof(TCHAR)) - 1)
 #define EMPTY_STRING _T("")

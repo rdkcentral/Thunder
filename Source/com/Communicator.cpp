@@ -169,8 +169,6 @@ namespace RPC {
         }
         void WaitForCompletion(Communicator::RemoteConnectionMap& parent) {
 
-            Communicator::MonitorableProcess* handler = nullptr;
-
             _adminLock.Lock();
 
             DestructorMap::iterator index(_destructors.begin());
