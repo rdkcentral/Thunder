@@ -1745,7 +1745,10 @@ namespace PluginHost {
 
         private:
             uint32_t Wakeup(const uint32_t timeout);
-
+#ifdef HIBERNATE_SUPPORT_ENABLED
+            uint32_t HibernateChildren(const Core::process_t parentPID, const uint32_t timeout);
+            uint32_t WakeupChildren(const Core::process_t parentPID, const uint32_t timeout);
+#endif
             virtual std::vector<string> GetLibrarySearchPaths(const string& locator) const override
             {
                 std::vector<string> all_paths;
@@ -4136,7 +4139,10 @@ POP_WARNING()
                     } else {
                         //select supported protocol and let know which one was choosen
                         auto protocol = SelectSupportedProtocol(Protocols());
-                        Protocols(Web::ProtocolsArray(protocol));
+                        if (protocol.empty() == false) {
+                            // if protocol header is not set sending an empty protocol header is not allowed (at least by chrome)
+                            Protocols(Web::ProtocolsArray(protocol));
+                        }
 
                         if (serviceCall == false) {
                             const string& JSONRPCHeader(_parent._config.JSONRPCPrefix());
@@ -4180,6 +4186,9 @@ POP_WARNING()
                         return protocol;
                     } else if (protocol == _T("jsonrpc")) {
                         State(JSONRPC, false);
+                        return protocol;
+                    } else if (protocol == _T("raw")) {
+                        State(RAW, false);
                         return protocol;
                     }
                 }

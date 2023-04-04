@@ -205,7 +205,6 @@ namespace Core {
             (void)closedir(dp);
         }
     }
-
 #endif
     /*
     // Get the Processes with this name.

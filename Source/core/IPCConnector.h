@@ -688,6 +688,7 @@ POP_WARNING()
     protected:
         IPCChannel()
             : _administration()
+            , _customData(nullptr)
         {
         }
         void Factory(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
@@ -701,6 +702,7 @@ POP_WARNING()
 
         IPCChannel(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
             : _administration(factory)
+            , _customData(nullptr)
         {
         }
         virtual ~IPCChannel() = default;
@@ -741,6 +743,15 @@ POP_WARNING()
             return (Execute(command, waitTime));
         }
 
+        const void* CustomData() const
+        {
+            return (_customData);
+        }
+        void CustomData(const void* const data)
+        {
+            _customData = data;
+        }
+
         virtual uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) = 0;
 
     private:
@@ -749,6 +760,9 @@ POP_WARNING()
 
     protected:
         IPCFactory _administration;
+
+    private:
+        const void* _customData;
     };
 
     template <typename ACTUALSOURCE, typename EXTENSION>
@@ -790,7 +804,7 @@ POP_WARNING()
 
                 if (handler.IsValid() == true) {
                     _parent.CallProcedure(handler, inbound);
-                } 
+                }
             }
 
             // Notification of a Response send.

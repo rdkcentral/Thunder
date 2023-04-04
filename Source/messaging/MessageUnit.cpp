@@ -183,22 +183,24 @@ namespace WPEFramework {
 
             ASSERT(_dispatcher == nullptr);
 
-            _settings.Load();
+            if (instanceId != static_cast<uint32_t>(~0)) {
+                _settings.Load();
 
-            _dispatcher.reset(new MessageDispatcher(*this, _settings.Identifier(), instanceId, _settings.BasePath(), _settings.SocketPort()));
-            ASSERT(_dispatcher != nullptr);
+                _dispatcher.reset(new MessageDispatcher(*this, _settings.Identifier(), instanceId, _settings.BasePath(), _settings.SocketPort()));
+                ASSERT(_dispatcher != nullptr);
 
-            if ( (_dispatcher != nullptr) && (_dispatcher->IsValid() == true) ) {
+                if ((_dispatcher != nullptr) && (_dispatcher->IsValid() == true)) {
 
-                _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
+                    _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
 
-                Core::Messaging::IStore::Set(this);
+                    Core::Messaging::IStore::Set(this);
 
-                // according to received config,
-                // let all announced controls know, whether they should push messages
-                Update();
+                    // according to received config,
+                    // let all announced controls know, whether they should push messages
+                    Update();
 
-                result = Core::ERROR_NONE;
+                    result = Core::ERROR_NONE;
+                }
             }
 
             return (result);
@@ -219,12 +221,14 @@ namespace WPEFramework {
                 }
             } handler;
 
-            Core::Messaging::IStore::Set(nullptr);
-            Core::Messaging::IControl::Iterate(handler);
+            if (_dispatcher != nullptr) {
+                Core::Messaging::IStore::Set(nullptr);
+                Core::Messaging::IControl::Iterate(handler);
 
-            _adminLock.Lock();
-            _dispatcher.reset(nullptr);
-            _adminLock.Unlock();
+                _adminLock.Lock();
+                _dispatcher.reset(nullptr);
+                _adminLock.Unlock();
+            }
         }
 
         /* virtual */ bool MessageUnit::Default(const Core::Messaging::Metadata& control) const

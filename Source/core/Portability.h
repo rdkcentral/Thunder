@@ -176,6 +176,7 @@
 #define DISABLE_WARNING_DEPRECATED_COPY
 #define DISABLE_WARNING_NON_VIRTUAL_DESTRUCTOR
 #define DISABLE_WARNING_UNUSED_RESULT
+#define DISABLE_WARNING_TYPE_LIMITS
 
 #else
 #define DISABLE_WARNING_CONDITIONAL_EXPRESSION_IS_CONSTANT
@@ -199,6 +200,7 @@
 #define DISABLE_WARNING_DEPRECATED_USE PUSH_WARNING_ARG_("-Wdeprecated-declarations")
 #define DISABLE_WARNING_DEPRECATED_COPY PUSH_WARNING_ARG_("-Wdeprecated-copy")
 #define DISABLE_WARNING_NON_VIRTUAL_DESTRUCTOR PUSH_WARNING_ARG_("-Wnon-virtual-dtor")
+#define DISABLE_WARNING_TYPE_LIMITS PUSH_WARNING_ARG_("-Wtype-limits")
 #endif
 #endif
 
@@ -260,13 +262,13 @@ EXTERNAL void SleepUs(const uint32_t time);
 
 #ifdef _UNICODE
 typedef std::wstring string;
-typedef std::wstring ccstring;
 #endif
 
 #ifndef _UNICODE
 typedef std::string string;
-typedef std::string ccstring;
 #endif
+
+using uint24_t = uint32_t;
 
 #define CBR_110 110
 #define CBR_300 300
@@ -625,13 +627,13 @@ typedef enum {
 
 #ifdef _UNICODE
 typedef std::wstring string;
-typedef std::wstring ccstring;
 #endif
 
 #ifndef _UNICODE
 typedef std::string string;
-typedef std::string ccstring;
 #endif
+
+using uint24_t = uint32_t;
 
 #define STRLEN(STATIC_TEXT) ((sizeof(STATIC_TEXT) / sizeof(TCHAR)) - 1)
 #define EMPTY_STRING _T("")
@@ -817,6 +819,8 @@ namespace Core {
     #endif
     }
 
+    #define COM_ERROR (0x80000000)
+
     #define ERROR_CODES \
         ERROR_CODE(ERROR_NONE, 0) \
         ERROR_CODE(ERROR_GENERAL, 1) \
@@ -868,7 +872,6 @@ namespace Core {
         ERROR_CODE(ERROR_INPROC, 47) \
         ERROR_CODE(ERROR_FAILED_REGISTERED, 48) \
         ERROR_CODE(ERROR_FAILED_UNREGISTERED, 49) 
-
 
     #define ERROR_CODE(CODE, VALUE) CODE = VALUE,
 

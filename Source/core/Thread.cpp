@@ -438,6 +438,15 @@ POP_WARNING()
         } __except (EXCEPTION_EXECUTE_HANDLER) {
         }
 #endif // __DEBUG__
+#else
+        int rc = pthread_setname_np(m_hThreadInstance, threadName);
+        if (rc == ERANGE) {
+            // name too long - max 16 chars allowed
+            char truncName[16];
+            strncpy(truncName, threadName, sizeof(truncName));
+            truncName[15] = '\0';
+            pthread_setname_np(m_hThreadInstance, truncName);
+        }
 #endif // __WINDOWS__
     }
 
