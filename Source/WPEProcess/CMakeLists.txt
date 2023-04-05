@@ -41,7 +41,7 @@ target_link_libraries(${TARGET}
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
           ${NAMESPACE}Core::${NAMESPACE}Core
-          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
+          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
           ${NAMESPACE}COM::${NAMESPACE}COM
