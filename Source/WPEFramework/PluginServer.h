@@ -1863,11 +1863,17 @@ namespace PluginHost {
                 if (locator.empty() == true) {
                     Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
                     newIF = admin.Instantiate<IPlugin>(Core::Library(), className, version);
+                    if (newIF == nullptr) {
+                        ErrorMessage(_T("local class definitions/version does not exist"));
+                    }
                 } else {
                     _library = LoadLibrary(locator);
-                    if (_library.IsLoaded() == true) {
+                    if (_library.IsLoaded() == false) {
+                        ErrorMessage(_T("Library could not be loaded"));
+                    }
+                    else {
                         if ((newIF = Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(_library, className, version)) == nullptr) {
-                            ErrorMessage(_T("class definitions does not exist"));
+                            ErrorMessage(_T("class definitions/version does not exist"));
                             _library = Core::Library();
                         }
                     }
