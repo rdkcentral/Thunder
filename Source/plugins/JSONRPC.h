@@ -82,7 +82,7 @@ namespace PluginHost {
                 while ((index != _designators.end()) && ((index->first != id) || (index->second != event))) {
                     index++;
                 }
-                ASSERT(index == _designators.end());
+
                 if (index == _designators.end()) {
                     _designators.emplace_back(Destination(id, event));
                 }
@@ -99,7 +99,7 @@ namespace PluginHost {
                 while ((index != _designators.end()) && ((index->first != id) || (index->second != event))) {
                     index++;
                 }
-                ASSERT(index != _designators.end());
+
                 if (index != _designators.end()) {
                     _designators.erase(index);
                 }
@@ -121,7 +121,7 @@ namespace PluginHost {
             }
             void Unsubscribe(const IDispatcher::ICallback* callback) {
                 Remotes::iterator index = std::find(_callbacks.begin(), _callbacks.end(), callback);
-                
+
                 ASSERT(index != _callbacks.end());
 
                 if (index != _callbacks.end()) {
@@ -790,6 +790,29 @@ namespace PluginHost {
             _observers.erase(event);
 
             _adminLock.Unlock();
+        }
+
+    public:
+        Core::hresult Subscribe(const uint32_t channel, const string& eventId, const string& designator) override
+        {
+            const Core::hresult result = JSONRPC::Subscribe(channel, eventId, designator);
+
+            if (result == Core::ERROR_NONE) {
+                NotifyObservers(eventId, designator, Status::registered);
+            }
+
+            return (result);
+        }
+
+        Core::hresult Unsubscribe(const uint32_t channel, const string& eventId, const string& designator) override
+        {
+            const Core::hresult result = JSONRPC::Unsubscribe(channel, eventId, designator);
+
+            if (result == Core::ERROR_NONE) {
+                NotifyObservers(eventId, designator, Status::unregistered);
+            }
+
+            return (result);
         }
 
     protected:
