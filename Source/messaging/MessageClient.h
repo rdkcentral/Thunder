@@ -57,7 +57,7 @@ namespace Messaging {
 
     private:
         using Factories = std::unordered_map<Core::Messaging::Metadata::type, IEventFactory*>;
-        using Clients = std::unordered_map<uint32_t, MessageUnit::Client>;
+        using Clients = std::map<uint32_t, MessageUnit::Client>;
 
         mutable Core::CriticalSection _adminLock;
         const string _identifier;
