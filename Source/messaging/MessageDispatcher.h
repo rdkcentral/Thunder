@@ -95,8 +95,8 @@ namespace Messaging {
                 cursor.Forward(sizeof(entrySize));
                 return entrySize > sizeof(entrySize) ? entrySize - sizeof(entrySize) : 0;
             }
-            void Destroy() {
-                Core::CyclicBuffer::Destroy();
+            void Unlink() {
+                Core::CyclicBuffer::Unlink();
             }
 
         private:
@@ -147,10 +147,10 @@ namespace Messaging {
             }
         }
         ~MessageDataBufferType() {
+            _dataBuffer.Relinquish();
             if (_initialize == true) {
-                _dataBuffer.Relinquish();
                 _dataLock.Lock();
-                _dataBuffer.Destroy();
+                _dataBuffer.Unlink();
                 _dataLock.Unlock();
             }
         }
@@ -293,7 +293,7 @@ namespace Messaging {
                 metaDataFilename = _T("127.0.0.1:") + Core::NumberType<uint16_t>(socketPort + instanceId + 1).Text();
             }
             else {
-                doorBellFilename = basePath +  _T(".doorbell");
+                doorBellFilename = basePath + _T(".doorbell");
                 metaDataFilename = instancePath + _T(".metadata");
             }
 
