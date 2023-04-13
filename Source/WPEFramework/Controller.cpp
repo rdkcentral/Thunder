@@ -123,7 +123,7 @@ namespace Plugin {
 
         _service->Register(&_systemInfoReport);
 
-        if ((config.Ui.IsSet() == true) && (config.Ui.Value() == true)) {
+        if (config.Ui.Value() == true) {
             _service->EnableWebServer(_T("UI"), EMPTY_STRING);
         } else {
             _service->DisableWebServer();

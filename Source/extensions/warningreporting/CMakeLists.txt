@@ -34,7 +34,7 @@ target_compile_definitions(${TARGET} PRIVATE WARNINGREPORTING_EXPORTS)
 target_link_libraries(${TARGET}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
-          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
+          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
         )

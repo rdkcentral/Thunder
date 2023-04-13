@@ -370,6 +370,21 @@ namespace Core {
 #endif
             return (IsOpen());
         }
+        bool Unlink()
+        {
+            bool result = true;
+
+            if (Exists() == true) {
+                Close();
+#ifdef __POSIX__
+                result = (unlink(_name.c_str()) == 0);
+#endif
+#ifdef __WINDOWS__
+                result = (::DeleteFile(_name.c_str()) != FALSE);
+#endif
+            }
+            return (result);
+        }
         bool Destroy()
         {
             bool result = true;
