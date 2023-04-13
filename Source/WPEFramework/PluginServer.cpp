@@ -345,7 +345,7 @@ namespace PluginHost
             const string className(PluginHost::Service::Configuration().ClassName.Value());
 
             if (_handler == nullptr) {
-                SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
+                SYSLOG(Logging::Startup, (_T("Loading of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
                 result = Core::ERROR_UNAVAILABLE;
 
                 Unlock();
