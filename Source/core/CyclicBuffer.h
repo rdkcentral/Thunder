@@ -246,6 +246,11 @@ namespace Core {
         virtual void DataAvailable();
 
     protected:
+        inline bool Unlink()
+        {
+            _administration = nullptr;
+            return (_buffer.Unlink());
+        }
         inline bool Destroy()
         {
             _administration = nullptr;

@@ -95,8 +95,8 @@ namespace Messaging {
                 cursor.Forward(sizeof(entrySize));
                 return entrySize > sizeof(entrySize) ? entrySize - sizeof(entrySize) : 0;
             }
-            void Destroy() {
-                Core::CyclicBuffer::Destroy();
+            void Unlink() {
+                Core::CyclicBuffer::Unlink();
             }
 
         private:
@@ -120,6 +120,7 @@ namespace Messaging {
         MessageDataBufferType(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t socketPort = 0, const bool initialize = false)
             : _filenames(PrepareFilenames(baseDirectory, identifier, instanceId, socketPort))
             , _dataLock()
+            , _initialize(initialize)
             // clang-format off
             , _dataBuffer(_filenames.doorBell, _filenames.data,  Core::File::USER_READ    |
                                                                  Core::File::USER_WRITE   |
@@ -147,9 +148,11 @@ namespace Messaging {
         }
         ~MessageDataBufferType() {
             _dataBuffer.Relinquish();
-            _dataLock.Lock();
-            _dataBuffer.Destroy();
-            _dataLock.Unlock();
+            if (_initialize == true) {
+                _dataLock.Lock();
+                _dataBuffer.Unlink();
+                _dataLock.Unlock();
+            }
         }
 
     public:
@@ -283,6 +286,7 @@ namespace Messaging {
             string doorBellFilename;
             string metaDataFilename;
             string basePath = Core::Directory::Normalize(baseDirectory) + identifier;
+            string instancePath = basePath + '.' + Core::NumberType<uint32_t>(instanceId).Text();
 
             if (socketPort != 0) {
                 doorBellFilename = _T("127.0.0.1:") + Core::NumberType<uint16_t>(socketPort).Text();
@@ -290,16 +294,17 @@ namespace Messaging {
             }
             else {
                 doorBellFilename = basePath + _T(".doorbell");
-                metaDataFilename = basePath + '.' + Core::NumberType<uint32_t>(instanceId).Text() + _T(".metadata");
+                metaDataFilename = instancePath + _T(".metadata");
             }
 
-            string dataFilename = basePath + '.' + Core::NumberType<uint32_t>(instanceId).Text() + _T(".data");
+            string dataFilename = instancePath + _T(".data");
 
             return { doorBellFilename, metaDataFilename, dataFilename };
         }
 
     private:
         mutable Core::CriticalSection _dataLock;
+        bool _initialize;
         DataBuffer _dataBuffer;
     };
 }

@@ -85,6 +85,16 @@ namespace Core {
         {
             return (m_File.Permission(mode));
         }
+        bool Unlink()
+        {
+            bool closed = IsValid();
+
+            if (closed == true) {
+                Close();
+                closed = m_File.Unlink();
+            }
+            return (closed);
+        }
         bool Destroy()
         {
             bool closed = IsValid();
