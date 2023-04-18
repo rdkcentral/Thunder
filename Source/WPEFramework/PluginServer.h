@@ -34,6 +34,10 @@
 #error "Please define the name of the COM process!!!"
 #endif
 
+#ifdef THUNDER_CRASH_HANDLER
+#define MAX_LENGTH_JSON_REQUEST_PARAM 200 /* maximum length of json request param to store */
+#endif
+
 #define MAX_EXTERNAL_WAITS 2000 /* Wait for 2 Seconds */
 
 namespace WPEFramework {
@@ -103,13 +107,42 @@ namespace PluginHost {
     private:
         class WorkerPoolImplementation : public Core::WorkerPool {
         private:
+#ifdef THUNDER_CRASH_HANDLER
+            struct requestStrListStruct
+            {
+                Core::IDispatch* iDispatchJob;
+                string requestString;
+
+                requestStrListStruct (Core::IDispatch* Job,  const std::string &rString)
+                {
+                    iDispatchJob = Job;
+                    requestString = rString;
+                }
+            };
+
+            typedef std::list<requestStrListStruct> RequestStrList;
+#endif /* THUNDER_CRASH_HANDLER */
             class Dispatcher : public Core::ThreadPool::IDispatcher {
             public:
                 Dispatcher(const Dispatcher&) = delete;
                 Dispatcher& operator=(const Dispatcher&) = delete;
 
+#ifdef THUNDER_CRASH_HANDLER
+                Dispatcher(RequestStrList& stringList, Core::CriticalSection& adminLock)
+                : _requestList(stringList)
+                , _requestListLock(adminLock)
+                , _crashMonitor(nullptr)
+                {
+                }
+#else
                 Dispatcher() = default;
+#endif /* THUNDER_CRASH_HANDLER */
                 ~Dispatcher() override = default;
+
+#ifdef THUNDER_CRASH_HANDLER
+                void SetCrashMonitor(Core::ThreadPool::ICrashMonitor* crashMonitor);
+                void StoreRequestString(Core::IDispatch* job);
+#endif /* THUNDER_CRASH_HANDLER */
 
             private:
                 void Initialize() override {
@@ -117,6 +150,13 @@ namespace PluginHost {
                 void Deinitialize() override {
                 }
                 void Dispatch(Core::IDispatch* job) override;
+
+#ifdef THUNDER_CRASH_HANDLER
+            private:
+                RequestStrList& _requestList;
+                Core::CriticalSection& _requestListLock;
+                Core::ThreadPool::ICrashMonitor* _crashMonitor;
+#endif /* THUNDER_CRASH_HANDLER */
             };
 
         public:
@@ -124,6 +164,22 @@ namespace PluginHost {
             WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
             WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
+#ifdef THUNDER_CRASH_HANDLER
+            WorkerPoolImplementation(const uint32_t stackSize)
+                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 16, &_dispatch)
+                , _adminLock()
+                , _dispatch(_requestStringList, _adminLock)
+            {
+                CreateCrashMonitor();
+               _dispatch.SetCrashMonitor(GetThreadPool().GetCrashMonitor());
+                Run();
+            }
+            ~WorkerPoolImplementation()
+            {
+                _requestStringList.clear();
+            }
+            void UpdateRequestsList(Core::IDispatch* dispatchRequestJob,  const string& jsonString);
+#else
             WorkerPoolImplementation(const uint32_t stackSize)
                 : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 16, &_dispatch)
                 , _dispatch()
@@ -132,7 +188,13 @@ namespace PluginHost {
             }
             ~WorkerPoolImplementation() override = default;
 
+#endif /* THUNDER_CRASH_HANDLER */
+
         private:
+#ifdef THUNDER_CRASH_HANDLER
+            RequestStrList _requestStringList;
+            Core::CriticalSection _adminLock;
+#endif /* THUNDER_CRASH_HANDLER */
             Dispatcher _dispatch;
         };
 
@@ -2513,6 +2575,21 @@ namespace PluginHost {
             ~Channel() override;
 
         public:
+#ifdef THUNDER_CRASH_HANDLER
+            void GetRequestString(const Core::JSONRPC::Message &message, std::string& jsonRPCString)
+            {
+                string strParams;
+
+                jsonRPCString = std::string("jsonrpc: ") + message.JSONRPC.Value() + \
+                                         std::string(", id:") + std::to_string(message.Id.Value()) + \
+                                         std::string(", method:") + message.Designator.Value();
+
+                strParams.assign(message.Parameters.Value(), 0, MAX_LENGTH_JSON_REQUEST_PARAM);
+
+                jsonRPCString += std::string(", params:") + strParams;
+            }
+#endif
+
             inline uint32_t Id() const
             {
                 return (PluginHost::Channel::Id());
@@ -2740,7 +2817,18 @@ namespace PluginHost {
                         if (job.IsValid() == true) {
                             Core::ProxyType<Web::Request> baseRequest(Core::proxy_cast<Web::Request>(request));
                             job->Set(Id(), &_parent, service, baseRequest, _security->Token(), !request->ServiceCall());
+#ifdef THUNDER_CRASH_HANDLER
+                            std::string strJsonRpcRequest("");
+                            /* write the json rpc request in new string varaible */
+                            if(!request->ServiceCall() && (baseRequest->HasBody() == true))
+                            {
+                                Core::JSONRPC::Message &message(*(baseRequest->Body<Core::JSONRPC::Message>()));
+                                GetRequestString(message, strJsonRpcRequest);
+                            }
+                            _parent.Submit(Core::proxy_cast<Core::IDispatchType<void>>(job), strJsonRpcRequest);
+#else
                             _parent.Submit(Core::proxy_cast<Core::IDispatchType<void>>(job));
+#endif /* THUNDER_CRASH_HANDLER */
                         }
                     }
                     break;
@@ -2814,7 +2902,19 @@ namespace PluginHost {
 
                     if ((_service.IsValid() == true) && (job.IsValid() == true)) {
                         job->Set(Id(), &_parent, _service, element, _security->Token(), ((State() & Channel::JSONRPC) != 0));
+
+#ifdef THUNDER_CRASH_HANDLER
+                        std::string strJsonRpcRequest("");
+                        /* write the json rpc request in new string varaible */
+                        if((State() & Channel::JSONRPC) != 0)
+                        {
+                            Core::JSONRPC::Message &message(*(Core::proxy_cast<Core::JSONRPC::Message>(element)));
+                            GetRequestString(message, strJsonRpcRequest);
+                        }
+                        _parent.Submit(Core::proxy_cast<Core::IDispatch>(job), strJsonRpcRequest);
+#else
                         _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
+#endif /* THUNDER_CRASH_HANDLER */
                     }
                 }
             }
@@ -2832,7 +2932,12 @@ namespace PluginHost {
 
                 if ((_service.IsValid() == true) && (job.IsValid() == true)) {
                     job->Set(Id(), &_parent, _service, value);
+#ifdef THUNDER_CRASH_HANDLER
+                    syslog(LOG_NOTICE, "Submitting the job str value: %s", value.c_str());
+                    _parent.Submit(Core::proxy_cast<Core::IDispatch>(job), value);
+#else
                     _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
+#endif /* THUNDER_CRASH_HANDLER */
                 }
             }
 
@@ -3122,10 +3227,18 @@ namespace PluginHost {
         {
             return (_dispatcher);
         }
+#ifdef THUNDER_CRASH_HANDLER
+        inline void Submit(const Core::ProxyType<Core::IDispatchType<void>>& job, const std::string jsonString)
+        {
+            _dispatcher.UpdateRequestsList(&(*job), jsonString);
+            _dispatcher.Submit(job);
+        }
+#else
         inline void Submit(const Core::ProxyType<Core::IDispatchType<void>>& job)
         {
             _dispatcher.Submit(job);
         }
+#endif /* THUNDER_CRASH_HANDLER */
         inline void Schedule(const uint64_t time, const Core::ProxyType<Core::IDispatchType<void>>& job)
         {
             _dispatcher.Schedule(time, job);

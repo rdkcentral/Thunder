@@ -38,6 +38,16 @@ namespace Core {
             virtual void Dispatch(Core::IDispatchType<void>*) = 0;
         };
 
+#ifdef THUNDER_CRASH_HANDLER
+        struct ICrashMonitor {
+            virtual ~ICrashMonitor() = default;
+
+            /* Registering new signal handler for SIGSEGV.Also storing the old handler for SIGSEGV */
+            virtual void SetupCrashHandling() = 0;
+            virtual void StoreRequestString(::ThreadId threadId, const string& jsonString) = 0;
+        };
+#endif /* THUNDER_CRASH_HANDLER */
+
         template<typename IMPLEMENTATION>
         class JobType {
         private:
@@ -155,6 +165,9 @@ namespace Core {
                 , _interestCount(0)
                 , _currentRequest()
                 , _runs(0)
+#ifdef THUNDER_CRASH_HANDLER
+                , _ptrCrashMonitor(nullptr)
+#endif /* THUNDER_CRASH_HANDLER */
             {
 		ASSERT(dispatcher != nullptr);
             }
@@ -184,6 +197,16 @@ namespace Core {
 
                 return(result);
             }
+
+#ifdef THUNDER_CRASH_HANDLER
+            void SetCrashMonitorObject(ICrashMonitor* crashMonitor) {
+                ASSERT(nullptr == _ptrCrashMonitor);  // not expected to assign more than once
+                ASSERT(nullptr != crashMonitor);  // not expected to be null
+
+                _ptrCrashMonitor = crashMonitor;
+            }
+#endif /* THUNDER_CRASH_HANDLER */
+
             void Process()
             {
 		_dispatcher->Initialize();
@@ -195,6 +218,14 @@ namespace Core {
                     _runs++;
 
                     Core::IDispatch* request = &(*_currentRequest);
+
+#ifdef THUNDER_CRASH_HANDLER
+                    if(_ptrCrashMonitor != nullptr)
+                    {
+                        _ptrCrashMonitor->SetupCrashHandling();
+                    }
+#endif /* THUNDER_CRASH_HANDLER */
+
                     _dispatcher->Dispatch(request);
                     _currentRequest.Release();
 
@@ -225,6 +256,9 @@ namespace Core {
             uint32_t _interestCount;
             Core::ProxyType<Core::IDispatch> _currentRequest;
             uint32_t _runs;
+#ifdef THUNDER_CRASH_HANDLER
+            ICrashMonitor* _ptrCrashMonitor;
+#endif /* THUNDER_CRASH_HANDLER */
         };
 
     private:
@@ -274,6 +308,35 @@ namespace Core {
             Minion _minion;
         };
 
+#ifdef THUNDER_CRASH_HANDLER
+        class EXTERNAL CrashMonitor : public ICrashMonitor {
+        private:
+            typedef struct sigaction SigAction;
+            typedef struct {
+                ::ThreadId threadId;
+                string jsonRPCString;
+            } WorkerThreadInfo;
+
+        public:
+            CrashMonitor(std::list<Executor>& _units);
+            ~CrashMonitor();
+            void SetupCrashHandling() override;
+            void StoreRequestString(::ThreadId threadId, const string& jsonString) override;
+            void CreateCrashMonitor();
+            void DeleteCrashMonitor();
+            static void DumpBacktrace();
+            static void signal_segv(int signum, siginfo_t* info, void*ptr);
+            static void show_context(const ucontext_t *p_uc);
+
+        private:
+             std::list<Executor>& _threadlist;
+             static WorkerThreadInfo* _workerThreadInfo;
+             static uint8_t _numberOfWorkerThread;
+             static SigAction _orig_act;
+             Core::CriticalSection _adminLock;
+    };
+#endif /* THUNDER_CRASH_HANDLER */
+
     public:
         ThreadPool(const ThreadPool& a_Copy) = delete;
         ThreadPool& operator=(const ThreadPool& a_RHS) = delete;
@@ -289,9 +352,40 @@ namespace Core {
         ~ThreadPool() {
             Stop();
             _units.clear();
+#ifdef THUNDER_CRASH_HANDLER
+            DeleteCrashMonitor();
+#endif /* THUNDER_CRASH_HANDLER */
         }
 
     public:
+#ifdef THUNDER_CRASH_HANDLER
+        void CreateCrashMonitor()
+        {
+            if(_ptrcrashMonitor == nullptr)
+            {
+                _ptrcrashMonitor = new CrashMonitor(_units);
+                ASSERT( NULL != _ptrcrashMonitor);
+            }
+            _ptrcrashMonitor->CreateCrashMonitor();
+            std::list<WPEFramework::Core::ThreadPool::Executor>::iterator ptr = _units.begin();
+            while(ptr!=_units.end())
+            {
+                ptr->Me().SetCrashMonitorObject(_ptrcrashMonitor);
+                ptr++;
+            }
+        }
+        void DeleteCrashMonitor()
+        {
+            if ( NULL != _ptrcrashMonitor )
+            {
+                delete _ptrcrashMonitor;
+                _ptrcrashMonitor = NULL;
+            }
+        }
+        ICrashMonitor* GetCrashMonitor() {
+            return (_ptrcrashMonitor);
+        }
+#endif /* THUNDER_CRASH_HANDLER */
         uint8_t Count() const
         {
             return (static_cast<uint8_t>(_units.size()));
@@ -392,6 +486,9 @@ namespace Core {
     private:
         MessageQueue _queue;
         std::list<Executor> _units;
+#ifdef THUNDER_CRASH_HANDLER
+        CrashMonitor* _ptrcrashMonitor;
+#endif /* THUNDER_CRASH_HANDLER */
     };
 
 }
