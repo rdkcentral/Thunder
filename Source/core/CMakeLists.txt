@@ -146,6 +146,8 @@ set(PUBLIC_HEADERS
         MessageStore.h
         )
 
+target_compile_options (${TARGET} PRIVATE -Wno-psabi)
+
 # non-buildable interface target to carry the definitions
 # All build flags that are applicable to the whole system should be set here in the 
 # core since the core is included everywhere so if they are set here, they are 

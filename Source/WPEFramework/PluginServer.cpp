@@ -550,9 +550,6 @@ namespace PluginHost
                 if (_jsonrpc != nullptr) {
                     _jsonrpc->Deactivate();
                 }
-
-                _administrator.Deinitialized(callSign, this);
-
             }
 
             if (currentState != IShell::state::ACTIVATION) {
@@ -569,6 +566,8 @@ namespace PluginHost
             }
 
             State(why == CONDITIONS ? PRECONDITION : DEACTIVATED);
+
+            _administrator.Deinitialized(callSign, this);
 
             // We have no need for his module anymore..
             ReleaseInterfaces();
