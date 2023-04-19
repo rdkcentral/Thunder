@@ -30,10 +30,9 @@ add_executable(${TARGET}
 # Non-buildable interface target to carry the definitions for users
 add_library(COMProcess INTERFACE)
 add_library(${NAMESPACE}COMProcess::${NAMESPACE}COMProcess ALIAS COMProcess)
-target_compile_definitions(COMProcess
-        INTERFACE
-          HOSTING_COMPROCESS=${TARGET}
-        )
+target_compile_definitions(COMProcess INTERFACE HOSTING_COMPROCESS=${TARGET})
+
+target_compile_options (${TARGET} PRIVATE -Wno-psabi)
 
 target_link_libraries(${TARGET}
         PUBLIC

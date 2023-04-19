@@ -38,6 +38,8 @@ target_compile_definitions(${TARGET}
           THREADPOOL_COUNT=${THREADPOOL_COUNT}
         )
 
+target_compile_options (${TARGET} PRIVATE -Wno-psabi)
+
 if (TREE_REFERENCE)
     target_compile_definitions(${TARGET}
             PRIVATE
