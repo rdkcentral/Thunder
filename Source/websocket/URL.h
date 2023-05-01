@@ -278,6 +278,17 @@ namespace Core {
             return (_scheme != SCHEME_UNKNOWN);
         }
 
+        inline void Clear() {
+            _scheme = SchemeType::SCHEME_UNKNOWN;
+            _username.Clear();
+            _password.Clear();
+            _host.Clear();
+            _port.Clear();
+            _path.Clear();
+            _query.Clear();
+            _ref.Clear();
+        }
+
         SchemeType Type() const 
         {
             return (_scheme);
