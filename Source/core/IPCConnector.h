@@ -203,7 +203,8 @@ namespace Core {
                     if ((_offset - 8) < _length) {
 
                         // There could be multiple packages in this frame, do not read/handle more than what fits in the frame.
-                        uint16_t handled((maxLength - result) > static_cast<uint16_t>(_length - (_offset - 8)) ? static_cast<uint16_t>(_length - (_offset - 8)) : (maxLength - result));
+                        uint32_t tmp = _length - (_offset - 8);
+                        uint16_t handled(static_cast<uint32_t>(maxLength - result) > tmp ? static_cast<uint16_t>(tmp) : (maxLength - result));
 
                         if (_current != nullptr) {
                             handled = _current->Deserialize(&stream[result], handled, _offset - 8);
