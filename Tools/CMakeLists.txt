@@ -1,7 +1,7 @@
 # If not stated otherwise in this file or this component's LICENSE file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,18 +17,21 @@
 
 cmake_minimum_required(VERSION 3.3)
 
-project(WPEFrameworkGenerators)
+project(Generators)
 
 set(GENERATOR_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/sbin")
 
-message("CMAKE_SYSTEM_PREFIX_PATH ${CMAKE_SYSTEM_PREFIX_PATH}, CMAKE_SYSTEM_LIBRARY_PATH ${CMAKE_SYSTEM_LIBRARY_PATH}, CMAKE_SYSTEM_INCLUDE_PATH ${CMAKE_SYSTEM_INCLUDE_PATH} and CMAKE_SYSTEM_PROGRAM_PATH ${CMAKE_SYSTEM_PROGRAM_PATH}")
-
 if(NOT DEFINED GENERIC_CMAKE_MODULE_PATH)
-   find_path(GENERIC_CMAKE_MODULE_PATH CMake.cmake
-       PATHS
-           "/usr/share/cmake/Modules/"
-           "/usr/share/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules/"
-   )
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../src/bridge")
+        set(NAMESPACE bridge)
+    else()
+        set(NAMESPACE WPEFramework)
+    endif()
+    if(DEFINED ENV{STAGING_DIR})
+        set(GENERIC_CMAKE_MODULE_PATH "$ENV{STAGING_DIR}/usr/include/${NAMESPACE}/Modules")
+    else()
+        set(GENERIC_CMAKE_MODULE_PATH "${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/Modules")
+    endif()
 endif()
 
 configure_file( "${CMAKE_SOURCE_DIR}/cmake/FindProxyStubGenerator.cmake.in"

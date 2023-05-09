@@ -551,6 +551,27 @@ uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const
 namespace WPEFramework {
 
 namespace Core {
+
+    #if defined(__CORE_INSTANCE_BITS__) && (__CORE_INSTANCE_BITS__ != 0)
+    #if __CORE_INSTANCE_BITS__ <= 8
+    typedef uint8_t instance_id;
+    #elif __CORE_INSTANCE_BITS__ <= 16
+    typedef uint16_t instance_id;
+    #elif __CORE_INSTANCE_BITS__ <= 32 
+    typedef uint32_t instance_id;
+    #elif __CORE_INSTANCE_BITS__ <= 64
+    typedef uint64_t instance_id;
+    #endif
+    #else
+    #if defined(__SIZEOF_POINTER__) && (__SIZEOF_POINTER__ == 8) 
+    typedef uint64_t instance_id;
+    #else
+    typedef uint32_t instance_id;
+    #endif
+    #endif
+
+    typedef uint32_t hresult;
+
     inline void* Alignment(size_t alignment, void* incoming)
     {
         const auto basePtr = reinterpret_cast<uintptr_t>(incoming);

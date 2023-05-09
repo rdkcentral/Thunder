@@ -21,9 +21,9 @@
 # Generates Plugin Markdown documentation.
 #
 # Typical usage:
-#   ./GenerateDocs ../../../ThunderNanoServices/
-#   ./GenerateDocs ../../../ThunderNanoServices/BluetoothControl
-#   ./GenerateDocs ../../../ThunderNanoServices/BluetoothControl/BluetoothControlPlugin.json
+#   ./GenerateDocs ../../ThunderNanoServices/
+#   ./GenerateDocs ../../ThunderNanoServices/BluetoothControl
+#   ./GenerateDocs ../../ThunderNanoServices/BluetoothControl/BluetoothControlPlugin.json
 #
 
 command -v ./JsonGenerator.py >/dev/null 2>&1 || { echo >&2 "JsonGenerator.py is not available. Aborting."; exit 1; }
@@ -40,6 +40,6 @@ fi
 
 echo "Generating Plugin markdown documentation..."
 
-./JsonGenerator.py --docs -i ../../../ThunderInterfaces/jsonrpc -j ../../../ThunderInterfaces/interfaces -I ../../Source -o doc --verbose $files
+./JsonGenerator.py --docs -i ../../ThunderInterfaces/jsonrpc -j ../../ThunderInterfaces/interfaces -I ../../Thunder/Source -o doc --verbose $files
 
 echo "Complete."
