@@ -20,6 +20,7 @@
 #include "MessageClient.h"
 
 namespace WPEFramework {
+
 namespace Messaging {
 
     /**
@@ -47,11 +48,9 @@ namespace Messaging {
     void MessageClient::AddInstance(const uint32_t id)
     {
         _adminLock.Lock();
-
         _clients.emplace(std::piecewise_construct,
             std::forward_as_tuple(id),
             std::forward_as_tuple(_identifier, id, _basePath, _socketPort));
-
         _adminLock.Unlock();
     }
 
@@ -159,9 +158,11 @@ namespace Messaging {
      *
      * @param function function to be called on each of the messages in the buffer
      */
-    void MessageClient::PopMessagesAndCall(std::function<void(const Core::Messaging::IStore::Information& info, const Core::ProxyType<Core::Messaging::IEvent>& message)> function)
+    void MessageClient::PopMessagesAndCall(std::function<void(const Core::Messaging::Metadata& metadata, const Core::ProxyType<Core::Messaging::IEvent>& message)> function)
     {
-        Core::Messaging::IStore::Information information;
+        Core::Messaging::Metadata metadata;
+        Core::Messaging::IStore::Logging log;
+        Core::Messaging::IStore::Tracing trace;
         Core::ProxyType<Core::Messaging::IEvent> message;
 
         _adminLock.Lock();
@@ -176,24 +177,49 @@ namespace Messaging {
                     size = sizeof(_readBuffer);
                 }
 
-                auto length = information.Deserialize(_readBuffer, size);
-
-                if ((length > sizeof(Core::Messaging::Metadata::type)) && (length < sizeof(_readBuffer))) {
-                    auto factory = _factories.find(information.Type());
-                    if (factory != _factories.end()) {
-                        message = factory->second->Create();
-                        message->Deserialize(_readBuffer + length, size - length);
-                        function(information, message);
+                if (metadata.Deserialize(_readBuffer, size) != 0) {
+                    
+                    if (metadata.Type() == Core::Messaging::Metadata::type::TRACING) {
+                        auto length = trace.Deserialize(_readBuffer, size);
+                        
+                        if ((length > sizeof(Core::Messaging::Metadata::type)) && (length < sizeof(_readBuffer))) {
+                            auto factory = _factories.find(trace.Type());
+                        
+                            if (factory != _factories.end()) {
+                                message = factory->second->Create();
+                                message->Deserialize(_readBuffer + length, size - length);
+                                function(trace, message);
+                            }
+                        }
+                        else {
+                            client.second.FlushDataBuffer();
+                        }
+                        size = sizeof(_readBuffer);
+                    }
+                    else if (metadata.Type() == Core::Messaging::Metadata::type::LOGGING || metadata.Type() == Core::Messaging::Metadata::type::REPORTING) {
+                        auto length = log.Deserialize(_readBuffer, size);
+                        
+                        if ((length > sizeof(Core::Messaging::Metadata::type)) && (length < sizeof(_readBuffer))) {
+                            auto factory = _factories.find(log.Type());
+                            
+                            if (factory != _factories.end()) {
+                                message = factory->second->Create();
+                                message->Deserialize(_readBuffer + length, size - length);
+                                function(log, message);
+                            }
+                        }
+                        else {
+                            client.second.FlushDataBuffer();
+                        }
+                        size = sizeof(_readBuffer);
+                    }
+                    else {
+                        ASSERT(metadata.Type() != Core::Messaging::Metadata::type::INVALID);
                     }
                 }
-                else {
-                    client.second.FlushDataBuffer();
-                }
-
-                size = sizeof(_readBuffer);
             }
         }
-
+        
         _adminLock.Unlock();
     }
 
@@ -221,5 +247,6 @@ namespace Messaging {
         _factories.erase(type);
         _adminLock.Unlock();
     }
-}
-}
+
+} // namespace Messaging
+} // namespace WPEFramework

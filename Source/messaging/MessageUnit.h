@@ -56,23 +56,28 @@ namespace WPEFramework {
 
                 Control()
                     : Core::Messaging::Metadata()
-                    , _enabled(false) {
+                    , _enabled(false)
+                {
                 }
                 Control(const Metadata& info, const bool enabled)
                     : Core::Messaging::Metadata(info)
-                    , _enabled(enabled) {
+                    , _enabled(enabled)
+                {
                 }
                 Control(Control&& rhs)
                     : Core::Messaging::Metadata(rhs)
-                    , _enabled(rhs._enabled) {
+                    , _enabled(rhs._enabled)
+                {
                 }
                 Control(const Control& copy)
                     : Core::Messaging::Metadata(copy)
-                    , _enabled(copy._enabled) {
+                    , _enabled(copy._enabled)
+                {
                 }
                 ~Control() = default;
 
-                Control& operator= (Control&& rhs) {
+                Control& operator= (Control&& rhs)
+                {
                     Core::Messaging::Metadata::operator=(rhs);
                     _enabled = rhs._enabled;
 
@@ -80,10 +85,13 @@ namespace WPEFramework {
                 }
 
             public:
-                bool Enabled() const {
+                bool Enabled() const
+                {
                     return (_enabled);
                 }
-                uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const {
+                
+                uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const
+                {
                     uint16_t length = Metadata::Serialize(buffer, bufferSize);
 
                     if ((length == 0) || (length >= bufferSize)) {
@@ -96,7 +104,9 @@ namespace WPEFramework {
 
                     return (length);
                 }
-                uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) {
+                
+                uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize)
+                {
                     uint16_t length = Metadata::Deserialize(buffer, bufferSize);
 
                     if ((length == 0) || (length >= bufferSize)) {
@@ -113,6 +123,7 @@ namespace WPEFramework {
             private:
                 bool _enabled;
             };
+
             using ControlList = std::vector<Control>;
             class EXTERNAL Iterator {
             public:
@@ -122,28 +133,33 @@ namespace WPEFramework {
                 Iterator()
                     : _position(0)
                     , _container()
-                    , _index() {
+                    , _index()
+                {
                 }
                 Iterator(const ControlList& copy)
                     : _position(0)
                     , _container(copy)
-                    , _index(_container.begin()) {
+                    , _index(_container.begin())
+                {
                 }
                 Iterator(Iterator&& move)
                     : _position(0)
                     , _container(move._container)
-                    , _index(_container.begin()) {
+                    , _index(_container.begin())
+                {
                 }
                 ~Iterator() = default;
 
-                Iterator& operator= (Iterator&& rhs) {
+                Iterator& operator= (Iterator&& rhs)
+                {
                     _position = 0;
                     _container = std::move(rhs._container);
                     _index = _container.begin();
 
                     return (*this);
                 }
-                Iterator& operator= (ControlList&& rhs) {
+                Iterator& operator= (ControlList&& rhs)
+                {
                     _position = 0;
                     _container = std::move(rhs);
                     _index = _container.begin();
@@ -152,14 +168,17 @@ namespace WPEFramework {
                 }
 
             public:
-                bool IsValid() const {
+                bool IsValid() const
+                {
                     return ((_position > 0) && (_index != _container.end()));
                 }
-                void Reset() {
+                void Reset()
+                {
                     _position = 0;
                     _index = _container.begin();
                 }
-                bool Next() {
+                bool Next()
+                {
                     if (_position == 0) {
                         _position++;
                     }
@@ -170,20 +189,28 @@ namespace WPEFramework {
 
                     return (_index != _container.end());
                 }
-                Core::Messaging::Metadata::type Type() const {
+                Core::Messaging::Metadata::type Type() const
+                {
                     ASSERT(IsValid());
+
                     return (_index->Type());
                 }
-                const string& Module() const {
+                const string& Module() const
+                {
                     ASSERT(IsValid());
+
                     return (_index->Module());
                 }
-                const string& Category() const {
+                const string& Category() const
+                {
                     ASSERT(IsValid());
+
                     return (_index->Category());
                 }
-                bool Enabled() const {
+                bool Enabled() const
+                {
                     ASSERT(IsValid());
+                    
                     return (_index->Enabled());
                 }
 
@@ -192,6 +219,7 @@ namespace WPEFramework {
                 ControlList _container;
                 ControlList::iterator _index;
             };
+
             class EXTERNAL Settings {
             private:
                 static constexpr const TCHAR* MESSAGE_DISPATCHER_CONFIG_ENV = _T("MESSAGE_DISPATCHER_CONFIG");
@@ -315,22 +343,28 @@ namespace WPEFramework {
                 ~Settings() = default;
 
             public:
-                const string& BasePath() const {
+                const string& BasePath() const
+                {
                     return(_path);
                 }
-                const string& Identifier() const {
+                const string& Identifier() const
+                {
                     return (_identifier);
                 }
-                uint16_t SocketPort() const {
+                uint16_t SocketPort() const
+                {
                     return (_socketPort);
                 }
-                bool IsBackground() const {
+                bool IsBackground() const
+                {
                     return ((_mode & mode::BACKGROUND) != 0);
                 }
-                bool IsDirect() const {
+                bool IsDirect() const
+                {
                     return ((_mode & mode::DIRECT) != 0);
                 }
-                bool IsAbbreviated() const {
+                bool IsAbbreviated() const
+                {
                     return ((_mode & mode::ABBREVIATED) != 0);
                 }
                 void Configure (const string& path, const string& identifier, const uint16_t socketPort, const string& config, const bool background, const flush flushMode)
@@ -414,7 +448,8 @@ namespace WPEFramework {
 
                     return (result);
                 }
-                void Save() const {
+                void Save() const
+                {
                     // Store all config info..
                     string settings = _path + DELIMITER +
                                _identifier + DELIMITER +
@@ -430,7 +465,8 @@ namespace WPEFramework {
 
                     Core::SystemInfo::SetEnvironment(MESSAGE_DISPATCHER_CONFIG_ENV, settings, true);
                 }
-                void Load() {
+                void Load()
+                {
                     string settings;
                     Core::SystemInfo::GetEnvironment(MESSAGE_DISPATCHER_CONFIG_ENV, settings);
                     Core::TextSegmentIterator iterator(Core::TextFragment(settings, 0, static_cast<uint16_t>(settings.length())), false, DELIMITER);
@@ -528,6 +564,7 @@ namespace WPEFramework {
                 uint16_t _socketPort;
                 uint8_t _mode;
             };
+
             class EXTERNAL Client : public MessageDataBufferType<DataSize, MetadataSize> {
             private:
                 using BaseClass = MessageDataBufferType<DataSize, MetadataSize>;
@@ -539,16 +576,18 @@ namespace WPEFramework {
 
                 Client(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t socketPort = 0)
                     : MessageDataBufferType < DataSize, MetadataSize>(identifier, instanceId, baseDirectory, socketPort, false)
-                    , _channel(Core::NodeId(MetadataName().c_str()), MetadataSize) {
-
+                    , _channel(Core::NodeId(MetadataName().c_str()), MetadataSize)
+                {
                     _channel.Open(Core::infinite);
                 }
-                ~Client() {
+                ~Client()
+                {
                     _channel.Close(Core::infinite);
                 }
 
             public:
-                bool IsValid() const {
+                bool IsValid() const
+                {
                     return (_channel.IsOpen());
                 }
 
@@ -561,7 +600,8 @@ namespace WPEFramework {
                  * @param maxLength maximum size of the buffer
                  * @return uint16_t how much data was written back to the buffer
                  */
-                uint32_t Update(const uint32_t waitTime, const Core::Messaging::Metadata& control, const bool enabled) {
+                uint32_t Update(const uint32_t waitTime, const Core::Messaging::Metadata& control, const bool enabled)
+                {
                     uint32_t result = Core::ERROR_ILLEGAL_STATE;
 
                     if (_channel.IsOpen() == true) {
@@ -580,8 +620,8 @@ namespace WPEFramework {
 
                     return (result);
                 }
-                void Load(ControlList& info) const {
-
+                void Load(ControlList& info) const
+                {
                     if (_channel.IsOpen() == true) {
 
                         // We got a connection to the spawned process side, get the list of traces from
@@ -712,12 +752,14 @@ namespace WPEFramework {
                  */
                 MessageDispatcher(MessageUnit& parent, const string& identifier, const uint32_t instanceId, const string& basePath, const uint16_t socketPort)
                     : BaseClass(identifier, instanceId, basePath, socketPort, true)
-                    , _metaDataBuffer(parent, BaseClass::MetadataName()) {
+                    , _metaDataBuffer(parent, BaseClass::MetadataName())
+                {
                 }
                 virtual ~MessageDispatcher() = default;
 
             public:
-                bool IsValid() const {
+                bool IsValid() const
+                {
                     return ((BaseClass::IsValid()) && (_metaDataBuffer.IsOpen()));
                 }
 
@@ -731,7 +773,8 @@ namespace WPEFramework {
                 : _adminLock()
                 , _dispatcher()
                 , _settings()
-                , _direct() {
+                , _direct()
+            {
             }
 
         public:
@@ -740,18 +783,22 @@ namespace WPEFramework {
 
             static MessageUnit& Instance();
 
-            ~MessageUnit() {
+            ~MessageUnit()
+            {
                 ASSERT(_dispatcher == nullptr);
             }
 
         public:
-            const string& BasePath() const {
+            const string& BasePath() const
+            {
                 return(_settings.BasePath());
             }
-            const string& Identifier() const {
+            const string& Identifier() const
+            {
                 return(_settings.Identifier());
             }
-            uint16_t SocketPort() const {
+            uint16_t SocketPort() const
+            {
                 return (_settings.SocketPort());
             }
 
@@ -760,7 +807,7 @@ namespace WPEFramework {
             void Close();
 
             bool Default(const Core::Messaging::Metadata& control) const override;
-            void Push(const Core::Messaging::IStore::Information& info, const Core::Messaging::IEvent* message) override;
+            void Push(const Core::Messaging::Metadata& metadata, const Core::Messaging::IEvent* message) override;
 
         private:
             uint16_t Serialize(uint8_t* buffer, const uint16_t length);
@@ -773,5 +820,6 @@ namespace WPEFramework {
             Settings _settings;
             DirectOutput _direct;
         };
+
     } // namespace Messaging
-}
+} // namespace WPEFramework

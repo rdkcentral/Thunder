@@ -46,15 +46,15 @@
         if (__control__::IsEnabled() == true) {                                              \
             CATEGORY __data__ PARAMETERS;                                                    \
             WPEFramework::Core::TextFragment classname (typeid(*this).name());               \
-            WPEFramework::Core::Messaging::IStore::Information __info__(                     \
+            WPEFramework::Core::Messaging::IStore::Tracing __trace__(                        \
                 __control__::Metadata(),                                                     \
+                WPEFramework::Core::Time::Now().Ticks(),                                     \
                 __FILE__,                                                                    \
                 __LINE__,                                                                    \
-                classname.Text(),                                                            \
-                WPEFramework::Core::Time::Now().Ticks()                                      \
+                classname.Text()                                                             \
             );                                                                               \
             WPEFramework::Messaging::TextMessage __message__(__data__.Data());               \
-            WPEFramework::Messaging::MessageUnit::Instance().Push(__info__, &__message__);   \
+            WPEFramework::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);  \
         }                                                                                    \
     } while(false)
 
@@ -63,15 +63,15 @@
         using __control__ = TRACE_CONTROL(CATEGORY);                                         \
         if (__control__::IsEnabled() == true) {                                              \
             CATEGORY __data__ PARAMETERS;                                                    \
-            WPEFramework::Core::Messaging::IStore::Information __info__(                     \
+            WPEFramework::Core::Messaging::IStore::Tracing __trace__(                        \
                 __control__::Metadata(),                                                     \
+                WPEFramework::Core::Time::Now().Ticks(),                                     \
                 __FILE__,                                                                    \
                 __LINE__,                                                                    \
-                __FUNCTION__,                                                                \
-                WPEFramework::Core::Time::Now().Ticks()                                      \
+                __FUNCTION__                                                                 \
             );                                                                               \
             WPEFramework::Messaging::TextMessage __message__(__data__.Data());               \
-            WPEFramework::Messaging::MessageUnit::Instance().Push(__info__, &__message__);   \
+            WPEFramework::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);  \
         }                                                                                    \
     } while(false)
 

@@ -22,6 +22,7 @@
 #include "Module.h"
 
 namespace WPEFramework {
+
 namespace Messaging {
 
     class EXTERNAL TextMessage : public Core::Messaging::IEvent {
@@ -46,12 +47,13 @@ namespace Messaging {
                 writer.NullTerminatedText(cutString);
                 length = bufferSize;
 
-            } else {
+            }
+            else {
                 writer.NullTerminatedText(_text);
                 length = static_cast<uint16_t>(_text.size() + 1);
             }
 
-            return length;
+            return (length);
         }
 
         uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override
@@ -72,5 +74,6 @@ namespace Messaging {
     private:
         string _text;
     };
-}
-}
+
+} // namespace Messaging
+} // namespace WPEFramework

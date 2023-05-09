@@ -24,6 +24,7 @@
 #endif // __WINDOWS__
 
 namespace WPEFramework {
+
 namespace Trace {
 
     /* static */ const string Constructor::_text(_T("Constructor called"));
@@ -32,4 +33,4 @@ namespace Trace {
     /* static */ const string AssignmentOperator::_text(_T("Assignment Operator called"));
 
 } // namespace Trace
-}
+} // namespace WPEFramework

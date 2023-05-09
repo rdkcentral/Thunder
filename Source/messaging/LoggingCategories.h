@@ -23,6 +23,7 @@
 #include "BaseCategory.h"
 
 namespace WPEFramework {
+
 namespace Logging {
 
     // ...but logging controls have to be visible outside of the Messaging lib
@@ -35,4 +36,4 @@ namespace Logging {
     DEFINE_LOGGING_CATEGORY(Crash);
 
 } // namespace Logging
-}
+} // namespace WPEFramework 

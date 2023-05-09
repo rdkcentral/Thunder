@@ -22,6 +22,7 @@
 #include "Module.h"
 
 namespace WPEFramework {
+
 namespace Messaging {
 
     template <const Core::Messaging::Metadata::type TYPE>
@@ -73,7 +74,7 @@ namespace Messaging {
     };
 
 } // namespace Messaging
-}
+} // namespace WPEFramework
 
 #define DEFINE_MESSAGING_CATEGORY(BASECATEGORY, CATEGORY)   \
     class EXTERNAL CATEGORY : public BASECATEGORY {         \

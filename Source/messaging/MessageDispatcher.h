@@ -22,6 +22,7 @@
 #include "Module.h"
 
 namespace WPEFramework {
+
 namespace Messaging {
 
     template <const uint16_t DATA_BUFFER_SIZE, const uint16_t METADATA_SIZE>
@@ -30,7 +31,6 @@ namespace Messaging {
         /**
         * @brief Metdata Callback. First two arguments are for data in. Two later for data out (responded to the other side).
         *        Third parameter is initially set to maximum length that can be written to the out buffer
-        *
         */
         class DataBuffer : public Core::CyclicBuffer {
         public:
@@ -47,7 +47,6 @@ namespace Messaging {
 
             /**
             * @brief Signal that data is available
-            *
             */
             void Ring()
             {
@@ -68,7 +67,7 @@ namespace Messaging {
                 if (result != Core::ERROR_TIMEDOUT) {
                     _doorBell.Acknowledge();
                 }
-                return result;
+                return (result);
             }
             void Relinquish()
             {
@@ -85,7 +84,7 @@ namespace Messaging {
                     cursor.Forward(chunkSize);
                 }
 
-                return cursor.Offset();
+                return (cursor.Offset());
             }
             uint32_t GetReadSize(Cursor& cursor) override
             {
@@ -93,9 +92,11 @@ namespace Messaging {
                 uint16_t entrySize = 0;
                 cursor.Peek(entrySize);
                 cursor.Forward(sizeof(entrySize));
-                return entrySize > sizeof(entrySize) ? entrySize - sizeof(entrySize) : 0;
+                
+                return (entrySize > sizeof(entrySize) ? entrySize - sizeof(entrySize) : 0);
             }
-            void Unlink() {
+            void Unlink()
+            {
                 Core::CyclicBuffer::Unlink();
             }
 
@@ -142,11 +143,13 @@ namespace Messaging {
                     TRACE_L1("%d bytes already in the buffer instance %d", _dataBuffer.Used(), instanceId);
                     _dataBuffer.Ring();
                 }
-            } else {
+            }
+            else {
                 TRACE_L1("MessageDispatcher instance %d is not valid!", instanceId);
             }
         }
-        ~MessageDataBufferType() {
+        ~MessageDataBufferType()
+        {
             _dataBuffer.Relinquish();
             if (_initialize == true) {
                 _dataLock.Lock();
@@ -156,7 +159,8 @@ namespace Messaging {
         }
 
     public:
-        inline const string& Name () const {
+        inline const string& Name () const
+        {
             return (_filenames.data);
         }
 
@@ -188,14 +192,15 @@ namespace Messaging {
                     _dataBuffer.Write(value, length); //value
                     _dataBuffer.Ring();
                     result = Core::ERROR_NONE;
-                } else {
+                }
+                else {
                     TRACE_L1("Buffer to small to fit message!");
                 }
             }
 
             _dataLock.Unlock();
 
-            return result;
+            return (result);
         }
 
         /**
@@ -234,7 +239,7 @@ namespace Messaging {
 
             _dataLock.Unlock();
 
-            return result;
+            return (result);
         }
         void Ring()
         {
@@ -242,7 +247,7 @@ namespace Messaging {
         }
         uint32_t Wait(const uint32_t waitTime)
         {
-            return _dataBuffer.Wait(waitTime);
+            return (_dataBuffer.Wait(waitTime));
         }
         void FlushDataBuffer()
         {
@@ -307,5 +312,6 @@ namespace Messaging {
         bool _initialize;
         DataBuffer _dataBuffer;
     };
-}
-}
+
+} // namespace Messaging 
+} // namespace WPEFramework 

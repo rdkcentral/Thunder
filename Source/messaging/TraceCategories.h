@@ -23,13 +23,14 @@
 #include "BaseCategory.h"
 
 namespace WPEFramework {
+
 namespace Trace {
 
     // for backwards compatibility 
     template <typename... Args>
     inline void Format(string& dst, Args&&... args) { Core::Format(dst, std::forward<Args>(args)...); }
     template <typename... Args>
-    inline string Format(Args&&... args) { return Core::Format(std::forward<Args>(args)...); }
+    inline string Format(Args&&... args) { return (Core::Format(std::forward<Args>(args)...)); }
 
     DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, Text);
     DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, Initialisation);
@@ -181,5 +182,4 @@ namespace Trace {
     };
 
 } // namespace Trace
-}
-
+} // namespace WPEFramework

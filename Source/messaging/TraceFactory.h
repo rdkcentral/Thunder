@@ -21,6 +21,7 @@
 #include "TextMessage.h"
 
 namespace WPEFramework {
+
 namespace Messaging {
 
     struct EXTERNAL IEventFactory {
@@ -41,11 +42,13 @@ namespace Messaging {
         Core::ProxyType<Core::Messaging::IEvent> Create() override
         {
             Core::ProxyType<TextMessage> proxy = _tracePool.Element();
-            return Core::ProxyType<Core::Messaging::IEvent>(proxy);
+            
+            return (Core::ProxyType<Core::Messaging::IEvent>(proxy));
         }
 
     private:
         Core::ProxyPoolType<Messaging::TextMessage> _tracePool;
     };
-}
-}
+
+} // namespace Messaging
+} // namespace WPEFramework

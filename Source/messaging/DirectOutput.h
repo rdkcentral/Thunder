@@ -42,11 +42,12 @@ namespace WPEFramework {
             ~DirectOutput() = default;
 
         public:
-            void Mode(const bool syslog, const bool abbreviated) {
+            void Mode(const bool syslog, const bool abbreviated)
+            {
                 _isSyslog = syslog;
                 _abbreviate = abbreviated;
             }
-            void Output(const Core::Messaging::IStore::Information& info, const Core::Messaging::IEvent* message) const;
+            void Output(const Core::Messaging::Metadata& metadata, const Core::Messaging::IEvent* message) const;
 
         private:
             uint64_t _baseTime;

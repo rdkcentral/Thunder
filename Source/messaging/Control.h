@@ -24,6 +24,7 @@
 #include "MessageUnit.h"
 
 namespace WPEFramework {
+
 namespace Messaging {
 
     using MessageType = Core::Messaging::Metadata::type;
@@ -120,4 +121,4 @@ namespace Messaging {
         LocalLifetimeType<CATEGORY, MODULENAME, TYPE>::_control(false);
 
 } // namespace Messaging
-}
+} // namespace WPEFramework

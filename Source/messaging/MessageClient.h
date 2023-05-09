@@ -23,6 +23,7 @@
 #include "MessageUnit.h"
 
 namespace WPEFramework {
+
 namespace Messaging {
 
     /**
@@ -50,7 +51,7 @@ namespace Messaging {
         void Enable(const Core::Messaging::Metadata& metadata, const bool enable);
         void Controls(Messaging::MessageUnit::Iterator& controls) const;
 
-        void PopMessagesAndCall(std::function<void(const Core::Messaging::IStore::Information& info, const Core::ProxyType<Core::Messaging::IEvent>& message)> function);
+        void PopMessagesAndCall(std::function<void(const Core::Messaging::Metadata& metadata, const Core::ProxyType<Core::Messaging::IEvent>& message)> function);
 
         void AddFactory(Core::Messaging::Metadata::type type, IEventFactory* factory);
         void RemoveFactory(Core::Messaging::Metadata::type type);
@@ -70,5 +71,6 @@ namespace Messaging {
         Clients _clients;
         Factories _factories;
     };
-}
-}
+
+} // namespace WPEFramework
+} // namespace WPEFramework
