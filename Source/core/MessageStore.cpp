@@ -159,7 +159,6 @@ namespace Core {
             uint16_t length = Metadata::Serialize(buffer, bufferSize);
 
             if (length != 0) {
-                //uint64_t timeStamp = WPEFramework::Core::Time::Now().Ticks();
                 const uint16_t extra = static_cast<uint16_t>(sizeof(_timeStamp));
                 ASSERT(bufferSize >= (length + extra));
 

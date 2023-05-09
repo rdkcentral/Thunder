@@ -24,7 +24,7 @@ namespace WPEFramework {
     namespace Messaging {
 
         void DirectOutput::Output(const Core::Messaging::Metadata& metadata, const Core::Messaging::IEvent* message) const
-        {            
+        {
             string result;
             ASSERT(message != nullptr);
 
