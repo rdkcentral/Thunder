@@ -23,6 +23,7 @@
  // ---- Include system wide include files ----
 #include <memory>
 #include <atomic>
+#include <deque>
 
 // ---- Include local include files ----
 #include "Portability.h"
@@ -1420,7 +1421,7 @@ POP_WARNING()
         class ProxyPoolType {
         private:
             using ContainerElement = ProxyContainerType< ProxyPoolType<PROXYELEMENT>, PROXYELEMENT, PROXYELEMENT>;
-            using ContainerList = std::list< Core::ProxyType<ContainerElement> >;
+            using ContainerList = std::deque< Core::ProxyType<ContainerElement> >;
 
         public:
             ProxyPoolType(const ProxyPoolType<PROXYELEMENT>&) = delete;
@@ -1740,7 +1741,7 @@ POP_WARNING()
         private:
             using ContainerElement = ProxyContainerType< ProxyListType<PROXYELEMENT>, PROXYELEMENT, PROXYELEMENT>;
             using ContainerStorage = std::pair < Core::ProxyType<PROXYELEMENT>, UnlinkStorage>;
-            using ContainerList = std::list< ContainerStorage >;
+            using ContainerList = std::deque< ContainerStorage >;
 
         public:
             ProxyListType(const ProxyListType<PROXYELEMENT>&) = delete;

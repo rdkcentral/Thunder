@@ -25,9 +25,14 @@
 #include "Frame.h"
 
 namespace WPEFramework {
+
 namespace Core {
 
     namespace Messaging {
+
+        extern EXTERNAL const char* MODULE_LOGGING;
+        extern EXTERNAL const char* MODULE_REPORTING;
+        extern EXTERNAL const char* MODULE_INVALID;
 
         struct EXTERNAL IEvent {
             virtual ~IEvent() = default;
@@ -67,40 +72,48 @@ namespace Core {
                 , _module(module)
             {
             }
+            virtual ~Metadata() = default;
+            
             bool operator==(const Metadata& other) const
             {
                 return ((_type == other._type) && (_category == other._category) && (_module == other._module));
             }
             bool operator!=(const Metadata& other) const
             {
-                return !operator==(other);
+                return (!operator==(other));
             }
 
         public:
-            type Type() const {
-                return _type;
+            type Type() const
+            {
+                return (_type);
             }
-            const string& Module() const {
-                return _module;
+            const string& Module() const
+            {
+                return (_module);
             }
-            const string& Category() const {
-                return _category;
+            const string& Category() const
+            {
+                return (_category);
             }
-            bool Default() const {
+            bool Default() const
+            {
                 return (_type == type::TRACING ? false : true);
             }
-            bool Specific() const {
+            bool Specific() const
+            {
                 return ((_type == type::LOGGING) || ((Category().empty() == false) && (Module().empty() == false)));
             }
-            bool Applicable(const Metadata& rhs) const {
+            bool Applicable(const Metadata& rhs) const
+            {
                 return ((rhs.Type() == Type()) &&
                     (rhs.Module().empty() || Module().empty() || (rhs.Module() == Module())) &&
                     (rhs.Category().empty() || Category().empty() || (rhs.Category() == Category())));
             }
 
         public:
-            uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const;
-            uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize);
+            virtual uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const;
+            virtual uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize);
 
         private:
             type _type;
@@ -133,32 +146,70 @@ namespace Core {
         */
         struct EXTERNAL IStore {
            /**
-            * @brief Data-Carrier, extended information about the message
+            * @brief Data-Carrier, extended information about the logging-type message
             */
-            class EXTERNAL Information : public Metadata {
+            class EXTERNAL Logging : public Metadata {
             public:
-                Information(const Information&) = default;
-                Information& operator=(const Information&) = default;
+                Logging(const Logging&) = default;
+                Logging& operator=(const Logging&) = default;
 
-                Information()
+                Logging()
                     : Metadata()
-                    , _fileName()
-                    , _lineNumber(0)
-                    , _className()
-                    , _timeStamp(0)
+                    , _timeStamp()
                 {
                 }
-                Information(const Metadata& metadata, const string& fileName, const uint16_t lineNumber, const string& className, const uint64_t timeStamp)
+                Logging(const Metadata& metadata, const uint64_t timeStamp)
                     : Metadata(metadata)
-                    , _fileName(fileName)
-                    , _lineNumber(lineNumber)
-                    , _className(className)
                     , _timeStamp(timeStamp)
                 {
                 }
-                ~Information() = default;
+                ~Logging() = default;
 
             public:
+                uint64_t TimeStamp() const
+                {
+                    return (_timeStamp);
+                }
+
+            public:
+                uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
+                uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
+
+            private:
+                uint64_t _timeStamp;
+            };
+
+            /**
+            * @brief Data-Carrier, extended information about the tracing-type message
+            */
+            class EXTERNAL Tracing : public Metadata {
+            public:
+                Tracing(const Tracing&) = default;
+                Tracing& operator=(const Tracing&) = default;
+
+                Tracing()
+                    : Metadata()
+                    , _timeStamp()
+                    , _fileName()
+                    , _lineNumber(0)
+                    , _className()
+                {
+                }
+                Tracing(const Metadata& metadata, const uint64_t timeStamp,const string& fileName, const uint16_t lineNumber, const string& className)
+                    : Metadata(metadata)
+                    , _timeStamp(timeStamp)
+                    , _fileName(fileName)
+                    , _lineNumber(lineNumber)
+                    , _className(className)
+                {
+                }
+                ~Tracing() = default;
+
+            public:
+                uint64_t TimeStamp() const
+                {
+                    return (_timeStamp);
+                }
                 const string& FileName() const
                 {
                     return (_fileName);
@@ -171,21 +222,17 @@ namespace Core {
                 {
                     return (_className);
                 }
-                uint64_t TimeStamp() const
-                {
-                    return (_timeStamp);
-                }
 
             public:
-                uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const;
-                uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize);
+                uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
+                uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
 
             private:
+                uint64_t _timeStamp;
                 string _fileName;
                 uint16_t _lineNumber;
                 string _className;
-                uint64_t _timeStamp;
-            };
+        };
 
 	    public:
             virtual ~IStore() = default;
@@ -193,9 +240,9 @@ namespace Core {
             static void Set(IStore*);
 
             virtual bool Default(const Metadata& metadata) const = 0;
-            virtual void Push(const Information& info, const IEvent* message) = 0;
+            virtual void Push(const Metadata& metadata, const IEvent* message) = 0;
         };
 
     } // namespace Messaging
 } // namespace Core
-}
+} // namespace WPEFramework
