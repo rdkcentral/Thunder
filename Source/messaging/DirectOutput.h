@@ -47,6 +47,7 @@ namespace WPEFramework {
                 _isSyslog = syslog;
                 _abbreviate = abbreviated;
             }
+            
             void Output(const Core::Messaging::Metadata& metadata, const Core::Messaging::IEvent* message) const;
 
         private:

@@ -53,6 +53,7 @@ namespace WPEFramework {
                         _offset += moved;
                     }
                 }
+
                 uint16_t Offset() const
                 {
                     return (_offset);
@@ -120,6 +121,7 @@ namespace WPEFramework {
                         control->Enable(enabled);
                     }
                 }
+
             private:
                 const Settings& _settings;
             } handler(_settings);

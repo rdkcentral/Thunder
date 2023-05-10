@@ -34,7 +34,8 @@ namespace Messaging {
         TraceFactory(const TraceFactory&) = delete;
         TraceFactory& operator=(const TraceFactory&) = delete;
 
-        TraceFactory() : _tracePool(2) {
+        TraceFactory() : _tracePool(2)
+        {
         }
         ~TraceFactory() override = default;
 

@@ -172,11 +172,13 @@ namespace WPEFramework {
                 {
                     return ((_position > 0) && (_index != _container.end()));
                 }
+
                 void Reset()
                 {
                     _position = 0;
                     _index = _container.begin();
                 }
+
                 bool Next()
                 {
                     if (_position == 0) {
@@ -189,24 +191,28 @@ namespace WPEFramework {
 
                     return (_index != _container.end());
                 }
+
                 Core::Messaging::Metadata::type Type() const
                 {
                     ASSERT(IsValid());
 
                     return (_index->Type());
                 }
+
                 const string& Module() const
                 {
                     ASSERT(IsValid());
 
                     return (_index->Module());
                 }
+
                 const string& Category() const
                 {
                     ASSERT(IsValid());
 
                     return (_index->Category());
                 }
+
                 bool Enabled() const
                 {
                     ASSERT(IsValid());
@@ -347,26 +353,32 @@ namespace WPEFramework {
                 {
                     return(_path);
                 }
+
                 const string& Identifier() const
                 {
                     return (_identifier);
                 }
+
                 uint16_t SocketPort() const
                 {
                     return (_socketPort);
                 }
+
                 bool IsBackground() const
                 {
                     return ((_mode & mode::BACKGROUND) != 0);
                 }
+
                 bool IsDirect() const
                 {
                     return ((_mode & mode::DIRECT) != 0);
                 }
+
                 bool IsAbbreviated() const
                 {
                     return ((_mode & mode::ABBREVIATED) != 0);
                 }
+
                 void Configure (const string& path, const string& identifier, const uint16_t socketPort, const string& config, const bool background, const flush flushMode)
                 {
                     _settings.clear();
@@ -379,6 +391,7 @@ namespace WPEFramework {
                     jsonParsed.FromString(config);
                     FromConfig(jsonParsed);
                 }
+
                 /**
                  * @brief Based on new metadata, update a specific setting. If there is no match, add entry to the list
                  */
@@ -465,6 +478,7 @@ namespace WPEFramework {
 
                     Core::SystemInfo::SetEnvironment(MESSAGE_DISPATCHER_CONFIG_ENV, settings, true);
                 }
+
                 void Load()
                 {
                     string settings;
@@ -537,6 +551,7 @@ namespace WPEFramework {
 
                     _adminLock.Unlock();
                 }
+
                 void ToConfig(Config& config) const
                 {
                     config.Tracing.Settings.Clear();
@@ -620,6 +635,7 @@ namespace WPEFramework {
 
                     return (result);
                 }
+
                 void Load(ControlList& info) const
                 {
                     if (_channel.IsOpen() == true) {
@@ -793,10 +809,12 @@ namespace WPEFramework {
             {
                 return(_settings.BasePath());
             }
+
             const string& Identifier() const
             {
                 return(_settings.Identifier());
             }
+
             uint16_t SocketPort() const
             {
                 return (_settings.SocketPort());

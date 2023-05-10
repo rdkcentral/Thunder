@@ -67,12 +67,15 @@ namespace Messaging {
                 if (result != Core::ERROR_TIMEDOUT) {
                     _doorBell.Acknowledge();
                 }
+
                 return (result);
             }
+
             void Relinquish()
             {
                 _doorBell.Relinquish();
             }
+
             uint32_t GetOverwriteSize(Cursor& cursor) override
             {
                 while (cursor.Offset() < cursor.Size()) {
@@ -86,6 +89,7 @@ namespace Messaging {
 
                 return (cursor.Offset());
             }
+
             uint32_t GetReadSize(Cursor& cursor) override
             {
                 // Just read one entry.
@@ -95,6 +99,7 @@ namespace Messaging {
                 
                 return (entrySize > sizeof(entrySize) ? entrySize - sizeof(entrySize) : 0);
             }
+
             void Unlink()
             {
                 Core::CyclicBuffer::Unlink();
@@ -151,6 +156,7 @@ namespace Messaging {
         ~MessageDataBufferType()
         {
             _dataBuffer.Relinquish();
+
             if (_initialize == true) {
                 _dataLock.Lock();
                 _dataBuffer.Unlink();
@@ -225,11 +231,13 @@ namespace Messaging {
 
             if (_dataBuffer.IsValid() == true) {
                 const uint32_t length = _dataBuffer.Read(outValue, outLength, true);
+                
                 if (length > 0) {
                     if (length > outLength) {
                         TRACE_L1("Lost part of the message");
                         result = Core::ERROR_GENERAL;
-                    } else {
+                    }
+                    else {
                         result = Core::ERROR_NONE;
                     }
                 }
@@ -245,22 +253,28 @@ namespace Messaging {
         {
             _dataBuffer.Ring();
         }
+
         uint32_t Wait(const uint32_t waitTime)
         {
             return (_dataBuffer.Wait(waitTime));
         }
+
         void FlushDataBuffer()
         {
             _dataLock.Lock();
+            
             if (_dataBuffer.IsValid() == true) {
                 _dataBuffer.Flush();
             }
+
             _dataLock.Lock();
         }
+
         bool IsValid() const
         {
             return (_dataBuffer.IsValid());
         }
+        
         const string& MetadataName() const {
             return (_filenames.metaData);
         }

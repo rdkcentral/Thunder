@@ -29,7 +29,9 @@ namespace WPEFramework {
             ASSERT(message != nullptr);
 
             if (metadata.Type() == Core::Messaging::Metadata::type::TRACING) {
+                
                 ASSERT(dynamic_cast<const Core::Messaging::IStore::Tracing*>(&metadata) != nullptr);
+                
                 const Core::Messaging::IStore::Tracing& trace = static_cast<const Core::Messaging::IStore::Tracing&>(metadata);
                 
                 if (_abbreviate == true) {
@@ -52,7 +54,9 @@ namespace WPEFramework {
             // TO-DO: Add a separate condition for warning reporting
             }
             else if (metadata.Type() == Core::Messaging::Metadata::type::LOGGING || metadata.Type() == Core::Messaging::Metadata::type::REPORTING) { 
+                
                 ASSERT(dynamic_cast<const Core::Messaging::IStore::Logging*>(&metadata) != nullptr);
+                
                 const Core::Messaging::IStore::Logging& log = static_cast<const Core::Messaging::IStore::Logging&>(metadata);
 
                 if (_abbreviate == true) {

@@ -49,6 +49,7 @@ namespace WPEFramework {
 
                 _adminLock.Unlock();
             }
+
             void Revoke(Core::Messaging::IControl* control)
             {
                 ASSERT(control != nullptr);
@@ -64,6 +65,7 @@ namespace WPEFramework {
 
                 _adminLock.Unlock();
             }
+
             void Iterate(Core::Messaging::IControl::IHandler& handler)
             {
                 _adminLock.Lock();
@@ -99,6 +101,7 @@ namespace Core {
             if (_type == TRACING) {
                 length += static_cast<uint16_t>(_module.size() + 1);
             }
+
             ASSERT(bufferSize >= length);
 
             if (bufferSize >= length) {
@@ -121,6 +124,7 @@ namespace Core {
         uint16_t Metadata::Deserialize(const uint8_t buffer[], const uint16_t bufferSize)
         {
             uint16_t length = 0;
+
             ASSERT(bufferSize > (sizeof(_type) + (sizeof(_category[0]) * 2)));
 
             if (bufferSize > (sizeof(_type) + (sizeof(_category[0]) * 2))) {
@@ -160,6 +164,7 @@ namespace Core {
 
             if (length != 0) {
                 const uint16_t extra = static_cast<uint16_t>(sizeof(_timeStamp));
+
                 ASSERT(bufferSize >= (length + extra));
 
                 if (bufferSize >= (length + extra)) {
@@ -179,6 +184,7 @@ namespace Core {
         uint16_t IStore::Logging::Deserialize(const uint8_t buffer[], const uint16_t bufferSize)
         {
             uint16_t length = Metadata::Deserialize(buffer, bufferSize);
+
             ASSERT(length <= bufferSize);
 
             if ((length <= bufferSize) && (length != 0)) {
@@ -200,6 +206,7 @@ namespace Core {
 
             if (length != 0) {
                 const uint16_t extra = static_cast<uint16_t>(sizeof(_timeStamp) + (_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber));
+                
                 ASSERT(bufferSize >= (length + extra));
 
                 if (bufferSize >= (length + extra)) {
@@ -222,6 +229,7 @@ namespace Core {
         uint16_t IStore::Tracing::Deserialize(const uint8_t buffer[], const uint16_t bufferSize)
         {
             uint16_t length = Metadata::Deserialize(buffer, bufferSize);
+
             ASSERT(length <= bufferSize);
 
             if ((length <= bufferSize) && (length != 0)) {
@@ -248,10 +256,12 @@ namespace Core {
                 control->Enable(_storage->Default(control->Metadata()));
             }
         }
+
         /* static */ void IControl::Revoke(IControl* control)
         {
             _registeredControls.Revoke(control);
         }
+
         /* static */ void IControl::Iterate(IControl::IHandler& handler)
         {
             _registeredControls.Iterate(handler);
@@ -261,6 +271,7 @@ namespace Core {
         {
             return (_storage);
         }
+        
         /* static */ void IStore::Set(IStore* storage)
         {
             ASSERT ((_storage == nullptr) ^ (storage == nullptr));

@@ -92,7 +92,8 @@ namespace Messaging {
             _adminLock.Unlock();
 
             firstEntry->second.Wait(waitTime);
-        } else {
+        }
+        else {
             _adminLock.Unlock();
         }
     }
@@ -112,7 +113,8 @@ namespace Messaging {
             _adminLock.Unlock();
 
             firstEntry->second.Ring();
-        } else {
+        }
+        else {
             _adminLock.Unlock();
         }
     }

@@ -88,22 +88,27 @@ namespace Core {
             {
                 return (_type);
             }
+
             const string& Module() const
             {
                 return (_module);
             }
+
             const string& Category() const
             {
                 return (_category);
             }
+
             bool Default() const
             {
                 return (_type == type::TRACING ? false : true);
             }
+
             bool Specific() const
             {
                 return ((_type == type::LOGGING) || ((Category().empty() == false) && (Module().empty() == false)));
             }
+
             bool Applicable(const Metadata& rhs) const
             {
                 return ((rhs.Type() == Type()) &&
@@ -195,7 +200,7 @@ namespace Core {
                     , _className()
                 {
                 }
-                Tracing(const Metadata& metadata, const uint64_t timeStamp,const string& fileName, const uint16_t lineNumber, const string& className)
+                Tracing(const Metadata& metadata, const uint64_t timeStamp, const string& fileName, const uint16_t lineNumber, const string& className)
                     : Metadata(metadata)
                     , _timeStamp(timeStamp)
                     , _fileName(fileName)
@@ -210,14 +215,17 @@ namespace Core {
                 {
                     return (_timeStamp);
                 }
+
                 const string& FileName() const
                 {
                     return (_fileName);
                 }
+
                 uint16_t LineNumber() const
                 {
                     return (_lineNumber);
                 }
+
                 const string& ClassName() const
                 {
                     return (_className);

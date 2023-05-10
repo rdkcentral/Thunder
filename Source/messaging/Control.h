@@ -98,14 +98,17 @@ namespace Messaging {
         {
             IsEnabled();
         }
+
         inline static bool IsEnabled()
         {
             return (_control.IsEnabled());
         }
+
         inline static void Enable(const bool enable)
         {
             _control.Enable(enable);
         }
+        
         inline static const Core::Messaging::Metadata& Metadata()
         {
             return (_control.Metadata());
