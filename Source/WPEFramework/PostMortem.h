@@ -72,7 +72,7 @@ namespace PluginHost {
             Add(_T("line"), &Line);
         }
 
-        ~CallstackData() = default;
+        ~CallstackData() override = default;
 
         CallstackData& operator=(const CallstackData& RHS)  {
 
