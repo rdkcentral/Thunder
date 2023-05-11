@@ -267,6 +267,7 @@ POP_WARNING()
     ExitHandler* ExitHandler::_instance = nullptr;
     Core::CriticalSection ExitHandler::_adminLock;
     struct sigaction _originalSegmentationHandler;
+    struct sigaction _originalAbortHandler;
 
     static string GetDeviceId(PluginHost::Server* dispatcher)
     {
@@ -317,12 +318,14 @@ POP_WARNING()
 
             ExitHandler::StartShutdown();
         }
-        else if (signo == SIGSEGV) {
+        else if ( (signo == SIGSEGV)  || (signo == SIGABRT) ) {
 
             // From here on we do the best we can do. Have no clue what failed, try to log as much as possible and on
             // a subsequent segmentation fault, just handle it the old fashion way. The root cause has been logged
             // by than!
             sigaction(SIGSEGV, &_originalSegmentationHandler, nullptr);
+            sigaction(SIGABRT, &_originalAbortHandler, nullptr);
+
 
             ExitHandler::DumpMetadata();
 
@@ -468,8 +471,8 @@ POP_WARNING()
             sigaction(SIGTERM, &sa, nullptr);
             sigaction(SIGQUIT, &sa, nullptr);
             sigaction(SIGUSR1, &sa, nullptr);
-            sigaction(SIGUSR1, &sa, nullptr);
             sigaction(SIGSEGV, &sa, &_originalSegmentationHandler);
+            sigaction(SIGABRT, &sa, &_originalAbortHandler);
         }
 
         if (atexit(ForcedExit) != 0) {
