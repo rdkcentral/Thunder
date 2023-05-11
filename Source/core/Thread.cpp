@@ -100,7 +100,7 @@ namespace Core {
         err = pthread_attr_destroy(&attr);
         ASSERT(err == 0);
 
-        m_ThreadId = (uint32_t)(size_t)m_hThreadInstance;
+        m_ThreadId = m_hThreadInstance;
 #endif
 
         if (threadName != nullptr) {

@@ -25,6 +25,7 @@
 #include "Config.h"
 #include "IRemoteInstantiation.h"
 #include "WarningReportingCategories.h"
+#include "PostMortem.h"
 
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
@@ -3611,12 +3612,12 @@ POP_WARNING()
                 string Identifier() const override {
                     string identifier;
                     if (_jsonrpc == false) {
-                        identifier = _T("{ \"type\": \"JSON\",  }");
+                        identifier = _T("{ \"type\": \"HTTP\",  }");
                     }
                     else {
                         Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
 
-                        identifier = Core::Format(_T("{ \"type\": \"JSONRPC\", \"id\": %d, \"method\": \"%s\", \"parameters\": %s }"), message->Id.Value(), message->Designator.Value(), message->Parameters.Value());
+                        identifier = Core::Format(_T("{ \"type\": \"HTTP\", \"id\": %d, \"method\": \"%s\", \"parameters\": %s }"), message->Id.Value(), message->Designator.Value().c_str(), message->Parameters.Value().c_str());
                     }
                     return (identifier);
                 }
@@ -3695,7 +3696,15 @@ POP_WARNING()
                     Job::Clear();
                 }
                 string Identifier() const override {
-                    return(_T("PluginServer::Channel::JSONElementJob::") + Callsign());
+                    if (_jsonrpc == true) {
+                        Core::ProxyType<Core::JSONRPC::Message> message(_element);
+                        if (message.IsValid() == true) {
+                            return (Core::Format(_T("{ \"type\": \"WS\", \"id\": %d, \"method\": \"%s\", \"parameters\": %s }"), message->Id.Value(), message->Designator.Value().c_str(), message->Parameters.Value().c_str()));
+                        }
+                    }
+                    string message;
+                    _element->ToString(message);
+                    return (Core::Format(_T("{ \"type\": \"WS\", \"callsign\": \"%s\", \"message\": %s }"), Callsign(), message.c_str()));
                 }
 
             private:
@@ -4379,10 +4388,28 @@ POP_WARNING()
             return (_connections);
         }
         inline void DumpMetadata() {
-            MetaData::Server data;
-            _dispatcher.Snapshot(data);
+            PostMortemData data;
+            _dispatcher.Snapshot(data.WorkerPool);
 
-            // Drop the workerpool info (wht is currently running and what is pending) to a file..
+            Core::JSON::ArrayType<MetaData::Server::Minion>::Iterator index(data.WorkerPool.ThreadPoolRuns.Elements());
+
+            while (index.Next() == true) {
+                
+                std::list<Core::callstack_info> stackList;
+
+                ::DumpCallStack(index.Current().Id.Value(), stackList);
+
+                PostMortemData::Callstack dump;
+                dump.Id = index.Current().Id.Value();
+
+                for (const Core::callstack_info& info : stackList) {
+                    dump.Data.Add() = CallstackData(info);
+                }
+
+                data.Callstacks.Add(dump);
+            }
+
+            // Drop the workerpool info (what is currently running and what is pending) to a file..
             Core::File dumpFile(_config.PostMortemPath() + "ThunderInternals.json");
             if (dumpFile.Create(false) == true) {
                 data.IElement::ToFile(dumpFile);
