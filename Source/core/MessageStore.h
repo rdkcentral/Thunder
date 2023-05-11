@@ -248,7 +248,8 @@ namespace Core {
             static void Set(IStore*);
 
             virtual bool Default(const Metadata& metadata) const = 0;
-            virtual void Push(const Metadata& metadata, const IEvent* message) = 0;
+            virtual void Push(const Logging& log, const IEvent* message) = 0;
+            virtual void Push(const Tracing& trace, const IEvent* message) = 0;
         };
 
     } // namespace Messaging

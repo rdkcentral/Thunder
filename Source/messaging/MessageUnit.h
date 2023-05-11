@@ -825,7 +825,8 @@ namespace WPEFramework {
             void Close();
 
             bool Default(const Core::Messaging::Metadata& control) const override;
-            void Push(const Core::Messaging::Metadata& metadata, const Core::Messaging::IEvent* message) override;
+            void Push(const Core::Messaging::IStore::Logging& log, const Core::Messaging::IEvent* message) override;
+            void Push(const Core::Messaging::IStore::Tracing& trace, const Core::Messaging::IEvent* message) override;
 
         private:
             uint16_t Serialize(uint8_t* buffer, const uint16_t length);

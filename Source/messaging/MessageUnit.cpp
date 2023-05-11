@@ -250,35 +250,24 @@ namespace WPEFramework {
         }
 
         /**
-        * @brief Push a message and its information to a buffer
+        * @brief Push a logging type message and its information to a buffer
         */
-        /* virtual */ void MessageUnit::Push(const Core::Messaging::Metadata& metadata, const Core::Messaging::IEvent* message)
+        /* virtual */ void MessageUnit::Push(const Core::Messaging::IStore::Logging& log, const Core::Messaging::IEvent* message)
         {
             //logging messages can happen in Core, meaning, otherside plugin can be not started yet
             //those should be just printed
             if (_settings.IsDirect() == true) {
-                _direct.Output(metadata, message);
+                _direct.Output(log, message);
             }
 
             if (_dispatcher != nullptr) {
                 uint8_t serializationBuffer[DataSize];
                 uint16_t length = 0;
 
-                if (metadata.Type() == Core::Messaging::Metadata::type::TRACING) {
-                    ASSERT(dynamic_cast<const Core::Messaging::IStore::Tracing*>(&metadata) != nullptr);
-                    const Core::Messaging::IStore::Tracing& trace = static_cast<const Core::Messaging::IStore::Tracing&>(metadata);
-                    length = trace.Serialize(serializationBuffer, sizeof(serializationBuffer));
-                // TO-DO: Add a separate condition for warning reporting
-                }
-                else if ((metadata.Type() == Core::Messaging::Metadata::type::LOGGING) || (metadata.Type() == Core::Messaging::Metadata::type::REPORTING)) {
-                    ASSERT(dynamic_cast<const Core::Messaging::IStore::Logging*>(&metadata) != nullptr);
-                    const Core::Messaging::IStore::Logging& log = static_cast<const Core::Messaging::IStore::Logging&>(metadata);
-                    length = log.Serialize(serializationBuffer, sizeof(serializationBuffer));
-                }
-                else {
-                    ASSERT(metadata.Type() != Core::Messaging::Metadata::type::INVALID);
-                }
-                
+                ASSERT(log.Type() == Core::Messaging::Metadata::type::LOGGING);
+
+                length = log.Serialize(serializationBuffer, sizeof(serializationBuffer));
+
                 //only serialize message if the information could fit
                 if (length != 0) {
                     length += message->Serialize(serializationBuffer + length, sizeof(serializationBuffer) - length);
@@ -292,6 +281,41 @@ namespace WPEFramework {
                 }
             }
         }
+
+        /**
+        * @brief Push a tracing type message and its information to a buffer
+        */
+        /* virtual */ void MessageUnit::Push(const Core::Messaging::IStore::Tracing& trace, const Core::Messaging::IEvent* message)
+        {
+            //logging messages can happen in Core, meaning, otherside plugin can be not started yet
+            //those should be just printed
+            if (_settings.IsDirect() == true) {
+                _direct.Output(trace, message);
+            }
+
+            if (_dispatcher != nullptr) {
+                uint8_t serializationBuffer[DataSize];
+                uint16_t length = 0;
+
+                ASSERT(trace.Type() == Core::Messaging::Metadata::type::TRACING);
+
+                length = trace.Serialize(serializationBuffer, sizeof(serializationBuffer));
+
+                //only serialize message if the information could fit
+                if (length != 0) {
+                    length += message->Serialize(serializationBuffer + length, sizeof(serializationBuffer) - length);
+
+                    if (_dispatcher->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
+                        TRACE_L1("Unable to push message data!");
+                    }
+                }
+                else {
+                    TRACE_L1("Unable to push data, buffer is too small!");
+                }
+            }
+        }
+
+        // TO-DO: Add another overloaded Push() method for Warning Reporting
 
     } // namespace Messaging
 } // namespace WPEFramework
