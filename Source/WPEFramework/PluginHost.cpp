@@ -266,8 +266,11 @@ POP_WARNING()
 
     ExitHandler* ExitHandler::_instance = nullptr;
     Core::CriticalSection ExitHandler::_adminLock;
+    
+    #ifndef __WINDOWS__
     struct sigaction _originalSegmentationHandler;
     struct sigaction _originalAbortHandler;
+    #endif
 
     static string GetDeviceId(PluginHost::Server* dispatcher)
     {
