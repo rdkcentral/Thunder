@@ -197,8 +197,8 @@ namespace Core {
                     : MessageInfo()
                 {
                 }
-                Logging(const MessageInfo& messageinfo)
-                    : MessageInfo(messageinfo)
+                Logging(const MessageInfo& messageInfo)
+                    : MessageInfo(messageInfo)
                 {
                 }
                 ~Logging() = default;
@@ -219,8 +219,8 @@ namespace Core {
                     , _className()
                 {
                 }
-                Tracing(const MessageInfo& messageinfo, const string& fileName, const uint16_t lineNumber, const string& className)
-                    : MessageInfo(messageinfo)
+                Tracing(const MessageInfo& messageInfo, const string& fileName, const uint16_t lineNumber, const string& className)
+                    : MessageInfo(messageInfo)
                     , _fileName(fileName)
                     , _lineNumber(lineNumber)
                     , _className(className)
