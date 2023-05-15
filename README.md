@@ -6,6 +6,11 @@ It can be built successfully on both Linux and Windows. First, make sure you hav
 * [Windows Build](#Windows)
 
 -------------------------------------------------------------------------------------------
+## Documentation
+
+Documentation on Thunder can be found here: [Documentation](doc/README.md)
+
+-------------------------------------------------------------------------------------------
 ## Dependencies
 After JsonGenerator.py and StubGenerator.py were modified to run with the Python 3.5 version, some additional actions might be required. However, no additional actions are necessary while using Buildroot or Yocto. When running these scripts manually or on Windows, make sure that Python 3.5 or higher is used:
 
