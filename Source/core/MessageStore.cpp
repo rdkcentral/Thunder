@@ -158,7 +158,7 @@ namespace Core {
             return (length);
         }
 
-        uint16_t IStore::Logging::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
+        uint16_t MessageInfo::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
             uint16_t length = Metadata::Serialize(buffer, bufferSize);
 
@@ -181,7 +181,7 @@ namespace Core {
             return (length);
         }
 
-        uint16_t IStore::Logging::Deserialize(const uint8_t buffer[], const uint16_t bufferSize)
+        uint16_t MessageInfo::Deserialize(const uint8_t buffer[], const uint16_t bufferSize)
         {
             uint16_t length = Metadata::Deserialize(buffer, bufferSize);
 
@@ -202,17 +202,16 @@ namespace Core {
 
         uint16_t IStore::Tracing::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
-            uint16_t length = Metadata::Serialize(buffer, bufferSize);
+            uint16_t length = MessageInfo::Serialize(buffer, bufferSize);
 
             if (length != 0) {
-                const uint16_t extra = static_cast<uint16_t>(sizeof(_timeStamp) + (_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber));
-                
+                const uint16_t extra = static_cast<uint16_t>((_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber));
+
                 ASSERT(bufferSize >= (length + extra));
 
                 if (bufferSize >= (length + extra)) {
                     Core::FrameType<0> frame(const_cast<uint8_t*>(buffer) + length, bufferSize - length, bufferSize - length);
                     Core::FrameType<0>::Writer frameWriter(frame, 0);
-                    frameWriter.Number(_timeStamp);
                     frameWriter.NullTerminatedText(_className);
                     frameWriter.NullTerminatedText(_fileName);
                     frameWriter.Number(_lineNumber);
@@ -228,18 +227,17 @@ namespace Core {
 
         uint16_t IStore::Tracing::Deserialize(const uint8_t buffer[], const uint16_t bufferSize)
         {
-            uint16_t length = Metadata::Deserialize(buffer, bufferSize);
+            uint16_t length = MessageInfo::Deserialize(buffer, bufferSize);
 
             ASSERT(length <= bufferSize);
 
             if ((length <= bufferSize) && (length != 0)) {
                 Core::FrameType<0> frame(const_cast<uint8_t*>(buffer) + length, bufferSize - length, bufferSize - length);
                 Core::FrameType<0>::Reader frameReader(frame, 0);
-                _timeStamp = frameReader.Number<uint64_t>();
                 _className = frameReader.NullTerminatedText();
                 _fileName = frameReader.NullTerminatedText();
                 _lineNumber = frameReader.Number<uint16_t>();
-                length += static_cast<uint16_t>(sizeof(_timeStamp) + (_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber));
+                length += static_cast<uint16_t>((_className.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber));
             }
             else {
                 length = 0;

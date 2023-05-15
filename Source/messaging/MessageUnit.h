@@ -512,7 +512,6 @@ namespace WPEFramework {
                                 string category = iterator.Current().Text();
                                 if (iterator.Next() == true) {
                                     string enabled = iterator.Current().Text();
-
                                     if ((type >= Core::Messaging::Metadata::type::TRACING) && (type <= Core::Messaging::Metadata::type::REPORTING) &&
                                         (enabled.length() == 1) &&
                                         ((enabled[0] == '0') || (enabled[0] == '1'))) {
@@ -656,6 +655,7 @@ namespace WPEFramework {
                             while (index < bufferSize) {
                                 Control entry;
                                 uint16_t length = entry.Deserialize(&(buffer[index]), bufferSize - index);
+                                
                                 if (length == 0) {
                                     TRACE_L1("Could not deserialize all controls !!!");
                                     index = bufferSize;
@@ -807,12 +807,12 @@ namespace WPEFramework {
         public:
             const string& BasePath() const
             {
-                return(_settings.BasePath());
+                return (_settings.BasePath());
             }
 
             const string& Identifier() const
             {
-                return(_settings.Identifier());
+                return (_settings.Identifier());
             }
 
             uint16_t SocketPort() const

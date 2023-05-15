@@ -46,9 +46,12 @@
         if (__control__::IsEnabled() == true) {                                              \
             CATEGORY __data__ PARAMETERS;                                                    \
             WPEFramework::Core::TextFragment classname (typeid(*this).name());               \
-            WPEFramework::Core::Messaging::IStore::Tracing __trace__(                        \
+            WPEFramework::Core::Messaging::MessageInfo __info__(                             \
                 __control__::Metadata(),                                                     \
-                WPEFramework::Core::Time::Now().Ticks(),                                     \
+                WPEFramework::Core::Time::Now().Ticks()                                      \
+            );                                                                               \
+            WPEFramework::Core::Messaging::IStore::Tracing __trace__(                        \
+                __info__,                                                                    \
                 __FILE__,                                                                    \
                 __LINE__,                                                                    \
                 classname.Text()                                                             \
@@ -63,9 +66,12 @@
         using __control__ = TRACE_CONTROL(CATEGORY);                                         \
         if (__control__::IsEnabled() == true) {                                              \
             CATEGORY __data__ PARAMETERS;                                                    \
-            WPEFramework::Core::Messaging::IStore::Tracing __trace__(                        \
+            WPEFramework::Core::Messaging::MessageInfo __info__(                             \
                 __control__::Metadata(),                                                     \
-                WPEFramework::Core::Time::Now().Ticks(),                                     \
+                WPEFramework::Core::Time::Now().Ticks()                                      \
+            );                                                                               \
+            WPEFramework::Core::Messaging::IStore::Tracing __trace__(                        \
+                __info__,                                                                    \
                 __FILE__,                                                                    \
                 __LINE__,                                                                    \
                 __FUNCTION__                                                                 \

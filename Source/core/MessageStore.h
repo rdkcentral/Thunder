@@ -146,63 +146,81 @@ namespace Core {
         };
 
         /**
+        * @brief Data-Carrier class storing the Metadata and timeStamp of the Message.
+        */
+        class EXTERNAL MessageInfo : public Metadata {
+        public:
+            MessageInfo(const MessageInfo&) = default;
+            MessageInfo& operator=(const MessageInfo&) = default;
+
+            MessageInfo()
+                : Metadata()
+                , _timeStamp()
+            {
+            }
+            MessageInfo(const Metadata& metadata, const uint64_t timeStamp)
+                : Metadata(metadata)
+                , _timeStamp(timeStamp)
+            {
+            }
+            ~MessageInfo() = default;
+
+        public:
+            uint64_t TimeStamp() const
+            {
+                return (_timeStamp);
+            }
+
+        public:
+            virtual uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
+            virtual uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
+
+        private:
+            uint64_t _timeStamp;
+        };
+
+        /**
         * @brief Class responsible for:
         *        - Pushing data (Information) to a location
         */
         struct EXTERNAL IStore {
            /**
-            * @brief Data-Carrier, extended information about the logging-type message
+            * @brief Data-Carrier, extended information about the logging-type message.
+            *        No additional info for now, used for function overloading.
             */
-            class EXTERNAL Logging : public Metadata {
+            class EXTERNAL Logging : public MessageInfo {
             public:
                 Logging(const Logging&) = default;
                 Logging& operator=(const Logging&) = default;
 
                 Logging()
-                    : Metadata()
-                    , _timeStamp()
+                    : MessageInfo()
                 {
                 }
-                Logging(const Metadata& metadata, const uint64_t timeStamp)
-                    : Metadata(metadata)
-                    , _timeStamp(timeStamp)
+                Logging(const MessageInfo& messageinfo)
+                    : MessageInfo(messageinfo)
                 {
                 }
                 ~Logging() = default;
-
-            public:
-                uint64_t TimeStamp() const
-                {
-                    return (_timeStamp);
-                }
-
-            public:
-                uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
-                uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
-
-            private:
-                uint64_t _timeStamp;
             };
 
             /**
             * @brief Data-Carrier, extended information about the tracing-type message
             */
-            class EXTERNAL Tracing : public Metadata {
+            class EXTERNAL Tracing : public MessageInfo {
             public:
                 Tracing(const Tracing&) = default;
                 Tracing& operator=(const Tracing&) = default;
 
                 Tracing()
-                    : Metadata()
-                    , _timeStamp()
+                    : MessageInfo()
                     , _fileName()
                     , _lineNumber(0)
                     , _className()
                 {
                 }
-                Tracing(const Metadata& metadata, const uint64_t timeStamp, const string& fileName, const uint16_t lineNumber, const string& className)
-                    : Metadata(metadata)
-                    , _timeStamp(timeStamp)
+                Tracing(const MessageInfo& messageinfo, const string& fileName, const uint16_t lineNumber, const string& className)
+                    : MessageInfo(messageinfo)
                     , _fileName(fileName)
                     , _lineNumber(lineNumber)
                     , _className(className)
@@ -211,11 +229,6 @@ namespace Core {
                 ~Tracing() = default;
 
             public:
-                uint64_t TimeStamp() const
-                {
-                    return (_timeStamp);
-                }
-
                 const string& FileName() const
                 {
                     return (_fileName);
@@ -236,7 +249,6 @@ namespace Core {
                 uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
 
             private:
-                uint64_t _timeStamp;
                 string _fileName;
                 uint16_t _lineNumber;
                 string _className;

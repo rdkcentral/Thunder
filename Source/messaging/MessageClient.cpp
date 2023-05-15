@@ -180,13 +180,13 @@ namespace Messaging {
                 }
 
                 if (metadata.Deserialize(_readBuffer, size) != 0) {
-                    
+
                     if (metadata.Type() == Core::Messaging::Metadata::type::TRACING) {
                         auto length = trace.Deserialize(_readBuffer, size);
-                        
+
                         if ((length > sizeof(Core::Messaging::Metadata::type)) && (length < sizeof(_readBuffer))) {
                             auto factory = _factories.find(trace.Type());
-                        
+
                             if (factory != _factories.end()) {
                                 message = factory->second->Create();
                                 message->Deserialize(_readBuffer + length, size - length);
@@ -200,7 +200,7 @@ namespace Messaging {
                     }
                     else if (metadata.Type() == Core::Messaging::Metadata::type::LOGGING || metadata.Type() == Core::Messaging::Metadata::type::REPORTING) {
                         auto length = log.Deserialize(_readBuffer, size);
-                        
+
                         if ((length > sizeof(Core::Messaging::Metadata::type)) && (length < sizeof(_readBuffer))) {
                             auto factory = _factories.find(log.Type());
                             
