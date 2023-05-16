@@ -100,7 +100,7 @@ namespace Core {
         err = pthread_attr_destroy(&attr);
         ASSERT(err == 0);
 
-        m_ThreadId = (uint32_t)(size_t)m_hThreadInstance;
+        m_ThreadId = m_hThreadInstance;
 #endif
 
         if (threadName != nullptr) {
@@ -129,7 +129,7 @@ namespace Core {
     {
 #ifdef __WINDOWS__
 PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
-        return (reinterpret_cast<::ThreadId>(::GetCurrentThreadId()));
+        return (::GetCurrentThreadId());
 POP_WARNING()
 #else
         return static_cast<::ThreadId>(pthread_self());

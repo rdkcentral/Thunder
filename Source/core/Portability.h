@@ -637,7 +637,7 @@ typedef std::string string;
 #ifdef __LINUX__
 typedef pthread_t ThreadId;
 #else
-typedef HANDLE ThreadId;
+typedef DWORD ThreadId;
 #endif
 
 #define QUOTE(str) #str
