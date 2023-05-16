@@ -47,13 +47,11 @@ namespace Trace {
         Constructor& operator=(const Constructor&) = delete;
 
     public:
-        const char* Data() const
-        {
+        const char* Data() const {
             return (_text.c_str());
         }
 
-        uint16_t Length() const
-        {
+        uint16_t Length() const {
             return (static_cast<uint16_t>(_text.length()));
         }
 
@@ -69,13 +67,11 @@ namespace Trace {
         CopyConstructor& operator=(const CopyConstructor&) = delete;
 
     public:
-        const char* Data() const
-        {
+        const char* Data() const {
             return (_text.c_str());
         }
 
-        uint16_t Length() const
-        {
+        uint16_t Length() const {
             return (static_cast<uint16_t>(_text.length()));
         }
 
@@ -91,13 +87,11 @@ namespace Trace {
         AssignmentOperator& operator=(const AssignmentOperator&) = delete;
 
     public:
-        const char* Data() const
-        {
+        const char* Data() const {
             return (_text.c_str());
         }
 
-        uint16_t Length() const
-        {
+        uint16_t Length() const {
             return (static_cast<uint16_t>(_text.length()));
         }
 
@@ -113,13 +107,11 @@ namespace Trace {
         Destructor& operator=(const Destructor&) = delete;
 
     public:
-        const char* Data() const
-        {
+        const char* Data() const {
             return (_text.c_str());
         }
 
-        uint16_t Length() const
-        {
+        uint16_t Length() const {
             return (static_cast<uint16_t>(_text.length()));
         }
 
@@ -182,4 +174,4 @@ namespace Trace {
     };
 
 } // namespace Trace
-} // namespace WPEFramework
+}

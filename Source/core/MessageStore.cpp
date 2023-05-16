@@ -255,18 +255,15 @@ namespace Core {
             }
         }
 
-        /* static */ void IControl::Revoke(IControl* control)
-        {
+        /* static */ void IControl::Revoke(IControl* control) {
             _registeredControls.Revoke(control);
         }
 
-        /* static */ void IControl::Iterate(IControl::IHandler& handler)
-        {
+        /* static */ void IControl::Iterate(IControl::IHandler& handler) {
             _registeredControls.Iterate(handler);
         }
 
-        /* static */ IStore* IStore::Instance()
-        {
+        /* static */ IStore* IStore::Instance() {
             return (_storage);
         }
         
@@ -277,4 +274,4 @@ namespace Core {
         }
     } // namespace Messaging
 } // namespace Core
-} // namespace WPEFramework
+}

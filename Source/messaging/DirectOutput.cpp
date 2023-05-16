@@ -101,4 +101,4 @@ namespace WPEFramework {
         // TO-DO: Add a separate method for warning reporting
 
     } // namespace Messaging
-} // namespace WPEFramework
+}

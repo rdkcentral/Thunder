@@ -85,8 +85,7 @@ namespace WPEFramework {
                 }
 
             public:
-                bool Enabled() const
-                {
+                bool Enabled() const {
                     return (_enabled);
                 }
                 
@@ -168,8 +167,7 @@ namespace WPEFramework {
                 }
 
             public:
-                bool IsValid() const
-                {
+                bool IsValid() const {
                     return ((_position > 0) && (_index != _container.end()));
                 }
 
@@ -274,6 +272,7 @@ namespace WPEFramework {
                                     Category = other.Category;
                                     Enabled = other.Enabled;
                                 }
+                                
                                 return (*this);
                             }
                             ~Entry() = default;
@@ -287,8 +286,7 @@ namespace WPEFramework {
                     public:
                         TracingSection()
                             : Core::JSON::Container()
-                            , Settings()
-                        {
+                            , Settings() {
                             Add(_T("settings"), &Settings);
                         }
                         ~TracingSection() = default;
@@ -303,8 +301,7 @@ namespace WPEFramework {
                     public:
                         LoggingSection()
                             : TracingSection()
-                            , Abbreviated(true)
-                        {
+                            , Abbreviated(true) {
                             Add(_T("abbreviated"), &Abbreviated);
                         }
                         ~LoggingSection() = default;
@@ -349,33 +346,27 @@ namespace WPEFramework {
                 ~Settings() = default;
 
             public:
-                const string& BasePath() const
-                {
+                const string& BasePath() const {
                     return(_path);
                 }
 
-                const string& Identifier() const
-                {
+                const string& Identifier() const {
                     return (_identifier);
                 }
 
-                uint16_t SocketPort() const
-                {
+                uint16_t SocketPort() const {
                     return (_socketPort);
                 }
 
-                bool IsBackground() const
-                {
+                bool IsBackground() const {
                     return ((_mode & mode::BACKGROUND) != 0);
                 }
 
-                bool IsDirect() const
-                {
+                bool IsDirect() const {
                     return ((_mode & mode::DIRECT) != 0);
                 }
 
-                bool IsAbbreviated() const
-                {
+                bool IsAbbreviated() const {
                     return ((_mode & mode::ABBREVIATED) != 0);
                 }
 
@@ -590,18 +581,15 @@ namespace WPEFramework {
 
                 Client(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t socketPort = 0)
                     : MessageDataBufferType < DataSize, MetadataSize>(identifier, instanceId, baseDirectory, socketPort, false)
-                    , _channel(Core::NodeId(MetadataName().c_str()), MetadataSize)
-                {
+                    , _channel(Core::NodeId(MetadataName().c_str()), MetadataSize) {
                     _channel.Open(Core::infinite);
                 }
-                ~Client()
-                {
+                ~Client() {
                     _channel.Close(Core::infinite);
                 }
 
             public:
-                bool IsValid() const
-                {
+                bool IsValid() const {
                     return (_channel.IsOpen());
                 }
 
@@ -774,8 +762,7 @@ namespace WPEFramework {
                 virtual ~MessageDispatcher() = default;
 
             public:
-                bool IsValid() const
-                {
+                bool IsValid() const {
                     return ((BaseClass::IsValid()) && (_metaDataBuffer.IsOpen()));
                 }
 
@@ -799,24 +786,20 @@ namespace WPEFramework {
 
             static MessageUnit& Instance();
 
-            ~MessageUnit()
-            {
+            ~MessageUnit() {
                 ASSERT(_dispatcher == nullptr);
             }
 
         public:
-            const string& BasePath() const
-            {
+            const string& BasePath() const {
                 return (_settings.BasePath());
             }
 
-            const string& Identifier() const
-            {
+            const string& Identifier() const {
                 return (_settings.Identifier());
             }
 
-            uint16_t SocketPort() const
-            {
+            uint16_t SocketPort() const {
                 return (_settings.SocketPort());
             }
 
@@ -841,4 +824,4 @@ namespace WPEFramework {
         };
 
     } // namespace Messaging
-} // namespace WPEFramework
+}

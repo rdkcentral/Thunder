@@ -54,8 +54,7 @@ namespace WPEFramework {
                     }
                 }
 
-                uint16_t Offset() const
-                {
+                uint16_t Offset() const {
                     return (_offset);
                 }
 
@@ -129,8 +128,7 @@ namespace WPEFramework {
             Core::Messaging::IControl::Iterate(handler);
         }
 
-        MessageUnit& MessageUnit::Instance()
-        {
+        MessageUnit& MessageUnit::Instance() {
             return (Core::SingletonType<MessageUnit>::Instance());
         }
 
@@ -244,8 +242,7 @@ namespace WPEFramework {
             }
         }
 
-        /* virtual */ bool MessageUnit::Default(const Core::Messaging::Metadata& control) const
-        {
+        /* virtual */ bool MessageUnit::Default(const Core::Messaging::Metadata& control) const {
             return (_settings.IsEnabled(control));
         }
 
@@ -318,4 +315,4 @@ namespace WPEFramework {
         // TO-DO: Add another overloaded Push() method for Warning Reporting
 
     } // namespace Messaging
-} // namespace WPEFramework
+}

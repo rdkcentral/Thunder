@@ -48,8 +48,7 @@ namespace Messaging {
             /**
             * @brief Signal that data is available
             */
-            void Ring()
-            {
+            void Ring() {
                 _doorBell.Ring();
             }
 
@@ -71,8 +70,7 @@ namespace Messaging {
                 return (result);
             }
 
-            void Relinquish()
-            {
+            void Relinquish() {
                 _doorBell.Relinquish();
             }
 
@@ -100,8 +98,7 @@ namespace Messaging {
                 return (entrySize > sizeof(entrySize) ? entrySize - sizeof(entrySize) : 0);
             }
 
-            void Unlink()
-            {
+            void Unlink() {
                 Core::CyclicBuffer::Unlink();
             }
 
@@ -165,8 +162,7 @@ namespace Messaging {
         }
 
     public:
-        inline const string& Name () const
-        {
+        inline const string& Name () const {
             return (_filenames.data);
         }
 
@@ -249,13 +245,12 @@ namespace Messaging {
 
             return (result);
         }
-        void Ring()
-        {
+
+        void Ring() {
             _dataBuffer.Ring();
         }
 
-        uint32_t Wait(const uint32_t waitTime)
-        {
+        uint32_t Wait(const uint32_t waitTime) {
             return (_dataBuffer.Wait(waitTime));
         }
 
@@ -270,8 +265,7 @@ namespace Messaging {
             _dataLock.Lock();
         }
 
-        bool IsValid() const
-        {
+        bool IsValid() const {
             return (_dataBuffer.IsValid());
         }
         
@@ -328,4 +322,4 @@ namespace Messaging {
     };
 
 } // namespace Messaging 
-} // namespace WPEFramework 
+}

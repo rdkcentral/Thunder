@@ -53,19 +53,16 @@ namespace Messaging {
 
         static constexpr Core::Messaging::Metadata::type Type = TYPE;
 
-        const char* Data() const
-        {
+        const char* Data() const {
             return (_text.c_str());
         }
 
-        uint16_t Length() const
-        {
+        uint16_t Length() const {
             return (static_cast<uint16_t>(_text.length()));
         }
 
     protected:
-        void Set(const string& text)
-        {
+        void Set(const string& text) {
             _text = text;
         }
 
@@ -74,7 +71,7 @@ namespace Messaging {
     };
 
 } // namespace Messaging
-} // namespace WPEFramework
+}
 
 #define DEFINE_MESSAGING_CATEGORY(BASECATEGORY, CATEGORY)   \
     class EXTERNAL CATEGORY : public BASECATEGORY {         \

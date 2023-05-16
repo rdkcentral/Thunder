@@ -39,8 +39,7 @@ namespace Logging {
     // force linkage of UnknownCallsign so it can be used as template argument (seems that C++17 onwards it should no longer be needed)
     extern void Force(const TCHAR**);
     template<typename DUMMY> 
-    void ForceLinkage()
-    {
+    void ForceLinkage() {
         Force(&UnknownCallsign);
     }
 
@@ -120,4 +119,4 @@ namespace Logging {
 #endif
 
 } // namespace Logging
-} // namespace WPEFramework 
+}

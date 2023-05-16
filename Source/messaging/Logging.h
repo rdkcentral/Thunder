@@ -47,32 +47,28 @@ namespace Logging {
         using BaseClass::BaseClass;
 
     public:
-        inline static void Announce()
-        {
+        inline static void Announce() {
             IsEnabled();
         }
 
-        inline static bool IsEnabled()
-        {
+        inline static bool IsEnabled() {
             return (_control.IsEnabled());
         }
 
-        inline static void Enable(const bool enable)
-        {
+        inline static void Enable(const bool enable) {
             _control.Enable(enable);
         }
         
-        inline static const Core::Messaging::Metadata& Metadata()
-        {
+        inline static const Core::Messaging::Metadata& Metadata() {
             return (_control.Metadata());
         }
 
     private:
-        static Control  _control;
+        static Control _control;
     };
 
 } // namespace Logging
-} // namespace WPEFramework
+}
 
 #ifdef __WINDOWS__
 

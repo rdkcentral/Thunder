@@ -36,4 +36,4 @@ namespace Logging {
     DEFINE_LOGGING_CATEGORY(Crash);
 
 } // namespace Logging
-} // namespace WPEFramework 
+}

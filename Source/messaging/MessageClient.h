@@ -73,4 +73,4 @@ namespace Messaging {
     };
 
 } // namespace WPEFramework
-} // namespace WPEFramework
+}

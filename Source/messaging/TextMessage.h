@@ -66,8 +66,7 @@ namespace Messaging {
             return (static_cast<uint16_t>(_text.size() + 1));
         }
 
-        const string& Data() const override
-        {
+        const string& Data() const override {
             return (_text);
         }
 
@@ -76,4 +75,4 @@ namespace Messaging {
     };
 
 } // namespace Messaging
-} // namespace WPEFramework
+}

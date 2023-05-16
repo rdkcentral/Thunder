@@ -33,4 +33,4 @@ namespace Trace {
     /* static */ const string AssignmentOperator::_text(_T("Assignment Operator called"));
 
 } // namespace Trace
-} // namespace WPEFramework
+}

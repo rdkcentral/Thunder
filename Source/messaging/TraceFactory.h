@@ -52,4 +52,4 @@ namespace Messaging {
     };
 
 } // namespace Messaging
-} // namespace WPEFramework
+}

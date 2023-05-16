@@ -74,43 +74,35 @@ namespace Core {
             }
             virtual ~Metadata() = default;
             
-            bool operator==(const Metadata& other) const
-            {
+            bool operator==(const Metadata& other) const {
                 return ((_type == other._type) && (_category == other._category) && (_module == other._module));
             }
-            bool operator!=(const Metadata& other) const
-            {
+            bool operator!=(const Metadata& other) const {
                 return (!operator==(other));
             }
 
         public:
-            type Type() const
-            {
+            type Type() const {
                 return (_type);
             }
 
-            const string& Module() const
-            {
+            const string& Module() const {
                 return (_module);
             }
 
-            const string& Category() const
-            {
+            const string& Category() const {
                 return (_category);
             }
 
-            bool Default() const
-            {
+            bool Default() const {
                 return (_type == type::TRACING ? false : true);
             }
 
-            bool Specific() const
-            {
+            bool Specific() const {
                 return ((_type == type::LOGGING) || ((Category().empty() == false) && (Module().empty() == false)));
             }
 
-            bool Applicable(const Metadata& rhs) const
-            {
+            bool Applicable(const Metadata& rhs) const {
                 return ((rhs.Type() == Type()) &&
                     (rhs.Module().empty() || Module().empty() || (rhs.Module() == Module())) &&
                     (rhs.Category().empty() || Category().empty() || (rhs.Category() == Category())));
@@ -166,8 +158,7 @@ namespace Core {
             ~MessageInfo() = default;
 
         public:
-            uint64_t TimeStamp() const
-            {
+            uint64_t TimeStamp() const {
                 return (_timeStamp);
             }
 
@@ -229,18 +220,15 @@ namespace Core {
                 ~Tracing() = default;
 
             public:
-                const string& FileName() const
-                {
+                const string& FileName() const {
                     return (_fileName);
                 }
 
-                uint16_t LineNumber() const
-                {
+                uint16_t LineNumber() const {
                     return (_lineNumber);
                 }
 
-                const string& ClassName() const
-                {
+                const string& ClassName() const {
                     return (_className);
                 }
 
@@ -266,4 +254,4 @@ namespace Core {
 
     } // namespace Messaging
 } // namespace Core
-} // namespace WPEFramework
+}
