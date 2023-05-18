@@ -72,5 +72,5 @@ namespace Messaging {
         Factories _factories;
     };
 
-} // namespace WPEFramework
+} // namespace Messaging
 }

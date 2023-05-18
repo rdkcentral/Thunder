@@ -32,7 +32,6 @@ namespace Core {
 
         extern EXTERNAL const char* MODULE_LOGGING;
         extern EXTERNAL const char* MODULE_REPORTING;
-        extern EXTERNAL const char* MODULE_INVALID;
 
         struct EXTERNAL IEvent {
             virtual ~IEvent() = default;
@@ -82,6 +81,10 @@ namespace Core {
             }
 
         public:
+            void SetType(const type what) {
+                _type = what;
+            }
+
             type Type() const {
                 return (_type);
             }

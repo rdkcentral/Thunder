@@ -45,7 +45,6 @@
         using __control__ = TRACE_CONTROL(CATEGORY);                                         \
         if (__control__::IsEnabled() == true) {                                              \
             CATEGORY __data__ PARAMETERS;                                                    \
-            WPEFramework::Core::TextFragment classname (typeid(*this).name());               \
             WPEFramework::Core::Messaging::MessageInfo __info__(                             \
                 __control__::Metadata(),                                                     \
                 WPEFramework::Core::Time::Now().Ticks()                                      \
@@ -54,7 +53,7 @@
                 __info__,                                                                    \
                 __FILE__,                                                                    \
                 __LINE__,                                                                    \
-                classname.Text()                                                             \
+                WPEFramework::Core::ClassNameOnly(typeid(*this).name()).Text()               \
             );                                                                               \
             WPEFramework::Messaging::TextMessage __message__(__data__.Data());               \
             WPEFramework::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);  \

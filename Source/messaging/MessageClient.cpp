@@ -162,9 +162,6 @@ namespace Messaging {
      */
     void MessageClient::PopMessagesAndCall(std::function<void(const Core::Messaging::Metadata& metadata, const Core::ProxyType<Core::Messaging::IEvent>& message)> function)
     {
-        Core::Messaging::Metadata metadata;
-        Core::Messaging::IStore::Logging log;
-        Core::Messaging::IStore::Tracing trace;
         Core::ProxyType<Core::Messaging::IEvent> message;
 
         _adminLock.Lock();
@@ -179,45 +176,52 @@ namespace Messaging {
                     size = sizeof(_readBuffer);
                 }
 
-                if (metadata.Deserialize(_readBuffer, size) != 0) {
+                Core::FrameType<0> frame(const_cast<uint8_t*>(_readBuffer), size, size);
+                Core::FrameType<0>::Reader frameReader(frame, 0);
+                Core::Messaging::Metadata::type type = frameReader.Number<Core::Messaging::Metadata::type>();
+                
+                uint16_t length = sizeof(type);
 
-                    if (metadata.Type() == Core::Messaging::Metadata::type::TRACING) {
-                        auto length = trace.Deserialize(_readBuffer, size);
+                if (type == Core::Messaging::Metadata::type::TRACING) {
+                    Core::Messaging::IStore::Tracing trace;
+                    trace.SetType(type);
+                    length += trace.Deserialize(_readBuffer + length, size - length);
 
-                        if ((length > sizeof(Core::Messaging::Metadata::type)) && (length < sizeof(_readBuffer))) {
-                            auto factory = _factories.find(trace.Type());
+                    if ((length > sizeof(Core::Messaging::Metadata::type)) && (length < sizeof(_readBuffer))) {
+                        auto factory = _factories.find(trace.Type());
 
-                            if (factory != _factories.end()) {
-                                message = factory->second->Create();
-                                message->Deserialize(_readBuffer + length, size - length);
-                                function(trace, message);
-                            }
+                        if (factory != _factories.end()) {
+                            message = factory->second->Create();
+                            message->Deserialize(_readBuffer + length, size - length);
+                            function(trace, message);
                         }
-                        else {
-                            client.second.FlushDataBuffer();
-                        }
-                        size = sizeof(_readBuffer);
-                    }
-                    else if (metadata.Type() == Core::Messaging::Metadata::type::LOGGING || metadata.Type() == Core::Messaging::Metadata::type::REPORTING) {
-                        auto length = log.Deserialize(_readBuffer, size);
-
-                        if ((length > sizeof(Core::Messaging::Metadata::type)) && (length < sizeof(_readBuffer))) {
-                            auto factory = _factories.find(log.Type());
-                            
-                            if (factory != _factories.end()) {
-                                message = factory->second->Create();
-                                message->Deserialize(_readBuffer + length, size - length);
-                                function(log, message);
-                            }
-                        }
-                        else {
-                            client.second.FlushDataBuffer();
-                        }
-                        size = sizeof(_readBuffer);
                     }
                     else {
-                        ASSERT(metadata.Type() != Core::Messaging::Metadata::type::INVALID);
+                        client.second.FlushDataBuffer();
                     }
+                    size = sizeof(_readBuffer);
+                }
+                else if (type == Core::Messaging::Metadata::type::LOGGING || type == Core::Messaging::Metadata::type::REPORTING) {
+                    Core::Messaging::IStore::Logging log;
+                    log.SetType(type);
+                    length += log.Deserialize(_readBuffer + length, size - length);
+
+                    if ((length > sizeof(Core::Messaging::Metadata::type)) && (length < sizeof(_readBuffer))) {
+                        auto factory = _factories.find(log.Type());
+
+                        if (factory != _factories.end()) {
+                            message = factory->second->Create();
+                            message->Deserialize(_readBuffer + length, size - length);
+                            function(log, message);
+                        }
+                    }
+                    else {
+                        client.second.FlushDataBuffer();
+                    }
+                    size = sizeof(_readBuffer);
+                }
+                else {
+                    ASSERT(type != Core::Messaging::Metadata::type::INVALID);
                 }
             }
         }
