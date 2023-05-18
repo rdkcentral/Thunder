@@ -81,10 +81,6 @@ namespace Core {
             }
 
         public:
-            void SetType(const type what) {
-                _type = what;
-            }
-
             type Type() const {
                 return (_type);
             }

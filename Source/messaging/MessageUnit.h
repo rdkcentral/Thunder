@@ -106,14 +106,8 @@ namespace WPEFramework {
                 
                 uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize)
                 {
-                    Core::FrameType<0> frame(const_cast<uint8_t*>(buffer), bufferSize, bufferSize);
-                    Core::FrameType<0>::Reader frameReader(frame, 0);
-                    Core::Messaging::Metadata::type type = frameReader.Number<Core::Messaging::Metadata::type>();
-                    
-                    uint16_t length = sizeof(type);
-                    Metadata::SetType(type);
+                    uint16_t length = Metadata::Deserialize(buffer, bufferSize);
 
-                    length += Metadata::Deserialize(buffer + length, bufferSize - length);
                     if ((length == 0) || (length >= bufferSize)) {
                         TRACE_L1("Could not deserialize control !!!");
                         length = 0;

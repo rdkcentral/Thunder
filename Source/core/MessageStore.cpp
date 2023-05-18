@@ -129,6 +129,7 @@ namespace Core {
             if (bufferSize > (sizeof(_type) + (sizeof(_category[0]) * 2))) {
                 Core::FrameType<0> frame(const_cast<uint8_t*>(buffer), bufferSize, bufferSize);
                 Core::FrameType<0>::Reader frameReader(frame, 0);
+                _type = frameReader.Number<type>();
                 _category = frameReader.NullTerminatedText();
 
                 if (_type == TRACING) {
@@ -145,10 +146,10 @@ namespace Core {
                 }
                 
                 if (_type == TRACING) {
-                    length = std::min<uint16_t>(bufferSize, (static_cast<uint16_t>(_category.size()) + 1) + (static_cast<uint16_t>(_module.size()) + 1));
+                    length = std::min<uint16_t>(bufferSize, static_cast<uint16_t>(sizeof(_type) + (static_cast<uint16_t>(_category.size()) + 1) + (static_cast<uint16_t>(_module.size()) + 1)));
                 }
                 else {
-                    length = std::min<uint16_t>(bufferSize, static_cast<uint16_t>(_category.size()) + 1);
+                    length = std::min<uint16_t>(bufferSize, static_cast<uint16_t>(sizeof(_type) + (static_cast<uint16_t>(_category.size()) + 1)));
                 }
             }
 

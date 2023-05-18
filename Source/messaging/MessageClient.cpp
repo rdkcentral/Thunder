@@ -196,25 +196,19 @@ namespace Messaging {
                     size = sizeof(_readBuffer);
                 }
 
-                Core::FrameType<0> frame(const_cast<uint8_t*>(_readBuffer), size, size);
-                Core::FrameType<0>::Reader frameReader(frame, 0);
-                Core::Messaging::Metadata::type type = frameReader.Number<Core::Messaging::Metadata::type>();
-                
-                uint16_t length = sizeof(type);
+                Core::Messaging::Metadata::type type = static_cast<Core::Messaging::Metadata::type>(_readBuffer[0]);
 
                 if (type == Core::Messaging::Metadata::type::TRACING) {
                     Core::Messaging::IStore::Tracing trace;
-                    trace.SetType(type);
                     
-                    length += trace.Deserialize(_readBuffer + length, size - length);
+                    uint16_t length = trace.Deserialize(_readBuffer, size);
                     
                     MessageClient::DeserializeAndSendMessage(trace, length, size, client, function);
                 }
                 else if (type == Core::Messaging::Metadata::type::LOGGING || type == Core::Messaging::Metadata::type::REPORTING) {
                     Core::Messaging::IStore::Logging log;
-                    log.SetType(type);
                     
-                    length += log.Deserialize(_readBuffer + length, size - length);
+                    uint16_t length = log.Deserialize(_readBuffer, size);
 
                     MessageClient::DeserializeAndSendMessage(log, length, size, client, function);
                 }
