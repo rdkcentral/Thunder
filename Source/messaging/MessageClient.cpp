@@ -154,6 +154,28 @@ namespace Messaging {
         controls = std::move(list);
     }
 
+    void MessageClient::DeserializeAndSendMessage(const Core::Messaging::Metadata& metadata, const uint16_t length,
+                                                  uint16_t& size, std::pair<const uint32_t, MessageUnit::Client>& client,
+                                                  std::function<void(const Core::Messaging::Metadata& metadata,
+                                                  const Core::ProxyType<Core::Messaging::IEvent>& message)> function)
+    {
+        Core::ProxyType<Core::Messaging::IEvent> message;
+
+        if ((length > sizeof(Core::Messaging::Metadata::type)) && (length < sizeof(_readBuffer))) {
+            auto factory = _factories.find(metadata.Type());
+
+            if (factory != _factories.end()) {
+                message = factory->second->Create();
+                message->Deserialize(_readBuffer + length, size - length);
+                function(metadata, message);
+            }
+        }
+        else {
+            client.second.FlushDataBuffer();
+        }
+        size = sizeof(_readBuffer);
+    }
+
     /**
      * @brief Pop all messages from all buffers, and for each of them call a passed function, with information about popped message
      *        This method should be called after receiving doorbell ring (after WaitForUpdated function)
@@ -162,8 +184,6 @@ namespace Messaging {
      */
     void MessageClient::PopMessagesAndCall(std::function<void(const Core::Messaging::Metadata& metadata, const Core::ProxyType<Core::Messaging::IEvent>& message)> function)
     {
-        Core::ProxyType<Core::Messaging::IEvent> message;
-
         _adminLock.Lock();
 
         for (auto& client : _clients) {
@@ -185,40 +205,18 @@ namespace Messaging {
                 if (type == Core::Messaging::Metadata::type::TRACING) {
                     Core::Messaging::IStore::Tracing trace;
                     trace.SetType(type);
+                    
                     length += trace.Deserialize(_readBuffer + length, size - length);
-
-                    if ((length > sizeof(Core::Messaging::Metadata::type)) && (length < sizeof(_readBuffer))) {
-                        auto factory = _factories.find(trace.Type());
-
-                        if (factory != _factories.end()) {
-                            message = factory->second->Create();
-                            message->Deserialize(_readBuffer + length, size - length);
-                            function(trace, message);
-                        }
-                    }
-                    else {
-                        client.second.FlushDataBuffer();
-                    }
-                    size = sizeof(_readBuffer);
+                    
+                    MessageClient::DeserializeAndSendMessage(trace, length, size, client, function);
                 }
                 else if (type == Core::Messaging::Metadata::type::LOGGING || type == Core::Messaging::Metadata::type::REPORTING) {
                     Core::Messaging::IStore::Logging log;
                     log.SetType(type);
+                    
                     length += log.Deserialize(_readBuffer + length, size - length);
 
-                    if ((length > sizeof(Core::Messaging::Metadata::type)) && (length < sizeof(_readBuffer))) {
-                        auto factory = _factories.find(log.Type());
-
-                        if (factory != _factories.end()) {
-                            message = factory->second->Create();
-                            message->Deserialize(_readBuffer + length, size - length);
-                            function(log, message);
-                        }
-                    }
-                    else {
-                        client.second.FlushDataBuffer();
-                    }
-                    size = sizeof(_readBuffer);
+                    MessageClient::DeserializeAndSendMessage(log, length, size, client, function);
                 }
                 else {
                     ASSERT(type != Core::Messaging::Metadata::type::INVALID);
