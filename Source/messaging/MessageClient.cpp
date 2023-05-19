@@ -158,7 +158,7 @@ namespace Messaging {
                                                   std::function<void(const Core::Messaging::Metadata& metadata,
                                                   const Core::ProxyType<Core::Messaging::IEvent>& message)> function)
     {
-        bool result;
+        bool result = false;
         Core::ProxyType<Core::Messaging::IEvent> message;
 
         if ((length > sizeof(Core::Messaging::Metadata::type)) && (length < sizeof(_readBuffer))) {
@@ -170,9 +170,6 @@ namespace Messaging {
                 function(metadata, message);
             }
             result = true;
-        }
-        else {
-            result = false;
         }
 
         return (result);
@@ -193,7 +190,10 @@ namespace Messaging {
 
             while (client.second.PopData(size, _readBuffer) != Core::ERROR_READ_ERROR) {
                 ASSERT(size != 0);
-                ASSERT(size < sizeof(_readBuffer));
+                
+                if (size > sizeof(_readBuffer)) {
+                    size = sizeof(_readBuffer);
+                }
 
                 const Core::Messaging::Metadata::type type = static_cast<Core::Messaging::Metadata::type>(_readBuffer[0]);
                 bool result;
