@@ -51,8 +51,7 @@ namespace Messaging {
         void Enable(const Core::Messaging::Metadata& metadata, const bool enable);
         void Controls(Messaging::MessageUnit::Iterator& controls) const;
 
-        void DeserializeAndSendMessage(const Core::Messaging::Metadata& metadata, const uint16_t length,
-                                       uint16_t& size, std::pair<const uint32_t, MessageUnit::Client>& client,
+        bool DeserializeAndSendMessage(const Core::Messaging::Metadata& metadata, const uint16_t length, const uint16_t size,
                                        std::function<void(const Core::Messaging::Metadata& metadata,
                                        const Core::ProxyType<Core::Messaging::IEvent>& message)> function);
 

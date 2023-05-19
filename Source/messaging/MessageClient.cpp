@@ -154,11 +154,11 @@ namespace Messaging {
         controls = std::move(list);
     }
 
-    void MessageClient::DeserializeAndSendMessage(const Core::Messaging::Metadata& metadata, const uint16_t length,
-                                                  uint16_t& size, std::pair<const uint32_t, MessageUnit::Client>& client,
+    bool MessageClient::DeserializeAndSendMessage(const Core::Messaging::Metadata& metadata, const uint16_t length, const uint16_t size,
                                                   std::function<void(const Core::Messaging::Metadata& metadata,
                                                   const Core::ProxyType<Core::Messaging::IEvent>& message)> function)
     {
+        bool result;
         Core::ProxyType<Core::Messaging::IEvent> message;
 
         if ((length > sizeof(Core::Messaging::Metadata::type)) && (length < sizeof(_readBuffer))) {
@@ -169,11 +169,13 @@ namespace Messaging {
                 message->Deserialize(_readBuffer + length, size - length);
                 function(metadata, message);
             }
+            result = true;
         }
         else {
-            client.second.FlushDataBuffer();
+            result = false;
         }
-        size = sizeof(_readBuffer);
+
+        return (result);
     }
 
     /**
@@ -191,33 +193,35 @@ namespace Messaging {
 
             while (client.second.PopData(size, _readBuffer) != Core::ERROR_READ_ERROR) {
                 ASSERT(size != 0);
+                ASSERT(size < sizeof(_readBuffer));
 
-                if (size > sizeof(_readBuffer)) {
-                    size = sizeof(_readBuffer);
-                }
-
-                Core::Messaging::Metadata::type type = static_cast<Core::Messaging::Metadata::type>(_readBuffer[0]);
+                const Core::Messaging::Metadata::type type = static_cast<Core::Messaging::Metadata::type>(_readBuffer[0]);
+                bool result;
 
                 if (type == Core::Messaging::Metadata::type::TRACING) {
                     Core::Messaging::IStore::Tracing trace;
-                    
+
                     uint16_t length = trace.Deserialize(_readBuffer, size);
-                    
-                    MessageClient::DeserializeAndSendMessage(trace, length, size, client, function);
+
+                    result = MessageClient::DeserializeAndSendMessage(trace, length, size, function);
                 }
                 else if (type == Core::Messaging::Metadata::type::LOGGING || type == Core::Messaging::Metadata::type::REPORTING) {
                     Core::Messaging::IStore::Logging log;
-                    
+
                     uint16_t length = log.Deserialize(_readBuffer, size);
 
-                    MessageClient::DeserializeAndSendMessage(log, length, size, client, function);
+                    result = MessageClient::DeserializeAndSendMessage(log, length, size, function);
                 }
                 else {
                     ASSERT(type != Core::Messaging::Metadata::type::INVALID);
                 }
+
+                if (!result) {
+                    client.second.FlushDataBuffer();
+                }
+                size = sizeof(_readBuffer);
             }
         }
-
         _adminLock.Unlock();
     }
 
