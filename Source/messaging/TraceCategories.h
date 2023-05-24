@@ -23,13 +23,14 @@
 #include "BaseCategory.h"
 
 namespace WPEFramework {
+
 namespace Trace {
 
     // for backwards compatibility 
     template <typename... Args>
     inline void Format(string& dst, Args&&... args) { Core::Format(dst, std::forward<Args>(args)...); }
     template <typename... Args>
-    inline string Format(Args&&... args) { return Core::Format(std::forward<Args>(args)...); }
+    inline string Format(Args&&... args) { return (Core::Format(std::forward<Args>(args)...)); }
 
     DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, Text);
     DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, Initialisation);
@@ -46,13 +47,11 @@ namespace Trace {
         Constructor& operator=(const Constructor&) = delete;
 
     public:
-        const char* Data() const
-        {
+        const char* Data() const {
             return (_text.c_str());
         }
 
-        uint16_t Length() const
-        {
+        uint16_t Length() const {
             return (static_cast<uint16_t>(_text.length()));
         }
 
@@ -68,13 +67,11 @@ namespace Trace {
         CopyConstructor& operator=(const CopyConstructor&) = delete;
 
     public:
-        const char* Data() const
-        {
+        const char* Data() const {
             return (_text.c_str());
         }
 
-        uint16_t Length() const
-        {
+        uint16_t Length() const {
             return (static_cast<uint16_t>(_text.length()));
         }
 
@@ -90,13 +87,11 @@ namespace Trace {
         AssignmentOperator& operator=(const AssignmentOperator&) = delete;
 
     public:
-        const char* Data() const
-        {
+        const char* Data() const {
             return (_text.c_str());
         }
 
-        uint16_t Length() const
-        {
+        uint16_t Length() const {
             return (static_cast<uint16_t>(_text.length()));
         }
 
@@ -112,13 +107,11 @@ namespace Trace {
         Destructor& operator=(const Destructor&) = delete;
 
     public:
-        const char* Data() const
-        {
+        const char* Data() const {
             return (_text.c_str());
         }
 
-        uint16_t Length() const
-        {
+        uint16_t Length() const {
             return (static_cast<uint16_t>(_text.length()));
         }
 
@@ -182,4 +175,3 @@ namespace Trace {
 
 } // namespace Trace
 }
-

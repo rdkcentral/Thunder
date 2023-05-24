@@ -34,10 +34,10 @@
 
 #else // _THUNDER_PRODUCTION
 
-#define TRACE_CONTROL(CATEGORY) \
+#define TRACE_CONTROL(CATEGORY)                                                              \
     WPEFramework::Messaging::LocalLifetimeType<CATEGORY, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::Messaging::Metadata::type::TRACING>
 
-#define TRACE_ENABLED(CATEGORY) \
+#define TRACE_ENABLED(CATEGORY)                                                              \
     TRACE_CONTROL(CATEGORY)::IsEnabled()
 
 #define TRACE(CATEGORY, PARAMETERS)                                                          \
@@ -45,16 +45,18 @@
         using __control__ = TRACE_CONTROL(CATEGORY);                                         \
         if (__control__::IsEnabled() == true) {                                              \
             CATEGORY __data__ PARAMETERS;                                                    \
-            WPEFramework::Core::TextFragment classname (typeid(*this).name());               \
-            WPEFramework::Core::Messaging::IStore::Information __info__(                     \
+            WPEFramework::Core::Messaging::MessageInfo __info__(                             \
                 __control__::Metadata(),                                                     \
-                __FILE__,                                                                    \
-                __LINE__,                                                                    \
-                classname.Text(),                                                            \
                 WPEFramework::Core::Time::Now().Ticks()                                      \
             );                                                                               \
+            WPEFramework::Core::Messaging::IStore::Tracing __trace__(                        \
+                __info__,                                                                    \
+                __FILE__,                                                                    \
+                __LINE__,                                                                    \
+                WPEFramework::Core::ClassNameOnly(typeid(*this).name()).Text()               \
+            );                                                                               \
             WPEFramework::Messaging::TextMessage __message__(__data__.Data());               \
-            WPEFramework::Messaging::MessageUnit::Instance().Push(__info__, &__message__);   \
+            WPEFramework::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);  \
         }                                                                                    \
     } while(false)
 
@@ -63,30 +65,33 @@
         using __control__ = TRACE_CONTROL(CATEGORY);                                         \
         if (__control__::IsEnabled() == true) {                                              \
             CATEGORY __data__ PARAMETERS;                                                    \
-            WPEFramework::Core::Messaging::IStore::Information __info__(                     \
+            WPEFramework::Core::Messaging::MessageInfo __info__(                             \
                 __control__::Metadata(),                                                     \
-                __FILE__,                                                                    \
-                __LINE__,                                                                    \
-                __FUNCTION__,                                                                \
                 WPEFramework::Core::Time::Now().Ticks()                                      \
             );                                                                               \
+            WPEFramework::Core::Messaging::IStore::Tracing __trace__(                        \
+                __info__,                                                                    \
+                __FILE__,                                                                    \
+                __LINE__,                                                                    \
+                __FUNCTION__                                                                 \
+            );                                                                               \
             WPEFramework::Messaging::TextMessage __message__(__data__.Data());               \
-            WPEFramework::Messaging::MessageUnit::Instance().Push(__info__, &__message__);   \
+            WPEFramework::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);  \
         }                                                                                    \
     } while(false)
 
-#define TRACE_DURATION(CODE, ...) \
-    do {                                                                        \
-        WPEFramework::Core::Time start = WPEFramework::Core::Time::Now();       \
-        { CODE }                                                                \
-        TRACE(WPEFramework::Trace::Duration, (start, ##__VA_ARGS__));           \
+#define TRACE_DURATION(CODE, ...)                                                            \
+    do {                                                                                     \
+        WPEFramework::Core::Time start = WPEFramework::Core::Time::Now();                    \
+        { CODE }                                                                             \
+        TRACE(WPEFramework::Trace::Duration, (start, ##__VA_ARGS__));                        \
     } while(false)
 
-#define TRACE_DURATION_GLOBAL(CODE, ...) \
-    do {                                                                        \
-        WPEFramework::Core::Time start = WPEFramework::Core::Time::Now();       \
-        { CODE }                                                                \
-        TRACE_GLOBAL(WPEFramework::Trace::Duration, (start, ##__VA_ARGS__));    \
+#define TRACE_DURATION_GLOBAL(CODE, ...)                                                     \
+    do {                                                                                     \
+        WPEFramework::Core::Time start = WPEFramework::Core::Time::Now();                    \
+        { CODE }                                                                             \
+        TRACE_GLOBAL(WPEFramework::Trace::Duration, (start, ##__VA_ARGS__));                 \
     } while(false)
 
 #endif // _THUNDER_PRODUCTION

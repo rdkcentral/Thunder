@@ -22,6 +22,7 @@
 #include "Module.h"
 
 namespace WPEFramework {
+
 namespace Messaging {
 
     template <const Core::Messaging::Metadata::type TYPE>
@@ -52,19 +53,16 @@ namespace Messaging {
 
         static constexpr Core::Messaging::Metadata::type Type = TYPE;
 
-        const char* Data() const
-        {
+        const char* Data() const {
             return (_text.c_str());
         }
 
-        uint16_t Length() const
-        {
+        uint16_t Length() const {
             return (static_cast<uint16_t>(_text.length()));
         }
 
     protected:
-        void Set(const string& text)
-        {
+        void Set(const string& text) {
             _text = text;
         }
 
