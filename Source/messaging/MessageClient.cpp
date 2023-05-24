@@ -154,25 +154,30 @@ namespace Messaging {
         controls = std::move(list);
     }
 
-    bool MessageClient::DeserializeAndSendMessage(const Core::Messaging::Metadata& metadata, const uint16_t length, const uint16_t size,
-                                                  std::function<void(const Core::Messaging::Metadata& metadata,
-                                                  const Core::ProxyType<Core::Messaging::IEvent>& message)> function)
+    using MessageHandler = std::function<void(const Core::Messaging::Metadata&, const Core::ProxyType<Core::Messaging::IEvent>&)>;
+    
+    template<typename MSG>
+    uint16_t MessageClient::DeserializeAndSendMessage(const uint16_t length, const MessageHandler& handler)
     {
-        bool result = false;
-        Core::ProxyType<Core::Messaging::IEvent> message;
+        ASSERT(handler != nullptr);
+        
+        MSG message;
+        const uint16_t offset = message.Deserialize(_readBuffer, length);
 
-        if ((length > sizeof(Core::Messaging::Metadata::type)) && (length < sizeof(_readBuffer))) {
+        if (length != 0) {
             auto factory = _factories.find(metadata.Type());
 
             if (factory != _factories.end()) {
+                Core::ProxyType<Core::Messaging::IEvent> message;
+
                 message = factory->second->Create();
-                message->Deserialize(_readBuffer + length, size - length);
-                function(metadata, message);
+                message->Deserialize((buffer + offset), (length - offset));
+
+                handler(metadata, message);
             }
-            result = true;
         }
 
-        return (result);
+        return (length);
     }
 
     /**
@@ -181,7 +186,7 @@ namespace Messaging {
      *
      * @param function function to be called on each of the messages in the buffer
      */
-    void MessageClient::PopMessagesAndCall(std::function<void(const Core::Messaging::Metadata& metadata, const Core::ProxyType<Core::Messaging::IEvent>& message)> function)
+    void MessageClient::PopMessagesAndCall(const MessageHandler& handler)
     {
         _adminLock.Lock();
 
@@ -190,38 +195,31 @@ namespace Messaging {
 
             while (client.second.PopData(size, _readBuffer) != Core::ERROR_READ_ERROR) {
                 ASSERT(size != 0);
-                
+
                 if (size > sizeof(_readBuffer)) {
                     size = sizeof(_readBuffer);
                 }
 
                 const Core::Messaging::Metadata::type type = static_cast<Core::Messaging::Metadata::type>(_readBuffer[0]);
-                bool result;
+                ASSERT(type != Core::Messaging::Metadata::type::INVALID);
+                    
+                uint16_t length = 0;
 
                 if (type == Core::Messaging::Metadata::type::TRACING) {
-                    Core::Messaging::IStore::Tracing trace;
-
-                    uint16_t length = trace.Deserialize(_readBuffer, size);
-
-                    result = MessageClient::DeserializeAndSendMessage(trace, length, size, function);
+                    length = DeserializeAndSendMessag<Core::Messaging::IStore::Tracing>(_readBuffer, size, handler);
                 }
                 else if (type == Core::Messaging::Metadata::type::LOGGING || type == Core::Messaging::Metadata::type::REPORTING) {
-                    Core::Messaging::IStore::Logging log;
-
-                    uint16_t length = log.Deserialize(_readBuffer, size);
-
-                    result = MessageClient::DeserializeAndSendMessage(log, length, size, function);
-                }
-                else {
-                    ASSERT(type != Core::Messaging::Metadata::type::INVALID);
+                    length = DeserializeAndSendMessag<Core::Messaging::IStore::Logging>(_readBuffer, size, handler);
                 }
 
-                if (!result) {
+                if (length == 0) {
                     client.second.FlushDataBuffer();
                 }
+
                 size = sizeof(_readBuffer);
             }
         }
+ 
         _adminLock.Unlock();
     }
 
