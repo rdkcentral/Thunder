@@ -55,12 +55,12 @@ namespace Plugin {
     static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData>> jsonBodyMetaDataFactory(1);
     static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData::Service>> jsonBodyServiceFactory(1);
     static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData::Version>> jsonBodyVersionFactory(1);
-    static Core::ProxyPoolType<Web::JSONBodyType<Core::JSON::ArrayType<Controller::CallstackData>>> jsonBodyCallstackFactory(1);
+    static Core::ProxyPoolType<Web::JSONBodyType<Core::JSON::ArrayType<PluginHost::CallstackData>>> jsonBodyCallstackFactory(1);
     static Core::ProxyPoolType<Web::JSONBodyType<Core::JSON::ArrayType<PluginHost::MetaData::COMRPC>>> jsonBodyProxiesFactory(1);
 
     static Core::ProxyPoolType<Web::TextBody> jsonBodyTextFactory(2);
 
-    void Controller::Callstack(const ThreadId id, Core::JSON::ArrayType<CallstackData>& response) const {
+    void Controller::Callstack(const ThreadId id, Core::JSON::ArrayType<PluginHost::CallstackData>& response) const {
         std::list<Core::callstack_info> stackList;
 
         ::DumpCallStack(id, stackList);
@@ -453,13 +453,13 @@ namespace Plugin {
             else {
                 Core::NumberType<uint8_t> threadIndex(index.Current());
                 
-                Core::ProxyType<Web::JSONBodyType<Core::JSON::ArrayType<CallstackData>>> response = jsonBodyCallstackFactory.Element();
+                Core::ProxyType<Web::JSONBodyType<Core::JSON::ArrayType<PluginHost::CallstackData>>> response = jsonBodyCallstackFactory.Element();
                 Callstack(_pluginServer->WorkerPool().Id(threadIndex.Value()), *response);
                 result->Body(Core::ProxyType<Web::IBody>(response));
             }
         } else if (index.Current() == _T ("Monitor")) {
             Core::NumberType<uint8_t> threadIndex(index.Current());
-            Core::ProxyType<Web::JSONBodyType<Core::JSON::ArrayType<CallstackData>>> response = jsonBodyCallstackFactory.Element();
+            Core::ProxyType<Web::JSONBodyType<Core::JSON::ArrayType<PluginHost::CallstackData>>> response = jsonBodyCallstackFactory.Element();
             Callstack(Core::ResourceMonitor::Instance().Id(), *response);
             result->Body(Core::ProxyType<Web::IBody>(response));
         } else if (index.Current() == _T("Discovery")) {
@@ -1084,7 +1084,7 @@ namespace Plugin {
 
     Core::hresult Controller::CallStack(const string& index, string& callstack) const
     {
-        Core::JSON::ArrayType<CallstackData> jsonResponse;
+        Core::JSON::ArrayType<PluginHost::CallstackData> jsonResponse;
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
 
         if (index.empty() == true) {

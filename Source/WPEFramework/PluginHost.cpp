@@ -266,6 +266,11 @@ POP_WARNING()
 
     ExitHandler* ExitHandler::_instance = nullptr;
     Core::CriticalSection ExitHandler::_adminLock;
+    
+    #ifndef __WINDOWS__
+    struct sigaction _originalSegmentationHandler;
+    struct sigaction _originalAbortHandler;
+    #endif
 
     static string GetDeviceId(PluginHost::Server* dispatcher)
     {
@@ -311,6 +316,26 @@ POP_WARNING()
                 syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a SIGTERM or SIGQUIT signal. Regular shutdown");
             } else {
                 fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a SIGTERM or SIGQUIT signal. No regular shutdown.\nErrors to follow are collateral damage errors !!!!!!\n");
+                fflush(stderr);
+            }
+
+            ExitHandler::StartShutdown();
+        }
+        else if ( (signo == SIGSEGV)  || (signo == SIGABRT) ) {
+
+            // From here on we do the best we can do. Have no clue what failed, try to log as much as possible and on
+            // a subsequent segmentation fault, just handle it the old fashion way. The root cause has been logged
+            // by than!
+            sigaction(SIGSEGV, &_originalSegmentationHandler, nullptr);
+            sigaction(SIGABRT, &_originalAbortHandler, nullptr);
+
+
+            ExitHandler::DumpMetadata();
+
+            if (_background) {
+                syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a segmentation fault. All relevant data dumped");
+            } else {
+                fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a segmentation fault. All relevant data dumped\n");
                 fflush(stderr);
             }
 
@@ -449,6 +474,8 @@ POP_WARNING()
             sigaction(SIGTERM, &sa, nullptr);
             sigaction(SIGQUIT, &sa, nullptr);
             sigaction(SIGUSR1, &sa, nullptr);
+            sigaction(SIGSEGV, &sa, &_originalSegmentationHandler);
+            sigaction(SIGABRT, &sa, &_originalAbortHandler);
         }
 
         if (atexit(ForcedExit) != 0) {
@@ -831,7 +858,7 @@ POP_WARNING()
                         printf("Pending:     %d\n", static_cast<uint32_t>(metaData.Pending.size()));
                         printf("Poolruns:\n");
                         for (uint8_t index = 0; index < metaData.Slots; index++) {
-                           printf("  Thread%02d|0x%08X: %10d", (index + 1), (uint32_t) metaData.Slot[index].WorkerId, metaData.Slot[index].Runs);
+                           printf("  Thread%02d|0x%16lX: %10d", (index + 1), metaData.Slot[index].WorkerId, metaData.Slot[index].Runs);
                             if (metaData.Slot[index].Job.IsSet() == false) {
                                 printf("\n");
                             }
