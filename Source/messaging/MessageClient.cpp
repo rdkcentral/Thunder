@@ -154,32 +154,6 @@ namespace Messaging {
         controls = std::move(list);
     }
 
-    using MessageHandler = std::function<void(const Core::Messaging::Metadata&, const Core::ProxyType<Core::Messaging::IEvent>&)>;
-    
-    template<typename MSG>
-    uint16_t MessageClient::DeserializeAndSendMessage(const uint16_t length, const MessageHandler& handler)
-    {
-        ASSERT(handler != nullptr);
-        
-        MSG message;
-        const uint16_t offset = message.Deserialize(_readBuffer, length);
-
-        if (length != 0) {
-            auto factory = _factories.find(metadata.Type());
-
-            if (factory != _factories.end()) {
-                Core::ProxyType<Core::Messaging::IEvent> message;
-
-                message = factory->second->Create();
-                message->Deserialize((buffer + offset), (length - offset));
-
-                handler(metadata, message);
-            }
-        }
-
-        return (length);
-    }
-
     /**
      * @brief Pop all messages from all buffers, and for each of them call a passed function, with information about popped message
      *        This method should be called after receiving doorbell ring (after WaitForUpdated function)
@@ -202,14 +176,14 @@ namespace Messaging {
 
                 const Core::Messaging::Metadata::type type = static_cast<Core::Messaging::Metadata::type>(_readBuffer[0]);
                 ASSERT(type != Core::Messaging::Metadata::type::INVALID);
-                    
+
                 uint16_t length = 0;
 
                 if (type == Core::Messaging::Metadata::type::TRACING) {
-                    length = DeserializeAndSendMessag<Core::Messaging::IStore::Tracing>(_readBuffer, size, handler);
+                    length = DeserializeAndSendMessage<Core::Messaging::IStore::Tracing>(size, handler);
                 }
                 else if (type == Core::Messaging::Metadata::type::LOGGING || type == Core::Messaging::Metadata::type::REPORTING) {
-                    length = DeserializeAndSendMessag<Core::Messaging::IStore::Logging>(_readBuffer, size, handler);
+                    length = DeserializeAndSendMessage<Core::Messaging::IStore::Logging>(size, handler);
                 }
 
                 if (length == 0) {
