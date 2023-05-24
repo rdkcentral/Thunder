@@ -20,9 +20,11 @@
 #include "MessageUnit.h"
 
 namespace WPEFramework {
+
     namespace Messaging {
 
-        uint16_t MessageUnit::Serialize(uint8_t* buffer, const uint16_t length) {
+        uint16_t MessageUnit::Serialize(uint8_t* buffer, const uint16_t length)
+        {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = delete;
@@ -32,12 +34,14 @@ namespace WPEFramework {
                 Handler(uint8_t* buffer, const uint16_t length)
                     : _buffer(buffer)
                     , _length(length)
-                    , _offset(0) {
+                    , _offset(0)
+                {
                 }
                 ~Handler() override = default;
 
             public:
-                void Handle (Core::Messaging::IControl* control) override {
+                void Handle (Core::Messaging::IControl* control) override
+                {
                     Control info(control->Metadata(), control->Enable());
 
                     uint16_t moved = info.Serialize(&(_buffer[_offset]), _length - _offset);
@@ -49,6 +53,7 @@ namespace WPEFramework {
                         _offset += moved;
                     }
                 }
+
                 uint16_t Offset() const {
                     return (_offset);
                 }
@@ -64,7 +69,8 @@ namespace WPEFramework {
             return (handler.Offset());
         }
 
-        void MessageUnit::Update(const Core::Messaging::Metadata& control, const bool enable) {
+        void MessageUnit::Update(const Core::Messaging::Metadata& control, const bool enable)
+        {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = delete;
@@ -73,12 +79,14 @@ namespace WPEFramework {
 
                 Handler(const Core::Messaging::Metadata& info, const bool enable)
                     : _info(info)
-                    , _enable(enable) {
+                    , _enable(enable)
+                {
                 }
                 ~Handler() override = default;
 
             public:
-                void Handle (Core::Messaging::IControl* control) override {
+                void Handle (Core::Messaging::IControl* control) override
+                {
                     if ( (_info.Applicable(control->Metadata()) == true) && (control->Enable() ^ _enable) ) {
                         control->Enable(_enable);
                     }
@@ -92,7 +100,8 @@ namespace WPEFramework {
             Core::Messaging::IControl::Iterate(handler);
         }
 
-        void MessageUnit::Update() {
+        void MessageUnit::Update()
+        {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = delete;
@@ -103,12 +112,15 @@ namespace WPEFramework {
                 ~Handler() override = default;
 
             public:
-                void Handle (Core::Messaging::IControl* control) override {
+                void Handle (Core::Messaging::IControl* control) override
+                {
                     bool enabled = _settings.IsEnabled(control->Metadata());
+                    
                     if (enabled ^ control->Enable()) {
                         control->Enable(enabled);
                     }
                 }
+
             private:
                 const Settings& _settings;
             } handler(_settings);
@@ -116,9 +128,7 @@ namespace WPEFramework {
             Core::Messaging::IControl::Iterate(handler);
         }
 
-
-        MessageUnit& MessageUnit::Instance()
-        {
+        MessageUnit& MessageUnit::Instance() {
             return (Core::SingletonType<MessageUnit>::Instance());
         }
 
@@ -157,7 +167,7 @@ namespace WPEFramework {
             _dispatcher.reset(new MessageDispatcher(*this, identifier, 0, basePath, socketPort));
             ASSERT(_dispatcher != nullptr);
 
-            if ( (_dispatcher != nullptr) && (_dispatcher->IsValid() == true) )  {
+            if ((_dispatcher != nullptr) && (_dispatcher->IsValid() == true)) {
 
                 _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
 
@@ -214,7 +224,8 @@ namespace WPEFramework {
                 ~Handler() override = default;
 
             public:
-                void Handle (Core::Messaging::IControl* control) override {
+                void Handle (Core::Messaging::IControl* control) override
+                {
                     control->Destroy();
                 }
             } handler;
@@ -227,26 +238,28 @@ namespace WPEFramework {
             _adminLock.Unlock();
         }
 
-        /* virtual */ bool MessageUnit::Default(const Core::Messaging::Metadata& control) const
-        {
+        /* virtual */ bool MessageUnit::Default(const Core::Messaging::Metadata& control) const {
             return (_settings.IsEnabled(control));
         }
 
         /**
-        * @brief Push a message and its information to a buffer
+        * @brief Push a logging type message and its information to a buffer
         */
-        /* virtual */ void MessageUnit::Push(const Core::Messaging::IStore::Information& info, const Core::Messaging::IEvent* message)
+        /* virtual */ void MessageUnit::Push(const Core::Messaging::IStore::Logging& log, const Core::Messaging::IEvent* message)
         {
             //logging messages can happen in Core, meaning, otherside plugin can be not started yet
             //those should be just printed
             if (_settings.IsDirect() == true) {
-                _direct.Output(info, message);
+                _direct.Output(log, message);
             }
 
             if (_dispatcher != nullptr) {
                 uint8_t serializationBuffer[DataSize];
+                uint16_t length = 0;
 
-                uint16_t length = info.Serialize(serializationBuffer, sizeof(serializationBuffer));
+                ASSERT(log.Type() == Core::Messaging::Metadata::type::LOGGING);
+
+                length = log.Serialize(serializationBuffer, sizeof(serializationBuffer));
 
                 //only serialize message if the information could fit
                 if (length != 0) {
@@ -255,11 +268,47 @@ namespace WPEFramework {
                     if (_dispatcher->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
                         TRACE_L1("Unable to push message data!");
                     }
-
-                } else {
+                }
+                else {
                     TRACE_L1("Unable to push data, buffer is too small!");
                 }
             }
         }
-    }
+
+        /**
+        * @brief Push a tracing type message and its information to a buffer
+        */
+        /* virtual */ void MessageUnit::Push(const Core::Messaging::IStore::Tracing& trace, const Core::Messaging::IEvent* message)
+        {
+            //logging messages can happen in Core, meaning, otherside plugin can be not started yet
+            //those should be just printed
+            if (_settings.IsDirect() == true) {
+                _direct.Output(trace, message);
+            }
+
+            if (_dispatcher != nullptr) {
+                uint8_t serializationBuffer[DataSize];
+                uint16_t length = 0;
+
+                ASSERT(trace.Type() == Core::Messaging::Metadata::type::TRACING);
+
+                length = trace.Serialize(serializationBuffer, sizeof(serializationBuffer));
+
+                //only serialize message if the information could fit
+                if (length != 0) {
+                    length += message->Serialize(serializationBuffer + length, sizeof(serializationBuffer) - length);
+
+                    if (_dispatcher->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
+                        TRACE_L1("Unable to push message data!");
+                    }
+                }
+                else {
+                    TRACE_L1("Unable to push data, buffer is too small!");
+                }
+            }
+        }
+
+        // TO-DO: Add another overloaded Push() method for Warning Reporting
+
+    } // namespace Messaging
 }
