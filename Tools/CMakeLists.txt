@@ -1,7 +1,7 @@
 # If not stated otherwise in this file or this component's LICENSE file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 Metrological
+# Copyright 2020 RDK Management
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,16 +22,11 @@ project(Generators)
 set(GENERATOR_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/sbin")
 
 if(NOT DEFINED GENERIC_CMAKE_MODULE_PATH)
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../src/bridge")
-        set(NAMESPACE bridge)
-    else()
-        set(NAMESPACE WPEFramework)
-    endif()
-    if(DEFINED ENV{STAGING_DIR})
-        set(GENERIC_CMAKE_MODULE_PATH "$ENV{STAGING_DIR}/usr/include/${NAMESPACE}/Modules")
-    else()
-        set(GENERIC_CMAKE_MODULE_PATH "${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/Modules")
-    endif()
+    find_path(GENERIC_CMAKE_MODULE_PATH CMake.cmake
+    PATHS
+        "/usr/share/cmake/Modules/"
+        "/usr/share/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules/"
+    )
 endif()
 
 configure_file( "${CMAKE_SOURCE_DIR}/cmake/FindProxyStubGenerator.cmake.in"

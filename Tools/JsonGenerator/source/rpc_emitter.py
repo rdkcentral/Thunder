@@ -790,6 +790,11 @@ def _EmitRpcCode(root, emit, header_file, source_file, data_emitted):
         if not config.NO_PUSH_WARNING:
             emit.Line("PUSH_WARNING(DISABLE_WARNING_UNUSED_FUNCTIONS)")
             emit.Line()
+        else:
+            emit.Line("#if defined(__GNUC__) || defined(__clang__)")
+            emit.Line('#pragma GCC diagnostic ignored "-Wunused-function"')
+            emit.Line("#endif")
+            emit.Line()
 
         for event in events:
             EmitEvent(emit, root, event, "object")
