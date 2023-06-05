@@ -26,9 +26,8 @@
 #include "MessageUnit.h"
 
 namespace WPEFramework {
-namespace Logging {
 
-    extern EXTERNAL const char* MODULE_LOGGING;
+namespace Logging {
 
     void EXTERNAL DumpException(const string& exceptionType);
     void EXTERNAL DumpSystemFiles(const Core::process_t pid);
@@ -37,7 +36,7 @@ namespace Logging {
     class BaseLoggingType : public Messaging::BaseCategoryType<Core::Messaging::Metadata::type::LOGGING> {
     public:
         using BaseClass = Messaging::BaseCategoryType<Core::Messaging::Metadata::type::LOGGING>;
-        using Control = Messaging::ControlType<CATEGORY, &MODULE_LOGGING, Core::Messaging::Metadata::type::LOGGING>;
+        using Control = Messaging::ControlType<CATEGORY, &Core::Messaging::MODULE_LOGGING, Core::Messaging::Metadata::type::LOGGING>;
 
         BaseLoggingType(const BaseLoggingType&) = delete;
         BaseLoggingType& operator=(const BaseLoggingType&) = delete;
@@ -48,25 +47,24 @@ namespace Logging {
         using BaseClass::BaseClass;
 
     public:
-        inline static void Announce()
-        {
+        inline static void Announce() {
             IsEnabled();
         }
-        inline static bool IsEnabled()
-        {
+
+        inline static bool IsEnabled() {
             return (_control.IsEnabled());
         }
-        inline static void Enable(const bool enable)
-        {
+
+        inline static void Enable(const bool enable) {
             _control.Enable(enable);
         }
-        inline static const Core::Messaging::Metadata& Metadata()
-        {
+        
+        inline static const Core::Messaging::Metadata& Metadata() {
             return (_control.Metadata());
         }
 
     private:
-        static Control  _control;
+        static Control _control;
     };
 
 } // namespace Logging
@@ -93,16 +91,13 @@ namespace Logging {
         static_assert(std::is_base_of<WPEFramework::Logging::BaseLoggingType<CATEGORY>, CATEGORY>::value, "SYSLOG() only for Logging controls");  \
         if (CATEGORY::IsEnabled() == true) {                                                                                                      \
             CATEGORY __data__ PARAMETERS;                                                                                                         \
-            WPEFramework::Core::TextFragment classname (typeid(*this).name());                                                                                  \
-            WPEFramework::Core::Messaging::IStore::Information __info__(                                                                          \
+            WPEFramework::Core::Messaging::MessageInfo __info__(                                                                                  \
                 CATEGORY::Metadata(),                                                                                                             \
-                __FILE__,                                                                                                                         \
-                __LINE__,                                                                                                                         \
-                classname.Text(),                                                                                                                 \
                 WPEFramework::Core::Time::Now().Ticks()                                                                                           \
             );                                                                                                                                    \
+            WPEFramework::Core::Messaging::IStore::Logging __log__(__info__);                                                                     \
             WPEFramework::Messaging::TextMessage __message__(__data__.Data());                                                                    \
-            WPEFramework::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                                                        \
+            WPEFramework::Messaging::MessageUnit::Instance().Push(__log__, &__message__);                                                         \
         }                                                                                                                                         \
     } while(false)
 
@@ -111,15 +106,13 @@ namespace Logging {
         static_assert(std::is_base_of<WPEFramework::Logging::BaseLoggingType<CATEGORY>, CATEGORY>::value, "SYSLOG() only for Logging controls");  \
         if (CATEGORY::IsEnabled() == true) {                                                                                                      \
             CATEGORY __data__ PARAMETERS;                                                                                                         \
-            WPEFramework::Core::Messaging::IStore::Information __info__(                                                                          \
+            WPEFramework::Core::Messaging::MessageInfo __info__(                                                                                  \
                 CATEGORY::Metadata(),                                                                                                             \
-                __FILE__,                                                                                                                         \
-                __LINE__,                                                                                                                         \
-                __FUNCTION__,                                                                                                                     \
                 WPEFramework::Core::Time::Now().Ticks()                                                                                           \
             );                                                                                                                                    \
+            WPEFramework::Core::Messaging::IStore::Logging __log__(__info__);                                                                     \
             WPEFramework::Messaging::TextMessage __message__(__data__.Data());                                                                    \
-            WPEFramework::Messaging::MessageUnit::Instance().Push(__info__, &__message__);                                                        \
+            WPEFramework::Messaging::MessageUnit::Instance().Push(__log__, &__message__);                                                         \
         }                                                                                                                                         \
     } while(false)
 
