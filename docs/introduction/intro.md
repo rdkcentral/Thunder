@@ -1,6 +1,6 @@
 # What is Thunder?
 !!! note
-	The terms "**Thunder**" and "**WPEFramework**" may be used interchangeably throughout this documentation. The project was originally known as WPEFramework (since it was developed by the Web Platform for Embedded, or WPE, team).	The name was changed to Thunder when it was incorporated into RDK, but the code still uses the name WPEFramework internally. 
+	The terms "**Thunder**" and "**WPEFramework**" may be used interchangeably throughout this documentation. The project was originally known as WPEFramework (since it was developed by the Web Platform for Embedded, or WPE, team).	The name was changed to Thunder when it was incorporated into RDK, but the code still uses the name WPEFramework internally.
 
 ## Introduction
 
@@ -32,7 +32,7 @@ Builds on Linux and Windows and unit test runs are performed automatically on al
 
 ### License
 
-The code is licensed under the Apache 2.0 license. The code may include material which is licensed under other licenses/copyrights as listed in the [NOTICE](https://github.com/rdkcentral/Thunder/blob/master/NOTICE) file. 
+Thunder is Copyright 2018 Metrological and licensed under the Apache License, Version 2.0. See the LICENSE and NOTICE files in the top level directory for further details.
 
 ## Relationship with RDK-V
 
@@ -40,4 +40,4 @@ Thunder was developed as a standalone component for use by Metrological in their
 
 Thunder is still used on non-RDK platforms, and the core Thunder framework does not have any coupling to RDK-V. Metrological maintain their own repository of plugins for use on their platforms, and RDK host their own RDKServices repository which contains RDK-V specific Thunder plugins.
 
-RDK-V is currently using a fork of the R2 branch with many changes backported from R3/R4. 
+RDK-V is currently using a fork of the R2 branch with many changes backported from R3/R4.
