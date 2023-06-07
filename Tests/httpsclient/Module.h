@@ -24,7 +24,6 @@
 #endif
 
 #include <plugins/plugins.h>
-#include <websocket/websocket.h>
 
 #undef EXTERNAL
 #define EXTERNAL
