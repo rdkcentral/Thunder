@@ -88,13 +88,23 @@ class Metadata:
         self.is_obsolete = False
         self.is_index = False
         self.is_listener = False
+        self.decorators = []
         self.length = None
         self.maxlength = None
         self.interface = None
+        self.alt = None
         self.text = None
+        self.range = []
         self.param = OrderedDict()
         self.retval = OrderedDict()
 
+    @property
+    def is_input(self):
+        return self.input or not self.output
+
+    @property
+    def is_output(self):
+        return self.output
 
 class BaseType:
     def __init__(self, type):
@@ -115,11 +125,10 @@ class Undefined(BaseType):
     def Proto(self):
         proto = self.comment
         if isinstance(self.type, list):
-            if (type(self.type[0]) is str):
-                proto += " ".join(self.type).replace(" < ", "<").replace(" :: ", "::").replace(
-                    " >", ">").replace(" *", "*").replace(" &", "&").replace(" &&", "&&").replace(" ,",",")
-            else:
-                proto += " ".join([str(x) for x in self.type])
+            for e in self.type:
+                proto += " " + (e if isinstance(e, str) else str(e))
+            proto = proto.replace(" < ", "<").replace(" :: ", "::").replace(" >", ">")
+            proto = proto.replace(" *", "*").replace(" &", "&").replace(" &&", "&&").replace(" ,",",").strip()
         else:
             proto += str(self.type)
 
@@ -155,8 +164,14 @@ class BuiltinInteger(Intrinsic):
 
 
 class String(Intrinsic):
+    def __init__(self, std=False, cc=False):
+        Intrinsic.__init__(self, "std::string" if std else "ccstring" if cc else "string")
+        self.is_cc = cc
+
+
+class CCString(Intrinsic):
     def __init__(self, std=False):
-        Intrinsic.__init__(self, "std::string" if std else "string")
+        Intrinsic.__init__(self, "ccstring")
 
 
 class Nullptr_t(Fundamental):
@@ -194,7 +209,7 @@ class Integer(Fundamental):
             self.size = " ".join(self.type.split()[1:])
 
     def IsFixed(self):
-        return self.size != "int"
+        return self.size != "int" and not self.type.endswith(" int") and type != "char" and not self.type.endswith(" char")
 
 
 class Float(Fundamental):
@@ -207,7 +222,8 @@ class Identifier():
     def __init__(self, parent_block, parent, string, valid_specifiers, tags_allowed=True):
         self.parent = parent_block
         self.meta = Metadata()
-        parent.specifiers = []
+        if parent:
+            parent.specifiers = []
         self.name = ""
         type = ["?"] # indexing safety
         type_found = False
@@ -218,7 +234,6 @@ class Identifier():
         self.value = []
 
         if string.count("*") > 2:
-            print(string)
             raise ParserError("multi-dimensional pointers to pointers are not supported: '%s'" % (" ".join(["".join(x) for x in string])))
         if string.count("[") > 1:
             raise ParserError("multi-dimensional arrays are not supported: '%s'" % (" ".join(["".join(x) for x in string])))
@@ -274,31 +289,54 @@ class Identifier():
                     if tags_allowed:
                         self.meta.input = True
                     else:
-                        raise ParserError("in/out tags not allowed on return value")
+                        raise ParserError("in/out tags not allowed here")
                 elif token[1:] == "OUT":
                     if tags_allowed:
                         self.meta.output = True
                     else:
-                        raise ParserError("in/out tags not allowed on return value")
+                        raise ParserError("in/out tags not allowed here")
                 elif token[1:] == "INDEX":
                     if tags_allowed:
                         self.meta.is_index = True
                     else:
-                        raise ParserError("@index tag not allowed on return value")
+                        raise ParserError("@index tag not allowed here")
                 elif token[1:] == "LENGTH":
                     self.meta.length = string[i + 1]
                     skip = 1
-                    continue
                 elif token[1:] == "MAXLENGTH":
                     if tags_allowed:
                         self.meta.maxlength = string[i + 1]
                     else:
-                        raise ParserError("@maxlength tag not allowed on return value")
+                        raise ParserError("@maxlength tag not allowed here")
                     skip = 1
-                    continue
+                elif token[1:] == "RESTRICT":
+                    if tags_allowed:
+                        self.meta.range = []
+                        for s in "".join(string[i + 1]).split(".."):
+                            try:
+                                if '.' not in s:
+                                    v = eval(s.lower().replace("k","*1024").replace("m","*1024*1024").replace("g","*1024*1024*1024"))
+                                else:
+                                    v = eval(s)
+                                self.meta.range.append(int(v))
+                            except:
+                                raise ParserError("failed to evaluate range in @restrict: '%s'" % s)
+                        if len(self.meta.range) == 2:
+                            if self.meta.range[0] > self.meta.range[1]:
+                                raise ParserError("invalid range in @restrict: %s > %s" % (self.meta.range[0], self.meta.range[1]))
+                        elif len(self.meta.range) == 1:
+                            self.meta.range.append(self.meta.range[0])
+                            self.meta.range[0] = 0
+                        else:
+                            raise ParserError("failed to parse range in @restrict: '%s'" % "".join(string[i + 1]))
+                    else:
+                        raise ParserError("@restrict tag not allowed here")
+                    skip = 1
                 elif token[1:] == "INTERFACE":
                     self.meta.interface = string[i + 1]
                     skip = 1
+                elif token[1:] == "OPAQUE":
+                    self.meta.decorators.append("opaque")
                 elif token[1:] == "PROPERTY":
                     self.meta.is_property = True
                 elif token[1:] == "BRIEF":
@@ -323,8 +361,13 @@ class Identifier():
                     self.meta.is_deprecated = True
                 elif token[1:] == "OBSOLETE":
                     self.meta.is_obsolete = True
+                elif token[1:] == "BITMASK":
+                    self.meta.decorators.append("bitmask")
                 elif token[1:] == "TEXT":
                     self.meta.text = "".join(string[i + 1])
+                    skip = 1
+                elif token[1:] == "ALT":
+                    self.meta.alt = "".join(string[i + 1])
                     skip = 1
                 else:
                     raise ParserError("invalid tag: " + token)
@@ -353,7 +396,8 @@ class Identifier():
 
             elif token in ["const", "volatile", "constexpr"]:
                 if token == "constexpr":
-                    parent.specifiers.append("constexpr")
+                    if parent:
+                        parent.specifiers.append("constexpr")
                     token = "const"
 
                 # put qualifiers in order
@@ -366,7 +410,8 @@ class Identifier():
 
             # include valid specifiers
             elif token in valid_specifiers:
-                parent.specifiers.append(token)
+                if parent:
+                    parent.specifiers.append(token)
 
             elif not type_found and not array:
                 # handle primitive type combinations...
@@ -432,7 +477,7 @@ class Identifier():
                 qualifiedT = "::" + T
 
                 # need full qualification if the class is a subclass
-                if tree.full_name.startswith(parent.full_name + "::"):
+                if parent and tree.full_name.startswith(parent.full_name + "::"):
                     if T.count("::") != tree.full_name.replace(parent.full_name, "").count("::"):
                         return
 
@@ -498,11 +543,13 @@ class Identifier():
                     self.type[i] = Type(Void())
                 elif type == "string":
                     self.type[i] = Type(String())
+                elif type == "ccstring":
+                    self.type[i] = Type(String(cc=True))
                 elif type == "std::string":
                     self.type[i] = Type(String(True))
                 elif type == "__stubgen_integer":
                     self.type[i] = Type(BuiltinInteger(True))
-                elif type == "__stubgen_unspecified_integer":
+                elif type == "__stubgen_undetermined_integer":
                     self.type[i] = Type(BuiltinInteger(False))
                 else:
                     found = []
@@ -546,6 +593,9 @@ class Identifier():
 
     def Proto(self):
         return str(self.Type())
+
+    def Signature(self):
+        return (self.Proto() + " " + self.name)
 
 
 def Evaluate(identifiers_):
@@ -604,13 +654,16 @@ def Evaluate(identifiers_):
 
     # attempt to parse the arithmetics...
     try:
-        x = [str(v.value) if (isinstance(v, (Variable, Enumerator)) and v.value) else str(v) for v in val]
+        x = [str(v.value) if (isinstance(v, (Variable, Enumerator)) and v.value != None) else str(v) for v in val]
         value = eval("".join(x))
     except:
         try:
             value = eval("".join(val))
         except:
-            value = val
+            try:
+                value = " ".join(val)
+            except:
+                value = val
 
     return value
 
@@ -695,17 +748,20 @@ class Type:
         self.type = basetype
         self.ref = Ref.VALUE
 
+    def IsVoid(self):
+        return (isinstance(self.type, Void) and not self.IsPointer() and not self.IsPointerToPointer())
+
     def IsConst(self):
-        return self.ref & Ref.CONST != 0
+        return (self.ref & Ref.CONST) != 0
 
     def IsVolatile(self):
-        return self.ref & Ref.VOLATILE != 0
+        return (self.ref & Ref.VOLATILE) != 0
 
     def IsPointer(self):
-        return self.ref & Ref.POINTER != 0
+        return (self.ref & Ref.POINTER) != 0
 
     def IsPointerToPointer(self):
-        return self.ref & Ref.POINTER_TO_POINTER != 0
+        return (self.ref & Ref.POINTER_TO_POINTER) != 0
 
     def IsConstPointer(self):
         return self.IsPointer() and self.IsConst()
@@ -714,16 +770,16 @@ class Type:
         return self.IsPointer() and self.IsVolatile()
 
     def IsReference(self):
-        return self.ref & Ref.REFERENCE != 0
+        return (self.ref & Ref.REFERENCE) != 0
 
     def IsRvalueReference(self):
-        return self.ref & Ref.RVALUE_REFERENCE
+        return (self.ref & Ref.RVALUE_REFERENCE) != 0
 
     def IsPointerToConst(self):
-        return self.ref & Ref.POINTER_TO_CONST
+        return (self.ref & Ref.POINTER_TO_CONST) != 0
 
     def IsPointerToVolatile(self):
-        return self.ref & Ref.POINTER_TO_VOLATILE
+        return (self.ref & Ref.POINTER_TO_VOLATILE) != 0
 
     def IsConstPointerToConst(self):
         return self.IsConst() and self.IsPointerToConst()
@@ -755,6 +811,9 @@ class Type:
     def TypeName(self):
         return self.type.Proto()
 
+    def TypeNameCV(self):
+        return self.type.Proto()
+
     def Resolve(self, ref = 0):
         if self.IsPointerToPointer() and ref & Ref.POINTER:
             raise ParserError("Too many pointers %s" % self)
@@ -767,21 +826,32 @@ class Type:
             type.ref |= ref
         return type
 
-    def CVString(self):
-        str = "const" if self.IsConst() else ""
-        str += " " if self.IsConst() and self.IsVolatile() else ""
-        str += "volatile" if self.IsVolatile() else ""
-        return str
+    def CVString(self, mask=""):
+        _str = "const " if (self.IsConst() and not self.IsPointer() and "nocv" not in mask) or (self.IsPointerToConst() and "nopcv" not in mask) else ""
+        _str += "volatile " if (self.IsVolatile() and not self.IsPointer() and "nocv" not in mask) or (self.IsPointerToVolatile() and "nopcv" not in mask) else ""
+        return _str.strip()
 
-    def Proto(self):
-        _str = "const " if ((self.IsConst() and not self.IsPointer()) or self.IsPointerToConst()) else ""
-        _str += "volatile " if (self.IsVolatile() and not self.IsPointer()) or self.IsPointerToVolatile() else ""
-        _str += self.TypeName()
-        _str += "*" if self.IsPointer() else ""
+    def PointerString(self, mask=""):
+        _str = "*" if self.IsPointer() else ""
         _str += "*" if self.IsPointerToPointer() else ""
-        _str += " const" if self.IsConstPointer() else ""
-        _str += " volatile" if self.IsVolatilePointer() else ""
-        _str += "&" if self.IsReference() else "&&" if self.IsRvalueReference() else ""
+        if "nocv" not in mask:
+            _str += " const" if self.IsConstPointer() else ""
+            _str += " volatile" if self.IsVolatilePointer() else ""
+        return _str
+
+    def ReferenceString(self):
+        _str = "&" if self.IsReference() else "&&" if self.IsRvalueReference() else ""
+        return _str
+
+    def Proto(self, mask=""):
+        _str = ""
+        _str += self.CVString(mask)
+        _str += " " if _str else ""
+        _str += self.TypeName()
+        if "noptr" not in mask:
+            _str += self.PointerString(mask)
+        if "noref" not in mask:
+            _str += self.ReferenceString()
         return _str
 
     def __str__(self):
@@ -792,11 +862,11 @@ class Type:
 
 
 def TypeStr(s):
-    return str(Undefined(s, "/* undefined */ ")) if not isinstance(s, Type) else str(s)
+    return str(Undefined(s, "/* undefined type  */")) if not isinstance(s, Type) else str(s)
 
 
 def ValueStr(s):
-    return str(s) if isinstance(s, int) else str(Undefined(s, "/* unparsable expression */ ")) if not isinstance(s, str) else s
+    return str(s) if isinstance(s, int) else (str(Undefined(s, "/* unparsable expression */ ")) if not isinstance(s, str) else s)
 
 
 # Holds typedef definition
@@ -810,18 +880,24 @@ class Typedef(Identifier, Name):
         self.is_iterator = self.parent.is_iterator if isinstance(self.parent, (Class, Typedef)) else False
 
     def Resolve(self, ref = 0):
-        type = self.type.Resolve(self.type.ref | ref)
+        if isinstance(self.type, Typedef):
+            type = self.type.Resolve(self.type.ref | ref)
+        else:
+            if isinstance(self.type, list):
+                type = self.type[0]
+            else:
+                type = copy.deepcopy(self.type)
+                type.ref |= ref
         return type
 
     def Proto(self):
         return self.full_name
 
     def __str__(self):
-        return "typedef %s %s" % (self.full_name, TypeStr(self.type))
+        return "typedef %s %s" % (TypeStr(self.type), self.full_name)
 
     def __repr__(self):
         return "typedef %s [= %s]" % (self.full_name, TypeStr(self.type.type))
-
 
 # Holds structs and classes
 class Class(Identifier, Block):
@@ -840,10 +916,21 @@ class Class(Identifier, Block):
         self.json_version = ""
         self.is_event = False
         self.is_extended = False
+        self.is_collapsed = False
+        self.is_compliant = False
         self.is_iterator = False
         self.sourcelocation = None
         self.type_name = name
         self.parent.classes.append(self)
+
+    def IsAbstract(self):
+        return any([m.IsPureVirtual() for m in self.methods])
+
+    def IsVirtual(self):
+        return any([m.IsVirtual() for m in self.methods])
+
+    def Inherits(self, class_name):
+        return any([(class_name == str(base[0])) for base in self.ancestors])
 
     def Proto(self):
         return self.full_name
@@ -879,12 +966,14 @@ class Union(Identifier, Block):
 
 # Holds enumeration blocks, including class enums
 class Enum(Identifier, Block):
-    def __init__(self, parent_block, name, is_scoped, type="int"):
+    def __init__(self, parent_block, name, is_scoped, type="int", bitmask=False):
         Identifier.__init__(self, parent_block, self, [type, name], [])
         Block.__init__(self, parent_block, name)
         self.items = []
         self.scoped = is_scoped
         self.parent.enums.append(self)
+        if bitmask:
+            self.meta.decorators.append("bitmask")
         self._last_value = 0 # used for auto-incrementation
 
     def Proto(self):
@@ -904,6 +993,11 @@ class Enum(Identifier, Block):
     def GetValue(self):
         return self._last_value
 
+    def Enumerator(self, name):
+        for item in self.items:
+            if item.name == name:
+                return item
+        return None
 
 # Holds functions
 class Function(Block, Name):
@@ -940,16 +1034,33 @@ class Function(Block, Name):
 
 
 # Holds variables and constants
+class Temporary(Identifier, Name):
+    def __init__(self, parent_block, string, value=[], valid_specifiers=["static", "extern", "register"]):
+        Identifier.__init__(self, parent_block, self, string, valid_specifiers)
+        Name.__init__(self, parent_block, self.name)
+        self.value = Evaluate(value) if value else None
+
+    def Proto(self):
+        return TypeStr(self.type)
+
+    def __str__(self):
+        return self.Proto()
+
+    def __repr__(self):
+        value = ValueStr(self.value) if self.value else None
+        return "variable %s %s '%s'%s" % (str(self.specifiers), TypeStr(self.type), str(self.name),
+                                          (" = " + value) if value else "")
+
 class Variable(Identifier, Name):
     def __init__(self, parent_block, string, value=[], valid_specifiers=["static", "extern", "register"]):
         Identifier.__init__(self, parent_block, self, string, valid_specifiers)
         Name.__init__(self, parent_block, self.name)
         self.value = Evaluate(value) if value else None
-        self.parent.vars
-        self.parent.vars.append(self)
+        if self.parent:
+            self.parent.vars.append(self)
 
     def Proto(self):
-        return "%s %s" % (TypeStr(self.type), self.name)
+        return TypeStr(self.type)
 
     def __str__(self):
         return self.Proto()
@@ -991,6 +1102,9 @@ class Method(Function):
     def IsPureVirtual(self):
         return "pure-virtual" in self.specifiers
 
+    def IsDestructor(self):
+        return isinstance(self, Destructor)
+
     def IsConst(self):
         return "const" in self.qualifiers
 
@@ -1013,8 +1127,16 @@ class Method(Function):
         _str += " = 0" if self.IsPureVirtual() else ""
         return _str
 
+    def Signature(self):
+        _str = "static " if self.IsStatic() else ""
+        _str += TypeStr(self.retval.type) if self.retval.type else ""
+        _str += (" " if str(self.retval) else "") + self.name
+        _str += "(%s)" % (", ".join([str(v) for v in self.vars]))
+        _str += " " + self.CVString() if self.CVString() else ""
+        return _str
+
     def __str__(self):
-        return self.Proto()
+        return self.Signature()
 
     def __repr__(self):
         cv = " " + self.CVString() if self.CVString() else ""
@@ -1072,7 +1194,7 @@ class Enumerator(Identifier, Name):
         Name.__init__(self, parent_enum, self.name)
         self.parent = parent_block
         self.value = parent_block.GetValue() if value == None else Evaluate(value)
-        self.autoValue = (value == None)
+        self.auto_value = (value == None)
         if isinstance(self.value, (int)):
             self.parent.SetValue(self.value)
         self.parent.items.append(self)
@@ -1134,7 +1256,7 @@ class InstantiatedTemplateClass(Class):
         s = []
         for i, _ in enumerate(self.params):
             s.append(self.params[i].name + " = " + str(self.args[i]))
-        _str = "template class %s<%s>" % (self.baseName.full_name, ", ".join([str(p) for p in self.params]))
+        _str = "/* instantiated */ template class %s<%s>" % (self.baseName.full_name, ", ".join([str(p) for p in self.params]))
         _str += " [with %s]" % (", ".join(s))
         return _str
 
@@ -1190,7 +1312,10 @@ class TemplateClass(Class):
         instance.ancestors = self.ancestors
         instance.specifiers = self.specifiers
         instance.is_json = self.is_json
+        instance.json_version = self.json_version
         instance.is_extended = self.is_extended
+        instance.is_collapsed = self.is_collapsed
+        instance.is_compliant = self.is_compliant
         instance.is_event = self.is_event
         instance.is_iterator = self.is_iterator
 
@@ -1298,6 +1423,7 @@ def __Tokenize(contents,log = None):
     tagtokens = []
     # check for special metadata within comments
     skipmode = False
+    omit_depth = 0
     for token in tokens:
         if token:
             if skipmode:
@@ -1306,7 +1432,7 @@ def __Tokenize(contents,log = None):
                 else:
                     continue
 
-            def __ParseParameterValue(string, tag, append = True):
+            def __ParseParameterValue(string, tag, mandatory = True, append = True):
                 formula = (r"(\"[^\"]+\")"
                            r"|(\'[^\']+\')"
                            r"|(\*/)|(::)|(==)|(!=)|(>=)|(<=)|(&&)|(\|\|)"
@@ -1316,17 +1442,18 @@ def __Tokenize(contents,log = None):
 
                 if append:
                     tagtokens.append(tag.upper())
+
                 length_str = string[string.index(tag) + len(tag):]
-                length_tokens = [
-                    s.strip() for s in re.split(formula, length_str, flags=re.MULTILINE)
-                    if isinstance(s, str) and len(s.strip())
-                ]
+                length_tokens = [s.strip() for s in re.split(formula, length_str, flags=re.MULTILINE) if isinstance(s, str) and len(s.strip())]
                 tokens = []
+
                 if len(length_tokens) > 0:
                     if length_tokens[0] == ':':
                         length_tokens = length_tokens[1:]
+
                     no_close_last = (length_tokens[0] == '(')
                     par_count = 0
+
                     for t in length_tokens:
                         if t == '(':
                             if tokens:
@@ -1346,8 +1473,13 @@ def __Tokenize(contents,log = None):
                             tokens.append(t)
                             if par_count == 0:
                                 break
+
                     if par_count != 0:
                         raise ParserError("unmatched parenthesis in %s expression" % tag)
+
+                if mandatory and not tokens:
+                    raise ParserError("Missing parameter to " + tag)
+
                 return tokens
 
             if ((token[:2] == "/*") and (token.count("/*") != token.count("*/"))):
@@ -1355,13 +1487,12 @@ def __Tokenize(contents,log = None):
 
             if ((token[:2] == "/*") or (token[:2] == "//")):
                 def _find(word, string):
-                    return re.compile(r"[ \r\n/\*]({0})([: \r\n\*]|$)".format(word)).search(string) != None
+                    return re.compile(r"[ \r\n/\*]({0})([-: \r\n\*]|$)".format(word)).search(string) != None
 
                 if _find("@stubgen", token):
                     if "@stubgen:skip" in token:
                         skipmode = True
-                        if log:
-                            log.Warn("The Use of @stubgen:skip is deprecated, use @stubgen:omit instead", ("%s(%i): " % (CurrentFile(), CurrentLine())))
+                        log.Warn("@stubgen:skip is deprecated, use @stubgen:omit instead", ("%s(%i)" % (CurrentFile(), CurrentLine())))
                     elif "@stubgen:omit" in token:
                         tagtokens.append("@OMIT")
                     elif "@stubgen:stub" in token:
@@ -1374,6 +1505,14 @@ def __Tokenize(contents,log = None):
                     skipmode = True
                 if _find("@omit", token):
                     tagtokens.append("@OMIT")
+                if _find("@_omit_start", token):
+                    if omit_depth == 0:
+                        tagtokens.append("@OMITSTART")
+                    omit_depth += 1
+                if _find("@_omit_end", token):
+                    omit_depth -= 1
+                    if omit_depth == 0:
+                        tagtokens.append("@OMITEND")
                 if _find("@stub", token):
                     tagtokens.append("@STUB")
                 if _find("@in", token):
@@ -1391,28 +1530,50 @@ def __Tokenize(contents,log = None):
                     tagtokens.append("@DEPRECATED")
                 if _find("@obsolete", token):
                     tagtokens.append("@OBSOLETE")
-                if _find("@json", token):
-                    tagtokens.append(__ParseParameterValue(token, "@json"))
                 if _find("@json:omit", token):
                     tagtokens.append("@JSON_OMIT")
+                elif _find("@json", token):
+                    tagtokens.append(__ParseParameterValue(token, "@json", False))
                 if _find("@event", token):
                     tagtokens.append("@EVENT")
                 if _find("@extended", token):
                     tagtokens.append("@EXTENDED")
+                    log.Warn("@extended keyword is deprecated, use @uncompliant:extended instead", ("%s(%i)" % (CurrentFile(), CurrentLine())))
+                if _find("@uncompliant", token):
+                    if "@uncompliant:extended" in token:
+                        tagtokens.append("@EXTENDED")
+                    elif "@uncompliant:collapsed" in token:
+                        tagtokens.append("@COLLAPSED")
+                    elif "@uncompliant-extended" in token:
+                        tagtokens.append("@EXTENDED")
+                    elif "@uncompliant-collapsed" in token:
+                        tagtokens.append("@COLLAPSED")
+                    else:
+                        raise ParserError("Invalid @uncompliant tag")
+                if _find("@compliant", token):
+                    tagtokens.append("@COMPLIANT")
                 if _find("@iterator", token):
                     tagtokens.append("@ITERATOR")
+                if _find("@bitmask", token):
+                    tagtokens.append("@BITMASK")
+                if _find("@opaque", token):
+                    tagtokens.append("@OPAQUE")
                 if _find("@sourcelocation", token):
                     tagtokens.append(__ParseParameterValue(token, "@sourcelocation"))
+                if _find("@alt", token):
+                    tagtokens.append(__ParseParameterValue(token, "@alt"))
                 if _find("@text", token):
                     tagtokens.append(__ParseParameterValue(token, "@text"))
                 if _find("@length", token):
                     tagtokens.append(__ParseParameterValue(token, "@length"))
                 if _find("@maxlength", token):
                     tagtokens.append(__ParseParameterValue(token, "@maxlength"))
+                if _find("@restrict", token):
+                    tagtokens.append(__ParseParameterValue(token, "@restrict"))
                 if _find("@interface", token):
                     tagtokens.append(__ParseParameterValue(token, "@interface"))
                 if _find("@define", token):
-                    defines.append(__ParseParameterValue(token, "@define", False))
+                    defines.append(__ParseParameterValue(token, "@define", False, False))
 
                 def FindDoxyString(tag, hasParam, string, tagtokens):
                     def EndOfTag(string, start):
@@ -1483,16 +1644,16 @@ current_file = "undefined"
 
 
 def CurrentFile():
-    if i > 0:
+    if i > 0 and i < len(files):
         # error during c++ parsing
         return files[i]
     else:
         # error during preprocessing
-        return current_file
+        return os.path.basename(current_file)
 
 
 def CurrentLine():
-    if i > 0:
+    if i > 0 and i < len(line_numbers):
         # error during c++ parsing
         return line_numbers[i]
     else:
@@ -1540,6 +1701,7 @@ def Parse(contents,log = None):
     next_block = None
     last_template_def = []
     min_index = 0
+    omit_mode = False
     omit_next = False
     stub_next = False
     json_next = False
@@ -1547,6 +1709,8 @@ def Parse(contents,log = None):
     exclude_next = False
     event_next = False
     extended_next = False
+    collapsed_next = False
+    compliant_next = False
     iterator_next = False
     sourcelocation_next = False
     in_typedef = False
@@ -1563,6 +1727,14 @@ def Parse(contents,log = None):
             omit_next = True
             tokens[i] = ";"
             i += 1
+        elif tokens[i] == "@OMITSTART":
+            omit_mode = True
+            tokens[i] = ";"
+            i += 1
+        elif tokens[i] == "@OMITEND":
+            omit_mode = False
+            tokens[i] = ";"
+            i += 1
         elif tokens[i] == "@STUB":
             stub_next = True
             tokens[i] = ";"
@@ -1574,14 +1746,24 @@ def Parse(contents,log = None):
             i += 2
         elif tokens[i] == "@JSON_OMIT":
             exclude_next = True
+            json_next = False
             tokens[i] = ';'
             i += 1
         elif tokens[i] == "@EVENT":
             event_next = True
+            json_next = False
             tokens[i] = ";"
             i += 1
         elif tokens[i] == "@EXTENDED":
             extended_next = True
+            tokens[i] = ";"
+            i += 1
+        elif tokens[i] == "@COLLAPSED":
+            collapsed_next = True
+            tokens[i] = ";"
+            i += 1
+        elif tokens[i] == "@COMPLIANT":
+            compliant_next = True
             tokens[i] = ";"
             i += 1
         elif tokens[i] == "@SOURCELOCATION":
@@ -1596,11 +1778,15 @@ def Parse(contents,log = None):
             next_block = None
             last_template_def = []
             min_index = 0
+            omit_mode = False
             omit_next = False
             stub_next = False
             json_next = False
+            json_version = ""
             event_next = False
             extended_next = False
+            collapsed_next = False
+            compliant_next = False
             iterator_next = False
             sourcelocation_next = False
             in_typedef = False
@@ -1635,6 +1821,9 @@ def Parse(contents,log = None):
 
         # Parse type alias...
         elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == "typedef":
+            if json_next or event_next or omit_next or stub_next or exclude_next:
+                raise ParserError("@json, @event and @stubgen tags are invalid here")
+
             j = i + 1
             while tokens[j] != ";":
                 j += 1
@@ -1644,8 +1833,7 @@ def Parse(contents,log = None):
                 event_next = False
             if not isinstance(typedef.type, Type) and typedef.type[0] == "enum":
                 # To be removed
-                if log:
-                    log.Warn("Support for typedefs to anonymous enums is deprecated, (%s(%i): " % (CurrentFile(), CurrentLine()))
+                log.Warn("support for typedefs to anonymous enums is deprecated, (%s(%i)" % (CurrentFile(), CurrentLine()))
                 in_typedef = True
                 i += 1
             elif not isinstance(typedef.type, Type) and (not isinstance(typedef.type, list) or typedef.type[0] in ["struct", "class", "union"]):
@@ -1655,6 +1843,9 @@ def Parse(contents,log = None):
 
         # Parse "using"...
         elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == "using":
+            if json_next or event_next or omit_next or stub_next or exclude_next:
+                raise ParserError("@json, @event and @stubgen tags are invalid here")
+
             if tokens[i + 1] != "namespace" and tokens[i + 2] == "=":
                 i += 2
                 j = i + 1
@@ -1705,29 +1896,47 @@ def Parse(contents,log = None):
 
             new_class._current_access = "private" if tokens[i] == "class" else "public"
 
+            if omit_mode:
+                new_class.omit = True
             if omit_next:
                 new_class.omit = True
                 omit_next = False
             elif stub_next:
                 new_class.stub = True
                 stub_next = False
+            if event_next or json_next:
+                new_class.is_collapsed = collapsed_next
+                new_class.is_extended = extended_next
+                new_class.is_compliant = compliant_next
             if json_next:
                 new_class.is_json = True
                 new_class.json_version = json_version
-                new_class.is_extended = extended_next
-                json_next = False
-                extended_next = False
             if event_next:
                 new_class.is_event = True
-                new_class.is_extended = extended_next
-                event_next = False
-                extended_next = False
             if iterator_next:
                 new_class.is_iterator = True
-                event_next = False
             if sourcelocation_next:
                 new_class.sourcelocation = sourcelocation_next
-                sourcelocation_next = False
+                sourcelocation_next = None
+            if extended_next:
+                if not json_next and not event_next:
+                    raise ParserError("@uncompliant:extended used without @json")
+                if collapsed_next:
+                    raise ParserError("@uncompliant:extended and @uncompliant:collapsed used together");
+            if collapsed_next and not json_next and not event_next:
+                raise ParserError("@uncompliant:collapsed used without @json")
+            if compliant_next:
+                if not json_next and not event_next:
+                    raise ParserError("@compliant used without @json")
+                if collapsed_next or extended_next:
+                    raise ParserError("@compliant and @uncompliant used together")
+
+            json_next = False
+            event_next = False
+            iterator_next = False
+            extended_next = False
+            collapsed_next = False
+            compliant_next = False
 
             if new_class.parent.omit:
                 # Inherit omiting...
@@ -1773,22 +1982,35 @@ def Parse(contents,log = None):
 
         # Parse enum definition...
         elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == "enum":
+            if json_next or event_next or omit_next or stub_next or exclude_next:
+                raise ParserError("@json, @event and @stubgen tags are invalid here")
+
             enum_name = ""
             enum_type = "int"
+            enum_bitmask = False
             is_scoped = False
-            if (tokens[i + 1] == "class") or (tokens[i + 1] == "struct"):
+            i += 1
+            if (tokens[i] == "class") or (tokens[i] == "struct"):
                 is_scoped = True
                 i += 1
-            if is_valid(tokens[i + 1]): # enum name given?
-                enum_name = tokens[i + 1]
+            if is_valid(tokens[i]): # enum name given?
+                enum_name = tokens[i]
                 i += 1
-            if tokens[i + 1] == ':':
-                enum_type = tokens[i + 2]
+            if tokens[i] == "@BITMASK":
+                enum_bitmask = True
+                i += 1
+            if tokens[i] == ':':
+                enum_type = tokens[i + 1]
                 i += 2
+            if tokens[i] == "@BITMASK":
+                enum_bitmask = True
+                i += 1
 
-            new_enum = Enum(current_block[-1], enum_name, is_scoped, enum_type)
-            next_block = new_enum
-            i += 1
+            new_enum = Enum(current_block[-1], enum_name, is_scoped, enum_type, enum_bitmask)
+            if tokens[i] != ';':
+                next_block = new_enum
+            else:
+                i += 1
 
         # Parse class access specifier...
         elif isinstance(current_block[-1], Class) and tokens[i] == ':':
@@ -1798,6 +2020,11 @@ def Parse(contents,log = None):
 
         # Parse function/method definition...
         elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == "(":
+            if event_next:
+                raise ParserError("@event tag is invalid here")
+
+            json_next = False
+
             # concatenate tokens to handle operators and destructors
             j = i - 1
             k = i - 1
@@ -1828,13 +2055,15 @@ def Parse(contents,log = None):
             if omit_next:
                 method.omit = True
                 omit_next = False
-            elif method.parent.omit:
-                method.omit = True
             elif stub_next:
                 method.stub = True
                 stub_next = False
-            elif method.parent.stub:
-                method.stub = True
+
+            if isinstance(method.parent,Namespace):
+                if method.parent.omit:
+                    method.omit = True
+                elif method.parent.stub:
+                    method.stub = True
 
             if exclude_next:
                 method.is_excluded = True
@@ -1876,7 +2105,7 @@ def Parse(contents,log = None):
                         assignment = param.index('=')
                         value = param[assignment + 1:]
                         param = param[0:assignment]
-                    if not current_block[-1].omit and not method.omit:
+                    if not method.omit:
                         Parameter(method, param, value)
                 i = j
                 j += 1
@@ -1922,7 +2151,7 @@ def Parse(contents,log = None):
         # Handle closing a compound block/composite type
         elif tokens[i] == '}':
             if isinstance(current_block[-1], Class) and (tokens[i + 1] != ';'):
-                raise ParserError("definitions following a class declaration is not supported (%s)" %
+                raise ParserError("missing semicolon after a class definition; variable definitions following a class are not supported (%s)" %
                                   current_block[-1].full_name)
             if len(current_block) > 1:
                 current_block.pop()
@@ -1933,6 +2162,9 @@ def Parse(contents,log = None):
 
         # Parse variables and member attributes
         elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == ';':
+            if json_next or event_next or omit_next or stub_next or exclude_next:
+                raise ParserError("@json, @event and @stubgen tags are invalid here")
+
             j = i - 1
             while j >= min_index and tokens[j] not in ['{', '}', ';', ":"]:
                 j -= 1
@@ -1946,6 +2178,9 @@ def Parse(contents,log = None):
 
         # Parse constants and member constants
         elif isinstance(current_block[-1], (Namespace, Class)) and (tokens[i] == '=') and (tokens[i - 1] != "operator"):
+            if json_next or event_next or omit_next or stub_next or exclude_next:
+                raise ParserError("@json, @event and @stubgen tags are invalid here")
+
             j = i - 1
             k = i + 1
             while tokens[j] not in ['{', '}', ';', ":"]:
@@ -1966,7 +2201,7 @@ def Parse(contents,log = None):
             enum = current_block[-1]
             j = i
             while True:
-                if tokens[i] in ['}', ',']:
+                if tokens[i] in ['}', ',', ';']:
 
                     # disentangle @text tag and enumerator value (if any)
                     value = None
@@ -2003,7 +2238,7 @@ def Parse(contents,log = None):
 # -------------------------------------------------------------------------
 
 
-def ReadFile(source_file, includePaths, quiet=False, initial=""):
+def ReadFile(source_file, includePaths, quiet=False, initial="", omit=False):
     contents = initial
     global current_file
     try:
@@ -2023,7 +2258,7 @@ def ReadFile(source_file, includePaths, quiet=False, initial=""):
                             if os.path.isfile(tryPath):
                                 prev = current_file
                                 current_file = source_file
-                                contents += ReadFile(tryPath, includePaths, False, contents)
+                                contents += ReadFile(tryPath, includePaths, False, contents, True)
                                 current_file = prev
                             else:
                                 raise LoaderError(source_file, "can't include '%s', file does not exist" % tryPath)
@@ -2038,7 +2273,7 @@ def ReadFile(source_file, includePaths, quiet=False, initial=""):
                                 if os.path.isfile(tryPath):
                                     prev = current_file
                                     current_file = source_file
-                                    contents += ReadFile(tryPath, includePaths, True, contents)
+                                    contents += ReadFile(tryPath, includePaths, True, contents, True)
                                     current_file = prev
                                     found = True
                             if not found:
@@ -2049,7 +2284,11 @@ def ReadFile(source_file, includePaths, quiet=False, initial=""):
                     break
 
             contents += "// @_file:%s\n" % source_file
+            if omit:
+                contents += "// @_omit_start\n"
             contents += file_content
+            if omit:
+                contents += "// @_omit_end\n"
             return contents
     except FileNotFoundError:
         if not quiet:
@@ -2068,6 +2307,7 @@ def ParseFiles(source_files, includePaths = [], log = None):
         if source_file:
             quiet = (source_file[0] == "@")
             contents += ReadFile((source_file[1:] if quiet else source_file), includePaths, quiet, "")
+
     return Parse(contents,log)
 
 
@@ -2108,7 +2348,7 @@ def DumpTree(tree, ind=0):
 # entry point
 
 if __name__ == "__main__":
-    tree = ParseFile(sys.argv[1], sys.argv[2:])
+    tree = ParseFiles(["default.h", sys.argv[1]], sys.argv[2:])
     if isinstance(tree, Namespace):
         DumpTree(tree)
     else:

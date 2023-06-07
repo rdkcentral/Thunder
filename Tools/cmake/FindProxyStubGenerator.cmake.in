@@ -1,7 +1,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2020 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,9 +30,9 @@ function(ProxyStubGenerator)
         message(FATAL_ERROR "ProxyStubGenerator path ${PROXYSTUB_GENERATOR} invalid.")
     endif()
 
-    set(optionsArgs SCAN_IDS TRACES OLD_CPP NO_WARNINGS KEEP VERBOSE)
-    set(oneValueArgs INCLUDE NAMESPACE INDENT OUTDIR)
-    set(multiValueArgs INPUT INCLUDE_PATH)
+    set(optionsArgs SECURE TRACES VERBOSE NO_WARNINGS KEEP FORCE_GENERATE)
+    set(oneValueArgs NAMESPACE OUTDIR)
+    set(multiValueArgs INPUT INCLUDE INCLUDE_PATH)
 
     cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -44,46 +44,42 @@ function(ProxyStubGenerator)
 
     set(_execute_command ${PROXYSTUB_GENERATOR})
 
-    if(Argument_SCAN_IDS)
-        list(APPEND _execute_command  "--scan-ids")
-    endif()
-
-    if(Argument_TRACES)
-        list(APPEND _execute_command  "--traces")
-    endif()
-
-    if(Argument_OLD_CPP)
-        list(APPEND _execute_command  "--old-cpp")
+    if(Argument_SECURE)
+        list(APPEND _execute_command  "--secure")
     endif()
 
     if(Argument_NO_WARNINGS)
         list(APPEND _execute_command  "--no-warnings")
     endif()
 
-    if(Argument_KEEP)
-        list(APPEND _execute_command  "--keep")
+    if(Argument_TRACES)
+        list(APPEND _execute_command  "--traces")
     endif()
 
     if(Argument_VERBOSE)
         list(APPEND _execute_command  "--verbose")
     endif()
 
-    if (Argument_INCLUDE)
-        list(APPEND _execute_command  "-i" "${Argument_INCLUDE}")
+    if(Argument_KEEP)
+        list(APPEND _execute_command  "--keep")
     endif()
 
-    if (Argument_NAMESPACE)
+    if(Argument_FORCE_GENERATE)
+        list(APPEND _execute_command  "--force")
+    endif()
+
+    if(Argument_NAMESPACE)
         list(APPEND _execute_command  "--namespace" "${Argument_NAMESPACE}")
     endif()
 
-    if (Argument_INDENT)
-        list(APPEND _execute_command  "--indent" "${Argument_INDENT}")
-    endif()
-
-    if (Argument_OUTDIR)
+    if(Argument_OUTDIR)
         file(MAKE_DIRECTORY "${Argument_OUTDIR}")
         list(APPEND _execute_command  "--outdir" "${Argument_OUTDIR}")
     endif()
+
+    foreach(_include ${Argument_INCLUDE})
+        list(APPEND _execute_command  "-I" "${_include}")
+    endforeach(_include)
 
     foreach(_include_path ${Argument_INCLUDE_PATH})
         list(APPEND _execute_command  "-I" "${_include_path}")

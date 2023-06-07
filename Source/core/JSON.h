@@ -1616,6 +1616,11 @@ namespace Core {
                 return (_default);
             }
 
+            inline operator const string() const
+            {
+                return (Value());
+            }
+
             void Null(const bool enabled)
             {
                 if (enabled == true)

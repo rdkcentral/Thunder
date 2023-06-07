@@ -25,35 +25,48 @@
 
 #pragma once
 
+#include <stdint.h>
+
 /* @define EXTERNAL */
-/* @define DEPRACETED */
+/* @define DEPRECATED */
 
 typedef char TCHAR;
 typedef wchar_t WCHAR;
 
 namespace std {
-  typedef __stubgen_unspecified_integer uintmax_t;
-  typedef __stubgen_unspecified_integer intmax_t;
-  typedef __stubgen_unspecified_integer uintptr_t;
-  typedef __stubgen_unspecified_integer intptr_t;
-
-  typedef __stubgen_unspecified_integer size_t;
-  typedef __stubgen_unspecified_integer ssize_t;
-  typedef __stubgen_unspecified_integer time_t;
-  typedef __stubgen_unspecified_integer clock_t;
+  typedef __stubgen_undetermined_integer uintmax_t;
+  typedef __stubgen_undetermined_integer intmax_t;
+  typedef __stubgen_undetermined_integer uintptr_t;
+  typedef __stubgen_undetermined_integer intptr_t;
+  typedef __stubgen_undetermined_integer size_t;
+  typedef __stubgen_undetermined_integer ssize_t;
+  typedef __stubgen_undetermined_integer time_t;
+  typedef __stubgen_undetermined_integer clock_t;
 }
 
 namespace WPEFramework {
 
   namespace Core {
     typedef __stubgen_integer instance_id;
-    
-    class IUnknown;
+    typedef uint32_t hresult;
+
+    struct IUnknown {
+      enum {
+        ID_OFFSET_INTERNAL = 0
+      };
+    };
   }
 
   namespace PluginHost {
-    class IShell;
-    class ISubSystem;
+    class IShell {
+      enum state : uint8_t;
+      enum reason : uint8_t;
+    };
+
+    class ISubSystem {
+      enum subsystem : uint32_t;
+    };
+
     class IPlugin {
       class INotification;
     };
