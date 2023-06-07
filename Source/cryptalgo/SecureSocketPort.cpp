@@ -48,6 +48,62 @@ namespace WPEFramework {
 
 namespace Crypto {
 
+    static Core::Time ASN1_ToTime(const ASN1_TIME* input)
+    {
+        Core::Time result;
+
+        if (input != nullptr) {
+            uint8_t index = 0;
+            uint16_t year = 0;
+            const char* textVersion = reinterpret_cast<const char*>(input->data);
+
+            if (input->type == V_ASN1_UTCTIME)
+            {
+                year = (textVersion[0] - '0') * 10 + (textVersion[1] - '0');
+                year += (year < 70 ? 2000 : 1900);
+                textVersion = &textVersion[2];
+            }
+            else if (input->type == V_ASN1_GENERALIZEDTIME)
+            {
+                year = (textVersion[0] - '0') * 1000 + (textVersion[1] - '0') * 100 + (textVersion[2] - '0') * 10 + (textVersion[3] - '0');
+                textVersion = &textVersion[4];
+            }
+            uint8_t month = ((textVersion[0] - '0') * 10 + (textVersion[1] - '0')) - 1;
+            uint8_t day = (textVersion[2] - '0') * 10 + (textVersion[3] - '0');
+            uint8_t hour = (textVersion[4] - '0') * 10 + (textVersion[5] - '0');
+            uint8_t minutes = (textVersion[6] - '0') * 10 + (textVersion[7] - '0');
+            uint8_t seconds = (textVersion[8] - '0') * 10 + (textVersion[9] - '0');
+
+            /* Note: we did not adjust the time based on time zone information */
+            result = Core::Time(year, month, day, hour, minutes, seconds, 0, false);
+        }
+        return (result);
+    }
+
+string SecureSocketPort::Certificate::Issuer() const {
+    char buffer[1024];
+    buffer[0] = '\0';
+    X509_NAME_oneline(X509_get_issuer_name(_certificate), buffer, sizeof(buffer));
+
+    return (string(buffer));
+}
+
+string SecureSocketPort::Certificate::Subject() const {
+    char buffer[1024];
+    buffer[0] = '\0';
+    X509_NAME_oneline(X509_get_subject_name(_certificate), buffer, sizeof(buffer));
+
+    return (string(buffer));
+}
+
+Core::Time SecureSocketPort::Certificate::ValidFrom() const {
+    return(ASN1_ToTime(X509_get0_notBefore(_certificate)));
+}
+
+Core::Time SecureSocketPort::Certificate::ValidTill() const {
+    return(ASN1_ToTime(X509_get0_notAfter(_certificate)));
+}
+
 SecureSocketPort::Handler::~Handler() {
     if(_ssl != nullptr) {
         SSL_free(static_cast<SSL*>(_ssl));
@@ -58,10 +114,11 @@ SecureSocketPort::Handler::~Handler() {
 }
 
 uint32_t SecureSocketPort::Handler::Initialize() {
-    _context = SSL_CTX_new(SSLv23_method());
+    _context = SSL_CTX_new(TLS_method());
     
     _ssl = SSL_new(static_cast<SSL_CTX*>(_context));
     SSL_set_fd(static_cast<SSL*>(_ssl), static_cast<Core::IResource&>(*this).Descriptor());
+    SSL_CTX_set_options(static_cast<SSL_CTX*>(_context), SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
 
     return (Core::SocketPort::Initialize());
 }
@@ -79,11 +136,41 @@ int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t 
     return (SSL_write(static_cast<SSL*>(_ssl), buffer, length));
 }
 
+
+uint32_t SecureSocketPort::Handler::Open(const uint32_t waitTime) {
+    return (Core::SocketPort::Open(waitTime));
+}
+
 uint32_t SecureSocketPort::Handler::Close(const uint32_t waitTime) {
     if (_ssl != nullptr) {
         SSL_shutdown(static_cast<SSL*>(_ssl));
     }
+    _handShaking = IDLE;
     return(Core::SocketPort::Close(waitTime));
+}
+
+void SecureSocketPort::Handler::ValidateHandShake() {
+    /* Step 1: verify a server certificate was presented during the negotiation */
+    X509* cert = SSL_get_peer_certificate(static_cast<SSL*>(_ssl));
+    if (cert != nullptr) {
+        Core::SocketPort::Lock();
+
+        if ((_callback == nullptr) || (_callback->Validate(Certificate(cert)) == true)) {
+            _handShaking = CONNECTED;
+            Core::SocketPort::Unlock();
+            _parent.StateChange();
+        }
+        else {
+            _handShaking = IDLE;
+            Core::SocketPort::Unlock();
+            SetError();
+        }
+        X509_free(cert);
+    }
+    else {
+        _handShaking = IDLE;
+        SetError();
+    }
 }
 
 void SecureSocketPort::Handler::Update() {
@@ -91,10 +178,10 @@ void SecureSocketPort::Handler::Update() {
         int result;
 
         if (_handShaking == IDLE) {
+            SSL_set_tlsext_host_name(static_cast<SSL*>(_ssl), RemoteNode().HostName().c_str());
             result = SSL_connect(static_cast<SSL*>(_ssl));
             if (result == 1) {
-                _handShaking = CONNECTED;
-                _parent.StateChange();
+                ValidateHandShake();
             }
             else {
                 result = SSL_get_error(static_cast<SSL*>(_ssl), result);
@@ -105,8 +192,7 @@ void SecureSocketPort::Handler::Update() {
         }
         else if (_handShaking == EXCHANGE) {
             if (SSL_do_handshake(static_cast<SSL*>(_ssl)) == 1) {
-                _handShaking = CONNECTED;
-                _parent.StateChange();
+                ValidateHandShake();
             }
         }
     }
