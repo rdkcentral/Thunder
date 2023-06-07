@@ -49,6 +49,7 @@ add_library(${TARGET} SHARED
         SystemInfo.cpp
         TextReader.cpp
         Thread.cpp
+        ThreadPool.cpp
         Time.cpp
         Trace.cpp
         WorkerPool.cpp
@@ -178,6 +179,11 @@ endif()
 if (BLUETOOTH)
     target_compile_definitions(${TARGET} PUBLIC CORE_BLUETOOTH)
     message(STATUS "Enable bluetooth support.")
+endif()
+
+if (CRASH_MONITOR AND __LINUX__)
+    target_compile_definitions(${TARGET} PUBLIC THUNDER_CRASH_HANDLER)
+    message(STATUS "Enable Crash Monitor")
 endif()
 
 # ==================================================================================

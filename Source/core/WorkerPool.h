@@ -173,6 +173,13 @@ namespace Core {
         }
 
     public:
+
+#ifdef THUNDER_CRASH_HANDLER
+        void CreateCrashMonitor()
+        {
+            _threadPool.CreateCrashMonitor();
+        }
+#endif /* THUNDER_CRASH_HANDLER */
         void Submit(const Core::ProxyType<Core::IDispatch>& job) override
         {
             _threadPool.Submit(job, Core::infinite);
@@ -246,6 +253,12 @@ namespace Core {
         }
 
     protected:
+#ifdef THUNDER_CRASH_HANDLER
+        ThreadPool& GetThreadPool()
+        {
+            return (_threadPool);
+        }
+#endif /* THUNDER_CRASH_HANDLER */
         inline void Shutdown()
         {
             _threadPool.Queue().Disable();

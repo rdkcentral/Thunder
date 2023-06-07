@@ -162,6 +162,56 @@ namespace PluginHost
         const string _controllerName;
     };
 
+#ifdef THUNDER_CRASH_HANDLER
+    void Server::WorkerPoolImplementation::UpdateRequestsList(Core::IDispatch* dispatchRequestJob,  const string& jsonString)
+    {
+       _adminLock.Lock();
+       _requestStringList.emplace_back(dispatchRequestJob, jsonString);
+       _adminLock.Unlock();
+    }
+
+    void Server::WorkerPoolImplementation::Dispatcher::SetCrashMonitor(Core::ThreadPool::ICrashMonitor* crashMonitor)
+    {
+        ASSERT(NULL != crashMonitor);
+        ASSERT(NULL == _crashMonitor);
+        _crashMonitor = crashMonitor;
+    }
+
+    void Server::WorkerPoolImplementation::Dispatcher::StoreRequestString(Core::IDispatch* job)
+    {
+        _requestListLock.Lock();
+        auto ptr = _requestList.cbegin();
+
+        while (ptr != _requestList.cend())
+        {
+            if(ptr->iDispatchJob == job)
+            {
+                if (!ptr->requestString.empty())
+                {
+                    ASSERT(NULL != _crashMonitor);
+
+                    if (_crashMonitor)
+                    {
+                        _crashMonitor->StoreRequestString(Core::Thread::ThreadId(), ptr->requestString);
+                    }
+                    else
+                    {
+ #ifndef __WINDOWS__
+                        syslog(LOG_NOTICE, "_crashMonitor is NULL");
+ #endif
+                    }
+                }
+
+                ptr = _requestList.erase(ptr);
+                break;
+            }
+            ptr++;
+        }
+
+        _requestListLock.Unlock();
+    }
+#endif /* THUNDER_CRASH_HANDLER */
+
     void Server::WorkerPoolImplementation::Dispatcher::Dispatch(Core::IDispatch* job) /* override */ {
     #ifdef __CORE_EXCEPTION_CATCHING__
         string callsign(_T("Unknown"));
@@ -173,6 +223,9 @@ namespace PluginHost
         WARNING_REPORTING_THREAD_SETCALLSIGN(callsign.c_str());
 
         try {
+#ifdef THUNDER_CRASH_HANDLER
+            StoreRequestString(job);
+#endif /* THUNDER_CRASH_HANDLER */
             job->Dispatch();
         }
         catch (const std::exception& type) {
@@ -182,6 +235,9 @@ namespace PluginHost
             Logging::DumpException(_T("Unknown"));
         }
     #else
+#ifdef THUNDER_CRASH_HANDLER
+        StoreRequestString(job);
+#endif /* THUNDER_CRASH_HANDLER */
         job->Dispatch();
     #endif
     }
