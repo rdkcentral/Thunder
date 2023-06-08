@@ -183,7 +183,8 @@ void SecureSocketPort::Handler::ValidateHandShake() {
 
         Certificate certificate(x509cert, static_cast<SSL*>(_ssl));
 
-        // Step 2: Validate certificate - use custom IValidator instance if available
+        // Step 2: Validate certificate - use custom IValidator instance if available or if self signed
+        // certificates are needed :-)
         string validationError;
         if (_callback && _callback->Validate(certificate) == true) {
             _handShaking = CONNECTED;
