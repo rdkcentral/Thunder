@@ -23,6 +23,7 @@
 
 struct x509_store_ctx_st;
 struct x509_st;
+struct ssl_st;
 
 namespace WPEFramework {
 namespace Crypto {
@@ -35,8 +36,9 @@ namespace Crypto {
             Certificate(Certificate&&) = delete;
             Certificate(const Certificate&) = delete;
 
-            Certificate(const x509_st* certificate)
-                : _certificate(certificate) {
+            Certificate(x509_st* certificate, const ssl_st* context)
+                : _certificate(certificate)
+                , _context(context) {
             }
             ~Certificate() = default;
 
@@ -45,9 +47,12 @@ namespace Crypto {
             string Subject() const;
             Core::Time ValidFrom() const;
             Core::Time ValidTill() const;
+            bool ValidHostname(const string& expectedHostname) const;
+            bool Verify(string& errorMsg) const;
 
         private:
-            const x509_st* _certificate;
+            x509_st* _certificate;
+            const ssl_st* _context;
         };
         struct IValidator {
             virtual ~IValidator() = default;
@@ -71,7 +76,7 @@ namespace Crypto {
 
             template <typename... Args>
             Handler(SecureSocketPort& parent, Args&&... args)
-                : Core::SocketPort(args...) 
+                : Core::SocketPort(args...)
                 , _parent(parent)
                 , _context(nullptr)
                 , _ssl(nullptr)
