@@ -1,8 +1,6 @@
 # Worker Pool
 
-One of the most underused functionalities in Thunder that we believe needs to be addressed as soon as possible is Worker Pool. Multiple examples can be found across many repositories where it is, in fact, properly utilized, but there are also plenty of plugins that do not apply this feature, while in the meantime using other ways to create threads, which are far less efficient on many fronts. The goal of creating this document is to spread the knowledge about features that are not used enough just like Worker Pool, because the main reason why it is not utilized to its fullest extent is probably the fact that many developers do not know about such a feature being already implemented in Thunder. Before we jump into explaining the details, it is probably a
-good idea to briefly describe multithreading and simple ways to create threads, so that later it will be possible to show the advantages of
-using the Worker Pool.
+One of the most underused functionalities in Thunder that we believe needs to be addressed as soon as possible is Worker Pool. Multiple examples can be found across many repositories where it is, in fact, properly utilized, but there are also plenty of plugins that do not apply this feature, while in the meantime using other ways to create threads, which are far less efficient on many fronts. The goal of creating this document is to spread the knowledge about features that are not used enough just like Worker Pool, because the main reason why it is not utilized to its fullest extent is probably the fact that many developers do not know about such a feature being already implemented in Thunder. Before we jump into explaining the details, it is probably a good idea to briefly describe multithreading and simple ways to create threads, so that later it will be possible to show the advantages of using the Worker Pool.
 
 ## Multithreading
 

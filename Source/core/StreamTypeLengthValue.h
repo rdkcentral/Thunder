@@ -355,9 +355,10 @@ POP_WARNING()
         }
         inline uint32_t Flush()
         {
+            _channel.Flush();
+
             _responses.Lock();
 
-            _channel.Flush();
             _responses.Flush();
             _buffer.Flush();
 
