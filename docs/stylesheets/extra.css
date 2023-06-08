@@ -1,0 +1,9 @@
+/* Make page slightly wider that default */
+.md-grid {
+    max-width: 65rem;
+}
+
+/* Slightly smaller than default */
+.md-typeset {
+    font-size: .75rem;
+}
