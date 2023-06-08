@@ -20,6 +20,7 @@
 #include "SecureSocketPort.h"
 
 #include <openssl/ssl.h>
+#include <openssl/x509v3.h>
 
 #ifndef __WINDOWS__
 namespace {
@@ -104,6 +105,21 @@ Core::Time SecureSocketPort::Certificate::ValidTill() const {
     return(ASN1_ToTime(X509_get0_notAfter(_certificate)));
 }
 
+bool SecureSocketPort::Certificate::ValidHostname(const string& expectedHostname) const {
+    return (X509_check_host(_certificate, expectedHostname.data(), expectedHostname.size(), 0, nullptr) == 1);
+}
+
+bool SecureSocketPort::Certificate::Verify(string& errorMsg) const {
+    long error = SSL_get_verify_result(_context);
+
+    if (error != X509_V_OK) {
+        errorMsg = X509_verify_cert_error_string(error);
+    }
+
+    return error == X509_V_OK;
+}
+
+
 SecureSocketPort::Handler::~Handler() {
     if(_ssl != nullptr) {
         SSL_free(static_cast<SSL*>(_ssl));
@@ -114,13 +130,23 @@ SecureSocketPort::Handler::~Handler() {
 }
 
 uint32_t SecureSocketPort::Handler::Initialize() {
+    uint32_t success = Core::ERROR_NONE;
+
     _context = SSL_CTX_new(TLS_method());
-    
+
     _ssl = SSL_new(static_cast<SSL_CTX*>(_context));
     SSL_set_fd(static_cast<SSL*>(_ssl), static_cast<Core::IResource&>(*this).Descriptor());
     SSL_CTX_set_options(static_cast<SSL_CTX*>(_context), SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
 
-    return (Core::SocketPort::Initialize());
+    // Trust the same certificates as any other application
+    if (SSL_CTX_set_default_verify_paths(static_cast<SSL_CTX*>(_context)) == 1) {
+        success = Core::SocketPort::Initialize();
+    } else {
+        TRACE_L1("OpenSSL failed to load certificate store");
+        success = Core::ERROR_GENERAL;
+    }
+
+    return success;
 }
 
 int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length) const {
@@ -150,24 +176,35 @@ uint32_t SecureSocketPort::Handler::Close(const uint32_t waitTime) {
 }
 
 void SecureSocketPort::Handler::ValidateHandShake() {
-    /* Step 1: verify a server certificate was presented during the negotiation */
-    X509* cert = SSL_get_peer_certificate(static_cast<SSL*>(_ssl));
-    if (cert != nullptr) {
+    // Step 1: verify a server certificate was presented during the negotiation
+    X509* x509cert = SSL_get_peer_certificate(static_cast<SSL*>(_ssl));
+    if (x509cert != nullptr) {
         Core::SocketPort::Lock();
 
-        if ((_callback == nullptr) || (_callback->Validate(Certificate(cert)) == true)) {
+        Certificate certificate(x509cert, static_cast<SSL*>(_ssl));
+
+        // Step 2: Validate certificate - use custom IValidator instance if available or if self signed
+        // certificates are needed :-)
+        string validationError;
+        if (_callback && _callback->Validate(certificate) == true) {
             _handShaking = CONNECTED;
             Core::SocketPort::Unlock();
             _parent.StateChange();
-        }
-        else {
+        } else if (certificate.Verify(validationError) && certificate.ValidHostname(RemoteNode().HostName())) {
+            _handShaking = CONNECTED;
+            Core::SocketPort::Unlock();\
+            _parent.StateChange();
+        } else {
+            if (!validationError.empty()) {
+                TRACE_L1("OpenSSL certificate validation error for %s: %s", certificate.Subject().c_str(), validationError.c_str());
+            }
             _handShaking = IDLE;
             Core::SocketPort::Unlock();
             SetError();
         }
-        X509_free(cert);
-    }
-    else {
+
+        X509_free(x509cert);
+    } else {
         _handShaking = IDLE;
         SetError();
     }
