@@ -21,10 +21,40 @@
 
 #include "Module.h"
 
+struct x509_store_ctx_st;
+struct x509_st;
+
 namespace WPEFramework {
 namespace Crypto {
 
     class EXTERNAL SecureSocketPort : public Core::IResource {
+    public:
+        class EXTERNAL Certificate {
+        public:
+            Certificate() = delete;
+            Certificate(Certificate&&) = delete;
+            Certificate(const Certificate&) = delete;
+
+            Certificate(const x509_st* certificate)
+                : _certificate(certificate) {
+            }
+            ~Certificate() = default;
+
+        public:
+            string Issuer() const;
+            string Subject() const;
+            Core::Time ValidFrom() const;
+            Core::Time ValidTill() const;
+
+        private:
+            const x509_st* _certificate;
+        };
+        struct IValidator {
+            virtual ~IValidator() = default;
+
+            virtual bool Validate(const Certificate& certificate) const = 0;
+        };
+
     private:
         class EXTERNAL Handler : public Core::SocketPort {
         private:
@@ -35,6 +65,7 @@ namespace Crypto {
             };
 
         public:
+            Handler(Handler&&) = delete;
             Handler(const Handler&) = delete;
             Handler& operator=(const Handler&) = delete;
 
@@ -44,6 +75,7 @@ namespace Crypto {
                 , _parent(parent)
                 , _context(nullptr)
                 , _ssl(nullptr)
+                , _callback(nullptr)
                 , _handShaking(IDLE) {
             }
             ~Handler();
@@ -54,6 +86,7 @@ namespace Crypto {
             int32_t Read(uint8_t buffer[], const uint16_t length) const override;
             int32_t Write(const uint8_t buffer[], const uint16_t length) override;
 
+            uint32_t Open(const uint32_t waitTime);
             uint32_t Close(const uint32_t waitTime);
 
             // Methods to extract and insert data into the socket buffers
@@ -68,21 +101,39 @@ namespace Crypto {
             // Signal a state change, Opened, Closed or Accepted
             void StateChange() override {
 
-                ASSERT (_context != nullptr);
+                ASSERT(_context != nullptr);
                 Update();
+            };
+            inline uint32_t Callback(IValidator* callback) {
+                uint32_t result = Core::ERROR_ILLEGAL_STATE;
+
+                Core::SocketPort::Lock();
+
+                ASSERT((callback == nullptr) || (_callback == nullptr));
+
+                if ((callback == nullptr) || (_callback == nullptr)) {
+                    _callback = callback;
+                    result = Core::ERROR_NONE;
+                }
+                Core::SocketPort::Unlock();
+
+                return (result);
             }
 
         private:
             void Update();
+            void ValidateHandShake();
  
         private:
             SecureSocketPort& _parent;
             void* _context;
             void* _ssl;
+            IValidator* _callback;
             mutable state _handShaking;
         };
 
     public:
+        SecureSocketPort(SecureSocketPort&&) = delete;
         SecureSocketPort(const SecureSocketPort&) = delete;
         SecureSocketPort& operator=(const SecureSocketPort&) = delete;
 
@@ -125,6 +176,10 @@ namespace Crypto {
         {
             _handler.RemoteNode(node);
         }
+        inline const Core::NodeId& RemoteNode() const
+        {
+            return (_handler.RemoteNode());
+        }
 
         inline uint32_t Open(const uint32_t waitTime) {
             return(_handler.Open(waitTime));
@@ -134,6 +189,9 @@ namespace Crypto {
         }
         inline void Trigger() {
             _handler.Trigger();
+        }
+        inline uint32_t Callback(IValidator* callback) {
+            return (_handler.Callback(callback));
         }
 
         //
