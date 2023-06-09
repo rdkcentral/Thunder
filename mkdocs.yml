@@ -13,6 +13,7 @@ nav:
       - Linux Build: introduction/build_linux.md
       - Windows Build: introduction/build_windows.md
       - Configuration: introduction/config.md
+      - Basic Usage: introduction/usage.md
     - Architecture:
       - Overview: introduction/architecture/overview.md
       - Plugin Execution Modes: introduction/architecture/plugin_modes.md
@@ -88,6 +89,7 @@ theme:
     - toc.follow
     - navigation.top
     - content.code.copy
+    - content.code.annotate
   icon:
     repo: fontawesome/brands/github
   palette:
