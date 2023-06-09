@@ -3704,7 +3704,7 @@ POP_WARNING()
                     }
                     string message;
                     _element->ToString(message);
-                    return (Core::Format(_T("{ \"type\": \"WS\", \"callsign\": \"%s\", \"message\": %s }"), Callsign(), message.c_str()));
+                    return (Core::Format(_T("{ \"type\": \"WS\", \"callsign\": \"%s\", \"message\": %s }"), Callsign().c_str(), message.c_str()));
                 }
 
             private:
