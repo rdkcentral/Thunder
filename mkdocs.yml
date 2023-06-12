@@ -27,12 +27,12 @@ nav:
     - Interfaces:
       - Interface-Driven Development: plugin/interfaces/interfaces.md
       - Documentation generation: plugin/interfaces/docs.md
+    - Configuration: plugin/config.md
     - Error Handling: plugin/errors.md
     - Versioning: plugin/versioning.md
     - Logging:
       - Logging & Tracing: plugin/logging.md
       - Warning Reporting: plugin/warning-reporting.md
-    - Configuration: plugin/config.md
     - Subsystems: plugin/subsystems.md
     - ProxyPool: plugin/proxypool.md
     - Private COM-RPC : plugin/private-comrpc.md
@@ -72,6 +72,11 @@ markdown_extensions:
   - admonition
   - pymdownx.details
   - def_list
+  - footnotes
+  - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid

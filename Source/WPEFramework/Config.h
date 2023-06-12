@@ -25,7 +25,10 @@
 namespace WPEFramework {
 
 namespace PluginHost {
-
+    /**
+     * IMPORTANT: If updating this class to add/remove/modify configuration options, ensure
+     * the documentation in docs/introduction/config.md is updated to reflect the changes!
+    */
     class EXTERNAL Config {
     private:
         class Substituter {
