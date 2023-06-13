@@ -257,7 +257,6 @@ namespace PluginHost {
                 Core::JSON::Boolean OutputEnabled;
             };
 
-
             class Observables : public Core::JSON::Container {
             public:
                 Observables& operator= (const Observables&);

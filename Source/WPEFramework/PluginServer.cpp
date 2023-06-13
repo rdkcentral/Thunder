@@ -426,6 +426,13 @@ namespace PluginHost
                         _jsonrpc->Activate(this);
                     }
 
+                    if (_external.Connector().empty() == false) {
+                        uint32_t result = _external.Open(0);
+                        if ((result != Core::ERROR_NONE) && (result != Core::ERROR_INPROGRESS)) {
+                            TRACE(Trace::Error, (_T("Could not open the external connector for %s"), Callsign().c_str()));
+                        }
+                    }
+
                     SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
                     Lock();
                     State(ACTIVATED);
@@ -549,6 +556,9 @@ namespace PluginHost
 
                 if (_jsonrpc != nullptr) {
                     _jsonrpc->Deactivate();
+                }
+                if (_external.Connector().empty() == false) {
+                    _external.Close(0);
                 }
             }
 
