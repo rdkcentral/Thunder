@@ -1,6 +1,6 @@
-/* Make page slightly wider that default */
+/* Make page wider that default so tables etc fit better */
 .md-grid {
-    max-width: 65rem;
+    max-width: 70rem;
 }
 
 /* Slightly smaller than default */
