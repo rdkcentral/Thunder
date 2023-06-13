@@ -27,6 +27,10 @@
 
 namespace WPEFramework {
 namespace Plugin {
+    /**
+     * IMPORTANT: If updating this class to add/remove/modify configuration options, ensure
+     * the documentation in docs/plugin/config.md is updated to reflect the changes!
+    */
     class EXTERNAL Config : public Core::JSON::Container {
     public:
         class EXTERNAL RootConfig : public Core::JSON::Container {
