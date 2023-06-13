@@ -89,7 +89,7 @@ namespace WarningReporting {
             visitor = Core::Format(_T("It took suspiciously long to switch plugin [%s] to state [%s]"),
                 _callsign.c_str(),
                 StateAsString(_stateChange).c_str());
-            visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, maxValue);
+            visitor += Core::Format(_T(", value %" PRId64 " [ms], max allowed %" PRId64 " [ms]"), actualValue, maxValue);
         };
 
         static constexpr uint32_t DefaultWarningBound = { 5000 };
@@ -209,7 +209,7 @@ namespace WarningReporting {
             visitor = Core::Format(_T("It took suspiciously long to handle an incoming message of type [%s] with content [%s]"),
                 TypeAsString(_type).c_str(),
                 (_content.c_str() == nullptr ? _T("<empty>") : _content.c_str()));
-            visitor += Core::Format(_T(", value %lld [ms], max allowed %lld [ms]"), actualValue, maxValue);
+            visitor += Core::Format(_T(", value %" PRId64 " [ms], max allowed %" PRId64 " [ms]"), actualValue, maxValue);
         };
 
         static constexpr uint32_t DefaultWarningBound = { 500 };
