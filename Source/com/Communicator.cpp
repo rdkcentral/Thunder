@@ -347,7 +347,6 @@ namespace RPC {
     uint8_t Communicator::_hardKillCheckWaitTime = 4;;
 
     PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST);
-
     Communicator::Communicator(const Core::NodeId& node, const string& proxyStubPath)
         : _connectionMap(*this)
         , _ipcServer(node, _connectionMap, proxyStubPath) {
@@ -372,6 +371,7 @@ namespace RPC {
         _ipcServer.CreateFactory<AnnounceMessage>(1);
         _ipcServer.CreateFactory<InvokeMessage>(3);
     }
+    POP_WARNING();
 
     /* virtual */ Communicator::~Communicator()
     {
@@ -387,53 +387,50 @@ namespace RPC {
         // Now there are no more connections pending. Remove my pending IMonitorable::ICallback settings.
         g_destructor.WaitForCompletion(_connectionMap);
     }
-
-    void Communicator::Destroy(const uint32_t id)
-    {
+    void Communicator::Destroy(const uint32_t id) {
         // This is a forceull call, blocking, to kill that specific connection
         g_destructor.ForceDestruct(id);
     }
-
-    void Communicator::LoadProxyStubs(const string& pathName)
-    {
+    void Communicator::LoadProxyStubs(const string& pathName) {
         RPC::LoadProxyStubs(pathName);
     }
-
-    const std::vector<string>& Communicator::Process::DynamicLoaderPaths() const
-    {
+    const std::vector<string>& Communicator::Process::DynamicLoaderPaths() const {
         return _LoaderPaths.Paths();
     }
+
+    PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST);
     CommunicatorClient::CommunicatorClient(
         const Core::NodeId& remoteNode)
         : Core::IPCChannelClientType<Core::Void, false, true>(remoteNode, CommunicationBufferSize)
-        , _announceMessage(Core::ProxyType<RPC::AnnounceMessage>::Create())
+        , _announceMessage()
         , _announceEvent(false, true)
-        , _handler(this)
         , _connectionId(~0)
     {
+        _announceMessage.AddRef();
+
         CreateFactory<RPC::AnnounceMessage>(1);
         CreateFactory<RPC::InvokeMessage>(2);
 
-        Register(RPC::InvokeMessage::Id(), Core::ProxyType<Core::IIPCServer>(Core::ProxyType<InvokeHandlerImplementation>::Create()));
-        Register(RPC::AnnounceMessage::Id(), Core::ProxyType<Core::IIPCServer>(Core::ProxyType<AnnounceHandlerImplementation>::Create(this)));
+        Register(RPC::InvokeMessage::Id(), Core::ProxyType<Core::IIPCServer>(Core::ProxyType<InvokeHandler>::Create()));
+        Register(RPC::AnnounceMessage::Id(), Core::ProxyType<Core::IIPCServer>(Core::ProxyType<AnnounceHandler>::Create(*this)));
     }
-
     CommunicatorClient::CommunicatorClient(
         const Core::NodeId& remoteNode,
         const Core::ProxyType<Core::IIPCServer>& handler)
         : Core::IPCChannelClientType<Core::Void, false, true>(remoteNode, CommunicationBufferSize)
-        , _announceMessage(Core::ProxyType<RPC::AnnounceMessage>::Create())
+        , _announceMessage()
         , _announceEvent(false, true)
-        , _handler(this)
         , _connectionId(~0)
     {
+        _announceMessage.AddRef();
+
         CreateFactory<RPC::AnnounceMessage>(1);
         CreateFactory<RPC::InvokeMessage>(2);
 
         BaseClass::Register(RPC::InvokeMessage::Id(), handler);
-        BaseClass::Register(RPC::AnnounceMessage::Id(), handler);
+        BaseClass::Register(RPC::AnnounceMessage::Id(), Core::ProxyType<Core::IIPCServer>(Core::ProxyType<AnnounceHandler>::Create(*this)));
     }
-POP_WARNING()
+    POP_WARNING();
 
     CommunicatorClient::~CommunicatorClient()
     {
@@ -444,6 +441,8 @@ POP_WARNING()
 
         DestroyFactory<RPC::InvokeMessage>();
         DestroyFactory<RPC::AnnounceMessage>();
+
+        _announceMessage.CompositRelease();
     }
 
     uint32_t CommunicatorClient::Open(const uint32_t waitTime)
@@ -452,7 +451,7 @@ POP_WARNING()
         _announceEvent.ResetEvent();
 
         //do not set announce parameters, we do not know what side will offer the interface
-        _announceMessage->Parameters().Set(Core::ProcessInfo().Id());
+        _announceMessage.Parameters().Set(Core::ProcessInfo().Id());
 
         uint32_t result = BaseClass::Open(waitTime);
 
@@ -468,7 +467,7 @@ POP_WARNING()
         ASSERT(BaseClass::IsOpen() == false);
         _announceEvent.ResetEvent();
 
-        _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), className, interfaceId, version);
+        _announceMessage.Parameters().Set(Core::ProcessInfo().Id(), className, interfaceId, version);
 
         uint32_t result = BaseClass::Open(waitTime);
 
@@ -486,7 +485,7 @@ POP_WARNING()
 
         Core::instance_id impl = instance_cast<void*>(implementation);
 
-        _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), interfaceId, impl, exchangeId);
+        _announceMessage.Parameters().Set(Core::ProcessInfo().Id(), interfaceId, impl, exchangeId);
 
         uint32_t result = BaseClass::Open(waitTime);
 
@@ -507,12 +506,12 @@ POP_WARNING()
 
         if (BaseClass::Source().IsOpen()) {
             TRACE_L1("Invoking the Announce message to the server. %d", __LINE__);
-            uint32_t result = Invoke<RPC::AnnounceMessage>(_announceMessage, this);
+            uint32_t result = Invoke<RPC::AnnounceMessage>(Core::ProxyType<RPC::AnnounceMessage>(_announceMessage), this);
 
             if (result != Core::ERROR_NONE) {
                 TRACE_L1("Error during invoke of AnnounceMessage: %d", result);
             } else {
-                RPC::Data::Init& setupFrame(_announceMessage->Parameters());
+                RPC::Data::Init& setupFrame(_announceMessage.Parameters());
 
                 if (setupFrame.IsRequested() == true) {
                     Core::ProxyType<Core::IPCChannel> refChannel(*this);

@@ -726,22 +726,20 @@ POP_WARNING()
             _administration.AbortOutbound();
         }
         template <typename ACTUALELEMENT>
-        uint32_t Invoke(ProxyType<ACTUALELEMENT>& command, IDispatchType<IIPC>* completed)
+        uint32_t Invoke(const ProxyType<ACTUALELEMENT>& command, IDispatchType<IIPC>* completed)
         {
-            Core::ProxyType<IIPC> base(command);
-            return (Execute(base, completed));
+            return (Execute(Core::ProxyType<IIPC>(command), completed));
         }
         template <typename ACTUALELEMENT>
-        uint32_t Invoke(ProxyType<ACTUALELEMENT>& command, const uint32_t waitTime)
+        uint32_t Invoke(const ProxyType<ACTUALELEMENT>& command, const uint32_t waitTime)
         {
-            Core::ProxyType<IIPC> base(command);
-            return (Execute(base, waitTime));
+            return (Execute(Core::ProxyType<IIPC>(command), waitTime));
         }
-        uint32_t Invoke(ProxyType<Core::IIPC>& command, IDispatchType<IIPC>* completed)
+        uint32_t Invoke(const ProxyType<Core::IIPC>& command, IDispatchType<IIPC>* completed)
         {
             return (Execute(command, completed));
         }
-        uint32_t Invoke(ProxyType<Core::IIPC>& command, const uint32_t waitTime)
+        uint32_t Invoke(const ProxyType<Core::IIPC>& command, const uint32_t waitTime)
         {
             return (Execute(command, waitTime));
         }
@@ -758,8 +756,8 @@ POP_WARNING()
         virtual uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) = 0;
 
     private:
-        virtual uint32_t Execute(ProxyType<IIPC>& command, IDispatchType<IIPC>* completed) = 0;
-        virtual uint32_t Execute(ProxyType<IIPC>& command, const uint32_t waitTime) = 0;
+        virtual uint32_t Execute(const ProxyType<IIPC>& command, IDispatchType<IIPC>* completed) = 0;
+        virtual uint32_t Execute(const ProxyType<IIPC>& command, const uint32_t waitTime) = 0;
 
     protected:
         IPCFactory _administration;
@@ -944,7 +942,7 @@ POP_WARNING()
         {
         }
 
-        uint32_t Execute(ProxyType<IIPC>& command, IDispatchType<IIPC>* completed) override
+        uint32_t Execute(const ProxyType<IIPC>& command, IDispatchType<IIPC>* completed) override
         {
             uint32_t success = Core::ERROR_UNAVAILABLE;
 
@@ -967,7 +965,7 @@ POP_WARNING()
 
             return (success);
         }
-        uint32_t Execute(ProxyType<IIPC>& command, const uint32_t waitTime) override
+        uint32_t Execute(const ProxyType<IIPC>& command, const uint32_t waitTime) override
         {
             uint32_t success = Core::ERROR_CONNECTION_CLOSED;
 
