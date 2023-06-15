@@ -1,0 +1,33 @@
+# Inspiration: https://github.com/ACCESS-Hive/access-hive.github.io/pull/126
+# For security, we do not want to checkout and run code from forks (could lead to secrets being leaked)
+# So split documentation build/preview into discrete steps
+
+name: Deploy documentation preview
+
+# If the documentation build completed successfully, then download the generated artifact
+# and upload it to github pages
+on:
+  repository_dispatch:
+    types: [upload-preview]
+
+concurrency:
+  group: preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download built site
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          run_id: ${{ github.event.client_payload.runId }}
+          name: preview_site
+          path: ./site
+      - name: Deploy preview
+        uses: access-nri/pr-preview-action@v2
+        with:
+          source-dir: site
+          action: deploy
+          pr-number: ${{ github.event.client_payload.pr }}
