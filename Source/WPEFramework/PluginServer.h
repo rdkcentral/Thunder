@@ -4463,7 +4463,8 @@ POP_WARNING()
             }
 
             // Drop the workerpool info (what is currently running and what is pending) to a file..
-            Core::File dumpFile(_config.PostMortemPath() + "ThunderInternals.json");
+            string time = std::to_string(Core::Time::Now().Ticks());
+            Core::File dumpFile(_config.PostMortemPath() + "ThunderInternals_" + time + ".json");
             if (dumpFile.Create(false) == true) {
                 data.IElement::ToFile(dumpFile);
             }
