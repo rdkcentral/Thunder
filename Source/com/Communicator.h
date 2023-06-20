@@ -321,6 +321,7 @@ namespace RPC {
     public:
         InvokeHandler(InvokeHandler&&) = delete;
         InvokeHandler(const InvokeHandler&) = delete;
+        InvokeHandler& operator=(InvokeHandler&&) = delete;
         InvokeHandler& operator=(const InvokeHandler&) = delete;
 
         InvokeHandler() = default;
@@ -347,7 +348,9 @@ namespace RPC {
         private:
             friend class RemoteConnectionMap;
 
+            RemoteConnection(RemoteConnection&&) = delete;
             RemoteConnection(const RemoteConnection&) = delete;
+            RemoteConnection& operator=(RemoteConnection&&) = delete;
             RemoteConnection& operator=(const RemoteConnection&) = delete;
 
         protected:
@@ -419,6 +422,7 @@ namespace RPC {
             MonitorableProcess() = delete;
             MonitorableProcess(MonitorableProcess&&) = delete;
             MonitorableProcess(const MonitorableProcess&) = delete;
+            MonitorableProcess& operator= (MonitorableProcess&&) = delete;
             MonitorableProcess& operator= (const MonitorableProcess&) = delete;
 
             MonitorableProcess(const string& callsign, RemoteConnectionMap& parent)
@@ -493,7 +497,9 @@ namespace RPC {
         class EXTERNAL Process {
         public:
             Process() = delete;
+            Process(Process&&) = delete;
             Process(const Process&) = delete;
+            Process& operator=(Process&&) = delete;
             Process& operator=(const Process&) = delete;
 
             Process(const uint32_t sequenceNumber, const Config& config, const Object& instance)
@@ -637,7 +643,9 @@ namespace RPC {
             friend class Core::Service<LocalProcess>;
 
             LocalProcess() = delete;
+            LocalProcess(LocalProcess&&) = delete;
             LocalProcess(const LocalProcess&) = delete;
+            LocalProcess& operator=(LocalProcess&&) = delete;
             LocalProcess& operator=(const LocalProcess&) = delete;
 
             LocalProcess(const Config& config, const Object& instance, RemoteConnectionMap& parent)
@@ -703,7 +711,9 @@ namespace RPC {
         private:
             class ContainerConfig : public Core::JSON::Container {
             public:
+                ContainerConfig(ContainerConfig&&) = delete;
                 ContainerConfig(const ContainerConfig&) = delete;
+                ContainerConfig& operator=(ContainerConfig&&) = delete;
                 ContainerConfig& operator=(const ContainerConfig&) = delete;
 
                 ContainerConfig()
@@ -726,7 +736,9 @@ namespace RPC {
         public:
             friend class Core::Service<ContainerProcess>;
 
+            ContainerProcess(ContainerProcess&&) = delete;
             ContainerProcess(const ContainerProcess&) = delete;
+            ContainerProcess& operator=(ContainerProcess&&) = delete;
             ContainerProcess& operator=(const ContainerProcess&) = delete;
 
             ContainerProcess(const Config& baseConfig, const Object& instance, RemoteConnectionMap& parent)
@@ -868,20 +880,20 @@ namespace RPC {
             class Info {
             public:
                 Info() = delete;
+                Info(Info&&) = delete;
                 Info(const Info&) = delete;
+                Info& operator= (Info&&) = delete;
+                Info& operator= (const Info&) = delete;
+
                 Info(Core::Event& event, const uint32_t id)
                     : _event(event)
                     , _id(id)
-                    , _interface(nullptr)
-                {
+                    , _interface(nullptr) {
                 }
-                ~Info()
-                {
-                }
+                ~Info() = default;
 
             public:
-                inline void Implementation(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation)
-                {
+                inline void Implementation(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation) {
 
                     ASSERT(_interface == nullptr);
 
@@ -1270,6 +1282,7 @@ namespace RPC {
             ChannelLink() = delete;
             ChannelLink(ChannelLink&&) = delete;
             ChannelLink(const ChannelLink&) = delete;
+            ChannelLink& operator=(ChannelLink&&) = delete;
             ChannelLink& operator=(const ChannelLink&) = delete;
 
             ChannelLink(Core::IPCChannelType<Core::SocketPort, ChannelLink>* channel)
@@ -1321,6 +1334,7 @@ namespace RPC {
                 AnnounceHandler() = delete;
                 AnnounceHandler(AnnounceHandler&&) = delete;
                 AnnounceHandler(const AnnounceHandler&) = delete;
+                AnnounceHandler& operator=(AnnounceHandler&&) = delete;
                 AnnounceHandler& operator=(const AnnounceHandler&) = delete;
 
                 AnnounceHandler(ChannelServer& parent)
@@ -1359,6 +1373,7 @@ namespace RPC {
         public:
             ChannelServer(ChannelServer&&) = delete;
             ChannelServer(const ChannelServer&) = delete;
+            ChannelServer& operator=(ChannelServer&&) = delete;
             ChannelServer& operator=(const ChannelServer&) = delete;
 
             PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
@@ -1411,6 +1426,7 @@ POP_WARNING()
         Communicator() = delete;
         Communicator(Communicator&&) = delete;
         Communicator(const Communicator&) = delete;
+        Communicator& operator=(Communicator&&) = delete;
         Communicator& operator=(const Communicator&) = delete;
 
         Communicator(
@@ -1537,7 +1553,9 @@ POP_WARNING()
         class AnnounceHandler : public Core::IIPCServer {
         public:
             AnnounceHandler() = delete;
+            AnnounceHandler(AnnounceHandler&&) = delete;
             AnnounceHandler(const AnnounceHandler&) = delete;
+            AnnounceHandler& operator=(AnnounceHandler&&) = delete;
             AnnounceHandler& operator=(const AnnounceHandler&) = delete;
 
             AnnounceHandler(CommunicatorClient& parent)
@@ -1572,6 +1590,7 @@ POP_WARNING()
         CommunicatorClient() = delete;
         CommunicatorClient(CommunicatorClient&&) = delete;
         CommunicatorClient(const CommunicatorClient&) = delete;
+        CommunicatorClient& operator=(CommunicatorClient&&) = delete;
         CommunicatorClient& operator=(const CommunicatorClient&) = delete;
 
         CommunicatorClient(
