@@ -25,7 +25,6 @@ namespace WarningReporting {
     WarningReportingUnit::WarningReportingUnit()
         : _categories()
         , _adminLock()
-        , _directOutput(false)
     {
         WarningReportingUnitProxy::Instance().Handle(this);
     }

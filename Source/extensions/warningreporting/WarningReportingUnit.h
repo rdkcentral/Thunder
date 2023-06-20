@@ -175,22 +175,12 @@ namespace WarningReporting {
 
         void ReportWarningEvent(const char identifier[], const IWarningEvent& information) override;
 
-        inline bool HasDirectOutput() const
-        {
-            return _directOutput;
-        }
-        inline void DirectOutput(const bool enabled)
-        {
-            _directOutput = enabled;
-        }
-
     private:
         void UpdateEnabledCategories(const Core::JSON::ArrayType<Setting::JSON>& info);
 
         ControlList _categories;
         mutable Core::CriticalSection _adminLock;
         Settings _enabledCategories;
-        bool _directOutput;
     };
 }
 }
