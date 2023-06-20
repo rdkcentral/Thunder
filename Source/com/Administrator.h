@@ -47,14 +47,17 @@ namespace RPC {
 
     class EXTERNAL Administrator {
     public:
-        typedef std::vector<ProxyStub::UnknownProxy*> Proxies;
+        using Proxies = std::vector<ProxyStub::UnknownProxy*>;
 
     private:
         Administrator();
+
         class RecoverySet {
         public:
             RecoverySet() = delete;
+            RecoverySet(RecoverySet&&) = delete;
             RecoverySet(const RecoverySet&) = delete;
+            RecoverySet& operator= (RecoverySet&&) = delete;
             RecoverySet& operator= (const RecoverySet&) = delete;
 
             RecoverySet(const uint32_t id, Core::IUnknown* object)
@@ -91,8 +94,8 @@ namespace RPC {
             uint32_t _referenceCount;
         };
 
-        typedef std::map<const Core::IPCChannel*, Proxies> ChannelMap;
-        typedef std::map<const Core::IPCChannel*, std::list< RecoverySet > > ReferenceMap;
+        using ChannelMap = std::map<const Core::IPCChannel*, Proxies>;
+        using ReferenceMap = std::map<const Core::IPCChannel*, std::list< RecoverySet > >;
 
         struct EXTERNAL IMetadata {
             virtual ~IMetadata() = default;
@@ -105,6 +108,7 @@ namespace RPC {
         public:
             ProxyType(ProxyType<PROXY>&& ) = delete;
             ProxyType(const ProxyType<PROXY>&) = delete;
+            ProxyType<PROXY>& operator=(ProxyType<PROXY>&&) = delete;
             ProxyType<PROXY>& operator=(const ProxyType<PROXY>&) = delete;
 
             ProxyType() = default;
@@ -119,6 +123,7 @@ namespace RPC {
     public:
         Administrator(Administrator&&) = delete;
         Administrator(const Administrator&) = delete;
+        Administrator& operator=(Administrator&&) = delete;
         Administrator& operator=(const Administrator&) = delete;
 
         virtual ~Administrator();
@@ -306,8 +311,8 @@ namespace RPC {
         {
         }
         Job(Job&& move)
-            : _message(move._message)
-            , _channel(move._channel)
+            : _message(std::move(move._message))
+            , _channel(std::move(move._channel))
         {
         }
         Job(const Job& copy)
@@ -389,7 +394,9 @@ namespace RPC {
 
     class EXTERNAL InvokeServer : public IIPCServer {
     public:
+        InvokeServer(InvokeServer&&) = delete;
         InvokeServer(const InvokeServer&) = delete;
+        InvokeServer& operator=(InvokeServer&&) = delete;
         InvokeServer& operator=(const InvokeServer&) = delete;
 
         InvokeServer(Core::IWorkerPool* workers)
@@ -425,7 +432,9 @@ namespace RPC {
     private:
         class Dispatcher : public Core::ThreadPool::IDispatcher {
         public:
+            Dispatcher(Dispatcher&&) = delete;
             Dispatcher(const Dispatcher&) = delete;
+            Dispatcher& operator=(Dispatcher&&) = delete;
             Dispatcher& operator=(const Dispatcher&) = delete;
 
             Dispatcher() = default;
@@ -442,7 +451,9 @@ namespace RPC {
         };
 
     public:
+        InvokeServerType(InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&&) = delete;
         InvokeServerType(const InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&) = delete;
+        InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>& operator = (InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&&) = delete;
         InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>& operator = (const InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&) = delete;
 
         InvokeServerType()
