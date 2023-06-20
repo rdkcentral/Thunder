@@ -30,25 +30,21 @@ jobs:
           python-version: 3.x
       - run: pip install mkdocs-material
       - run: mkdocs build
+      - run: echo "${{ github.event.number }}" >> ./site/.pr_number
       - name : Upload preview site artifact
         uses : actions/upload-artifact@v3
         with:
           name: preview_site
           path: ./site
           retention-days: 1
-      # Fire an event to trigger the preview upload securely
-      - name: Repository Dispatch
-        uses: peter-evans/repository-dispatch@v2
-        with:
-          event-type: upload-preview
-          client-payload: '{"pr": ${{ github.event.number }}, "runId": ${{ github.run_id }}}'
   clean-preview:
     if: ${{ github.event.action == 'closed' }}
     runs-on: ubuntu-latest
     steps:
-      # Fire an event to trigger the preview removal securely
-      - name: Repository Dispatch
-        uses: peter-evans/repository-dispatch@v2
+      - run: mkdir pr_tmp
+      - run: echo "${{ github.event.number }}" >> ./pr_tmp/.pr_number
+      - uses : actions/upload-artifact@v3
         with:
-          event-type: clean-preview
-          client-payload: '{"pr": ${{ github.event.number }}, "runId": ${{ github.run_id }}}'
+          name: closed_pr_number
+          path: ./pr_tmp
+          retention-days: 1
