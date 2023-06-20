@@ -1,0 +1,54 @@
+# Inspiration: https://github.com/ACCESS-Hive/access-hive.github.io/pull/126
+# For security, we do not want to checkout and run code from forks (could lead to secrets being leaked)
+# So split documentation build/preview into discrete steps
+
+name: Build documentation preview
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+    # Only run when we change files in docs directory
+    paths:
+      - 'docs/**'
+
+concurrency:
+  group: preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-preview:
+    if: ${{ github.event.action != 'closed' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+      - run: pip install mkdocs-material
+      - run: mkdocs build
+      - name : Upload preview site artifact
+        uses : actions/upload-artifact@v3
+        with:
+          name: preview_site
+          path: ./site
+          retention-days: 1
+      # Fire an event to trigger the preview upload securely
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          event-type: upload-preview
+          client-payload: '{"pr": ${{ github.event.number }}, "runId": ${{ github.run_id }}}'
+  clean-preview:
+    if: ${{ github.event.action == 'closed' }}
+    runs-on: ubuntu-latest
+    steps:
+      # Fire an event to trigger the preview removal securely
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          event-type: clean-preview
+          client-payload: '{"pr": ${{ github.event.number }}, "runId": ${{ github.run_id }}}'
