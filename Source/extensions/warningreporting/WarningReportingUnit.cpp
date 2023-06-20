@@ -19,55 +19,15 @@
 
 #include "WarningReportingUnit.h"
 
-#define WARNINGREPORTING_CYCLIC_BUFFER_FILENAME _T("WARNINGREPORTING_FILENAME")
-#define WARNINGREPORTING_CYCLIC_BUFFER_DOORBELL _T("WARNINGREPORTING_DOORBELL")
-
 namespace WPEFramework {
 namespace WarningReporting {
-
-    /* static */ const TCHAR* CyclicBufferName = _T("warningreportingbuffer");
 
     WarningReportingUnit::WarningReportingUnit()
         : _categories()
         , _adminLock()
-        , _outputChannel(nullptr)
         , _directOutput(false)
     {
         WarningReportingUnitProxy::Instance().Handle(this);
-    }
-
-    WarningReportingUnit::ReportingBuffer::ReportingBuffer(const string& doorBell, const string& name)
-        : Core::CyclicBuffer(name,
-              Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE | Core::File::GROUP_READ | Core::File::GROUP_WRITE | Core::File::SHAREABLE,
-              CyclicBufferSize, true)
-        , _doorBell(doorBell.c_str())
-    {
-        // Make sure the trace file opened proeprly.
-        TRACE_L1("Opened a file to stash my reported warning at: %s [%d] and doorbell: %s", name.c_str(), CyclicBufferSize, doorBell.c_str());
-        ASSERT(IsValid() == true);
-    }
-
-    WarningReportingUnit::ReportingBuffer::~ReportingBuffer()
-    {
-    }
-
-    uint32_t WarningReportingUnit::ReportingBuffer::GetOverwriteSize(Cursor& cursor)
-    {
-        while (cursor.Offset() < cursor.Size()) {
-            uint16_t chunkSize = 0;
-            cursor.Peek(chunkSize);
-
-            TRACE_L1("Flushing warning reporting data !!! %d", __LINE__);
-
-            cursor.Forward(chunkSize);
-        }
-
-        return cursor.Offset();
-    }
-
-    void WarningReportingUnit::ReportingBuffer::DataAvailable()
-    {
-        _doorBell.Ring();
     }
 
     WarningReportingUnit& WarningReportingUnit::Instance()
@@ -77,61 +37,11 @@ namespace WarningReporting {
 
     WarningReportingUnit::~WarningReportingUnit()
     {
-
-        if (_outputChannel != nullptr) {
-            Close();
-        }
-        
         while (_categories.size() != 0) {
             _categories.begin()->second->Destroy();
         }
 
         WarningReportingUnitProxy::Instance().Handle(nullptr);
-    }
-
-    uint32_t WarningReportingUnit::Open(const uint32_t identifier)
-    {
-        uint32_t result = Core::ERROR_UNAVAILABLE;
-
-        string fileName;
-        string doorBell;
-        Core::SystemInfo::GetEnvironment(WARNINGREPORTING_CYCLIC_BUFFER_FILENAME, fileName);
-        Core::SystemInfo::GetEnvironment(WARNINGREPORTING_CYCLIC_BUFFER_DOORBELL, doorBell);
-
-        ASSERT(fileName.empty() == false);
-        ASSERT(doorBell.empty() == false);
-
-        if (fileName.empty() == false) {
-
-            fileName += '.' + Core::NumberType<uint32_t>(identifier).Text();
-            result = Open(doorBell, fileName);
-        }
-
-        return result;
-    }
-
-    uint32_t WarningReportingUnit::Open(const string& pathName)
-    {
-        string fileName(Core::Directory::Normalize(pathName) + CyclicBufferName);
-#ifdef __WINDOWS__
-        string doorBell("127.0.0.1:62002");
-#else
-        string doorBell(Core::Directory::Normalize(pathName) + CyclicBufferName + ".doorbell");
-#endif
-
-        Core::SystemInfo::SetEnvironment(WARNINGREPORTING_CYCLIC_BUFFER_FILENAME, fileName);
-        Core::SystemInfo::SetEnvironment(WARNINGREPORTING_CYCLIC_BUFFER_DOORBELL, doorBell);
-
-        return Open(doorBell, fileName);
-    }
-
-    uint32_t WarningReportingUnit::Close()
-    {
-        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
-        
-        _outputChannel.reset(nullptr);
-
-        return Core::ERROR_NONE;
     }
 
     std::list<string> WarningReportingUnit::GetCategories()

@@ -227,10 +227,6 @@ POP_WARNING()
 
             Messaging::MessageUnit::Instance().Close();
 
-#ifdef __CORE_WARNING_REPORTING__
-            WarningReporting::WarningReportingUnit::Instance().Close();
-#endif
-
 #ifndef __WINDOWS__
             if (_background) {
                 syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " closing all created singletons.");
@@ -601,10 +597,6 @@ POP_WARNING()
             }
             
 #ifdef __CORE_WARNING_REPORTING__
-            if (WarningReporting::WarningReportingUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE) {
-                SYSLOG_GLOBAL(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable issue reporting functionality!")));
-            }
-
             WarningReporting::WarningReportingUnit::Instance().Defaults(_config->WarningReportingCategories());
 #endif
 
