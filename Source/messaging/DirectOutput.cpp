@@ -98,7 +98,43 @@ namespace WPEFramework {
             }
         }
 
-        // TO-DO: Add a separate method for warning reporting
+        /**
+        * @brief Simply printing a reporting type message
+        */
+        void DirectOutput::Output(const Core::Messaging::IStore::WarningReporting& report, const Core::Messaging::IEvent* message) const
+        {
+            string result;
+            ASSERT(message != nullptr);
+            ASSERT(report.Type() == Core::Messaging::Metadata::type::REPORTING);
+
+            if (_abbreviate == true) {
+                result = Core::Format("[%11ju us]:[%s]:[%s] %s",
+                    static_cast<uintmax_t>(report.TimeStamp() - _baseTime),
+                    report.Category().c_str(),
+                    report.Callsign().c_str(),
+                    message->Data().c_str());
+            }
+            else {
+                Core::Time now(report.TimeStamp());
+                string time(now.ToRFC1123(true));
+
+                result = Core::Format("[%s]:[%s:%d]:[%s]:[%s]:[%s]: %s", time.c_str(),
+                    report.Category().c_str(),
+                    report.Callsign().c_str(),
+                    message->Data().c_str());
+            }
+
+#ifndef __WINDOWS__
+            if (_isSyslog == true) {
+                //use longer messages for syslog
+                syslog(LOG_NOTICE, "%s\n", result.c_str());
+            }
+            else
+#endif
+            {
+                std::cout << result << std::endl;
+            }
+        }
 
     } // namespace Messaging
 }

@@ -208,8 +208,6 @@ namespace WarningReporting {
         uint32_t Open(const string& pathName);
         uint32_t Close();
 
-        void Announce(IWarningReportingUnit::IWarningReportingControl& Category) override;
-        void Revoke(IWarningReportingUnit::IWarningReportingControl& Category) override;
         std::list<string> GetCategories();
 
         // Default enabled/disabled categories: set via config.json.
@@ -217,7 +215,7 @@ namespace WarningReporting {
         string Defaults() const;
         void Defaults(const string& jsonCategories);
 
-        void ReportWarningEvent(const char identifier[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information) override;
+        void ReportWarningEvent(const char identifier[], const IWarningEvent& information) override;
 
         inline bool HasDirectOutput() const
         {

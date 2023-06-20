@@ -182,8 +182,11 @@ namespace Messaging {
                 if (type == Core::Messaging::Metadata::type::TRACING) {
                     length = DeserializeAndSendMessage<Core::Messaging::IStore::Tracing>(size, handler);
                 }
-                else if (type == Core::Messaging::Metadata::type::LOGGING || type == Core::Messaging::Metadata::type::REPORTING) {
+                else if (type == Core::Messaging::Metadata::type::LOGGING) {
                     length = DeserializeAndSendMessage<Core::Messaging::IStore::Logging>(size, handler);
+                }
+                else if (type == Core::Messaging::Metadata::type::REPORTING) {
+                    length = DeserializeAndSendMessage<Core::Messaging::IStore::WarningReporting>(size, handler);
                 }
 
                 if (length == 0) {

@@ -312,7 +312,37 @@ namespace WPEFramework {
             }
         }
 
-        // TO-DO: Add another overloaded Push() method for Warning Reporting
+        /**
+        * @brief Push a warning reporting type message and its information to a buffer
+        */
+        /* virtual */ void MessageUnit::Push(const Core::Messaging::IStore::WarningReporting& report, const Core::Messaging::IEvent* message)
+        {
+            //logging messages can happen in Core, meaning, otherside plugin can be not started yet
+            //those should be just printed
+            if (_settings.IsDirect() == true) {
+                _direct.Output(report, message);
+            }
 
+            if (_dispatcher != nullptr) {
+                uint8_t serializationBuffer[DataSize];
+                uint16_t length = 0;
+
+                ASSERT(report.Type() == Core::Messaging::Metadata::type::REPORTING);
+
+                length = report.Serialize(serializationBuffer, sizeof(serializationBuffer));
+
+                //only serialize message if the information could fit
+                if (length != 0) {
+                    length += message->Serialize(serializationBuffer + length, sizeof(serializationBuffer) - length);
+
+                    if (_dispatcher->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
+                        TRACE_L1("Unable to push message data!");
+                    }
+                }
+                else {
+                    TRACE_L1("Unable to push data, buffer is too small!");
+                }
+            }
+        }
     } // namespace Messaging
 }

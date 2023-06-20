@@ -50,6 +50,7 @@ namespace WPEFramework {
             
             void Output(const Core::Messaging::IStore::Logging& log, const Core::Messaging::IEvent* message) const;
             void Output(const Core::Messaging::IStore::Tracing& trace, const Core::Messaging::IEvent* message) const;
+            void Output(const Core::Messaging::IStore::WarningReporting& report, const Core::Messaging::IEvent* message) const;
 
         private:
             uint64_t _baseTime;

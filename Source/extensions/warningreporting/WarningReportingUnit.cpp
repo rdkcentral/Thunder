@@ -33,7 +33,7 @@ namespace WarningReporting {
         , _outputChannel(nullptr)
         , _directOutput(false)
     {
-        WarningReportingUnitProxy::Instance().Handler(this);
+        WarningReportingUnitProxy::Instance().Handle(this);
     }
 
     WarningReportingUnit::ReportingBuffer::ReportingBuffer(const string& doorBell, const string& name)
@@ -86,7 +86,7 @@ namespace WarningReporting {
             _categories.begin()->second->Destroy();
         }
 
-        WarningReportingUnitProxy::Instance().Handler(nullptr);
+        WarningReportingUnitProxy::Instance().Handle(nullptr);
     }
 
     uint32_t WarningReportingUnit::Open(const uint32_t identifier)
@@ -132,20 +132,6 @@ namespace WarningReporting {
         _outputChannel.reset(nullptr);
 
         return Core::ERROR_NONE;
-    }
-
-    void WarningReportingUnit::Announce(IWarningReportingUnit::IWarningReportingControl& category)
-    {
-        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
-    
-        _categories[category.Category()] = &category;
-    }
-
-    void WarningReportingUnit::Revoke(IWarningReportingUnit::IWarningReportingControl& category)
-    {
-        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
-        
-        _categories.erase(category.Category());
     }
 
     std::list<string> WarningReportingUnit::GetCategories()
@@ -200,8 +186,8 @@ namespace WarningReporting {
 
             if (category != _categories.end()) {
                 
-                if (category->second->Enabled() != setting.second.Enabled()) {
-                    category->second->Enabled(setting.second.Enabled());
+                if (category->second->Enable() != setting.second.Enabled()) {
+                    category->second->Enable(setting.second.Enabled());
                 }
 
                 category->second->Configure(setting.second.Configuration());
@@ -228,59 +214,17 @@ namespace WarningReporting {
         _adminLock.Unlock();
     }
 
-    void WarningReportingUnit::ReportWarningEvent(const char identifier[], const char file[], const uint32_t lineNumber, const char className[], const IWarningEvent& information)
-    {
+    void WarningReportingUnit::ReportWarningEvent(const char identifier[], const IWarningEvent& information)
+    {        
+        WPEFramework::Core::Messaging::Metadata metadata(WPEFramework::Core::Messaging::Metadata::type::REPORTING, information.Category(), WPEFramework::Core::Messaging::MODULE_REPORTING);
+        WPEFramework::Core::Messaging::MessageInfo messageInfo(metadata, WPEFramework::Core::Time::Now().Ticks());
+        WPEFramework::Core::Messaging::IStore::WarningReporting report(messageInfo, identifier);
 
-        const char* fileName(Core::FileNameOnly(file));
+        string text;
+        information.ToString(text);
+        WPEFramework::Messaging::TextMessage data(text);
 
-        _adminLock.Lock();
-
-        if (_outputChannel != nullptr) {
-
-            const char* category(information.Category());
-            const uint64_t current = Core::Time::Now().Ticks();
-
-            const uint16_t fileNameLength = static_cast<uint16_t>(strlen(fileName) + 1); // File name.
-            const uint16_t categoryLength = static_cast<uint16_t>(strlen(category) + 1); // Cateogory.
-            const uint16_t identifierLength = static_cast<uint16_t>(strlen(identifier) + 1); // Identifier name.
-
-            // length(2 bytes) - clock ticks (8 bytes) - lineNumber (4 bytes) - fileNameLength - categoryLength - identifierLength - data
-            const uint16_t headerLength = 2 + 8 + 4 + fileNameLength + categoryLength + identifierLength;
-
-            uint8_t buffer[1024];
-            uint16_t result = information.Serialize(buffer, sizeof(buffer));
-
-            const uint16_t fullLength = headerLength + result;
-
-            // Tell the buffer how much we are going to write.
-            // stack buffer 1kB, serialize
-            const uint32_t actualLength = _outputChannel->Reserve(fullLength);
-
-            if (actualLength >= fullLength) {
-                _outputChannel->Write(reinterpret_cast<const uint8_t*>(&fullLength), 2); //fullLength
-                _outputChannel->Write(reinterpret_cast<const uint8_t*>(&current), 8); //timestamp
-                _outputChannel->Write(reinterpret_cast<const uint8_t*>(&lineNumber), 4); //lineNumber
-                _outputChannel->Write(reinterpret_cast<const uint8_t*>(fileName), fileNameLength); //filename
-                _outputChannel->Write(reinterpret_cast<const uint8_t*>(category), categoryLength); //category name
-                _outputChannel->Write(reinterpret_cast<const uint8_t*>(identifier), identifierLength); //identifier aka. callsign
-                _outputChannel->Write(reinterpret_cast<const uint8_t*>(buffer), result);
-            }
-        }
-        _adminLock.Unlock();
-
-        if ((_directOutput == true) && (information.IsWarning() == true)) {
-
-            string text;
-            string time(Core::Time::Now().ToRFC1123(true));
-            Core::TextFragment cleanClassName(Core::ClassNameOnly(className));
-
-            information.ToString(text);
-
-            fprintf(stdout, "\033[1;32mSUSPICIOUS [%s]: [%s:%s]: %s\n\033[0m", time.c_str(), identifier, information.Category(), text.c_str());
-            fflush(stdout);
-        }
-
-
+        WPEFramework::Messaging::MessageUnit::Instance().Push(report, &data);
     }
 }
 }

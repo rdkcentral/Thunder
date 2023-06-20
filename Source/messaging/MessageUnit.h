@@ -312,14 +312,31 @@ namespace WPEFramework {
                         Core::JSON::Boolean Abbreviated;
                     };
 
+                    class ReportingSection : public TracingSection {
+                    public:
+                        ReportingSection()
+                            : TracingSection()
+                            , Abbreviated(true) {
+                            Add(_T("abbreviated"), &Abbreviated);
+                        }
+                        ~ReportingSection() = default;
+                        ReportingSection(const ReportingSection& other) = delete;
+                        ReportingSection& operator=(const ReportingSection& other) = delete;
+
+                    public:
+                        Core::JSON::Boolean Abbreviated;
+                    };
+
                 public:
                     Config()
                         : Core::JSON::Container()
                         , Tracing()
                         , Logging()
+                        , Reporting()
                     {
                         Add(_T("tracing"), &Tracing);
                         Add(_T("logging"), &Logging);
+                        Add(_T("reporting"), &Reporting);
                     }
                     ~Config() = default;
                     Config(const Config& other) = delete;
@@ -328,6 +345,7 @@ namespace WPEFramework {
                 public:
                     TracingSection Tracing;
                     LoggingSection Logging;
+                    ReportingSection Reporting;
                 };
 
             public:
@@ -539,6 +557,14 @@ namespace WPEFramework {
                         }
                     }
 
+                    if (config.Reporting.IsSet() == true) {
+                        auto it = config.Reporting.Settings.Elements();
+                        while (it.Next() == true) {
+                            Core::Messaging::Metadata info(Core::Messaging::Metadata::type::REPORTING, it.Current().Category.Value(), it.Current().Module.Value());
+                            _settings.emplace_back(info, it.Current().Enabled.Value());
+                        }
+                    }
+
                     _adminLock.Unlock();
                 }
 
@@ -546,6 +572,7 @@ namespace WPEFramework {
                 {
                     config.Tracing.Settings.Clear();
                     config.Logging.Settings.Clear();
+                    config.Reporting.Settings.Clear();
 
                     _adminLock.Lock();
 
@@ -555,6 +582,9 @@ namespace WPEFramework {
                         }
                         else if (it->Type() == Core::Messaging::Metadata::type::LOGGING) {
                             config.Logging.Settings.Add({ it->Category(), it->Module(), it->Enabled() });
+                        }
+                        else if (it->Type() == Core::Messaging::Metadata::type::REPORTING) {
+                            config.Reporting.Settings.Add({ it->Category(), it->Module(), it->Enabled() });
                         }
                     }
 
@@ -810,6 +840,7 @@ namespace WPEFramework {
             bool Default(const Core::Messaging::Metadata& control) const override;
             void Push(const Core::Messaging::IStore::Logging& log, const Core::Messaging::IEvent* message) override;
             void Push(const Core::Messaging::IStore::Tracing& trace, const Core::Messaging::IEvent* message) override;
+            void Push(const Core::Messaging::IStore::WarningReporting& report, const Core::Messaging::IEvent* message) override;
 
         private:
             uint16_t Serialize(uint8_t* buffer, const uint16_t length);

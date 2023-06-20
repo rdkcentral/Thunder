@@ -20,9 +20,6 @@
 #pragma once
 
 #include "Module.h"
-#include "Proxy.h"
-#include "Sync.h"
-#include "Frame.h"
 
 namespace WPEFramework {
 
@@ -241,6 +238,38 @@ namespace Core {
                 string _className;
         };
 
+           /**
+            * @brief Data-Carrier, extended information about the warning-reporting-type message.
+            */
+            class EXTERNAL WarningReporting : public MessageInfo {
+            public:
+                WarningReporting(const WarningReporting&) = default;
+                WarningReporting& operator=(const WarningReporting&) = default;
+
+                WarningReporting()
+                    : MessageInfo()
+                {
+                }
+                WarningReporting(const MessageInfo& messageInfo, const string& callsign)
+                    : MessageInfo(messageInfo),
+                    _callsign(callsign)
+                {
+                }
+                ~WarningReporting() = default;
+
+            public:
+                const string& Callsign() const {
+                    return (_callsign);
+                }
+
+            public:
+                uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
+                uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
+
+            private:
+                string _callsign;
+            };
+
 	    public:
             virtual ~IStore() = default;
             static IStore* Instance();
@@ -249,6 +278,7 @@ namespace Core {
             virtual bool Default(const Metadata& metadata) const = 0;
             virtual void Push(const Logging& log, const IEvent* message) = 0;
             virtual void Push(const Tracing& trace, const IEvent* message) = 0;
+            virtual void Push(const WarningReporting& report, const IEvent* message) = 0;
         };
 
     } // namespace Messaging

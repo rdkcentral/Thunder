@@ -77,9 +77,6 @@
             == true) {                                                                                                 \
             WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                  \
                 WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
-                __FILE__,                                                                                              \
-                __LINE__,                                                                                              \
-                typeid(*this).name(),                                                                                  \
                 __message__);                                                                                          \
         }                                                                                                              \
     }
@@ -93,9 +90,6 @@
             == true) {                                                                                                 \
             WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                  \
                 WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
-                __FILE__,                                                                                              \
-                __LINE__,                                                                                              \
-                __FUNCTION__,                                                                                          \
                 __message__);                                                                                          \
         }                                                                                                              \
     }
@@ -109,25 +103,19 @@
             == true) {                                                                                                                                                          \
             WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                                           \
                 WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),                                                          \
-                __FILE__,                                                                                                                                                       \
-                __LINE__,                                                                                                                                                       \
-                typeid(*this).name(),                                                                                                                                           \
                 __message__);                                                                                                                                                   \
         }                                                                                                                                                                       \
     }
 
-#define REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...)                                                                                                                  \
+#define REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...)                                                                                                     \
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) {                  \
         WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;                             \
-        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, CALLSIGN, \
+        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, CALLSIGN,                                                                                              \
                 ACTUALVALUE,                                                                                                                                                    \
                 ##__VA_ARGS__)                                                                                                                                                  \
             == true) {                                                                                                                                                          \
             WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                                           \
-                CALLSIGN,                                                          \
-                __FILE__,                                                                                                                                                       \
-                __LINE__,                                                                                                                                                       \
-                typeid(*this).name(),                                                                                                                                           \
+                CALLSIGN,                                                                                                                                                       \
                 __message__);                                                                                                                                                   \
         }                                                                                                                                                                       \
     }
@@ -146,9 +134,6 @@
             == true) {                                                                                                                                         \
             WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                          \
                 WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),                                         \
-                __FILE__,                                                                                                                                      \
-                __LINE__,                                                                                                                                      \
-                typeid(*this).name(),                                                                                                                          \
                 __message__);                                                                                                                                  \
         }                                                                                                                                                      \
     } else {                                                                                                                                                   \
@@ -206,25 +191,21 @@ namespace WarningReporting {
 
         static WarningReportingUnitProxy& Instance();
 
-        void ReportWarningEvent(const char identifier[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information);
+        void ReportWarningEvent(const char identifier[], const IWarningEvent& information);
         void FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const;
-        void Announce(IWarningReportingUnit::IWarningReportingControl& Category);
-        void Revoke(IWarningReportingUnit::IWarningReportingControl& Category);
 
-        void Handler(IWarningReportingUnit* handler);
+        void Handle(IWarningReportingUnit* handler);
         void FillExcludedWarnings(const string& excludedJsonList, ExcludedWarnings& outExcludedWarnings) const;
         void FillBoundsConfig(const string& boundsConfig, uint32_t& outReportingBound, uint32_t& outWarningBound, string& outSpecificConfig) const;
 
     protected:
         WarningReportingUnitProxy()
             : _handler(nullptr)
-            , _waitingAnnounces(){};
+        {
+        }
 
     private:
-        using WaitingAnnounceContainer = std::vector<IWarningReportingUnit::IWarningReportingControl*>;
-
         IWarningReportingUnit* _handler;
-        WaitingAnnounceContainer _waitingAnnounces;
     };
 
     template <typename CONTROLCATEGORY>
@@ -411,10 +392,11 @@ namespace WarningReporting {
             WarningReportingControl()
                 : _categoryName(CallCategoryName())
                 , _enabled(0x03)
+                , _metadata(WPEFramework::Core::Messaging::Metadata::type::REPORTING, _categoryName, WPEFramework::Core::Messaging::MODULE_REPORTING)
             {
                 // Register Our control unit, so it can be influenced from the outside
                 // if nessecary..
-                WarningReportingUnitProxy::Instance().Announce(*this);
+                Core::Messaging::IControl::Announce(this);
 
                 bool isDefaultCategory = false;
                 bool isEnabled = false;
@@ -454,15 +436,11 @@ namespace WarningReporting {
             {
                 return new WarningReportingType<CONTROLCATEGORY>();
             }
-            const char* Category() const override
-            {
-                return _categoryName.c_str();
-            }
-            bool Enabled() const override
+            bool Enable() const override
             {
                 return IsEnabled();
             }
-            void Enabled(const bool enabled) override
+            void Enable(const bool enabled) override
             {
                 _enabled = (_enabled & 0xFE) | (enabled ? 0x01 : 0x00);
             }
@@ -476,16 +454,21 @@ namespace WarningReporting {
             }
             void Destroy() override
             {
+                Core::Messaging::IControl::Revoke(this);
                 if ((_enabled & 0x02) != 0) {
-                    WarningReportingUnitProxy::Instance().Revoke(*this);
                     _enabled = 0;
                 }
+            }
+            const Core::Messaging::Metadata& Metadata() const override
+            {
+                return (_metadata);
             }
 
         protected:
             const string _categoryName;
             uint8_t _enabled;
             ExcludedWarnings _excludedWarnings;
+            Core::Messaging::Metadata _metadata;
         };
 
     public:
@@ -540,7 +523,7 @@ namespace WarningReporting {
 
         const char* Category() const override
         {
-            return _sWarningControl.Category();
+            return _sWarningControl.Metadata().Category().c_str();
         }
 
         uint16_t Serialize(uint8_t data[], const uint16_t size) const override
