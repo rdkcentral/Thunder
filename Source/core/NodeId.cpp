@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 // SocketPortSettings.cpp: implementation of the NodeId class.
 //
 //////////////////////////////////////////////////////////////////////
@@ -58,20 +58,48 @@ namespace Core {
 #endif
 
 #ifdef __CORE_BLUETOOTH_SUPPORT__
-    static string BTName(const NodeId::SocketInfo& input)
+    static string BTAddress(const NodeId::SocketInfo& input, bool delimited = false)
     {
         static TCHAR _hexArray[] = "0123456789ABCDEF";
+        string address;
+
+        ASSERT(input.L2Socket.l2_family == AF_BLUETOOTH);
+        ASSERT(input.L2Socket.l2_type == BTPROTO_L2CAP);
+
+        address.reserve(delimited? 18 : 12);
+
+        const bdaddr_t& addr = input.L2Socket.l2_bdaddr;
+
+        for (uint8_t index = 0; index < sizeof(addr); index++) {
+            if ((index != 0) && (delimited == true)) {
+                address += ':';
+            }
+
+            address += _hexArray[(addr.b[(sizeof(addr.b) - 1) - index] >> 4)];
+            address += _hexArray[(addr.b[(sizeof(addr.b) - 1) - index] & 0xF)];
+        }
+
+        return (address);
+    }
+    static string BTName(const NodeId::SocketInfo& input)
+    {
+        string result;
+
+        ASSERT(input.L2Socket.l2_family == AF_BLUETOOTH);
 
         if (input.L2Socket.l2_type == BTPROTO_HCI) {
-            return (_T("Bluetooth:") + Core::NumberType<uint16_t>(input.BTSocket.hci_dev).Text() + ':' + Core::NumberType<uint16_t>(input.BTSocket.hci_channel).Text());
+            result = (_T("Bluetooth:") + Core::NumberType<uint16_t>(input.BTSocket.hci_dev).Text() + ':' + Core::NumberType<uint16_t>(input.BTSocket.hci_channel).Text());
         }
-        TCHAR address[14];
-        for (uint8_t index = 0; index < sizeof(input.L2Socket.l2_bdaddr); index++) {
-            address[(index * 2)] = _hexArray[(input.L2Socket.l2_bdaddr.b[(sizeof(input.L2Socket.l2_bdaddr) - 1) - index] >> 4)];
-            address[(index * 2) + 1] = _hexArray[(input.L2Socket.l2_bdaddr.b[(sizeof(input.L2Socket.l2_bdaddr) - 1) - index] & 0xF)];
+        else if (input.L2Socket.l2_type == BTPROTO_L2CAP) {
+            const string address = BTAddress(input);
+            result = (_T("BluetoothL2:") + Core::NumberType<uint16_t>(input.L2Socket.l2_cid).Text() + ':' + Core::NumberType<uint16_t>(input.L2Socket.l2_psm).Text()
+                        + ':' + Core::NumberType<pid_t>(input.L2Socket.l2_bdaddr_type).Text() + ':' + address);
         }
-        address[12] = '\0';
-        return (_T("BluetoothL2:") + Core::NumberType<uint16_t>(input.L2Socket.l2_cid).Text() + ':' + Core::NumberType<uint16_t>(input.L2Socket.l2_psm).Text() + ':' + Core::NumberType<pid_t>(input.L2Socket.l2_bdaddr_type).Text() + ':' + address);
+        else {
+            ASSERT(!"Unsupported BT proto");
+        }
+
+        return (result);
     }
 #endif
 
@@ -168,10 +196,10 @@ namespace Core {
         : m_group()
     {
         memcpy(&(m_structInfo.RawSocket), &rInfo, sizeof(sockaddr_ll));
-        
+
         m_hostName = RawName(m_structInfo);
     }
-    
+
     NodeId::NodeId(const uint16_t interfaceIndex, const uint16_t protocol, const uint8_t pkgType, const uint8_t haType, const uint8_t length, const uint8_t* address)
         : m_group()
         , m_hostName()
@@ -186,11 +214,11 @@ namespace Core {
             m_structInfo.RawSocket.sll_hatype = haType;
             m_structInfo.RawSocket.sll_pkttype = pkgType;
             m_structInfo.RawSocket.sll_halen = length;
-        
+
             if(length > 0){
                 memcpy(m_structInfo.RawSocket.sll_addr, address, std::min(length, static_cast<uint8_t>(sizeof(m_structInfo.RawSocket.sll_addr))));
             }
-    
+
             m_hostName = RawName(m_structInfo);
         }
     }
@@ -631,6 +659,13 @@ POP_WARNING()
                     result = string(buffer);
                 }
             }
+#ifdef __CORE_BLUETOOTH_SUPPORT__
+            else if (m_structInfo.L2Socket.l2_family == AF_BLUETOOTH) {
+                if (m_structInfo.L2Socket.l2_type == BTPROTO_L2CAP) {
+                    result = BTAddress(m_structInfo, true);
+                }
+            }
+#endif
         }
         return (result);
     }
