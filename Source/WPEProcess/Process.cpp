@@ -108,7 +108,6 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize, const string& callsign)
             : WorkerPool(threads - 1, stackSize, queueSize, &_dispatcher, this)
             , _dispatcher(callsign)
-            , _announceHandler(nullptr)
             , _sink(*this)
         {
             Core::ServiceAdministrator::Instance().Callback(&_sink);
@@ -125,11 +124,6 @@ POP_WARNING()
 
             // Disable the queue so the minions can stop, even if they are processing and waiting for work..
             Core::WorkerPool::Stop();
-        }
-        void Announcements(Core::IIPCServer* announces)
-        {
-            ASSERT((announces != nullptr) ^ (_announceHandler != nullptr));
-            _announceHandler = announces;
         }
         void Run()
         {
@@ -151,13 +145,12 @@ POP_WARNING()
         {
             Core::ProxyType<RPC::Job> job(RPC::Job::Instance());
 
-            job->Set(channel, data, _announceHandler);
+            job->Set(channel, data);
 
             WorkerPool::Submit(Core::ProxyType<Core::IDispatch>(job));
         }
     private:
         Dispatcher _dispatcher;
-        Core::IIPCServer* _announceHandler;
         Sink _sink;
     };
 
@@ -474,7 +467,6 @@ public:
         PluginHost::IFactories::Assign(&_factories);
 
         _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, Core::ProxyType<Core::IIPCServer>(_engine)));
-        _engine->Announcements(_server->Announcement());
     }
     void Run(const string& pathName, const uint32_t interfaceId, void* base, const uint32_t sequenceId)
     {
