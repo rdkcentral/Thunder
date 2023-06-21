@@ -1081,6 +1081,26 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#path-handling" class="md-nav__link">
+    Path Handling
+  </a>
+  
+    <nav class="md-nav" aria-label="Path Handling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#normalisation" class="md-nav__link">
+    Normalisation
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1766,6 +1786,26 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#path-handling" class="md-nav__link">
+    Path Handling
+  </a>
+  
+    <nav class="md-nav" aria-label="Path Handling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#normalisation" class="md-nav__link">
+    Normalisation
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1831,6 +1871,7 @@
 </div>
 <div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="n">fileObject</span><span class="p">(</span><span class="s">&quot;/tmp/test.txt&quot;</span><span class="p">);</span>
 
+<span class="c1">// Open() defaults to read-only</span>
 <span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fileObject</span><span class="p">.</span><span class="n">Open</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="c1">// Successfully opened the file, now read into a buffer</span>
 <span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">buffer</span><span class="p">[</span><span class="mi">1024</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{};</span>
@@ -1922,6 +1963,20 @@ Core::File(&quot;/tmp/subdirectory&quot;).Destroy();
 <span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Found text file: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">currentEntry</span><span class="p">.</span><span class="n">Name</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
+</code></pre></div>
+<h2 id="path-handling">Path Handling</h2>
+<h3 id="normalisation">Normalisation</h3>
+<p>For security, use the <code>Normalise()</code> function when accepting user input to prevent path traversal vulnerabilities. Will attempt to return a safe version of the path if possible. If the path attempts to traverse outside of the current directory then the <code>valid</code> argument will be set to false.</p>
+<div class="highlight"><pre><span></span><code><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">vulnerablePath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;../../../../passwd&quot;</span><span class="p">;</span>
+<span class="kt">bool</span><span class="w"> </span><span class="n">validPath</span><span class="p">;</span>
+
+<span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="o">::</span><span class="n">Normalize</span><span class="p">(</span><span class="n">vulnerablePath</span><span class="p">,</span><span class="w"> </span><span class="n">validPath</span><span class="p">);</span>
+
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;Safe path: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">validPath</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s">&quot;false&quot;</span><span class="p">);</span>
+
+<span class="cm">/* Output:</span>
+<span class="cm">Safe path: false</span>
+<span class="cm">*/</span>
 </code></pre></div>
 
 
