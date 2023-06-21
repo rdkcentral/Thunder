@@ -107,6 +107,59 @@ namespace Core {
             struct sockaddr_hci BTSocket;
             struct bluetooth_extended L2Socket;
 #endif
+
+            uint32_t Extension() const
+            {
+                switch (FamilyType) {
+                case AF_INET:
+                    return (IPV4Socket.in_protocol);
+                    break;
+
+                case AF_INET6:
+                    return(IPV6Socket.in_protocol);
+
+    #ifdef __CORE_BLUETOOTH_SUPPORT__
+                case AF_BLUETOOTH:
+                    return (L2Socket.l2_type);
+                    break;
+    #endif
+    #ifndef __WINDOWS__
+                case AF_NETLINK:
+                    return (NetlinkSocket.nl_destination);
+                    break;
+    #endif
+                default:
+                    break;
+                }
+
+                return (0);
+            }
+
+            void Extension(uint32_t extension)
+            {
+                switch (FamilyType) {
+                case TYPE_IPV4:
+                    IPV4Socket.in_protocol = extension;
+                    break;
+
+                case TYPE_IPV6:
+                    IPV6Socket.in_protocol = extension;
+                    break;
+
+    #ifdef __CORE_BLUETOOTH_SUPPORT__
+                case AF_BLUETOOTH:
+                    L2Socket.l2_type = extension;
+                    break;
+    #endif
+    #ifndef __WINDOWS__
+            case AF_NETLINK:
+                    NetlinkSocket.nl_destination = extension;
+                    break;
+    #endif
+                default:
+                    break;
+                }
+            }
         };
 
         static bool IsIPV6Enabled()
@@ -150,30 +203,7 @@ namespace Core {
     public:
         inline uint32_t Extension() const
         {
-            switch(Type()) {
-             case TYPE_IPV4:
-                 return(m_structInfo.IPV4Socket.in_protocol);
-                 break;
-
-            case TYPE_IPV6:
-                 return(m_structInfo.IPV6Socket.in_protocol);
-                 break;
-       
-#ifdef __CORE_BLUETOOTH_SUPPORT__
-            case TYPE_BLUETOOTH:
-                 return(m_structInfo.L2Socket.l2_type);
-                 break;
-#endif
-#ifndef __WINDOWS__
-            case TYPE_NETLINK:
-                 return(m_structInfo.NetlinkSocket.nl_destination);
-                 break;
-#endif
-            default:
-                 break;
-            }
-
-            return (0);
+            return (m_structInfo.Extension());
         }
 
         inline uint32_t Rights() const
