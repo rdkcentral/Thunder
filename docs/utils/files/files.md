@@ -63,6 +63,7 @@ string extension = fileObject.Extension();
 ```cpp
 Core::File fileObject("/tmp/test.txt");
 
+// Open() defaults to read-only
 if (fileObject.Open()) {
     // Successfully opened the file, now read into a buffer
     char buffer[1024] = {};
@@ -186,4 +187,25 @@ while (dir.Next()) {
     }
 }
 ```
+
+## Path Handling
+
+### Normalisation
+
+For security, use the `Normalise()` function when accepting user input to prevent path traversal vulnerabilities. Will attempt to return a safe version of the path if possible. If the path attempts to traverse outside of the current directory then the `valid` argument will be set to false.
+
+```cpp
+std::string vulnerablePath = "../../../../passwd";
+bool validPath;
+
+Core::File::Normalize(vulnerablePath, validPath);
+
+printf("Safe path: %s\n", validPath ? "true" : "false");
+
+/* Output:
+Safe path: false
+*/
+```
+
+
 
