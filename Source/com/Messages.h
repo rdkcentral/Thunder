@@ -84,9 +84,10 @@ namespace RPC {
             }
             void Set(Core::instance_id implementation, const uint32_t interfaceId, const uint8_t methodId)
             {
-                uint16_t result = _data.SetNumber<Core::instance_id>(0, implementation);
-                result += _data.SetNumber<uint32_t>(result, interfaceId);
-                _data.SetNumber(result, methodId);
+                Frame::Writer frameWriter(_data, 0);
+                frameWriter.Number(implementation);
+                frameWriter.Number(interfaceId);
+                frameWriter.Number(methodId);
             }
             Core::instance_id Implementation()
             {

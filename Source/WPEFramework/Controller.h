@@ -24,6 +24,7 @@
 #include "PluginServer.h"
 #include "Probe.h"
 #include "IController.h"
+#include "PostMortem.h"
 
 namespace WPEFramework {
 namespace Plugin {
@@ -39,73 +40,6 @@ namespace Plugin {
         , public Exchange::IController::ILifeTime
         , public Exchange::IController::ILifeTime::INotification {
     public:
-        class CallstackData : public Core::JSON::Container {
-        public:
-            CallstackData()
-                : Core::JSON::Container()
-                , Address()
-                , Function()
-                , Module()
-                , Line()
-            {
-                Add(_T("address"), &Address);
-                Add(_T("function"), &Function);
-                Add(_T("module"), &Module);
-                Add(_T("line"), &Line);
-            }
-            CallstackData(const Core::callstack_info source)
-                : Core::JSON::Container()
-                , Address()
-                , Function()
-                , Module()
-                , Line()
-            {
-                Add(_T("address"), &Address);
-                Add(_T("function"), &Function);
-                Add(_T("module"), &Module);
-                Add(_T("line"), &Line);
-
-                Address = reinterpret_cast<Core::instance_id>(source.address);
-                Function = source.function;
-                if (source.module.empty() == false) {
-                    Module = source.module;
-                }
-                if (source.line != static_cast<uint32_t>(~0)) {
-                    Line = source.line;
-                }
-            }
-            CallstackData(const CallstackData& copy)
-                : Core::JSON::Container()
-                , Address(copy.Address)
-                , Function(copy.Function)
-                , Module(copy.Module)
-                , Line(copy.Line)
-            {
-                Add(_T("address"), &Address);
-                Add(_T("function"), &Function);
-                Add(_T("module"), &Module);
-                Add(_T("line"), &Line);
-            }
-
-            ~CallstackData() = default;
-
-            CallstackData& operator=(const CallstackData& RHS)  {
-
-                Address = RHS.Address;
-                Function = RHS.Function;
-                Module = RHS.Module;
-                Line = RHS.Line;
-
-                return (*this);
-            }
-
-        public:
-            Core::JSON::Pointer   Address;
-            Core::JSON::String    Function;
-            Core::JSON::String    Module;
-            Core::JSON::DecUInt32 Line;
-        };
-
 	class SubsystemsData : public Core::JSON::Container {
         public:
             SubsystemsData()
@@ -450,7 +384,7 @@ namespace Plugin {
         void WorkerPoolMetaData(PluginHost::MetaData::Server& data) const {
             _pluginServer->WorkerPool().Snapshot(data);
         }
-        void Callstack(const ThreadId id, Core::JSON::ArrayType<CallstackData>& response) const;
+        void Callstack(const ThreadId id, Core::JSON::ArrayType<PluginHost::CallstackData>& response) const;
         void SubSystems();
         uint32_t Harakiri();
         uint32_t Storeconfig();

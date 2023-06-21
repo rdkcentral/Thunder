@@ -25,6 +25,7 @@
 #include "Config.h"
 #include "IRemoteInstantiation.h"
 #include "WarningReportingCategories.h"
+#include "PostMortem.h"
 
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
@@ -932,6 +933,37 @@ namespace PluginHost {
             };
 
         private:
+            class ExternalAccess : public RPC::Communicator {
+            public:
+                ExternalAccess() = delete;
+                ExternalAccess(ExternalAccess&&) = delete;
+                ExternalAccess(const ExternalAccess&) = delete;
+                ExternalAccess& operator=(const ExternalAccess&) = delete;
+
+                ExternalAccess(
+                    const Core::NodeId& source,
+                    const string& proxyStubPath)
+                    : RPC::Communicator(source, proxyStubPath)
+                    , _plugin(nullptr)
+                {
+                    //engine->Announcements(Announcement());
+                }
+                ~ExternalAccess() override = default;
+
+            public:
+                void SetInterface(Core::IUnknown* plugin) {
+                    ASSERT((_plugin == nullptr) ^ (plugin == nullptr));
+                    _plugin = plugin;
+                }
+
+            private:
+                void* Acquire(const string& /* className */, const uint32_t interfaceId, const uint32_t /* versionId */) override {
+                    return (_plugin->QueryInterface(interfaceId));
+                }
+
+            private:
+                Core::IUnknown* _plugin;
+            };
             class Condition {
             private:
                 enum state : uint8_t {
@@ -1127,9 +1159,27 @@ namespace PluginHost {
                 std::vector<PluginHost::ISubSystem::subsystem> _control;
                 string _versionHash;
             };
+            static Core::NodeId PluginNodeId(const string& basePath, const Core::JSON::String& communicator) {
+                Core::NodeId result;
+                if (communicator.IsSet() == true) {
+                    if (strchr(communicator.Value().c_str(), '/') == nullptr) {
+                        result = Core::NodeId(communicator.Value().c_str());
+                    }
+                    else {
+                        uint8_t index = 0;
+                        string path = communicator.Value();
+                        while (path[index] == '/') {
+                            index++;
+                        }
+                        result = Core::NodeId((basePath + path.substr(index)).c_str());
+                    }
+                }
+                return (result);
+            }
 
         public:
             Service() = delete;
+            Service(Service&&) = delete;
             Service(const Service&) = delete;
             Service& operator=(const Service&) = delete;
 
@@ -1154,6 +1204,7 @@ namespace PluginHost {
                 , _lastId(0)
                 , _metadata()
                 , _library()
+                , _external(PluginNodeId(server.VolatilePath() + plugin.Callsign.Value() + '/', plugin.Communicator), server.ProxyStubPath())
                 , _administrator(administrator)
             {
             }
@@ -1911,6 +1962,8 @@ namespace PluginHost {
                     _precondition.Evaluate(events);
                     _termination.Evaluate(events);
 
+                    _external.SetInterface(newIF);
+
                     _pluginHandling.Unlock();
                 }
             }
@@ -1971,7 +2024,7 @@ namespace PluginHost {
                 _pluginHandling.Unlock();
 
                 if (currentIF != nullptr) {
-
+                    _external.SetInterface(nullptr);
                     currentIF->Release();
                 }
 
@@ -2003,6 +2056,7 @@ namespace PluginHost {
             ControlData _metadata;
             Core::Library _library;
             void* _hibernateStorage;
+            ExternalAccess _external;
             ServiceMap& _administrator;
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;
@@ -3611,12 +3665,12 @@ POP_WARNING()
                 string Identifier() const override {
                     string identifier;
                     if (_jsonrpc == false) {
-                        identifier = _T("{ \"type\": \"JSON\",  }");
+                        identifier = _T("{ \"type\": \"HTTP\",  }");
                     }
                     else {
                         Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
 
-                        identifier = Core::Format(_T("{ \"type\": \"JSONRPC\", \"id\": %d, \"method\": \"%s\", \"parameters\": %s }"), message->Id.Value(), message->Designator.Value().c_str(), message->Parameters.Value().c_str());
+                        identifier = Core::Format(_T("{ \"type\": \"HTTP\", \"id\": %d, \"method\": \"%s\", \"parameters\": %s }"), message->Id.Value(), message->Designator.Value().c_str(), message->Parameters.Value().c_str());
                     }
                     return (identifier);
                 }
@@ -3695,7 +3749,15 @@ POP_WARNING()
                     Job::Clear();
                 }
                 string Identifier() const override {
-                    return(_T("PluginServer::Channel::JSONElementJob::") + Callsign());
+                    if (_jsonrpc == true) {
+                        Core::ProxyType<Core::JSONRPC::Message> message(_element);
+                        if (message.IsValid() == true) {
+                            return (Core::Format(_T("{ \"type\": \"WS\", \"id\": %d, \"method\": \"%s\", \"parameters\": %s }"), message->Id.Value(), message->Designator.Value().c_str(), message->Parameters.Value().c_str()));
+                        }
+                    }
+                    string message;
+                    _element->ToString(message);
+                    return (Core::Format(_T("{ \"type\": \"WS\", \"callsign\": \"%s\", \"message\": %s }"), Callsign().c_str(), message.c_str()));
                 }
 
             private:
@@ -4379,10 +4441,28 @@ POP_WARNING()
             return (_connections);
         }
         inline void DumpMetadata() {
-            MetaData::Server data;
-            _dispatcher.Snapshot(data);
+            PostMortemData data;
+            _dispatcher.Snapshot(data.WorkerPool);
 
-            // Drop the workerpool info (wht is currently running and what is pending) to a file..
+            Core::JSON::ArrayType<MetaData::Server::Minion>::Iterator index(data.WorkerPool.ThreadPoolRuns.Elements());
+
+            while (index.Next() == true) {
+                
+                std::list<Core::callstack_info> stackList;
+
+                ::DumpCallStack(static_cast<ThreadId>(index.Current().Id.Value()), stackList);
+
+                PostMortemData::Callstack dump;
+                dump.Id = index.Current().Id.Value();
+
+                for (const Core::callstack_info& info : stackList) {
+                    dump.Data.Add() = CallstackData(info);
+                }
+
+                data.Callstacks.Add(dump);
+            }
+
+            // Drop the workerpool info (what is currently running and what is pending) to a file..
             Core::File dumpFile(_config.PostMortemPath() + "ThunderInternals.json");
             if (dumpFile.Create(false) == true) {
                 data.IElement::ToFile(dumpFile);

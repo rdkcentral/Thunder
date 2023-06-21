@@ -255,6 +255,15 @@ namespace WPEFramework {
             virtual uint32_t Initialize();
             virtual int32_t Read(uint8_t buffer[], const uint16_t length) const;
             virtual int32_t Write(const uint8_t buffer[], const uint16_t length);
+            void SetError() {
+                m_State |= SocketPort::EXCEPTION;
+            }
+            void Lock() const {
+                m_syncAdmin.Lock();
+            }
+            void Unlock() const {
+                m_syncAdmin.Unlock();
+            }
 
         private:
             virtual IResource::handle Descriptor() const override

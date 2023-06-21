@@ -22,6 +22,7 @@
 #include "Module.h"
 
 namespace WPEFramework {
+
 namespace Messaging {
 
     template <const uint16_t DATA_BUFFER_SIZE, const uint16_t METADATA_SIZE>
@@ -30,7 +31,6 @@ namespace Messaging {
         /**
         * @brief Metdata Callback. First two arguments are for data in. Two later for data out (responded to the other side).
         *        Third parameter is initially set to maximum length that can be written to the out buffer
-        *
         */
         class DataBuffer : public Core::CyclicBuffer {
         public:
@@ -47,10 +47,8 @@ namespace Messaging {
 
             /**
             * @brief Signal that data is available
-            *
             */
-            void Ring()
-            {
+            void Ring() {
                 _doorBell.Ring();
             }
 
@@ -68,12 +66,14 @@ namespace Messaging {
                 if (result != Core::ERROR_TIMEDOUT) {
                     _doorBell.Acknowledge();
                 }
-                return result;
+
+                return (result);
             }
-            void Relinquish()
-            {
+
+            void Relinquish() {
                 _doorBell.Relinquish();
             }
+
             uint32_t GetOverwriteSize(Cursor& cursor) override
             {
                 while (cursor.Offset() < cursor.Size()) {
@@ -85,16 +85,19 @@ namespace Messaging {
                     cursor.Forward(chunkSize);
                 }
 
-                return cursor.Offset();
+                return (cursor.Offset());
             }
+
             uint32_t GetReadSize(Cursor& cursor) override
             {
                 // Just read one entry.
                 uint16_t entrySize = 0;
                 cursor.Peek(entrySize);
                 cursor.Forward(sizeof(entrySize));
-                return entrySize > sizeof(entrySize) ? entrySize - sizeof(entrySize) : 0;
+                
+                return (entrySize > sizeof(entrySize) ? entrySize - sizeof(entrySize) : 0);
             }
+
             void Unlink() {
                 Core::CyclicBuffer::Unlink();
             }
@@ -142,12 +145,15 @@ namespace Messaging {
                     TRACE_L1("%d bytes already in the buffer instance %d", _dataBuffer.Used(), instanceId);
                     _dataBuffer.Ring();
                 }
-            } else {
+            }
+            else {
                 TRACE_L1("MessageDispatcher instance %d is not valid!", instanceId);
             }
         }
-        ~MessageDataBufferType() {
+        ~MessageDataBufferType()
+        {
             _dataBuffer.Relinquish();
+
             if (_initialize == true) {
                 _dataLock.Lock();
                 _dataBuffer.Unlink();
@@ -188,14 +194,15 @@ namespace Messaging {
                     _dataBuffer.Write(value, length); //value
                     _dataBuffer.Ring();
                     result = Core::ERROR_NONE;
-                } else {
+                }
+                else {
                     TRACE_L1("Buffer to small to fit message!");
                 }
             }
 
             _dataLock.Unlock();
 
-            return result;
+            return (result);
         }
 
         /**
@@ -220,11 +227,13 @@ namespace Messaging {
 
             if (_dataBuffer.IsValid() == true) {
                 const uint32_t length = _dataBuffer.Read(outValue, outLength, true);
+                
                 if (length > 0) {
                     if (length > outLength) {
                         TRACE_L1("Lost part of the message");
                         result = Core::ERROR_GENERAL;
-                    } else {
+                    }
+                    else {
                         result = Core::ERROR_NONE;
                     }
                 }
@@ -234,28 +243,32 @@ namespace Messaging {
 
             _dataLock.Unlock();
 
-            return result;
+            return (result);
         }
-        void Ring()
-        {
+
+        void Ring() {
             _dataBuffer.Ring();
         }
-        uint32_t Wait(const uint32_t waitTime)
-        {
-            return _dataBuffer.Wait(waitTime);
+
+        uint32_t Wait(const uint32_t waitTime) {
+            return (_dataBuffer.Wait(waitTime));
         }
+
         void FlushDataBuffer()
         {
             _dataLock.Lock();
+            
             if (_dataBuffer.IsValid() == true) {
                 _dataBuffer.Flush();
             }
+
             _dataLock.Lock();
         }
-        bool IsValid() const
-        {
+
+        bool IsValid() const {
             return (_dataBuffer.IsValid());
         }
+        
         const string& MetadataName() const {
             return (_filenames.metaData);
         }
@@ -307,5 +320,6 @@ namespace Messaging {
         bool _initialize;
         DataBuffer _dataBuffer;
     };
-}
+
+} // namespace Messaging 
 }

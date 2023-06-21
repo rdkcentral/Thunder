@@ -220,13 +220,7 @@ namespace Core {
         bool Priority(int priority);
         inline ::ThreadId Id() const
         {
-#if defined(__WINDOWS__) || defined(__APPLE__)
-PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
-            return (reinterpret_cast<const ::ThreadId>(m_ThreadId));
-POP_WARNING()
-#else
-            return (static_cast<::ThreadId>(m_ThreadId));
-#endif
+            return (m_ThreadId);
         }
         static ::ThreadId ThreadId();
 
@@ -280,15 +274,15 @@ POP_WARNING()
 #ifdef __POSIX__
         Event m_sigExit;
         pthread_t m_hThreadInstance;
-        uint32_t m_ThreadId;
 #endif
 
 #ifdef __WINDOWS__
         Event m_sigExit;
         thread_state m_enumSuspendedState;
         HANDLE m_hThreadInstance;
-        DWORD m_ThreadId;
 #endif
+
+        ::ThreadId m_ThreadId;
         static uint32_t _defaultStackSize;
 
 #ifdef __CORE_EXCEPTION_CATCHING__

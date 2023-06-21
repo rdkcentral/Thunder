@@ -45,6 +45,60 @@
 namespace WPEFramework {
 namespace Core {
 
+static bool IsIPv4Address(const TCHAR hostname[]) {
+    bool result = true;
+    uint32_t index = 0;
+    uint16_t number = 0;
+    uint8_t delimiter = 0;
+    while ((result == true) && (hostname[index] != '\0')) {
+        if (isdigit(hostname[index])) {
+            number = (number * 10) + (hostname[index] - '0');
+            result = (number <= 0xFF);
+        }
+        else if (hostname[index] == '.') {
+            number = 0;
+            delimiter++;
+            result = (delimiter < 4);
+        }
+        else {
+            result = false;
+        }
+        index++;
+    }
+
+    // last entry a dot and than no digit is not an IPv4 :-)
+    return (result && (isdigit(hostname[index-1])));
+}
+
+static bool IsIPv6Address(const TCHAR hostname[]) {
+    bool result = true;
+    uint32_t index = 0;
+    uint32_t number = 0;
+    uint8_t delimiter = 0;
+    while ((result == true) && (hostname[index] != '\0')) {
+        if (::isdigit(hostname[index])) {
+            number = (number * 16) + (hostname[index] - '0');
+            result = (number <= 0xFFFF);
+        }
+        else if (::isxdigit(hostname[index])) {
+            number = (number * 16) + ((::toupper(hostname[index]) - 'A') + 10);
+            result = (number <= 0xFFFF);
+        }
+        else if (hostname[index] == ':') {
+            number = 0;
+            delimiter++;
+            result = (delimiter < 8);
+        }
+        else {
+            result = false;
+        }
+        index++;
+    }
+
+    // last entry a dot and than no digit is not an IPv4 :-)
+    return (result);
+}
+
 #ifndef __WINDOWS__
     static string NetlinkName(const NodeId::SocketInfo& input)
     {
@@ -282,9 +336,15 @@ namespace Core {
 
         if (m_structInfo.IPV4Socket.sin_family == AF_INET) {
             m_structInfo.IPV4Socket.in_protocol = protocol;
+            if (IsIPv4Address(strHostName) == false) {
+                m_hostName = strHostName;
+            }
         }
         else if (m_structInfo.IPV4Socket.sin_family == AF_INET6) {
             m_structInfo.IPV6Socket.in_protocol = protocol;
+            if (IsIPv6Address(strHostName) == false) {
+                m_hostName = strHostName;
+            }
         }
     }
 
@@ -368,16 +428,27 @@ namespace Core {
 
             if (m_structInfo.IPV4Socket.sin_family == AF_INET) {
                 m_structInfo.IPV4Socket.in_protocol = protocol;
+                if (IsIPv4Address(strHostName) == false) {
+                    if (portNumber == nullptr) {
+                        m_hostName = strHostName;
+                    }
+                    else {
+                        m_hostName = string(strHostName).substr(0, static_cast<uint32_t>(portNumber - strHostName));;
+                    }
+                }
             }
             else if (m_structInfo.IPV4Socket.sin_family == AF_INET6) {
                 m_structInfo.IPV6Socket.in_protocol = protocol;
+                if (IsIPv6Address(strHostName) == false) {
+                    m_hostName = string(strHostName).substr(0, static_cast<uint32_t>(portNumber - strHostName));;
+                }
+
             }
         }
     }
 
     NodeId::NodeId(const NodeId& rInfo)
     {
-
         *this = rInfo;
     }
 
