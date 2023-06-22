@@ -47,14 +47,17 @@ namespace RPC {
 
     class EXTERNAL Administrator {
     public:
-        typedef std::vector<ProxyStub::UnknownProxy*> Proxies;
+        using Proxies = std::vector<ProxyStub::UnknownProxy*>;
 
     private:
         Administrator();
+
         class RecoverySet {
         public:
             RecoverySet() = delete;
+            RecoverySet(RecoverySet&&) = delete;
             RecoverySet(const RecoverySet&) = delete;
+            RecoverySet& operator= (RecoverySet&&) = delete;
             RecoverySet& operator= (const RecoverySet&) = delete;
 
             RecoverySet(const uint32_t id, Core::IUnknown* object)
@@ -91,8 +94,8 @@ namespace RPC {
             uint32_t _referenceCount;
         };
 
-        typedef std::map<const Core::IPCChannel*, Proxies> ChannelMap;
-        typedef std::map<const Core::IPCChannel*, std::list< RecoverySet > > ReferenceMap;
+        using ChannelMap = std::map<const Core::IPCChannel*, Proxies>;
+        using ReferenceMap = std::map<const Core::IPCChannel*, std::list< RecoverySet > >;
 
         struct EXTERNAL IMetadata {
             virtual ~IMetadata() = default;
@@ -105,6 +108,7 @@ namespace RPC {
         public:
             ProxyType(ProxyType<PROXY>&& ) = delete;
             ProxyType(const ProxyType<PROXY>&) = delete;
+            ProxyType<PROXY>& operator=(ProxyType<PROXY>&&) = delete;
             ProxyType<PROXY>& operator=(const ProxyType<PROXY>&) = delete;
 
             ProxyType() = default;
@@ -119,6 +123,7 @@ namespace RPC {
     public:
         Administrator(Administrator&&) = delete;
         Administrator(const Administrator&) = delete;
+        Administrator& operator=(Administrator&&) = delete;
         Administrator& operator=(const Administrator&) = delete;
 
         virtual ~Administrator();
@@ -298,27 +303,34 @@ namespace RPC {
         Job()
             : _message()
             , _channel()
-            , _handler(nullptr)
         {
         }
-        Job(Core::IPCChannel& channel, const Core::ProxyType<Core::IIPC>& message, Core::IIPCServer* handler)
+        Job(Core::IPCChannel& channel, const Core::ProxyType<Core::IIPC>& message)
             : _message(message)
             , _channel(channel)
-            , _handler(handler)
+        {
+        }
+        Job(Job&& move)
+            : _message(std::move(move._message))
+            , _channel(std::move(move._channel))
         {
         }
         Job(const Job& copy)
             : _message(copy._message)
             , _channel(copy._channel)
-            , _handler(copy._handler)
         {
         }
         ~Job() override = default;
 
+        Job& operator=(Job&& rhs) {
+            _message = std::move(rhs._message);
+            _channel = std::move(rhs._channel);
+
+            return (*this);
+        }
         Job& operator=(const Job& rhs) {
             _message = rhs._message;
             _channel = rhs._channel;
-            _handler = rhs._handler;
 
             return (*this);
         }
@@ -332,13 +344,11 @@ namespace RPC {
         {
             _message.Release();
             _channel.Release();
-            _handler = nullptr;
         }
-        void Set(Core::IPCChannel& channel, const Core::ProxyType<Core::IIPC>& message, Core::IIPCServer* handler)
+        void Set(Core::IPCChannel& channel, const Core::ProxyType<Core::IIPC>& message)
         {
             _message = message;
             _channel = Core::ProxyType<Core::IPCChannel>(channel);
-            _handler = handler;
         }
         string Identifier() const override {
             string identifier;
@@ -353,14 +363,9 @@ namespace RPC {
         }
         void Dispatch() override
         {
-            if (_message->Label() == InvokeMessage::Id()) {
-                Invoke(_channel, _message);
-            } else {
-                ASSERT(_message->Label() == AnnounceMessage::Id());
-                ASSERT(_handler != nullptr);
+            ASSERT(_message->Label() == InvokeMessage::Id());
 
-                _handler->Procedure(*_channel, _message);
-            }
+            Invoke(_channel, _message);
         }
 
         static void Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<Core::IIPC>& data)
@@ -375,7 +380,6 @@ namespace RPC {
     private:
         Core::ProxyType<Core::IIPC> _message;
         Core::ProxyType<Core::IPCChannel> _channel;
-        Core::IIPCServer* _handler;
 
         static Core::ProxyPoolType<Job> _factory;
         static Administrator& _administrator;
@@ -384,31 +388,25 @@ namespace RPC {
     struct EXTERNAL IIPCServer : public Core::IIPCServer {
         ~IIPCServer() override = default;
 
-        virtual void Announcements(Core::IIPCServer* announces) = 0;
         virtual void Submit(const Core::ProxyType<Core::IDispatch>& job) = 0;
         virtual void Revoke(const Core::ProxyType<Core::IDispatch>& job) = 0;
     };
 
     class EXTERNAL InvokeServer : public IIPCServer {
     public:
+        InvokeServer(InvokeServer&&) = delete;
         InvokeServer(const InvokeServer&) = delete;
+        InvokeServer& operator=(InvokeServer&&) = delete;
         InvokeServer& operator=(const InvokeServer&) = delete;
 
         InvokeServer(Core::IWorkerPool* workers)
             : _threadPoolEngine(*workers)
-            , _handler(nullptr)
         {
             ASSERT(workers != nullptr);
         }
-        ~InvokeServer()
-        {
-        }
+        ~InvokeServer() override = default;
 
-        void Announcements(Core::IIPCServer* announces) override
-        {
-            ASSERT((announces != nullptr) ^ (_handler != nullptr));
-            _handler = announces;
-        }
+    public:
         void Submit(const Core::ProxyType<Core::IDispatch>& job) override {
             _threadPoolEngine.Submit(job);
         }
@@ -421,13 +419,12 @@ namespace RPC {
         {
             Core::ProxyType<Job> job(Job::Instance());
 
-            job->Set(source, message, _handler);
+            job->Set(source, message);
             _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job));
         }
 
     private:
         Core::IWorkerPool& _threadPoolEngine;
-        Core::IIPCServer* _handler;
     };
 
     template <const uint8_t THREADPOOLCOUNT, const uint32_t STACKSIZE, const uint32_t MESSAGESLOTS>
@@ -435,7 +432,9 @@ namespace RPC {
     private:
         class Dispatcher : public Core::ThreadPool::IDispatcher {
         public:
+            Dispatcher(Dispatcher&&) = delete;
             Dispatcher(const Dispatcher&) = delete;
+            Dispatcher& operator=(Dispatcher&&) = delete;
             Dispatcher& operator=(const Dispatcher&) = delete;
 
             Dispatcher() = default;
@@ -452,25 +451,20 @@ namespace RPC {
         };
 
     public:
+        InvokeServerType(InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&&) = delete;
         InvokeServerType(const InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&) = delete;
+        InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>& operator = (InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&&) = delete;
         InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>& operator = (const InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&) = delete;
 
         InvokeServerType()
             : _dispatcher()
             , _threadPoolEngine(THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS, &_dispatcher, nullptr, nullptr, nullptr)
-            , _handler(nullptr)
         {
             _threadPoolEngine.Run();
         }
         ~InvokeServerType() override
         {
             _threadPoolEngine.Stop();
-        }
-
-        void Announcements(Core::IIPCServer* announces) override
-        {
-            ASSERT((announces != nullptr) ^ (_handler != nullptr));
-            _handler = announces;
         }
         void Submit(const Core::ProxyType<Core::IDispatch>& job) override {
             _threadPoolEngine.Submit(job, Core::infinite);
@@ -493,21 +487,17 @@ namespace RPC {
                 TRACE_L1("_threadPoolEngine.Pending() == %d", _threadPoolEngine.Pending());
             }
 
-            if (message->Label() == AnnounceMessage::Id()) {
-                ASSERT(_handler != nullptr);
-                _handler->Procedure(source, message);
-            } else {
-                Core::ProxyType<RPC::Job> job(Job::Instance());
+            ASSERT(message->Label() == InvokeMessage::Id());
 
-                job->Set(source, message, _handler);
-                _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite);
-            }
+            Core::ProxyType<RPC::Job> job(Job::Instance());
+
+            job->Set(source, message);
+            _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite);
         }
 
     private:
         Dispatcher _dispatcher;
         Core::ThreadPool _threadPoolEngine;
-        Core::IIPCServer* _handler;
     };
 }
 

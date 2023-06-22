@@ -228,7 +228,10 @@ namespace Core {
                 m_Buffer = newPointer;
                 m_Size = (adjust < m_Size ? (m_Size - adjust) : 0);
                 m_MaxSize = (adjust < m_MaxSize ? (m_MaxSize - adjust) : 0);
-                TRACE_L1("Aligning the memory buffer by %d bytes to %p !!!\n\n", adjust, m_Buffer);
+
+                if (adjust != 0) {
+                    TRACE_L1("Aligning the memory buffer by %d bytes to %p !!!", adjust, m_Buffer);
+                }
             }
         }
         inline uint64_t AllocatedSize() const

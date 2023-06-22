@@ -942,11 +942,10 @@ namespace PluginHost {
 
                 ExternalAccess(
                     const Core::NodeId& source,
-                    const string& proxyStubPath)
-                    : RPC::Communicator(source, proxyStubPath)
-                    , _plugin(nullptr)
-                {
-                    //engine->Announcements(Announcement());
+                    const string& proxyStubPath,
+                    const Core::ProxyType<RPC::InvokeServer>& handler)
+                    : RPC::Communicator(source, proxyStubPath, Core::ProxyType<Core::IIPCServer>(handler))
+                    , _plugin(nullptr) {
                 }
                 ~ExternalAccess() override = default;
 
@@ -1183,7 +1182,7 @@ namespace PluginHost {
             Service(const Service&) = delete;
             Service& operator=(const Service&) = delete;
 
-            Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode type)
+            Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode type, const Core::ProxyType<RPC::InvokeServer>& handler)
                 : PluginHost::Service(plugin, server.WebPrefix(), server.PersistentPath(), server.DataPath(), server.VolatilePath())
                 , _mode(type)
                 , _pluginHandling()
@@ -1204,7 +1203,7 @@ namespace PluginHost {
                 , _lastId(0)
                 , _metadata()
                 , _library()
-                , _external(PluginNodeId(server.VolatilePath() + plugin.Callsign.Value() + '/', plugin.Communicator), server.ProxyStubPath())
+                , _external(PluginNodeId(server.VolatilePath() + plugin.Callsign.Value() + '/', plugin.Communicator), server.ProxyStubPath(), handler)
                 , _administrator(administrator)
             {
             }
@@ -2410,9 +2409,6 @@ namespace PluginHost {
                     , _requestObservers()
                     , _proxyStubObserver(*this, observableProxyStubPath)
                 {
-                    // Make sure the engine knows how to call the Announcment handler..
-                    handler->Announcements(Announcement());
-
                     if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
                         TRACE_L1("We can not open the RPC server. No out-of-process communication available. %d", __LINE__);
                     } else {
@@ -3081,7 +3077,7 @@ POP_WARNING()
             inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration, const Service::mode mode)
             {
                 // Whatever plugin is needse, we at least have our MetaData plugin available (as the first entry :-).
-                Core::ProxyType<Service> newService(Core::ProxyType<Service>::Create(Configuration(), configuration, *this, mode));
+                Core::ProxyType<Service> newService(Core::ProxyType<Service>::Create(Configuration(), configuration, *this, mode, _engine));
 
                 if (newService.IsValid() == true) {
                     _adminLock.Lock();
@@ -3110,7 +3106,7 @@ POP_WARNING()
                     newConfiguration.FromString(original->Configuration());
                     newConfiguration.Callsign = newCallsign;
 
-                    Core::ProxyType<Service> clone = Core::ProxyType<Service>::Create(Configuration(), newConfiguration, *this, Service::mode::CLONED);
+                    Core::ProxyType<Service> clone = Core::ProxyType<Service>::Create(Configuration(), newConfiguration, *this, Service::mode::CLONED, _engine);
 
                     if (newService.IsValid() == true) {
                         // Fire up the interface. Let it handle the messages.
