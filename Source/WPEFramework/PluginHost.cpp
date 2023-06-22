@@ -597,7 +597,36 @@ POP_WARNING()
             }
             
 #ifdef __CORE_WARNING_REPORTING__
-            WarningReporting::WarningReportingUnit::Instance().Defaults(_config->WarningReportingCategories());
+            class GlobalConfig : public Core::JSON::Container {
+            public:
+                class ReportingSettings : public Core::JSON::Container {
+                public:
+                    ReportingSettings()
+                        : Core::JSON::Container()
+                        , Settings()
+                    {
+                        Add("settings", &Settings);
+                    }
+
+                public:
+                    Core::JSON::String Settings;
+                };
+
+            public:
+                GlobalConfig()
+                    : Core::JSON::Container()
+                    , WarningReporting()
+                {
+                    Add("reporting", &WarningReporting);
+                }
+
+             public:
+                ReportingSettings WarningReporting;
+            } gc;
+
+            gc.FromString(_config->MessagingCategories());
+
+            WarningReporting::WarningReportingUnit::Instance().Defaults(gc.WarningReporting.Settings.Value());
 #endif
 
             SYSLOG_GLOBAL(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
