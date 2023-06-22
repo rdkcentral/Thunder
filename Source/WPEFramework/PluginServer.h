@@ -933,6 +933,36 @@ namespace PluginHost {
             };
 
         private:
+            class ExternalAccess : public RPC::Communicator {
+            public:
+                ExternalAccess() = delete;
+                ExternalAccess(ExternalAccess&&) = delete;
+                ExternalAccess(const ExternalAccess&) = delete;
+                ExternalAccess& operator=(const ExternalAccess&) = delete;
+
+                ExternalAccess(
+                    const Core::NodeId& source,
+                    const string& proxyStubPath,
+                    const Core::ProxyType<RPC::InvokeServer>& handler)
+                    : RPC::Communicator(source, proxyStubPath, Core::ProxyType<Core::IIPCServer>(handler))
+                    , _plugin(nullptr) {
+                }
+                ~ExternalAccess() override = default;
+
+            public:
+                void SetInterface(Core::IUnknown* plugin) {
+                    ASSERT((_plugin == nullptr) ^ (plugin == nullptr));
+                    _plugin = plugin;
+                }
+
+            private:
+                void* Acquire(const string& /* className */, const uint32_t interfaceId, const uint32_t /* versionId */) override {
+                    return (_plugin->QueryInterface(interfaceId));
+                }
+
+            private:
+                Core::IUnknown* _plugin;
+            };
             class Condition {
             private:
                 enum state : uint8_t {
@@ -1128,13 +1158,31 @@ namespace PluginHost {
                 std::vector<PluginHost::ISubSystem::subsystem> _control;
                 string _versionHash;
             };
+            static Core::NodeId PluginNodeId(const string& basePath, const Core::JSON::String& communicator) {
+                Core::NodeId result;
+                if (communicator.IsSet() == true) {
+                    if (strchr(communicator.Value().c_str(), '/') == nullptr) {
+                        result = Core::NodeId(communicator.Value().c_str());
+                    }
+                    else {
+                        uint8_t index = 0;
+                        string path = communicator.Value();
+                        while (path[index] == '/') {
+                            index++;
+                        }
+                        result = Core::NodeId((basePath + path.substr(index)).c_str());
+                    }
+                }
+                return (result);
+            }
 
         public:
             Service() = delete;
+            Service(Service&&) = delete;
             Service(const Service&) = delete;
             Service& operator=(const Service&) = delete;
 
-            Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode type)
+            Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode type, const Core::ProxyType<RPC::InvokeServer>& handler)
                 : PluginHost::Service(plugin, server.WebPrefix(), server.PersistentPath(), server.DataPath(), server.VolatilePath())
                 , _mode(type)
                 , _pluginHandling()
@@ -1155,6 +1203,7 @@ namespace PluginHost {
                 , _lastId(0)
                 , _metadata()
                 , _library()
+                , _external(PluginNodeId(server.VolatilePath() + plugin.Callsign.Value() + '/', plugin.Communicator), server.ProxyStubPath(), handler)
                 , _administrator(administrator)
             {
             }
@@ -1912,6 +1961,8 @@ namespace PluginHost {
                     _precondition.Evaluate(events);
                     _termination.Evaluate(events);
 
+                    _external.SetInterface(newIF);
+
                     _pluginHandling.Unlock();
                 }
             }
@@ -1972,7 +2023,7 @@ namespace PluginHost {
                 _pluginHandling.Unlock();
 
                 if (currentIF != nullptr) {
-
+                    _external.SetInterface(nullptr);
                     currentIF->Release();
                 }
 
@@ -2004,6 +2055,7 @@ namespace PluginHost {
             ControlData _metadata;
             Core::Library _library;
             void* _hibernateStorage;
+            ExternalAccess _external;
             ServiceMap& _administrator;
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;
@@ -2357,9 +2409,6 @@ namespace PluginHost {
                     , _requestObservers()
                     , _proxyStubObserver(*this, observableProxyStubPath)
                 {
-                    // Make sure the engine knows how to call the Announcment handler..
-                    handler->Announcements(Announcement());
-
                     if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
                         TRACE_L1("We can not open the RPC server. No out-of-process communication available. %d", __LINE__);
                     } else {
@@ -3028,7 +3077,7 @@ POP_WARNING()
             inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration, const Service::mode mode)
             {
                 // Whatever plugin is needse, we at least have our MetaData plugin available (as the first entry :-).
-                Core::ProxyType<Service> newService(Core::ProxyType<Service>::Create(Configuration(), configuration, *this, mode));
+                Core::ProxyType<Service> newService(Core::ProxyType<Service>::Create(Configuration(), configuration, *this, mode, _engine));
 
                 if (newService.IsValid() == true) {
                     _adminLock.Lock();
@@ -3057,7 +3106,7 @@ POP_WARNING()
                     newConfiguration.FromString(original->Configuration());
                     newConfiguration.Callsign = newCallsign;
 
-                    Core::ProxyType<Service> clone = Core::ProxyType<Service>::Create(Configuration(), newConfiguration, *this, Service::mode::CLONED);
+                    Core::ProxyType<Service> clone = Core::ProxyType<Service>::Create(Configuration(), newConfiguration, *this, Service::mode::CLONED, _engine);
 
                     if (newService.IsValid() == true) {
                         // Fire up the interface. Let it handle the messages.
@@ -3704,7 +3753,7 @@ POP_WARNING()
                     }
                     string message;
                     _element->ToString(message);
-                    return (Core::Format(_T("{ \"type\": \"WS\", \"callsign\": \"%s\", \"message\": %s }"), Callsign(), message.c_str()));
+                    return (Core::Format(_T("{ \"type\": \"WS\", \"callsign\": \"%s\", \"message\": %s }"), Callsign().c_str(), message.c_str()));
                 }
 
             private:
@@ -4397,7 +4446,7 @@ POP_WARNING()
                 
                 std::list<Core::callstack_info> stackList;
 
-                ::DumpCallStack(index.Current().Id.Value(), stackList);
+                ::DumpCallStack(static_cast<ThreadId>(index.Current().Id.Value()), stackList);
 
                 PostMortemData::Callstack dump;
                 dump.Id = index.Current().Id.Value();

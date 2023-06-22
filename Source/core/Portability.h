@@ -243,6 +243,7 @@ PUSH_WARNING( \
 #include <array>
 #include <thread>
 #include <stdarg.h> /* va_list, va_start, va_arg, va_end */
+#include <inttypes.h>
 
 #define AF_NETLINK 16
 #define AF_PACKET  17
@@ -378,6 +379,7 @@ typedef std::string string;
 #include <pthread.h>
 #include <sched.h>
 #include <signal.h>
+#include <inttypes.h>
 
 #include <sys/ioctl.h>
 #include <sys/resource.h>
@@ -506,14 +508,17 @@ inline void EXTERNAL SleepS(unsigned int a_Time)
 #define DEPRECATED __attribute__((deprecated))
 #define VARIABLE_IS_NOT_USED __attribute__((unused))
 #define WARNING_RESULT_NOT_USED __attribute__((warn_unused_result))
+#define PRINTF_FORMAT(fmt, ellipsis) __attribute__ ((format (printf, fmt, ellipsis)))
 #elif defined(_MSC_VER)
 #define DEPRECATED __declspec(deprecated)
 #define VARIABLE_IS_NOT_USED
 #define WARNING_RESULT_NOT_USED
+#define PRINTF_FORMAT(fmt, ellipsis)
 #else
 #define DEPRECATED
 #define VARIABLE_IS_NOT_USED
 #define WARNING_RESULT_NOT_USED
+#define PRINTF_FORMAT(fmt, ellipsis)
 #endif
 
 #if !defined(NDEBUG)
@@ -734,8 +739,8 @@ namespace Core {
         std::transform(inplace.begin(), inplace.end(), inplace.begin(), ::tolower);
     }
 
-    string EXTERNAL Format(const TCHAR formatter[], ...);
-    void EXTERNAL Format(string& dst, const TCHAR format[], ...);
+    string EXTERNAL Format(const TCHAR formatter[], ...) PRINTF_FORMAT(1, 2);
+    void EXTERNAL Format(string& dst, const TCHAR format[], ...) PRINTF_FORMAT(2, 3);
     void EXTERNAL Format(string& dst, const TCHAR format[], va_list ap);
 
     const uint32_t infinite = -1;

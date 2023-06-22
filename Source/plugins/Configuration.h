@@ -27,6 +27,10 @@
 
 namespace WPEFramework {
 namespace Plugin {
+    /**
+     * IMPORTANT: If updating this class to add/remove/modify configuration options, ensure
+     * the documentation in docs/plugin/config.md is updated to reflect the changes!
+    */
     class EXTERNAL Config : public Core::JSON::Container {
     public:
         class EXTERNAL RootConfig : public Core::JSON::Container {
@@ -216,6 +220,7 @@ namespace Plugin {
             , SystemRootPath()
             , StartupOrder(50)
             , Startup(PluginHost::IShell::startup::DEACTIVATED)
+            , Communicator()
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -232,6 +237,7 @@ namespace Plugin {
             Add(_T("systemrootpath"), &SystemRootPath);
             Add(_T("startuporder"), &StartupOrder);
             Add(_T("startmode"), &Startup);
+            Add(_T("communicator"), &Communicator);
         }
         Config(const Config& copy)
             : Core::JSON::Container()
@@ -250,6 +256,7 @@ namespace Plugin {
             , SystemRootPath(copy.SystemRootPath)
             , StartupOrder(copy.StartupOrder)
             , Startup(copy.Startup)
+            , Communicator(copy.Communicator)
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -266,6 +273,7 @@ namespace Plugin {
             Add(_T("systemrootpath"), &SystemRootPath);
             Add(_T("startuporder"), &StartupOrder);
             Add(_T("startmode"), &Startup);
+            Add(_T("communicator"), &Communicator);
         }
         ~Config() override = default;
 
@@ -286,6 +294,7 @@ namespace Plugin {
             SystemRootPath = RHS.SystemRootPath;
             StartupOrder = RHS.StartupOrder;
             Startup = RHS.Startup;
+            Communicator = RHS.Communicator;
 
             return (*this);
         }
@@ -318,6 +327,7 @@ namespace Plugin {
         Core::JSON::String SystemRootPath;
         Core::JSON::DecUInt32 StartupOrder;
         Core::JSON::EnumType<PluginHost::IShell::startup> Startup;
+        Core::JSON::String Communicator;
 
         static Core::NodeId IPV4UnicastNode(const string& ifname);
 

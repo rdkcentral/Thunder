@@ -202,8 +202,6 @@ namespace Core {
             , _connector()
             , _bufferSize(bufferSize)
         {
-            ASSERT(node.IsValid() == true);
-
             static_assert(INTERNALFACTORY == true, "This constructor can only be called if you specify an INTERNAL factory");
 
             if (node.IsValid() == true) {
@@ -225,8 +223,6 @@ namespace Core {
             , _connector()
             , _bufferSize(bufferSize)
         {
-            ASSERT(node.IsValid() == true);
-
             static_assert(INTERNALFACTORY == false, "This constructor can only be called if you specify an EXTERNAL factory");
 
             if (node.IsValid() == true) {
@@ -256,6 +252,13 @@ namespace Core {
         }
 
     public:
+        uint32_t Open(const uint32_t waitTime) {
+            ASSERT(_connector.empty() == false);
+            return (SocketListner::Open(waitTime));
+        }
+        uint32_t Close(const uint32_t waitTime) {
+            return (SocketListner::Close(waitTime));
+        }
         // void action(const Client& client)
         template<typename ACTION>
         void Visit(ACTION&& action) {

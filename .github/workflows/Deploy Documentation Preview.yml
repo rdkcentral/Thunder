@@ -1,0 +1,64 @@
+# Inspiration: https://github.com/ACCESS-Hive/access-hive.github.io/pull/126
+# For security, we do not want to checkout and run code from forks (could lead to secrets being leaked)
+# So split documentation build/preview into discrete steps
+
+name: Deploy documentation preview
+
+# If the documentation build completed successfully, then download the generated artifact
+# and upload it to github pages
+on:
+  workflow_run:
+    workflows: ["Build Documentation preview"]
+    types:
+      - completed
+
+concurrency:
+  group: preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      # Will download all artifacts
+      # If artifact name == preview_site, then we have a site to reply
+      # If artifact name == closed_pr_number, then we need to cleanup an old deployment
+      - name: Download artifacts
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          run_id: ${{github.event.workflow_run.id }}
+          path: ./artifacts
+      - name: Check artifact name
+        run: |
+          if [ -d "./artifacts/preview_site" ]; then
+            echo "mode=deploy" >> "$GITHUB_ENV"
+          elif [ -d "./artifacts/closed_pr_number" ]; then
+            echo "mode=clean" >> "$GITHUB_ENV"
+          else
+              echo "Failed to find artifact"
+              exit 1
+          fi
+      # Get PR number
+      - if: ${{ env.mode == 'deploy' }}
+        name: Get PR number (deploy)
+        run: echo "pr_number=$(cat ./artifacts/preview_site/.pr_number)" >> "$GITHUB_ENV"
+
+      - if: ${{ env.mode == 'clean' }}
+        name: Get PR number (clean)
+        run: echo "pr_number=$(cat ./artifacts/closed_pr_number/.pr_number)" >> "$GITHUB_ENV"
+
+      # Run deployment
+      - if: ${{ env.mode == 'deploy' }}
+        name: Deploy preview
+        uses: access-nri/pr-preview-action@v2
+        with:
+          source-dir: ./artifacts/preview_site
+          action: deploy
+          pr-number: ${{ env.pr_number }}
+      - if: ${{ env.mode == 'clean' }}
+        name: Clean preview
+        uses: access-nri/pr-preview-action@v2
+        with:
+          action: remove
+          pr-number: ${{ env.pr_number }}

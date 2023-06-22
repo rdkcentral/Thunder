@@ -84,8 +84,6 @@ else()
 endif()
 
 # Remove optimization flags added by the build system
-string(REGEX REPLACE "(-O([0123gs]|fast))" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-string(REGEX REPLACE "(-O([0123gs]|fast))" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 string(REGEX REPLACE "(-g[0123])" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 string(REGEX REPLACE "(-g[0123])" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 string(REGEX REPLACE "\\-\\g$" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")

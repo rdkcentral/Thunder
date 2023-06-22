@@ -42,7 +42,8 @@ namespace WPEFramework {
                 Core::Time now(log.TimeStamp());
                 string time(now.ToRFC1123(true));
 
-                result = Core::Format("[%s]:[%s:%d]:[%s]:[%s]: %s", time.c_str(),
+                result = Core::Format("[%s]:[%s][%s]: %s", time.c_str(),
+                    log.Module().c_str(),
                     log.Category().c_str(),
                     message->Data().c_str());
             }
