@@ -41,6 +41,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::IShell::reason)
     { PluginHost::IShell::AUTOMATIC, _TXT("Automatic") },
     { PluginHost::IShell::FAILURE, _TXT("Failure") },
     { PluginHost::IShell::MEMORY_EXCEEDED, _TXT("MemoryExceeded") },
+    { PluginHost::IShell::MEMORY_EXCEEDED_ON_SUSPEND, _TXT("MemoryExceededOnSuspend") },
     { PluginHost::IShell::STARTUP, _TXT("Startup") },
     { PluginHost::IShell::SHUTDOWN, _TXT("Shutdown") },
     { PluginHost::IShell::CONDITIONS, _TXT("Conditions") },

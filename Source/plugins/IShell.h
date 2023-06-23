@@ -72,6 +72,7 @@ namespace PluginHost {
             AUTOMATIC,
             FAILURE,
             MEMORY_EXCEEDED,
+            MEMORY_EXCEEDED_ON_SUSPEND,
             STARTUP,
             SHUTDOWN,
             CONDITIONS,
