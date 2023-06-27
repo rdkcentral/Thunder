@@ -17,7 +17,7 @@
         <link rel="next" href="../../json/">
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.16">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.17">
     
     
       
@@ -73,6 +73,11 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
+      
+        
+        <a href="#example" class="md-skip">
+          Skip to content
+        </a>
       
     </div>
     <div data-md-component="announce">
@@ -931,9 +936,38 @@
       
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          File Observer
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         File Observer
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    Example
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1459,6 +1493,21 @@
   
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    Example
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1477,7 +1526,88 @@
 
   <h1>File Observer</h1>
 
+<p>The file observer can be used to monitor files/directories and invoke code when a change occurs. On linux systems, it uses inotify to receive filesystem events.</p>
+<h2 id="example">Example</h2>
+<p>To get started with a simple FileObserver implementation, create a class that inherits from <code>Core::FileSystemMonitor::ICallback</code>. The class registers with the <code>FileSystemMonitor</code> instance upon construction, and unregisters upon destruction.</p>
+<p>This class should implement the <code>Updated()</code> method from the <code>ICallback</code> interface which is called whenever the observed file is changed.</p>
+<div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;core/core.h&gt;</span>
 
+<span class="k">using</span><span class="w"> </span><span class="k">namespace</span><span class="w"> </span><span class="nn">WPEFramework</span><span class="p">;</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">FileChangeMonitor</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">FileSystemMonitor</span><span class="o">::</span><span class="n">ICallback</span><span class="w"> </span><span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+<span class="w">    </span><span class="n">FileChangeMonitor</span><span class="p">(</span><span class="n">string</span><span class="w"> </span><span class="n">filePath</span><span class="p">)</span>
+<span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">_filePath</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">filePath</span><span class="p">))</span>
+<span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">_registered</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Check the path is valid</span>
+<span class="w">        </span><span class="n">Core</span><span class="o">::</span><span class="n">File</span><span class="w"> </span><span class="nf">file</span><span class="p">(</span><span class="n">_filePath</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">file</span><span class="p">.</span><span class="n">Exists</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Error: Path %s does not exist - cannot add monitor</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">_filePath</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="c1">// Register the file path with the filesystem observer</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">FileSystemMonitor</span><span class="o">::</span><span class="n">Instance</span><span class="p">().</span><span class="n">Register</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">_filePath</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">_registered</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Successfully installed file monitor for %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">_filePath</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Failed to install filesystem monitor</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="o">~</span><span class="n">FileChangeMonitor</span><span class="p">()</span><span class="w"> </span><span class="k">override</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">_registered</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">Core</span><span class="o">::</span><span class="n">FileSystemMonitor</span><span class="o">::</span><span class="n">Instance</span><span class="p">().</span><span class="n">Unregister</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">_filePath</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// Delete copy/move ctors</span>
+<span class="w">    </span><span class="n">FileChangeMonitor</span><span class="p">(</span><span class="n">FileChangeMonitor</span><span class="o">&amp;&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+<span class="w">    </span><span class="n">FileChangeMonitor</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">FileChangeMonitor</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+<span class="w">    </span><span class="n">FileChangeMonitor</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">FileChangeMonitor</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">Updated</span><span class="p">()</span><span class="w"> </span><span class="k">override</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;This file %s has changed!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">_filePath</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="k">private</span><span class="o">:</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="n">_filePath</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">_registered</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div>
+<p>We can now construct an instance of <code>FileChangeMonitor</code> to observe a file or directory of our choosing</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If watching a directory, be aware the file observer is not recursive, so will only monitor the top-level for changes. Add seperate observers for child directories if required</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="c1">// Monitor a specific file (note this is based on inodes so cannot withstand the file being deleted &amp; recreated)</span>
+<span class="n">FileChangeMonitor</span><span class="w"> </span><span class="n">fileMonitor</span><span class="p">(</span><span class="s">&quot;/tmp/test.txt&quot;</span><span class="p">);</span>
+
+<span class="c1">// Monitor an entire directory</span>
+<span class="n">FileChangeMonitor</span><span class="w"> </span><span class="n">fileMonitor</span><span class="p">(</span><span class="s">&quot;/tmp&quot;</span><span class="p">);</span>
+</code></pre></div>
+<p>Below is a <code>main()</code> method that installs the file monitor and sleeps for 20 seconds. </p>
+<p>Whilst the app is running, modifying the <code>/tmp/test.txt</code> file will cause our callback to fire and the message to be printed to the console</p>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="k">const</span><span class="o">*</span><span class="w"> </span><span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">FileChangeMonitor</span><span class="w"> </span><span class="n">fileMonitor</span><span class="p">(</span><span class="s">&quot;/tmp/test.txt&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="n">SleepS</span><span class="p">(</span><span class="mi">20</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// Always remember to call Core::Singleton::Dispose() at the end of the</span>
+<span class="w">    </span><span class="c1">// application after destructing any created objects</span>
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Singleton</span><span class="o">::</span><span class="n">Dispose</span><span class="p">();</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="cm">/* Output:</span>
+<span class="cm">Successfully installed file monitor for /tmp/test.txt</span>
+<span class="cm">This file /tmp/test.txt has changed!</span>
+<span class="cm">*/</span>
+</code></pre></div>
 
 
 
@@ -1561,7 +1691,7 @@
     <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.a51614de.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.b425cdc4.min.js"></script>
       
     
   </body>
