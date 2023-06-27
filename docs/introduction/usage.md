@@ -110,7 +110,7 @@ Connected (press CTRL+C to quit)
 
 ### Controller Plugin
 
-The Controller plugin is the central plugin in Thunder for managing plugins. It is the only plugin always included as part of a Thunder build, and the code is part of the core Thunder repository. Using this plugin you can activate/deactivate plugins, check their status, suspect or resume compatible plugins and manage plugin configuration.
+The Controller plugin is the central plugin in Thunder for managing plugins. It is the only plugin always included as part of a Thunder build, and the code is part of the core Thunder repository. Using this plugin you can activate/deactivate plugins, check their status, suspend or resume compatible plugins and manage plugin configuration.
 
 It provides JSON-RPC APIs for managing plugins
 
