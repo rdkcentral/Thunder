@@ -16,12 +16,12 @@ nav:
       - Basic Usage: introduction/usage.md
     - Architecture:
       - Overview: introduction/architecture/overview.md
-      - Plugin Execution Modes: introduction/architecture/plugin_modes.md
       - RPC Protocols:
         - JSON-RPC: introduction/architecture/rpc/jsonrpc.md
         - COM-RPC: introduction/architecture/rpc/comrpc.md
   - Plugin Development:
     - Introduction: plugin/intro.md
+    - Execution Modes: plugin/execution-modes.md
     - Plugin Lifecycle: plugin/lifecycle.md
     - Design Principles: plugin/principles.md
     - Interfaces:
@@ -36,6 +36,7 @@ nav:
     - Subsystems: plugin/subsystems.md
     - ProxyPool: plugin/proxypool.md
     - Private COM-RPC : plugin/private-comrpc.md
+    - Split Implementation: plugin/split-implementation.md
     - Composite Plugins: plugin/composite.md
   - Common Utilities:
     - Strings: utils/strings.md
