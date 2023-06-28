@@ -149,10 +149,9 @@ namespace WarningReporting {
         WarningReportingBoundsCategoryConfig boundsconfig;
 
         boundsconfig.FromString(boundsConfig);
-// std::cout << "boundsconfig.ReportBound.IsSet(): " << boundsconfig.ReportBound.IsSet() << std::endl;
+
         if (boundsconfig.ReportBound.IsSet()) {
             outReportingBound = static_cast<uint32_t>(boundsconfig.ReportBound.Value());
-// std::cout << "outReportingBound: " << outReportingBound << std::endl;
         }
 
         if (boundsconfig.WarningBound.IsSet()) {

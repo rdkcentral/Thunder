@@ -83,7 +83,6 @@ namespace WarningReporting {
 
     void WarningReportingUnit::Defaults(const string& jsonCategories)
     {
-// std::cout << "WarningReportingUnit::Defaults(): " << jsonCategories << std::endl;
         Core::JSON::ArrayType<Setting::JSON> serialized;
         Core::OptionalType<Core::JSON::Error> error;
         serialized.FromString(jsonCategories, error);
@@ -98,13 +97,15 @@ namespace WarningReporting {
     void WarningReportingUnit::UpdateEnabledCategories(const Core::JSON::ArrayType<Setting::JSON>& info)
     {
         Core::JSON::ArrayType<Setting::JSON>::ConstIterator index = info.Elements();
+
         _adminLock.Lock();
 
         _enabledCategories.clear();
+
         while (index.Next()) {
             _enabledCategories.emplace(index.Current().Category.Value(), Setting(index.Current()));
         }
-// std::cout << "WarningReportingUnit::UpdateEnabledCategories()" << std::endl;
+
         for (auto& setting : _enabledCategories) {
             auto category = _categories.find(setting.first);
 
@@ -115,7 +116,6 @@ namespace WarningReporting {
                 }
 
                 category->second->Configure(setting.second.Configuration());
-// std::cout << "WarningReportingUnit::UpdateEnabledCategories(). Configuration(): " << setting.second.Configuration() << std::endl;
                 category->second->Exclude(setting.second.Excluded());
             }
         }

@@ -32,7 +32,6 @@
 #include "TypeTraits.h"
 #include <unordered_set>
 #include <vector>
-#include <iostream>
 
 #ifndef __CORE_WARNING_REPORTING__
 
@@ -234,9 +233,9 @@ namespace WarningReporting {
                 uint32_t reportBound = 0;
                 uint32_t warningBound = 0;
                 string specificConfig;
-// std::cout << "WarningReportingBoundsCategory Configure start. CategoryName(): " << CategoryName() << std::endl;
+
                 WarningReportingUnitProxy::Instance().FillBoundsConfig(settings, reportBound, warningBound, specificConfig);
-// std::cout << "WarningReportingBoundsCategory Configure after FillBoundsConfig. CategoryName(): " << CategoryName() << ". ReportBound: " << reportBound << std::endl;
+
                 if (reportBound != 0) {
                     _reportingBound.store(reportBound, std::memory_order_relaxed);
                 }
@@ -261,7 +260,6 @@ namespace WarningReporting {
             bool report = false;
             _actualValue = actualValue;
             if (actualValue > _reportingBound.load(std::memory_order_relaxed)) {
-// std::cout << "WarningReportingBoundsCategory Analyze. CategoryName(): " << CategoryName() << ". actualValue: " << actualValue << ". _reportingBound: " << _reportingBound.load(std::memory_order_relaxed) << std::endl;
                 report = CallAnalyze(moduleName, identifier, std::forward<Args>(args)...);
             }
             return report;
@@ -359,7 +357,6 @@ namespace WarningReporting {
         {
             bool result = false;
             if (!_sWarningControl.IsCallsignExcluded(identifier) && !_sWarningControl.IsModuleExcluded(modulename)) {
-// std::cout << "WarningReportingType::Analyze() modulename: " << modulename << ". identifier: " << identifier << std::endl;
                 result = CallAnalyze(_info, modulename, identifier, std::forward<Args>(args)...);
             }
             return result;
@@ -415,7 +412,6 @@ namespace WarningReporting {
                 string settings;
                 string excluded;
                 WarningReportingUnitProxy::Instance().FetchCategoryInformation(_categoryName, isDefaultCategory, isEnabled, excluded, settings);
-// std::cout << "WarningReportingControl Constructor. _categoryName: " << _categoryName << ". Settings: " << settings << std::endl;
 
                 if (isDefaultCategory) {
     
@@ -467,7 +463,6 @@ namespace WarningReporting {
             }
             void Destroy() override
             {
-// std::cout << "WarningReportingControl Destructor. _categoryName: " << _categoryName << std::endl;
                 if ((_enabled & 0x02) != 0) {
                     Core::Messaging::IControl::Revoke(this);
 
@@ -522,7 +517,6 @@ namespace WarningReporting {
         inline static typename Core::TypeTraits::enable_if<hasAnalyze<T, bool, const char[], const char[], Args&&...>::value, bool>::type
         CallAnalyze(T& category, const char modulename[], const char identifier[], Args&&... args)
         {
-// std::cout << "WarningReportingType::CallAnalyze() modulename: " << modulename << ". identifier: " << identifier << ". category: " << category.CategoryName() << std::endl;
             return category.Analyze(modulename, identifier, std::forward<Args>(args)...);
         }
 
