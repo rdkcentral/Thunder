@@ -46,7 +46,7 @@ namespace WPEFramework {
                 ASSERT(control != nullptr);
 
                 _adminLock.Lock();
-// std::cout << "Controls::Announce(). Category:" << control->Metadata().Category() << " Module: " << control->Metadata().Module() << " Type: " << control->Metadata().Type() << std::endl;
+
                 ASSERT(std::find(_controlList.begin(), _controlList.end(), control) == _controlList.end());
                 _controlList.push_back(control);
 
