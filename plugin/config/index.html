@@ -805,6 +805,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#path-substitution" class="md-nav__link">
+    Path Substitution
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1692,6 +1699,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#path-substitution" class="md-nav__link">
+    Path Substitution
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1759,22 +1773,22 @@
 <td>SamplePlugin</td>
 </tr>
 <tr>
-<td>versions</td>
-<td></td>
-<td>string</td>
-<td>-</td>
-<td></td>
+<td>startmode</td>
+<td>Default start state of the plugin when loading (Unavailable, Deactivated, Activated).<br /><br />Setting to Activated will behave the same as the <code>autostart</code> option</td>
+<td>enum</td>
+<td>Deactivated</td>
+<td>Activated</td>
 </tr>
 <tr>
 <td>autostart</td>
-<td>Whether to automatically start the plugin when starting WPEFramework. If false, the plugin must be activated manually using the Controller plugin</td>
+<td><img alt="⚠" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/26a0.svg" title=":warning:" /> <strong>Deprecated</strong>: Use <code>startmode</code> instead<br /><br />Whether to automatically start the plugin when starting WPEFramework. If false, the plugin must be activated manually using the Controller plugin</td>
 <td>bool</td>
 <td>true</td>
 <td>false</td>
 </tr>
 <tr>
 <td>resumed</td>
-<td>When starting a plugin that supports suspend/resume (IStateControl), when activating the plugin start it in a resumed state instead of suspended</td>
+<td><img alt="⚠" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/26a0.svg" title=":warning:" /> <strong>Deprecated</strong>: Use <code>startmode</code> instead<br /><br />When starting a plugin that supports suspend/resume (IStateControl), when activating the plugin start it in a resumed state instead of suspended</td>
 <td>bool</td>
 <td>false</td>
 <td>true</td>
@@ -1788,7 +1802,7 @@
 </tr>
 <tr>
 <td>precondition</td>
-<td>Array of subsystems that are preconditions for plugin activation<sup id="fnref2:1"><a class="footnote-ref" href="#fn:1">1</a></sup>. If any of the provided subsystems aren't marked as active, the plugin will fail to activate with a precondition error</td>
+<td>Array of subsystems that are preconditions for plugin activation<sup id="fnref2:1"><a class="footnote-ref" href="#fn:1">1</a></sup>. If any of the provided subsystems aren't marked as active, the plugin will not activate until those preconditions are met.</td>
 <td>array</td>
 <td>-</td>
 <td>["GRAPHICS"]</td>
@@ -1799,6 +1813,13 @@
 <td>array</td>
 <td>-</td>
 <td>["NOT_GRAPHICS"]</td>
+</tr>
+<tr>
+<td>communicator</td>
+<td>Custom (private) COM-RPC socket to use just for this plugin instead of the main Thunder communicator socket.<br /><br />If set to null, will create a unix domain socket named after the callsign of the plugin.<br /><br />If set to a string, will create a socket at the specified address (unix domain socket path or TCP socket). Path must be unique.</td>
+<td>string</td>
+<td>-</td>
+<td>null</td>
 </tr>
 <tr>
 <td>configuration.root.locator</td>
@@ -1837,7 +1858,7 @@
 </tr>
 <tr>
 <td>configuration.root.outofprocess</td>
-<td><img alt="⚠" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/26a0.svg" title=":warning:" /> Deprecated: use <code>mode</code> instead.<br /><br />Set to true to run plugin out of process</td>
+<td><img alt="⚠" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/26a0.svg" title=":warning:" /> <strong>Deprecated</strong>: use <code>configuration.root.mode</code> instead.<br /><br />Set to true to run plugin out of process</td>
 <td>bool</td>
 <td>false</td>
 <td>true</td>
@@ -1884,13 +1905,6 @@
 <td>50</td>
 <td>10</td>
 </tr>
-<tr>
-<td>startmode</td>
-<td>Default start state of the plugin when loading (Unavailable, Deactivated, Activated).<br /><br />Setting to Activated will simply enable autostart if not set.</td>
-<td>enum</td>
-<td>Deactivated</td>
-<td>Unavailable</td>
-</tr>
 </tbody>
 </table>
 <h3 id="sample-configuration">Sample Configuration</h3>
@@ -1935,7 +1949,9 @@
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="o">~</span><span class="n">GreeterPluginConfiguration</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
 
+<span class="w">    </span><span class="n">GreeterPluginConfiguration</span><span class="p">(</span><span class="n">GreeterPluginConfiguration</span><span class="o">&amp;&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
 <span class="w">    </span><span class="n">GreeterPluginConfiguration</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">GreeterPluginConfiguration</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+<span class="w">    </span><span class="n">GreeterPluginConfiguration</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">GreeterPluginConfiguration</span><span class="o">&amp;&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
 <span class="w">    </span><span class="n">GreeterPluginConfiguration</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">GreeterPluginConfiguration</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
 
 <span class="k">public</span><span class="o">:</span>
@@ -2060,6 +2076,26 @@
     &quot;result&quot;: null
 }
 </code></pre></div>
+<h2 id="path-substitution">Path Substitution</h2>
+<p>If your custom plugin configuration contains values for filesystem paths, instead of hardcoding specific paths it is possible to use path variable substitution. This allows you to retrieve and use the values for paths set in the main Thunder config file in your configuration automatically.</p>
+<p>For example, if the custom plugin config contained the following</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;customDirectory&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;%persistentpath%/myDirectory&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Then in the plugin code, calling <code>_service-&gt;Substitute(...)</code> would replace the <code>%persistentpath%</code> variable with the <code>persistentpath</code> value from the main config file.</p>
+<div class="highlight"><pre><span></span><code><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">configValue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_config</span><span class="p">.</span><span class="n">CustomDirectory</span><span class="p">().</span><span class="n">Value</span><span class="p">();</span>
+<span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">realPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">Substitute</span><span class="p">(</span><span class="n">configValue</span><span class="p">);</span>
+</code></pre></div>
+<p>The following values are supported as substitution variables:</p>
+<ul>
+<li><code>%datapath%</code></li>
+<li><code>%persistentpath%</code></li>
+<li><code>%systempath%</code></li>
+<li><code>%volatilepath%</code></li>
+<li><code>%proxystubpath%</code></li>
+<li><code>%postmortempath%</code></li>
+</ul>
 <div class="footnote">
 <hr />
 <ol>
