@@ -1,4 +1,4 @@
-A Thunder plugin can be configured to run in multiple different "execution modes". Each mode defines how the plugin code is executed, however it does not affect how a client will interact with the plugin. Clients will not know (and shouldn't care!) which mode a plugin is running in, and will continue to connect/communicate through the main WPEFramework daemon.
+A Thunder plugin can be configured to run in multiple different "execution modes". Each mode defines how the plugin code is executed, however it does not affect how a client will interact with the plugin. Clients will not know (and shouldn't care!) which mode a plugin is running in, and will continue to connect/communicate through the main WPEFramework process.
 
 Providing a plugin correctly implements a COM-RPC interface, there should be no additional development work in the plugin to support running in different execution modes, so the decision on which mode each plugin runs in can be an architecture decision based on platform, performance and security requirements.
 
@@ -32,25 +32,25 @@ As with other config options, this can be changed via the Controller plugin at r
 
 ## In Process Plugins
 
-This is the simplest execution mode, and the default if a mode is not set. An in-process plugin is loaded into and executed inside the main WPEFraemwork daemon.
+This is the simplest execution mode, and the default if a mode is not set. An in-process plugin is loaded into and executed inside the main WPEFraemwork process.
 
 **Advantages**
 
 * Simple - there is no additional overhead or complexity from running additional processes
-* Highest performance - no additional RPC hops are required to communicate with the plugin. All calls to the plugin from the WPEFramework daemon are just local function calls.
+* Highest performance - no additional RPC hops are required to communicate with the plugin. All calls to the plugin from the WPEFramework process are just local virtual function calls.
     * If an in-process plugin needs to communicate with another in-process plugin, Thunder will resolve any COM-RPC interface calls to local function calls. This removes the need to serialise/deserialise any data or cross any IPC boundary and results in the fastest performance possible
 
 **Disadvantages**
 
-* Stability - if a plugin is unstable or buggy and causes a crash then it will bring down the entire WPEFramework daemon
+* Stability - if a plugin is unstable or buggy and causes a crash then it will bring down the entire WPEFramework process
 * Resource monitoring - since the plugin runs inside the WPEFramework process, it is much harder to accurately monitor the CPU/memory usage from that specific plugin
-* Security - the plugin runs with the same permissions and privileges as the main WPEFramework daemon
+* Security - the plugin runs with the same permissions and privileges as the main WPEFramework process
 
 ## Out-Of-Process (OOP) Plugins
 
 If a plugin is configured to run out-of-process, it will run in its own individual hosting process called `WPEProcess` instead of in the main WPEFramework process. Each out-of-process plugin will run in a separate WPEProcess instance.
 
-When the plugin is activated, Thunder will automatically spawn a WPEProcess instance as a child process. The WPEProcess host will load the plugin library and establish a COM-RPC connection between itself and the main WPEFramework process. This COM-RPC connection is how clients communicating with the main Thunder daemon are still able to invoke methods on out-of-process plugins. The WPEProcess process will be stopped when the plugin is deactivated.
+When the plugin is activated, Thunder will automatically spawn a WPEProcess instance as a child process. The WPEProcess host will load the plugin library and establish a COM-RPC connection between itself and the main WPEFramework process. This COM-RPC connection is how clients communicating with the main Thunder process are still able to invoke methods on out-of-process plugins. The WPEProcess process will be stopped when the plugin is deactivated.
 
 !!! tip
 	For larger, more complex out-of-process plugins, it is often useful to split a plugin into two separate libraries - see [here](../split-implementation) for more details.
@@ -59,7 +59,7 @@ When the plugin is activated, Thunder will automatically spawn a WPEProcess inst
 
 * Reliability - if a plugin crashes, it will only bring down the WPEProcess instance and therefore not affect any other plugin. It can then be restarted as necessary
 * Monitoring - by running a plugin in its own process, it becomes easier to monitor the resource usage (memory, CPU etc) of that plugin
-* Security - out of process plugins can be run in a different user/group to the main WPEFramework daemon (which might be running as root) to reduce the privileges of the plugin and increase security
+* Security - out of process plugins can be run in a different user/group to the main WPEFramework process (which might be running as root) to reduce the privileges of the plugin and increase security
 * Resource control - the size of the thread pool and process priority can be set for the WPEProcess host, allowing more custom tuning for specific plugin requirements
 
 **Disadvantages**
@@ -85,7 +85,7 @@ An extension to the out-of-process mode, container mode will run the WPEProcess 
 
 A requirement for running a plugin in a container is a suitable container configuration must have been defined - Thunder cannot create container configurations dynamically on-the-fly for plugins. Thunder will look for container configurations in the following locations (with the below priority):
 
-1. `<volatile path>/<callsign>Container`
+1. `<volatile path>/<callsign>/Container`
 1. `<persistent path>/<callsign>/Container`
 1. `<data path>/<classname>/Container`
 
@@ -107,7 +107,7 @@ For example, the config for a plugin will callsign SamplePlugin might be stored 
 !!! danger
 	Distributed mode is considered experimental
 
-Distributed mode takes the out-of-process mode one step further by allowing plugins to run on an entirely different device than the main WPEFramework process. This device could even be running a different CPU and with a architecture. A COM-RPC channel is established over a TCP socket between the two devices to allow communication.
+Distributed mode takes the out-of-process mode one step further by allowing plugins to run on an entirely different device than the main WPEFramework process. This device could even be running a different CPU with a different architecture. A COM-RPC channel is established over a TCP socket between the two devices to allow communication.
 
 An example use case for this could be a dual-SoC platform or for communicating with peripheral devices such as cameras.
 
