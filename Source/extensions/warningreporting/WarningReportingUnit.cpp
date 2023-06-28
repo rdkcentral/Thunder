@@ -54,6 +54,20 @@ namespace WarningReporting {
         return result;
     }
 
+    void WarningReportingUnit::AddToCategoryList(IWarningReportingUnit::IWarningReportingControl& category)
+    {
+        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+    
+        _categories[category.Metadata().Category()] = &category;
+    }
+
+    void WarningReportingUnit::RemoveFromCategoryList(IWarningReportingUnit::IWarningReportingControl& category)
+    {
+        Core::SafeSyncType<Core::CriticalSection> guard(_adminLock);
+        
+        _categories.erase(category.Metadata().Category());
+    }
+
     string WarningReportingUnit::Defaults() const
     {
         string result;
@@ -69,6 +83,7 @@ namespace WarningReporting {
 
     void WarningReportingUnit::Defaults(const string& jsonCategories)
     {
+// std::cout << "WarningReportingUnit::Defaults(): " << jsonCategories << std::endl;
         Core::JSON::ArrayType<Setting::JSON> serialized;
         Core::OptionalType<Core::JSON::Error> error;
         serialized.FromString(jsonCategories, error);
@@ -89,7 +104,7 @@ namespace WarningReporting {
         while (index.Next()) {
             _enabledCategories.emplace(index.Current().Category.Value(), Setting(index.Current()));
         }
-
+// std::cout << "WarningReportingUnit::UpdateEnabledCategories()" << std::endl;
         for (auto& setting : _enabledCategories) {
             auto category = _categories.find(setting.first);
 
@@ -100,6 +115,7 @@ namespace WarningReporting {
                 }
 
                 category->second->Configure(setting.second.Configuration());
+// std::cout << "WarningReportingUnit::UpdateEnabledCategories(). Configuration(): " << setting.second.Configuration() << std::endl;
                 category->second->Exclude(setting.second.Excluded());
             }
         }

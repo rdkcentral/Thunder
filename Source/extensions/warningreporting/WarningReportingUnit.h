@@ -166,6 +166,8 @@ namespace WarningReporting {
     public:
         static WarningReportingUnit& Instance();
 
+        void AddToCategoryList(IWarningReportingUnit::IWarningReportingControl& Category) override;
+        void RemoveFromCategoryList(IWarningReportingUnit::IWarningReportingControl& Category) override;
         std::list<string> GetCategories();
 
         // Default enabled/disabled categories: set via config.json.

@@ -101,11 +101,46 @@ namespace WarningReporting {
         adminlock.Unlock();
     }
 
+    void WarningReportingUnitProxy::AddToCategoryList(IWarningReportingUnit::IWarningReportingControl& Category)
+    {
+        adminlock.Lock();
+        if (_handler != nullptr) {
+            _handler->AddToCategoryList(Category);
+        } else {
+            _waitingAnnounces.emplace_back(&Category);
+        }
+        adminlock.Unlock();
+
+    }
+
+    void WarningReportingUnitProxy::RemoveFromCategoryList(IWarningReportingUnit::IWarningReportingControl& Category)
+    {
+        adminlock.Lock();
+        if (_handler != nullptr) {
+            ASSERT(_waitingAnnounces.size() == 0);
+            _handler->RemoveFromCategoryList(Category);
+        } else {
+            WaitingAnnounceContainer::iterator it = std::find(std::begin(_waitingAnnounces), std::end(_waitingAnnounces), &Category);
+            if (it != std::end(_waitingAnnounces)) {
+                _waitingAnnounces.erase(it);
+            }
+        }
+        adminlock.Unlock();
+    }
+
     void WarningReportingUnitProxy::Handle(IWarningReportingUnit* handler)
     {
         ASSERT((_handler == nullptr && handler != nullptr) || (_handler != nullptr && handler == nullptr));
         adminlock.Lock();
         _handler = handler;
+        if (_handler != nullptr) {
+
+            for (IWarningReportingUnit::IWarningReportingControl* category : _waitingAnnounces) {
+                ASSERT(category != nullptr);
+                _handler->AddToCategoryList(*category);
+            }
+            _waitingAnnounces.clear();
+        }
         adminlock.Unlock();
     }
 
@@ -114,9 +149,10 @@ namespace WarningReporting {
         WarningReportingBoundsCategoryConfig boundsconfig;
 
         boundsconfig.FromString(boundsConfig);
-
+// std::cout << "boundsconfig.ReportBound.IsSet(): " << boundsconfig.ReportBound.IsSet() << std::endl;
         if (boundsconfig.ReportBound.IsSet()) {
             outReportingBound = static_cast<uint32_t>(boundsconfig.ReportBound.Value());
+// std::cout << "outReportingBound: " << outReportingBound << std::endl;
         }
 
         if (boundsconfig.WarningBound.IsSet()) {

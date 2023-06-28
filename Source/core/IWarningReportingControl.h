@@ -47,6 +47,8 @@ namespace WarningReporting {
         virtual ~IWarningReportingUnit() = default;
         virtual void ReportWarningEvent(const char identifier[], const IWarningEvent& information) = 0;
         virtual void FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const = 0;
+        virtual void AddToCategoryList(IWarningReportingControl& Category) = 0;
+        virtual void RemoveFromCategoryList(IWarningReportingControl& Category) = 0;
     };
 
 }

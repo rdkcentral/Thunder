@@ -32,6 +32,7 @@
 #include "TypeTraits.h"
 #include <unordered_set>
 #include <vector>
+#include <iostream>
 
 #ifndef __CORE_WARNING_REPORTING__
 
@@ -193,6 +194,8 @@ namespace WarningReporting {
 
         void ReportWarningEvent(const char identifier[], const IWarningEvent& information);
         void FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const;
+        void AddToCategoryList(IWarningReportingUnit::IWarningReportingControl& Category);
+        void RemoveFromCategoryList(IWarningReportingUnit::IWarningReportingControl& Category);
 
         void Handle(IWarningReportingUnit* handler);
         void FillExcludedWarnings(const string& excludedJsonList, ExcludedWarnings& outExcludedWarnings) const;
@@ -201,11 +204,15 @@ namespace WarningReporting {
     protected:
         WarningReportingUnitProxy()
             : _handler(nullptr)
+            , _waitingAnnounces()
         {
         }
 
     private:
+        using WaitingAnnounceContainer = std::vector<IWarningReportingUnit::IWarningReportingControl*>;
+
         IWarningReportingUnit* _handler;
+        WaitingAnnounceContainer _waitingAnnounces;
     };
 
     template <typename CONTROLCATEGORY>
@@ -223,21 +230,23 @@ namespace WarningReporting {
 
         static void Configure(const string& settings)
         {
-            uint32_t reportBound = 0;
-            uint32_t warningBound = 0;
-            string specificConfig;
-            WarningReportingUnitProxy::Instance().FillBoundsConfig(settings, reportBound, warningBound, specificConfig);
+            if (settings.length() != 0) {
+                uint32_t reportBound = 0;
+                uint32_t warningBound = 0;
+                string specificConfig;
+// std::cout << "WarningReportingBoundsCategory Configure start. CategoryName(): " << CategoryName() << std::endl;
+                WarningReportingUnitProxy::Instance().FillBoundsConfig(settings, reportBound, warningBound, specificConfig);
+// std::cout << "WarningReportingBoundsCategory Configure after FillBoundsConfig. CategoryName(): " << CategoryName() << ". ReportBound: " << reportBound << std::endl;
+                if (reportBound != 0) {
+                    _reportingBound.store(reportBound, std::memory_order_relaxed);
+                }
+                if (warningBound != 0) {
+                    _warningBound.store(warningBound, std::memory_order_relaxed);
+                }
 
-            if (reportBound != 0) {
-                _reportingBound.store(reportBound, std::memory_order_relaxed);
-            }
-
-            if (warningBound != 0) {
-                _warningBound.store(warningBound, std::memory_order_relaxed);
-            }
-
-            if (!specificConfig.empty()) {
-                CallConfigure(specificConfig);
+                if (!specificConfig.empty()) {
+                    CallConfigure(specificConfig);
+                }
             }
         }
 
@@ -252,6 +261,7 @@ namespace WarningReporting {
             bool report = false;
             _actualValue = actualValue;
             if (actualValue > _reportingBound.load(std::memory_order_relaxed)) {
+// std::cout << "WarningReportingBoundsCategory Analyze. CategoryName(): " << CategoryName() << ". actualValue: " << actualValue << ". _reportingBound: " << _reportingBound.load(std::memory_order_relaxed) << std::endl;
                 report = CallAnalyze(moduleName, identifier, std::forward<Args>(args)...);
             }
             return report;
@@ -349,6 +359,7 @@ namespace WarningReporting {
         {
             bool result = false;
             if (!_sWarningControl.IsCallsignExcluded(identifier) && !_sWarningControl.IsModuleExcluded(modulename)) {
+// std::cout << "WarningReportingType::Analyze() modulename: " << modulename << ". identifier: " << identifier << std::endl;
                 result = CallAnalyze(_info, modulename, identifier, std::forward<Args>(args)...);
             }
             return result;
@@ -397,13 +408,15 @@ namespace WarningReporting {
                 // Register Our control unit, so it can be influenced from the outside
                 // if nessecary..
                 Core::Messaging::IControl::Announce(this);
+                WarningReportingUnitProxy::Instance().AddToCategoryList(*this);
 
                 bool isDefaultCategory = false;
                 bool isEnabled = false;
                 string settings;
                 string excluded;
                 WarningReportingUnitProxy::Instance().FetchCategoryInformation(_categoryName, isDefaultCategory, isEnabled, excluded, settings);
-                
+// std::cout << "WarningReportingControl Constructor. _categoryName: " << _categoryName << ". Settings: " << settings << std::endl;
+
                 if (isDefaultCategory) {
     
                     if (isEnabled) {
@@ -454,8 +467,11 @@ namespace WarningReporting {
             }
             void Destroy() override
             {
-                Core::Messaging::IControl::Revoke(this);
+// std::cout << "WarningReportingControl Destructor. _categoryName: " << _categoryName << std::endl;
                 if ((_enabled & 0x02) != 0) {
+                    Core::Messaging::IControl::Revoke(this);
+
+                    WarningReportingUnitProxy::Instance().RemoveFromCategoryList(*this);
                     _enabled = 0;
                 }
             }
@@ -506,6 +522,7 @@ namespace WarningReporting {
         inline static typename Core::TypeTraits::enable_if<hasAnalyze<T, bool, const char[], const char[], Args&&...>::value, bool>::type
         CallAnalyze(T& category, const char modulename[], const char identifier[], Args&&... args)
         {
+// std::cout << "WarningReportingType::CallAnalyze() modulename: " << modulename << ". identifier: " << identifier << ". category: " << category.CategoryName() << std::endl;
             return category.Analyze(modulename, identifier, std::forward<Args>(args)...);
         }
 
@@ -567,11 +584,11 @@ namespace WarningReporting {
     };
 
     template <typename CATEGORY>
-    EXTERNAL_HIDDEN typename WarningReportingType<CATEGORY>::template WarningReportingControl<CATEGORY> WarningReportingType<CATEGORY>::_sWarningControl;
+    EXTERNAL typename WarningReportingType<CATEGORY>::template WarningReportingControl<CATEGORY> WarningReportingType<CATEGORY>::_sWarningControl;
     template <typename CONTROLCATEGORY>
-    EXTERNAL_HIDDEN std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_reportingBound(CONTROLCATEGORY::DefaultReportBound);
+    EXTERNAL std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_reportingBound(CONTROLCATEGORY::DefaultReportBound);
     template <typename CONTROLCATEGORY>
-    EXTERNAL_HIDDEN std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_warningBound(CONTROLCATEGORY::DefaultWarningBound);
+    EXTERNAL std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_warningBound(CONTROLCATEGORY::DefaultWarningBound);
 }
 }
 
