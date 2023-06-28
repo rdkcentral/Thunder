@@ -101,6 +101,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://rdkcentral.github.com/Thunder/plugin/execution-modes/</loc>
+         <lastmod>2023-06-28</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://rdkcentral.github.com/Thunder/plugin/intro/</loc>
          <lastmod>2023-06-28</lastmod>
          <changefreq>daily</changefreq>
