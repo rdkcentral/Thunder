@@ -578,11 +578,11 @@ namespace WarningReporting {
     };
 
     template <typename CATEGORY>
-    EXTERNAL typename WarningReportingType<CATEGORY>::template WarningReportingControl<CATEGORY> WarningReportingType<CATEGORY>::_sWarningControl;
+    EXTERNAL_HIDDEN typename WarningReportingType<CATEGORY>::template WarningReportingControl<CATEGORY> WarningReportingType<CATEGORY>::_sWarningControl;
     template <typename CONTROLCATEGORY>
-    EXTERNAL std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_reportingBound(CONTROLCATEGORY::DefaultReportBound);
+    EXTERNAL_HIDDEN std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_reportingBound(CONTROLCATEGORY::DefaultReportBound);
     template <typename CONTROLCATEGORY>
-    EXTERNAL std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_warningBound(CONTROLCATEGORY::DefaultWarningBound);
+    EXTERNAL_HIDDEN std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_warningBound(CONTROLCATEGORY::DefaultWarningBound);
 }
 }
 
