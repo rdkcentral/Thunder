@@ -184,8 +184,8 @@ namespace Messaging {
                 auto factory = _factories.find(type);
 
                 if (factory != _factories.end()) {
-                    Core::ProxyType<Core::Messaging::IEvent> message;
                     Core::ProxyType<Core::Messaging::MessageInfo> metadata;
+                    Core::ProxyType<Core::Messaging::IEvent> message;
 
                     metadata = factory->second->GetMetadata();
                     message = factory->second->GetMessage();
