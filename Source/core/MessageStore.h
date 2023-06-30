@@ -44,10 +44,12 @@ namespace Core {
         class EXTERNAL Metadata {
         public:
             enum type : uint8_t {
-                INVALID   = 0,
-                TRACING   = 1,
-                LOGGING   = 2,
-                REPORTING = 3
+                INVALID        = 0,
+                TRACING        = 1,
+                LOGGING        = 2,
+                REPORTING      = 3,
+                STANDARD_OUT   = 4,
+                STANDARD_ERROR = 5
             };
 
         public:
