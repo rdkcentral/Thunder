@@ -1301,8 +1301,11 @@ namespace WPEFramework {
                 // Align the buffer to what is requested
                 BufferAlignment(result);
 
+                // Carry the protocol type over to the new node
+                address.Extension(m_LocalNode.Extension());
+
                 remoteId = address;
-         }
+            }
             else {
                 int error = __ERRORRESULT__;
                 if ((error != __ERROR_AGAIN__) && (error != __ERROR_WOULDBLOCK__)) {
