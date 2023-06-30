@@ -67,7 +67,7 @@ namespace WPEFramework {
         {
             string result;
             ASSERT(message != nullptr);
-            ASSERT(trace.Type() != Core::Messaging::Metadata::type::TRACING);
+            ASSERT(trace.Type() == Core::Messaging::Metadata::type::TRACING);
 
             if (_abbreviate == true) {
                 result = Core::Format("[%11ju us]:[%s] %s",
