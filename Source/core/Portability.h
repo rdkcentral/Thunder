@@ -390,6 +390,7 @@ typedef std::string string;
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/memfd.h> // memfd_create in Messaging/ConsoleRedirect.h
 
 #include <arpa/inet.h>
 
