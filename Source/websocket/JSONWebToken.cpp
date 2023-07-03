@@ -156,7 +156,8 @@ namespace Web
 	bool JSONWebToken::ValidSignature(const mode type, const string& token) const 
 	{
         bool result = false;
-
+	uint16_t decodedLength = 0;
+		
         // Check if the Hash is correct..
         size_t pos = token.find_last_of('.');
 
@@ -167,12 +168,33 @@ namespace Web
                 Crypto::SHA256HMAC hash(_key);
 
                 // Extract the signature and convert it to a binary string.
-				uint8_t signature[Crypto::SHA256HMAC::Length];
-                if (Core::URL::Base64Decode(token.substr(pos + 1).c_str(), static_cast<uint16_t>(token.length() - pos - 1), signature, sizeof(signature), nullptr) == sizeof(signature)) {
+		uint8_t signature[Crypto::SHA256HMAC::Length];
+		string signatureSource(token.substr(pos + 1).c_str());
+                TCHAR* signatureOutput = reinterpret_cast<TCHAR*>(ALLOCA(signatureSource.length() * sizeof(TCHAR)));
+
+                if (nullptr == signatureOutput)
+                {
+                    result = false;
+                    return result;
+                }
+                memset (signatureOutput, 0, sizeof (signatureOutput));
+
+                decodedLength = Core::URL::Base64Decode(
+                            token.substr(pos + 1).c_str(),
+                            static_cast<uint16_t>(token.length() - pos - 1),
+                            reinterpret_cast<uint8_t*>(signatureOutput),
+                            static_cast<uint16_t>(signatureSource.length() * sizeof(TCHAR)),
+                            nullptr);
+		    
+                if ( decodedLength == sizeof(signature)) {
 
 					hash.Input(reinterpret_cast<const uint8_t*>(token.substr(0, pos).c_str()), static_cast<uint16_t>(pos * sizeof(TCHAR)));
-					result = (::memcmp(hash.Result(), signature, sizeof(signature)) == 0);
+					result = (::memcmp(hash.Result(), reinterpret_cast<uint8_t*>(signatureOutput), sizeof(signature)) == 0);
 				}
+		    		else
+                                {
+                                        result = false;
+                                }
             }
 		}
 
