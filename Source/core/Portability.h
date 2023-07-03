@@ -246,6 +246,7 @@ PUSH_WARNING( \
 #include <thread>
 #include <stdarg.h> /* va_list, va_start, va_arg, va_end */
 #include <inttypes.h>
+#include <io.h>
 
 #define AF_NETLINK 16
 #define AF_PACKET  17

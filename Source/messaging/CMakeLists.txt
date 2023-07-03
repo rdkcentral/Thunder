@@ -30,6 +30,7 @@ set(PUBLIC_HEADERS
         TraceFactory.h
         TextMessage.h
         BaseCategory.h
+        ConsoleStreamRedirect.h
         )
 
 set(SOURCES 
