@@ -365,11 +365,11 @@ bool Open(const Core::IResource::handle replacing) {
 	ASSERT(replacing != Core::IResource::INVALID);
 
 	if (replacing != Core::IResource::INVALID) {
-		_handle = memfd_create(_T("RedirectReaderFile"), 0');
+		_handle = memfd_create(_T("RedirectReaderFile"), 0);
 			if (_handle != Core::IResource::INVALID) {
 				_index = replacing;
 				_copy = ::dup(replacing)
-					::flush(replacing);
+				::flush(replacing);
 				::dup2(_handle, _index);
 				::close(_handle);
 				Core::ResourceMonitor::Instance().Register(*this);
