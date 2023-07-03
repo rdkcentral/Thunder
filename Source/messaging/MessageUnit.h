@@ -384,8 +384,17 @@ namespace WPEFramework {
                     return ((_mode & mode::DIRECT) != 0);
                 }
 
-                bool IsAbbreviated() const {
-                    return ((_mode & mode::ABBREVIATED) != 0);
+                Core::Messaging::MessageInfo::abbreviate IsAbbreviated() const {
+                    Core::Messaging::MessageInfo::abbreviate abbreviate;
+
+                    if ((_mode & mode::ABBREVIATED) == 0) {
+                        abbreviate = Core::Messaging::MessageInfo::abbreviate::FULL;
+                    }
+                    else {
+                        abbreviate = Core::Messaging::MessageInfo::abbreviate::ABBREVIATED;
+                    }
+
+                    return (abbreviate);
                 }
 
                 void Configure (const string& path, const string& identifier, const uint16_t socketPort, const string& config, const bool background, const flush flushMode)

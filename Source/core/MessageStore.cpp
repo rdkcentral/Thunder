@@ -201,6 +201,26 @@ namespace Core {
             return (length);
         }
 
+        string MessageInfo::ToString(const abbreviate abbreviate) const
+        {
+            string result;
+            const Core::Time now(TimeStamp());
+            string time;
+
+            if (abbreviate == true) {
+                time = now.ToTimeOnly(true);
+            }
+            else {
+                time = now.ToRFC1123(true);
+            }
+            result = Core::Format("[%s]:[%s]:[%s]: ",
+                    time.c_str(),
+                    Module().c_str(),
+                    Category().c_str());
+
+            return (result);
+        }
+
         uint16_t IStore::Tracing::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
             uint16_t length = MessageInfo::Serialize(buffer, bufferSize);
@@ -247,6 +267,32 @@ namespace Core {
             return (length);
         }
 
+        string IStore::Tracing::ToString(const abbreviate abbreviate) const
+        {
+            string result;
+            const Core::Time now(TimeStamp());
+
+            if (abbreviate == true) {
+                const string time(now.ToTimeOnly(true));
+                result = Core::Format("[%s]:[%s]:[%s]: ",
+                        time.c_str(),
+                        Module().c_str(),
+                        Category().c_str());
+            }
+            else {
+                const string time(now.ToRFC1123(true));
+                result = Core::Format("[%s]:[%s]:[%s:%u]:[%s]:[%s]: ",
+                        time.c_str(),
+                        Module().c_str(),
+                        Core::FileNameOnly(FileName().c_str()),
+                        LineNumber(),
+                        ClassName().c_str(),
+                        Category().c_str());
+            }
+
+            return (result);
+        }
+
         uint16_t IStore::WarningReporting::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
             uint16_t length = MessageInfo::Serialize(buffer, bufferSize);
@@ -287,6 +333,30 @@ namespace Core {
             }
 
             return (length);
+        }
+
+        string IStore::WarningReporting::ToString(const abbreviate abbreviate) const
+        {
+            string result;
+            const Core::Time now(TimeStamp());
+
+            if (abbreviate == true) {
+                const string time(now.ToTimeOnly(true));
+                result = Core::Format("[%s]:[%s]:[%s]: ",
+                        time.c_str(),
+                        Module().c_str(),
+                        Category().c_str());
+            }
+            else {
+                const string time(now.ToRFC1123(true));
+                result = Core::Format("[%s]:[%s]:[%s]:[%s]: ",
+                        time.c_str(),
+                        Module().c_str(),
+                        Callsign().c_str(),
+                        Category().c_str());
+            }
+
+            return (result);
         }
 
         /* static */ void IControl::Announce(IControl* control)

@@ -140,6 +140,12 @@ namespace Core {
         */
         class EXTERNAL MessageInfo : public Metadata {
         public:
+            enum abbreviate : uint8_t {
+                FULL        = 0,
+                ABBREVIATED = 1
+            };
+
+        public:
             MessageInfo(const MessageInfo&) = default;
             MessageInfo& operator=(const MessageInfo&) = default;
 
@@ -161,8 +167,9 @@ namespace Core {
             }
 
         public:
-            virtual uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
-            virtual uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
+            uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
+            uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
+            virtual string ToString(const abbreviate abbreviate) const;
 
         private:
             uint64_t _timeStamp;
@@ -233,6 +240,7 @@ namespace Core {
             public:
                 uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
                 uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
+                string ToString(const abbreviate abbreviate) const override;
 
             private:
                 string _fileName;
@@ -267,6 +275,7 @@ namespace Core {
             public:
                 uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
                 uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
+                string ToString(const abbreviate abbreviate) const override;
 
             private:
                 string _callsign;
