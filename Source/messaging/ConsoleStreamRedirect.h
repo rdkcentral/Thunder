@@ -368,8 +368,8 @@ bool Open(const Core::IResource::handle replacing) {
 		_handle = memfd_create(_T("RedirectReaderFile"), 0);
 			if (_handle != Core::IResource::INVALID) {
 				_index = replacing;
-				_copy = ::dup(replacing)
-				::flush(replacing);
+				_copy = ::dup(replacing);
+				::fsync(replacing);
 				::dup2(_handle, _index);
 				::close(_handle);
 				Core::ResourceMonitor::Instance().Register(*this);
@@ -379,7 +379,7 @@ bool Open(const Core::IResource::handle replacing) {
 }
 bool Close() {
 	if (_index != Core::IResource::INVALID) {
-		flush(_copy);
+		::fsync(_copy);
 		::dup2(_copy, _index);
 		::close(_copy);
 		Core::ResourceMonitor::Instance().Unregister(*this);
@@ -404,11 +404,10 @@ void Handle(const uint16_t events) override {
 		int readBytes, freeSpace;
 
 		do {
-			freeSpace = sizeof(_buffer) - _offset;
-			readBytes = read(_handle, &(_buffer[_offset]), freeSpace);
+			readBytes = read(_handle, Reader::Buffer(), Reader::Length());
 
 			if (readBytes > 0) {
-				ProcessBuffer(readBytes);
+				Reader::ProcessBuffer(readBytes);
 			}
 
 		} while (readBytes == freeSpace);
