@@ -1855,7 +1855,7 @@
   </p>
 <figcaption>Plugin lifecycle state diagram</figcaption>
 </figure>
-<p>Each plugin goes through a sequence of states when activated or deactivated. Plugins can be configured to activate automatically when Thunder is started, or can be activated manually using the Controller plugin.</p>
+<p>Each plugin goes through a sequence of states when activated or deactivated. Plugins can be configured to activate automatically when Thunder is started or can be activated manually using the Controller plugin.</p>
 <p>Unless otherwise stated in the config, a plugin will default to the Deactivated state when Thunder is started.</p>
 <p>Plugins can be in one of the following states at a given time:</p>
 <table>
@@ -1892,11 +1892,11 @@
 </tr>
 <tr>
 <td>Suspended</td>
-<td><em>Only available if the plugin implements <code>IStateControl</code></em><br /><br />A sub-state of <code>Activated</code>. The plugin is activated but has been placed into a suspended state. The exact behaviour of a suspended plugin will depend on the implementation of the IStateControl interface.</td>
+<td><em>Only available if the plugin implements <code>IStateControl</code></em><br /><br />A sub-state of <code>Activated</code>. The plugin is activated but has been placed into a suspended state. The exact behaviour of a suspended plugin will depend on the implementation of the <code>IStateControl</code> interface.</td>
 </tr>
 <tr>
 <td>Resumed</td>
-<td><em>Only available if the plugin implements <code>IStateControl</code></em><br /><br />A sub-state of <code>Activated</code>. The plugin is activated and not in a suspended state. The plugin has been initialised, is running and will respond to function calls</td>
+<td><em>Only available if the plugin implements <code>IStateControl</code></em><br /><br />A sub-state of <code>Activated</code>. The plugin is activated and not in a suspended state. The plugin has been initialised, is running and will respond to function calls.</td>
 </tr>
 <tr>
 <td>Hibernated</td>
@@ -1906,7 +1906,8 @@
 </table>
 <h2 id="activation-deactivation">Activation &amp; Deactivation</h2>
 <p>Activation and deactivation are the core lifecycle events in Thunder. </p>
-<p>When a plugin is activated, the library is loaded, constructed and the <code>Initialize()</code> method is called. When it is deactivated the reverse happens; the <code>Deactivate()</code> method is called, the library is destructed and unloaded. As a result, once a plugin is deactivated it is safe to replace the library file (e.g. to upgrade to a new version) without needing to restart the framework.</p>
+<p>During plugin activation, the library is loaded, constructed and the <code>Initialize()</code> method is called. Once the initialise method returns, activation is considered complete and the plugin moves to the Activated state.</p>
+<p>When a plugin is deactivated the reverse happens; the <code>Deinitialize()</code> method is called, the plugin moves to the Deactivated state and the library is destructed and unloaded. As a result, once a plugin is deactivated it is safe to replace the library file (perhaps to upgrade to a new version) without needing to restart the framework.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>All plugin libraries will be quickly loaded &amp; unloaded once during WPEFramework startup regardless of plugin start mode to retrieve the version information.</p>
@@ -2031,7 +2032,7 @@
 <span class="p">};</span>
 </code></pre></div>
 <p>A plugin should inherit from the interface class, add it to the plugin interface map and add overrides for those methods. It should also maintain a local variable with its current state - which should be initialised to <code>PluginHost::IStateControl::UNINITIALIZED</code>.</p>
-<p>The important method is <code>Request(...)</code> which is called whenever a state change is requested for the plugin. The plugin should compare the requested state to the current state, and if it's different take whatever actions are necessary to transition itself before updating its state internally. If the state changes, it should then raise the <code>StateChange</code> notification with the new state.</p>
+<p>The important method is <code>Request(...)</code> which is called whenever a state change is requested for the plugin. The plugin should compare the requested state to the current state, and if required different take whatever actions are necessary to transition itself to the new state before updating its state internally. If the state changes, it should then raise the <code>StateChange</code> notification with the new state.</p>
 <p>If the requested state change is invalid (e.g. resuming an already resumed plugin) then return <code>Core::ERROR_ILLEGAL_STATE</code>. </p>
 <div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">TestPlugin::Configure</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">*</span><span class="w"> </span><span class="n">service</span><span class="p">)</span>
 <span class="p">{</span>
@@ -2041,7 +2042,7 @@
 
 <span class="cm">/**</span>
 <span class="cm"> * @brief Return the current plugin state</span>
-<span class="cm">*/</span>
+<span class="cm"> */</span>
 <span class="n">PluginHost</span><span class="o">::</span><span class="n">IStateControl</span><span class="o">::</span><span class="n">state</span><span class="w"> </span><span class="nf">TestPlugin::State</span><span class="p">()</span><span class="w"> </span><span class="k">const</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">_currentState</span><span class="p">;</span>
@@ -2049,7 +2050,7 @@
 
 <span class="cm">/**</span>
 <span class="cm"> * @brief Called when a request is made to change the plugin state.</span>
-<span class="cm">*/</span>
+<span class="cm"> */</span>
 <span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">TestPlugin::Request</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IStateControl</span><span class="o">::</span><span class="n">command</span><span class="w"> </span><span class="n">state</span><span class="p">)</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_ILLEGAL_STATE</span><span class="p">;</span>
@@ -2086,13 +2087,13 @@
 
 <span class="cm">/**</span>
 <span class="cm"> * @brief Called by COM-RPC clients to subscribe to state change notifications</span>
-<span class="cm">*/</span>
+<span class="cm"> */</span>
 <span class="kt">void</span><span class="w"> </span><span class="nf">TestPlugin::Register</span><span class="p">(</span><span class="n">IStateControl</span><span class="o">::</span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="n">notification</span><span class="p">)</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">_adminLock</span><span class="p">.</span><span class="n">Lock</span><span class="p">();</span>
 
 <span class="w">    </span><span class="c1">// Make sure a sink is not registered multiple times.</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">any_of</span><span class="p">(</span><span class="n">_stateChangeClients</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">_stateChangeClients</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span><span class="w"> </span><span class="n">notification</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">find</span><span class="p">(</span><span class="n">_stateChangeClients</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">_stateChangeClients</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span><span class="w"> </span><span class="n">notification</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">_stateChangeClients</span><span class="p">.</span><span class="n">end</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="n">_stateChangeClients</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">notification</span><span class="p">);</span>
 <span class="w">        </span><span class="n">notification</span><span class="o">-&gt;</span><span class="n">AddRef</span><span class="p">();</span>
 <span class="w">    </span><span class="p">}</span>
@@ -2102,7 +2103,7 @@
 
 <span class="cm">/**</span>
 <span class="cm"> * @brief Called by COM-RPC clients to unsubscribe from state change notifications</span>
-<span class="cm">*/</span>
+<span class="cm"> */</span>
 <span class="kt">void</span><span class="w"> </span><span class="nf">TestPlugin::Unregister</span><span class="p">(</span><span class="n">IStateControl</span><span class="o">::</span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="n">notification</span><span class="p">)</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">_adminLock</span><span class="p">.</span><span class="n">Lock</span><span class="p">();</span>
@@ -2119,7 +2120,7 @@
 </code></pre></div>
 <h2 id="unavailable-plugins">Unavailable Plugins</h2>
 <p>If required, it is possible to move a plugin to the Unavailable state. This is a purely administrative state that behaves almost identically to the Deactivated state. The only difference is the allowed state transitions in/out of the state - it is not possible to activate an unavailable plugin without first moving it to a deactivated state.</p>
-<p>This state was added to make it easier to distinguish between a plugin that is deactivated and a plugin that might not actually be installed on the platform. However it is not a requirement to use, since plugin libraries are unloaded once the plugin is deactivated.</p>
+<p>This state was added to make it easier to distinguish between a plugin that is deactivated and a plugin that might not actually be installed on the platform. However, it is not a requirement to use, since plugin libraries are unloaded once the plugin is deactivated.</p>
 <p>By default, a plugin will start in the deactivated state. Using the <code>startmode</code> option in the plugin config file, it is possible to change this so a plugin starts in the unavailable state.</p>
 <h2 id="clients-changing-plugin-state">Clients: Changing Plugin State</h2>
 <p>The Controller plugin is responsible for managing plugin lifecycle in Thunder as well as general information and configuration tasks. Controller implements the <code>IController</code> interface (<code>Source/plugins/IController.h</code>) and exposes both JSON and COM-RPC interfaces.</p>
@@ -2319,9 +2320,10 @@
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Controller.1.activate&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Controller.1.register&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;callsign&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TestPlugin&quot;</span>
+<span class="w">        </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;statechange&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sampleClient&quot;</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -2333,13 +2335,13 @@
 </ul>
 <p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2b05.svg" title=":arrow_left:" /> Event</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">   </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<span class="w">   </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="s2">&quot;sampleClient.statechange&quot;</span><span class="p">,</span>
-<span class="w">   </span><span class="nt">&quot;params&quot;</span><span class="p">:{</span>
-<span class="w">      </span><span class="nt">&quot;callsign&quot;</span><span class="p">:</span><span class="s2">&quot;TestPlugin&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="s2">&quot;Activated&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;reason&quot;</span><span class="p">:</span><span class="s2">&quot;Requested&quot;</span>
-<span class="w">   </span><span class="p">}</span>
+<span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sampleClient.statechange&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;callsign&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TestPlugin&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Deactivated&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Requested&quot;</span>
+<span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="com-rpc_1">COM-RPC</h3>
