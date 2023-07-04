@@ -174,24 +174,27 @@ Core::hresult TestPlugin::Request(const PluginHost::IStateControl::command state
 
     _adminLock.Lock();
 
-    TRACE(Trace::Information, (_T("Received state change request from %s to %s"), IStateControl::ToString(_currentState), IStateControl::ToString(state)));
+    TRACE(Trace::Information, (_T("Received state change request from %s to %s"), 
+                               IStateControl::ToString(_currentState), IStateControl::ToString(state)));
 
-    switch (state) {
-    case PluginHost::IStateControl::command::RESUME:
-        // Do whatever action is necessary to resume the plugin
-        _currentState = PluginHost::IStateControl::state::RESUMED;
-        result = Core::ERROR_NONE;
-        break;
-    case PluginHost::IStateControl::command::SUSPEND:
+    if (_currentState == PluginHost::IStateControl::state::RESUMED &&
+        state == PluginHost::IStateControl::command::SUSPEND) {
+        // Request to move from resumed -> suspended
         // Do whatever action is necessary to suspend the plugin
         _currentState = PluginHost::IStateControl::state::SUSPENDED;
         result = Core::ERROR_NONE;
-        break;
-    default:
-        break;
+    } else if (_currentState == PluginHost::IStateControl::state::SUSPENDED &&
+               state == PluginHost::IStateControl::command::RESUME) {
+        // Request to move from suspended -> resumed
+        // Do whatever action is necessary to resume the plugin
+        _currentState = PluginHost::IStateControl::state::RESUMED;
+        result = Core::ERROR_NONE;
+    } else {
+        // Trying to move from/to the same state
+        TRACE(Trace::Warning, (_T("Illegal state change")));
     }
 
-    // Fire off a notification to subscribed clients
+    // Fire off a notification to subscribed clients if we changed state successfully
     if (result == Core::ERROR_NONE) {
         for (const auto& client : _stateChangeClients) {
             client->StateChange(_currentState);
