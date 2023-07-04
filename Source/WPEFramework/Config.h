@@ -368,7 +368,6 @@ namespace PluginHost {
                 , IPV6(false)
                 , LegacyInitialize(false)
                 , DefaultMessagingCategories(false)
-                , DefaultWarningReportingCategories(false)
                 , Process()
                 , Input()
                 , Configs()
@@ -407,7 +406,6 @@ namespace PluginHost {
                 Add(_T("ipv6"), &IPV6);
                 Add(_T("legacyinitialize"), &LegacyInitialize);
                 Add(_T("messaging"), &DefaultMessagingCategories);
-                Add(_T("warningreporting"), &DefaultWarningReportingCategories); 
                 Add(_T("redirect"), &Redirect);
                 Add(_T("process"), &Process);
                 Add(_T("input"), &Input);
@@ -453,7 +451,6 @@ namespace PluginHost {
             Core::JSON::Boolean IPV6;
             Core::JSON::Boolean LegacyInitialize;
             Core::JSON::String DefaultMessagingCategories; 
-            Core::JSON::String DefaultWarningReportingCategories; 
             ProcessSet Process;
             InputConfig Input;
             Core::JSON::String Configs;
@@ -607,7 +604,6 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             , _model()
             , _messagingCategories()
             , _messagingCategoriesFile()
-            , _warningReportingCategories()
             , _binding()
             , _interface()
             , _URL()
@@ -685,8 +681,6 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                     config.DefaultMessagingCategories.SetQuoted(true);
                 }
                 _messagingCategories = config.DefaultMessagingCategories.Value();
-                _warningReportingCategories = config.DefaultWarningReportingCategories.Value();
-
 
                 if (config.Model.IsSet()) {
                     _model = config.Model.Value();
@@ -757,10 +751,6 @@ POP_WARNING()
         inline const string& MessagingCategories() const
         {
             return (_messagingCategories);
-        }
-        inline const string& WarningReportingCategories() const
-        {
-            return (_warningReportingCategories);
         }
         inline const string& Redirect() const
         {
@@ -1045,7 +1035,6 @@ POP_WARNING()
         string _model;
         string _messagingCategories;
         bool _messagingCategoriesFile;
-        string _warningReportingCategories;
         string _binding;
         string _interface;
         string _URL;

@@ -32,9 +32,6 @@ namespace WPEFramework {
 
 namespace WarningReporting {
 
-    constexpr uint32_t CyclicBufferSize = ((8 * 1024) - (sizeof(struct Core::CyclicBuffer::control))); /* 8Kb */
-    extern EXTERNAL const TCHAR* CyclicBufferName;
-
     // ---- Class Definition ----
     class EXTERNAL WarningReportingUnit : public IWarningReportingUnit {
     public:
@@ -160,41 +157,6 @@ namespace WarningReporting {
         WarningReportingUnit(const WarningReportingUnit&) = delete;
         WarningReportingUnit& operator=(const WarningReportingUnit&) = delete;
 
-        class EXTERNAL ReportingBuffer : public Core::CyclicBuffer {
-
-        public:
-            ReportingBuffer(const ReportingBuffer&) = delete;
-            ReportingBuffer& operator=(const ReportingBuffer&) = delete;
-
-            ReportingBuffer(const string& doorBell, const string& name);
-            ~ReportingBuffer();
-
-        public:
-            virtual uint32_t GetOverwriteSize(Cursor& cursor) override;
-            inline void Ring()
-            {
-                _doorBell.Ring();
-            }
-            inline void Acknowledge()
-            {
-                _doorBell.Acknowledge();
-            }
-            inline uint32_t Wait(const uint32_t waitTime)
-            {
-                return _doorBell.Wait(waitTime);
-            }
-            inline void Relinquish()
-            {
-                return _doorBell.Relinquish();
-            }
-
-        private:
-            virtual void DataAvailable() override;
-
-        private:
-            Core::DoorBell _doorBell;
-        };
-
     protected:
         WarningReportingUnit();
 
@@ -204,12 +166,8 @@ namespace WarningReporting {
     public:
         static WarningReportingUnit& Instance();
 
-        uint32_t Open(const uint32_t identifier);
-        uint32_t Open(const string& pathName);
-        uint32_t Close();
-
-        void Announce(IWarningReportingUnit::IWarningReportingControl& Category) override;
-        void Revoke(IWarningReportingUnit::IWarningReportingControl& Category) override;
+        void AddToCategoryList(IWarningReportingUnit::IWarningReportingControl& Category) override;
+        void RemoveFromCategoryList(IWarningReportingUnit::IWarningReportingControl& Category) override;
         std::list<string> GetCategories();
 
         // Default enabled/disabled categories: set via config.json.
@@ -217,64 +175,14 @@ namespace WarningReporting {
         string Defaults() const;
         void Defaults(const string& jsonCategories);
 
-        void ReportWarningEvent(const char identifier[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information) override;
-
-        inline bool HasDirectOutput() const
-        {
-            return _directOutput;
-        }
-        inline void DirectOutput(const bool enabled)
-        {
-            _directOutput = enabled;
-        }
-        inline void Announce()
-        {
-            if (_outputChannel != nullptr) {
-                _outputChannel->Ring();
-            }
-        }
-        inline void Acknowledge()
-        {
-            if (_outputChannel != nullptr) {
-                _outputChannel->Acknowledge();
-            }
-        }
-        inline uint32_t Wait(const uint32_t waitTime)
-        {
-            uint32_t status = Core::ERROR_UNAVAILABLE;
-            if (_outputChannel != nullptr) {
-                status = _outputChannel->Wait(waitTime);
-            }
-            return status;
-        }
-        inline void Relinquish()
-        {
-            if (_outputChannel != nullptr) {
-                _outputChannel->Relinquish();
-            }
-            return;
-        }
+        void ReportWarningEvent(const char identifier[], const IWarningEvent& information) override;
 
     private:
-        inline uint32_t Open(const string& doorBell, const string& fileName)
-        {
-
-            ASSERT(_outputChannel == nullptr);
-
-            _outputChannel.reset(new ReportingBuffer(doorBell, fileName));
-
-            ASSERT(_outputChannel->IsValid() == true);
-
-            return _outputChannel->IsValid() ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE;
-
-        }
         void UpdateEnabledCategories(const Core::JSON::ArrayType<Setting::JSON>& info);
 
         ControlList _categories;
         mutable Core::CriticalSection _adminLock;
-        std::unique_ptr<ReportingBuffer> _outputChannel;
         Settings _enabledCategories;
-        bool _directOutput;
     };
 }
 }

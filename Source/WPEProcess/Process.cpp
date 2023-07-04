@@ -631,10 +631,6 @@ int main(int argc, char** argv)
         // Due to the LXC container support all ID's get mapped. For the MessageBuffer, use the host given ID.
         Messaging::MessageUnit::Instance().Open(options.Exchange);
 
-#ifdef __CORE_WARNING_REPORTING__
-        WarningReporting::WarningReportingUnit::Instance().Open(options.Exchange);
-#endif
-
         if (remoteNode.IsValid()) {
             void* base = nullptr;
 

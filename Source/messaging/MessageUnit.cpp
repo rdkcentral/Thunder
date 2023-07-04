@@ -243,23 +243,23 @@ namespace WPEFramework {
         }
 
         /**
-        * @brief Push a logging type message and its information to a buffer
+        * @brief Push a message of any type and its information to a buffer
         */
-        /* virtual */ void MessageUnit::Push(const Core::Messaging::IStore::Logging& log, const Core::Messaging::IEvent* message)
+        /* virtual */ void MessageUnit::Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message)
         {
             //logging messages can happen in Core, meaning, otherside plugin can be not started yet
             //those should be just printed
             if (_settings.IsDirect() == true) {
-                _direct.Output(log, message);
+                _direct.Output(messageInfo, message);
             }
 
             if (_dispatcher != nullptr) {
                 uint8_t serializationBuffer[DataSize];
                 uint16_t length = 0;
 
-                ASSERT(log.Type() == Core::Messaging::Metadata::type::LOGGING);
+                ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
 
-                length = log.Serialize(serializationBuffer, sizeof(serializationBuffer));
+                length = messageInfo.Serialize(serializationBuffer, sizeof(serializationBuffer));
 
                 //only serialize message if the information could fit
                 if (length != 0) {
@@ -274,41 +274,5 @@ namespace WPEFramework {
                 }
             }
         }
-
-        /**
-        * @brief Push a tracing type message and its information to a buffer
-        */
-        /* virtual */ void MessageUnit::Push(const Core::Messaging::IStore::Tracing& trace, const Core::Messaging::IEvent* message)
-        {
-            //logging messages can happen in Core, meaning, otherside plugin can be not started yet
-            //those should be just printed
-            if (_settings.IsDirect() == true) {
-                _direct.Output(trace, message);
-            }
-
-            if (_dispatcher != nullptr) {
-                uint8_t serializationBuffer[DataSize];
-                uint16_t length = 0;
-
-                ASSERT(trace.Type() == Core::Messaging::Metadata::type::TRACING);
-
-                length = trace.Serialize(serializationBuffer, sizeof(serializationBuffer));
-
-                //only serialize message if the information could fit
-                if (length != 0) {
-                    length += message->Serialize(serializationBuffer + length, sizeof(serializationBuffer) - length);
-
-                    if (_dispatcher->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
-                        TRACE_L1("Unable to push message data!");
-                    }
-                }
-                else {
-                    TRACE_L1("Unable to push data, buffer is too small!");
-                }
-            }
-        }
-
-        // TO-DO: Add another overloaded Push() method for Warning Reporting
-
     } // namespace Messaging
 }

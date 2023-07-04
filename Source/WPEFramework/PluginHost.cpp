@@ -227,10 +227,6 @@ POP_WARNING()
 
             Messaging::MessageUnit::Instance().Close();
 
-#ifdef __CORE_WARNING_REPORTING__
-            WarningReporting::WarningReportingUnit::Instance().Close();
-#endif
-
 #ifndef __WINDOWS__
             if (_background) {
                 syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " closing all created singletons.");
@@ -574,11 +570,36 @@ POP_WARNING()
             }
             
 #ifdef __CORE_WARNING_REPORTING__
-            if (WarningReporting::WarningReportingUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE) {
-                SYSLOG_GLOBAL(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable issue reporting functionality!")));
-            }
+            class GlobalConfig : public Core::JSON::Container {
+            public:
+                class ReportingSettings : public Core::JSON::Container {
+                public:
+                    ReportingSettings()
+                        : Core::JSON::Container()
+                        , Settings()
+                    {
+                        Add("settings", &Settings);
+                    }
 
-            WarningReporting::WarningReportingUnit::Instance().Defaults(_config->WarningReportingCategories());
+                public:
+                    Core::JSON::String Settings;
+                };
+
+            public:
+                GlobalConfig()
+                    : Core::JSON::Container()
+                    , WarningReporting()
+                {
+                    Add("reporting", &WarningReporting);
+                }
+
+             public:
+                ReportingSettings WarningReporting;
+            } gc;
+
+            gc.FromString(_config->MessagingCategories());
+
+            WarningReporting::WarningReportingUnit::Instance().Defaults(gc.WarningReporting.Settings.Value());
 #endif
 
             SYSLOG_GLOBAL(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));

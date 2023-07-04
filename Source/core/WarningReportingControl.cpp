@@ -82,11 +82,12 @@ namespace WarningReporting {
         return (Core::SingletonType<WarningReportingUnitProxy>::Instance());
     }
 
-    void WarningReportingUnitProxy::ReportWarningEvent(const char module[], const char fileName[], const uint32_t lineNumber, const char className[], const IWarningEvent& information)
+    void WarningReportingUnitProxy::ReportWarningEvent(const char module[], const IWarningEvent& information)
     {
         adminlock.Lock();
+        ASSERT (_handler != nullptr);
         if (_handler != nullptr) {
-            _handler->ReportWarningEvent(module, fileName, lineNumber, className, information);
+            _handler->ReportWarningEvent(module, information);
         }
         adminlock.Unlock();
     }
@@ -100,11 +101,11 @@ namespace WarningReporting {
         adminlock.Unlock();
     }
 
-    void WarningReportingUnitProxy::Announce(IWarningReportingUnit::IWarningReportingControl& Category)
+    void WarningReportingUnitProxy::AddToCategoryList(IWarningReportingUnit::IWarningReportingControl& Category)
     {
         adminlock.Lock();
         if (_handler != nullptr) {
-            _handler->Announce(Category);
+            _handler->AddToCategoryList(Category);
         } else {
             _waitingAnnounces.emplace_back(&Category);
         }
@@ -112,12 +113,12 @@ namespace WarningReporting {
 
     }
 
-    void WarningReportingUnitProxy::Revoke(IWarningReportingUnit::IWarningReportingControl& Category)
+    void WarningReportingUnitProxy::RemoveFromCategoryList(IWarningReportingUnit::IWarningReportingControl& Category)
     {
         adminlock.Lock();
         if (_handler != nullptr) {
             ASSERT(_waitingAnnounces.size() == 0);
-            _handler->Revoke(Category);
+            _handler->RemoveFromCategoryList(Category);
         } else {
             WaitingAnnounceContainer::iterator it = std::find(std::begin(_waitingAnnounces), std::end(_waitingAnnounces), &Category);
             if (it != std::end(_waitingAnnounces)) {
@@ -127,7 +128,7 @@ namespace WarningReporting {
         adminlock.Unlock();
     }
 
-    void WarningReportingUnitProxy::Handler(IWarningReportingUnit* handler)
+    void WarningReportingUnitProxy::Handle(IWarningReportingUnit* handler)
     {
         ASSERT((_handler == nullptr && handler != nullptr) || (_handler != nullptr && handler == nullptr));
         adminlock.Lock();
@@ -136,7 +137,7 @@ namespace WarningReporting {
 
             for (IWarningReportingUnit::IWarningReportingControl* category : _waitingAnnounces) {
                 ASSERT(category != nullptr);
-                _handler->Announce(*category);
+                _handler->AddToCategoryList(*category);
             }
             _waitingAnnounces.clear();
         }
