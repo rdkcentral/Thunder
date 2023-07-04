@@ -35,7 +35,9 @@ namespace PluginHost {
         class EXTERNAL Config {
         public:
             Config() = delete;
+            Config(Config&&) = delete;
             Config(const Config&) = delete;
+            Config& operator=(Config&&) = delete;
             Config& operator=(const Config&) = delete;
 
             Config(const Plugin::Config& plugin, const string& webPrefix, const string& persistentPath, const string& dataPath, const string& volatilePath)
@@ -52,9 +54,7 @@ namespace PluginHost {
 
                 Update(plugin);
             }
-            ~Config()
-            {
-            }
+            ~Config() = default;
 
         public:
             inline bool IsSupported(const uint8_t number) const
