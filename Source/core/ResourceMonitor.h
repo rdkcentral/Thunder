@@ -34,7 +34,8 @@ namespace Core {
     struct EXTERNAL IResource {
         virtual ~IResource() = default;
 
-        typedef signed int handle;
+        using handle = signed int;
+        static constexpr handle INVALID = -1;
 
         virtual handle Descriptor() const = 0;
         virtual uint16_t Events() = 0;
@@ -88,7 +89,7 @@ namespace Core {
 
     public:
         struct Metadata {
-            signed int descriptor;
+            Core::IResource::handle descriptor;
             uint16_t monitor;
             uint16_t events;
             const char* classname;
