@@ -7,7 +7,7 @@ A key responsibility of the Thunder framework is managing the lifecycle of its p
   <figcaption>Plugin lifecycle state diagram</figcaption>
 </figure>
 
-Each plugin goes through a sequence of states when activated or deactivated. Plugins can be configured to activate automatically when Thunder is started, or can be activated manually using the Controller plugin.
+Each plugin goes through a sequence of states when activated or deactivated. Plugins can be configured to activate automatically when Thunder is started or can be activated manually using the Controller plugin.
 
 Unless otherwise stated in the config, a plugin will default to the Deactivated state when Thunder is started.
 
@@ -21,15 +21,17 @@ Plugins can be in one of the following states at a given time:
 | Activation   | The plugin is currently being activated                      |
 | Unavailable  | An administrative state used to indicate the plugin is known but not available (e.g. it might be downloaded later) to prevent accidental activation. The plugin must be explicitly moved to Deactivated before it can be activated. |
 | Precondition | The plugin is currently waiting on preconditions to be met before it will activate. Once the preconditions are met, it will move to activated |
-| Suspended    | *Only available if the plugin implements `IStateControl`*<br /><br />A sub-state of `Activated`. The plugin is activated but has been placed into a suspended state. The exact behaviour of a suspended plugin will depend on the implementation of the IStateControl interface. |
-| Resumed      | *Only available if the plugin implements `IStateControl`*<br /><br />A sub-state of `Activated`. The plugin is activated and not in a suspended state. The plugin has been initialised, is running and will respond to function calls |
+| Suspended    | *Only available if the plugin implements `IStateControl`*<br /><br />A sub-state of `Activated`. The plugin is activated but has been placed into a suspended state. The exact behaviour of a suspended plugin will depend on the implementation of the `IStateControl` interface. |
+| Resumed      | *Only available if the plugin implements `IStateControl`*<br /><br />A sub-state of `Activated`. The plugin is activated and not in a suspended state. The plugin has been initialised, is running and will respond to function calls. |
 | Hibernated   | *Only available if Thunder is built with Hibernation support*<br /><br />The plugin has been placed into a hibernated state where the contents of its memory have been flushed to disk. The plugin is not running and will not respond to requests. |
 
 ## Activation & Deactivation
 
 Activation and deactivation are the core lifecycle events in Thunder. 
 
-When a plugin is activated, the library is loaded, constructed and the `Initialize()` method is called. When it is deactivated the reverse happens; the `Deactivate()` method is called, the library is destructed and unloaded. As a result, once a plugin is deactivated it is safe to replace the library file (e.g. to upgrade to a new version) without needing to restart the framework.
+During plugin activation, the library is loaded, constructed and the `Initialize()` method is called. Once the initialise method returns, activation is considered complete and the plugin moves to the Activated state.
+
+When a plugin is deactivated the reverse happens; the `Deinitialize()` method is called, the plugin moves to the Deactivated state and the library is destructed and unloaded. As a result, once a plugin is deactivated it is safe to replace the library file (perhaps to upgrade to a new version) without needing to restart the framework.
 
 !!! note
 	All plugin libraries will be quickly loaded & unloaded once during WPEFramework startup regardless of plugin start mode to retrieve the version information.
@@ -144,7 +146,7 @@ struct INotification : virtual public Core::IUnknown {
 
 A plugin should inherit from the interface class, add it to the plugin interface map and add overrides for those methods. It should also maintain a local variable with its current state - which should be initialised to `PluginHost::IStateControl::UNINITIALIZED`.
 
-The important method is `Request(...)` which is called whenever a state change is requested for the plugin. The plugin should compare the requested state to the current state, and if it's different take whatever actions are necessary to transition itself before updating its state internally. If the state changes, it should then raise the `StateChange` notification with the new state.
+The important method is `Request(...)` which is called whenever a state change is requested for the plugin. The plugin should compare the requested state to the current state, and if required different take whatever actions are necessary to transition itself to the new state before updating its state internally. If the state changes, it should then raise the `StateChange` notification with the new state.
 
 If the requested state change is invalid (e.g. resuming an already resumed plugin) then return `Core::ERROR_ILLEGAL_STATE`. 
 
@@ -157,7 +159,7 @@ Core::hresult TestPlugin::Configure(PluginHost::IShell* service)
 
 /**
  * @brief Return the current plugin state
-*/
+ */
 PluginHost::IStateControl::state TestPlugin::State() const
 {
     return _currentState;
@@ -165,7 +167,7 @@ PluginHost::IStateControl::state TestPlugin::State() const
 
 /**
  * @brief Called when a request is made to change the plugin state.
-*/
+ */
 Core::hresult TestPlugin::Request(const PluginHost::IStateControl::command state)
 {
     Core::hresult result = Core::ERROR_ILLEGAL_STATE;
@@ -202,13 +204,13 @@ Core::hresult TestPlugin::Request(const PluginHost::IStateControl::command state
 
 /**
  * @brief Called by COM-RPC clients to subscribe to state change notifications
-*/
+ */
 void TestPlugin::Register(IStateControl::INotification* notification)
 {
     _adminLock.Lock();
 
     // Make sure a sink is not registered multiple times.
-    if (!std::any_of(_stateChangeClients.begin(), _stateChangeClients.end(), notification)) {
+    if (std::find(_stateChangeClients.begin(), _stateChangeClients.end(), notification) == _stateChangeClients.end()) {
         _stateChangeClients.push_back(notification);
         notification->AddRef();
     }
@@ -218,7 +220,7 @@ void TestPlugin::Register(IStateControl::INotification* notification)
 
 /**
  * @brief Called by COM-RPC clients to unsubscribe from state change notifications
-*/
+ */
 void TestPlugin::Unregister(IStateControl::INotification* notification)
 {
     _adminLock.Lock();
@@ -238,7 +240,7 @@ void TestPlugin::Unregister(IStateControl::INotification* notification)
 
 If required, it is possible to move a plugin to the Unavailable state. This is a purely administrative state that behaves almost identically to the Deactivated state. The only difference is the allowed state transitions in/out of the state - it is not possible to activate an unavailable plugin without first moving it to a deactivated state.
 
-This state was added to make it easier to distinguish between a plugin that is deactivated and a plugin that might not actually be installed on the platform. However it is not a requirement to use, since plugin libraries are unloaded once the plugin is deactivated.
+This state was added to make it easier to distinguish between a plugin that is deactivated and a plugin that might not actually be installed on the platform. However, it is not a requirement to use, since plugin libraries are unloaded once the plugin is deactivated.
 
 By default, a plugin will start in the deactivated state. Using the `startmode` option in the plugin config file, it is possible to change this so a plugin starts in the unavailable state.
 
@@ -465,10 +467,6 @@ int main(int argc, char const* argv[])
 ```
 
 
-
-
-
-
 ## State Change Notifications
 
 When a plugin changes state, Thunder will send out a notification to interested subscribers. This allows client applications to take action on plugin state changes.
@@ -483,9 +481,10 @@ The Controller plugin will emit state change notifications over JSON-RPC to any 
 {
 	"jsonrpc": "2.0",
 	"id": 1,
-	"method": "Controller.1.activate",
+	"method": "Controller.1.register",
 	"params": {
-		"callsign": "TestPlugin"
+		"event": "statechange",
+		"id": "sampleClient"
 	}
 }
 ```
@@ -500,13 +499,13 @@ Then, whenever a state change occurs a message will be sent over the websocket c
 
 ```json
 {
-   "jsonrpc":"2.0",
-   "method":"sampleClient.statechange",
-   "params":{
-      "callsign":"TestPlugin",
-      "state":"Activated",
-      "reason":"Requested"
-   }
+	"jsonrpc": "2.0",
+	"method": "sampleClient.statechange",
+	"params": {
+		"callsign": "TestPlugin",
+		"state": "Deactivated",
+		"reason": "Requested"
+	}
 }
 ```
 
