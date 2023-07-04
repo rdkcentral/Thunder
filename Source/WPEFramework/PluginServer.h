@@ -957,7 +957,8 @@ namespace PluginHost {
 
             private:
                 void* Acquire(const string& /* className */, const uint32_t interfaceId, const uint32_t /* versionId */) override {
-                    return (_plugin->QueryInterface(interfaceId));
+                    ASSERT(interfaceId >= RPC::IDS::ID_EXTERNAL_INTERFACE_OFFSET);
+                    return (interfaceId >= RPC::IDS::ID_EXTERNAL_INTERFACE_OFFSET ? _plugin->QueryInterface(interfaceId) : nullptr);
                 }
 
             private:
@@ -1158,19 +1159,32 @@ namespace PluginHost {
                 std::vector<PluginHost::ISubSystem::subsystem> _control;
                 string _versionHash;
             };
-            static Core::NodeId PluginNodeId(const string& basePath, const Core::JSON::String& communicator) {
+            static Core::NodeId PluginNodeId(const PluginHost::Config& config, const Plugin::Config& plugin) {
                 Core::NodeId result;
-                if (communicator.IsSet() == true) {
-                    if (strchr(communicator.Value().c_str(), '/') == nullptr) {
-                        result = Core::NodeId(communicator.Value().c_str());
+                if (plugin.Communicator.IsSet() == true) {
+                    if (plugin.Communicator.IsNull() == true) {
+                        // It should be derived from the Thunder communicator port..
+                        Core::NodeId masterNode = config.Communicator();
+
+                        if (masterNode.Type() != Core::NodeId::enumType::TYPE_DOMAIN) {
+                            // It's not a path name, just take the same address but with a different port
+                            static uint32_t nextPortId = 1;
+
+                            result = Core::NodeId(masterNode);
+                            result.PortNumber(masterNode.PortNumber() + static_cast<uint8_t>(Core::InterlockedIncrement(nextPortId) & 0xFF));
+                        }
+                        else {
+                            // Its a domain socket, move the callsign in between and make that path part..
+                            string pathName = Core::Directory::Normalize(Core::File::PathName(masterNode.HostName())) + plugin.Callsign.Value();
+                            string fullName = pathName + '/' + Core::File::FileName(masterNode.HostName());
+                
+                            if (Core::Directory(pathName.c_str()).Create() == true) {
+                                result = Core::NodeId(fullName.c_str(), Core::NodeId::enumType::TYPE_DOMAIN);
+                            }
+                        }
                     }
                     else {
-                        uint8_t index = 0;
-                        string path = communicator.Value();
-                        while (path[index] == '/') {
-                            index++;
-                        }
-                        result = Core::NodeId((basePath + path.substr(index)).c_str());
+                        result = Core::NodeId(plugin.Communicator.Value().c_str());
                     }
                 }
                 return (result);
@@ -1180,6 +1194,7 @@ namespace PluginHost {
             Service() = delete;
             Service(Service&&) = delete;
             Service(const Service&) = delete;
+            Service& operator=(Service&&) = delete;
             Service& operator=(const Service&) = delete;
 
             Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode type, const Core::ProxyType<RPC::InvokeServer>& handler)
@@ -1203,7 +1218,7 @@ namespace PluginHost {
                 , _lastId(0)
                 , _metadata()
                 , _library()
-                , _external(PluginNodeId(server.VolatilePath() + plugin.Callsign.Value() + '/', plugin.Communicator), server.ProxyStubPath(), handler)
+                , _external(PluginNodeId(server, plugin), server.ProxyStubPath(), handler)
                 , _administrator(administrator)
             {
             }
@@ -2057,6 +2072,7 @@ namespace PluginHost {
             void* _hibernateStorage;
             ExternalAccess _external;
             ServiceMap& _administrator;
+
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;
         };
@@ -3205,7 +3221,7 @@ POP_WARNING()
                             entry.Remote = identifier;
                         }
                     });
-                _adminLock.Unlock();
+                    _adminLock.Unlock();
             }
             uint32_t FromIdentifier(const string& callSign, Core::ProxyType<IShell>& service)
             {
@@ -4443,7 +4459,7 @@ POP_WARNING()
             Core::JSON::ArrayType<MetaData::Server::Minion>::Iterator index(data.WorkerPool.ThreadPoolRuns.Elements());
 
             while (index.Next() == true) {
-                
+
                 std::list<Core::callstack_info> stackList;
 
                 ::DumpCallStack(static_cast<ThreadId>(index.Current().Id.Value()), stackList);
@@ -4494,7 +4510,7 @@ POP_WARNING()
         inline PluginHost::Config& Configuration()
         {
             return (_config);
-        }  
+        }
         inline const PluginHost::Config& Configuration() const
         {
             return (_config);
@@ -4506,7 +4522,7 @@ POP_WARNING()
 
         uint32_t Persist()
         {
-            Override infoBlob( _config, _services, Configuration().PersistentPath() + PluginOverrideFile);
+            Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideFile);
 
             return (infoBlob.Save());
         }
