@@ -91,6 +91,8 @@ if(MESSAGING)
     add_subdirectory(messaging)
 endif()
 
+add_subdirectory(extensions)
+
 if(COM)
     add_subdirectory(com)
 endif()
@@ -106,5 +108,3 @@ endif()
 if(EXECUTABLE)
     add_subdirectory(WPEFramework)
 endif()
-
-add_subdirectory(extensions)
