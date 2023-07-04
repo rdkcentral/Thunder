@@ -207,7 +207,7 @@ namespace Core {
             const Core::Time now(TimeStamp());
             string time;
 
-            if (abbreviate == true) {
+            if (abbreviate == abbreviate::ABBREVIATED) {
                 time = now.ToTimeOnly(true);
             }
             else {
@@ -272,7 +272,7 @@ namespace Core {
             string result;
             const Core::Time now(TimeStamp());
 
-            if (abbreviate == true) {
+            if (abbreviate == abbreviate::ABBREVIATED) {
                 const string time(now.ToTimeOnly(true));
                 result = Core::Format("[%s]:[%s]:[%s]: ",
                         time.c_str(),
@@ -340,7 +340,7 @@ namespace Core {
             string result;
             const Core::Time now(TimeStamp());
 
-            if (abbreviate == true) {
+            if (abbreviate == abbreviate::ABBREVIATED) {
                 const string time(now.ToTimeOnly(true));
                 result = Core::Format("[%s]:[%s]:[%s]: ",
                         time.c_str(),
