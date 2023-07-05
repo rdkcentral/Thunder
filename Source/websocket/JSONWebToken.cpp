@@ -168,7 +168,7 @@ namespace Web
 
                 // Extract the signature and convert it to a binary string.
 				uint8_t signature[Crypto::SHA256HMAC::Length];
-		if ((token.length() - pos - 1) == ((((8 * sizeof(signature)) + 7)/6)))
+		if ((token.length() - pos - 1) == ((((8 * sizeof(signature)) + 5)/6)))
                 {		    
                 if (Core::URL::Base64Decode(token.substr(pos + 1).c_str(), static_cast<uint16_t>(token.length() - pos - 1), signature, sizeof(signature), nullptr) == sizeof(signature)) {
 
