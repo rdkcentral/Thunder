@@ -51,36 +51,11 @@ namespace Messaging {
         void Enable(const Core::Messaging::Metadata& metadata, const bool enable);
         void Controls(Messaging::MessageUnit::Iterator& controls) const;
 
-        using MessageHandler = std::function<void(const Core::Messaging::Metadata&, const Core::ProxyType<Core::Messaging::IEvent>&)>;
+        using MessageHandler = std::function<void(const Core::ProxyType<Core::Messaging::MessageInfo>&, const Core::ProxyType<Core::Messaging::IEvent>&)>;
         void PopMessagesAndCall(const MessageHandler& handler);
 
         void AddFactory(Core::Messaging::Metadata::type type, IEventFactory* factory);
         void RemoveFactory(Core::Messaging::Metadata::type type);
-
-    private:
-        template<typename METADATA>
-        uint16_t DeserializeAndSendMessage(const uint16_t length, const MessageHandler& handler)
-        {
-            ASSERT(handler != nullptr);
-
-            METADATA metadata;
-            const uint16_t offset = metadata.Deserialize(_readBuffer, length);
-
-            if (offset != 0) {
-                auto factory = _factories.find(metadata.Type());
-
-                if (factory != _factories.end()) {
-                    Core::ProxyType<Core::Messaging::IEvent> message;
-
-                    message = factory->second->Create();
-                    message->Deserialize((_readBuffer + offset), (length - offset));
-
-                    handler(metadata, message);
-                }
-            }
-
-            return (offset);
-        }
 
     private:
         using Factories = std::unordered_map<Core::Messaging::Metadata::type, IEventFactory*>;

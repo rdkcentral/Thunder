@@ -179,11 +179,21 @@ namespace Messaging {
 
                 uint16_t length = 0;
 
-                if (type == Core::Messaging::Metadata::type::TRACING) {
-                    length = DeserializeAndSendMessage<Core::Messaging::IStore::Tracing>(size, handler);
-                }
-                else if (type == Core::Messaging::Metadata::type::LOGGING || type == Core::Messaging::Metadata::type::REPORTING) {
-                    length = DeserializeAndSendMessage<Core::Messaging::IStore::Logging>(size, handler);
+                ASSERT(handler != nullptr);
+
+                auto factory = _factories.find(type);
+
+                if (factory != _factories.end()) {
+                    Core::ProxyType<Core::Messaging::MessageInfo> metadata;
+                    Core::ProxyType<Core::Messaging::IEvent> message;
+
+                    metadata = factory->second->GetMetadata();
+                    message = factory->second->GetMessage();
+
+                    length = metadata->Deserialize(_readBuffer, size);
+                    length += message->Deserialize((&_readBuffer[length]), (size - length));
+
+                    handler(metadata, message);
                 }
 
                 if (length == 0) {

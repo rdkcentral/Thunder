@@ -20,9 +20,6 @@
 #pragma once
 
 #include "Module.h"
-#include "Proxy.h"
-#include "Sync.h"
-#include "Frame.h"
 
 namespace WPEFramework {
 
@@ -47,10 +44,12 @@ namespace Core {
         class EXTERNAL Metadata {
         public:
             enum type : uint8_t {
-                INVALID   = 0,
-                TRACING   = 1,
-                LOGGING   = 2,
-                REPORTING = 3
+                INVALID        = 0,
+                TRACING        = 1,
+                LOGGING        = 2,
+                REPORTING      = 3,
+                STANDARD_OUT   = 4,
+                STANDARD_ERROR = 5
             };
 
         public:
@@ -141,6 +140,12 @@ namespace Core {
         */
         class EXTERNAL MessageInfo : public Metadata {
         public:
+            enum abbreviate : uint8_t {
+                FULL        = 0,
+                ABBREVIATED = 1
+            };
+
+        public:
             MessageInfo(const MessageInfo&) = default;
             MessageInfo& operator=(const MessageInfo&) = default;
 
@@ -162,8 +167,9 @@ namespace Core {
             }
 
         public:
-            virtual uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
-            virtual uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
+            uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
+            uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
+            virtual string ToString(const abbreviate abbreviate) const;
 
         private:
             uint64_t _timeStamp;
@@ -234,6 +240,7 @@ namespace Core {
             public:
                 uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
                 uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
+                string ToString(const abbreviate abbreviate) const override;
 
             private:
                 string _fileName;
@@ -241,14 +248,46 @@ namespace Core {
                 string _className;
         };
 
+           /**
+            * @brief Data-Carrier, extended information about the warning-reporting-type message.
+            */
+            class EXTERNAL WarningReporting : public MessageInfo {
+            public:
+                WarningReporting(const WarningReporting&) = default;
+                WarningReporting& operator=(const WarningReporting&) = default;
+
+                WarningReporting()
+                    : MessageInfo()
+                {
+                }
+                WarningReporting(const MessageInfo& messageInfo, const string& callsign)
+                    : MessageInfo(messageInfo),
+                    _callsign(callsign)
+                {
+                }
+                ~WarningReporting() = default;
+
+            public:
+                const string& Callsign() const {
+                    return (_callsign);
+                }
+
+            public:
+                uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
+                uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
+                string ToString(const abbreviate abbreviate) const override;
+
+            private:
+                string _callsign;
+            };
+
 	    public:
             virtual ~IStore() = default;
             static IStore* Instance();
             static void Set(IStore*);
 
             virtual bool Default(const Metadata& metadata) const = 0;
-            virtual void Push(const Logging& log, const IEvent* message) = 0;
-            virtual void Push(const Tracing& trace, const IEvent* message) = 0;
+            virtual void Push(const MessageInfo& messageInfo, const IEvent* message) = 0;
         };
 
     } // namespace Messaging

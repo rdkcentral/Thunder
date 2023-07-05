@@ -30,6 +30,7 @@
     <ClInclude Include="MessageClient.h" />
     <ClInclude Include="MessageUnit.h" />
     <ClInclude Include="Module.h" />
+    <ClInclude Include="ConsoleStreamRedirect.h" />
     <ClInclude Include="TextMessage.h" />
     <ClInclude Include="TraceCategories.h" />
     <ClInclude Include="TraceControl.h" />
