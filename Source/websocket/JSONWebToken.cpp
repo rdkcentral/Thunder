@@ -155,8 +155,7 @@ namespace Web
 
 	bool JSONWebToken::ValidSignature(const mode type, const string& token) const 
 	{
-        bool result = false;
-			
+        bool result = false;	
         // Check if the Hash is correct..
         size_t pos = token.find_last_of('.');
 
@@ -167,7 +166,7 @@ namespace Web
                 Crypto::SHA256HMAC hash(_key);
 
                 // Extract the signature and convert it to a binary string.
-		uint8_t signature[Crypto::SHA256HMAC::Length];
+				uint8_t signature[Crypto::SHA256HMAC::Length];
 		if ((token.length() - pos - 1) == ((((8 * sizeof(signature)) + 7)/6)))
                 {		    
                 if (Core::URL::Base64Decode(token.substr(pos + 1).c_str(), static_cast<uint16_t>(token.length() - pos - 1), signature, sizeof(signature), nullptr) == sizeof(signature)) {
