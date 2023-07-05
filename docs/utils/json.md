@@ -10,7 +10,7 @@ The only downside of this approach it that all JSON documents must have a known 
 
 All JSON documents should be defined as instances of `Core::JSON::Container`.
 
-The class will contains public variables for each JSON property that should be accessible. In the constructor of the class, the `Add()` method should be called for each property to map the JSON object name to the variable. The class initialiser list should define sensible default values for each variable.
+The class will contain public variables for each JSON property that should be accessible. In the constructor of the class, the `Add()` method should be called for each property to map the JSON object name to the variable. The class initialiser list should define sensible default values for each variable.
 
 If a key exists in the JSON document that does not exist in the C++ class, then it is silently ignored.
 
@@ -121,12 +121,18 @@ ENUM_CONVERSION_END(Colour)
 
 The enum can now be used in a `Core::JSON::EnumType<>` object inside a JSON document.
 
-## Examples
+## Streaming
 
-### Deserialise
+Unlike many other parsers, Thunder's JSON parser does not require the full JSON document to be read into memory before it can parse it. Instead, it parses JSON documents in chunks (as small as 1 byte). 
+
+This is very useful when working with data over the network, as Thunder can begin to deserialise the message incrementally the instant the first bytes are received instead of having to wait for the entire message to be read into memory. This improves both performance and reduces memory usage.
+
+## Examples
 
 !!! warning
 	Thunder does not support comments in JSON documents since comments are not part of the formal [JSON specification](https://datatracker.ietf.org/doc/html/rfc8259)
+
+### Deserialise
 
 #### From File
 
@@ -152,6 +158,8 @@ Successfully parsed JSON from file
 Name: Emily Smith
 */
 ```
+
+Since the JSON parser works on streams, the file is read in 1KB chunks and each chunk is parsed individually to build the final document. As a result, it does not need to read the entire file into memory before it can parse it.
 
 If you need to get an error description for why the parsing failed, provide an Error object to the FromFile() method. The error will contain the error and the character at which the error occurred.
 
@@ -196,6 +204,48 @@ if (person.FromString(input)) {
 ```
 
 As with deserialising from file, an optional Error object can be provided to store an error message if the JSON could not be parsed
+
+#### From Stream
+
+This (slightly contrived) example simulates reading data in small chunks and parsing each chunk as it arrives. 
+
+In the real-world, this could be data read over a slow connection (such as a serial port or bluetooth) or a large file that you do not want to read entirely into memory before parsing. Note the `FromFile`/`ToFile` chunk their read/writes in 1KB buffers in the same way.
+
+```c++
+std::string input = R"({"name": "Emily Smith", "age": 36, "gender": "Female", "address":
+                        {"line1": "1 Example Way", "town": "Sample Town",
+                        "city": "Test City", "postcode": "AB1 2CD"}})";
+
+// Create object to deserialise into
+Person person;
+
+Core::OptionalType<Core::JSON::Error> error;
+uint16_t bytesRead = 0;
+uint32_t offset = 0;
+
+// Read the string in one byte at a time
+for (const char& c : input) {
+    char buffer[1];
+    buffer[0] = c;
+
+    bytesRead += person.Deserialize(buffer, sizeof(buffer), offset, error);
+}
+
+// Check that we read all the data correctly
+if (offset != 0 || bytesRead < input.size() && !error.IsSet()) {
+    error = Core::JSON::Error { "Malformed JSON. Missing closing quotes or brackets" };
+}
+
+// Check if an error occured during parsing
+if (error.IsSet()) {
+    printf("Failed to read JSON with error %s\n", ErrorDisplayMessage(error.Value()).c_str());
+    person.Clear();
+} else {
+    printf("Parsed JSON. Name is %s\n", person.Name.Value().c_str());
+}
+```
+
+
 
 ### Serialise
 
