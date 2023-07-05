@@ -155,8 +155,8 @@ namespace Web
 
 	bool JSONWebToken::ValidSignature(const mode type, const string& token) const 
 	{
-        bool result = false;	
-		
+        bool result = false;
+
         // Check if the Hash is correct..
         size_t pos = token.find_last_of('.');
 
