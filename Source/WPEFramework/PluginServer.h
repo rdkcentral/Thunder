@@ -3626,7 +3626,7 @@ POP_WARNING()
                                     response->ErrorCode = Web::STATUS_NO_CONTENT;
                                     message->Clear();
                                     message->Id = id;
-                                    message->Error.SetError(Core::ERROR_INVALID_DESIGNATOR);
+                                    message->Error.SetError(Core::ERROR_INVALID_INPUT_LENGTH);
                                     message->Error.Text = error;
                                     response->Body(Core::ProxyType<Web::IBody>(message));
                                 }

@@ -98,6 +98,9 @@ namespace Core {
                     case Core::ERROR_TIMEDOUT:
                         Code = -32000; // Server defined, now mapped to Timed out
                         break;
+                    case Core::ERROR_INVALID_INPUT_LENGTH:
+                        Code = -32700; // Parse error
+                        break;
                     default:
                         Code = static_cast<int32_t>(frameworkError);
                         break;
