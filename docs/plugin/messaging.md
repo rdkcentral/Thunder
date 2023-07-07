@@ -1,12 +1,10 @@
-# Messaging
-
 In the past, logging, tracing and warning reporting were completely separate issues and were handled individually. However, even though these message types have distinct characteristics, we recognized the advantages of consolidating them into a unified framework, which is now referred to as `Messaging`. We are convinced it is much better suited for the development, and with some recent fixes that will be described in the following sections, `Messaging` is fully operational. We strongly believe that it is a good time to shed some more light on that functionality, since it is simple to use and yet very effective.
 
 Before we begin to describe what the `MessageControl` plugin does and where logging, tracing and warning reporting can be directed, it is probably a good idea to start from the ground up. In this case, what precisely are these message types, what are their differences in general and in Thunder, how exactly the messages are created, and what is going on with them before they end up at their final destination.
 
 We can all agree that logging, tracing and warning reporting are important techniques often used in software development to gather information and provide insight into the behavior of an application. However, there are some fundamental differences between them.
 
-## Tracing
+# Tracing
 
 First, let us briefly discuss the part responsible for the tracing. In theory, tracing is the process of monitoring the flow of a request through an application. It is used to identify performance bottlenecks and understand the interactions between different components of a distributed system. A trace typically consists of a series of events, each of which corresponds to a particular stage in the processing of a request. Tracing provides a much broader and more continuous perspective of the application compared to logging. The goal of tracing is to track the flow and evolution of data within a program so that we can be proactive instead of just reactive and increase overall performance.
 
@@ -70,7 +68,7 @@ void DirectOutput::Output(const Core::Messaging::MessageInfo& messageInfo, const
 }
 ```
 
-## Logging
+# Logging
 
 Logging, on the other hand, is the process of recording events that occur during the execution of an application. These events could be error messages, warnings, or informational messages that provide details about the application’s behavior. Logging is typically used for debugging and troubleshooting purposes. The primary goal of logging is to provide a historical record of events that can be used to analyze and diagnose problems. This means that in theory, we want to save the logs for later use.
 
@@ -108,7 +106,7 @@ In the piece of code below we can see that the first noticeable difference betwe
 In addition, you might be wondering why we have some `Messaging` components such as `Metadata` in `Core`, and why everything is not simply inside
 `Source/messaging`. From an architectural point of view, there is a reason for this, which revolves around the need for reporting capabilities within `Core`. For instance, we would like to measure how long it takes to lock and then unlock. To accomplish this, we need some of the messaging features to be accessible in `Core`, because otherwise we would get, as you may have guessed, circular dependencies.
 
-## Warning Reporting
+# Warning Reporting
 
 Last but not least, it is about time to describe warning reporting. It is a crucial aspect of software systems that aims to alert developers and users about potential issues or anomalies within the system's operation. Unlike logging and tracing, which primarily focus on capturing and storing detailed information for diagnostic purposes, warning reporting specifically targets situations where certain conditions might lead to unexpected behavior or errors. While logging records events and activities to provide a comprehensive record of system activity, and tracing follows the flow of execution across different components or services, warning reporting is designed to raise flags about specific conditions that could lead to failures, performance degradation, or security vulnerabilities.
 
@@ -118,7 +116,7 @@ By emphasizing the significance of these conditions, warning reporting enables p
 REPORT_OUTOFBOUNDS_WARNING(WarningReporting::SinkStillHasReference, _referenceCount);
 ```
 
-### Macros
+## Macros
 
 Within Thunder, there are five distinct macros dedicated to warning reporting, each with a slightly different use case scenario. You can find these macros inside `Source/core/WarningReportingControl.h`. The first two macros, `REPORT_WARNING` and `REPORT_WARNING_GLOBAL`, only require the `CATEGORY` parameter. These macros should be used when reporting a warning without without specific values within the category. While all categories in Thunder currently use actual values and compare them with the reporting bounds. While all categories in Thunder currently utilize actual values and compare them against reporting bounds, these macros have been implemented with future use cases in mind. If someone decides to add their own simple category without reporting values, they can effortlessly make use of these macros.
 
@@ -155,7 +153,7 @@ bool Analyze(const char moduleName[], const char identifier[], const uint32_t ac
 
 In the code above, we can notice that the main job of this method is to check whether the `actualValue` reported by the macro exceeds the `_reportingBound` set by the user.  If the condition is met, then the `CallAnalyze()` method is called, which will invoke an `Analyze()` method specific to the warning reporting category. However, if the category does not have such a method, then `CallAnalyze()` simply returns `true`. In such fashion, we can easily check additional conditions necessary for a warning to trigger.
 
-### Warning Reporting proxy
+## Warning Reporting proxy
 
 Moving forward, the next step involves sending the message to a proxy called `WarningReportingUnit`. This distinction highlights one of the key differences between warning reporting and other message types. While warning reporting can be used in `Core`, which is dependent on `messaging`, it necessitated the creation of a proxy to enable the use of warning reporting macros in `Core` while still routing the messages to `MessageUnit` located in `Source/messaging`. This entire process is accomplished through the utilization of the `ReportWarningEvent()` method:
 
@@ -218,15 +216,15 @@ void AnalyseAndReportDispatchedJobs()
 }
 ```
 
-## MessageControl plugin
+# MessageControl plugin
 
 Now that we have explored the concepts of logging, tracing, and warning reporting in theory and their implementation within Thunder, we can delve into the significance of the `MessageControl` plugin. This plugin plays a vital role as it manages all message types seamlessly. In the subsequent sections, we will provide a more detailed explanation of how the plugin operates and the specific steps it undertakes. However, it is important to highlight that the plugin not only consolidates various message types but also offers the flexibility to direct these messages to different specific outputs. These outputs include the Console, Syslog, a file, or even a Network Stream through UDP.
 
-### Content of the message
+## Content of the message
 
 Before examining the workings of the plugin, it is crucial to provide a brief overview of the components that make up a message, as they directly impact the message processing. A message consists of three main parameters: module, category, and the actual content of the message. Understanding these parameters is essential for effective message handling.
 
-#### Categories of each message type
+### Categories of each message type
 
 When it comes to tracing, the module parameter represents the name of the plugin responsible for sending the message, for example `Plugin_Cobalt`. However, when the `SYSLOG` macro is used, the module name will simply be `Syslog`.
 
@@ -291,7 +289,7 @@ Last but not least, the warning reporting categories in Thunder can be found in 
 - TooLongPluginState
 - TooLongInvokeMessage
 
-#### Creating a warning reporting category
+### Creating a warning reporting category
 
 Unlike the tracing and logging categories, these warning reporting categories are not declared using macros. Instead, they are directly declared within the designated header files mentioned above.
 
@@ -327,7 +325,7 @@ public:
 };
 ```
 
-### From a macro to an output
+## From a macro to an output
 
 Now, let us delve into how the MessageControl plugin manages the messages from logging, tracing, and warning reporting. To begin, let us revisit the macros discussed earlier. When handling tracing and logging messages, the first step involves checking if the corresponding category is enabled. Subsequently, both tracing and logging macros create an object of the `CATEGORY` class, which encapsulates the actual contents of the message provided as `PARAMETERS` within the macro. This enables the convenient storage and processing of the message content.
 
@@ -371,7 +369,7 @@ WPEFramework::Messaging::TextMessage __message__(__data__.Data());
 WPEFramework::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);
 ```
 
-#### MessageUnit::Push()
+### MessageUnit::Push()
 
 This is how the communication between Thunder and the `MessageControl` plugin takes place. For tracing and logging it is within the macros, but for warning reporting it is in the separate method `ReportWarningEvent()` of the reporting proxy `WarningReportingUnit`.  The first step involves constructing the content of the message. Once the message content is prepared, it is then pushed to a buffer or special queue in the second line of code. This buffer serves as a centralized storage for messages, ensuring that they are properly organized and ready for further processing.
 
@@ -410,7 +408,7 @@ When the `MessageControl` plugin is used, each message is buffered and added to 
 
 It is important to note that when the `MessageControl` plugin is not actively running or in scenarios where it is disabled, there is an option to directly print the message onto the console using the `DirectOutput()` method. This allows for immediate display of the message on the console without going through the buffering process.
 
-#### MessageClient::PopMessagesAndCall()
+### MessageClient::PopMessagesAndCall()
 
 ```c++
 using MessageHandler = std::function<void(const Core::ProxyType<Core::Messaging::MessageInfo>&, const Core::ProxyType<Core::Messaging::IEvent>&)>;
@@ -495,7 +493,7 @@ void Message(const Core::Messaging::MessageInfo& metadata, const string& message
 }
 ```
 
-#### Output configuration
+### Output configuration
 
 Let us take a closer look at how outputs are configured and how this configuration can be modified. The configuration is generated as a JSON file, where specific JSON values correspond to the actual objects in the code. The association between an object and its corresponding JSON value is established within the constructor of the `Config` class in `ThunderNanoServicesRDK/MessageControl/MessageControl.h` utilizing the `Add()` method. This connection ensures that the configuration values in the JSON file are correctly linked to the corresponding objects in the code. To understand the configuration process in more detail, it is important to examine the `Initialize()` method in `MessageControl/MessageControl.cpp`.
 
@@ -551,7 +549,7 @@ private:
 
 If you have noticed the connection between the `ConsoleOutput` and `IPublish` structures, you are absolutely correct. Within the `ThunderNanoServicesRDK/MessageControl/MessageOutput.h` file, you will find the `IPublish` structure along with several classes that inherit from it, including the `ConsoleOutput` class. The base structure `IPublish` has a virtual destructor, so that we can ensure that an instance of a derived class will not be potentially deleted through a pointer to the base class. In addition, it also has a virtual method `Message()` that is overridden in each of the derived classes.
 
-#### Convert() - the final step
+### Convert() - the final step
 
 ```c++
 void ConsoleOutput::Message(const Core::Messaging::MessageInfo& metadata, const string& text) /* override */
