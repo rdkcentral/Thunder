@@ -278,7 +278,7 @@ namespace PluginHost {
         StatisticsList _statistics;
     };
 
-    class TrackingJSONRPC : public Web::JSONBodyType<Core::JSONRPC::Message> {
+    class TrackingJSONRPC : public  Web::JSONRPC::Body {
     public:
         TrackingJSONRPC(const TrackingJSONRPC&) = delete;
         TrackingJSONRPC& operator= (const TrackingJSONRPC&) = delete;
@@ -290,14 +290,14 @@ namespace PluginHost {
         void Clear() {
             _in = 0;
             _out = 0;
-            Web::JSONBodyType<Core::JSONRPC::Message>::Clear();
+            Web::JSONRPC::Body::Clear();
 
         }
 	void In(const uint32_t data) {
             if (data == 0) {
                 uint64_t now = Core::Time::Now().Ticks();
                 _statistics.Deserialization = static_cast<uint32_t>(now - _stamp);
-		_stamp = now;
+		        _stamp = now;
             }
             _in += data;
         }
@@ -347,7 +347,7 @@ namespace PluginHost {
     };
     using JSONRPCMessage = TrackingJSONRPC;
 #else
-    using JSONRPCMessage = Web::JSONBodyType<Core::JSONRPC::Message>;
+    using JSONRPCMessage = Web::JSONRPC::Body;
 #endif
 
     typedef Core::ProxyPoolType<PluginHost::Request> RequestPool;

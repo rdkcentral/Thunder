@@ -366,7 +366,7 @@ private:
         {
             return (_fileBodyFactory.Element());
         }
-        Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> JSONRPC() override
+        Core::ProxyType<Web::JSONRPC::Body> JSONRPC() override
         {
             return (_jsonRPCFactory.Element());
         }
@@ -375,7 +375,7 @@ private:
         Core::ProxyPoolType<Web::Request> _requestFactory;
         Core::ProxyPoolType<Web::Response> _responseFactory;
         Core::ProxyPoolType<Web::FileBody> _fileBodyFactory;
-        Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> _jsonRPCFactory;
+        Core::ProxyPoolType<Web::JSONRPC::Body> _jsonRPCFactory;
     };
 
     static void UncaughtExceptions () {

@@ -388,7 +388,7 @@ namespace PluginHost {
         }
         uint32_t Response(const Core::JSONRPC::Context& context, const string& result)
         {
-            Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = IFactories::Instance().JSONRPC();
+            Core::ProxyType<Web::JSONRPC::Body> message = IFactories::Instance().JSONRPC();
 
             ASSERT(_service != nullptr);
 
@@ -400,7 +400,7 @@ namespace PluginHost {
         }
         uint32_t Response(const Core::JSONRPC::Context& channel, const Core::JSONRPC::Error& result)
         {
-            Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = IFactories::Instance().JSONRPC();
+            Core::ProxyType<Web::JSONRPC::Body> message = IFactories::Instance().JSONRPC();
 
             ASSERT(_service != nullptr);
 
@@ -558,7 +558,7 @@ namespace PluginHost {
 
         }
         Core::hresult Error(const uint32_t channel, const uint32_t id, const uint32_t code, const string& errorText) override {
-            Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = IFactories::Instance().JSONRPC();
+            Core::ProxyType<Web::JSONRPC::Body> message = IFactories::Instance().JSONRPC();
 
             ASSERT(_service != nullptr);
 
@@ -570,7 +570,7 @@ namespace PluginHost {
             return (_service->Submit(channel, Core::ProxyType<Core::JSON::IElement>(message)));
         }
         Core::hresult Response(const uint32_t channel, const uint32_t id, const string& response) override {
-            Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = IFactories::Instance().JSONRPC();
+            Core::ProxyType<Web::JSONRPC::Body> message = IFactories::Instance().JSONRPC();
 
             ASSERT(_service != nullptr);
 
