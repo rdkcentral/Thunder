@@ -59,7 +59,7 @@ namespace Core {
             KeyValue(const Core::TextFragment& data)
                 : _data(data) {
             }
-            KeyValue(KeyValue&& move)
+            KeyValue(KeyValue&& move) noexcept
                 : _data(move._data) {
             }
             KeyValue(const KeyValue& copy)
