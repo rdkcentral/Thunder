@@ -1899,7 +1899,7 @@ namespace Core {
                         else if ((_flagsAndCounters & 0x1F) == 0) {
                             // If we did not open an object, the only thing we allow are whitespaces as they can
                             // always be dropped!
-                            finished = (((_flagsAndCounters & EscapeFoundBit) == 0) && ((current == ',') || (current == '}') || (current == ']') || (current == '\0')));
+                            finished = (((_flagsAndCounters & EscapeFoundBit) == 0) && (isspace(current) == false));
                         }
                         else if (current == '}') {
                             if (OutScope(ScopeBracket::CURLY_BRACKET) == false) {
