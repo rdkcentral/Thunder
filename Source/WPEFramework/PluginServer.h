@@ -3755,23 +3755,40 @@ POP_WARNING()
                     ASSERT(_element.IsValid() == true);
 
                     if (_jsonrpc == true) {
+
 #if THUNDER_PERFORMANCE
                         Core::ProxyType<TrackingJSONRPC> tracking (_element);
                         ASSERT (tracking.IsValid() == true);
-                                    tracking->Dispatch();
+                        tracking->Dispatch();
 #endif
-                        Core::ProxyType<Core::JSONRPC::Message> message(_element);
-                        ASSERT(message.IsValid() == true);
-                        if (HasService() == true) {
-                            message->ImplicitCallsign(GetService().Callsign());
-                        }
+                        Core::ProxyType<Web::JSONRPC::Body> message(_element);
 
-                        _element = Core::ProxyType<Core::JSON::IElement>(Job::Process(_token, message));
+                        ASSERT(message.IsValid() == true);
+
+                        if (message->Validity().IsSet() == true) {
+                            // If we also do not have an id, we can not return a suitable JSON message!
+                            if (message->Recorded().IsSet() == false) {
+                                SYSLOG(Logging::Error, (_T("Received a corrupted JSONRPC message without an id.")));
+                            }
+                            else {
+                                uint32_t id = message->Recorded().Value();
+                                string error = message->Validity().Value().Message();
+                                message->Id = id;
+                                message->Error.SetError(Core::ERROR_INVALID_INPUT_LENGTH);
+                                message->Error.Text = error;
+                            }
+                        }
+                        else {
+                            if (HasService() == true) {
+                                message->ImplicitCallsign(GetService().Callsign());
+                            }
+
+                            _element = Core::ProxyType<Core::JSON::IElement>(Job::Process(_token, Core::ProxyType<Core::JSONRPC::Message>(message)));
+                        }
 
 #if THUNDER_PERFORMANCE
                         tracking->Execution();
 #endif
-
                     } else {
                         _element = Job::Process(_element);
                     }
