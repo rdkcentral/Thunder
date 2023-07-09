@@ -64,7 +64,7 @@ namespace WPEFramework {
                     , _enabled(enabled)
                 {
                 }
-                Control(Control&& rhs)
+                Control(Control&& rhs) noexcept
                     : Core::Messaging::Metadata(rhs)
                     , _enabled(rhs._enabled)
                 {
@@ -76,7 +76,7 @@ namespace WPEFramework {
                 }
                 ~Control() = default;
 
-                Control& operator= (Control&& rhs)
+                Control& operator= (Control&& rhs) noexcept
                 {
                     Core::Messaging::Metadata::operator=(rhs);
                     _enabled = rhs._enabled;
@@ -141,7 +141,7 @@ namespace WPEFramework {
                     , _index(_container.begin())
                 {
                 }
-                Iterator(Iterator&& move)
+                Iterator(Iterator&& move) noexcept
                     : _position(0)
                     , _container(move._container)
                     , _index(_container.begin())
@@ -149,7 +149,7 @@ namespace WPEFramework {
                 }
                 ~Iterator() = default;
 
-                Iterator& operator= (Iterator&& rhs)
+                Iterator& operator= (Iterator&& rhs) noexcept
                 {
                     _position = 0;
                     _container = std::move(rhs._container);
@@ -157,7 +157,7 @@ namespace WPEFramework {
 
                     return (*this);
                 }
-                Iterator& operator= (ControlList&& rhs)
+                Iterator& operator= (ControlList&& rhs) noexcept
                 {
                     _position = 0;
                     _container = std::move(rhs);

@@ -1666,7 +1666,7 @@ POP_WARNING()
                 ASSERT(baseChannel.IsValid() == true);
 
                 // Ensure the offer instance is known to security if it is used before the call with cached AddRef returns.
-                const RPC::InstanceRecord localInstances[] = { { RPC::instance_cast(offer), INTERFACE::ID }, { 0, 0 } };
+                const RPC::InstanceRecord localInstances[] = { { RPC::instance_cast(offer), static_cast<uint32_t>(INTERFACE::ID) }, { 0, 0 } };
                 baseChannel->CustomData(localInstances);
 
                 BaseClass::Invoke(Core::ProxyType<RPC::AnnounceMessage>(_announceMessage), waitTime);
