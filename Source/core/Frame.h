@@ -482,6 +482,34 @@ namespace Core {
 
             _size = size;
         }
+        void Shrink(const SIZE_CONTEXT offset, const SIZE_CONTEXT size) {
+
+            ASSERT((offset + size) <= _size);
+
+            if (size > 0) {
+                if ((offset + size) == _size) {
+                    _size -= size;
+                }
+                else {
+                    ::memmove(&(_data[offset]), &(_data[offset + size]), _size - offset - size);
+                    _size -= size;
+                }
+            }
+        }
+        void Expand(const SIZE_CONTEXT offset, const SIZE_CONTEXT size) {
+            ASSERT((offset + size) <= _size);
+
+            if (size > 0) {
+                if (offset == _size) {
+                    _size += size;
+                }
+                else {
+                    ::memmove(&(_data[offset + size]), &(_data[offset]), _size - offset);
+                    _size += size;
+                }
+            }
+
+        }
         template <typename TYPENAME>
         uint32_t SetBuffer(const SIZE_CONTEXT offset, const TYPENAME& length, const uint8_t buffer[])
         {

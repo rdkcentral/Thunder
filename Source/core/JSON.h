@@ -493,7 +493,7 @@ namespace Core {
                 , _default(Value)
             {
             }
-            NumberType(NumberType<TYPE, SIGNED, BASETYPE>&& move)
+            NumberType(NumberType<TYPE, SIGNED, BASETYPE>&& move) noexcept
                 : _set(std::move(move._set))
                 , _value(std::move(move._value))
                 , _default(std::move(move._default))
@@ -1306,7 +1306,7 @@ namespace Core {
             {
             }
 
-            Boolean(Boolean&& move)
+            Boolean(Boolean&& move) noexcept
                 : _value(std::move(move._value))
             {
             }
@@ -1318,7 +1318,7 @@ namespace Core {
 
             ~Boolean() override = default;
 
-            Boolean& operator=(Boolean&& move)
+            Boolean& operator=(Boolean&& move) noexcept
             {
                 // Do not overwrite the default, if not set...copy if set
                 _value = (move._value & (SetBit | ValueBit)) | ((move._value & (SetBit)) ? (move._value & DefaultBit) : (_value & DefaultBit));
@@ -1551,7 +1551,7 @@ namespace Core {
             }
 #endif // __CORE_NO_WCHAR_SUPPORT__
 
-            String(String&& move)
+            String(String&& move) noexcept
                 : _default(std::move(move._default))
                 , _value(std::move(move._value))
                 , _storage(std::move(move._storage))
@@ -1595,7 +1595,7 @@ namespace Core {
             }
 #endif // __CORE_NO_WCHAR_SUPPORT__
 
-            String& operator=(String&& move)
+            String& operator=(String&& move) noexcept
             {
                 _default = std::move(move._default);
                 _value = std::move(move._value);
@@ -2189,7 +2189,7 @@ namespace Core {
             {
             }
 
-            Buffer(Buffer&& move)
+            Buffer(Buffer&& move) noexcept
                 : _state(std::move(move._state))
                 , _lastStuff(std::move(move._lastStuff))
                 , _index(std::move(move._index))
@@ -2209,7 +2209,11 @@ namespace Core {
                 , _buffer(reinterpret_cast<uint8_t*>(::malloc(_maxLength)))
             {
                 ASSERT(_length <= _maxLength);
-                ::memcpy(_buffer, copy._buffer, _length);
+                ASSERT(_buffer != nullptr);
+
+                if (_buffer != nullptr) {
+                    ::memcpy(_buffer, copy._buffer, _length);
+                }
             }
 
            ~Buffer() override
@@ -2219,7 +2223,7 @@ namespace Core {
                 }
             }
 
-            Buffer& operator= (Buffer&& move) {
+            Buffer& operator= (Buffer&& move) noexcept {
                 _state = std::move(move._state);
                 _lastStuff = std::move(move._lastStuff);
                 _index = std::move(move._index);
@@ -2241,7 +2245,11 @@ namespace Core {
                 _buffer = reinterpret_cast<uint8_t*>(::malloc(_maxLength));
 
                 ASSERT(_length <= _maxLength);
-                ::memcpy(_buffer, copy._buffer, _length);
+                ASSERT(_buffer != nullptr);
+
+                if (_buffer != nullptr) {
+                    ::memcpy(_buffer, copy._buffer, _length);
+                }
 
                 return (*this);
             }
@@ -2570,7 +2578,7 @@ namespace Core {
             {
             }
 
-            EnumType(EnumType<ENUMERATE>&& move)
+            EnumType(EnumType<ENUMERATE>&& move) noexcept
                 : _state(std::move(move._state))
                 , _value(std::move(move._value))
                 , _default(std::move(move._default))
@@ -2912,7 +2920,7 @@ namespace Core {
                 {
                 }
 
-                IteratorType(IteratorType<ARRAYELEMENT>&& move)
+                IteratorType(IteratorType<ARRAYELEMENT>&& move) noexcept
                     : _container(std::move(move._container))
                     , _iterator(std::move(move._iterator))
                     , _state(std::move(move._state))
@@ -2928,7 +2936,7 @@ namespace Core {
 
                 ~IteratorType() = default;
 
-                IteratorType<ARRAYELEMENT>& operator=(IteratorType<ARRAYELEMENT>&& move)
+                IteratorType<ARRAYELEMENT>& operator=(IteratorType<ARRAYELEMENT>&& move) noexcept
                 {
                     _container = std::move(move._container);
                     _iterator = std::move(move._iterator);
@@ -3036,7 +3044,7 @@ namespace Core {
             {
             }
 
-            ArrayType(ArrayType<ELEMENT>&& move)
+            ArrayType(ArrayType<ELEMENT>&& move) noexcept
                 : _state(std::move(move._state))
                 , _count(std::move(move._count))
                 , _data(std::move(move._data))
@@ -4085,7 +4093,7 @@ namespace Core {
                 String::operator=(text);
             }
 
-            Variant(Variant&& move)
+            Variant(Variant&& move) noexcept
                 : JSON::String(std::move(move))
                 , _type(std::move(move._type))
             {
@@ -4101,7 +4109,7 @@ namespace Core {
 
             ~Variant() override = default;
 
-            Variant& operator=(Variant&& move)
+            Variant& operator=(Variant&& move) noexcept
             {
                 JSON::String::operator=(std::move(move));
                 _type = std::move(move._type);
@@ -4344,7 +4352,7 @@ namespace Core {
                 {
                 }
 
-                Iterator(Iterator&& move)
+                Iterator(Iterator&& move) noexcept
                     : _container(std::move(move._container))
                     , _index(std::move(move._index))
                     , _start(std::move(move._start))
@@ -4366,7 +4374,7 @@ namespace Core {
 
                 ~Iterator() = default;
 
-                Iterator& operator=(Iterator&& move)
+                Iterator& operator=(Iterator&& move) noexcept
                 {
                     _container = std::move(move._container);
                     _index = std::move(move._index);
@@ -4450,7 +4458,7 @@ namespace Core {
                 Container::FromString(serialized);
             }
 
-            VariantContainer(VariantContainer&& move)
+            VariantContainer(VariantContainer&& move) noexcept
                 : Container()
                 , _elements(std::move(move._elements))
             {
@@ -4483,10 +4491,10 @@ namespace Core {
                 Elements::const_iterator index(values.begin());
 
                 while (index != values.end()) {
-                    Elements::iterator index = _elements.emplace(std::piecewise_construct,
+                    Elements::iterator loop = _elements.emplace(std::piecewise_construct,
                         std::forward_as_tuple(index->first),
                         std::forward_as_tuple(index->second)).first;
-                    Container::Add(index->first.c_str(), &(index->second));
+                    Container::Add(loop->first.c_str(), &(loop->second));
                     index++;
                 }
             }
