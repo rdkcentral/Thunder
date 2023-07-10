@@ -328,7 +328,7 @@ namespace Web {
             JSONOBJECT::Clear();
             _offset = 0;
         }
-        const Core::OptionalType<Core::JSON::Error>& Validity() const {
+        const Core::OptionalType<Core::JSON::Error>& Report() const {
             return (_error);
         }
 
@@ -444,7 +444,7 @@ namespace Web {
             ~Body() override = default;
 
         public:
-            void Clear() {
+            void Clear() override {
                 // If by an error this gets cleared, at least remember the Id, if it was set...
                 if (Core::JSONRPC::Message::Id.IsSet() == true) {
                     _id = Core::JSONRPC::Message::Id.Value();

@@ -1472,7 +1472,13 @@ namespace PluginHost {
                         response->Id = message.Id.Value();
                     }
 
-                    if ((result = _jsonrpc->Validate(token, method, message.Parameters.Value())) == Core::ERROR_PRIVILIGED_REQUEST) {
+                    if ((message.Designator.IsSet() == false) || (method.empty())) {
+                        if (response.IsValid() == true) {
+                            response->Error.SetError(Core::ERROR_PARSE_FAILURE);
+                            response->Error.Text = _T("Parsing of the method failed");
+                        }
+                    }
+                    else if ((result = _jsonrpc->Validate(token, method, message.Parameters.Value())) == Core::ERROR_PRIVILIGED_REQUEST) {
                         if (response.IsValid() == true) {
                             response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
                             response->Error.Text = _T("method invokation not allowed.");
@@ -1531,6 +1537,10 @@ namespace PluginHost {
                             case Core::ERROR_ILLEGAL_STATE:
                                 response->Error.SetError(Core::ERROR_ILLEGAL_STATE);
                                 response->Error.Text = _T("The service is in an illegal state!!!.");
+                                break;
+                            case Core::ERROR_PARSE_FAILURE:
+                                response->Error.SetError(Core::ERROR_PARSE_FAILURE);
+                                response->Error.Text = output;
                                 break;
                             case static_cast<uint32_t>(~0):
                                 response.Release();
@@ -3611,25 +3621,24 @@ POP_WARNING()
                     if (_jsonrpc == true) {
                         if(_request->Verb == Request::HTTP_POST) {
                             Core::ProxyType<Web::JSONRPC::Body> message(_request->Body<Web::JSONRPC::Body>());
-                            if (message->Validity().IsSet() == true) {
+                            if (message->Report().IsSet() == true) {
                                 // Looks like we have a corrupted message.. Respond if posisble, with an error
                                 response = IFactories::Instance().Response();
 
+                                response->ErrorCode = Web::STATUS_BAD_REQUEST;
+                                response->Message = _T("JSON-RPC was incorrectly formatted, could not deduce the id");
+
                                 // If we also do not have an id, we can not return a suitable JSON message!
                                 if (message->Recorded().IsSet() == false) {
-                                    response->ErrorCode = Web::STATUS_BAD_REQUEST;
-                                    response->Message = _T("JSON-RPC was incorrectly formatted, could not deduce the id");
+                                    message->Id.Null(true);
                                 }
                                 else {
-                                    uint32_t id = message->Recorded().Value();
-                                    string error = message->Validity().Value().Message();
-                                    response->ErrorCode = Web::STATUS_NO_CONTENT;
-                                    message->Clear();
-                                    message->Id = id;
-                                    message->Error.SetError(Core::ERROR_INVALID_INPUT_LENGTH);
-                                    message->Error.Text = error;
-                                    response->Body(Core::ProxyType<Web::IBody>(message));
+                                    message->Id = message->Recorded().Value();
                                 }
+
+                                message->Error.SetError(Core::ERROR_PARSE_FAILURE);
+                                message->Error.Text = message->Report().Value().Message();
+                                response->Body(Core::ProxyType<Web::IBody>(message));
                             }
                             else {
                                 if (HasService() == true) {
@@ -3655,7 +3664,7 @@ POP_WARNING()
                                         }
                                         else {
                                             response->ErrorCode = Web::STATUS_ACCEPTED;
-                                            response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(body->Error.Code).Text();
+                                            response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<int32_t>(body->Error.Code).Text();
                                         }
                                     }
                                 }
@@ -3765,18 +3774,17 @@ POP_WARNING()
 
                         ASSERT(message.IsValid() == true);
 
-                        if (message->Validity().IsSet() == true) {
+                        if (message->Report().IsSet() == true) {
                             // If we also do not have an id, we can not return a suitable JSON message!
                             if (message->Recorded().IsSet() == false) {
-                                SYSLOG(Logging::Error, (_T("Received a corrupted JSONRPC message without an id.")));
+                                message->Id.Null(true);
                             }
                             else {
-                                uint32_t id = message->Recorded().Value();
-                                string error = message->Validity().Value().Message();
-                                message->Id = id;
-                                message->Error.SetError(Core::ERROR_INVALID_INPUT_LENGTH);
-                                message->Error.Text = error;
+                                message->Id = message->Recorded().Value();
                             }
+
+                            message->Error.SetError(Core::ERROR_PARSE_FAILURE);
+                            message->Error.Text = message->Report().Value().Message();
                         }
                         else {
                             if (HasService() == true) {

@@ -362,7 +362,7 @@ namespace Core {
             const string _token;
         };
 
-        typedef std::function<void(const Context& context, const string& parameters)> CallbackFunction;
+        typedef std::function<void(const Context& context, const string& parameters, Core::OptionalType<Core::JSON::Error>&)> CallbackFunction;
         typedef std::function<uint32_t(const Context& context, const string& method, const string& parameters, string& result)> InvokeFunction;
 
         class EXTERNAL Handler {
@@ -452,9 +452,18 @@ namespace Core {
             public:
                 uint32_t Invoke(const Context& context, const string& method, const string& parameters, string& response)
                 {
-                    uint32_t result = ~0;
+                    uint32_t result;
+
                     if (_asynchronous == true) {
-                        _info._callback(context, parameters);
+                        Core::OptionalType<Core::JSON::Error> report;
+                        _info._callback(context, parameters, report);
+                        if (report.IsSet() == false) {
+                            result = ~0;
+                        }
+                        else {
+                            result = Core::ERROR_PARSE_FAILURE;
+                            response = report.Value().Message();
+                        }
                     } else {
                         result = _info._invoke(context, method, parameters, response);
                     }
@@ -746,8 +755,15 @@ namespace Core {
                     PARAMETER parameter;
                     uint32_t code;
                     if (inbound.empty() == false) {
-                        parameter.FromString(inbound);
-                        code = setter(*objectPtr, parameter);
+                        Core::OptionalType<Core::JSON::Error> report;
+                        parameter.FromString(inbound, report);
+                        if (report.IsSet() == false) {
+                            code = setter(*objectPtr, parameter);
+                        }
+                        else {
+                            outbound = report.Value().Message();
+                            code = Core::ERROR_PARSE_FAILURE;
+                        }
                     } else {
                         code = Core::ERROR_UNAVAILABLE;
                     }
@@ -765,8 +781,15 @@ namespace Core {
                     PARAMETER parameter;
                     uint32_t code;
                     if (inbound.empty() == false) {
-                        parameter.FromString(inbound);
-                        code = setter(*objectPtr, parameter);
+                        Core::OptionalType<Core::JSON::Error> report;
+                        parameter.FromString(inbound, report);
+                        if (report.IsSet() == false) {
+                            code = setter(*objectPtr, parameter);
+                        }
+                        else {
+                            code = Core::ERROR_PARSE_FAILURE;
+                            outbound = report.Value().Message();
+                        }
                     } else {
                         code = getter(*objectPtr, parameter);
                         parameter.ToString(outbound);
@@ -804,8 +827,15 @@ namespace Core {
                     uint32_t code;
                     if (inbound.empty() == false) {
                         const string index = Message::Index(method);
-                        parameter.FromString(inbound);
-                        code = setter(*objectPtr, index, parameter);
+                        Core::OptionalType<Core::JSON::Error> report;
+                        parameter.FromString(inbound, report);
+                        if (report.IsSet() == false) {
+                            code = setter(*objectPtr, index, parameter);
+                        }
+                        else {
+                            outbound = report.Value().Message();
+                            code = Core::ERROR_PARSE_FAILURE;
+                        }
                     } else {
                         code = Core::ERROR_UNAVAILABLE;
                     }
@@ -824,8 +854,15 @@ namespace Core {
                     uint32_t code;
                     const string index = Message::Index(method);
                     if (inbound.empty() == false) {
-                        parameter.FromString(inbound);
-                        code = setter(*objectPtr, index, parameter);
+                        Core::OptionalType<Core::JSON::Error> report;
+                        parameter.FromString(inbound, report);
+                        if (report.IsSet() == false) {
+                            code = setter(*objectPtr, index, parameter);
+                        }
+                        else {
+                            outbound = report.Value().Message();
+                            code = Core::ERROR_PARSE_FAILURE;
+                        }
                     } else {
                         code = getter(*objectPtr, index, parameter);
                         parameter.ToString(outbound);
@@ -847,10 +884,20 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
                 std::function<uint32_t(const INBOUND&)> actualMethod = method;
-                InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context&, const string&, const string& parameters, string&) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context&, const string&, const string& parameters, string& outbound) -> uint32_t {
+                    uint32_t code;
                     INBOUND inbound;
-                    inbound.FromString(parameters);
-                    return (actualMethod(inbound));
+                    Core::OptionalType<Core::JSON::Error> report;
+                    inbound.FromString(parameters, report);
+
+                    if (report.IsSet() == false) {
+                        code = actualMethod(inbound);
+                    }
+                    else {
+                        outbound = report.Value().Message();
+                        code = Core::ERROR_PARSE_FAILURE;
+                    }
+                    return (code);
                 };
                 Register(methodName, implementation);
             }
@@ -875,14 +922,24 @@ namespace Core {
             {
                 std::function<uint32_t(const INBOUND&, OUTBOUND&)> actualMethod = method;
                 InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context&, const string&, const string& parameters, string& result) -> uint32_t {
+                    uint32_t code;
                     INBOUND inbound;
+                    Core::OptionalType<Core::JSON::Error> report;
                     OUTBOUND outbound;
-                    inbound.FromString(parameters);
-                    uint32_t code = actualMethod(inbound, outbound);
-                    if (code == Core::ERROR_NONE) {
-                        outbound.ToString(result);
-                    } else {
-                        result.clear();
+                    inbound.FromString(parameters, report);
+
+                    if (report.IsSet() == false) {
+                        code = actualMethod(inbound, outbound);
+                        if (code == Core::ERROR_NONE) {
+                            outbound.ToString(result);
+                        }
+                        else {
+                            result.clear();
+                        }
+                    }
+                    else {
+                        result = report.Value().Message();
+                        code = Core::ERROR_PARSE_FAILURE;
                     }
                     return (code);
                 };
@@ -892,10 +949,20 @@ namespace Core {
             void InternalRegisterWithIndex(const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
                 std::function<uint32_t(const string& index, const INBOUND&)> actualMethod = method;
-                InvokeFunction implementation = [actualMethod](const Context&, const string& method, const string& parameters, string&) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const Context&, const string& method, const string& parameters, string& result) -> uint32_t {
+                    uint32_t code;
                     INBOUND inbound;
-                    inbound.FromString(parameters);
-                    return (actualMethod(Message::Index(method), inbound));
+                    Core::OptionalType<Core::JSON::Error> report;
+                    inbound.FromString(parameters, report);
+
+                    if (report.IsSet() == false) {
+                        code = actualMethod(Message::Index(method), inbound);
+                    }
+                    else {
+                        code = Core::ERROR_PARSE_FAILURE;
+                        result = report.Value().Message();
+                    }
+                    return(code);
                 };
                 Register(methodName, implementation);
             }
@@ -920,14 +987,24 @@ namespace Core {
             {
                 std::function<uint32_t(const string& index, const INBOUND&, OUTBOUND&)> actualMethod = method;
                 InvokeFunction implementation = [actualMethod](const Context&, const string& method, const string& parameters, string& result) -> uint32_t {
+                    uint32_t code;
                     INBOUND inbound;
+                    Core::OptionalType<Core::JSON::Error> report;
                     OUTBOUND outbound;
-                    inbound.FromString(parameters);
-                    uint32_t code = actualMethod(Message::Index(method), inbound, outbound);
-                    if (code == Core::ERROR_NONE) {
-                        outbound.ToString(result);
-                    } else {
-                        result.clear();
+                    inbound.FromString(parameters, report);
+
+                    if (report.IsSet() == false) {
+                        code = actualMethod(Message::Index(method), inbound, outbound);
+                        if (code == Core::ERROR_NONE) {
+                            outbound.ToString(result);
+                        }
+                        else {
+                            result.clear();
+                        }
+                    }
+                    else {
+                        code = Core::ERROR_PARSE_FAILURE;
+                        result = report.Value().Message();
                     }
                     return (code);
                 };
@@ -946,10 +1023,19 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 std::function<uint32_t(const INBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
-                InvokeFunction implementation = [actualMethod](const Context&, const string&, const string& parameters, string&) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const Context&, const string&, const string& parameters, string& result) -> uint32_t {
+                    uint32_t code;
                     INBOUND inbound;
-                    inbound.FromString(parameters);
-                    return (actualMethod(inbound));
+                    Core::OptionalType<Core::JSON::Error> report;
+                    inbound.FromString(parameters, report);
+                    if (report.IsSet() == false) {
+                        code = actualMethod(inbound);
+                    }
+                    else {
+                        code = Core::ERROR_PARSE_FAILURE;
+                        result = report.Value().Message();
+                    }
+                    return (code);
                 };
                 Register(methodName, implementation);
             }
@@ -974,15 +1060,26 @@ namespace Core {
             {
                 std::function<uint32_t(const INBOUND&, OUTBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2);
                 InvokeFunction implementation = [actualMethod](const Context&, const string&, const string& parameters, string& result) -> uint32_t {
+                    uint32_t code;
                     INBOUND inbound;
                     OUTBOUND outbound;
-                    inbound.FromString(parameters);
-                    uint32_t code = actualMethod(inbound, outbound);
-                    if (code == Core::ERROR_NONE) {
-                        outbound.ToString(result);
-                    } else {
-                        result.clear();
+                    Core::OptionalType<Core::JSON::Error> report; 
+                    inbound.FromString(parameters, report);
+
+                    if (report.IsSet() == false) {
+                        code = actualMethod(inbound, outbound);
+                        if (code == Core::ERROR_NONE) {
+                            outbound.ToString(result);
+                        }
+                        else {
+                            result.clear();
+                        }
                     }
+                    else {
+                        code = Core::ERROR_PARSE_FAILURE;
+                        result = report.Value().Message();
+                    }                    
+                    
                     return (code);
                 };
                 Register(methodName, implementation);
@@ -1000,10 +1097,21 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
                 std::function<uint32_t(const Core::JSONRPC::Context&, const INBOUND&)> actualMethod = method;
-                InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context& context, const string&, const string& parameters, string&) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context& context, const string&, const string& parameters, string& result) -> uint32_t {
+                    uint32_t code;
                     INBOUND inbound;
-                    inbound.FromString(parameters);
-                    return (actualMethod(context, inbound));
+                    Core::OptionalType<Core::JSON::Error> report;
+                    inbound.FromString(parameters, report);
+
+                    if (report.IsSet() == false) {
+                        code = actualMethod(context, inbound);
+                    }
+                    else {
+                        code = Core::ERROR_PARSE_FAILURE;
+                        result = report.Value().Message();
+                    }
+
+                    return (code);
                 };
                 Register(methodName, implementation);
             }
@@ -1029,16 +1137,26 @@ namespace Core {
             {
                 std::function<uint32_t(const Core::JSONRPC::Context&, const INBOUND&, OUTBOUND&)> actualMethod = method;
                 InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context& context, const string&, const string& parameters, string& result) -> uint32_t {
+                    uint32_t code;
                     INBOUND inbound;
                     OUTBOUND outbound;
-                    inbound.FromString(parameters);
-                    uint32_t code = actualMethod(context, inbound, outbound);
-                    if (code == Core::ERROR_NONE) {
-                        outbound.ToString(result);
+                    Core::OptionalType<Core::JSON::Error> report;
+                    inbound.FromString(parameters, report);
+
+                    if (report.IsSet() == false) {
+                        code = actualMethod(context, inbound, outbound);
+                        if (code == Core::ERROR_NONE) {
+                            outbound.ToString(result);
+                        }
+                        else {
+                            result.clear();
+                        }
                     }
                     else {
-                        result.clear();
+                        code = Core::ERROR_PARSE_FAILURE;
+                        result = report.Value().Message();
                     }
+
                     return (code);
                 };
                 Register(methodName, implementation);
@@ -1047,10 +1165,20 @@ namespace Core {
             void InternalRegisterWithIndex(const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
                 std::function<uint32_t(const Core::JSONRPC::Context&, const string& index, const INBOUND&)> actualMethod = method;
-                InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context& context, const string& method, const string& parameters, string&) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context& context, const string& method, const string& parameters, string& result) -> uint32_t {
+                    uint32_t code;
                     INBOUND inbound;
-                    inbound.FromString(parameters);
-                    return (actualMethod(context, Message::Index(method), inbound));
+                    Core::OptionalType<Core::JSON::Error> report;
+                    inbound.FromString(parameters, report);
+
+                    if (report.IsSet() == false) {
+                        code = actualMethod(context, Message::Index(method), inbound);
+                    }
+                    else {
+                        code = Core::ERROR_PARSE_FAILURE;
+                        result = report.Value().Message();
+                    }
+                    return (code);
                 };
                 Register(methodName, implementation);
             }
@@ -1076,16 +1204,26 @@ namespace Core {
             {
                 std::function<uint32_t(const Core::JSONRPC::Context&, const string& index, const INBOUND&, OUTBOUND&)> actualMethod = method;
                 InvokeFunction implementation = [actualMethod](const Core::JSONRPC::Context& context, const string& method, const string& parameters, string& result) -> uint32_t {
+                    uint32_t code;
                     INBOUND inbound;
                     OUTBOUND outbound;
-                    inbound.FromString(parameters);
-                    uint32_t code = actualMethod(context, Message::Index(method), inbound, outbound);
-                    if (code == Core::ERROR_NONE) {
-                        outbound.ToString(result);
+                    Core::OptionalType<Core::JSON::Error> report;
+                    inbound.FromString(parameters, report);
+
+                    if (report.IsSet() == false) {
+                        code = actualMethod(context, Message::Index(method), inbound, outbound);
+                        if (code == Core::ERROR_NONE) {
+                            outbound.ToString(result);
+                        }
+                        else {
+                            result.clear();
+                        }
                     }
                     else {
-                        result.clear();
+                        code = Core::ERROR_PARSE_FAILURE;
+                        result = report.Value().Message();
                     }
+
                     return (code);
                 };
                 Register(methodName, implementation);
@@ -1103,10 +1241,21 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 std::function<uint32_t(const Core::JSONRPC::Context&, const INBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
-                InvokeFunction implementation = [actualMethod](const Context& context, const string&, const string& parameters, string&) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const Context& context, const string&, const string& parameters, string& result) -> uint32_t {
+                    uint32_t code;
                     INBOUND inbound;
+                    Core::OptionalType<Core::JSON::Error> report;
                     inbound.FromString(parameters);
-                    return (actualMethod(context, inbound));
+
+                    if (report.IsSet() == false) {
+                        code = actualMethod(context, inbound);
+                    }
+                    else {
+                        code = Core::ERROR_PARSE_FAILURE;
+                        result = report.Value().Message();
+                    }
+
+                    return (code);
                 };
                 Register(methodName, implementation);
             }
@@ -1132,16 +1281,26 @@ namespace Core {
             {
                 std::function<uint32_t(const INBOUND&, OUTBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2);
                 InvokeFunction implementation = [actualMethod](const Context& context, const string&, const string& parameters, string& result) -> uint32_t {
+                    uint32_t code;
                     INBOUND inbound;
                     OUTBOUND outbound;
+                    Core::OptionalType<Core::JSON::Error> report;
                     inbound.FromString(parameters);
-                    uint32_t code = actualMethod(context, inbound, outbound);
-                    if (code == Core::ERROR_NONE) {
-                        outbound.ToString(result);
+
+                    if (report.IsSet() == false) {
+                        code = actualMethod(context, inbound, outbound);
+                        if (code == Core::ERROR_NONE) {
+                            outbound.ToString(result);
+                        }
+                        else {
+                            result.clear();
+                        }
                     }
                     else {
-                        result.clear();
+                        code = Core::ERROR_PARSE_FAILURE;
+                        result = report.Value().Message();
                     }
+
                     return (code);
                 };
                 Register(methodName, implementation);
@@ -1150,7 +1309,7 @@ namespace Core {
             void InternalAnnounce(const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
                 std::function<void(const Core::JSONRPC::Context&)> actualMethod = method;
-                CallbackFunction implementation = [actualMethod](const Context& connection, const string&) -> void {
+                CallbackFunction implementation = [actualMethod](const Context& connection, const string&, Core::OptionalType<Core::JSON::Error>&) -> void {
                     actualMethod(connection);
                 };
                 Register(methodName, implementation);
@@ -1159,10 +1318,12 @@ namespace Core {
             void InternalAnnounce(const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 std::function<void(const Core::JSONRPC::Context&, const INBOUND&)> actualMethod = method;
-                CallbackFunction implementation = [actualMethod](const Context& connection, const string& parameters) -> void {
+                CallbackFunction implementation = [actualMethod](const Context& connection, const string& parameters, Core::OptionalType<Core::JSON::Error>& report) -> void {
                     INBOUND inbound;
-                    inbound.FromString(parameters);
-                    actualMethod(connection, inbound);
+                    inbound.FromString(parameters, report);
+                    if (report.IsSet() == false) {
+                        actualMethod(connection, inbound);
+                    }
                 };
                 Register(methodName, implementation);
             }
@@ -1170,7 +1331,7 @@ namespace Core {
             void InternalAnnounce(const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 std::function<void(const Core::JSONRPC::Context&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
-                CallbackFunction implementation = [actualMethod](const Context& connection, const string&) -> void {
+                CallbackFunction implementation = [actualMethod](const Context& connection, const string&, Core::OptionalType<Core::JSON::Error>&) -> void {
                     actualMethod(connection);
                 };
                 Register(methodName, implementation);
@@ -1179,10 +1340,12 @@ namespace Core {
             void InternalAnnounce(const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 std::function<void(const Core::JSONRPC::Context&, const INBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2);
-                CallbackFunction implementation = [actualMethod](const Context& connection, const string& parameters) -> void {
+                CallbackFunction implementation = [actualMethod](const Context& connection, const string& parameters, Core::OptionalType<Core::JSON::Error>& report) -> void {
                     INBOUND inbound;
-                    inbound.FromString(parameters);
-                    actualMethod(connection, inbound);
+                    inbound.FromString(parameters, report);
+                    if (report.IsSet() == false) {
+                        actualMethod(connection, inbound);
+                    }
                 };
                 Register(methodName, implementation);
             }
