@@ -533,10 +533,10 @@ POP_WARNING()
                 _state |= ACTIVITY;
 
                 if ((_state & WEBSOCKET) != 0) {
-                    if (maxSendSize > 4) {
-                        result = _parent.SendData(&(dataFrame[4]), (maxSendSize - 4));
+                    if (maxSendSize > 8) {
+                        result = _parent.SendData(&(dataFrame[4]), (maxSendSize - 8));
 
-                        result = _handler.Encoder(dataFrame, (maxSendSize - 4), result);
+                        result = _handler.Encoder(dataFrame, (maxSendSize - 8), result);
                     }
                 } else {
                     result = _serializerImpl.Serialize(dataFrame, maxSendSize);
