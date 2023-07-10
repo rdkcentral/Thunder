@@ -31,7 +31,7 @@ namespace Messaging {
     };
 
     template<typename METADATA, typename EVENT>
-    class EXTERNAL TraceFactoryType : public IEventFactory {
+    class TraceFactoryType : public IEventFactory {
     public:
         TraceFactoryType(const TraceFactoryType<METADATA, EVENT>&) = delete;
         TraceFactoryType<METADATA, EVENT>& operator=(const TraceFactoryType<METADATA, EVENT>&) = delete;

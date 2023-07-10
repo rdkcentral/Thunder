@@ -54,7 +54,7 @@ namespace PluginHost {
                 : _callbacks()
                 , _designators() {
             }
-            Observer(Observer&& move)
+            Observer(Observer&& move) noexcept
                 : _callbacks(move._callbacks)
                 , _designators(move._designators) {
             }
@@ -169,7 +169,7 @@ namespace PluginHost {
                 , _minor(minor)
                 , _patch(patch) {
             }
-            VersionInfo(VersionInfo&& move)
+            VersionInfo(VersionInfo&& move) noexcept
                 : _name(move._name)
                 , _major(move._major)
                 , _minor(move._minor)
