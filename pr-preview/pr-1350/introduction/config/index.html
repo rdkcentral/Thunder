@@ -413,20 +413,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#messaging-configuration" class="md-nav__link">
-    Messaging Configuration
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#warning-reporting-configuration" class="md-nav__link">
-    Warning Reporting Configuration
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1486,20 +1472,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#messaging-configuration" class="md-nav__link">
-    Messaging Configuration
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#warning-reporting-configuration" class="md-nav__link">
-    Warning Reporting Configuration
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1848,131 +1820,6 @@
 </tr>
 </tbody>
 </table>
-<h2 id="messaging-configuration">Messaging Configuration</h2>
-<p>The config file can be used to enable/disable the default messaging categories used for logging, tracing and warning reporting. It is possible to use the MessageControl plugin to edit these values at runtime.</p>
-<p>Messages are split into 2 types, logging and tracing. Each type has a list of categories and modules which can be marked as enabled or disabled. If a category/module is not present in the config, it will be disabled.</p>
-<p>Below is an example of the messaging section in the config:</p>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;messaging&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;logging&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;abbreviated&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="c1">// (1)</span>
-<span class="w">            </span><span class="nt">&quot;settings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">                </span><span class="p">{</span>
-<span class="w">                    </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Notification&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// (2)</span>
-<span class="w">                    </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
-<span class="w">                </span><span class="p">},</span>
-<span class="w">                </span><span class="p">{</span>
-<span class="w">                    </span><span class="nt">&quot;module&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Plugin_SamplePlugin&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// (3)</span>
-<span class="w">                    </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
-<span class="w">                </span><span class="p">}</span>
-<span class="w">            </span><span class="p">]</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="nt">&quot;tracing&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;settings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">                </span><span class="p">{</span>
-<span class="w">                    </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Fatal&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// (4)</span>
-<span class="w">                    </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
-<span class="w">                </span><span class="p">},</span>
-<span class="w">                </span><span class="p">{</span>
-<span class="w">                    </span><span class="nt">&quot;module&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Plugin_SamplePlugin&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// (5)</span>
-<span class="w">                    </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
-<span class="w">                </span><span class="p">}</span>
-<span class="w">            </span><span class="p">]</span>
-<span class="w">        </span><span class="p">}</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-<ol>
-<li>Reduce the amount of information in the log messages (e.g. removing line number and class name)</li>
-<li>Enable logging messages in the <code>Notification</code> category</li>
-<li>Enable <strong>all</strong> logging categories used in the SamplePlugin plugin. The module name reflects the <code>MODULE_NAME</code> definition in the plugin <code>Module.h</code></li>
-<li>Enable trace messages in the <code>Fatal</code> category</li>
-<li>Enable <strong>all</strong> tracing categories used in the SamplePlugin plugin. The module name reflects the <code>MODULE_NAME</code> definition in the plugin <code>Module.h</code></li>
-</ol>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>It is also possible to supply a filepath instead of an object to allow storing messaging configuration in a seperate file
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;messaging&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/path/to/messagingconfig.json&quot;</span>
-<span class="p">}</span>
-</code></pre></div></p>
-</div>
-<p>Out of the box, the following categories are available:</p>
-<ul>
-<li>Logging<ul>
-<li>Startup</li>
-<li>Shutdown</li>
-<li>Notification</li>
-<li>Error</li>
-<li>ParsingError</li>
-<li>Fatal</li>
-<li>Crash</li>
-</ul>
-</li>
-<li>Tracing<ul>
-<li>Constructor</li>
-<li>Destructor</li>
-<li>CopyConstructor</li>
-<li>AssignmentOperator</li>
-<li>MethodEntry</li>
-<li>MethodExit</li>
-<li>Duration</li>
-<li>Text</li>
-<li>Initialisation</li>
-<li>Information</li>
-<li>Warning</li>
-<li>Error</li>
-<li>Fatal</li>
-</ul>
-</li>
-</ul>
-<p>In addition to these, it is possible for a plugin to define its own categories that can be enabled/disabled. See <strong>TODO</strong> for more info on how to do this. </p>
-<h2 id="warning-reporting-configuration">Warning Reporting Configuration</h2>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Warning Reporting is only available if Thunder is compiled with the <code>WARNING_REPORTING</code> option.</p>
-</div>
-<p>Warning Reporting enabled various runtime checks for potentially erroneous conditions, and can be enabled on a per-category basis. These are typically time-based - i.e. a warning will be reported if something exceeded an allowable time. </p>
-<p>Each category can also have its own configuration to tune the thresholds for triggering the warning.</p>
-<p>Below is an example Warning Reporting configuration</p>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;warningreporting&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TooLongWaitingForLock&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// (1)</span>
-<span class="w">            </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;excluded&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="nt">&quot;callsigns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">                    </span><span class="s2">&quot;com.example.SamplePlugin&quot;</span><span class="w"> </span><span class="c1">// (2)</span>
-<span class="w">                </span><span class="p">],</span>
-<span class="w">                </span><span class="nt">&quot;modules&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">                    </span><span class="s2">&quot;Plugin_SamplePlugin&quot;</span><span class="w"> </span><span class="c1">// (3)</span>
-<span class="w">                </span><span class="p">]</span>
-<span class="w">            </span><span class="p">}</span>
-<span class="w">            </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="nt">&quot;reportbound&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="c1">// (4)</span>
-<span class="w">                </span><span class="nt">&quot;warningbound&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2000</span><span class="w"> </span><span class="c1">// (5)</span>
-<span class="w">            </span><span class="p">}</span>
-<span class="w">        </span><span class="p">}</span>
-<span class="w">    </span><span class="p">]</span>
-<span class="p">}</span>
-</code></pre></div>
-<ol>
-<li>Name of category to enable</li>
-<li>Callsigns of plugins to exclude from the warning reporting category</li>
-<li>Module names to exclude from this warning reporting category</li>
-<li>Report bound indicates the amount of time (ms) that must be exceeded for a report to be generated</li>
-<li>Warning bound indicates the amount of time (ms) that must be exceeded for a warning to be generated (considered higher severity than a report). Note warning bound should be &gt;= report bound</li>
-</ol>
-<p>Out of the box, the following warning reporting categories are available:</p>
-<ul>
-<li>TooLongWaitingForLock</li>
-<li>SinkStillHasReference</li>
-<li>TooLongInvokeRPC</li>
-<li>JobTooLongToFinish</li>
-<li>JobTooLongWaitingInQueue</li>
-<li>TooLongDecrypt</li>
-<li>JobActiveForTooLong</li>
-</ul>
 
 
 
