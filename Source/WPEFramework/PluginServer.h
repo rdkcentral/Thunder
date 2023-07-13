@@ -1473,10 +1473,13 @@ namespace PluginHost {
                     }
 
                     if ((message.Designator.IsSet() == false) || (method.empty())) {
-                        if (response.IsValid() == true) {
-                            response->Error.SetError(Core::ERROR_PARSE_FAILURE);
-                            response->Error.Text = _T("Parsing of the method failed");
+                        if (response.IsValid() == false) {
+                            response = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
+                            response->Id.Null(true);
                         }
+
+                        response->Error.SetError(Core::ERROR_PARSE_FAILURE);
+                        response->Error.Text = _T("Parsing of the method failed");
                     }
                     else if ((result = _jsonrpc->Validate(token, method, message.Parameters.Value())) == Core::ERROR_PRIVILIGED_REQUEST) {
                         if (response.IsValid() == true) {
@@ -1500,7 +1503,16 @@ namespace PluginHost {
                         string output;
                         result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, method, message.Parameters.Value(), output);
 
-                        if (response.IsValid() == true) {
+                        if (result == Core::ERROR_PARSE_FAILURE) {
+                            if (response.IsValid() == false) {
+                                response = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
+                                response->Id.Null(true);
+                            }
+
+                            response->Error.SetError(Core::ERROR_PARSE_FAILURE);
+                            response->Error.Text = _T("Parsing of the parameters failed");
+                        }
+                        else if (response.IsValid() == true) {
                             switch (result) {
                             case Core::ERROR_NONE:
                                 if (output.empty() == true) {
@@ -1537,10 +1549,6 @@ namespace PluginHost {
                             case Core::ERROR_ILLEGAL_STATE:
                                 response->Error.SetError(Core::ERROR_ILLEGAL_STATE);
                                 response->Error.Text = _T("The service is in an illegal state!!!.");
-                                break;
-                            case Core::ERROR_PARSE_FAILURE:
-                                response->Error.SetError(Core::ERROR_PARSE_FAILURE);
-                                response->Error.Text = output;
                                 break;
                             case static_cast<uint32_t>(~0):
                                 response.Release();

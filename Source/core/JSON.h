@@ -3786,6 +3786,9 @@ namespace Core {
                             skip = SKIP_AFTER_KEY;
                         } else {
                             loaded += _current.json->Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
+                            // It could be that the field name was used, as we are not interested in this field, if so,
+                            // do not forget to reset the field name..
+                            _fieldName.Clear();
                         }
                         offset = (offset == FIND_MARKER ? skip : offset + PARSE);
                     }
