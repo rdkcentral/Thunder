@@ -1,5 +1,6 @@
 In the past, prior to the R3 version of Thunder, logging, tracing and warning reporting were completely separate issues and were handled individually. However, even though these message types have distinct characteristics, we recognized the advantages of consolidating them into a unified framework, which is now referred to as `Messaging`. In the early versions of R3, we still had tracing enabled by default and messaging was in the early development. It is the R4 version of Thunder where `Messaging` is finally the default framework to handle all types of messages.
 
+
 # Advantages of using messaging
 
 There are of course several advantages of using this framework to deliver the messages over simply using something like `printf`:
@@ -12,6 +13,7 @@ There are of course several advantages of using this framework to deliver the me
 
 We are convinced that `Messaging` is much better suited for the development, and with some recent changes which will be described in the following sections, it is fully operational and enabled by default. We strongly believe that it is a good time to shed some more light on that functionality, since it is simple to use and yet very effective.
 
+
 # Differences between the message types
 
 Logging, tracing and warning reporting are important techniques often used in software development to gather information and provide insight into the behavior of an application. However, there are some fundamental differences between them within Thunder, in a nutshell:
@@ -19,6 +21,7 @@ Logging, tracing and warning reporting are important techniques often used in so
 * Tracing is meant for the developers and is dropped in production
 * Logging is not dropped in production and is used to indicate information vital to the user
 * Warning Reporting is only available if Thunder is compiled with the `WARNING_REPORTING` option and sends warnings only if a condition is met
+
 
 # Viewing logs
 
@@ -53,8 +56,7 @@ Config()
 6. An object that should have two properties: `binding` which corresponds to a binding address and `port` on which the UDP connection will be established
 
 !!! note
-
-​	Even though by default no output is set to either true or false in this config file, the plugin will output the messages to a console or syslog depending on whether Thunder is running in the background or not.
+	Even though by default no output is set to either true or false in this config file, the plugin will output the messages to a console or syslog depending on whether Thunder is running in the background or not.
 
 ## DirectOutput
 
@@ -81,6 +83,7 @@ void DirectOutput::Output(const Core::Messaging::MessageInfo& messageInfo, const
     }
 }
 ```
+
 
 # How to adjust messaging
 
@@ -167,14 +170,15 @@ Below is an example of the messaging section in the config:
 	}
 	```
 
+Warning Reporting enables various runtime checks for potentially erroneous conditions and can be enabled on a per-category basis. These are typically time-based - i.e. a warning will be reported if something exceeded an allowable time. Each category can also have its own configuration to tune the thresholds for triggering the warning.
+
 !!! note
 	Warning Reporting is only available if Thunder is compiled with the `WARNING_REPORTING` option.
-
-Warning Reporting enables various runtime checks for potentially erroneous conditions and can be enabled on a per-category basis. These are typically time-based - i.e. a warning will be reported if something exceeded an allowable time. Each category can also have its own configuration to tune the thresholds for triggering the warning.
 
 ## Runtime
 
 It is also possible to use the `MessageControl` plugin to edit the configuration values at runtime. At the moment it is possible to enable/disable any category at runtime, either globally for logging and warning reporting, or individually per plugin for the tracing messages.
+
 
 # Tracing
 
@@ -189,8 +193,7 @@ TRACE_GLOBAL(Trace::Error, ("Is this not a descriptor to a DRM Node... =^..^= ")
 In Thunder, there are two main macros that can be used to wrap messages that will be treated as traces. These macros, namely `TRACE` and `TRACE_GLOBAL`, can be found in `Thunder/Source/messaging/TraceControl.h`. Upon examining the code, we can notice that the only distinction between them is that `TRACE` includes the class name where it is used, whereas the global version refers to the function name instead of a class.
 
 !!! warning
-
-​	The `TRACE` macro should always be used if we have the `this` pointer available, so when tracing takes place inside a class, otherwise you have to use `TRACE_GLOBAL`.
+	The `TRACE` macro should always be used if we have the `this` pointer available, so when tracing takes place inside a class, otherwise you have to use `TRACE_GLOBAL`.
 
 ```c++
 #define TRACE(CATEGORY, PARAMETERS)
@@ -267,6 +270,7 @@ private:
 };
 ```
 
+
 # Logging
 
 Logging, on the other hand, is the process of recording events that occur during the execution of an application. These events could be error messages, warnings, or informational messages that provide details about the application’s behavior. Logging is typically used for debugging and troubleshooting purposes. The primary goal of logging is to provide a historical record of events that can be used to analyze and diagnose problems. This means that in theory, we want to save the logs for later use.
@@ -284,8 +288,7 @@ SYSLOG_GLOBAL(Logging::Fatal, (_T("Plugin config file [%s] could not be opened."
 Similarly as in the case of tracing, there is also a global version of the `SYSLOG` macro, but this is something that was used prior to when tracing and logging became separate issues.
 
 !!! warning
-
-​	The `SYSLOG_GLOBAL` macro is marked as deprecated, because it is no longer necessary since the separation of logging and tracing (logging does not have either a class or a function name anymore), and thus it should not be used.
+	The `SYSLOG_GLOBAL` macro is marked as deprecated, because it is no longer necessary since the separation of logging and tracing (logging does not have either a class or a function name anymore), and thus it should not be used.
 
 In the piece of code below we can see that the first noticeable difference between tracing and logging macros is that there is an assert, which ensures that the macro parameter `CATEGORY` is an actual logging category. Apart from this difference, everything looks very similar besides the omission of file, line and class name, since these are not particularly useful when it comes to logging.
 
@@ -311,6 +314,7 @@ In the piece of code below we can see that the first noticeable difference betwe
 
 In addition, you might be wondering why we have some `Messaging` components such as `Metadata` in `Core`, and why everything is not simply inside
 `Source/messaging`. From an architectural point of view, there is a reason for this, which revolves around the need for reporting capabilities to be accessible not only in the plugins and other Thunder components, but also within `Core`, where, for instance, we would like to measure how long it takes to lock and then unlock. To accomplish this, we need some of the messaging features to be accessible in `Core`, because otherwise we would get, as you may have guessed, circular dependencies.
+
 
 # Warning Reporting
 
@@ -378,8 +382,7 @@ void AnalyseAndReportDispatchedJobs()
 The `REPORT_DURATION_WARNING` macro, as its name implies, serves the purpose of measuring the execution time of a specific code segment and generating a warning if the duration exceeds the expected threshold. In the provided code snippet, we observe a key distinction compared to the previous macros: the first parameter of the macro represents the code segment to be measured, and the timing is captured prior to invoking `Analyze()`.
 
 !!! note
-
-​	Even if warning reporting is not enabled in the code or if a specific category provided as a parameter is not enabled, this code segment will still be executed.
+	Even if warning reporting is not enabled in the code or if a specific category provided as a parameter is not enabled, this code segment will still be executed.
 
 ```c++
 #define REPORT_DURATION_WARNING(CODE, CATEGORY, ...)
@@ -422,8 +425,7 @@ Unlike the tracing and logging categories, the default warning reporting categor
 The code snippet below demonstrates the simplicity of creating a custom warning reporting category. If an additional `Analyze()` method is not necessary, it is sufficient to declare the `Serialize()` and `Deserialize()` methods to return `0`. However, attention must be given to the implementation of the `ToString()` method, along with the variables `DefaultWarningBound` and `DefaultReportBound`.
 
 !!! note
-
-​	In the near future, we want the `MessageControl` plugin to handle reports and warnings *separately* - a **report** means that we send the data to be stored, for example, in a file and then analyzed, while a **warning** is more severe, so we want to instantly output it to a different location, for instance, a console or a network stream. In the end, we are going to split it in the `MessageControl` plugin in such a way that it will be possible to filter out the warnings.
+	In the near future, we want the `MessageControl` plugin to handle reports and warnings *separately* - a **report** means that we send the data to be stored, for example, in a file and then analyzed, while a **warning** is more severe, so we want to instantly output it to a different location, for instance, a console or a network stream. In the end, we are going to split it in the `MessageControl` plugin in such a way that it will be possible to filter out the warnings.
 
 ```c++
 class EXTERNAL TooLongWaitingForLock {
@@ -454,6 +456,7 @@ public:
     static constexpr uint32_t DefaultReportBound = { 1000 };
 };
 ```
+
 
 # MessageControl plugin
 
@@ -755,8 +758,7 @@ void Dispatch()
 ```
 
 !!! warning
-
-​	If the `MessageControl` plugin is disabled, the message queue will eventually reach its capacity. As a result, the framework will issue warnings indicating that there is no more space available in the queue. In this situation, older messages will be overwritten by newer ones as they continue to arrive. Of course it does not change the fact that the messages can still be generated by `DirectOutput`. 
+	If the `MessageControl` plugin is disabled, the message queue will eventually reach its capacity. As a result, the framework will issue warnings indicating that there is no more space available in the queue. In this situation, older messages will be overwritten by newer ones as they continue to arrive. Of course it does not change the fact that the messages can still be generated by `DirectOutput`. 
 
 Within the `Message()` method, as shown below, the plugin is responsible for sending the message to all designated outputs selected in the plugin configuration.
 
