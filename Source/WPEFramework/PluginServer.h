@@ -3619,8 +3619,7 @@ POP_WARNING()
                     _token = token;
                 }
                 void Dispatch() override
-                {
-                    
+                {            
                     ASSERT(_request.IsValid());
                     ASSERT(Job::HasService() == true);
 
@@ -3629,23 +3628,35 @@ POP_WARNING()
                     if (_jsonrpc == true) {
                         if(_request->Verb == Request::HTTP_POST) {
                             Core::ProxyType<Web::JSONRPC::Body> message(_request->Body<Web::JSONRPC::Body>());
-                            if (message->Report().IsSet() == true) {
+                            if ( (message->Report().IsSet() == true) || (message->IsComplete() == false) ) {
                                 // Looks like we have a corrupted message.. Respond if posisble, with an error
                                 response = IFactories::Instance().Response();
 
                                 response->ErrorCode = Web::STATUS_BAD_REQUEST;
-                                response->Message = _T("JSON-RPC was incorrectly formatted, could not deduce the id");
+                                response->Message = _T("JSON was incorrectly formatted");
 
                                 // If we also do not have an id, we can not return a suitable JSON message!
-                                if (message->Recorded().IsSet() == false) {
+                                if (message->Recorded().IsSet() == true) {
+                                    message->Id = message->Recorded().Value();
+                                    message->Error.Text = message->Report().Value().Message();
+                                }
+                                else if (message->IsComplete() == true) {
                                     message->Id.Null(true);
+                                    message->Error.Text = message->Report().Value().Message();
+                                }
+                                else if (message->Id.IsSet() == false) {
+                                    message->Clear();
+                                    message->Id.Null(true);
+                                    message->Error.Text = _T("Incomplete JSON send");
                                 }
                                 else {
-                                    message->Id = message->Recorded().Value();
+                                    uint32_t id = message->Id.Value();
+                                    message->Clear();
+                                    message->Id = id;
+                                    message->Error.Text = _T("Incomplete JSON send");
                                 }
 
                                 message->Error.SetError(Core::ERROR_PARSE_FAILURE);
-                                message->Error.Text = message->Report().Value().Message();
                                 response->Body(Core::ProxyType<Web::IBody>(message));
                             }
                             else {

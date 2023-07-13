@@ -3442,7 +3442,8 @@ namespace Core {
         private:
             enum modus : uint8_t {
                 ERROR = 0x80,
-                UNDEFINED = 0x40
+                UNDEFINED = 0x40,
+                COMPLETE = 0x20
             };
 
             static constexpr uint16_t FIND_MARKER = 0;
@@ -3542,6 +3543,9 @@ namespace Core {
             ~Container() override = default;
 
         public:
+            bool IsComplete() const {
+                return ( (_state & modus::COMPLETE) != 0);
+            }
             bool HasLabel(const string& label) const
             {
                 JSONElementList::const_iterator index(_data.begin());
@@ -3580,6 +3584,7 @@ namespace Core {
                     index->second->Clear();
                     index++;
                 }
+                _state = 0;
             }
 
             void Add(const TCHAR label[], IElement* element)
@@ -3706,6 +3711,7 @@ namespace Core {
                                     error = Error{ "Expected value, \"}\" found." };
                                 }
                                 offset = FIND_MARKER;
+                                _state |= modus::COMPLETE;
                                 loaded++;
                                 break;
                             case ',':
