@@ -1945,12 +1945,12 @@ namespace Core {
                         if (current == '\\') {
                             // And we need to start it.
                             _flagsAndCounters |= SpecialSequenceBit;
-                        }
-                        else if (current == '\"') {
+                        } else if (current == '\"') {
                             // We are done! leave this element.
                             finished = true;
-                        }
-                        else {
+                        } else if (current >= 0x0 && current <= 0x1F) {
+                            error = Error{ "Unescaped control character detected" };
+			} else {
                             // Just copy and onto the next;
                             _value += current;
                         }
