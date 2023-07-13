@@ -1496,8 +1496,8 @@
 </ol>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
+<p>Even though by default no output is set to either true or false in this config file, the plugin will output the messages to a console or syslog depending on whether Thunder is running in the background or not.</p>
 </div>
-<p>​   Even though by default no output is set to either true or false in this config file, the plugin will output the messages to a console or syslog depending on whether Thunder is running in the background or not.</p>
 <h2 id="directoutput">DirectOutput</h2>
 <p>It is important to note that when the <code>MessageControl</code> plugin is not actively running or in scenarios where it is disabled, there is an option to directly print messages onto the console using the <code>DirectOutput()</code> method. This allows for immediate display of messages on the console without going through the buffering process.  In such a situation, the <code>Output()</code> method of the <code>DirectOutput</code> class is used. Furthermore, the <code>DirectOutput</code> class can be configured using the <code>Mode()</code> method to send the messages to the system logger instead of simply printing them on the console.</p>
 <div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">DirectOutput::Output</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Messaging</span><span class="o">::</span><span class="n">MessageInfo</span><span class="o">&amp;</span><span class="w"> </span><span class="n">messageInfo</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Messaging</span><span class="o">::</span><span class="n">IEvent</span><span class="o">*</span><span class="w"> </span><span class="n">message</span><span class="p">)</span><span class="w"> </span><span class="k">const</span>
@@ -1609,11 +1609,11 @@
 <span class="p">}</span>
 </code></pre></div></p>
 </div>
+<p>Warning Reporting enables various runtime checks for potentially erroneous conditions and can be enabled on a per-category basis. These are typically time-based - i.e. a warning will be reported if something exceeded an allowable time. Each category can also have its own configuration to tune the thresholds for triggering the warning.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Warning Reporting is only available if Thunder is compiled with the <code>WARNING_REPORTING</code> option.</p>
 </div>
-<p>Warning Reporting enables various runtime checks for potentially erroneous conditions and can be enabled on a per-category basis. These are typically time-based - i.e. a warning will be reported if something exceeded an allowable time. Each category can also have its own configuration to tune the thresholds for triggering the warning.</p>
 <h2 id="runtime">Runtime</h2>
 <p>It is also possible to use the <code>MessageControl</code> plugin to edit the configuration values at runtime. At the moment it is possible to enable/disable any category at runtime, either globally for logging and warning reporting, or individually per plugin for the tracing messages.</p>
 <h1 id="tracing">Tracing</h1>
@@ -1625,8 +1625,8 @@
 <p>In Thunder, there are two main macros that can be used to wrap messages that will be treated as traces. These macros, namely <code>TRACE</code> and <code>TRACE_GLOBAL</code>, can be found in <code>Thunder/Source/messaging/TraceControl.h</code>. Upon examining the code, we can notice that the only distinction between them is that <code>TRACE</code> includes the class name where it is used, whereas the global version refers to the function name instead of a class.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
+<p>The <code>TRACE</code> macro should always be used if we have the <code>this</code> pointer available, so when tracing takes place inside a class, otherwise you have to use <code>TRACE_GLOBAL</code>.</p>
 </div>
-<p>​   The <code>TRACE</code> macro should always be used if we have the <code>this</code> pointer available, so when tracing takes place inside a class, otherwise you have to use <code>TRACE_GLOBAL</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="cp">#define TRACE(CATEGORY, PARAMETERS)</span>
 <span class="w">    </span><span class="k">do</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">using</span><span class="w"> </span><span class="n">__control__</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TRACE_CONTROL</span><span class="p">(</span><span class="n">CATEGORY</span><span class="p">);</span>
@@ -1702,8 +1702,8 @@
 <p>Similarly as in the case of tracing, there is also a global version of the <code>SYSLOG</code> macro, but this is something that was used prior to when tracing and logging became separate issues.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
+<p>The <code>SYSLOG_GLOBAL</code> macro is marked as deprecated, because it is no longer necessary since the separation of logging and tracing (logging does not have either a class or a function name anymore), and thus it should not be used.</p>
 </div>
-<p>​   The <code>SYSLOG_GLOBAL</code> macro is marked as deprecated, because it is no longer necessary since the separation of logging and tracing (logging does not have either a class or a function name anymore), and thus it should not be used.</p>
 <p>In the piece of code below we can see that the first noticeable difference between tracing and logging macros is that there is an assert, which ensures that the macro parameter <code>CATEGORY</code> is an actual logging category. Apart from this difference, everything looks very similar besides the omission of file, line and class name, since these are not particularly useful when it comes to logging.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -1771,8 +1771,8 @@
 <p>The <code>REPORT_DURATION_WARNING</code> macro, as its name implies, serves the purpose of measuring the execution time of a specific code segment and generating a warning if the duration exceeds the expected threshold. In the provided code snippet, we observe a key distinction compared to the previous macros: the first parameter of the macro represents the code segment to be measured, and the timing is captured prior to invoking <code>Analyze()</code>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
+<p>Even if warning reporting is not enabled in the code or if a specific category provided as a parameter is not enabled, this code segment will still be executed.</p>
 </div>
-<p>​   Even if warning reporting is not enabled in the code or if a specific category provided as a parameter is not enabled, this code segment will still be executed.</p>
 <div class="highlight"><pre><span></span><code><span class="cp">#define REPORT_DURATION_WARNING(CODE, CATEGORY, ...)</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(...</span><span class="n">WarningReportingType</span><span class="o">&lt;</span><span class="p">...</span><span class="n">WarningReportingBoundsCategory</span><span class="o">&lt;</span><span class="n">CATEGORY</span><span class="o">&gt;&gt;::</span><span class="n">IsEnabled</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="n">WPEFramework</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">WPEFramework</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">Now</span><span class="p">();</span>
@@ -1807,8 +1807,8 @@
 <p>The code snippet below demonstrates the simplicity of creating a custom warning reporting category. If an additional <code>Analyze()</code> method is not necessary, it is sufficient to declare the <code>Serialize()</code> and <code>Deserialize()</code> methods to return <code>0</code>. However, attention must be given to the implementation of the <code>ToString()</code> method, along with the variables <code>DefaultWarningBound</code> and <code>DefaultReportBound</code>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
+<p>In the near future, we want the <code>MessageControl</code> plugin to handle reports and warnings <em>separately</em> - a <strong>report</strong> means that we send the data to be stored, for example, in a file and then analyzed, while a <strong>warning</strong> is more severe, so we want to instantly output it to a different location, for instance, a console or a network stream. In the end, we are going to split it in the <code>MessageControl</code> plugin in such a way that it will be possible to filter out the warnings.</p>
 </div>
-<p>​   In the near future, we want the <code>MessageControl</code> plugin to handle reports and warnings <em>separately</em> - a <strong>report</strong> means that we send the data to be stored, for example, in a file and then analyzed, while a <strong>warning</strong> is more severe, so we want to instantly output it to a different location, for instance, a console or a network stream. In the end, we are going to split it in the <code>MessageControl</code> plugin in such a way that it will be possible to filter out the warnings.</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">TooLongWaitingForLock</span><span class="w"> </span><span class="p">{</span>
 <span class="k">public</span><span class="o">:</span>
 <span class="w">    </span><span class="n">TooLongWaitingForLock</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">TooLongWaitingForLock</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
@@ -2100,8 +2100,8 @@
 </code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
+<p>If the <code>MessageControl</code> plugin is disabled, the message queue will eventually reach its capacity. As a result, the framework will issue warnings indicating that there is no more space available in the queue. In this situation, older messages will be overwritten by newer ones as they continue to arrive. Of course it does not change the fact that the messages can still be generated by <code>DirectOutput</code>. </p>
 </div>
-<p>​   If the <code>MessageControl</code> plugin is disabled, the message queue will eventually reach its capacity. As a result, the framework will issue warnings indicating that there is no more space available in the queue. In this situation, older messages will be overwritten by newer ones as they continue to arrive. Of course it does not change the fact that the messages can still be generated by <code>DirectOutput</code>. </p>
 <p>Within the <code>Message()</code> method, as shown below, the plugin is responsible for sending the message to all designated outputs selected in the plugin configuration.</p>
 <div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">Message</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Messaging</span><span class="o">::</span><span class="n">MessageInfo</span><span class="o">&amp;</span><span class="w"> </span><span class="n">metadata</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">message</span><span class="p">)</span>
 <span class="p">{</span>
