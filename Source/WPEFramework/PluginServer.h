@@ -3669,9 +3669,13 @@ POP_WARNING()
 
                                     // If we have no response body, it looks like an async-call...
                                     if (body.IsValid() == false) {
-                                        // It's a a-synchronous call, seems we should just queue this request, it will be answered later on..
-                                        if (_request->Connection.Value() == Web::Request::CONNECTION_CLOSE) {
-                                            Job::RequestClose();
+                                        // It's a a-synchronous call if the id was set but we do not yet have a resposne.
+                                        // If the id of the originating message was not set, it is a Notification and no
+                                        // response is expected at all, just report HTTP NO_CONTENT than
+                                        if (message->Id.IsSet() == false) {
+                                            response = IFactories::Instance().Response();
+                                            response->ErrorCode = Web::STATUS_NO_CONTENT;
+                                            response->Message = _T("A JSONRPC Notification was send to the server. Processed it..");
                                         }
                                     }
                                     else {
@@ -3685,6 +3689,10 @@ POP_WARNING()
                                             response->ErrorCode = Web::STATUS_ACCEPTED;
                                             response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<int32_t>(body->Error.Code).Text();
                                         }
+                                    }
+
+                                    if (_request->Connection.Value() == Web::Request::CONNECTION_CLOSE) {
+                                        Job::RequestClose();
                                     }
                                 }
                                 else {
