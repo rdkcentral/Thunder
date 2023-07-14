@@ -3355,17 +3355,17 @@ POP_WARNING()
 
                     if (file.IsDirectory() == false) { 
                         if (file.Open(true) == false) {
-                            SYSLOG_GLOBAL(Logging::Fatal, (_T("Plugin config file [%s] could not be opened."), file.Name().c_str()));
+                            SYSLOG(Logging::Fatal, (_T("Plugin config file [%s] could not be opened."), file.Name().c_str()));
                         }
                         else {
                             Plugin::Config pluginConfig;
                             Core::OptionalType<Core::JSON::Error> error;
                             pluginConfig.IElement::FromFile(file, error);
                             if (error.IsSet() == true) {
-                                SYSLOG_GLOBAL(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                                SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
                             }
                             else if ((pluginConfig.ClassName.Value().empty() == true) || (pluginConfig.Locator.Value().empty() == true)) {
-                                SYSLOG_GLOBAL(Logging::Fatal, (_T("Plugin config file [%s] does not contain classname or locator."), file.Name().c_str()));
+                                SYSLOG(Logging::Fatal, (_T("Plugin config file [%s] does not contain classname or locator."), file.Name().c_str()));
                             }
                             else {
                                 if (pluginConfig.Callsign.Value().empty() == true) {
