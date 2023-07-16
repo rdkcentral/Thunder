@@ -31,8 +31,7 @@ namespace WPEFramework {
             ASSERT(message != nullptr);
             ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
 
-            string result = messageInfo.ToString(_abbreviate).c_str() +
-                            Core::Format("%s\n", message->Data().c_str());
+            string result = messageInfo.ToString(_abbreviate).c_str() + message->Data();
 
 #ifndef __WINDOWS__
             if (_isSyslog == true) {

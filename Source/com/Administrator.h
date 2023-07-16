@@ -310,7 +310,7 @@ namespace RPC {
             , _channel(channel)
         {
         }
-        Job(Job&& move)
+        Job(Job&& move) noexcept
             : _message(std::move(move._message))
             , _channel(std::move(move._channel))
         {
@@ -322,7 +322,7 @@ namespace RPC {
         }
         ~Job() override = default;
 
-        Job& operator=(Job&& rhs) {
+        Job& operator=(Job&& rhs) noexcept {
             _message = std::move(rhs._message);
             _channel = std::move(rhs._channel);
 

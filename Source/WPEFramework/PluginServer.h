@@ -187,9 +187,9 @@ namespace PluginHost {
             {
                 return (_fileBodyFactory.Element());
             }
-            Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> JSONRPC() override
+            Core::ProxyType<Web::JSONRPC::Body> JSONRPC() override
             {
-                return (Core::ProxyType< Web::JSONBodyType<Core::JSONRPC::Message> >(_jsonRPCFactory.Element()));
+                return (Core::ProxyType< Web::JSONRPC::Body> (_jsonRPCFactory.Element()));
             }
 
         private:
@@ -1472,7 +1472,16 @@ namespace PluginHost {
                         response->Id = message.Id.Value();
                     }
 
-                    if ((result = _jsonrpc->Validate(token, method, message.Parameters.Value())) == Core::ERROR_PRIVILIGED_REQUEST) {
+                    if ((message.Designator.IsSet() == false) || (method.empty())) {
+                        if (response.IsValid() == false) {
+                            response = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
+                            response->Id.Null(true);
+                        }
+
+                        response->Error.SetError(Core::ERROR_PARSE_FAILURE);
+                        response->Error.Text = _T("Parsing of the method failed");
+                    }
+                    else if ((result = _jsonrpc->Validate(token, method, message.Parameters.Value())) == Core::ERROR_PRIVILIGED_REQUEST) {
                         if (response.IsValid() == true) {
                             response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
                             response->Error.Text = _T("method invokation not allowed.");
@@ -1494,7 +1503,16 @@ namespace PluginHost {
                         string output;
                         result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, method, message.Parameters.Value(), output);
 
-                        if (response.IsValid() == true) {
+                        if (result == Core::ERROR_PARSE_FAILURE) {
+                            if (response.IsValid() == false) {
+                                response = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
+                                response->Id.Null(true);
+                            }
+
+                            response->Error.SetError(Core::ERROR_PARSE_FAILURE);
+                            response->Error.Text = _T("Parsing of the parameters failed");
+                        }
+                        else if (response.IsValid() == true) {
                             switch (result) {
                             case Core::ERROR_NONE:
                                 if (output.empty() == true) {
@@ -1759,19 +1777,10 @@ namespace PluginHost {
 
             void Closed(const uint32_t id)
             {
-                IDispatcher* dispatcher = nullptr;
-
                 _pluginHandling.Lock();
-                if (_handler != nullptr) {
-                    dispatcher = _handler->QueryInterface<IDispatcher>();
-                    if (dispatcher != nullptr) {
-                        ILocalDispatcher* localDispatcher = dispatcher->Local();
 
-                        if (localDispatcher) {
-                            localDispatcher->Dropped(id);
-                        }
-                        dispatcher->Release();
-                    }
+                if (_jsonrpc != nullptr)  {
+                    _jsonrpc->Dropped(id);
                 }
                 _pluginHandling.Unlock();
 
@@ -3601,45 +3610,87 @@ POP_WARNING()
                     _token = token;
                 }
                 void Dispatch() override
-                {
-                    
+                {            
                     ASSERT(_request.IsValid());
                     ASSERT(Job::HasService() == true);
 
                     Core::ProxyType<Web::Response> response;
 
                     if (_jsonrpc == true) {
-                        if(_request->Verb == Request::HTTP_POST){
-                            Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
-                            if (HasService() == true) {
-                                message->ImplicitCallsign(GetService().Callsign());
+                        if(_request->Verb == Request::HTTP_POST) {
+                            Core::ProxyType<Web::JSONRPC::Body> message(_request->Body<Web::JSONRPC::Body>());
+                            if ( (message->Report().IsSet() == true) || (message->IsComplete() == false) ) {
+                                // Looks like we have a corrupted message.. Respond if posisble, with an error
+                                response = IFactories::Instance().Response();
+
+                                response->ErrorCode = Web::STATUS_BAD_REQUEST;
+                                response->Message = _T("JSON was incorrectly formatted");
+
+                                // If we also do not have an id, we can not return a suitable JSON message!
+                                if (message->Recorded().IsSet() == true) {
+                                    message->Id = message->Recorded().Value();
+                                    message->Error.Text = message->Report().Value().Message();
+                                }
+                                else if (message->IsComplete() == true) {
+                                    message->Id.Null(true);
+                                    message->Error.Text = message->Report().Value().Message();
+                                }
+                                else if (message->Id.IsSet() == false) {
+                                    message->Clear();
+                                    message->Id.Null(true);
+                                    message->Error.Text = _T("Incomplete JSON send");
+                                }
+                                else {
+                                    uint32_t id = message->Id.Value();
+                                    message->Clear();
+                                    message->Id = id;
+                                    message->Error.Text = _T("Incomplete JSON send");
+                                }
+
+                                message->Error.SetError(Core::ERROR_PARSE_FAILURE);
+                                response->Body(Core::ProxyType<Web::IBody>(message));
                             }
+                            else {
+                                if (HasService() == true) {
+                                    message->ImplicitCallsign(GetService().Callsign());
+                                }
 
-                            if (message->IsSet()) {
-                                Core::ProxyType<Core::JSONRPC::Message> body = Job::Process(_token, message);
+                                if (message->IsSet()) {
+                                    Core::ProxyType<Core::JSONRPC::Message> body = Job::Process(_token, Core::ProxyType<Core::JSONRPC::Message>(message));
 
-                                // If we have no response body, it looks like an async-call...
-                                if (body.IsValid() == false) {
-                                    // It's a a-synchronous call, seems we should just queue this request, it will be answered later on..
+                                    // If we have no response body, it looks like an async-call...
+                                    if (body.IsValid() == false) {
+                                        // It's a a-synchronous call if the id was set but we do not yet have a resposne.
+                                        // If the id of the originating message was not set, it is a Notification and no
+                                        // response is expected at all, just report HTTP NO_CONTENT than
+                                        if (message->Id.IsSet() == false) {
+                                            response = IFactories::Instance().Response();
+                                            response->ErrorCode = Web::STATUS_NO_CONTENT;
+                                            response->Message = _T("A JSONRPC Notification was send to the server. Processed it..");
+                                        }
+                                    }
+                                    else {
+                                        response = IFactories::Instance().Response();
+                                        response->Body(body);
+                                        if (body->Error.IsSet() == false) {
+                                            response->ErrorCode = Web::STATUS_OK;
+                                            response->Message = _T("JSONRPC executed succesfully");
+                                        }
+                                        else {
+                                            response->ErrorCode = Web::STATUS_ACCEPTED;
+                                            response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<int32_t>(body->Error.Code).Text();
+                                        }
+                                    }
+
                                     if (_request->Connection.Value() == Web::Request::CONNECTION_CLOSE) {
                                         Job::RequestClose();
                                     }
                                 }
                                 else {
                                     response = IFactories::Instance().Response();
-                                    response->Body(body);
-                                    if (body->Error.IsSet() == false) {
-                                        response->ErrorCode = Web::STATUS_OK;
-                                        response->Message = _T("JSONRPC executed succesfully");
-                                    } else {
-                                        response->ErrorCode = Web::STATUS_ACCEPTED;
-                                        response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(body->Error.Code).Text();
-                                    }
+                                    response->ErrorCode = Web::STATUS_ACCEPTED;
+                                    response->Message = _T("Failed to parse JSONRPC message");
                                 }
-                            } else {
-                                response = IFactories::Instance().Response();
-                                response->ErrorCode = Web::STATUS_ACCEPTED;
-                                response->Message = _T("Failed to parse JSONRPC message");
                             }
                         } else {
                             response = IFactories::Instance().Response();
@@ -3731,23 +3782,39 @@ POP_WARNING()
                     ASSERT(_element.IsValid() == true);
 
                     if (_jsonrpc == true) {
+
 #if THUNDER_PERFORMANCE
                         Core::ProxyType<TrackingJSONRPC> tracking (_element);
                         ASSERT (tracking.IsValid() == true);
-                                    tracking->Dispatch();
+                        tracking->Dispatch();
 #endif
-                        Core::ProxyType<Core::JSONRPC::Message> message(_element);
-                        ASSERT(message.IsValid() == true);
-                        if (HasService() == true) {
-                            message->ImplicitCallsign(GetService().Callsign());
-                        }
+                        Core::ProxyType<Web::JSONRPC::Body> message(_element);
 
-                        _element = Core::ProxyType<Core::JSON::IElement>(Job::Process(_token, message));
+                        ASSERT(message.IsValid() == true);
+
+                        if (message->Report().IsSet() == true) {
+                            // If we also do not have an id, we can not return a suitable JSON message!
+                            if (message->Recorded().IsSet() == false) {
+                                message->Id.Null(true);
+                            }
+                            else {
+                                message->Id = message->Recorded().Value();
+                            }
+
+                            message->Error.SetError(Core::ERROR_PARSE_FAILURE);
+                            message->Error.Text = message->Report().Value().Message();
+                        }
+                        else {
+                            if (HasService() == true) {
+                                message->ImplicitCallsign(GetService().Callsign());
+                            }
+
+                            _element = Core::ProxyType<Core::JSON::IElement>(Job::Process(_token, Core::ProxyType<Core::JSONRPC::Message>(message)));
+                        }
 
 #if THUNDER_PERFORMANCE
                         tracking->Execution();
 #endif
-
                     } else {
                         _element = Job::Process(_element);
                     }
