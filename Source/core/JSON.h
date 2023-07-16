@@ -1501,7 +1501,7 @@ namespace Core {
         class EXTERNAL String : public IElement, public IMessagePack {
         private:
             static constexpr uint16_t FlagMask = 0xFC00;
-            static constexpr uint16_t EscapeFoundBit = 0x0400;
+            static constexpr uint16_t QuotedAreaBit = 0x0400;
             static constexpr uint16_t SpecialSequenceBit = 0x0800;
             static constexpr uint16_t QuotedSerializeBit = 0x1000;
             static constexpr uint16_t QuoteFoundBit = 0x2000;
@@ -1744,7 +1744,7 @@ namespace Core {
                             stream[result++] = '\"';
                         }
                         offset = 1;
-                        _flagsAndCounters &= (FlagMask ^ (SpecialSequenceBit|EscapeFoundBit));
+                        _flagsAndCounters &= (FlagMask ^ (SpecialSequenceBit| QuotedAreaBit));
                     }
 
                     uint32_t length = static_cast<uint32_t>(_value.length()) - (offset - 1);
@@ -1869,7 +1869,7 @@ namespace Core {
 
                 if (offset == 0) {
                     _value.clear();
-                    _flagsAndCounters &= (FlagMask ^ (SpecialSequenceBit|EscapeFoundBit|QuoteFoundBit));
+                    _flagsAndCounters &= (FlagMask ^ (SpecialSequenceBit|QuotedAreaBit|QuoteFoundBit));
                     _storage = 0;
                     if (stream[result] == '\"') {
                         result++;
@@ -1885,40 +1885,55 @@ namespace Core {
 
                     // What are we deserializing a string, or an opaque JSON object!!!
                     if ((_flagsAndCounters & QuoteFoundBit) == 0) {
-                        // It's an opaque structure, so *no* decoding required. Leave as is !
-                        if (current == '{') {
-                            if (InScope(ScopeBracket::CURLY_BRACKET) == false) {
-                                error = Error{ "Opaque object nesting too deep" };
+
+                        if ((_flagsAndCounters & QuotedAreaBit) == 0) {
+                            // It's an opaque structure, so *no* decoding required. Leave as is !
+                            if (current == '{') {
+                                if (InScope(ScopeBracket::CURLY_BRACKET) == false) {
+                                    error = Error{ "Opaque object nesting too deep" };
+                                }
                             }
-                        }
-                        else if (current == '[') {
-                            if (InScope(ScopeBracket::SQUARE_BRACKET) == false) {
-                                error = Error{ "Opaque object nesting too deep" };
+                            else if (current == '[') {
+                                if (InScope(ScopeBracket::SQUARE_BRACKET) == false) {
+                                    error = Error{ "Opaque object nesting too deep" };
+                                }
                             }
-                        }
-                        else if ((_flagsAndCounters & 0x1F) == 0) {
-                            // If we did not open an object, the only thing we allow are whitespaces as they can
-                            // always be dropped!
-                            finished = (((_flagsAndCounters & EscapeFoundBit) == 0) && ((current == ',') || (current == '}') || (current == ']') || (current == '\0')));
-                        }
-                        else if (current == '}') {
-                            if (OutScope(ScopeBracket::CURLY_BRACKET) == false) {
-                                error = Error{ "Expected \"]\" but got \"}\" in opaque object" };
+                            else if ((_flagsAndCounters & 0x1F) == 0) {
+                                // We are not in a nested area, see what 
+                                finished = ((current == ',') || (current == '}') || (current == ']') || (current == '\0') || (!_value.empty() && ::isspace(current)));
                             }
-                        }
-                        else if (current == ']') {
-                            if (OutScope(ScopeBracket::SQUARE_BRACKET) == false) {
-                                error = Error{ "Expected \"}\" but got \"]\" in opaque object" };
+                            else if (current == '}') {
+                                if (OutScope(ScopeBracket::CURLY_BRACKET) == false) {
+                                    error = Error{ "Expected \"]\" but got \"}\" in opaque object" };
+                                }
+                            }
+                            else if (current == ']') {
+                                if (OutScope(ScopeBracket::SQUARE_BRACKET) == false) {
+                                    error = Error{ "Expected \"}\" but got \"]\" in opaque object" };
+                                }
                             }
                         }
 
                         if (finished == false) {
-                            // Write the amount we possibly can..
-                            _value += current;
+                            if ((_flagsAndCounters & QuotedAreaBit) != 0) {
+                                // Write the amount we possibly can..
+                                _value += current;
+                            }
+                            else if (::isspace(current) == false) {
+                                // If we are creating an opaque string, drop all whitespaces if possible.
+                                _value += current;
 
+                                // See if we are done, if this is the last close marker, we bail out..
+                                finished = (((_flagsAndCounters & 0x1F) == 0) && ((current == '}') || (current == ']')));
+                            }
+
+                            // We are assumed to be opaque, but all quoted string stuff is enclosed between quotes
+                            // and should be considered for scope counting.
+                            // Check if we are entering or leaving a quoted area in the opaque object
                             if ((current == '\"') && ((_value.empty() == true) || (_value[_value.length() - 1] != '\\'))) {
-                                // Oke we are going to enetr a Serialized thingy... lets be opaque from here on
-                                _flagsAndCounters ^= EscapeFoundBit;
+                                // This is not an "escaped" quote, so it should be considered a real quote. It means
+                                // we are now entering or leaving a quoted area within the opaque struct...
+                                _flagsAndCounters ^= QuotedAreaBit;
                             }
 
                             result++;
@@ -1936,7 +1951,7 @@ namespace Core {
                             finished = true;
                         }
                         else {
-                            // Just copy, we and onto the next;
+                            // Just copy and onto the next;
                             _value += current;
                         }
                         result++;
@@ -3427,7 +3442,8 @@ namespace Core {
         private:
             enum modus : uint8_t {
                 ERROR = 0x80,
-                UNDEFINED = 0x40
+                UNDEFINED = 0x40,
+                COMPLETE = 0x20
             };
 
             static constexpr uint16_t FIND_MARKER = 0;
@@ -3527,6 +3543,9 @@ namespace Core {
             ~Container() override = default;
 
         public:
+            bool IsComplete() const {
+                return ( (_state & modus::COMPLETE) != 0);
+            }
             bool HasLabel(const string& label) const
             {
                 JSONElementList::const_iterator index(_data.begin());
@@ -3565,6 +3584,7 @@ namespace Core {
                     index->second->Clear();
                     index++;
                 }
+                _state = 0;
             }
 
             void Add(const TCHAR label[], IElement* element)
@@ -3691,6 +3711,7 @@ namespace Core {
                                     error = Error{ "Expected value, \"}\" found." };
                                 }
                                 offset = FIND_MARKER;
+                                _state |= modus::COMPLETE;
                                 loaded++;
                                 break;
                             case ',':
@@ -3771,6 +3792,9 @@ namespace Core {
                             skip = SKIP_AFTER_KEY;
                         } else {
                             loaded += _current.json->Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
+                            // It could be that the field name was used, as we are not interested in this field, if so,
+                            // do not forget to reset the field name..
+                            _fieldName.Clear();
                         }
                         offset = (offset == FIND_MARKER ? skip : offset + PARSE);
                     }

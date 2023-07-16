@@ -24,7 +24,6 @@
 namespace WPEFramework {
 namespace PluginHost {
 
-
     class EXTERNAL IFactories {
     public:
         virtual ~IFactories();
@@ -37,7 +36,7 @@ namespace PluginHost {
         virtual Core::ProxyType<Web::Request> Request() = 0;
         virtual Core::ProxyType<Web::Response> Response() = 0;
         virtual Core::ProxyType<Web::FileBody> FileBody() = 0;
-        virtual Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> JSONRPC() = 0;
+        virtual Core::ProxyType<Web::JSONRPC::Body> JSONRPC() = 0;
     };
 
     typedef DEPRECATED Core::WorkerPool WorkerPool;
