@@ -1777,19 +1777,10 @@ namespace PluginHost {
 
             void Closed(const uint32_t id)
             {
-                IDispatcher* dispatcher = nullptr;
-
                 _pluginHandling.Lock();
-                if (_handler != nullptr) {
-                    dispatcher = _handler->QueryInterface<IDispatcher>();
-                    if (dispatcher != nullptr) {
-                        ILocalDispatcher* localDispatcher = dispatcher->Local();
 
-                        if (localDispatcher) {
-                            localDispatcher->Dropped(id);
-                        }
-                        dispatcher->Release();
-                    }
+                if (_jsonrpc != nullptr)  {
+                    _jsonrpc->Dropped(id);
                 }
                 _pluginHandling.Unlock();
 

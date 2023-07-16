@@ -1950,7 +1950,7 @@ namespace Core {
                             finished = true;
                         } else if (current >= 0x0 && current <= 0x1F) {
                             error = Error{ "Unescaped control character detected" };
-			} else {
+                        } else {
                             // Just copy and onto the next;
                             _value += current;
                         }
