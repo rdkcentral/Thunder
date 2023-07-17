@@ -81,19 +81,6 @@
         }                                                                                                              \
     }
 
-#define REPORT_WARNING_GLOBAL(CATEGORY, ...)                                                                           \
-    if (WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled() == true) {                         \
-        WPEFramework::WarningReporting::WarningReportingType<CATEGORY> __message__;                                    \
-        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME,                                               \
-                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
-                ##__VA_ARGS__)                                                                                         \
-            == true) {                                                                                                 \
-            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                  \
-                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
-                __message__);                                                                                          \
-        }                                                                                                              \
-    }
-
 #define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...)                                                                                                                  \
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) {                  \
         WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;                             \
