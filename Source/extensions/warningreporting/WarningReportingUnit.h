@@ -78,7 +78,14 @@ namespace WarningReporting {
 
                     Category = rhs.Category();
                     Enabled = rhs.Enabled();
-                    CategoryConfig = rhs.Configuration();
+
+                    if (rhs.Configuration().empty() == false) {
+                        CategoryConfig = rhs.Configuration();
+                    }
+
+                    if (rhs.Excluded().empty() == false) {
+                        Excluded = rhs.Excluded();
+                    }
                 }
                 ~JSON() override = default;
 
