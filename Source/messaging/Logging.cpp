@@ -57,14 +57,14 @@ namespace Logging {
         const TCHAR* callsign = UnknownCallsign;
 #endif
 
-        SYSLOG_GLOBAL(Logging::Crash, (_T("-== Unhandled exception in: %s [%s] ==-\n"), callsign, exceptionType.c_str()));
+        SYSLOG(Logging::Crash, (_T("-== Unhandled exception in: %s [%s] ==-\n"), callsign, exceptionType.c_str()));
         
         for (const Core::callstack_info& entry : stack) {
             if (entry.line != static_cast<uint32_t>(~0)) {
-                SYSLOG_GLOBAL(Logging::Crash, (Core::Format(_T("[%03d] [%p] %.30s %s [%d]"), counter, entry.address, entry.module.c_str(), entry.function.c_str(), entry.line)));
+                SYSLOG(Logging::Crash, (Core::Format(_T("[%03d] [%p] %.30s %s [%d]"), counter, entry.address, entry.module.c_str(), entry.function.c_str(), entry.line)));
             }
             else {
-                SYSLOG_GLOBAL(Logging::Crash, (Core::Format(_T("[%03d] [%p] %.30s %s"), counter, entry.address, entry.module.c_str(), entry.function.c_str())));
+                SYSLOG(Logging::Crash, (Core::Format(_T("[%03d] [%p] %.30s %s"), counter, entry.address, entry.module.c_str(), entry.function.c_str())));
             }
             counter++;
         }
@@ -76,11 +76,11 @@ namespace Logging {
             std::ifstream fileStream(path);
             
             if (fileStream.is_open()) {
-                SYSLOG_GLOBAL(Logging::Crash, (_T("-== %s ==-\n"), path.c_str()));
+                SYSLOG(Logging::Crash, (_T("-== %s ==-\n"), path.c_str()));
                 std::string line;
                 
                 while (std::getline(fileStream, line)) {
-                    SYSLOG_GLOBAL(Logging::Crash, (line));
+                    SYSLOG(Logging::Crash, (line));
                 }
             }
         };
