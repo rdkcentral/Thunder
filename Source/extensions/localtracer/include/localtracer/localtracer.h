@@ -137,11 +137,13 @@ namespace Messaging {
             , _path(path)
             , _worker(*this)
             , _client(MessageSettings::Instance().Identifier(), MessageSettings::Instance().BasePath(), MessageSettings::Instance().SocketPort())
-            , _factory()
+            , _tracingFactory()
+            , _loggingFactory()
             , _callback(nullptr)
         {
             _client.AddInstance(0);
-            _client.AddFactory(Core::Messaging::Metadata::type::TRACING, &_factory);
+            _client.AddFactory(Core::Messaging::Metadata::type::TRACING, &_tracingFactory);
+            _client.AddFactory(Core::Messaging::Metadata::type::LOGGING, &_loggingFactory);
 
             _worker.Start();
 
@@ -164,8 +166,8 @@ namespace Messaging {
         void Dispatch()
         {
             _client.WaitForUpdates(Core::infinite);
-            _client.PopMessagesAndCall([this](const Core::Messaging::Metadata& metadata, const Core::ProxyType<Core::Messaging::IEvent>& message) {
-                Message(metadata, message->Data());
+            _client.PopMessagesAndCall([this](const Core::ProxyType<Core::Messaging::MessageInfo>& metadata, const Core::ProxyType<Core::Messaging::IEvent>& message) {
+                Message(*metadata, message->Data());
             });
         }
 
@@ -179,7 +181,7 @@ namespace Messaging {
         }
 
     private:
-        void Message(const Core::Messaging::Metadata& metadata, const string& message)
+        void Message(const Core::Messaging::MessageInfo& metadata, const string& message)
         {
             Core::SafeSyncType<Core::CriticalSection> scopedLock(_adminLock);
 
@@ -194,7 +196,8 @@ namespace Messaging {
 
         WorkerThread _worker;
         MessageClient _client;
-        TraceFactory _factory;
+        TraceFactoryType<Core::Messaging::IStore::Tracing, Messaging::TextMessage> _tracingFactory;
+        TraceFactoryType<Core::Messaging::IStore::Logging, Messaging::TextMessage> _loggingFactory;
 
         ICallback* _callback;
     };
