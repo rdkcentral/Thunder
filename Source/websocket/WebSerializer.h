@@ -301,17 +301,17 @@ namespace Web {
 
     template <typename JSONOBJECT>
     class JSONBodyType : public JSONOBJECT, public IBody {
-    private:
-        typedef JSONBodyType<JSONOBJECT> ThisClass;
-
     public:
+        JSONBodyType(JSONBodyType<JSONOBJECT>&&) = delete;
         JSONBodyType(const JSONBodyType<JSONOBJECT>&) = delete;
+        JSONBodyType<JSONOBJECT>& operator=(JSONBodyType<JSONOBJECT>&&) = delete;
         JSONBodyType<JSONOBJECT>& operator=(const JSONBodyType<JSONOBJECT>&) = delete;
 
         JSONBodyType()
             : JSONOBJECT()
             , _lastPosition(0)
             , _offset(0)
+            , _error()
         {
         }
         ~JSONBodyType() override = default;
@@ -320,13 +320,16 @@ namespace Web {
         inline JSONBodyType<JSONOBJECT>& operator=(const JSONOBJECT& RHS)
         {
             JSONOBJECT::operator=(RHS);
-
             return (*this);
         }
-        inline void Clear()
+        void Clear() override
         {
+            // Before we clear this, 
             JSONOBJECT::Clear();
             _offset = 0;
+        }
+        const Core::OptionalType<Core::JSON::Error>& Report() const {
+            return (_error);
         }
 
     protected:
@@ -335,6 +338,8 @@ namespace Web {
             _lastPosition = 0;
             _body.clear();
 
+            // We need to transfer this to a string as we need to send the length 
+            // upfront (in the headers)
             JSONOBJECT::ToString(_body);
 
             if (_body.length() <= 2) {
@@ -345,6 +350,7 @@ namespace Web {
         }
         uint32_t Deserialize() override
         {
+            _error.Clear();
             return (static_cast<uint32_t>(~0));
         }
         uint16_t Serialize(uint8_t stream[], const uint16_t maxLength) const override
@@ -359,7 +365,7 @@ namespace Web {
         }
         uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength) override
         {
-            return static_cast<Core::JSON::IElement&>(*this).Deserialize(reinterpret_cast<const char*>(stream), maxLength, _offset);
+            return static_cast<Core::JSON::IElement&>(*this).Deserialize(reinterpret_cast<const char*>(stream), maxLength, _offset, _error);
         }
         void End() const override
         {
@@ -369,6 +375,7 @@ namespace Web {
         mutable uint32_t _lastPosition;
         mutable string _body;
         uint32_t _offset;
+        Core::OptionalType<Core::JSON::Error> _error;
     };
 
     template <typename JSONOBJECT, typename HASHALGORITHM>
@@ -423,5 +430,40 @@ namespace Web {
     private:
         HashType _hash;
     };
+
+    namespace JSONRPC {
+
+        class Body : public JSONBodyType<Core::JSONRPC::Message> {
+        public:
+            Body(Body&&) = delete;
+            Body(const Body&) = delete;
+            Body& operator= (Body&&) = delete;
+            Body& operator= (const Body&) = delete;
+
+            Body() = default;
+            ~Body() override = default;
+
+        public:
+            void Clear() override {
+                // If by an error this gets cleared, at least remember the Id, if it was set...
+                if (Core::JSONRPC::Message::Id.IsSet() == true) {
+                    _id = Core::JSONRPC::Message::Id.Value();
+                }
+                JSONBodyType<Core::JSONRPC::Message>::Clear();
+            }
+            uint32_t Deserialize() override
+            {
+                _id.Clear();
+                return (JSONBodyType<Core::JSONRPC::Message>::Deserialize());
+            }
+            const Core::OptionalType<uint32_t>& Recorded() const {
+                return (_id);
+            }
+
+        private:
+            Core::OptionalType<uint32_t> _id;
+        };
+
+    }
 }
 }

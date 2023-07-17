@@ -18,6 +18,9 @@
  */
 
 #include "MessageStore.h"
+#include "Proxy.h"
+#include "Sync.h"
+#include "Frame.h"
 
 namespace WPEFramework {
 
@@ -198,6 +201,26 @@ namespace Core {
             return (length);
         }
 
+        string MessageInfo::ToString(const abbreviate abbreviate) const
+        {
+            string result;
+            const Core::Time now(TimeStamp());
+            string time;
+
+            if (abbreviate == abbreviate::ABBREVIATED) {
+                time = now.ToTimeOnly(true);
+            }
+            else {
+                time = now.ToRFC1123(true);
+            }
+            result = Core::Format("[%s]:[%s]:[%s]: ",
+                    time.c_str(),
+                    Module().c_str(),
+                    Category().c_str());
+
+            return (result);
+        }
+
         uint16_t IStore::Tracing::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
             uint16_t length = MessageInfo::Serialize(buffer, bufferSize);
@@ -242,6 +265,98 @@ namespace Core {
             }
 
             return (length);
+        }
+
+        string IStore::Tracing::ToString(const abbreviate abbreviate) const
+        {
+            string result;
+            const Core::Time now(TimeStamp());
+
+            if (abbreviate == abbreviate::ABBREVIATED) {
+                const string time(now.ToTimeOnly(true));
+                result = Core::Format("[%s]:[%s]:[%s]: ",
+                        time.c_str(),
+                        Module().c_str(),
+                        Category().c_str());
+            }
+            else {
+                const string time(now.ToRFC1123(true));
+                result = Core::Format("[%s]:[%s]:[%s:%u]:[%s]:[%s]: ",
+                        time.c_str(),
+                        Module().c_str(),
+                        Core::FileNameOnly(FileName().c_str()),
+                        LineNumber(),
+                        ClassName().c_str(),
+                        Category().c_str());
+            }
+
+            return (result);
+        }
+
+        uint16_t IStore::WarningReporting::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
+        {
+            uint16_t length = MessageInfo::Serialize(buffer, bufferSize);
+
+            if (length != 0) {
+                const uint16_t extra = static_cast<uint16_t>(_callsign.size() + 1);
+
+                ASSERT(bufferSize >= (length + extra));
+
+                if (bufferSize >= (length + extra)) {
+                    Core::FrameType<0> frame(const_cast<uint8_t*>(buffer) + length, bufferSize - length, bufferSize - length);
+                    Core::FrameType<0>::Writer frameWriter(frame, 0);
+                    frameWriter.NullTerminatedText(_callsign);
+                    length += extra;
+                }
+                else {
+                    length = 0;
+                }
+            }
+
+            return (length);
+        }
+
+        uint16_t IStore::WarningReporting::Deserialize(const uint8_t buffer[], const uint16_t bufferSize)
+        {
+            uint16_t length = MessageInfo::Deserialize(buffer, bufferSize);
+
+            ASSERT(length <= bufferSize);
+
+            if ((length <= bufferSize) && (length != 0)) {
+                Core::FrameType<0> frame(const_cast<uint8_t*>(buffer) + length, bufferSize - length, bufferSize - length);
+                Core::FrameType<0>::Reader frameReader(frame, 0);
+                _callsign = frameReader.NullTerminatedText();
+                length += static_cast<uint16_t>(_callsign.size() + 1);
+            }
+            else {
+                length = 0;
+            }
+
+            return (length);
+        }
+
+        string IStore::WarningReporting::ToString(const abbreviate abbreviate) const
+        {
+            string result;
+            const Core::Time now(TimeStamp());
+
+            if (abbreviate == abbreviate::ABBREVIATED) {
+                const string time(now.ToTimeOnly(true));
+                result = Core::Format("[%s]:[%s]:[%s]: ",
+                        time.c_str(),
+                        Module().c_str(),
+                        Category().c_str());
+            }
+            else {
+                const string time(now.ToRFC1123(true));
+                result = Core::Format("[%s]:[%s]:[%s]:[%s]: ",
+                        time.c_str(),
+                        Module().c_str(),
+                        Callsign().c_str(),
+                        Category().c_str());
+            }
+
+            return (result);
         }
 
         /* static */ void IControl::Announce(IControl* control)

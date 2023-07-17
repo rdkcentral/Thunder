@@ -227,10 +227,6 @@ POP_WARNING()
 
             Messaging::MessageUnit::Instance().Close();
 
-#ifdef __CORE_WARNING_REPORTING__
-            WarningReporting::WarningReportingUnit::Instance().Close();
-#endif
-
 #ifndef __WINDOWS__
             if (_background) {
                 syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " closing all created singletons.");
@@ -362,25 +358,25 @@ POP_WARNING()
                         LoadPlugins(file.Name(), config);
                     }
                 } else if (file.Open(true) == false) {
-                    SYSLOG_GLOBAL(Logging::Startup, (_T("Plugin config file [%s] could not be opened."), file.Name().c_str()));
+                    SYSLOG(Logging::Startup, (_T("Plugin config file [%s] could not be opened."), file.Name().c_str()));
                 } else {
                     Plugin::Config pluginConfig;
                     Core::OptionalType<Core::JSON::Error> error;
                     pluginConfig.IElement::FromFile(file, error);
                     if (error.IsSet() == true) {
-                        SYSLOG_GLOBAL(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                        SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
                     }
                     file.Close();
 
                     if ((pluginConfig.ClassName.Value().empty() == true) || (pluginConfig.Locator.Value().empty() == true)) {
-                        SYSLOG_GLOBAL(Logging::Startup, (_T("Plugin config file [%s] does not contain classname or locator."), file.Name().c_str()));
+                        SYSLOG(Logging::Startup, (_T("Plugin config file [%s] does not contain classname or locator."), file.Name().c_str()));
                     } else {
                         if (pluginConfig.Callsign.Value().empty() == true) {
                             pluginConfig.Callsign = Core::File::FileName(file.FileName());
                         }
 
                         if (config.Add(pluginConfig) == false) {
-                            SYSLOG_GLOBAL(Logging::Startup, (_T("Plugin config file [%s] can not be reconfigured."), file.Name().c_str()));
+                            SYSLOG(Logging::Startup, (_T("Plugin config file [%s] can not be reconfigured."), file.Name().c_str()));
                         }
                     }
                 }
@@ -395,9 +391,9 @@ POP_WARNING()
 
         if (observer.WaitForCompletion(AdapterObserver::WaitTime) == Core::ERROR_NONE) {
             observer.Up();
-            SYSLOG_GLOBAL(Logging::Startup, (string(_T("Interface [lo], fully functional"))));
+            SYSLOG(Logging::Startup, (string(_T("Interface [lo], fully functional"))));
         } else {
-            SYSLOG_GLOBAL(Logging::Startup, (string(_T("Interface [lo], partly functional (no name resolving)"))));
+            SYSLOG(Logging::Startup, (string(_T("Interface [lo], partly functional (no name resolving)"))));
         }
     }
 #endif
@@ -502,7 +498,7 @@ POP_WARNING()
             _config = new Config(configFile, _background, error);
 
             if (error.IsSet() == true) {
-                SYSLOG_GLOBAL(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
                 delete _config;
                 _config = nullptr;
             }
@@ -601,24 +597,49 @@ POP_WARNING()
             }
             
 #ifdef __CORE_WARNING_REPORTING__
-            if (WarningReporting::WarningReportingUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE) {
-                SYSLOG_GLOBAL(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable issue reporting functionality!")));
-            }
+            class GlobalConfig : public Core::JSON::Container {
+            public:
+                class ReportingSettings : public Core::JSON::Container {
+                public:
+                    ReportingSettings()
+                        : Core::JSON::Container()
+                        , Settings()
+                    {
+                        Add("settings", &Settings);
+                    }
 
-            WarningReporting::WarningReportingUnit::Instance().Defaults(_config->WarningReportingCategories());
+                public:
+                    Core::JSON::String Settings;
+                };
+
+            public:
+                GlobalConfig()
+                    : Core::JSON::Container()
+                    , WarningReporting()
+                {
+                    Add("reporting", &WarningReporting);
+                }
+
+             public:
+                ReportingSettings WarningReporting;
+            } gc;
+
+            gc.FromString(_config->MessagingCategories());
+
+            WarningReporting::WarningReportingUnit::Instance().Defaults(gc.WarningReporting.Settings.Value());
 #endif
 
-            SYSLOG_GLOBAL(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
-            SYSLOG_GLOBAL(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
-            SYSLOG_GLOBAL(Logging::Startup, (_T("Process Id:    %d"), Core::ProcessInfo().Id()));
-            SYSLOG_GLOBAL(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
-            SYSLOG_GLOBAL(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
-            SYSLOG_GLOBAL(Logging::Startup, (_T("Version:       %d:%d:%d"), PluginHost::Major, PluginHost::Minor, PluginHost::Minor));
-            SYSLOG_GLOBAL(Logging::Startup, (_T("Messages:        %s"), messagingSettings.c_str()));
+            SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
+            SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
+            SYSLOG(Logging::Startup, (_T("Process Id:    %d"), Core::ProcessInfo().Id()));
+            SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
+            SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
+            SYSLOG(Logging::Startup, (_T("Version:       %d:%d:%d"), PluginHost::Major, PluginHost::Minor, PluginHost::Minor));
+            SYSLOG(Logging::Startup, (_T("Messages:        %s"), messagingSettings.c_str()));
 
             // Before we do any translation of IP, make sure we have the right network info...
             if (_config->IPv6() == false) {
-                SYSLOG_GLOBAL(Logging::Startup, (_T("Forcing the network to IPv4 only.")));
+                SYSLOG(Logging::Startup, (_T("Forcing the network to IPv4 only.")));
                 Core::NodeId::ClearIPV6Enabled();
             }
 
@@ -633,14 +654,14 @@ POP_WARNING()
             // Startup/load/initialize what we found in the configuration.
             _dispatcher = new PluginHost::Server(*_config, _background);
 
-            SYSLOG_GLOBAL(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " actively listening.")));
+            SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " actively listening.")));
 
             // If we have handlers open up the gates to analyze...
             _dispatcher->Open();
 
             string id = GetDeviceId(_dispatcher);
             if (id.empty() == false) {
-                SYSLOG_GLOBAL(Logging::Startup, (_T("SystemId:      %s"), id.c_str()));
+                SYSLOG(Logging::Startup, (_T("SystemId:      %s"), id.c_str()));
             }
 
 #ifndef __WINDOWS__

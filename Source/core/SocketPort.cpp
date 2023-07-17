@@ -395,6 +395,8 @@ namespace WPEFramework {
                 TRACE_L1("Error on preparing the port for communication. Error %d", __ERRORRESULT__);
             }
             else {
+                localAddress.Extension(remoteNode.Extension());
+
                 m_LocalNode = localAddress;
 
                 BufferAlignment(m_Socket);

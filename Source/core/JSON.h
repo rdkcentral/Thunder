@@ -493,7 +493,7 @@ namespace Core {
                 , _default(Value)
             {
             }
-            NumberType(NumberType<TYPE, SIGNED, BASETYPE>&& move)
+            NumberType(NumberType<TYPE, SIGNED, BASETYPE>&& move) noexcept
                 : _set(std::move(move._set))
                 , _value(std::move(move._value))
                 , _default(std::move(move._default))
@@ -1306,7 +1306,7 @@ namespace Core {
             {
             }
 
-            Boolean(Boolean&& move)
+            Boolean(Boolean&& move) noexcept
                 : _value(std::move(move._value))
             {
             }
@@ -1318,7 +1318,7 @@ namespace Core {
 
             ~Boolean() override = default;
 
-            Boolean& operator=(Boolean&& move)
+            Boolean& operator=(Boolean&& move) noexcept
             {
                 // Do not overwrite the default, if not set...copy if set
                 _value = (move._value & (SetBit | ValueBit)) | ((move._value & (SetBit)) ? (move._value & DefaultBit) : (_value & DefaultBit));
@@ -1501,7 +1501,7 @@ namespace Core {
         class EXTERNAL String : public IElement, public IMessagePack {
         private:
             static constexpr uint16_t FlagMask = 0xFC00;
-            static constexpr uint16_t EscapeFoundBit = 0x0400;
+            static constexpr uint16_t QuotedAreaBit = 0x0400;
             static constexpr uint16_t SpecialSequenceBit = 0x0800;
             static constexpr uint16_t QuotedSerializeBit = 0x1000;
             static constexpr uint16_t QuoteFoundBit = 0x2000;
@@ -1551,7 +1551,7 @@ namespace Core {
             }
 #endif // __CORE_NO_WCHAR_SUPPORT__
 
-            String(String&& move)
+            String(String&& move) noexcept
                 : _default(std::move(move._default))
                 , _value(std::move(move._value))
                 , _storage(std::move(move._storage))
@@ -1595,7 +1595,7 @@ namespace Core {
             }
 #endif // __CORE_NO_WCHAR_SUPPORT__
 
-            String& operator=(String&& move)
+            String& operator=(String&& move) noexcept
             {
                 _default = std::move(move._default);
                 _value = std::move(move._value);
@@ -1744,7 +1744,7 @@ namespace Core {
                             stream[result++] = '\"';
                         }
                         offset = 1;
-                        _flagsAndCounters &= (FlagMask ^ (SpecialSequenceBit|EscapeFoundBit));
+                        _flagsAndCounters &= (FlagMask ^ (SpecialSequenceBit| QuotedAreaBit));
                     }
 
                     uint32_t length = static_cast<uint32_t>(_value.length()) - (offset - 1);
@@ -1869,7 +1869,7 @@ namespace Core {
 
                 if (offset == 0) {
                     _value.clear();
-                    _flagsAndCounters &= (FlagMask ^ (SpecialSequenceBit|EscapeFoundBit|QuoteFoundBit));
+                    _flagsAndCounters &= (FlagMask ^ (SpecialSequenceBit|QuotedAreaBit|QuoteFoundBit));
                     _storage = 0;
                     if (stream[result] == '\"') {
                         result++;
@@ -1885,40 +1885,55 @@ namespace Core {
 
                     // What are we deserializing a string, or an opaque JSON object!!!
                     if ((_flagsAndCounters & QuoteFoundBit) == 0) {
-                        // It's an opaque structure, so *no* decoding required. Leave as is !
-                        if (current == '{') {
-                            if (InScope(ScopeBracket::CURLY_BRACKET) == false) {
-                                error = Error{ "Opaque object nesting too deep" };
+
+                        if ((_flagsAndCounters & QuotedAreaBit) == 0) {
+                            // It's an opaque structure, so *no* decoding required. Leave as is !
+                            if (current == '{') {
+                                if (InScope(ScopeBracket::CURLY_BRACKET) == false) {
+                                    error = Error{ "Opaque object nesting too deep" };
+                                }
                             }
-                        }
-                        else if (current == '[') {
-                            if (InScope(ScopeBracket::SQUARE_BRACKET) == false) {
-                                error = Error{ "Opaque object nesting too deep" };
+                            else if (current == '[') {
+                                if (InScope(ScopeBracket::SQUARE_BRACKET) == false) {
+                                    error = Error{ "Opaque object nesting too deep" };
+                                }
                             }
-                        }
-                        else if ((_flagsAndCounters & 0x1F) == 0) {
-                            // If we did not open an object, the only thing we allow are whitespaces as they can
-                            // always be dropped!
-                            finished = (((_flagsAndCounters & EscapeFoundBit) == 0) && ((current == ',') || (current == '}') || (current == ']') || (current == '\0')));
-                        }
-                        else if (current == '}') {
-                            if (OutScope(ScopeBracket::CURLY_BRACKET) == false) {
-                                error = Error{ "Expected \"]\" but got \"}\" in opaque object" };
+                            else if ((_flagsAndCounters & 0x1F) == 0) {
+                                // We are not in a nested area, see what 
+                                finished = ((current == ',') || (current == '}') || (current == ']') || (current == '\0') || (!_value.empty() && ::isspace(current)));
                             }
-                        }
-                        else if (current == ']') {
-                            if (OutScope(ScopeBracket::SQUARE_BRACKET) == false) {
-                                error = Error{ "Expected \"}\" but got \"]\" in opaque object" };
+                            else if (current == '}') {
+                                if (OutScope(ScopeBracket::CURLY_BRACKET) == false) {
+                                    error = Error{ "Expected \"]\" but got \"}\" in opaque object" };
+                                }
+                            }
+                            else if (current == ']') {
+                                if (OutScope(ScopeBracket::SQUARE_BRACKET) == false) {
+                                    error = Error{ "Expected \"}\" but got \"]\" in opaque object" };
+                                }
                             }
                         }
 
                         if (finished == false) {
-                            // Write the amount we possibly can..
-                            _value += current;
+                            if ((_flagsAndCounters & QuotedAreaBit) != 0) {
+                                // Write the amount we possibly can..
+                                _value += current;
+                            }
+                            else if (::isspace(current) == false) {
+                                // If we are creating an opaque string, drop all whitespaces if possible.
+                                _value += current;
 
+                                // See if we are done, if this is the last close marker, we bail out..
+                                finished = (((_flagsAndCounters & 0x1F) == 0) && ((current == '}') || (current == ']')));
+                            }
+
+                            // We are assumed to be opaque, but all quoted string stuff is enclosed between quotes
+                            // and should be considered for scope counting.
+                            // Check if we are entering or leaving a quoted area in the opaque object
                             if ((current == '\"') && ((_value.empty() == true) || (_value[_value.length() - 1] != '\\'))) {
-                                // Oke we are going to enetr a Serialized thingy... lets be opaque from here on
-                                _flagsAndCounters ^= EscapeFoundBit;
+                                // This is not an "escaped" quote, so it should be considered a real quote. It means
+                                // we are now entering or leaving a quoted area within the opaque struct...
+                                _flagsAndCounters ^= QuotedAreaBit;
                             }
 
                             result++;
@@ -1930,13 +1945,13 @@ namespace Core {
                         if (current == '\\') {
                             // And we need to start it.
                             _flagsAndCounters |= SpecialSequenceBit;
-                        }
-                        else if (current == '\"') {
+                        } else if (current == '\"') {
                             // We are done! leave this element.
                             finished = true;
-                        }
-                        else {
-                            // Just copy, we and onto the next;
+                        } else if (current >= 0x0 && current <= 0x1F) {
+                            error = Error{ "Unescaped control character detected" };
+                        } else {
+                            // Just copy and onto the next;
                             _value += current;
                         }
                         result++;
@@ -2174,7 +2189,7 @@ namespace Core {
             {
             }
 
-            Buffer(Buffer&& move)
+            Buffer(Buffer&& move) noexcept
                 : _state(std::move(move._state))
                 , _lastStuff(std::move(move._lastStuff))
                 , _index(std::move(move._index))
@@ -2194,7 +2209,11 @@ namespace Core {
                 , _buffer(reinterpret_cast<uint8_t*>(::malloc(_maxLength)))
             {
                 ASSERT(_length <= _maxLength);
-                ::memcpy(_buffer, copy._buffer, _length);
+                ASSERT(_buffer != nullptr);
+
+                if (_buffer != nullptr) {
+                    ::memcpy(_buffer, copy._buffer, _length);
+                }
             }
 
            ~Buffer() override
@@ -2204,7 +2223,7 @@ namespace Core {
                 }
             }
 
-            Buffer& operator= (Buffer&& move) {
+            Buffer& operator= (Buffer&& move) noexcept {
                 _state = std::move(move._state);
                 _lastStuff = std::move(move._lastStuff);
                 _index = std::move(move._index);
@@ -2226,7 +2245,11 @@ namespace Core {
                 _buffer = reinterpret_cast<uint8_t*>(::malloc(_maxLength));
 
                 ASSERT(_length <= _maxLength);
-                ::memcpy(_buffer, copy._buffer, _length);
+                ASSERT(_buffer != nullptr);
+
+                if (_buffer != nullptr) {
+                    ::memcpy(_buffer, copy._buffer, _length);
+                }
 
                 return (*this);
             }
@@ -2555,7 +2578,7 @@ namespace Core {
             {
             }
 
-            EnumType(EnumType<ENUMERATE>&& move)
+            EnumType(EnumType<ENUMERATE>&& move) noexcept
                 : _state(std::move(move._state))
                 , _value(std::move(move._value))
                 , _default(std::move(move._default))
@@ -2897,7 +2920,7 @@ namespace Core {
                 {
                 }
 
-                IteratorType(IteratorType<ARRAYELEMENT>&& move)
+                IteratorType(IteratorType<ARRAYELEMENT>&& move) noexcept
                     : _container(std::move(move._container))
                     , _iterator(std::move(move._iterator))
                     , _state(std::move(move._state))
@@ -2913,7 +2936,7 @@ namespace Core {
 
                 ~IteratorType() = default;
 
-                IteratorType<ARRAYELEMENT>& operator=(IteratorType<ARRAYELEMENT>&& move)
+                IteratorType<ARRAYELEMENT>& operator=(IteratorType<ARRAYELEMENT>&& move) noexcept
                 {
                     _container = std::move(move._container);
                     _iterator = std::move(move._iterator);
@@ -3021,7 +3044,7 @@ namespace Core {
             {
             }
 
-            ArrayType(ArrayType<ELEMENT>&& move)
+            ArrayType(ArrayType<ELEMENT>&& move) noexcept
                 : _state(std::move(move._state))
                 , _count(std::move(move._count))
                 , _data(std::move(move._data))
@@ -3419,7 +3442,8 @@ namespace Core {
         private:
             enum modus : uint8_t {
                 ERROR = 0x80,
-                UNDEFINED = 0x40
+                UNDEFINED = 0x40,
+                COMPLETE = 0x20
             };
 
             static constexpr uint16_t FIND_MARKER = 0;
@@ -3519,6 +3543,9 @@ namespace Core {
             ~Container() override = default;
 
         public:
+            bool IsComplete() const {
+                return ( (_state & modus::COMPLETE) != 0);
+            }
             bool HasLabel(const string& label) const
             {
                 JSONElementList::const_iterator index(_data.begin());
@@ -3557,6 +3584,7 @@ namespace Core {
                     index->second->Clear();
                     index++;
                 }
+                _state = 0;
             }
 
             void Add(const TCHAR label[], IElement* element)
@@ -3683,6 +3711,7 @@ namespace Core {
                                     error = Error{ "Expected value, \"}\" found." };
                                 }
                                 offset = FIND_MARKER;
+                                _state |= modus::COMPLETE;
                                 loaded++;
                                 break;
                             case ',':
@@ -3763,6 +3792,9 @@ namespace Core {
                             skip = SKIP_AFTER_KEY;
                         } else {
                             loaded += _current.json->Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
+                            // It could be that the field name was used, as we are not interested in this field, if so,
+                            // do not forget to reset the field name..
+                            _fieldName.Clear();
                         }
                         offset = (offset == FIND_MARKER ? skip : offset + PARSE);
                     }
@@ -4070,7 +4102,7 @@ namespace Core {
                 String::operator=(text);
             }
 
-            Variant(Variant&& move)
+            Variant(Variant&& move) noexcept
                 : JSON::String(std::move(move))
                 , _type(std::move(move._type))
             {
@@ -4086,7 +4118,7 @@ namespace Core {
 
             ~Variant() override = default;
 
-            Variant& operator=(Variant&& move)
+            Variant& operator=(Variant&& move) noexcept
             {
                 JSON::String::operator=(std::move(move));
                 _type = std::move(move._type);
@@ -4329,7 +4361,7 @@ namespace Core {
                 {
                 }
 
-                Iterator(Iterator&& move)
+                Iterator(Iterator&& move) noexcept
                     : _container(std::move(move._container))
                     , _index(std::move(move._index))
                     , _start(std::move(move._start))
@@ -4351,7 +4383,7 @@ namespace Core {
 
                 ~Iterator() = default;
 
-                Iterator& operator=(Iterator&& move)
+                Iterator& operator=(Iterator&& move) noexcept
                 {
                     _container = std::move(move._container);
                     _index = std::move(move._index);
@@ -4435,7 +4467,7 @@ namespace Core {
                 Container::FromString(serialized);
             }
 
-            VariantContainer(VariantContainer&& move)
+            VariantContainer(VariantContainer&& move) noexcept
                 : Container()
                 , _elements(std::move(move._elements))
             {
@@ -4468,10 +4500,10 @@ namespace Core {
                 Elements::const_iterator index(values.begin());
 
                 while (index != values.end()) {
-                    Elements::iterator index = _elements.emplace(std::piecewise_construct,
+                    Elements::iterator loop = _elements.emplace(std::piecewise_construct,
                         std::forward_as_tuple(index->first),
                         std::forward_as_tuple(index->second)).first;
-                    Container::Add(index->first.c_str(), &(index->second));
+                    Container::Add(loop->first.c_str(), &(loop->second));
                     index++;
                 }
             }

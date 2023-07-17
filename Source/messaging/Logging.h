@@ -102,17 +102,6 @@ namespace Logging {
     } while(false)
 
 #define SYSLOG_GLOBAL(CATEGORY, PARAMETERS)                                                                                                       \
-    do {                                                                                                                                          \
-        static_assert(std::is_base_of<WPEFramework::Logging::BaseLoggingType<CATEGORY>, CATEGORY>::value, "SYSLOG() only for Logging controls");  \
-        if (CATEGORY::IsEnabled() == true) {                                                                                                      \
-            CATEGORY __data__ PARAMETERS;                                                                                                         \
-            WPEFramework::Core::Messaging::MessageInfo __info__(                                                                                  \
-                CATEGORY::Metadata(),                                                                                                             \
-                WPEFramework::Core::Time::Now().Ticks()                                                                                           \
-            );                                                                                                                                    \
-            WPEFramework::Core::Messaging::IStore::Logging __log__(__info__);                                                                     \
-            WPEFramework::Messaging::TextMessage __message__(__data__.Data());                                                                    \
-            WPEFramework::Messaging::MessageUnit::Instance().Push(__log__, &__message__);                                                         \
-        }                                                                                                                                         \
-    } while(false)
+    DEPRECATED                                                                                                                                    \
+    SYSLOG(CATEGORY, PARAMETERS)
 

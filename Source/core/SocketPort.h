@@ -266,7 +266,7 @@ namespace WPEFramework {
             }
 
         private:
-            virtual IResource::handle Descriptor() const override
+            IResource::handle Descriptor() const override
             {
                 return (static_cast<IResource::handle>(m_Socket));
             }
@@ -274,8 +274,8 @@ namespace WPEFramework {
             {
                 return (((m_SocketType == LISTEN) || (m_SocketType == STREAM)) ? SOCK_STREAM : ((m_SocketType == DATAGRAM) ? SOCK_DGRAM : (m_SocketType == SEQUENCED ? SOCK_SEQPACKET : SOCK_RAW)));
             }
-            virtual uint16_t Events() override;
-            virtual void Handle(const uint16_t events) override;
+            uint16_t Events() override;
+            void Handle(const uint16_t events) override;
             bool Closed();
             void Opened();
             void Accepted();
