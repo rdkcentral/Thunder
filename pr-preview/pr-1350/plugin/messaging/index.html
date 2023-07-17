@@ -723,12 +723,323 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
-        
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Messaging
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
         Messaging
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#advantages-of-using-messaging" class="md-nav__link">
+    Advantages of using messaging
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#differences-between-the-message-types" class="md-nav__link">
+    Differences between the message types
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#viewing-logs" class="md-nav__link">
+    Viewing logs
+  </a>
+  
+    <nav class="md-nav" aria-label="Viewing logs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#messagecontrol-plugin" class="md-nav__link">
+    MessageControl plugin
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#directoutput" class="md-nav__link">
+    DirectOutput
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-adjust-messaging" class="md-nav__link">
+    How to adjust messaging
+  </a>
+  
+    <nav class="md-nav" aria-label="How to adjust messaging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    Configuration
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#runtime" class="md-nav__link">
+    Runtime
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tracing" class="md-nav__link">
+    Tracing
+  </a>
+  
+    <nav class="md-nav" aria-label="Tracing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#internal-tracing-trace_lx" class="md-nav__link">
+    Internal tracing (TRACE_Lx)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#defining-custom-trace-categories" class="md-nav__link">
+    Defining custom trace categories
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logging" class="md-nav__link">
+    Logging
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#warning-reporting" class="md-nav__link">
+    Warning Reporting
+  </a>
+  
+    <nav class="md-nav" aria-label="Warning Reporting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#macros" class="md-nav__link">
+    Macros
+  </a>
+  
+    <nav class="md-nav" aria-label="Macros">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#report_warning" class="md-nav__link">
+    REPORT_WARNING
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#report_outofbounds_warning" class="md-nav__link">
+    REPORT_OUTOFBOUNDS_WARNING
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#report_outofbounds_warning_ex" class="md-nav__link">
+    REPORT_OUTOFBOUNDS_WARNING_EX
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#report_duration_warning" class="md-nav__link">
+    REPORT_DURATION_WARNING
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-warning-reporting-category" class="md-nav__link">
+    Creating a warning reporting category
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#messagecontrol-plugin_1" class="md-nav__link">
+    MessageControl plugin
+  </a>
+  
+    <nav class="md-nav" aria-label="MessageControl plugin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#content-of-the-message" class="md-nav__link">
+    Content of the message
+  </a>
+  
+    <nav class="md-nav" aria-label="Content of the message">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#categories-of-each-message-type" class="md-nav__link">
+    Categories of each message type
+  </a>
+  
+    <nav class="md-nav" aria-label="Categories of each message type">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tracing-default-categories" class="md-nav__link">
+    Tracing default categories
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logging-categories" class="md-nav__link">
+    Logging categories
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#warning-reporting-default-categories" class="md-nav__link">
+    Warning reporting default categories
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#internals-from-a-macro-to-an-output" class="md-nav__link">
+    Internals - from a macro to an output
+  </a>
+  
+    <nav class="md-nav" aria-label="Internals - from a macro to an output">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#warning-reportings-differences" class="md-nav__link">
+    Warning Reporting's differences
+  </a>
+  
+    <nav class="md-nav" aria-label="Warning Reporting's differences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#analyze" class="md-nav__link">
+    Analyze()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#warning-reporting-proxy" class="md-nav__link">
+    Warning Reporting proxy
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#messageunitpush" class="md-nav__link">
+    MessageUnit::Push()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#messageclientpopmessagesandcall" class="md-nav__link">
+    MessageClient::PopMessagesAndCall()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#details-of-output-configuration" class="md-nav__link">
+    Details of output configuration
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#convert-the-final-step" class="md-nav__link">
+    Convert() - the final step
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1429,8 +1740,305 @@
   
   
   
-    
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#advantages-of-using-messaging" class="md-nav__link">
+    Advantages of using messaging
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#differences-between-the-message-types" class="md-nav__link">
+    Differences between the message types
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#viewing-logs" class="md-nav__link">
+    Viewing logs
+  </a>
+  
+    <nav class="md-nav" aria-label="Viewing logs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#messagecontrol-plugin" class="md-nav__link">
+    MessageControl plugin
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#directoutput" class="md-nav__link">
+    DirectOutput
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-adjust-messaging" class="md-nav__link">
+    How to adjust messaging
+  </a>
+  
+    <nav class="md-nav" aria-label="How to adjust messaging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    Configuration
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#runtime" class="md-nav__link">
+    Runtime
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tracing" class="md-nav__link">
+    Tracing
+  </a>
+  
+    <nav class="md-nav" aria-label="Tracing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#internal-tracing-trace_lx" class="md-nav__link">
+    Internal tracing (TRACE_Lx)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#defining-custom-trace-categories" class="md-nav__link">
+    Defining custom trace categories
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logging" class="md-nav__link">
+    Logging
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#warning-reporting" class="md-nav__link">
+    Warning Reporting
+  </a>
+  
+    <nav class="md-nav" aria-label="Warning Reporting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#macros" class="md-nav__link">
+    Macros
+  </a>
+  
+    <nav class="md-nav" aria-label="Macros">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#report_warning" class="md-nav__link">
+    REPORT_WARNING
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#report_outofbounds_warning" class="md-nav__link">
+    REPORT_OUTOFBOUNDS_WARNING
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#report_outofbounds_warning_ex" class="md-nav__link">
+    REPORT_OUTOFBOUNDS_WARNING_EX
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#report_duration_warning" class="md-nav__link">
+    REPORT_DURATION_WARNING
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-warning-reporting-category" class="md-nav__link">
+    Creating a warning reporting category
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#messagecontrol-plugin_1" class="md-nav__link">
+    MessageControl plugin
+  </a>
+  
+    <nav class="md-nav" aria-label="MessageControl plugin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#content-of-the-message" class="md-nav__link">
+    Content of the message
+  </a>
+  
+    <nav class="md-nav" aria-label="Content of the message">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#categories-of-each-message-type" class="md-nav__link">
+    Categories of each message type
+  </a>
+  
+    <nav class="md-nav" aria-label="Categories of each message type">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tracing-default-categories" class="md-nav__link">
+    Tracing default categories
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logging-categories" class="md-nav__link">
+    Logging categories
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#warning-reporting-default-categories" class="md-nav__link">
+    Warning reporting default categories
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#internals-from-a-macro-to-an-output" class="md-nav__link">
+    Internals - from a macro to an output
+  </a>
+  
+    <nav class="md-nav" aria-label="Internals - from a macro to an output">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#warning-reportings-differences" class="md-nav__link">
+    Warning Reporting's differences
+  </a>
+  
+    <nav class="md-nav" aria-label="Warning Reporting's differences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#analyze" class="md-nav__link">
+    Analyze()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#warning-reporting-proxy" class="md-nav__link">
+    Warning Reporting proxy
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#messageunitpush" class="md-nav__link">
+    MessageUnit::Push()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#messageclientpopmessagesandcall" class="md-nav__link">
+    MessageClient::PopMessagesAndCall()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#details-of-output-configuration" class="md-nav__link">
+    Details of output configuration
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#convert-the-final-step" class="md-nav__link">
+    Convert() - the final step
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1448,26 +2056,32 @@
   
 
 
+  <h1>Messaging</h1>
+
 <p>In the past, prior to the R3 version of Thunder, logging, tracing and warning reporting were completely separate issues and were handled individually. However, even though these message types have distinct characteristics, we recognized the advantages of consolidating them into a unified framework, which is now referred to as <code>Messaging</code>. In the early versions of R3, we still had tracing enabled by default and messaging was in the early development. It is the R4 version of Thunder where <code>Messaging</code> is finally the default framework to handle all types of messages.</p>
-<h1 id="advantages-of-using-messaging">Advantages of using messaging</h1>
+<h2 id="advantages-of-using-messaging">Advantages of using messaging</h2>
 <p>There are of course several advantages of using this framework to deliver the messages over simply using something like <code>printf</code>:</p>
 <ul>
 <li>There are not only different types of messages, but also categories within these types, and each of them can be enabled/disabled at runtime</li>
 <li>No serialization penalty between different processes</li>
 <li>Always getting full lines one after another since all messages are timestamped</li>
-<li>Possibility of redirecting the messages to another output like, e.g., a console, syslog, a file or a network stream, which is particularly useful in the case of containers, and this is something we are working towards</li>
-<li>In the near future, <em>standard out</em> and <em>standard error</em> will also be redirectable</li>
+<li>It is possible to redirect the messages to another output like, e.g., a console, syslog, a file or a network stream (in time to come, this will be particularly useful in the case of containers, and this is something we are working towards)</li>
+<li>In the near future, <em>standard out</em> and <em>standard error</em> will also be redirectable (also something that is in development)</li>
 </ul>
 <p>We are convinced that <code>Messaging</code> is much better suited for the development, and with some recent changes which will be described in the following sections, it is fully operational and enabled by default. We strongly believe that it is a good time to shed some more light on that functionality, since it is simple to use and yet very effective.</p>
-<h1 id="differences-between-the-message-types">Differences between the message types</h1>
+<h2 id="differences-between-the-message-types">Differences between the message types</h2>
 <p>Logging, tracing and warning reporting are important techniques often used in software development to gather information and provide insight into the behavior of an application. However, there are some fundamental differences between them within Thunder, in a nutshell:</p>
 <ul>
 <li>Tracing is meant for the developers and is dropped in production</li>
 <li>Logging is not dropped in production and is used to indicate information vital to the user</li>
 <li>Warning Reporting is only available if Thunder is compiled with the <code>WARNING_REPORTING</code> option and sends warnings only if a condition is met</li>
 </ul>
-<h1 id="viewing-logs">Viewing logs</h1>
-<h2 id="messagecontrol-plugin">MessageControl plugin</h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In <code>Production</code>, so when building with the <code>Min_Size_Rel</code> flag, the <code>TRACE</code> and <code>TRACE_GLOBAL</code> macros are declared empty and there is no way to enable tracing. This version of Thunder is meant to be used only by operators who want the smallest footprint on memory possible. In both <code>Debug</code> and <code>Release</code> versions, tracing is enabled. <code>Debug</code> is used by the developers, so all macros are enabled and it has no code optimization at all, whereas <code>Release</code> is used by most of our operators and the QA team - asserts off and some code optimization.</p>
+</div>
+<h2 id="viewing-logs">Viewing logs</h2>
+<h3 id="messagecontrol-plugin">MessageControl plugin</h3>
 <p>The <code>MessageControl</code> plugin not only consolidates all of the various message types but also offers the flexibility to redirect these messages to different outputs. These outputs include the Console, Syslog, a file, or even a Network Stream through UDP. This can be configured by assigning appropriate values to JSON objects in the configuration file located in <code>/etc/WPEFramework/plugins/MessageControl.json</code>. These object's names can be found in the constructor of the <code>Config</code> class in <code>ThunderNanoServicesRDK/MessageControl/MessageControl.h</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="n">Config</span><span class="p">()</span>
 <span class="w">    </span><span class="o">:</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">JSON</span><span class="o">::</span><span class="n">Container</span><span class="p">()</span>
@@ -1498,7 +2112,7 @@
 <p class="admonition-title">Note</p>
 <p>Even though by default no output is set to either true or false in this config file, the plugin will output the messages to a console or syslog depending on whether Thunder is running in the background or not.</p>
 </div>
-<h2 id="directoutput">DirectOutput</h2>
+<h3 id="directoutput">DirectOutput</h3>
 <p>It is important to note that when the <code>MessageControl</code> plugin is not actively running or in scenarios where it is disabled, there is an option to directly print messages onto the console using the <code>DirectOutput()</code> method. This allows for immediate display of messages on the console without going through the buffering process.  In such a situation, the <code>Output()</code> method of the <code>DirectOutput</code> class is used. Furthermore, the <code>DirectOutput</code> class can be configured using the <code>Mode()</code> method to send the messages to the system logger instead of simply printing them on the console.</p>
 <div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">DirectOutput::Output</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Messaging</span><span class="o">::</span><span class="n">MessageInfo</span><span class="o">&amp;</span><span class="w"> </span><span class="n">messageInfo</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Messaging</span><span class="o">::</span><span class="n">IEvent</span><span class="o">*</span><span class="w"> </span><span class="n">message</span><span class="p">)</span><span class="w"> </span><span class="k">const</span>
 <span class="p">{</span>
@@ -1520,9 +2134,9 @@
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<h1 id="how-to-adjust-messaging">How to adjust messaging</h1>
-<h2 id="configuration">Configuration</h2>
-<p>The config file can be used to enable/disable the default messaging categories used for logging, tracing and warning reporting.</p>
+<h2 id="how-to-adjust-messaging">How to adjust messaging</h2>
+<h3 id="configuration">Configuration</h3>
+<p>The main config file (<code>/etc/WPEFramework/config.json</code>) can be used to enable/disable the default messaging categories used for logging, tracing and warning reporting.</p>
 <p>Messages are split into 3 types: logging, tracing and warning reporting. Each type has a list of categories which can be marked as enabled or disabled. There is also a similar list for tracing when it comes to enabling or disabling certain modules (e.g. plugins). By default, all categories are enabled for logging and warning reporting, but in terms of tracing, if a category or a module is not present in the config, it will be disabled.</p>
 <p>Below is an example of the messaging section in the config:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
@@ -1614,9 +2228,29 @@
 <p class="admonition-title">Note</p>
 <p>Warning Reporting is only available if Thunder is compiled with the <code>WARNING_REPORTING</code> option.</p>
 </div>
-<h2 id="runtime">Runtime</h2>
-<p>It is also possible to use the <code>MessageControl</code> plugin to edit the configuration values at runtime. At the moment it is possible to enable/disable any category at runtime, either globally for logging and warning reporting, or individually per plugin for the tracing messages.</p>
-<h1 id="tracing">Tracing</h1>
+<h3 id="runtime">Runtime</h3>
+<p>It is also possible to use the <code>MessageControl</code> plugin to edit the configuration values at runtime. At the moment, it is possible to enable/disable any category at runtime, either globally for logging and warning reporting, or individually per plugin for the tracing messages. This can be achieve by either using the ThunderUI or doing a simple JSON-RPC call. In the example below, there is a request to enable traces from the <code>Information</code> category in the <code>BluetoothControl</code> plugin.</p>
+<p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MessageControl.1.enable&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tracing&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Information&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;module&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Plugin_BluetoothControl&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2b05.svg" title=":arrow_left:" /> Response</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="tracing">Tracing</h2>
 <p>First, let us briefly discuss the part responsible for the tracing. In theory, tracing is the process of monitoring the flow of a request through an application. It is used to identify performance bottlenecks and understand the interactions between different components of a distributed system. A trace typically consists of a series of events, each of which corresponds to a particular stage in the processing of a request. Tracing provides a much broader and more continuous perspective of the application compared to logging. The goal of tracing is to track the flow and evolution of data within a program so that we can be proactive instead of just reactive and increase overall performance.</p>
 <div class="highlight"><pre><span></span><code><span class="n">TRACE</span><span class="p">(</span><span class="n">Trace</span><span class="o">::</span><span class="n">Information</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;Not an A2DP audio sink device!&quot;</span><span class="p">)));</span>
 
@@ -1648,7 +2282,7 @@
 <span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">while</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span>
 </code></pre></div>
 <p>In the code fragment above, you can observe the internal structure of the macro. While more detailed explanations will be provided in subsequent paragraphs, let us cover the general process briefly. Firstly, we need to verify if the corresponding category is enabled. If it is, we proceed to create metadata for the message and send it alongside the message itself to the plugin, which will be discussed in greater detail in the plugin section.</p>
-<h2 id="internal-tracing-trace_lx">Internal tracing (TRACE_Lx)</h2>
+<h3 id="internal-tracing-trace_lx">Internal tracing (TRACE_Lx)</h3>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>TRACE_Lx macros should only be used by the framework for low-level debug messages and not by plugins.</p>
@@ -1656,7 +2290,7 @@
 <div class="highlight"><pre><span></span><code><span class="n">TRACE_L1</span><span class="p">(</span><span class="s">&quot;Failed to load library: %s, error %s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">filename</span><span class="p">,</span><span class="w"> </span><span class="n">_error</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 </code></pre></div>
 <p>On a side note, if you browse the Thunder code, you may come across another macro called <code>TRACE_L1</code>. You might wonder how it differs from the previously mentioned macros. To understand its purpose, it is important to know that tracing is disabled in certain layers of Thunder. This is necessary because <code>Messaging</code> relies on both <code>COM</code> and <code>Core</code>, and we surely want to avoid circular dependencies. As a result, <code>TRACE_L1</code> is restricted to lower layers only. Within the framework, you can utilize it in <code>Core</code> and <code>Messaging</code>, but it should not be used in <code>COM</code>. Moreover, once you reach a certain point, refrain from using <code>TRACE_L1</code> altogether, and instead use the <code>TRACE</code> macro.</p>
-<h2 id="defining-custom-trace-categories">Defining custom trace categories</h2>
+<h3 id="defining-custom-trace-categories">Defining custom trace categories</h3>
 <p>Furthermore, Thunder allows to create customized categories within plugins by simply creating classes that handle message formatting, which is pretty straightforward and you can find plenty examples of this across many plugins that all look very similar to one another. Here is an example which comes from the <code>AVS</code> plugin and is located in <code>ThunderNanoServices/AVS/Impl/TraceCategories.h</code>. This is a simple trace category for logs coming from the AVS plugin and implementation.</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AVSClient</span><span class="w"> </span><span class="p">{</span>
 <span class="k">public</span><span class="o">:</span>
@@ -1692,7 +2326,7 @@
 <span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">_text</span><span class="p">;</span>
 <span class="p">};</span>
 </code></pre></div>
-<h1 id="logging">Logging</h1>
+<h2 id="logging">Logging</h2>
 <p>Logging, on the other hand, is the process of recording events that occur during the execution of an application. These events could be error messages, warnings, or informational messages that provide details about the application’s behavior. Logging is typically used for debugging and troubleshooting purposes. The primary goal of logging is to provide a historical record of events that can be used to analyze and diagnose problems. This means that in theory, we want to save the logs for later use.</p>
 <div class="highlight"><pre><span></span><code><span class="n">SYSLOG</span><span class="p">(</span><span class="n">Logging</span><span class="o">::</span><span class="n">Startup</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;Failure in setting Key:Value:[%s]:[%s]</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">),</span><span class="w"> </span><span class="n">index</span><span class="p">.</span><span class="n">Current</span><span class="p">().</span><span class="n">Key</span><span class="p">.</span><span class="n">Value</span><span class="p">().</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="n">index</span><span class="p">.</span><span class="n">Current</span><span class="p">().</span><span class="n">Value</span><span class="p">.</span><span class="n">Value</span><span class="p">().</span><span class="n">c_str</span><span class="p">()));</span>
 </code></pre></div>
@@ -1726,19 +2360,17 @@
 </code></pre></div>
 <p>In addition, you might be wondering why we have some <code>Messaging</code> components such as <code>Metadata</code> in <code>Core</code>, and why everything is not simply inside
 <code>Source/messaging</code>. From an architectural point of view, there is a reason for this, which revolves around the need for reporting capabilities to be accessible not only in the plugins and other Thunder components, but also within <code>Core</code>, where, for instance, we would like to measure how long it takes to lock and then unlock. To accomplish this, we need some of the messaging features to be accessible in <code>Core</code>, because otherwise we would get, as you may have guessed, circular dependencies.</p>
-<h1 id="warning-reporting">Warning Reporting</h1>
+<h2 id="warning-reporting">Warning Reporting</h2>
 <p>Last but not least, it is about time to describe warning reporting. It is a crucial aspect of software systems that aims to alert developers and users about potential issues or anomalies within the system's operation. Unlike logging and tracing, which primarily focus on capturing and storing detailed information for diagnostic purposes, warning reporting specifically targets situations where certain conditions might lead to unexpected behavior or errors. While logging records events and activities to provide a comprehensive record of system activity, and tracing follows the flow of execution across different components or services, warning reporting is designed to raise flags about specific conditions that could lead to failures, performance degradation, or security vulnerabilities.</p>
 <p>By emphasizing the significance of these conditions, warning reporting enables proactive identification and resolution of potential problems, enhancing system reliability and user experience. It acts as an early detection mechanism, signaling the need for attention and potential action before the situation escalates into a critical failure or incident. Overall, warning reporting complements logging and tracing by focusing on identifying and communicating conditions that require immediate attention, facilitating effective troubleshooting and maintenance of software systems.</p>
 <div class="highlight"><pre><span></span><code><span class="n">REPORT_OUTOFBOUNDS_WARNING</span><span class="p">(</span><span class="n">WarningReporting</span><span class="o">::</span><span class="n">SinkStillHasReference</span><span class="p">,</span><span class="w"> </span><span class="n">_referenceCount</span><span class="p">);</span>
 </code></pre></div>
-<h2 id="macros">Macros</h2>
+<h3 id="macros">Macros</h3>
 <p>Within Thunder, at the moment there are four distinct macros dedicated to warning reporting, each with a slightly different use case scenario. You can find these macros inside <code>Source/core/WarningReportingControl.h</code>.</p>
-<h3 id="report_warning">REPORT_WARNING</h3>
+<h4 id="report_warning">REPORT_WARNING</h4>
 <p>The first macro <code>REPORT_WARNING</code> only requires the <code>CATEGORY</code> parameter. This macros should be used when reporting a warning without without specific values within the category. While all categories in Thunder currently utilize actual values and compare them against reporting bounds, this macro has been implemented with future use cases in mind.</p>
 <p>If someone decides to add their own simple category without reporting values, they can effortlessly make use of <code>REPORT_WARNING</code> macro. Below, there is an example of a potential macro use with a category that does not need any additional values to compare, thus the warning will always be triggered when entering this piece of code.</p>
-<div class="highlight"><pre><span></span><code><span class="n">REPORT_WARNING</span><span class="p">(</span><span class="n">WarningReporting</span><span class="o">::</span><span class="n">EnteringSuspiciousSection</span><span class="p">);</span>
-</code></pre></div>
-<h3 id="report_outofbounds_warning">REPORT_OUTOFBOUNDS_WARNING</h3>
+<h4 id="report_outofbounds_warning">REPORT_OUTOFBOUNDS_WARNING</h4>
 <p>The following macro, namely <code>REPORT_OUTOFBOUNDS_WARNING</code>, serves a different purpose compared to the macros described in the previous paragraphs. As its name suggests, this macro is utilized when we want to generate a warning only if a specific parameter value exceeds the defined reporting bound. In the example below, a warning occurs while destructing a sink which still has a reference count greater than zero.</p>
 <div class="highlight"><pre><span></span><code><span class="o">~</span><span class="n">Sink</span><span class="p">()</span>
 <span class="p">{</span>
@@ -1751,7 +2383,7 @@
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<h3 id="report_outofbounds_warning_ex">REPORT_OUTOFBOUNDS_WARNING_EX</h3>
+<h4 id="report_outofbounds_warning_ex">REPORT_OUTOFBOUNDS_WARNING_EX</h4>
 <p>The <code>REPORT_OUTOFBOUNDS_WARNING_EX</code> macro includes an additional user-provided callsign parameter. Below is an example of using the <code>REPORT_OUTOFBOUNDS_WARNING_EX</code> macro taken from <code>Source/core/WorkerPool.h</code>. Here a warning is triggered if a job has taken too long to complete (which could indicate a deadlock).</p>
 <div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">AnalyseAndReportDispatchedJobs</span><span class="p">()</span>
 <span class="p">{</span>
@@ -1767,7 +2399,7 @@
 <span class="w">    </span><span class="n">_lock</span><span class="p">.</span><span class="n">Unlock</span><span class="p">();</span>
 <span class="p">}</span>
 </code></pre></div>
-<h3 id="report_duration_warning">REPORT_DURATION_WARNING</h3>
+<h4 id="report_duration_warning">REPORT_DURATION_WARNING</h4>
 <p>The <code>REPORT_DURATION_WARNING</code> macro, as its name implies, serves the purpose of measuring the execution time of a specific code segment and generating a warning if the duration exceeds the expected threshold. In the provided code snippet, we observe a key distinction compared to the previous macros: the first parameter of the macro represents the code segment to be measured, and the timing is captured prior to invoking <code>Analyze()</code>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -1802,7 +2434,7 @@
 <span class="w">    </span><span class="n">WarningReporting</span><span class="o">::</span><span class="n">TooLongDecrypt</span>
 <span class="p">);</span>
 </code></pre></div>
-<h3 id="creating-a-warning-reporting-category">Creating a warning reporting category</h3>
+<h4 id="creating-a-warning-reporting-category">Creating a warning reporting category</h4>
 <p>Unlike the tracing and logging categories, the default warning reporting categories are not declared using macros. Instead, they are directly declared within the designated header files mentioned above.</p>
 <p>The code snippet below demonstrates the simplicity of creating a custom warning reporting category. If an additional <code>Analyze()</code> method is not necessary, it is sufficient to declare the <code>Serialize()</code> and <code>Deserialize()</code> methods to return <code>0</code>. However, attention must be given to the implementation of the <code>ToString()</code> method, along with the variables <code>DefaultWarningBound</code> and <code>DefaultReportBound</code>.</p>
 <div class="admonition note">
@@ -1837,11 +2469,11 @@
 <span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">DefaultReportBound</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="p">};</span>
 <span class="p">};</span>
 </code></pre></div>
-<h1 id="messagecontrol-plugin_1">MessageControl plugin</h1>
+<h2 id="messagecontrol-plugin_1">MessageControl plugin</h2>
 <p>Now that we have explored the concepts of logging, tracing, and warning reporting in theory and their implementation within Thunder, we can delve into the significance of the <code>MessageControl</code> plugin. This plugin plays a vital role as it manages all message types seamlessly. In the subsequent sections, we will provide a more detailed explanation of how the plugin operates and the specific steps it undertakes.</p>
-<h2 id="content-of-the-message">Content of the message</h2>
+<h3 id="content-of-the-message">Content of the message</h3>
 <p>Before examining the workings of the plugin, it is crucial to provide a brief overview of the components that make up a message, as they directly impact the message processing. A message consists of three main parameters: module, category, and the actual content of the message. Understanding these parameters is essential for effective message handling.</p>
-<h3 id="categories-of-each-message-type">Categories of each message type</h3>
+<h4 id="categories-of-each-message-type">Categories of each message type</h4>
 <p>When it comes to tracing, the module parameter represents the name of the plugin responsible for sending the message, for example <code>Plugin_Cobalt</code>. </p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -1852,33 +2484,17 @@
 <span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">MODULE_REPORTING</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;Reporting&quot;</span><span class="p">);</span>
 </code></pre></div>
 <p>Choosing the appropriate category is vital when working with macros. The category can be described as a class that either formats the message string or best represents the nature of the message. While it is possible to create custom categories, which will be explained in the following paragraph, it is generally recommended to utilize the predefined categories available in Thunder to avoid redundancy.</p>
-<h4 id="tracing-default-categories">Tracing default categories</h4>
+<h5 id="tracing-default-categories">Tracing default categories</h5>
 <p>Thunder already offers several default categories for tracing:</p>
 <ul>
-<li>
-<p>Text</p>
-</li>
-<li>
-<p>Initialization</p>
-</li>
-<li>
-<p>Information</p>
-</li>
-<li>
-<p>Warning</p>
-</li>
-<li>
-<p>Error</p>
-</li>
-<li>
-<p>Fatal</p>
-</li>
-<li>
-<p>Constructor</p>
-</li>
-<li>
-<p>Destructor</p>
-</li>
+<li>Text</li>
+<li>Initialization</li>
+<li>Information</li>
+<li>Warning</li>
+<li>Error</li>
+<li>Fatal</li>
+<li>Constructor</li>
+<li>Destructor</li>
 <li>CopyConstructor</li>
 <li>AssignmentOperator</li>
 <li>MethodEntry</li>
@@ -1889,30 +2505,16 @@
 <div class="highlight"><pre><span></span><code><span class="n">DEFINE_MESSAGING_CATEGORY</span><span class="p">(</span><span class="n">Messaging</span><span class="o">::</span><span class="n">BaseCategoryType</span><span class="o">&lt;</span><span class="n">Core</span><span class="o">::</span><span class="n">Messaging</span><span class="o">::</span><span class="n">Metadata</span><span class="o">::</span><span class="n">type</span><span class="o">::</span><span class="n">TRACING</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">Text</span><span class="p">);</span>
 </code></pre></div>
 <p>As you can see in the code, these classes inherit from a templated class called <code>BaseCategoryType</code>. The association of these categories with tracing is established by passing the <code>TRACING</code> metadata type as a template parameter.</p>
-<h4 id="logging-categories">Logging categories</h4>
+<h5 id="logging-categories">Logging categories</h5>
 <p>Similarly, logging includes several categories, such as:</p>
 <ul>
-<li>
-<p>Startup</p>
-</li>
-<li>
-<p>Shutdown</p>
-</li>
-<li>
-<p>Notification</p>
-</li>
-<li>
-<p>Error</p>
-</li>
-<li>
-<p>ParsingError</p>
-</li>
-<li>
-<p>Fatal</p>
-</li>
-<li>
-<p>Crash</p>
-</li>
+<li>Startup</li>
+<li>Shutdown</li>
+<li>Notification</li>
+<li>Error</li>
+<li>ParsingError</li>
+<li>Fatal</li>
+<li>Crash</li>
 </ul>
 <p>These logging categories are created using the <code>DEFINE_LOGGING_CATEGORY</code> macro defined in <code>Thunder/Source/messaging/LoggingCategories.h</code>. The process of establishing these categories is slightly more complex and involves the utilization of the mentioned macro.</p>
 <div class="highlight"><pre><span></span><code><span class="cp">#define DEFINE_LOGGING_CATEGORY(CATEGORY)</span>
@@ -1921,7 +2523,7 @@
 <span class="w">    </span><span class="n">EXTERNAL</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="p">...</span><span class="n">BaseLoggingType</span><span class="o">&lt;</span><span class="n">CATEGORY</span><span class="o">&gt;::</span><span class="n">Control</span><span class="w"> </span><span class="p">...</span><span class="n">BaseLoggingType</span><span class="o">&lt;</span><span class="n">CATEGORY</span><span class="o">&gt;::</span><span class="n">_control</span><span class="p">;</span>
 </code></pre></div>
 <p>The <code>DEFINE_LOGGING_CATEGORY</code> macro functions by invoking the <code>DEFINE_MESSAGING_CATEGORY</code> macro. However, in this case, the classes created inherit from the templated class <code>BaseLoggingType</code>. The definition of this class can be found directly above the macro definition. Notably, the <code>BaseLoggingType</code> class itself inherits from the <code>BaseCategoryType</code> class, with the <code>LOGGING</code> metadata type passed as a template parameter.</p>
-<h4 id="warning-reporting-default-categories">Warning reporting default categories</h4>
+<h5 id="warning-reporting-default-categories">Warning reporting default categories</h5>
 <p>Last but not least, the warning reporting categories in Thunder can be found in either <code>Source/WPEFramework/WarningReportingCategories.h</code> or <code>Source/core/WarningReportingCategories.h</code>. These categories, located within the <code>WPEFramework::WarningReporting</code> namespace, include:</p>
 <ul>
 <li>TooLongWaitingForLock</li>
@@ -1934,7 +2536,7 @@
 <li>TooLongPluginState</li>
 <li>TooLongInvokeMessage</li>
 </ul>
-<h2 id="internals-from-a-macro-to-an-output">Internals - from a macro to an output</h2>
+<h3 id="internals-from-a-macro-to-an-output">Internals - from a macro to an output</h3>
 <p>Now, let us delve into how the MessageControl plugin manages the messages from logging, tracing, and warning reporting. To begin, it is best to revisit the macros discussed earlier. When handling tracing and logging messages, the first step involves checking whether the corresponding category is enabled. Subsequently, both tracing and logging macros create an object of the <code>CATEGORY</code> class, which encapsulates the actual contents of the message provided as <code>PARAMETERS</code> within the macro. This enables the convenient storage and processing of the message content.</p>
 <div class="highlight"><pre><span></span><code><span class="cp">#define TRACE_GLOBAL(CATEGORY, PARAMETERS)</span>
 <span class="w">    </span><span class="k">do</span><span class="w"> </span><span class="p">{</span>
@@ -1958,7 +2560,7 @@
 </code></pre></div>
 <p>In tracing, you may recall that the module name indicates the originating plugin from which the traces emerged. To obtain the module name for tracing purposes, the <code>TRACE_CONTROL</code> macro is invoked. This macro plays a crucial role in capturing the module name associated with the trace. </p>
 <p>Next, an object of <code>MessageInfo</code> class is created that stores the metadata and time of the message. This provides essential information for further handling and analysis of the message. Then, the last and the most complex part of the message is built, and it is slightly different for tracing, logging and warning reporting. File, line and a name of a class or a function for global trace version are passed as the members of the <code>Tracing</code> class. On the other hand, there are no additional data like this for logging, and for warning reporting there is only a callsign.</p>
-<h3 id="warning-reportings-differences">Warning Reporting's differences</h3>
+<h4 id="warning-reportings-differences">Warning Reporting's differences</h4>
 <p>The initial section is identical across all macros, including warning reporting, tracing, and logging. However, the approach to creating a message differs for warning reporting messages. To provide a clearer understanding, let us examine an example code snippet. Please note that for improved readability, the majority of the namespace has been intentionally omitted.</p>
 <div class="highlight"><pre><span></span><code><span class="cp">#define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...)</span>
 <span class="w">    </span><span class="k">if</span><span class="p">(...</span><span class="n">WarningReportingType</span><span class="o">&lt;</span><span class="p">...</span><span class="n">WarningReportingBoundsCategory</span><span class="o">&lt;</span><span class="n">CATEGORY</span><span class="o">&gt;&gt;::</span><span class="n">IsEnabled</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
@@ -1970,7 +2572,7 @@
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 </code></pre></div>
-<h4 id="analyze">Analyze()</h4>
+<h5 id="analyze">Analyze()</h5>
 <p>The macro begins by verifying if the corresponding category is enabled. In the provided code snippets, we can observe that if the category is enabled, an object is created, and the <code>Analyze()</code> method is invoked. This represents the primary distinction between the warning reporting macros and those used for tracing and logging.</p>
 <div class="highlight"><pre><span></span><code><span class="n">templatec</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="p">...</span><span class="w"> </span><span class="n">Args</span><span class="o">&gt;</span>
 <span class="kt">bool</span><span class="w"> </span><span class="n">Analyze</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">moduleName</span><span class="p">[],</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">identifier</span><span class="p">[],</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">actualValue</span><span class="p">,</span><span class="w"> </span><span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span><span class="w"> </span><span class="n">args</span><span class="p">)</span>
@@ -1984,7 +2586,7 @@
 <span class="p">}</span>
 </code></pre></div>
 <p>In the code above, we can notice that the main job of this method is to check whether the <code>actualValue</code> reported by the macro exceeds the <code>_reportingBound</code> set by the user.  If the condition is met, then the <code>CallAnalyze()</code> method is called, which will invoke an <code>Analyze()</code> method specific to the warning reporting category. However, if the category does not have such a method, then <code>CallAnalyze()</code> simply returns <code>true</code>. In such fashion, we can easily check additional conditions necessary for a warning to trigger.</p>
-<h4 id="warning-reporting-proxy">Warning Reporting proxy</h4>
+<h5 id="warning-reporting-proxy">Warning Reporting proxy</h5>
 <p>Moving forward, the next step involves sending the message to a proxy called <code>WarningReportingUnit</code>. This distinction highlights one of the key differences between warning reporting and other message types. Since warning reporting can be used in <code>Core</code>, on which <code>messaging</code> depends, it necessitated the creation of a proxy to enable the use of warning reporting macros in <code>Core</code> while still routing the messages to <code>MessageUnit</code> located in <code>Source/messaging</code>. This entire process is accomplished through the utilization of the <code>ReportWarningEvent()</code> method:</p>
 <div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">WarningReportingUnit::ReportWarningEvent</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">identifier</span><span class="p">[],</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">IWarningEvent</span><span class="o">&amp;</span><span class="w"> </span><span class="n">information</span><span class="p">)</span>
 <span class="p">{</span><span class="w">        </span>
@@ -2002,7 +2604,7 @@
 </code></pre></div>
 <p>The code above is very similar to the one that can be found directly in tracing and logging macros, but for warning reporting the functionality of sending messages through the <code>Push()</code> method of <code>MessageUnit</code> has to be outside of <code>Core</code>.</p>
 <p>In tracing and logging macros, the user directly enters the message as a macro parameter. However, this differs for warning reporting. As shown in the provided code snippet, the actual message content is obtained from the <code>ToString()</code> method. This method needs to be implemented in each warning reporting category class and should return a desired string to be printed when a warning occurs.</p>
-<h3 id="messageunitpush">MessageUnit::Push()</h3>
+<h4 id="messageunitpush">MessageUnit::Push()</h4>
 <p>In addition to the part of the macros where the messages are formed, the crucial part to which we want to pay extra attention is this line of code:</p>
 <div class="highlight"><pre><span></span><code><span class="n">WPEFramework</span><span class="o">::</span><span class="n">Messaging</span><span class="o">::</span><span class="n">MessageUnit</span><span class="o">::</span><span class="n">Instance</span><span class="p">().</span><span class="n">Push</span><span class="p">(</span><span class="n">__trace__</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">__message__</span><span class="p">);</span>
 </code></pre></div>
@@ -2037,7 +2639,7 @@
 <span class="w">    </span><span class="p">}</span>
 </code></pre></div>
 <p>When the <code>MessageControl</code> plugin is used, each message is buffered and added to a queue. The ultimate destination of these messages depends on the specific configuration settings applied to the plugin. The code segment above is responsible for pushing messages of any type and their associated metadata to the buffer.</p>
-<h3 id="messageclientpopmessagesandcall">MessageClient::PopMessagesAndCall()</h3>
+<h4 id="messageclientpopmessagesandcall">MessageClient::PopMessagesAndCall()</h4>
 <div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">MessageHandler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">Core</span><span class="o">::</span><span class="n">Messaging</span><span class="o">::</span><span class="n">MessageInfo</span><span class="o">&gt;&amp;</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">Core</span><span class="o">::</span><span class="n">Messaging</span><span class="o">::</span><span class="n">IEvent</span><span class="o">&gt;&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="p">;</span>
 
 <span class="kt">void</span><span class="w"> </span><span class="nf">MessageClient::PopMessagesAndCall</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">MessageHandler</span><span class="o">&amp;</span><span class="w"> </span><span class="n">handler</span><span class="p">)</span>
@@ -2117,7 +2719,7 @@
 <span class="w">    </span><span class="n">_outputLock</span><span class="p">.</span><span class="n">Unlock</span><span class="p">();</span>
 <span class="p">}</span>
 </code></pre></div>
-<h3 id="details-of-output-configuration">Details of output configuration</h3>
+<h4 id="details-of-output-configuration">Details of output configuration</h4>
 <p>Let us take a closer look at how outputs are configured and how this configuration can be modified. The configuration is generated as a JSON file, where specific JSON values correspond to the actual objects in the code. The association between an object and its corresponding JSON value is established within the constructor of the <code>Config</code> class in <code>ThunderNanoServicesRDK/MessageControl/MessageControl.h</code> utilizing the <code>Add()</code> method. This connection ensures that the configuration values in the JSON file are correctly linked to the corresponding objects in the code. However, to understand the configuration process in more detail, it is important to examine the <code>Initialize()</code> method in <code>MessageControl/MessageControl.cpp</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">service</span><span class="o">-&gt;</span><span class="n">Background</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(((</span><span class="n">_config</span><span class="p">.</span><span class="n">SysLog</span><span class="p">.</span><span class="n">IsSet</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(</span><span class="n">_config</span><span class="p">.</span><span class="n">Console</span><span class="p">.</span><span class="n">IsSet</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">false</span><span class="p">))</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">_config</span><span class="p">.</span><span class="n">Console</span><span class="p">.</span><span class="n">Value</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">true</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">Announce</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Publishers</span><span class="o">::</span><span class="n">ConsoleOutput</span><span class="p">(</span><span class="n">abbreviate</span><span class="p">));</span>
@@ -2162,7 +2764,7 @@
 <span class="p">};</span>
 </code></pre></div>
 <p>If you have noticed the connection between the <code>ConsoleOutput</code> and <code>IPublish</code> structures, you are absolutely correct. Within the <code>ThunderNanoServicesRDK/MessageControl/MessageOutput.h</code> file, you will find the <code>IPublish</code> structure along with several classes that inherit from it, including the <code>ConsoleOutput</code> class. The base structure <code>IPublish</code> has a virtual destructor, so that we can ensure that an instance of a derived class will not be potentially deleted through a pointer to the base class. In addition, it also has a virtual method <code>Message()</code> that is overridden in each of the derived classes.</p>
-<h3 id="convert-the-final-step">Convert() - the final step</h3>
+<h4 id="convert-the-final-step">Convert() - the final step</h4>
 <div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">ConsoleOutput::Message</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Messaging</span><span class="o">::</span><span class="n">MessageInfo</span><span class="o">&amp;</span><span class="w"> </span><span class="n">metadata</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="cm">/* override */</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">_convertor</span><span class="p">.</span><span class="n">Convert</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">);</span>
