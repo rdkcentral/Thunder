@@ -83,6 +83,11 @@ if boolean('@MESSAGING@'):
        "enabled" : True
       }
   
+  __warningReporting = {
+       "category" : "TooLongWaitingForLock",
+       "enabled" : True
+      }
+
   __logging_settings = []
   __logging_settings.append(__notification)
   
@@ -99,3 +104,12 @@ if boolean('@MESSAGING@'):
   __tracing.add("settings", __tracing_settings)
   
   messaging.add("tracing", __tracing)
+
+  __reporting_settings = []
+  __reporting_settings.append(__warningReporting)
+
+  __reporting = JSON()
+  __reporting.add("abbreviated", True)
+  __reporting.add("settings", __reporting_settings)
+
+  messaging.add("reporting", __reporting)
