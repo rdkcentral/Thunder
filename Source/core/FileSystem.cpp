@@ -370,7 +370,7 @@ namespace Core {
         GET_FILEEX_INFO_LEVELS infoLevelId = GetFileExInfoStandard;
 
         if (GetFileAttributesEx(_name.c_str(), infoLevelId, &data) != FALSE) {
-            result = (data.dwFileAttributes & FILE_DIRECTORY) != 0;
+            result = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
         }
 #endif
 

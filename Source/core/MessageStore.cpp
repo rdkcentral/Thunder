@@ -59,13 +59,14 @@ namespace WPEFramework {
 
                 _adminLock.Lock();
 
-                ASSERT(std::find(_controlList.begin(), _controlList.end(), control) != _controlList.end());
+                if (_controlList.size() > 0) {
+                    ASSERT(std::find(_controlList.begin(), _controlList.end(), control) != _controlList.end());
 
-                auto entry = std::find(_controlList.begin(), _controlList.end(), control);
-                if (entry != _controlList.end()) {
-                    _controlList.erase(entry);
+                    auto entry = std::find(_controlList.begin(), _controlList.end(), control);
+                    if (entry != _controlList.end()) {
+                        _controlList.erase(entry);
+                    }
                 }
-
                 _adminLock.Unlock();
             }
 
