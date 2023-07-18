@@ -116,7 +116,7 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rdkcentral.github.com/Thunder/plugin/logging/</loc>
+         <loc>https://rdkcentral.github.com/Thunder/plugin/messaging/</loc>
          <lastmod>2023-07-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -142,11 +142,6 @@
     </url>
     <url>
          <loc>https://rdkcentral.github.com/Thunder/plugin/versioning/</loc>
-         <lastmod>2023-07-18</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://rdkcentral.github.com/Thunder/plugin/warning-reporting/</loc>
          <lastmod>2023-07-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
