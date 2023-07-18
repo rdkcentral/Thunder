@@ -1168,7 +1168,7 @@ namespace PluginHost {
 
                         if (masterNode.Type() != Core::NodeId::enumType::TYPE_DOMAIN) {
                             // It's not a path name, just take the same address but with a different port
-                            static uint32_t nextPortId = 1;
+                            static uint32_t nextPortId = 0;
 
                             result = Core::NodeId(masterNode);
                             result.PortNumber(masterNode.PortNumber() + static_cast<uint8_t>(Core::InterlockedIncrement(nextPortId) & 0xFF));
@@ -1177,8 +1177,9 @@ namespace PluginHost {
                             // Its a domain socket, move the callsign in between and make that path part..
                             string pathName = Core::Directory::Normalize(Core::File::PathName(masterNode.HostName())) + plugin.Callsign.Value();
                             string fullName = pathName + '/' + Core::File::FileName(masterNode.HostName());
-                
-                            if (Core::Directory(pathName.c_str()).Create() == true) {
+
+                            Core::Directory base(pathName.c_str());
+                            if ((base.Exists() == true) || (base.Create() == true)) {
                                 result = Core::NodeId(fullName.c_str(), Core::NodeId::enumType::TYPE_DOMAIN);
                             }
                         }
