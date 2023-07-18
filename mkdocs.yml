@@ -30,9 +30,7 @@ nav:
     - Configuration: plugin/config.md
     - Error Handling: plugin/errors.md
     - Versioning: plugin/versioning.md
-    - Logging:
-      - Logging & Tracing: plugin/logging.md
-      - Warning Reporting: plugin/warning-reporting.md
+    - Messaging: plugin/messaging.md
     - Subsystems: plugin/subsystems.md
     - ProxyPool: plugin/proxypool.md
     - Private COM-RPC : plugin/private-comrpc.md
