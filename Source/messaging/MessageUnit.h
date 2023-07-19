@@ -624,7 +624,7 @@ namespace WPEFramework {
                     _channel.Open(Core::infinite);
                 }
                 ~Client() {
-                    _channel.Close(Core::infinite);
+                    _channel.Close(100);
                 }
 
             public:
