@@ -769,7 +769,7 @@ namespace Core {
 
     struct EXTERNAL IUnknown : public IReferenceCounted  {
 
-        enum {
+        enum : uint32_t {
             ID_OFFSET_INTERNAL  = 0x00000000,
             ID_OFFSET_PUBLIC    = 0x00000040,
             ID_OFFSET_CUSTOM    = 0x80000000

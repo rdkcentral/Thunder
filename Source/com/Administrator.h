@@ -197,7 +197,7 @@ namespace RPC {
             return (_factory.Element());
         }
 
-        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies);
+        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, Proxies& pendingProxies);
 
         template <typename ACTUALINTERFACE>
         ACTUALINTERFACE* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& impl)
