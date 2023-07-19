@@ -239,6 +239,64 @@ void TestPlugin::Unregister(IStateControl::INotification* notification)
 }
 ```
 
+## Hibernate
+!!! note
+    `Hibernated` state is not avaible by default. To enable it proper option must be switch on while building Thunder.
+
+Hibernate is a state where plugin is not running and will not respond to requests. Memory of the plugin is flushed to disk and released. When a plugin goes into `Suspended` state it slows down the CPU usage but it still occupies memory. Hibernate allows memory recovery of plugins that are not currently in use. This can come in handy when there is very little available and we need to be careful not to use it all. As the memory must first be written to and then read from disk, this increases the recovery time of the plugin.
+
+ To put plugin in `Hibernated` state two conditions must be met:
+
+* Plugin must be `Activated`
+* Plugin must be `Suspended`
+
+Fulfilment of these two conditions allows the **Controller** to save the contents of the plugin memory to disk and release it for further use by the system. To `Hibernate` plugin `Hibernate()` function needs to be called. For every process (parent and children) `HibernateProcess()` is called.
+```cpp
+uint32_t HibernateProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], void** storage)
+{
+    assert(*storage == NULL);
+    CheckpointMetaData* metaData = (CheckpointMetaData*) malloc(sizeof(CheckpointMetaData));
+    assert(metaData);
+
+    metaData->pid = pid;
+
+    *storage = (void*)(metaData);
+
+    return HIBERNATE_ERROR_NONE;
+}
+```
+Hibernation is made for the main process and all its child processes.
+If unsuccessful, the plugin will remain in the `Suspended` state. In case of success, `HIBERNATE_ERROR_NONE` is returned.
+
+### Resuming Plugin
+To resume plugin `Wakeup()` needs to be called. **Controller** will read the flushed memory from the disk and make the plugin running and responding to requests again. For every process (parent and children) `WakeupProcess()` is called.
+
+```cpp
+uint32_t WakeupProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], void** storage)
+{
+    assert(*storage != NULL);
+    CheckpointMetaData* metaData = (CheckpointMetaData*)(*storage);
+    assert(metaData->pid == pid);
+
+    free(metaData);
+    *storage = NULL;
+
+    return HIBERNATE_ERROR_NONE;
+}
+```
+
+In case of success, similar to `HibernateProcess()`, `HIBERNATE_ERROR_NONE` is returned
+
+### Enabling Hibernate
+To enable hibernate you need to build Thunder with `cmake` option `HIBERNATE_CHECKPOINTLIB=ON`. You can do this with this command:
+
+```
+cmake -DHIBERNATE_CHECKPOINTLIB=ON
+```
+
+!!! warning
+	To enable `HIBERNATE_CHECKPOINTLIB`, you must have the `Memcr` library available in your project. Make sure the library is correctly installed and that CMake can find it using the find_package command.
+
 ## Unavailable Plugins
 
 If required, it is possible to move a plugin to the Unavailable state. This is a purely administrative state that behaves almost identically to the Deactivated state. The only difference is the allowed state transitions in/out of the state - it is not possible to activate an unavailable plugin without first moving it to a deactivated state.
