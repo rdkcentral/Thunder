@@ -32,7 +32,6 @@
 #include "TypeTraits.h"
 #include <unordered_set>
 #include <vector>
-#include <iostream>
 
 #ifndef __CORE_WARNING_REPORTING__
 
