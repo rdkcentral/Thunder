@@ -1976,7 +1976,8 @@
 <span class="normal">69</span>
 <span class="normal">70</span>
 <span class="normal">71</span>
-<span class="normal">72</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="nf">TestPlugin::Initialize</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">*</span><span class="w"> </span><span class="n">service</span><span class="p">)</span>
+<span class="normal">72</span>
+<span class="normal">73</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="nf">TestPlugin::Initialize</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">*</span><span class="w"> </span><span class="n">service</span><span class="p">)</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">_service</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
 <span class="w">    </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">_connectionId</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
@@ -2010,6 +2011,8 @@
 <span class="hll"><span class="w">        </span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">Unregister</span><span class="p">(</span><span class="o">&amp;</span><span class="n">_notification</span><span class="p">);</span>
 </span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">_testPlugin</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">*</span><span class="w"> </span><span class="n">connection</span><span class="p">(</span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">RemoteConnection</span><span class="p">(</span><span class="n">_connectionId</span><span class="p">));</span>
+
 <span class="w">            </span><span class="c1">// This should release the last reference and destruct the object. If not,</span>
 <span class="w">            </span><span class="c1">// there&#39;s something else holding on to it and we have a leak</span>
 <span class="w">            </span><span class="n">VARIABLE_IS_NOT_USED</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_testPlugin</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
@@ -2017,7 +2020,6 @@
 <span class="w">            </span><span class="n">_testPlugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
 
 <span class="w">            </span><span class="c1">// Shut down the out-of-process connection if still running</span>
-<span class="w">            </span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">*</span><span class="w"> </span><span class="n">connection</span><span class="p">(</span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">RemoteConnection</span><span class="p">(</span><span class="n">_connectionId</span><span class="p">));</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">connection</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">                </span><span class="n">connection</span><span class="o">-&gt;</span><span class="n">Terminate</span><span class="p">();</span>
 <span class="w">                </span><span class="n">connection</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
@@ -2035,8 +2037,8 @@
 <span class="w">    </span><span class="c1">// No additional info to report</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">string</span><span class="p">();</span>
 <span class="p">}</span>
-
-<span class="hll"><span class="kt">void</span><span class="w"> </span><span class="nf">TestPlugin::Deactivated</span><span class="p">(</span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">*</span><span class="w"> </span><span class="n">connection</span><span class="p">)</span>
+<span class="hll">
+</span><span class="hll"><span class="kt">void</span><span class="w"> </span><span class="nf">TestPlugin::Deactivated</span><span class="p">(</span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">*</span><span class="w"> </span><span class="n">connection</span><span class="p">)</span>
 </span><span class="hll"><span class="p">{</span>
 </span><span class="hll"><span class="w">    </span><span class="c1">// Gracefully handle an unexpected termination from the other side of the</span>
 </span><span class="hll"><span class="w">    </span><span class="c1">// connection (for example if the remote process crashed) and deactivate</span>
@@ -2047,8 +2049,8 @@
 </span><span class="hll"><span class="w">            </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">::</span><span class="n">DEACTIVATED</span><span class="p">,</span>
 </span><span class="hll"><span class="w">            </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">::</span><span class="n">FAILURE</span><span class="p">));</span>
 </span><span class="hll"><span class="w">    </span><span class="p">}</span>
-</span><span class="hll"><span class="p">}</span>
-</span></code></pre></div></td></tr></table></div>
+</span><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
 <h3 id="client-crashes">Client Crashes</h3>
 <p>If your plugin provides the ability for client applications to register for notifications, then if the client crashes the plugin should remove any notification registrations that belong to that client.</p>
 <p>Whilst this is not strictly necessary (calling a method on a dead client's notification proxy will not cause a crash), it is a good practice to avoid holding on to dead proxy objects. This ensures memory is correctly freed and you don't waste time firing notifications to dead clients.</p>
@@ -2275,7 +2277,8 @@
 <span class="normal">62</span>
 <span class="normal">63</span>
 <span class="normal">64</span>
-<span class="normal">65</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="nf">TestPlugin::Initialize</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">*</span><span class="w"> </span><span class="n">service</span><span class="p">)</span>
+<span class="normal">65</span>
+<span class="normal">66</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="nf">TestPlugin::Initialize</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">*</span><span class="w"> </span><span class="n">service</span><span class="p">)</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">_service</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
 <span class="w">    </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">_connectionId</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
@@ -2309,6 +2312,8 @@
 <span class="hll"><span class="w">        </span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">Unregister</span><span class="p">(</span><span class="o">&amp;</span><span class="n">_notification</span><span class="p">);</span>
 </span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">_testPlugin</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">*</span><span class="w"> </span><span class="n">connection</span><span class="p">(</span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">RemoteConnection</span><span class="p">(</span><span class="n">_connectionId</span><span class="p">));</span>
+
 <span class="w">            </span><span class="c1">// This should release the last reference and destruct the object. If not,</span>
 <span class="w">            </span><span class="c1">// there&#39;s something else holding on to it and we have a leak</span>
 <span class="w">            </span><span class="n">VARIABLE_IS_NOT_USED</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_testPlugin</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
@@ -2316,7 +2321,6 @@
 <span class="w">            </span><span class="n">_testPlugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
 
 <span class="w">            </span><span class="c1">// Shut down the out-of-process connection if still running</span>
-<span class="w">            </span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">*</span><span class="w"> </span><span class="n">connection</span><span class="p">(</span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">RemoteConnection</span><span class="p">(</span><span class="n">_connectionId</span><span class="p">));</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">connection</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">                </span><span class="n">connection</span><span class="o">-&gt;</span><span class="n">Terminate</span><span class="p">();</span>
 <span class="w">                </span><span class="n">connection</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
@@ -2334,13 +2338,13 @@
 <span class="w">    </span><span class="c1">// No additional info to report</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">string</span><span class="p">();</span>
 <span class="p">}</span>
-
-<span class="hll"><span class="kt">void</span><span class="w"> </span><span class="nf">TestPlugin::CallbackRevoked</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">::</span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="n">remote</span><span class="p">)</span>
+<span class="hll">
+</span><span class="hll"><span class="kt">void</span><span class="w"> </span><span class="nf">TestPlugin::CallbackRevoked</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">::</span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="n">remote</span><span class="p">)</span>
 </span><span class="hll"><span class="p">{</span>
 </span><span class="hll"><span class="w">    </span><span class="c1">// Unregister the notification</span>
 </span><span class="hll"><span class="w">    </span><span class="n">_testPlugin</span><span class="o">-&gt;</span><span class="n">Unregister</span><span class="p">(</span><span class="n">remote</span><span class="p">);</span>
-</span><span class="hll"><span class="p">}</span>
-</span></code></pre></div></td></tr></table></div>
+</span><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
 <div class="highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">TestPluginImplementation.cpp</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
 <span class="normal"> 3</span>
