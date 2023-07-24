@@ -2130,11 +2130,12 @@
 <h2 id="hibernate">Hibernate</h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p><code>Hibernated</code> state is not avaible by default. To enable it proper option must be switch on while building Thunder.</p>
+<p><code>Hibernated</code> state is not available by default. To enable it proper option must be switch on while building Thunder.</p>
 </div>
 <p>Hibernate is a state where plugin is not running and will not respond to requests. Memory of the plugin is flushed to disk and released. When a plugin goes into <code>Suspended</code> state it slows down the CPU usage but it still occupies memory. Hibernate allows memory recovery of plugins that are not currently in use. This can come in handy when there is very little available and we need to be careful not to use it all. As the memory must first be written to and then read from disk, this increases the recovery time of the plugin.</p>
-<p>To put plugin in <code>Hibernated</code> state two conditions must be met:</p>
+<p>To put plugin in <code>Hibernated</code> state three conditions must be met:</p>
 <ul>
+<li>Plugin must be running <code>Out of process</code></li>
 <li>Plugin must be <code>Activated</code></li>
 <li>Plugin must be <code>Suspended</code></li>
 </ul>
@@ -2155,7 +2156,7 @@
 Hibernation is made for the main process and all its child processes.
 If unsuccessful, the plugin will remain in the <code>Suspended</code> state. In case of success, <code>HIBERNATE_ERROR_NONE</code> is returned.</p>
 <h3 id="resuming-plugin">Resuming Plugin</h3>
-<p>To resume plugin <code>Wakeup()</code> needs to be called. <strong>Controller</strong> will read the flushed memory from the disk and make the plugin running and responding to requests again. For every process (parent and children) <code>WakeupProcess()</code> is called.</p>
+<p>To resume plugin <code>Wakeup()</code> needs to be called. It is done automatically when you invoke the <code>Activate()</code> method. <strong>Controller</strong> will read the flushed memory from the disk and make the plugin running and responding to requests again. For every process (parent and children) <code>WakeupProcess()</code> is called.</p>
 <div class="highlight"><pre><span></span><code><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">WakeupProcess</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">timeout</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">pid_t</span><span class="w"> </span><span class="n">pid</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">data_dir</span><span class="p">[],</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">volatile_dir</span><span class="p">[],</span><span class="w"> </span><span class="kt">void</span><span class="o">**</span><span class="w"> </span><span class="n">storage</span><span class="p">)</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="o">*</span><span class="n">storage</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">);</span>
@@ -2175,7 +2176,7 @@ If unsuccessful, the plugin will remain in the <code>Suspended</code> state. In 
 </code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>To enable <code>HIBERNATE_CHECKPOINTLIB</code>, you must have the <code>Memcr</code> library available in your project. Make sure the library is correctly installed and that CMake can find it using the find_package command.</p>
+<p>To enable <code>HIBERNATE_CHECKPOINTLIB</code>, you must have the <code>Memcr</code> library available in your project. <a href="https://github.com/LibertyGlobal/memcr">Link to Memcr lib</a>. Make sure the library is correctly installed and that CMake can find it using the find_package command.</p>
 </div>
 <h2 id="unavailable-plugins">Unavailable Plugins</h2>
 <p>If required, it is possible to move a plugin to the Unavailable state. This is a purely administrative state that behaves almost identically to the Deactivated state. The only difference is the allowed state transitions in/out of the state - it is not possible to activate an unavailable plugin without first moving it to a deactivated state.</p>
