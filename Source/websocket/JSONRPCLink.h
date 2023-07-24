@@ -251,7 +251,7 @@ namespace WPEFramework {
 				}
 				uint32_t Initialize()
 				{
-					return (Open(0));
+					return (Open(1000));
 				}
 				void Deinitialize()
 				{
