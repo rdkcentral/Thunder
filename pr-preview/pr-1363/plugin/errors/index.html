@@ -2037,8 +2037,8 @@
 <span class="w">    </span><span class="c1">// No additional info to report</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">string</span><span class="p">();</span>
 <span class="p">}</span>
-<span class="hll">
-</span><span class="hll"><span class="kt">void</span><span class="w"> </span><span class="nf">TestPlugin::Deactivated</span><span class="p">(</span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">*</span><span class="w"> </span><span class="n">connection</span><span class="p">)</span>
+
+<span class="hll"><span class="kt">void</span><span class="w"> </span><span class="nf">TestPlugin::Deactivated</span><span class="p">(</span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">*</span><span class="w"> </span><span class="n">connection</span><span class="p">)</span>
 </span><span class="hll"><span class="p">{</span>
 </span><span class="hll"><span class="w">    </span><span class="c1">// Gracefully handle an unexpected termination from the other side of the</span>
 </span><span class="hll"><span class="w">    </span><span class="c1">// connection (for example if the remote process crashed) and deactivate</span>
@@ -2049,8 +2049,8 @@
 </span><span class="hll"><span class="w">            </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">::</span><span class="n">DEACTIVATED</span><span class="p">,</span>
 </span><span class="hll"><span class="w">            </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">::</span><span class="n">FAILURE</span><span class="p">));</span>
 </span><span class="hll"><span class="w">    </span><span class="p">}</span>
-</span><span class="p">}</span>
-</code></pre></div></td></tr></table></div>
+</span><span class="hll"><span class="p">}</span>
+</span></code></pre></div></td></tr></table></div>
 <h3 id="client-crashes">Client Crashes</h3>
 <p>If your plugin provides the ability for client applications to register for notifications, then if the client crashes the plugin should remove any notification registrations that belong to that client.</p>
 <p>Whilst this is not strictly necessary (calling a method on a dead client's notification proxy will not cause a crash), it is a good practice to avoid holding on to dead proxy objects. This ensures memory is correctly freed and you don't waste time firing notifications to dead clients.</p>
@@ -2338,13 +2338,13 @@
 <span class="w">    </span><span class="c1">// No additional info to report</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">string</span><span class="p">();</span>
 <span class="p">}</span>
-<span class="hll">
-</span><span class="hll"><span class="kt">void</span><span class="w"> </span><span class="nf">TestPlugin::CallbackRevoked</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">::</span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="n">remote</span><span class="p">)</span>
+
+<span class="hll"><span class="kt">void</span><span class="w"> </span><span class="nf">TestPlugin::CallbackRevoked</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">::</span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="n">remote</span><span class="p">)</span>
 </span><span class="hll"><span class="p">{</span>
 </span><span class="hll"><span class="w">    </span><span class="c1">// Unregister the notification</span>
 </span><span class="hll"><span class="w">    </span><span class="n">_testPlugin</span><span class="o">-&gt;</span><span class="n">Unregister</span><span class="p">(</span><span class="n">remote</span><span class="p">);</span>
-</span><span class="p">}</span>
-</code></pre></div></td></tr></table></div>
+</span><span class="hll"><span class="p">}</span>
+</span></code></pre></div></td></tr></table></div>
 <div class="highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">TestPluginImplementation.cpp</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
 <span class="normal"> 3</span>
