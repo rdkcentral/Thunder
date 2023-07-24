@@ -215,7 +215,7 @@ private:
 ```
 
 
-```c++ linenums="1" title="TestPlugin.cpp" hl_lines="12 32 61-72"
+```c++ linenums="1" title="TestPlugin.cpp" hl_lines="12 32 62-73"
 const string TestPlugin::Initialize(PluginHost::IShell* service)
 {
     ASSERT(_service == nullptr);
@@ -386,7 +386,7 @@ private:
 };
 ```
 
-```cpp title="TestPlugin.cpp" linenums="1" hl_lines="12 32 61-65"
+```cpp title="TestPlugin.cpp" linenums="1" hl_lines="12 32 62-66"
 const string TestPlugin::Initialize(PluginHost::IShell* service)
 {
     ASSERT(_service == nullptr);
