@@ -241,12 +241,13 @@ void TestPlugin::Unregister(IStateControl::INotification* notification)
 
 ## Hibernate
 !!! note
-    `Hibernated` state is not avaible by default. To enable it proper option must be switch on while building Thunder.
+    `Hibernated` state is not available by default. To enable it proper option must be switch on while building Thunder.
 
 Hibernate is a state where plugin is not running and will not respond to requests. Memory of the plugin is flushed to disk and released. When a plugin goes into `Suspended` state it slows down the CPU usage but it still occupies memory. Hibernate allows memory recovery of plugins that are not currently in use. This can come in handy when there is very little available and we need to be careful not to use it all. As the memory must first be written to and then read from disk, this increases the recovery time of the plugin.
 
- To put plugin in `Hibernated` state two conditions must be met:
+ To put plugin in `Hibernated` state three conditions must be met:
 
+* Plugin must be running `Out of process`
 * Plugin must be `Activated`
 * Plugin must be `Suspended`
 
@@ -269,7 +270,7 @@ Hibernation is made for the main process and all its child processes.
 If unsuccessful, the plugin will remain in the `Suspended` state. In case of success, `HIBERNATE_ERROR_NONE` is returned.
 
 ### Resuming Plugin
-To resume plugin `Wakeup()` needs to be called. **Controller** will read the flushed memory from the disk and make the plugin running and responding to requests again. For every process (parent and children) `WakeupProcess()` is called.
+To resume plugin `Wakeup()` needs to be called. It is done automatically when you invoke the `Activate()` method. **Controller** will read the flushed memory from the disk and make the plugin running and responding to requests again. For every process (parent and children) `WakeupProcess()` is called.
 
 ```cpp
 uint32_t WakeupProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], void** storage)
@@ -295,7 +296,7 @@ cmake -DHIBERNATE_CHECKPOINTLIB=ON
 ```
 
 !!! warning
-	To enable `HIBERNATE_CHECKPOINTLIB`, you must have the `Memcr` library available in your project. Make sure the library is correctly installed and that CMake can find it using the find_package command.
+	To enable `HIBERNATE_CHECKPOINTLIB`, you must have the `Memcr` library available in your project. [Link to Memcr lib](https://github.com/LibertyGlobal/memcr). Make sure the library is correctly installed and that CMake can find it using the find_package command.
 
 ## Unavailable Plugins
 
