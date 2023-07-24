@@ -86,7 +86,7 @@ The returned JSON conforms to the [JSON-RPC 2.0](https://www.jsonrpc.org/) stand
 | -32603           | Internal error   | Internal JSON-RPC error.                                     |
 | -32000 to -32099 | Server error     | Reserved for implementation-defined server-errors.           |
 
-In the below example, an attempt is made in activate a non-existent plugin. The Controller plugin returns `ERROR_UNKNOWN_KEY`
+In the below example, an attempt is made to activate a non-existent plugin. The Controller plugin returns `ERROR_UNKNOWN_KEY` since to plugin exists with the given callsign.
 
 :arrow_right: Request
 
@@ -123,7 +123,7 @@ From the perspective of a plugin, there are two COM-RPC disconnection scenarios 
 
 Whilst the framework can detect unexpected COM-RPC disconnects and handle updating reference counts accordingly, there are actions that should be taken in the plugin code to ensure safety.
 
-### Out-Of-Process Disconnects
+### Out-Of-Process Disconnection
 
 !!! warning
 	It is essential that plugins implement this feature if they are expected to run out-of-process
@@ -141,20 +141,23 @@ By deactivating with the `Failure` reason, the post-mortem handler will kick in.
 
 Example:
 
-```c++ linenums="1" title="TestPlugin.h" hl_lines="3-30 60"
+```c++ linenums="1" title="TestPlugin.h" hl_lines="3-33 40 69"
 class TestPlugin : public PluginHost::IPlugin, public PluginHost::JSONRPC {
 private:
     class Notification : public RPC::IRemoteConnection::INotification {
     public:
-        Notification() = delete;
         explicit Notification(TestPlugin* parent)
             : _parent(*parent)
         {
             ASSERT(parent != nullptr);
         }
 
-        ~Notification() = default;
+        ~Notification() override = default;
+
+        Notification(Notification&&) = delete;
         Notification(const Notification&) = delete;
+        Notification& operator=(Notification&&) = delete;
+        Notification& operator=(const Notification&) = delete;
 
     public:
         void Activated(RPC::IRemoteConnection* /* connection */) override
@@ -174,11 +177,18 @@ private:
     };
 
 public:
-    TestPlugin();
-    ~TestPlugin() override;
+    TestPlugin()
+        : _connectionId(0)
+        , _service(nullptr)
+        , _testPlugin(nullptr)
+        , _notification(this)
+    {
+    }
+    ~TestPlugin() override = default;
 
-    // Do not allow copy/move constructors
+    TestPlugin(TestPlugin&&) = delete;
     TestPlugin(const TestPlugin&) = delete;
+    TestPlugin& operator=(TestPlugin&&) = delete;
     TestPlugin& operator=(const TestPlugin&) = delete;
 
     BEGIN_INTERFACE_MAP(TestPlugin)
@@ -189,7 +199,6 @@ public:
 
 public:
     // IPlugin methods
-    // ======================
     const string Initialize(PluginHost::IShell* service) override;
     void Deinitialize(PluginHost::IShell* service) override;
     string Information() const override;
@@ -203,23 +212,10 @@ private:
     Exchange::ITestPlugin* _testPlugin;
     Core::Sink<Notification> _notification;
 };
-
 ```
 
 
-```c++ linenums="1" title="TestPlugin.cpp" hl_lines="5 24 46 65-76"
-TestPlugin::TestPlugin()
-    : _connectionId(0)
-    , _service(nullptr)
-    , _testPlugin(nullptr)
-    , _notification(this)
-{
-}
-
-TestPlugin::~TestPlugin()
-{
-}
-
+```c++ linenums="1" title="TestPlugin.cpp" hl_lines="12 32 61-72"
 const string TestPlugin::Initialize(PluginHost::IShell* service)
 {
     ASSERT(_service == nullptr);
@@ -235,9 +231,7 @@ const string TestPlugin::Initialize(PluginHost::IShell* service)
 
     // Instantiate the ITestPlugin interface (which will spawn the OOP side if running in OOP mode)
     // Store connection ID in _connectionId
-    _testPlugin = _service->Root<Exchange::ITestPlugin>(_connectionId,
-                                                        2000,
-                                                        _T("TestPluginImplementation"));
+    _testPlugin = _service->Root<Exchange::ITestPlugin>(_connectionId, 2000, _T("TestPluginImplementation"));
 
     if (!_testPlugin) {
         // Error occurred, return non-empty string
@@ -256,8 +250,18 @@ void TestPlugin::Deinitialize(PluginHost::IShell* service)
         _service->Unregister(&_notification);
 
         if (_testPlugin != nullptr) {
-            _testPlugin->Release();
+            // This should release the last reference and destruct the object. If not,
+            // there's something else holding on to it and we have a leak
+            VARIABLE_IS_NOT_USED uint32_t result = _testPlugin->Release();
+            ASSERT(result == Core::ERROR_DESTRUCTION_SUCCEEDED);
             _testPlugin = nullptr;
+
+            // Shut down the out-of-process connection if still running
+            RPC::IRemoteConnection* connection(_service->RemoteConnection(_connectionId));
+            if (connection != nullptr) {
+                connection->Terminate();
+                connection->Release();
+            }
         }
 
         _service->Release();
@@ -280,8 +284,8 @@ void TestPlugin::Deactivated(RPC::IRemoteConnection* connection)
     if (connection->Id() == _connectionId) {
         ASSERT(_service != nullptr);
         Core::IWorkerPool::Instance().Submit(PluginHost::IShell::Job::Create(_service,
-                                                                             PluginHost::IShell::DEACTIVATED,
-                                                                             PluginHost::IShell::FAILURE));
+            PluginHost::IShell::DEACTIVATED,
+            PluginHost::IShell::FAILURE));
     }
 }
 ```
@@ -296,31 +300,34 @@ In the below example, `ITestPlugin` has a notification called `INotification` an
 
 In normal operation, the client will call `Register()` when it starts, and `Unregister()` when it exits. However, if the client crashes it might not have chance to call the `Unregister()` method. Therefore it is up to the plugin to remove the registration manually.
 
-To do this, the plugin should register for `ICOMLink::INotification` events from the framework. When the `Dangling()` event occurs (indicating we have an interface that is not connected on both ends), the plugin should check to see which interface was revoked. If the interface belongs to the plugin's notification, then unregister that client
+To do this, the plugin should register for `ICOMLink::INotification` events from the framework. When the `Dangling()` event occurs (indicating we have an interface that is not connected on both ends), the plugin should check to see which interface was revoked. If the interface belongs to the plugin's notification, then unregister that client.
 
-```cpp title="TestPlugin.h" linenums="1" hl_lines="3-42 66 72"
+!!! note
+	The below example only demonstrates the `ICOMLink::INotification`. In the real world, this should be implemented alongside the `RPC::IRemoteConnection::INotification` notification shown in the previous example
+
+
+```cpp title="TestPlugin.h" linenums="1" hl_lines="3-40 47 69 75"
 class TestPlugin : public PluginHost::IPlugin, public PluginHost::JSONRPC {
 private:
     class Notification : public PluginHost::IShell::ICOMLink::INotification {
     public:
-        Notification() = delete;
         explicit Notification(TestPlugin* parent)
             : _parent(*parent)
         {
             ASSERT(parent != nullptr);
         }
+        ~Notification() override = default;
 
-        ~Notification() = default;
+        Notification(Notification&&) = delete;
         Notification(const Notification&) = delete;
+        Notification& operator=(Notification&&) = delete;
+        Notification& operator=(const Notification&) = delete;
 
     public:
         void Dangling(const Core::IUnknown* remote, const uint32_t interfaceId) override
         {
-            TRACE(Trace::Information, (_T("Dangling notification")));
-
             ASSERT(remote != nullptr);
-
-            if (interfaceId == Exchange::ID_TEST_PLUGIN_NOTIFICATION) {
+            if (interfaceId == Exchange::ITestPlugin::INotification::ID) {
                 const auto revokedInterface = remote->QueryInterface<Exchange::ITestPlugin::INotification>();
                 if (revokedInterface) {
                     _parent.CallbackRevoked(revokedInterface);
@@ -331,7 +338,6 @@ private:
 
         void Revoked(const Core::IUnknown* remote, const uint32_t interfaceId) override
         {
-            TRACE(Trace::Information, (_T("Revoked notification")));
         }
 
         BEGIN_INTERFACE_MAP(Notification)
@@ -343,10 +349,16 @@ private:
     };
 
 public:
-    TestPlugin();
-    ~TestPlugin() override;
+    TestPlugin()
+    	: _connectionId(0)
+    	, _service(nullptr)
+    	, _testPlugin(nullptr)
+    	, _notification(this)
+	{
+	}
+    ~TestPlugin() override = default;
 
-    // Do not allow copy/move constructors
+    // Do not allow copy constructors
     TestPlugin(const TestPlugin&) = delete;
     TestPlugin& operator=(const TestPlugin&) = delete;
 
@@ -358,7 +370,6 @@ public:
 
 public:
     // IPlugin methods
-    // ======================
     const string Initialize(PluginHost::IShell* service) override;
     void Deinitialize(PluginHost::IShell* service) override;
     string Information() const override;
@@ -374,19 +385,7 @@ private:
 };
 ```
 
-```cpp title="TestPlugin.cpp" linenums="1" hl_lines="5 24 44 63-68"
-TestPlugin::TestPlugin()
-    : _connectionId(0)
-    , _service(nullptr)
-    , _testPlugin(nullptr)
-    , _notification(this)
-{
-}
-
-TestPlugin::~TestPlugin()
-{
-}
-
+```cpp title="TestPlugin.cpp" linenums="1" hl_lines="12 32 61-65"
 const string TestPlugin::Initialize(PluginHost::IShell* service)
 {
     ASSERT(_service == nullptr);
@@ -421,8 +420,18 @@ void TestPlugin::Deinitialize(PluginHost::IShell* service)
         _service->Unregister(&_notification);
 
         if (_testPlugin != nullptr) {
-            _testPlugin->Release();
-            _testPlugin == nullptr;
+            // This should release the last reference and destruct the object. If not,
+            // there's something else holding on to it and we have a leak
+            VARIABLE_IS_NOT_USED uint32_t result = _testPlugin->Release();
+            ASSERT(result == Core::ERROR_DESTRUCTION_SUCCEEDED);
+            _testPlugin = nullptr;
+
+            // Shut down the out-of-process connection if still running
+            RPC::IRemoteConnection* connection(_service->RemoteConnection(_connectionId));
+            if (connection != nullptr) {
+                connection->Terminate();
+                connection->Release();
+            }
         }
 
         _service->Release();
@@ -440,7 +449,6 @@ string TestPlugin::Information() const
 void TestPlugin::CallbackRevoked(const Exchange::ITestPlugin::INotification* remote)
 {
     // Unregister the notification
-    TRACE(Trace::Information, (_T("Revoking callback due to dead client")));
     _testPlugin->Unregister(remote);
 }
 ```
