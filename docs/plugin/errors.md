@@ -250,6 +250,8 @@ void TestPlugin::Deinitialize(PluginHost::IShell* service)
         _service->Unregister(&_notification);
 
         if (_testPlugin != nullptr) {
+            RPC::IRemoteConnection* connection(_service->RemoteConnection(_connectionId));
+
             // This should release the last reference and destruct the object. If not,
             // there's something else holding on to it and we have a leak
             VARIABLE_IS_NOT_USED uint32_t result = _testPlugin->Release();
@@ -257,7 +259,6 @@ void TestPlugin::Deinitialize(PluginHost::IShell* service)
             _testPlugin = nullptr;
 
             // Shut down the out-of-process connection if still running
-            RPC::IRemoteConnection* connection(_service->RemoteConnection(_connectionId));
             if (connection != nullptr) {
                 connection->Terminate();
                 connection->Release();
@@ -420,6 +421,8 @@ void TestPlugin::Deinitialize(PluginHost::IShell* service)
         _service->Unregister(&_notification);
 
         if (_testPlugin != nullptr) {
+            RPC::IRemoteConnection* connection(_service->RemoteConnection(_connectionId));
+
             // This should release the last reference and destruct the object. If not,
             // there's something else holding on to it and we have a leak
             VARIABLE_IS_NOT_USED uint32_t result = _testPlugin->Release();
@@ -427,7 +430,6 @@ void TestPlugin::Deinitialize(PluginHost::IShell* service)
             _testPlugin = nullptr;
 
             // Shut down the out-of-process connection if still running
-            RPC::IRemoteConnection* connection(_service->RemoteConnection(_connectionId));
             if (connection != nullptr) {
                 connection->Terminate();
                 connection->Release();
