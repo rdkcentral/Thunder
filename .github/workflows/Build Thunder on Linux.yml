@@ -110,7 +110,6 @@ jobs:
         -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
         -DVOLATILE_PATH="tmp" \
         -DLOCALTRACER=ON \
-        -DHIBERNATESUPPORT=ON \
         -DPRIVILEGEDREQUEST=ON \
         -DPROCESSCONTAINERS=ON \
         -WARNING_REPORTING=ON \
