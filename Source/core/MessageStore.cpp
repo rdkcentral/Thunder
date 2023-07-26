@@ -49,6 +49,7 @@ namespace WPEFramework {
 
                 ASSERT(std::find(_controlList.begin(), _controlList.end(), control) == _controlList.end());
                 _controlList.push_back(control);
+
                 _adminLock.Unlock();
             }
 
