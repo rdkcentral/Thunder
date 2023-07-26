@@ -49,7 +49,6 @@ namespace WPEFramework {
 
                 ASSERT(std::find(_controlList.begin(), _controlList.end(), control) == _controlList.end());
                 _controlList.push_back(control);
-
                 _adminLock.Unlock();
             }
 
@@ -86,7 +85,12 @@ namespace WPEFramework {
             ControlList _controlList;
         };
 
-        static Controls _registeredControls;
+        Controls& ControlsInstance()
+        {
+            static Controls controls;
+            return (controls);
+        }
+
         static Core::Messaging::IStore* _storage;
     }
 
@@ -362,7 +366,7 @@ namespace Core {
 
         /* static */ void IControl::Announce(IControl* control)
         {
-            _registeredControls.Announce(control);
+            ControlsInstance().Announce(control);
 
             if (_storage != nullptr) {
                 control->Enable(_storage->Default(control->Metadata()));
@@ -370,11 +374,11 @@ namespace Core {
         }
 
         /* static */ void IControl::Revoke(IControl* control) {
-            _registeredControls.Revoke(control);
+            ControlsInstance().Revoke(control);
         }
 
         /* static */ void IControl::Iterate(IControl::IHandler& handler) {
-            _registeredControls.Iterate(handler);
+            ControlsInstance().Iterate(handler);
         }
 
         /* static */ IStore* IStore::Instance() {

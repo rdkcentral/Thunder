@@ -26,7 +26,6 @@
 #ifdef __CORE_WARNING_REPORTING__
 
 namespace {
-WPEFramework::Core::CriticalSection adminlock; // we cannot have this as a member as Sync.h might also need WarningReporting. but as WarningReportingUnitProxy that is not a problem
 
 class WarningReportingBoundsCategoryConfig : public WPEFramework::Core::JSON::Container {
 public:
@@ -77,45 +76,52 @@ public:
 namespace WPEFramework {
 namespace WarningReporting {
 
+    static Core::CriticalSection& GetAdminLock()
+    {
+        static Core::CriticalSection _adminlock;
+        return (_adminlock);
+    }
+
     WarningReportingUnitProxy& WarningReportingUnitProxy::Instance()
     {
-        return (Core::SingletonType<WarningReportingUnitProxy>::Instance());
+        static WarningReportingUnitProxy instance;
+        return (instance);
     }
 
     void WarningReportingUnitProxy::ReportWarningEvent(const char module[], const IWarningEvent& information)
     {
-        adminlock.Lock();
+        GetAdminLock().Lock();
         ASSERT (_handler != nullptr);
         if (_handler != nullptr) {
             _handler->ReportWarningEvent(module, information);
         }
-        adminlock.Unlock();
+        GetAdminLock().Unlock();
     }
 
     void WarningReportingUnitProxy::FetchCategoryInformation(const string& category, bool& outIsDefaultCategory, bool& outIsEnabled, string& outExcluded, string& outConfiguration) const
     {
-        adminlock.Lock();
+        GetAdminLock().Lock();
         if (_handler != nullptr) {
             _handler->FetchCategoryInformation(category, outIsDefaultCategory, outIsEnabled, outExcluded, outConfiguration);
         }
-        adminlock.Unlock();
+        GetAdminLock().Unlock();
     }
 
     void WarningReportingUnitProxy::AddToCategoryList(IWarningReportingUnit::IWarningReportingControl& Category)
     {
-        adminlock.Lock();
+        GetAdminLock().Lock();
         if (_handler != nullptr) {
             _handler->AddToCategoryList(Category);
         } else {
             _waitingAnnounces.emplace_back(&Category);
         }
-        adminlock.Unlock();
+        GetAdminLock().Unlock();
 
     }
 
     void WarningReportingUnitProxy::RemoveFromCategoryList(IWarningReportingUnit::IWarningReportingControl& Category)
     {
-        adminlock.Lock();
+        GetAdminLock().Lock();
         if (_handler != nullptr) {
             ASSERT(_waitingAnnounces.size() == 0);
             _handler->RemoveFromCategoryList(Category);
@@ -125,13 +131,13 @@ namespace WarningReporting {
                 _waitingAnnounces.erase(it);
             }
         }
-        adminlock.Unlock();
+        GetAdminLock().Unlock();
     }
 
     void WarningReportingUnitProxy::Handle(IWarningReportingUnit* handler)
     {
         ASSERT((_handler == nullptr && handler != nullptr) || (_handler != nullptr && handler == nullptr));
-        adminlock.Lock();
+        GetAdminLock().Lock();
         _handler = handler;
         if (_handler != nullptr) {
 
@@ -141,7 +147,7 @@ namespace WarningReporting {
             }
             _waitingAnnounces.clear();
         }
-        adminlock.Unlock();
+        GetAdminLock().Unlock();
     }
 
     void WarningReportingUnitProxy::FillBoundsConfig(const string& boundsConfig, uint32_t& outReportingBound, uint32_t& outWarningBound, string& outSpecificConfig) const

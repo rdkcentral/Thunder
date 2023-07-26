@@ -31,7 +31,8 @@ namespace WarningReporting {
 
     WarningReportingUnit& WarningReportingUnit::Instance()
     {
-        return Core::SingletonType<WarningReportingUnit>::Instance();
+        static WarningReportingUnit instance;
+        return (instance);
     }
 
     WarningReportingUnit::~WarningReportingUnit()
