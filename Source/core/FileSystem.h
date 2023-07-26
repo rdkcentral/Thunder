@@ -640,6 +640,8 @@ POP_WARNING()
             return (*this);
         }
 
+        bool Exists() const; 
+
 #ifdef __LINUX__
         bool IsValid() const
         {

@@ -251,7 +251,7 @@ namespace WPEFramework {
 				}
 				uint32_t Initialize()
 				{
-					return (Open(0));
+					return (Open(1000));
 				}
 				void Deinitialize()
 				{
@@ -1325,16 +1325,15 @@ namespace WPEFramework {
 			};
 
 		public:
-PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
+			PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST);
 			SmartLinkType(const string& remoteCallsign, const TCHAR* localCallsign, const string& query = "")
 				: _connection(*this, remoteCallsign, localCallsign, query)
 				, _callsign(remoteCallsign)
 			{
 			}
-POP_WARNING()
-			~SmartLinkType()
-			{
-			}
+			POP_WARNING();
+			virtual ~SmartLinkType() = default;
+
 		public:
 			template <typename INBOUND, typename METHOD>
 			uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)

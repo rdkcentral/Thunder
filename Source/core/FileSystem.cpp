@@ -362,6 +362,29 @@ namespace Core {
         return true;
     }
 
+    bool Directory::Exists() const {
+        bool result = false;
+
+#ifdef __WINDOWS__
+        WIN32_FILE_ATTRIBUTE_DATA data;
+        GET_FILEEX_INFO_LEVELS infoLevelId = GetFileExInfoStandard;
+
+        if (GetFileAttributesEx(_name.c_str(), infoLevelId, &data) != FALSE) {
+            result = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+        }
+#endif
+
+#ifdef __POSIX__
+        struct stat data;
+        if (stat(_name.c_str(), &data) == 0) {
+            result = ( (data.st_mode & S_IFDIR) != 0);
+        }
+#endif
+
+        return (result);
+
+    }
+
     uint32_t Directory::User(const string& userName) const
     {
         return AccessControl::OwnerShip(_name, userName, "");

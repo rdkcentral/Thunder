@@ -102,6 +102,6 @@ namespace Logging {
     } while(false)
 
 #define SYSLOG_GLOBAL(CATEGORY, PARAMETERS)                                                                                                       \
-    DEPRECATED                                                                                                                                    \
+    _Pragma ("GCC warning \"'SYSLOG_GLOBAL' macro is deprecated, use SYSLOG instead\"")                                                           \
     SYSLOG(CATEGORY, PARAMETERS)
 
