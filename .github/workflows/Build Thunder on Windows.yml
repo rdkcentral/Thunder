@@ -10,6 +10,7 @@ env:
   bridge: Thunder\Source\WPEFramework\bridge.vcxproj
   comProcess: Thunder\Source\WPEProcess\comprocess.vcxproj
   devEnv: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\devenv.com
+  warningReporting: Thunder\Source\extensions\warningreporting\warningreporting.vcxproj
   solution: Thunder.sln
 
 jobs:
@@ -36,7 +37,7 @@ jobs:
       with:
         path: ThunderOnWindows/Thunder
         repository: ${{github.repository_owner}}/Thunder
-        
+
     - name: Regex Thunder
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
       id: thunder
@@ -45,7 +46,7 @@ jobs:
         regex_pattern: '(?<=\[DependsOn=Thunder:).*(?=\])'
         regex_flags: 'gim'
         search_string: ${{github.event.pull_request.body}}
-        
+
     - name: Checkout Thunder - ${{steps.thunder.outputs.first_match}}
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
       uses: actions/checkout@v3
@@ -114,10 +115,11 @@ jobs:
         cd ThunderOnWindows
         "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
         "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"  "%solution%"
-        
+        "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%warningReporting%"  "%solution%"
+
     - name: Tar files
       run: tar -czvf ${{matrix.type}}${{matrix.version}}.tar.gz artifacts
-    
+
     - name: Upload
       uses: actions/upload-artifact@v3
       with:
