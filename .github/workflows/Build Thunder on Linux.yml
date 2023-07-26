@@ -111,8 +111,7 @@ jobs:
         -DVOLATILE_PATH="tmp" \
         -DLOCALTRACER=ON \
         -DPRIVILEGEDREQUEST=ON \
-        -DPROCESSCONTAINERS=ON \
-        -WARNING_REPORTING=ON \
+        -DWARNING_REPORTING=ON \
         ${{steps.regexthunder.outputs.first_match}}
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
