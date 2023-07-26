@@ -110,7 +110,6 @@ jobs:
         -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
         -DVOLATILE_PATH="tmp" \
         -DLOCALTRACER=ON \
-        -DPRIVILEGEDREQUEST=ON \
         -DWARNING_REPORTING=ON \
         ${{steps.regexthunder.outputs.first_match}}
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
