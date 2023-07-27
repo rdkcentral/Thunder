@@ -21,8 +21,17 @@
 #include "Proxy.h"
 #include "Sync.h"
 #include "Frame.h"
+#include "Enumerate.h"
 
 namespace WPEFramework {
+
+ENUM_CONVERSION_BEGIN(Core::Messaging::Metadata::type)
+    { Core::Messaging::Metadata::type::TRACING, _TXT("Tracing") },
+    { Core::Messaging::Metadata::type::LOGGING, _TXT("Logging") },
+    { Core::Messaging::Metadata::type::REPORTING, _TXT("Reporting") },
+    { Core::Messaging::Metadata::type::STANDARD_OUT, _TXT("StandardOut") },
+    { Core::Messaging::Metadata::type::STANDARD_ERROR, _TXT("StandardError") },
+ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
 
     namespace {
         /**
