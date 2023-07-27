@@ -326,8 +326,7 @@ namespace Exchange {
 
 To enable the generation of the corresponding JSON-RPC interface, add the @json tag above the interface definition.
 
-!!! hint
-	Here, the @json tag was passed a version number `1.0.0`, which can be used to version JSON-RPC interfaces. If not specified, it will default to `1.0.0`
+Here, the `@json` tag was passed a version number `1.0.0`, which can be used to version JSON-RPC interfaces. If not specified, it will default to `1.0.0`
 
 ```cpp title="IWiFi.h" linenums="1" hl_lines="8"
 #pragma once
@@ -345,10 +344,12 @@ namespace Exchange {
         ...
 ```
 
-The generated `JWiFi.h` file contains two methods - `Register` and `Unregister`, which are used by the plugin to connect the JSON-RPC interface to the underlying implementation.
+When JSON-RPC support is enabled, the code generator will create code to for the plugin to register the JSON-RPC methods, and code to convert between JSON and C++ classes.
 
 !!! danger
-	The below code is auto-generated and provided as an example. As the code-generation tools change, the actual output you see may look different than the below. Do not copy the below code for your own use
+	The below code samples are auto-generated and provided as an example. As the code-generation tools change, the actual output you see may look different than the below. Do not copy the below code for your own use
+
+The generated `JWiFi.h` file contains two methods - `Register` and `Unregister`, which are used by the plugin to connect the JSON-RPC interface to the underlying implementation.
 
 ??? example "Auto-generated code (click to expand/collapse)"
     ```cpp title="JWiFi.h" linenums="1"
@@ -358,65 +359,65 @@ The generated `JWiFi.h` file contains two methods - `Register` and `Unregister`,
     #include "Module.h"
     #include "JsonData_WiFi.h"
     #include <interfaces/IWiFi.h>
-
+    
     namespace WPEFramework {
-
+    
     namespace Exchange {
-
+    
         namespace JWiFi {
-
+    
             namespace Version {
-
+    
                 constexpr uint8_t Major = 1;
                 constexpr uint8_t Minor = 0;
                 constexpr uint8_t Patch = 0;
-
+    
             } // namespace Version
-
+    
             using JSONRPC = PluginHost::JSONRPC;
-
+    
             static void Register(JSONRPC& _module_, IWiFi* _impl_)
             {
                 ASSERT(_impl_ != nullptr);
-
+    
                 _module_.RegisterVersion(_T("JWiFi"), Version::Major, Version::Minor, Version::Patch);
-
+    
                 // Register methods and properties...
-
+    
                 // Method: 'scan' - Start a WiFi scan
                 _module_.Register<void, void>(_T("scan"), 
                     [_impl_]() -> uint32_t {
                         uint32_t _errorCode;
-
+    
                         _errorCode = _impl_->Scan();
-
+    
                         return (_errorCode);
                     });
-
+    
                 // Method: 'connect' - Connect to an access point
                 _module_.Register<JsonData::WiFi::ConnectParamsData, void>(_T("connect"), 
                     [_impl_](const JsonData::WiFi::ConnectParamsData& params) -> uint32_t {
                         uint32_t _errorCode;
-
+    
                         const string _ssid{params.Ssid};
-
+    
                         _errorCode = _impl_->Connect(_ssid);
-
+    
                         return (_errorCode);
                     });
-
+    
                 // Method: 'disconnect' - Disconnect from the currently connected access point
                 _module_.Register<void, void>(_T("disconnect"), 
                     [_impl_]() -> uint32_t {
                         uint32_t _errorCode;
-
+    
                         _errorCode = _impl_->Disconnect();
-
+    
                         return (_errorCode);
                     });
-
+    
             }
-
+    
             static void Unregister(JSONRPC& _module_)
             {
                 // Unregister methods and properties...
@@ -424,70 +425,71 @@ The generated `JWiFi.h` file contains two methods - `Register` and `Unregister`,
                 _module_.Unregister(_T("connect"));
                 _module_.Unregister(_T("disconnect"));
             }
-
+    
             namespace Event {
-
+    
                 PUSH_WARNING(DISABLE_WARNING_UNUSED_FUNCTIONS)
-
+    
                 // Event: 'scancomplete' - Signal that a previously requested WiFi AP scan has completed
                 static void ScanComplete(const JSONRPC& _module_, const JsonData::WiFi::ScanCompleteParamsData& params)
                 {
                     _module_.Notify(_T("scancomplete"), params);
                 }
-
+    
                 // Event: 'scancomplete' - Signal that a previously requested WiFi AP scan has completed
                 static void ScanComplete(const JSONRPC& _module_,
                          const Core::JSON::ArrayType<JsonData::WiFi::ScanCompleteParamsData::AccessPointData>& accessPoints)
                 {
                     JsonData::WiFi::ScanCompleteParamsData _params_;
                     _params_.AccessPoints = accessPoints;
-
+    
                     ScanComplete(_module_, _params_);
                 }
-
+    
                 // Event: 'scancomplete' - Signal that a previously requested WiFi AP scan has completed
                 static void ScanComplete(const JSONRPC& _module_, const std::list<Exchange::IWiFi::AccessPoint>& accessPoints)
                 {
                     JsonData::WiFi::ScanCompleteParamsData _params_;
                     _params_.AccessPoints = accessPoints;
-
+    
                     ScanComplete(_module_, _params_);
                 }
-
+    
                 POP_WARNING()
-
+    
             } // namespace Event
-
+    
         } // namespace JWiFi
-
+    
     } // namespace Exchange
-
+    
     } // namespace WPEFramework
-   
+       
     ```
-    
-    The auto-generated JsonData file contains code that can convert from the parameters object in the incoming JSON-RPC request to a C++ object. This is used by both the plugin and client apps to read incoming parameters and build responses.
-    
+
+The auto-generated `JsonData_WiFi.h` file contains code that can convert from the parameters object in the incoming JSON-RPC request to a C++ object. This is used by both the plugin and client apps to read incoming parameters and build responses.
+
+??? example "Auto-generated code (click to expand/collapse)"
     ```cpp title="JsonData_WiFi.h" linenums="1"
     // C++ classes for WiFi API JSON-RPC API.
     // Generated automatically from 'IWiFi.h'. DO NOT EDIT.
-
+    
     // Note: This code is inherently not thread safe. If required, proper synchronisation must be added.
-
+    
     #pragma once
-
+    
     #include <core/JSON.h>
     #include <interfaces/IWiFi.h>
-
+    
     namespace WPEFramework {
-
+    
     namespace JsonData {
-
+    
         namespace WiFi {
-
+    
             // Method params/result classes
             //
-
+    
             class ConnectParamsData : public Core::JSON::Container {
             public:
                 ConnectParamsData()
@@ -495,14 +497,14 @@ The generated `JWiFi.h` file contains two methods - `Register` and `Unregister`,
                 {
                     Add(_T("ssid"), &Ssid);
                 }
-
+    
                 ConnectParamsData(const ConnectParamsData&) = delete;
                 ConnectParamsData& operator=(const ConnectParamsData&) = delete;
-
+    
             public:
                 Core::JSON::String Ssid; //      SSID to connect to
             }; // class ConnectParamsData
-
+    
             class ScanCompleteParamsData : public Core::JSON::Container {
             public:
                 class AccessPointData : public Core::JSON::Container {
@@ -512,7 +514,7 @@ The generated `JWiFi.h` file contains two methods - `Register` and `Unregister`,
                     {
                         _Init();
                     }
-
+    
                     AccessPointData(const AccessPointData& _other)
                         : Core::JSON::Container()
                         , Ssid(_other.Ssid)
@@ -522,7 +524,7 @@ The generated `JWiFi.h` file contains two methods - `Register` and `Unregister`,
                     {
                         _Init();
                     }
-
+    
                     AccessPointData& operator=(const AccessPointData& _rhs)
                     {
                         Ssid = _rhs.Ssid;
@@ -531,7 +533,7 @@ The generated `JWiFi.h` file contains two methods - `Register` and `Unregister`,
                         Signal = _rhs.Signal;
                         return (*this);
                     }
-
+    
                     AccessPointData(const Exchange::IWiFi::AccessPoint& _other)
                         : Core::JSON::Container()
                     {
@@ -541,7 +543,7 @@ The generated `JWiFi.h` file contains two methods - `Register` and `Unregister`,
                         Signal = _other.signal;
                         _Init();
                     }
-
+    
                     AccessPointData& operator=(const Exchange::IWiFi::AccessPoint& _rhs)
                     {
                         Ssid = _rhs.ssid;
@@ -550,7 +552,7 @@ The generated `JWiFi.h` file contains two methods - `Register` and `Unregister`,
                         Signal = _rhs.signal;
                         return (*this);
                     }
-
+    
                     operator Exchange::IWiFi::AccessPoint() const
                     {
                         Exchange::IWiFi::AccessPoint _value{};
@@ -560,7 +562,7 @@ The generated `JWiFi.h` file contains two methods - `Register` and `Unregister`,
                         _value.signal = Signal;
                         return (_value);
                     }
-
+    
                 private:
                     void _Init()
                     {
@@ -569,32 +571,33 @@ The generated `JWiFi.h` file contains two methods - `Register` and `Unregister`,
                         Add(_T("frequency"), &Frequency);
                         Add(_T("signal"), &Signal);
                     }
-
+    
                 public:
                     Core::JSON::String Ssid;
                     Core::JSON::DecUInt8 Channel;
                     Core::JSON::DecUInt32 Frequency;
                     Core::JSON::DecSInt32 Signal;
                 }; // class AccessPointData
-
+    
                 ScanCompleteParamsData()
                     : Core::JSON::Container()
                 {
                     Add(_T("accesspoints"), &AccessPoints);
                 }
-
+    
                 ScanCompleteParamsData(const ScanCompleteParamsData&) = delete;
                 ScanCompleteParamsData& operator=(const ScanCompleteParamsData&) = delete;
-
+    
             public:
                 Core::JSON::ArrayType<ScanCompleteParamsData::AccessPointData> AccessPoints;
             }; // class ScanCompleteParamsData
-
+    
         } // namespace WiFi
-
+    
     } // namespace JsonData
-
+    
     }
-
+    
     ```
-    Since there are no enums in this example interface, no `JsonEnums_WiFi.cpp` file was generated.
+
+Since there are no enums in this example interface, no `JsonEnums_WiFi.cpp` file was generated.
