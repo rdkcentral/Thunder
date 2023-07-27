@@ -1431,6 +1431,26 @@ POP_WARNING()
             RemoteConnectionMap& _connections;
         };
 
+    protected:
+        virtual RemoteConnection* CreateStarter(const Config& config, const Object& instance)
+        {
+            RemoteConnection* result = nullptr;
+
+            if (instance.Type() == Object::HostType::LOCAL) {
+                result = Core::Service<LocalProcess>::Create<RemoteConnection>(config, instance, _connectionMap);
+            }
+            else if (instance.Type() == Object::HostType::CONTAINER) {
+#ifdef PROCESSCONTAINERS_ENABLED
+                result = Core::Service<ContainerProcess>::Create<RemoteConnection>(config, instance, _connectionMap);
+#else
+                SYSLOG(Logging::Error, (_T("Cannot create Container process for %s, this version was not build with Container support"), instance.ClassName().c_str()));
+#endif
+            }
+
+            return result;
+        }
+        void LoadProxyStubs(const string& pathName);
+
     public:
         Communicator() = delete;
         Communicator(Communicator&&) = delete;
