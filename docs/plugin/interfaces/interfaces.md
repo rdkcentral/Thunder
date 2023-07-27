@@ -281,7 +281,7 @@ namespace Exchange {
             /**
              * @brief Signal that a previously requested WiFi AP scan has completed
              */
-            virtual void ScanComplete(IAccessPointIterator&* accessPoints /* @out */) = 0; // (5)
+            virtual void ScanComplete(IAccessPointIterator* accessPoints /* @in */) = 0; // (5)
         };
 
         /**
@@ -319,7 +319,7 @@ namespace Exchange {
 2. Each interface must have a unique ID value
 3. We need to return a list of detected access points. Since we can't use a standard container such as `std::vector`, use the supported COM-RPC iterators. This iterator must have a unique ID
 4. All interfaces must have a unique ID, so the `INotification` interface must also have an ID
-5. This method will be invoked when the AP scan completes, and the `accessPoints` variable will hold all the discovered APs
+5. This method will be invoked when the AP scan completes, and the `accessPoints` variable will hold a list of all the discovered APs
 6. Provide register/unregister methods for COM-RPC clients to subscribe to notifications
 
 ### Enable JSON-RPC Generation
@@ -350,80 +350,251 @@ The generated `JWiFi.h` file contains two methods - `Register` and `Unregister`,
 !!! danger
 	The below code is auto-generated and provided as an example. As the code-generation tools change, the actual output you see may look different than the below. Do not copy the below code for your own use
 
-```cpp title="JWiFi.h" linenums="1"
-static void Register(JSONRPC& _module_, IWiFi* _impl_)
-{
-    ASSERT(_impl_ != nullptr);
+??? example "Auto-generated code (click to expand/collapse)"
+    ```cpp title="JWiFi.h" linenums="1"
+	// Generated automatically from 'IWiFi.h'. DO NOT EDIT.
+    #pragma once
 
-    _module_.RegisterVersion(_T("JWiFi"), Version::Major, Version::Minor, Version::Patch);
+    #include "Module.h"
+    #include "JsonData_WiFi.h"
+    #include <interfaces/IWiFi.h>
 
-    // Register methods and properties...
+    namespace WPEFramework {
 
-    // Method: 'scan' - Start a WiFi scan
-    _module_.Register<void, void>(_T("scan"), 
-        [_impl_]() -> uint32_t {
-            uint32_t _errorCode;
+    namespace Exchange {
 
-            _errorCode = _impl_->Scan();
+        namespace JWiFi {
 
-            return (_errorCode);
-        });
+            namespace Version {
 
-    // Method: 'connect' - Connect to an access point
-    _module_.Register<JsonData::WiFi::ConnectParamsData, void>(_T("connect"), 
-        [_impl_](const JsonData::WiFi::ConnectParamsData& params) -> uint32_t {
-            uint32_t _errorCode;
+                constexpr uint8_t Major = 1;
+                constexpr uint8_t Minor = 0;
+                constexpr uint8_t Patch = 0;
 
-            const string _ssid{params.Ssid};
+            } // namespace Version
 
-            _errorCode = _impl_->Connect(_ssid);
+            using JSONRPC = PluginHost::JSONRPC;
 
-            return (_errorCode);
-        });
-
-    // Method: 'disconnect' - Disconnect from the currently connected access point
-    _module_.Register<void, void>(_T("disconnect"), 
-        [_impl_]() -> uint32_t {
-            uint32_t _errorCode;
-
-            _errorCode = _impl_->Disconnect();
-
-            return (_errorCode);
-        });
-
-}
-
-static void Unregister(JSONRPC& _module_)
-{
-    // Unregister methods and properties...
-    _module_.Unregister(_T("scan"));
-    _module_.Unregister(_T("connect"));
-    _module_.Unregister(_T("disconnect"));
-}
-```
-
-The auto-generated JsonData file contains code that can convert from the parameters object in the incoming JSON-RPC request to a C++ object. This is used by both the plugin and client apps to read incoming parameters and build responses.
-
-```cpp title="JsonData_WiFi.h" linenums="1"
-namespace JsonData {
-    namespace WiFi {
-        // Method params/result classes
-        //
-        class ConnectParamsData : public Core::JSON::Container {
-        public:
-            ConnectParamsData()
-                : Core::JSON::Container()
+            static void Register(JSONRPC& _module_, IWiFi* _impl_)
             {
-                Add(_T("ssid"), &Ssid);
+                ASSERT(_impl_ != nullptr);
+
+                _module_.RegisterVersion(_T("JWiFi"), Version::Major, Version::Minor, Version::Patch);
+
+                // Register methods and properties...
+
+                // Method: 'scan' - Start a WiFi scan
+                _module_.Register<void, void>(_T("scan"), 
+                    [_impl_]() -> uint32_t {
+                        uint32_t _errorCode;
+
+                        _errorCode = _impl_->Scan();
+
+                        return (_errorCode);
+                    });
+
+                // Method: 'connect' - Connect to an access point
+                _module_.Register<JsonData::WiFi::ConnectParamsData, void>(_T("connect"), 
+                    [_impl_](const JsonData::WiFi::ConnectParamsData& params) -> uint32_t {
+                        uint32_t _errorCode;
+
+                        const string _ssid{params.Ssid};
+
+                        _errorCode = _impl_->Connect(_ssid);
+
+                        return (_errorCode);
+                    });
+
+                // Method: 'disconnect' - Disconnect from the currently connected access point
+                _module_.Register<void, void>(_T("disconnect"), 
+                    [_impl_]() -> uint32_t {
+                        uint32_t _errorCode;
+
+                        _errorCode = _impl_->Disconnect();
+
+                        return (_errorCode);
+                    });
+
             }
 
-            ConnectParamsData(const ConnectParamsData&) = delete;
-            ConnectParamsData& operator=(const ConnectParamsData&) = delete;
+            static void Unregister(JSONRPC& _module_)
+            {
+                // Unregister methods and properties...
+                _module_.Unregister(_T("scan"));
+                _module_.Unregister(_T("connect"));
+                _module_.Unregister(_T("disconnect"));
+            }
 
-        public:
-            Core::JSON::String Ssid; //      SSID to connect to
-        }; 
-    } 
-}
-```
-Since there are no enums in this example interface, no `JsonEnums_WiFi.cpp` file was generated.
+            namespace Event {
+
+                PUSH_WARNING(DISABLE_WARNING_UNUSED_FUNCTIONS)
+
+                // Event: 'scancomplete' - Signal that a previously requested WiFi AP scan has completed
+                static void ScanComplete(const JSONRPC& _module_, const JsonData::WiFi::ScanCompleteParamsData& params)
+                {
+                    _module_.Notify(_T("scancomplete"), params);
+                }
+
+                // Event: 'scancomplete' - Signal that a previously requested WiFi AP scan has completed
+                static void ScanComplete(const JSONRPC& _module_,
+                         const Core::JSON::ArrayType<JsonData::WiFi::ScanCompleteParamsData::AccessPointData>& accessPoints)
+                {
+                    JsonData::WiFi::ScanCompleteParamsData _params_;
+                    _params_.AccessPoints = accessPoints;
+
+                    ScanComplete(_module_, _params_);
+                }
+
+                // Event: 'scancomplete' - Signal that a previously requested WiFi AP scan has completed
+                static void ScanComplete(const JSONRPC& _module_, const std::list<Exchange::IWiFi::AccessPoint>& accessPoints)
+                {
+                    JsonData::WiFi::ScanCompleteParamsData _params_;
+                    _params_.AccessPoints = accessPoints;
+
+                    ScanComplete(_module_, _params_);
+                }
+
+                POP_WARNING()
+
+            } // namespace Event
+
+        } // namespace JWiFi
+
+    } // namespace Exchange
+
+    } // namespace WPEFramework
+   
+    ```
+    
+    The auto-generated JsonData file contains code that can convert from the parameters object in the incoming JSON-RPC request to a C++ object. This is used by both the plugin and client apps to read incoming parameters and build responses.
+    
+    ```cpp title="JsonData_WiFi.h" linenums="1"
+    // C++ classes for WiFi API JSON-RPC API.
+    // Generated automatically from 'IWiFi.h'. DO NOT EDIT.
+
+    // Note: This code is inherently not thread safe. If required, proper synchronisation must be added.
+
+    #pragma once
+
+    #include <core/JSON.h>
+    #include <interfaces/IWiFi.h>
+
+    namespace WPEFramework {
+
+    namespace JsonData {
+
+        namespace WiFi {
+
+            // Method params/result classes
+            //
+
+            class ConnectParamsData : public Core::JSON::Container {
+            public:
+                ConnectParamsData()
+                    : Core::JSON::Container()
+                {
+                    Add(_T("ssid"), &Ssid);
+                }
+
+                ConnectParamsData(const ConnectParamsData&) = delete;
+                ConnectParamsData& operator=(const ConnectParamsData&) = delete;
+
+            public:
+                Core::JSON::String Ssid; //      SSID to connect to
+            }; // class ConnectParamsData
+
+            class ScanCompleteParamsData : public Core::JSON::Container {
+            public:
+                class AccessPointData : public Core::JSON::Container {
+                public:
+                    AccessPointData()
+                        : Core::JSON::Container()
+                    {
+                        _Init();
+                    }
+
+                    AccessPointData(const AccessPointData& _other)
+                        : Core::JSON::Container()
+                        , Ssid(_other.Ssid)
+                        , Channel(_other.Channel)
+                        , Frequency(_other.Frequency)
+                        , Signal(_other.Signal)
+                    {
+                        _Init();
+                    }
+
+                    AccessPointData& operator=(const AccessPointData& _rhs)
+                    {
+                        Ssid = _rhs.Ssid;
+                        Channel = _rhs.Channel;
+                        Frequency = _rhs.Frequency;
+                        Signal = _rhs.Signal;
+                        return (*this);
+                    }
+
+                    AccessPointData(const Exchange::IWiFi::AccessPoint& _other)
+                        : Core::JSON::Container()
+                    {
+                        Ssid = _other.ssid;
+                        Channel = _other.channel;
+                        Frequency = _other.frequency;
+                        Signal = _other.signal;
+                        _Init();
+                    }
+
+                    AccessPointData& operator=(const Exchange::IWiFi::AccessPoint& _rhs)
+                    {
+                        Ssid = _rhs.ssid;
+                        Channel = _rhs.channel;
+                        Frequency = _rhs.frequency;
+                        Signal = _rhs.signal;
+                        return (*this);
+                    }
+
+                    operator Exchange::IWiFi::AccessPoint() const
+                    {
+                        Exchange::IWiFi::AccessPoint _value{};
+                        _value.ssid = Ssid;
+                        _value.channel = Channel;
+                        _value.frequency = Frequency;
+                        _value.signal = Signal;
+                        return (_value);
+                    }
+
+                private:
+                    void _Init()
+                    {
+                        Add(_T("ssid"), &Ssid);
+                        Add(_T("channel"), &Channel);
+                        Add(_T("frequency"), &Frequency);
+                        Add(_T("signal"), &Signal);
+                    }
+
+                public:
+                    Core::JSON::String Ssid;
+                    Core::JSON::DecUInt8 Channel;
+                    Core::JSON::DecUInt32 Frequency;
+                    Core::JSON::DecSInt32 Signal;
+                }; // class AccessPointData
+
+                ScanCompleteParamsData()
+                    : Core::JSON::Container()
+                {
+                    Add(_T("accesspoints"), &AccessPoints);
+                }
+
+                ScanCompleteParamsData(const ScanCompleteParamsData&) = delete;
+                ScanCompleteParamsData& operator=(const ScanCompleteParamsData&) = delete;
+
+            public:
+                Core::JSON::ArrayType<ScanCompleteParamsData::AccessPointData> AccessPoints;
+            }; // class ScanCompleteParamsData
+
+        } // namespace WiFi
+
+    } // namespace JsonData
+
+    }
+
+    ```
+    Since there are no enums in this example interface, no `JsonEnums_WiFi.cpp` file was generated.
