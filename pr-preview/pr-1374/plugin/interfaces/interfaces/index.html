@@ -2143,10 +2143,7 @@
 </ol>
 <h3 id="enable-json-rpc-generation">Enable JSON-RPC Generation</h3>
 <p>To enable the generation of the corresponding JSON-RPC interface, add the @json tag above the interface definition.</p>
-<div class="admonition hint">
-<p class="admonition-title">Hint</p>
-<p>Here, the @json tag was passed a version number <code>1.0.0</code>, which can be used to version JSON-RPC interfaces. If not specified, it will default to <code>1.0.0</code></p>
-</div>
+<p>Here, the <code>@json</code> tag was passed a version number <code>1.0.0</code>, which can be used to version JSON-RPC interfaces. If not specified, it will default to <code>1.0.0</code></p>
 <div class="highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">IWiFi.h</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
 <span class="normal"> 3</span>
@@ -2173,11 +2170,12 @@
 <span class="w">        </span><span class="p">};</span>
 <span class="w">        </span><span class="p">...</span>
 </code></pre></div></td></tr></table></div>
-<p>The generated <code>JWiFi.h</code> file contains two methods - <code>Register</code> and <code>Unregister</code>, which are used by the plugin to connect the JSON-RPC interface to the underlying implementation.</p>
+<p>When JSON-RPC support is enabled, the code generator will create code to for the plugin to register the JSON-RPC methods, and code to convert between JSON and C++ classes.</p>
 <div class="admonition danger">
 <p class="admonition-title">Danger</p>
-<p>The below code is auto-generated and provided as an example. As the code-generation tools change, the actual output you see may look different than the below. Do not copy the below code for your own use</p>
+<p>The below code samples are auto-generated and provided as an example. As the code-generation tools change, the actual output you see may look different than the below. Do not copy the below code for your own use</p>
 </div>
+<p>The generated <code>JWiFi.h</code> file contains two methods - <code>Register</code> and <code>Unregister</code>, which are used by the plugin to connect the JSON-RPC interface to the underlying implementation.</p>
 <details class="example">
 <summary>Auto-generated code (click to expand/collapse)</summary>
 <div class="highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">JWiFi.h</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">  1</span>
@@ -2402,8 +2400,11 @@
 
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace WPEFramework</span>
 </code></pre></div></td></tr></table></div>
-<p>The auto-generated JsonData file contains code that can convert from the parameters object in the incoming JSON-RPC request to a C++ object. This is used by both the plugin and client apps to read incoming parameters and build responses.</p>
-<p><div class="highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">JsonData_WiFi.h</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">  1</span>
+</details>
+<p>The auto-generated <code>JsonData_WiFi.h</code> file contains code that can convert from the parameters object in the incoming JSON-RPC request to a C++ object. This is used by both the plugin and client apps to read incoming parameters and build responses.</p>
+<details class="example">
+<summary>Auto-generated code (click to expand/collapse)</summary>
+<div class="highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">JsonData_WiFi.h</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">  1</span>
 <span class="normal">  2</span>
 <span class="normal">  3</span>
 <span class="normal">  4</span>
@@ -2655,8 +2656,8 @@
 
 <span class="p">}</span>
 </code></pre></div></td></tr></table></div>
-Since there are no enums in this example interface, no <code>JsonEnums_WiFi.cpp</code> file was generated.</p>
 </details>
+<p>Since there are no enums in this example interface, no <code>JsonEnums_WiFi.cpp</code> file was generated.</p>
 
 
 
