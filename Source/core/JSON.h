@@ -32,7 +32,17 @@
 #include "TextFragment.h"
 #include "TypeTraits.h"
 
-namespace WPEFramework {
+#ifndef __has_cpp_attribute
+# define __has_cpp_attribute(x) 0
+#endif
+
+#if __has_cpp_attribute(fallthrough)
+#       define FALLTHROUGH [[fallthrough]];
+#else
+#       define FALLTHROUGH do{} while(0);
+#endif
+
+ namespace WPEFramework {
 
 namespace Core {
 
@@ -488,7 +498,7 @@ namespace Core {
             {
             }
             NumberType(const TYPE Value, const bool set = false)
-                : _set(set ? SET : 0)
+                : _set((set ? SET : 0) | (Value < 0 ? NEGATIVE : 0)) 
                 , _value(Value)
                 , _default(Value)
             {
@@ -719,8 +729,8 @@ namespace Core {
 
                                     _set |= QUOTED;
                                     break;
-                    case 'n'    :   [[__fallthrough__]];
-                    case 'u'    :   [[__fallthrough__]];
+                    case 'n'    :   FALLTHROUGH
+                    case 'u'    :   FALLTHROUGH
                     case 'l'    :   // JSON value null
                                     if (((offset > 3 || (offset > 4 && (_set & QUOTED))) || c != IElement::NullTag[offset])) {
                                         _set = ERROR;
@@ -911,7 +921,8 @@ namespace Core {
                 using uTYPE = typename std::make_unsigned<TYPE>::type;
 
                 uTYPE divider = 1;
-                uTYPE value = static_cast<uTYPE>(_set & NEGATIVE ? -serialize : serialize);
+
+                uTYPE value = (_set & NEGATIVE ? static_cast<uTYPE>(1 - serialize) - 1 : static_cast<uTYPE>(serialize));
 
                 while ((value / divider) >= static_cast<uTYPE>(BASETYPE)) {
                     divider *= BASETYPE;
@@ -4925,3 +4936,5 @@ using JsonValue = WPEFramework::Core::JSON::Variant;
 using JsonArray = WPEFramework::Core::JSON::ArrayType<JsonValue>;
 
 #endif // __JSON_H
+
+#undef FALLTHROUGH
