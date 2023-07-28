@@ -1048,15 +1048,9 @@ POP_WARNING()
         }
         uint32_t Open(const uint32_t waitTime)
         {
-            auto start = std::chrono::high_resolution_clock::now();
-            auto result = _channel.Open(waitTime);
-            auto stop = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-            if(result != Core::ERROR_NONE) {
-                return result;
-            }
+            _channel.Open(0);
 
-            return WaitForLink(waitTime-duration.count());
+            return WaitForLink(waitTime);
         }
         uint32_t Close(const uint32_t waitTime)
         {
