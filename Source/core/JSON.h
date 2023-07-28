@@ -651,6 +651,7 @@ namespace Core {
                         bool result = false;
 
                         using uTYPE = typename std::make_unsigned<TYPE>::type;
+                        using sTYPE = typename std::make_signed<TYPE>::type;
 
                         uTYPE base = 0, offset = 0, number = 0;
 
@@ -667,7 +668,7 @@ namespace Core {
                         default                 : ASSERT(false);
                         }
 
-                        const uTYPE max = negative ? static_cast<uTYPE>(-(1 + std::numeric_limits<TYPE>::min())) + 1 : static_cast<uTYPE>(std::numeric_limits<TYPE>::max());
+                        const uTYPE max = negative ? static_cast<uTYPE>(-(1 + std::numeric_limits<sTYPE>::min())) + 1 : static_cast<uTYPE>(std::numeric_limits<TYPE>::max());
 
                         number = static_cast<uTYPE>(value);
 
