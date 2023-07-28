@@ -667,7 +667,7 @@ namespace Core {
                         default                 : ASSERT(false);
                         }
 
-                        const uTYPE max = negative ? static_cast<uTYPE>(-std::numeric_limits<TYPE>::min()) : std::numeric_limits<TYPE>::max();
+                        const uTYPE max = negative ? static_cast<uTYPE>(-(1 + std::numeric_limits<TYPE>::min())) + 1 : static_cast<uTYPE>(std::numeric_limits<TYPE>::max());
 
                         number = static_cast<uTYPE>(value);
 
@@ -922,7 +922,7 @@ namespace Core {
 
                 uTYPE divider = 1;
 
-                uTYPE value = (_set & NEGATIVE ? static_cast<uTYPE>(1 - serialize) - 1 : static_cast<uTYPE>(serialize));
+                uTYPE value = (_set & NEGATIVE ? static_cast<uTYPE>(-(1 + serialize)) + 1 : static_cast<uTYPE>(serialize));
 
                 while ((value / divider) >= static_cast<uTYPE>(BASETYPE)) {
                     divider *= BASETYPE;
