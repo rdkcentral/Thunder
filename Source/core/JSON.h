@@ -913,18 +913,29 @@ namespace Core {
             }
 
         private:
-            uint16_t Convert(char stream[], const uint16_t maxLength, uint32_t& offset, const TYPE serialize) const
+            template <typename STYPE = TYPE>
+            typename std::enable_if<std::is_signed<STYPE>::value, uint16_t>::type
+            Convert(char stream[], const uint16_t maxLength, uint32_t& offset, const STYPE serialize) const
+            {
+                using uTYPE = typename std::make_unsigned<STYPE>::type;
+
+                uTYPE value = (_set & NEGATIVE ? static_cast<uTYPE>(-(1 + serialize)) + 1 : static_cast<uTYPE>(serialize));
+
+                return Convert(stream, maxLength, offset, value);
+            }
+
+            template <typename UTYPE = TYPE>
+            typename std::enable_if<std::is_unsigned<UTYPE>::value, uint16_t>::type
+            Convert(char stream[], const uint16_t maxLength, uint32_t& offset, const UTYPE serialize) const
             {
                 uint8_t parsed = 4;
                 uint16_t loaded = 0;
 
-                using uTYPE = typename std::make_unsigned<TYPE>::type;
+                UTYPE divider = 1;
 
-                uTYPE divider = 1;
+                UTYPE value = static_cast<UTYPE>(serialize);
 
-                uTYPE value = (_set & NEGATIVE ? static_cast<uTYPE>(-(1 + serialize)) + 1 : static_cast<uTYPE>(serialize));
-
-                while ((value / divider) >= static_cast<uTYPE>(BASETYPE)) {
+                while ((value / divider) >= static_cast<UTYPE>(BASETYPE)) {
                     divider *= BASETYPE;
                 }
 
@@ -948,16 +959,6 @@ namespace Core {
                 }
 
                 return (loaded);
-            }
-
-            uint16_t Convert(char stream[], const uint16_t maxLength, uint32_t& offset, const TemplateIntToType<false>& /* For compile time diffrentiation */) const
-            {
-                return (Convert(stream, maxLength, offset, _value));
-            }
-
-            uint16_t Convert(char stream[], const uint16_t maxLength, uint32_t& offset, const TemplateIntToType<true>& /* For c ompile time diffrentiation */) const
-            {
-                return (Convert(stream, maxLength, offset, ::abs(_value)));
             }
 
             uint16_t Convert(uint8_t stream[], const uint16_t maxLength, uint32_t& offset, const TemplateIntToType<false>& /* For compile time diffrentiation */) const
