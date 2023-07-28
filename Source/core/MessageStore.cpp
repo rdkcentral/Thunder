@@ -21,6 +21,7 @@
 #include "Proxy.h"
 #include "Sync.h"
 #include "Frame.h"
+#include "Singleton.h"
 
 namespace WPEFramework {
 
@@ -88,8 +89,7 @@ namespace WPEFramework {
 
         Controls& ControlsInstance()
         {
-            static Controls controls;
-            return (controls);
+            return (Core::SingletonType<Controls>::Instance());
         }
 
         static Core::Messaging::IStore* _storage;
