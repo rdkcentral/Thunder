@@ -2301,6 +2301,8 @@ namespace PluginHost {
             class CommunicatorServer : public RPC::Communicator {
             private:
                 using Observers = std::vector<IShell::ICOMLink::INotification*>;
+                using Proxy = std::pair<uint32_t, const Core::IUnknown*>;
+                using Proxies = std::vector<Proxy>;
 
                 class RemoteHost : public RPC::Communicator::RemoteConnection {
                 private:
@@ -2434,6 +2436,8 @@ namespace PluginHost {
                     , _adminLock()
                     , _requestObservers()
                     , _proxyStubObserver(*this, observableProxyStubPath)
+                    , _deadProxies()
+                    , _job(*this)
                 {
                     if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
                         TRACE_L1("We can not open the RPC server. No out-of-process communication available. %d", __LINE__);
@@ -2546,6 +2550,23 @@ namespace PluginHost {
                         _adminLock.Unlock();
                     }
                 }
+                void Dispatch() {
+                    // Oke time to notify the destruction of some proxies...
+                    _adminLock.Lock();
+
+                    for (const Proxy& entry : _deadProxies) {
+                        for (IShell::ICOMLink::INotification* observer : _requestObservers) {
+                            observer->Dangling(entry.second, entry.first);
+                            if (entry.second->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) {
+                                TRACE(Trace::Warning, (_T("Potentially a Proxy leak on interface %d"), entry.first));
+                            }
+                        }
+                    }
+
+                    _deadProxies.clear();
+
+                    _adminLock.Unlock();
+                }
 
             private:
                 void Reload(const string& path) {
@@ -2568,32 +2589,20 @@ namespace PluginHost {
                     }
                     return (concatenatedPath);
                 }
-                RPC::Communicator::RemoteConnection* CreateStarter(const RPC::Config& config, const RPC::Object& instance) override
-                {
-                    RPC::Communicator::RemoteConnection* result = nullptr;
-
-                    if (instance.Type() == RPC::Object::HostType::DISTRIBUTED) {
-                        result = Core::Service<RemoteHost>::Create<RPC::Communicator::RemoteConnection>(instance, config);
-                    } else {
-                        result = RPC::Communicator::CreateStarter(config, instance);
-                    }
-
-                    return result;
-                }
-
                 void* Acquire(const string& className, const uint32_t interfaceId, const uint32_t version) override
                 {
                     return (_parent.Acquire(interfaceId, className, version));
                 }
-
                 void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) override
                 {
                     _adminLock.Lock();
 
                     _parent.Dangling(source, interfaceId);
 
-                    for (auto& observer : _requestObservers) {
-                        observer->Dangling(source, interfaceId);
+                    if (_requestObservers.empty() == false) {
+                        _deadProxies.emplace_back(interfaceId,source);
+                        source->AddRef();
+                        _job.Submit();
                     }
 
                     _adminLock.Unlock();
@@ -2620,6 +2629,19 @@ namespace PluginHost {
 
                     _adminLock.Unlock();
                 }
+                RPC::Communicator::RemoteConnection* CreateStarter(const RPC::Config& config, const RPC::Object& instance) override
+                {
+                    RPC::Communicator::RemoteConnection* result = nullptr;
+
+                    if (instance.Type() == RPC::Object::HostType::DISTRIBUTED) {
+                        result = Core::Service<RemoteHost>::Create<RPC::Communicator::RemoteConnection>(instance, config);
+                    }
+                    else {
+                        result = RPC::Communicator::CreateStarter(config, instance);
+                    }
+
+                    return result;
+                }
 
             private:
                 ServiceMap& _parent;
@@ -2634,6 +2656,8 @@ namespace PluginHost {
                 mutable Core::CriticalSection _adminLock;
                 Observers _requestObservers;
                 ProxyStubObserver _proxyStubObserver;
+                Proxies _deadProxies;
+                Core::WorkerPool::JobType<CommunicatorServer&> _job;
             };
             class RemoteInstantiation : public IRemoteInstantiation {
             private:
