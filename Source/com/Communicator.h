@@ -1409,7 +1409,7 @@ POP_WARNING()
             }
             else if (instance.Type() == Object::HostType::CONTAINER) {
 #ifdef PROCESSCONTAINERS_ENABLED
-                result = Core::Service<ContainerProcess>::Create<RemoteConnection>(config, instance, _reporter);
+                result = Core::Service<ContainerProcess>::Create<RemoteConnection>(config, instance, _connectionMap);
 #else
                 SYSLOG(Logging::Error, (_T("Cannot create Container process for %s, this version was not build with Container support"), instance.ClassName().c_str()));
 #endif
