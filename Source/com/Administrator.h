@@ -372,9 +372,13 @@ namespace RPC {
         {
             Core::ProxyType<InvokeMessage> message(data);
             ASSERT(message.IsValid() == true);
-            _administrator.Invoke(channel, message);
-            channel->ReportResponse(data);
-
+            if (message->Parameters().IsValid() == false) {
+                SYSLOG(Logging::Error, (_T("COMRPC Announce message incorrectly formatted!")));
+            }
+            else {
+                _administrator.Invoke(channel, message);
+                channel->ReportResponse(data);
+            }
         }
 
     private:
