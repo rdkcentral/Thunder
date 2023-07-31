@@ -8,8 +8,8 @@ All tags follow the same format of `@` followed by the tag name. They can be ins
 
 | Tag|Short Description|Deprecated|StubGen|JsonGen|Scope|
 |--|--|:--:|:--:|:--:|:--:|
-|[@stubgen:skip](#stubgenskip)|Stop processing current file, now deprecated| Yes | Yes|Yes|File|
-|[@stop](#stop)|Same as @stubgen:skip, not deprecated, but also never advertised ||Yes| Yes|File|
+|[@stubgen:skip](#stubgenskip)|Stop processing current file. Prefer `@omit`| Yes | Yes|Yes|File|
+|[@stop](#stop)|Equivalent to `@stubgen:skip`. Prefer `@omit`. ||Yes| Yes|File|
 |[@stubgen:omit](#stubgenomit)|Omit processing of the next class or method | | Yes| No (but has side-effects)| Class, Method|
 |[@omit](#omit)|Same as `@stubgen:omit` | | Yes| No (but has side-effects)| Class, Method|
 |[@stubgen:include](#stubgen_include)|Insert another C++ file ||Yes| Yes|File|
@@ -32,7 +32,9 @@ The remaining portion of the file below this tag will be skipped from processing
 <hr/>
 
 #### @stop
-This tag is same as `@stubgen:skip`
+Prefer `@omit` to this tag.
+
+This tag is equivalent to `@stubgen:skip` but can be used as a last resort when the generator is technically unable to parse the file. However in such case it is recommended that the complicated part is moved to a separate header file instead.
 
 <hr/>
 
@@ -140,7 +142,7 @@ When the function returns, the parameter will have the modified length value. Th
 
 #### @restrict
 
-Specifies a valid range for a parameter (e.g. for buffers and strings it could specify a valid size).
+Specifies a valid range for a parameter (e.g. for buffers and strings it could specify a valid size). Ranges are inclusive.
 
 If a parameter is outside the valid range, then there are two possibilities:
 
@@ -150,8 +152,8 @@ If a parameter is outside the valid range, then there are two possibilities:
 ##### Example
 
 * `@restrict:1..32` - Value must be between 1 and 32
-* `@restrict:256..1K` - Value must be between 256B and 1K in side
-* `@restrict:1M` - Value must be less than 1M
+* `@restrict:256..1K` - Value must be between 256B and 1K in size
+* `@restrict:1M` - Value must be <= 1M in size
 
 <hr/>
 
