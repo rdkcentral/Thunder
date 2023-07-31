@@ -215,7 +215,9 @@ In [IPerformance.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166b
 |--|--|:--:|:--:|:--:|:--:|
 |[@json](#json)|Marks a class as JsonGenerator input | | No| Yes| Class|
 |[@json:omit](#json_omit)|Marks a method/property/notification to omit | | No| Yes|Method|
-|[@uncompliant:extended](#extended)|Generates the extended format instead of the short one| Yes | No| Yes|Class|
+|[@uncompliant:extended](#uncompliantextended)|Indicates the generated JSON-RPC code should use the old "extended" format for parameters| Yes | No| Yes|Class|
+|[@uncompliant:collapsed](#uncompliantcollapsed)|Indicates the generated JSON-RPC code should use the old "collapsed" format for parameters| Yes | No | Yes |Class|
+|[@compliant](#compliant)|Indicates the generated JSON-RPC code should be strictly JSON-RPC compliant (default)|  | No | Yes |Class|
 |[@event](#event)|Marks a class as JSON notification | | No| Yes|Class|
 |[@property](#property)|Marks a method as a property ||No|Yes| Method|
 |[@iterator](#iterator)|Marks a class as an iterator | | Yes| Yes|Class|
@@ -256,16 +258,46 @@ This tag is used to leave out any Class/Struct/enum from generating JSON-RPC fil
 
 !!! warning
 	This tag is deprecated
-	
-By default, while creating the JSON-RPC, if a method has a single POD paramenter, It's equivalent Json class is used.
 
-If a class is marked with this tag, such conversion will not take place. It will still create a separate Data class to access that parameter.
+When a JSON-RPC method is marked as a property (and therefore can only have a single parameter), allow providing that parameter value directly without enclosing it in a surrounding JSON object. For example:
 
-##### Example
-In [IVolumeControl.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IVolumeControl.h#L31) INotification structure is marked with this tag.
-The functions parameters for muted and volume will be implemented in expanded format meaning a JSON wrapper class will be created even if there is only one member present.
+```json
+params: "foobar"
+```
+
+This should not be used for new interfaces as does not comply strictly with the JSON-RPC specification.
 
 <hr/>
+
+####  @uncompliant:collapsed
+
+!!! warning
+	This tag is deprecated
+
+When any JSON-RPC method/property/notification only has a single parameter, allow that parameter value to be directly provided without enclosing it in a surrounding JSON object. For example:
+
+```json
+params: "foobar"
+```
+
+This should not be used for new interfaces as does not comply strictly with the JSON-RPC specification.
+
+<hr/>
+
+####  @compliant
+
+All JSON-RPC methods, notifications and properties should strictly comply to the JSON-RPC specification - meaning all parameters must be enclosed in a surrounding object with the name of the parameter and value:
+
+```json
+params: { 
+	"name":  "abcd"
+}
+```
+
+This is the default behaviour so does not normally need adding to interfaces (unless the generator is being run with non-standard options)
+
+<hr/>
+
 
 #### @event
 This tag is used in JSON-RPC file generation. This tag is used to mark a struct/class that will be called back as an notification by the framework.
