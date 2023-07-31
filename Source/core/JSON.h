@@ -1736,8 +1736,8 @@ namespace Core {
 
                 ASSERT(maxLength > 0);
 
-                if ((_flagsAndCounters & SetBit) != 0) {
-                    bool isQuoted = IsQuoted();
+                bool isQuoted = IsQuoted();
+                if ((_flagsAndCounters & SetBit) != 0 || (_value.empty() && isQuoted)) {
                     if (offset == 0)  {
                         if (isQuoted == true) {
                             // We always start with a quote or Block marker
