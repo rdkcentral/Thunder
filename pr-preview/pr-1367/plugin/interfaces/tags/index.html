@@ -875,6 +875,20 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#uncompliantcollapsed" class="md-nav__link">
+    @uncompliant:collapsed
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#compliant" class="md-nav__link">
+    @compliant
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#event" class="md-nav__link">
     @event
   </a>
@@ -1951,6 +1965,20 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#uncompliantcollapsed" class="md-nav__link">
+    @uncompliant:collapsed
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#compliant" class="md-nav__link">
+    @compliant
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#event" class="md-nav__link">
     @event
   </a>
@@ -2425,9 +2453,25 @@ When the function returns, the parameter will have the modified length value. Th
 <td style="text-align: center;">Method</td>
 </tr>
 <tr>
-<td><a href="#extended">@uncompliant:extended</a></td>
-<td>Generates the extended format instead of the short one</td>
+<td><a href="#uncompliantextended">@uncompliant:extended</a></td>
+<td>Indicates the generated JSON-RPC code should use the old "extended" format for parameters</td>
 <td style="text-align: center;">Yes</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Class</td>
+</tr>
+<tr>
+<td><a href="#uncompliantcollapsed">@uncompliant:collapsed</a></td>
+<td>Indicates the generated JSON-RPC code should use the old "collapsed" format for parameters</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Class</td>
+</tr>
+<tr>
+<td><a href="#compliant">@compliant</a></td>
+<td>Indicates the generated JSON-RPC code should be strictly JSON-RPC compliant (default)</td>
+<td style="text-align: center;"></td>
 <td style="text-align: center;">No</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Class</td>
@@ -2526,16 +2570,35 @@ When the function returns, the parameter will have the modified length value. Th
 <p class="admonition-title">Warning</p>
 <p>This tag is deprecated</p>
 </div>
-<p>By default, while creating the JSON-RPC, if a method has a single POD paramenter, It's equivalent Json class is used.</p>
-<p>If a class is marked with this tag, such conversion will not take place. It will still create a separate Data class to access that parameter.</p>
-<h5 id="example_14">Example</h5>
-<p>In <a href="https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IVolumeControl.h#L31">IVolumeControl.h</a> INotification structure is marked with this tag.
-The functions parameters for muted and volume will be implemented in expanded format meaning a JSON wrapper class will be created even if there is only one member present.</p>
+<p>When a JSON-RPC method is marked as a property (and therefore can only have a single parameter), allow providing that parameter value directly without enclosing it in a surrounding JSON object. For example:</p>
+<div class="highlight"><pre><span></span><code><span class="err">params</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;foobar&quot;</span>
+</code></pre></div>
+<p>This should not be used for new interfaces as does not comply strictly with the JSON-RPC specification.</p>
+<hr/>
+
+<h4 id="uncompliantcollapsed">@uncompliant:collapsed</h4>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This tag is deprecated</p>
+</div>
+<p>When any JSON-RPC method/property/notification only has a single parameter, allow that parameter value to be directly provided without enclosing it in a surrounding JSON object. For example:</p>
+<div class="highlight"><pre><span></span><code><span class="err">params</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;foobar&quot;</span>
+</code></pre></div>
+<p>This should not be used for new interfaces as does not comply strictly with the JSON-RPC specification.</p>
+<hr/>
+
+<h4 id="compliant">@compliant</h4>
+<p>All JSON-RPC methods, notifications and properties should strictly comply to the JSON-RPC specification - meaning all parameters must be enclosed in a surrounding object with the name of the parameter and value:</p>
+<div class="highlight"><pre><span></span><code><span class="err">params</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;abcd&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>This is the default behaviour so does not normally need adding to interfaces (unless the generator is being run with non-standard options)</p>
 <hr/>
 
 <h4 id="event">@event</h4>
 <p>This tag is used in JSON-RPC file generation. This tag is used to mark a struct/class that will be called back as an notification by the framework.</p>
-<h5 id="example_15">Example</h5>
+<h5 id="example_14">Example</h5>
 <p><a href="https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IDolby.h#L53">IDolby.h</a> Whenever the audio mode changes AudioModeChanged API will be called. </p>
 <hr/>
 
@@ -2547,7 +2610,7 @@ The functions parameters for muted and volume will be implemented in expanded fo
 <li>A property is said to be read only if its parameter is non-const and there no ther method definition with const is given for setting.</li>
 <li>A property is said to be both if it has both const and non-const version present.</li>
 </ul>
-<h5 id="example_16">Example</h5>
+<h5 id="example_15">Example</h5>
 <ul>
 <li>
 <p><a href="https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IDolby.h#L64">IDolby.h</a> is a read only property as it does not have a const version for setting the property.</p>
@@ -2569,21 +2632,21 @@ The helper functions are defined in IIteratorType.h. </p>
 <li>In Json Generator,it will help to convert the class to JsonArray.</li>
 <li>In Proxy generation, it will help in generating the helper function like Current, Next, Previous for iterating through the array.</li>
 </ul>
-<h5 id="example_17">Example</h5>
+<h5 id="example_16">Example</h5>
 <p><a href="https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IDeviceInfo.h#L24">IDeviceInfo.h</a> uses @stubgen:include to insert the IIteratorType to that file.</p>
 <p>Which in turn used to iterate through iterators in function <a href="https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IDeviceInfo.h#L83">AudioOutputs</a>, <a href="https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IDeviceInfo.h#L84">VideoOutputs</a>, <a href="https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IDeviceInfo.h#L85">Resolutions</a></p>
 <hr/>
 
 <h4 id="bitmask">@bitmask</h4>
 <p>Indicates that enumerator lists should be packed into into a bit mask. </p>
-<h5 id="example_18">Example</h5>
+<h5 id="example_17">Example</h5>
 <p><a href="https://github.com/rdkcentral/ThunderInterfaces/blob/3f38ee11f4396b791dc1e75fe575779de3ff1611/interfaces/IBluetoothAudio.h#L159">IBluetoothAudio.h</a> uses @bitmask to indicate the supported audio codecs should be encoded as a bitmask.</p>
 <hr/>
 
 <h4 id="index">@index</h4>
 <p>Used in conjunction with @property. Allows a property list to be accessed at a given index.</p>
 <p>Index should be the first parameter in the function. </p>
-<h5 id="example_19">Example</h5>
+<h5 id="example_18">Example</h5>
 <p><a href="https://github.com/rdkcentral/Thunder/blob/6fa31a946314fdbad05792a216b33891584fb4b5/Source/plugins/IController.h#L125">IController.h</a> sets the <code>@index</code> tag on the <code>index</code> parameter.</p>
 <p>This allows the status method to be called as normal to return all plugin configs:</p>
 <p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
@@ -2605,13 +2668,13 @@ The helper functions are defined in IIteratorType.h. </p>
 
 <h4 id="opaque">@opaque</h4>
 <p>Indicates the string parameter contains a JSON document that should not be deserialised and just treated as a string</p>
-<h5 id="example_20">Example</h5>
+<h5 id="example_19">Example</h5>
 <p><a href="https://github.com/rdkcentral/Thunder/blob/R4.3/Source/plugins/IController.h#L80">IController</a> uses @opaque to indicate the plugin configuration should be treated as an opaque JSON object that does not need to be deserialised and should just be treated as a string</p>
 <hr/>
 
 <h4 id="alt">@alt</h4>
 <p>Provide an alternative name for the method. JSON-RPC methods will be generated for both the actual function name and the alternative name</p>
-<h5 id="example_21">Example</h5>
+<h5 id="example_20">Example</h5>
 <p><a href="https://github.com/rdkcentral/Thunder/blob/R4.3/Source/plugins/IController.h#L38">IController</a> uses @alt for the <code>Reboot()</code> method to generate an alternatively named method called <code>Harakiri</code> (for legacy reasons)</p>
 <hr/>
 
@@ -2622,7 +2685,7 @@ The helper functions are defined in IIteratorType.h. </p>
 <li>When used in function names, it will replace the actual function name with the text that is given.</li>
 <li>When used in function parameter, it will replace the parameter name with the text that is given in the tag.</li>
 </ul>
-<h5 id="example_22">Example</h5>
+<h5 id="example_21">Example</h5>
 <p><a href="https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IBrowser.h#L61">IBrowser.h</a> uses this tag for enum. The generated code for this header will map the text for these enums as allowed and not as Allowed, blocked and not as Blocked. </p>
 <p>Without these tags the string equivalent of the enums will be first letter caps followed by all small. This tag has changed it to all small.</p>
 <h3 id="json-rpc-documentation-related-tags">JSON-RPC Documentation Related Tags</h3>
@@ -2700,14 +2763,14 @@ The helper functions are defined in IIteratorType.h. </p>
 <p>By default, the documentation generator will add links to the implemented interface definitions. </p>
 <p>The link used by default is <code>https://github.com/rdkcentral/ThunderInterfaces/blob/{revision}/jsonrpc/{interfacefile}</code> (as set in <code>ThunderInterfaces/jsonrpc/common.json</code>)</p>
 <p>The @sourcelocation tag allows changing this to a custom URL</p>
-<h5 id="example_23">Example</h5>
+<h5 id="example_22">Example</h5>
 <div class="highlight"><pre><span></span><code>@sourcelocation http://example.com
 </code></pre></div>
 <hr/>
 
 <h4 id="deprecated">@deprecated</h4>
 <p>This tag is used to mark a Method, Property as deprecated in the generated document.</p>
-<h5 id="example_24">Example</h5>
+<h5 id="example_23">Example</h5>
 <p>When a method is marked with this tag, in the generated .md documentation, it will be marked with the below Message </p>
 <blockquote>
 <p>This API is <strong>deprecated</strong> and may be removed in the future. It is no longer recommended for use in new implementations.
@@ -2717,7 +2780,7 @@ The helper functions are defined in IIteratorType.h. </p>
 
 <h4 id="obsolete">@obsolete</h4>
 <p>This tag is used to mark a Method, Property as obolete in the generated document.</p>
-<h5 id="example_25">Example</h5>
+<h5 id="example_24">Example</h5>
 <p>When a method is marked with this tag, in the generated .md documentation, it will be marked with the below Message </p>
 <blockquote>
 <p>This API is <strong>obsolete</strong>. It is no longer recommended for use in new implementations</p>
@@ -2726,7 +2789,7 @@ The helper functions are defined in IIteratorType.h. </p>
 
 <h4 id="brief">@brief</h4>
 <p>This is a short description about the function. This description will be appeneded to the method description in the JSON-RPC generated file.</p>
-<h5 id="example_26">Example</h5>
+<h5 id="example_25">Example</h5>
 <p><a href="https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IDolby.h#L65">IDolby.h</a> mentions a brief descrption using this tag.</p>
 <p>JsonGenerator.py will create a file JDolbyOutput.h. In that file the method AtmosMetadata. It adds that description.</p>
 <div class="highlight"><pre><span></span><code><span class="hll"><span class="c1">// Property: dolby_atmosmetadata - Atmos capabilities of Sink (r/o)</span>
@@ -2755,7 +2818,7 @@ The helper functions are defined in IIteratorType.h. </p>
 <h4 id="param">@param</h4>
 <p>The syntax for this tag is <code>@param &lt;PARAMETER&gt;</code>. It is associated with a function/property.
 This tag adds the description about the specified parameter in the generated code and in the generated document.</p>
-<h5 id="example_27">Example</h5>
+<h5 id="example_26">Example</h5>
 <p><a href="https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IDolby.h#L76">IDolby.h</a> add description about enable parameter using this tag.</p>
 <hr />
 
@@ -2763,7 +2826,7 @@ This tag adds the description about the specified parameter in the generated cod
 <p>This tag is used in document creation.</p>
 <p>The syntax for this tag is <code>@retval &lt;ErrorCode&gt;: &lt;Description&gt;</code>. It is associated with function/property</p>
 <p>This tag adds description about each return codes specified in the generated markdown document.</p>
-<h5 id="example_28">Example</h5>
+<h5 id="example_27">Example</h5>
 <p>In <a href="https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IVolumeControl.h#L54">IVolumeControl.h</a>, it uses this tag to add description about the returned error code.</p>
 
 
