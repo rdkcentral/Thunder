@@ -22,6 +22,7 @@
 #include "Sync.h"
 #include "Frame.h"
 #include "Enumerate.h"
+#include "Singleton.h"
 
 namespace WPEFramework {
 
@@ -95,7 +96,11 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
             ControlList _controlList;
         };
 
-        static Controls _registeredControls;
+        Controls& ControlsInstance()
+        {
+            return (Core::SingletonType<Controls>::Instance());
+        }
+
         static Core::Messaging::IStore* _storage;
     }
 
@@ -371,7 +376,7 @@ namespace Core {
 
         /* static */ void IControl::Announce(IControl* control)
         {
-            _registeredControls.Announce(control);
+            ControlsInstance().Announce(control);
 
             if (_storage != nullptr) {
                 control->Enable(_storage->Default(control->Metadata()));
@@ -379,11 +384,11 @@ namespace Core {
         }
 
         /* static */ void IControl::Revoke(IControl* control) {
-            _registeredControls.Revoke(control);
+            ControlsInstance().Revoke(control);
         }
 
         /* static */ void IControl::Iterate(IControl::IHandler& handler) {
-            _registeredControls.Iterate(handler);
+            ControlsInstance().Iterate(handler);
         }
 
         /* static */ IStore* IStore::Instance() {

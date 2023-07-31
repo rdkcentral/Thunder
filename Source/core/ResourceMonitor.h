@@ -120,6 +120,7 @@ namespace Core {
 #ifdef __DEBUG__
             // All resources should be gone !!!
             for (const auto& resource : _resourceList) {
+                TRACE_L1("Resource name: %s", typeid(resource).name());
                 ASSERT(resource == nullptr);
             }
 #endif

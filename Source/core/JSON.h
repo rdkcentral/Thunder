@@ -1736,8 +1736,8 @@ namespace Core {
 
                 ASSERT(maxLength > 0);
 
-                if ((_flagsAndCounters & SetBit) != 0) {
-                    bool isQuoted = IsQuoted();
+                bool isQuoted = IsQuoted();
+                if ((_flagsAndCounters & SetBit) != 0 || (_value.empty() && isQuoted)) {
                     if (offset == 0)  {
                         if (isQuoted == true) {
                             // We always start with a quote or Block marker
@@ -1948,7 +1948,7 @@ namespace Core {
                         } else if (current == '\"') {
                             // We are done! leave this element.
                             finished = true;
-                        } else if (current >= 0x0 && current <= 0x1F) {
+                        } else if (current <= 0x1F) {
                             error = Error{ "Unescaped control character detected" };
                         } else {
                             // Just copy and onto the next;
