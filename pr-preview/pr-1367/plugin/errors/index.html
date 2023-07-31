@@ -17,7 +17,7 @@
         <link rel="next" href="../versioning/">
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
+      <meta name="generator" content="mkdocs-1.5.1, mkdocs-material-9.1.21">
     
     
       
@@ -73,6 +73,11 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
+      
+        
+        <a href="#exceptions" class="md-skip">
+          Skip to content
+        </a>
       
     </div>
     <div data-md-component="announce">
@@ -705,9 +710,105 @@
       
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Error Handling
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         Error Handling
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#exceptions" class="md-nav__link">
+    Exceptions
+  </a>
+  
+    <nav class="md-nav" aria-label="Exceptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exception-catching" class="md-nav__link">
+    Exception Catching
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-codes" class="md-nav__link">
+    Error Codes
+  </a>
+  
+    <nav class="md-nav" aria-label="Error Codes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#com-rpc-errors" class="md-nav__link">
+    COM-RPC Errors
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json-rpc" class="md-nav__link">
+    JSON-RPC
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#handling-unexpected-com-rpc-disconnections" class="md-nav__link">
+    Handling Unexpected COM-RPC Disconnections
+  </a>
+  
+    <nav class="md-nav" aria-label="Handling Unexpected COM-RPC Disconnections">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#out-of-process-disconnection" class="md-nav__link">
+    Out-Of-Process Disconnection
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#client-crashes" class="md-nav__link">
+    Client Crashes
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1437,6 +1538,88 @@
   
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#exceptions" class="md-nav__link">
+    Exceptions
+  </a>
+  
+    <nav class="md-nav" aria-label="Exceptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exception-catching" class="md-nav__link">
+    Exception Catching
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-codes" class="md-nav__link">
+    Error Codes
+  </a>
+  
+    <nav class="md-nav" aria-label="Error Codes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#com-rpc-errors" class="md-nav__link">
+    COM-RPC Errors
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json-rpc" class="md-nav__link">
+    JSON-RPC
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#handling-unexpected-com-rpc-disconnections" class="md-nav__link">
+    Handling Unexpected COM-RPC Disconnections
+  </a>
+  
+    <nav class="md-nav" aria-label="Handling Unexpected COM-RPC Disconnections">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#out-of-process-disconnection" class="md-nav__link">
+    Out-Of-Process Disconnection
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#client-crashes" class="md-nav__link">
+    Client Crashes
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1455,7 +1638,841 @@
 
   <h1>Error Handling</h1>
 
+<p>As with all code, it is important that Thunder plugins handle errors gracefully and consistently. </p>
+<h2 id="exceptions">Exceptions</h2>
+<p>By default, Thunder is compiled with <code>-fno-exceptions</code> to disable exception support in the framework. This can be changed by enabling the <code>EXCEPTIONS_ENABLE</code> CMake option. As a result, plugins should <strong>never</strong> be designed to throw exceptions.</p>
+<p>If an exception does occur, the WPEFramework process will immediately shut down with an error to prevent any further issues and log the following message:</p>
+<div class="highlight"><pre><span></span><code>WPEFramework shutting down due to an uncaught exception.
+</code></pre></div>
+<p>If the <code>Crash</code> logging category is enabled, then more information about the faulting callstack will be available (only on debug builds). Thunder will attempt to resolve the callsign of the faulting plugin but this is not always possible.</p>
+<div class="highlight"><pre><span></span><code>[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: -== Unhandled exception in: NoTLSCallsign [General] ==-
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [000] [0x7ffff7d22cba] /Thunder/install/usr/lib/libWPEFrameworkCore.so.1 DumpCallStack [74]
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [001] [0x7ffff7e02b84] /Thunder/install/usr/lib/libWPEFrameworkMessaging.so.1 WPEFramework::Logging::DumpException(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) [88]
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [002] [0x555555641b35] /Thunder/install/usr/bin/WPEFramework 
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [003] [0x7ffff7aae24c] /lib/x86_64-linux-gnu/libstdc++.so.6 
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [004] [0x7ffff7aae2b7] /lib/x86_64-linux-gnu/libstdc++.so.6 
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [005] [0x7ffff7aae518] /lib/x86_64-linux-gnu/libstdc++.so.6 
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [006] [0x7ffff49820ff] /Thunder/install/usr/lib/wpeframework/plugins/libWPEFrameworkTestPlugin.so 
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [007] [0x555555664a61] /Thunder/install/usr/bin/WPEFramework 
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [008] [0x55555566b47e] /Thunder/install/usr/bin/WPEFramework 
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [009] [0x555555643b35] /Thunder/install/usr/bin/WPEFramework 
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [010] [0x7ffff7629d90] /lib/x86_64-linux-gnu/libc.so.6 
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [011] [0x7ffff7629e40] /lib/x86_64-linux-gnu/libc.so.6 __libc_start_main [128]
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [012] [0x555555596055] /Thunder/install/usr/bin/WPEFramework _start [37]
+</code></pre></div>
+<h3 id="exception-catching">Exception Catching</h3>
+<div class="admonition danger">
+<p class="admonition-title">Danger</p>
+<p>This is almost always a bad idea. Catching exceptions at a high level in such a coarse way then continuing will often result in undesired behaviour!</p>
+</div>
+<p>If compiled with the <code>EXCEPTION_CATCHING</code> CMake option, then Thunder will install high-level exception catching at specific places in the framework. These will catch exceptions coming from plugins and continue execution instead of terminating the entire process. However, be aware this will not catch all exceptions so some exceptions will still result in the framework terminating.</p>
+<h2 id="error-codes">Error Codes</h2>
+<p>Thunder defines a list of common error codes in <code>Source/core/Portability.h</code>. Each error code has unique uint32_t ID associated with it. Error codes can be converted to a human-readable string by calling the <code>ErrorToString(uint32_t code)</code> function:</p>
+<div class="highlight"><pre><span></span><code><span class="kt">uint32_t</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_TIMEDOUT</span><span class="p">;</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;Got error code %d (%s)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ErrorToString</span><span class="p">(</span><span class="n">error</span><span class="p">));</span>
 
+<span class="cm">/* Output:</span>
+<span class="cm">Got error code 11 (ERROR_TIMEDOUT)</span>
+<span class="cm">*/</span>
+</code></pre></div>
+<h3 id="com-rpc-errors">COM-RPC Errors</h3>
+<p>When designing an interface that will be exposed over COM-RPC, all functions should return a <code>Core::hresult</code> to indicate if the function executed successfully. On success, the function should return <code>Core::ERROR_NONE</code>. </p>
+<p>Any data returned by the function should be stored in an output parameter instead of a return value. This ensures consistency across interfaces. If an error occurs over the COM-RPC transport or during marshalling/umarshalling the data, the most-significant bit will be used to indicate the error code is a COM error. </p>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_remoteInterface</span><span class="o">-&gt;</span><span class="n">MyFunction</span><span class="p">();</span>
+
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">success</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// An error occured, was this a result of the COM link or did the plugin return an error?</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">success</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">COM_ERROR</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Plugin returned error %d (%s)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">success</span><span class="p">,</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ErrorToString</span><span class="p">(</span><span class="n">success</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;COM-RPC error %d (%s)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">success</span><span class="p">,</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ErrorToString</span><span class="p">(</span><span class="n">success</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="json-rpc">JSON-RPC</h3>
+<p>As with COM-RPC, JSON-RPC methods should return a <code>Core::hresult</code> value to indicate success or failure.  If the JSON-RPC method returns an error code other than <code>Core::ERROR_NONE</code>, it is treated as a failure.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Some older RDK plugins return a <code>success</code> boolean in their response to indicate errors. This is not recommended or necessary - simply return the appropriate error code from the method and a valid JSON-RPC error response will be generated.</p>
+</div>
+<p>The returned JSON conforms to the <a href="https://www.jsonrpc.org/">JSON-RPC 2.0</a> standard. In addition to the Thunder core error code, the response body may contain a JSON-RPC error as defined in the JSON-RPC specification</p>
+<table>
+<thead>
+<tr>
+<th>code</th>
+<th>message</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-32700</td>
+<td>Parse error</td>
+<td>Invalid JSON was received by the server. An error occurred on the server while parsing the JSON text.</td>
+</tr>
+<tr>
+<td>-32600</td>
+<td>Invalid Request</td>
+<td>The JSON sent is not a valid Request object.</td>
+</tr>
+<tr>
+<td>-32601</td>
+<td>Method not found</td>
+<td>The method does not exist / is not available.</td>
+</tr>
+<tr>
+<td>-32602</td>
+<td>Invalid params</td>
+<td>Invalid method parameter(s).</td>
+</tr>
+<tr>
+<td>-32603</td>
+<td>Internal error</td>
+<td>Internal JSON-RPC error.</td>
+</tr>
+<tr>
+<td>-32000 to -32099</td>
+<td>Server error</td>
+<td>Reserved for implementation-defined server-errors.</td>
+</tr>
+</tbody>
+</table>
+<p>In the below example, an attempt is made to activate a non-existent plugin. The Controller plugin returns <code>ERROR_UNKNOWN_KEY</code> since to plugin exists with the given callsign.</p>
+<p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Controller.1.activate&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;callsign&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fakePlugin&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2b05.svg" title=":arrow_left:" /> Response</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">22</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ERROR_UNKNOWN_KEY&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="handling-unexpected-com-rpc-disconnections">Handling Unexpected COM-RPC Disconnections</h2>
+<p>From the perspective of a plugin, there are two COM-RPC disconnection scenarios to consider:</p>
+<ul>
+<li>When the out-of-process side of the plugin unexpectedly terminates (either due to a crash or being killed by an external entity such as the linux OOM killer)</li>
+<li>When a client that has registered for notifications crashes unepxectedly.</li>
+</ul>
+<p>Whilst the framework can detect unexpected COM-RPC disconnects and handle updating reference counts accordingly, there are actions that should be taken in the plugin code to ensure safety.</p>
+<h3 id="out-of-process-disconnection">Out-Of-Process Disconnection</h3>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>It is essential that plugins implement this feature if they are expected to run out-of-process</p>
+</div>
+<p>If your plugin implements an interface that could run out of process, then it is very important the plugin subscribes to the remote connection notification <code>RPC::IRemoteConnection::INotification</code>. This is a common pattern that you will see across many plugins.</p>
+<p>The framework will raise this notification whenever a COM-RPC connection or disconnection occurs. The plugin should check if the disconnected connection belongs to them, and if so take action. Typically, this action will be for the plugin to deactivate itself with a <code>Failure</code> reason. </p>
+<p>Without listening for this notification and taking action, if the out-of-process side of a plugin dies the plugin itself will not be deactivated.</p>
+<p>By deactivating with the <code>Failure</code> reason, the post-mortem handler will kick in. This will dump the contents of some system files to the log (memory information, load averages) to help debugging.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code>Deactivated()</code> function might be called on a socket thread which we do not want to block. As a result, this function should return as quickly as possible and any work that needs doing (e.g. deactivating the plugin) must be done on a separate thread in the main worker pool.</p>
+</div>
+<p>Example:</p>
+<div class="highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">TestPlugin.h</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TestPlugin</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IPlugin</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">JSONRPC</span><span class="w"> </span><span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+<span class="hll"><span class="w">    </span><span class="k">class</span><span class="w"> </span><span class="nc">Notification</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">::</span><span class="n">INotification</span><span class="w"> </span><span class="p">{</span>
+</span><span class="hll"><span class="w">    </span><span class="k">public</span><span class="o">:</span>
+</span><span class="hll"><span class="w">        </span><span class="k">explicit</span><span class="w"> </span><span class="n">Notification</span><span class="p">(</span><span class="n">TestPlugin</span><span class="o">*</span><span class="w"> </span><span class="n">parent</span><span class="p">)</span>
+</span><span class="hll"><span class="w">            </span><span class="o">:</span><span class="w"> </span><span class="n">_parent</span><span class="p">(</span><span class="o">*</span><span class="n">parent</span><span class="p">)</span>
+</span><span class="hll"><span class="w">        </span><span class="p">{</span>
+</span><span class="hll"><span class="w">            </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">parent</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
+</span><span class="hll"><span class="w">        </span><span class="p">}</span>
+</span><span class="hll">
+</span><span class="hll"><span class="w">        </span><span class="o">~</span><span class="n">Notification</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+</span><span class="hll">
+</span><span class="hll"><span class="w">        </span><span class="n">Notification</span><span class="p">(</span><span class="n">Notification</span><span class="o">&amp;&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+</span><span class="hll"><span class="w">        </span><span class="n">Notification</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Notification</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+</span><span class="hll"><span class="w">        </span><span class="n">Notification</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">Notification</span><span class="o">&amp;&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+</span><span class="hll"><span class="w">        </span><span class="n">Notification</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Notification</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+</span><span class="hll">
+</span><span class="hll"><span class="w">    </span><span class="k">public</span><span class="o">:</span>
+</span><span class="hll"><span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="n">Activated</span><span class="p">(</span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">*</span><span class="w"> </span><span class="cm">/* connection */</span><span class="p">)</span><span class="w"> </span><span class="k">override</span>
+</span><span class="hll"><span class="w">        </span><span class="p">{</span>
+</span><span class="hll"><span class="w">        </span><span class="p">}</span>
+</span><span class="hll"><span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="n">Deactivated</span><span class="p">(</span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">*</span><span class="w"> </span><span class="n">connectionId</span><span class="p">)</span><span class="w"> </span><span class="k">override</span>
+</span><span class="hll"><span class="w">        </span><span class="p">{</span>
+</span><span class="hll"><span class="w">            </span><span class="n">_parent</span><span class="p">.</span><span class="n">Deactivated</span><span class="p">(</span><span class="n">connectionId</span><span class="p">);</span>
+</span><span class="hll"><span class="w">        </span><span class="p">}</span>
+</span><span class="hll">
+</span><span class="hll"><span class="w">        </span><span class="n">BEGIN_INTERFACE_MAP</span><span class="p">(</span><span class="n">Notification</span><span class="p">)</span>
+</span><span class="hll"><span class="w">        </span><span class="n">INTERFACE_ENTRY</span><span class="p">(</span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">::</span><span class="n">INotification</span><span class="p">)</span>
+</span><span class="hll"><span class="w">        </span><span class="n">END_INTERFACE_MAP</span>
+</span><span class="hll">
+</span><span class="hll"><span class="w">    </span><span class="k">private</span><span class="o">:</span>
+</span><span class="hll"><span class="w">        </span><span class="n">TestPlugin</span><span class="o">&amp;</span><span class="w"> </span><span class="n">_parent</span><span class="p">;</span>
+</span><span class="hll"><span class="w">    </span><span class="p">};</span>
+</span>
+<span class="k">public</span><span class="o">:</span>
+<span class="w">    </span><span class="n">TestPlugin</span><span class="p">()</span>
+<span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">_connectionId</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">_service</span><span class="p">(</span><span class="k">nullptr</span><span class="p">)</span>
+<span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">_testPlugin</span><span class="p">(</span><span class="k">nullptr</span><span class="p">)</span>
+<span class="hll"><span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">_notification</span><span class="p">(</span><span class="k">this</span><span class="p">)</span>
+</span><span class="w">    </span><span class="p">{</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="o">~</span><span class="n">TestPlugin</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+
+<span class="w">    </span><span class="n">TestPlugin</span><span class="p">(</span><span class="n">TestPlugin</span><span class="o">&amp;&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+<span class="w">    </span><span class="n">TestPlugin</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">TestPlugin</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+<span class="w">    </span><span class="n">TestPlugin</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">TestPlugin</span><span class="o">&amp;&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+<span class="w">    </span><span class="n">TestPlugin</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">TestPlugin</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+
+<span class="w">    </span><span class="n">BEGIN_INTERFACE_MAP</span><span class="p">(</span><span class="n">TestPlugin</span><span class="p">)</span>
+<span class="w">    </span><span class="n">INTERFACE_ENTRY</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IPlugin</span><span class="p">)</span>
+<span class="w">    </span><span class="n">INTERFACE_ENTRY</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IDispatcher</span><span class="p">)</span>
+<span class="w">    </span><span class="n">INTERFACE_AGGREGATE</span><span class="p">(</span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="p">,</span><span class="w"> </span><span class="n">_testPlugin</span><span class="p">)</span>
+<span class="w">    </span><span class="n">END_INTERFACE_MAP</span>
+
+<span class="k">public</span><span class="o">:</span>
+<span class="w">    </span><span class="c1">// IPlugin methods</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="n">Initialize</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">*</span><span class="w"> </span><span class="n">service</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">Deinitialize</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">*</span><span class="w"> </span><span class="n">service</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="nf">Information</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+
+<span class="k">private</span><span class="o">:</span>
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">Deactivated</span><span class="p">(</span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">*</span><span class="w"> </span><span class="n">connection</span><span class="p">);</span>
+
+<span class="k">private</span><span class="o">:</span>
+<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">_connectionId</span><span class="p">;</span>
+<span class="w">    </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">*</span><span class="w"> </span><span class="n">_service</span><span class="p">;</span>
+<span class="w">    </span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">*</span><span class="w"> </span><span class="n">_testPlugin</span><span class="p">;</span>
+<span class="hll"><span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Sink</span><span class="o">&lt;</span><span class="n">Notification</span><span class="o">&gt;</span><span class="w"> </span><span class="n">_notification</span><span class="p">;</span>
+</span><span class="p">};</span>
+</code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">TestPlugin.cpp</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span>
+<span class="normal">71</span>
+<span class="normal">72</span>
+<span class="normal">73</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="nf">TestPlugin::Initialize</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">*</span><span class="w"> </span><span class="n">service</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">_service</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
+<span class="w">    </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">_connectionId</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{};</span>
+
+<span class="w">    </span><span class="n">_service</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">service</span><span class="p">;</span>
+<span class="w">    </span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">AddRef</span><span class="p">();</span>
+
+<span class="w">    </span><span class="c1">// Register for COM-RPC connection/disconnection notifications</span>
+<span class="hll"><span class="w">    </span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">Register</span><span class="p">(</span><span class="o">&amp;</span><span class="n">_notification</span><span class="p">);</span>
+</span>
+<span class="w">    </span><span class="c1">// Instantiate the ITestPlugin interface (which will spawn the OOP side if running in OOP mode)</span>
+<span class="w">    </span><span class="c1">// Store connection ID in _connectionId</span>
+<span class="w">    </span><span class="n">_testPlugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">Root</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_connectionId</span><span class="p">,</span><span class="w"> </span><span class="mi">2000</span><span class="p">,</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;TestPluginImplementation&quot;</span><span class="p">));</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">_testPlugin</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Error occurred, return non-empty string</span>
+<span class="w">        </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Failed to create ITestPlugin&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">result</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">TestPlugin::Deinitialize</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">*</span><span class="w"> </span><span class="n">service</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">service</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">_service</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">service</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Unsubscribe from connection notification first to prevent any false-positives</span>
+<span class="hll"><span class="w">        </span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">Unregister</span><span class="p">(</span><span class="o">&amp;</span><span class="n">_notification</span><span class="p">);</span>
+</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">_testPlugin</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">*</span><span class="w"> </span><span class="n">connection</span><span class="p">(</span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">RemoteConnection</span><span class="p">(</span><span class="n">_connectionId</span><span class="p">));</span>
+
+<span class="w">            </span><span class="c1">// This should release the last reference and destruct the object. If not,</span>
+<span class="w">            </span><span class="c1">// there&#39;s something else holding on to it and we have a leak</span>
+<span class="w">            </span><span class="n">VARIABLE_IS_NOT_USED</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_testPlugin</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
+<span class="w">            </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">result</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_DESTRUCTION_SUCCEEDED</span><span class="p">);</span>
+<span class="w">            </span><span class="n">_testPlugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
+
+<span class="w">            </span><span class="c1">// Shut down the out-of-process connection if still running</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">connection</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">connection</span><span class="o">-&gt;</span><span class="n">Terminate</span><span class="p">();</span>
+<span class="w">                </span><span class="n">connection</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
+<span class="w">        </span><span class="n">_service</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
+<span class="w">        </span><span class="n">_connectionId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">string</span><span class="w"> </span><span class="nf">TestPlugin::Information</span><span class="p">()</span><span class="w"> </span><span class="k">const</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="c1">// No additional info to report</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">string</span><span class="p">();</span>
+<span class="p">}</span>
+
+<span class="hll"><span class="kt">void</span><span class="w"> </span><span class="nf">TestPlugin::Deactivated</span><span class="p">(</span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">*</span><span class="w"> </span><span class="n">connection</span><span class="p">)</span>
+</span><span class="hll"><span class="p">{</span>
+</span><span class="hll"><span class="w">    </span><span class="c1">// Gracefully handle an unexpected termination from the other side of the</span>
+</span><span class="hll"><span class="w">    </span><span class="c1">// connection (for example if the remote process crashed) and deactivate</span>
+</span><span class="hll"><span class="w">    </span><span class="c1">// ourselves as we cannot continue safely</span>
+</span><span class="hll"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">connection</span><span class="o">-&gt;</span><span class="n">Id</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">_connectionId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span class="hll"><span class="w">        </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">_service</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
+</span><span class="hll"><span class="w">        </span><span class="n">Core</span><span class="o">::</span><span class="n">IWorkerPool</span><span class="o">::</span><span class="n">Instance</span><span class="p">().</span><span class="n">Submit</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">::</span><span class="n">Job</span><span class="o">::</span><span class="n">Create</span><span class="p">(</span><span class="n">_service</span><span class="p">,</span>
+</span><span class="hll"><span class="w">            </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">::</span><span class="n">DEACTIVATED</span><span class="p">,</span>
+</span><span class="hll"><span class="w">            </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">::</span><span class="n">FAILURE</span><span class="p">));</span>
+</span><span class="hll"><span class="w">    </span><span class="p">}</span>
+</span><span class="hll"><span class="p">}</span>
+</span></code></pre></div></td></tr></table></div>
+<h3 id="client-crashes">Client Crashes</h3>
+<p>If your plugin provides the ability for client applications to register for notifications, then if the client crashes the plugin should remove any notification registrations that belong to that client.</p>
+<p>Whilst this is not strictly necessary (calling a method on a dead client's notification proxy will not cause a crash), it is a good practice to avoid holding on to dead proxy objects. This ensures memory is correctly freed and you don't waste time firing notifications to dead clients.</p>
+<p>In the below example, <code>ITestPlugin</code> has a notification called <code>INotification</code> and allows client applications can register/unregister for that notification (see <code>TestPluginImplementation.cpp</code>). </p>
+<p>In normal operation, the client will call <code>Register()</code> when it starts, and <code>Unregister()</code> when it exits. However, if the client crashes it might not have chance to call the <code>Unregister()</code> method. Therefore it is up to the plugin to remove the registration manually.</p>
+<p>To do this, the plugin should register for <code>ICOMLink::INotification</code> events from the framework. When the <code>Dangling()</code> event occurs (indicating we have an interface that is not connected on both ends), the plugin should check to see which interface was revoked. If the interface belongs to the plugin's notification, then unregister that client.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The below example only demonstrates the <code>ICOMLink::INotification</code>. In the real world, this should be implemented alongside the <code>RPC::IRemoteConnection::INotification</code> notification shown in the previous example</p>
+</div>
+<div class="highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">TestPlugin.h</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span>
+<span class="normal">71</span>
+<span class="normal">72</span>
+<span class="normal">73</span>
+<span class="normal">74</span>
+<span class="normal">75</span>
+<span class="normal">76</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TestPlugin</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IPlugin</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">JSONRPC</span><span class="w"> </span><span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+<span class="hll"><span class="w">    </span><span class="k">class</span><span class="w"> </span><span class="nc">Notification</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">::</span><span class="n">ICOMLink</span><span class="o">::</span><span class="n">INotification</span><span class="w"> </span><span class="p">{</span>
+</span><span class="hll"><span class="w">    </span><span class="k">public</span><span class="o">:</span>
+</span><span class="hll"><span class="w">        </span><span class="k">explicit</span><span class="w"> </span><span class="n">Notification</span><span class="p">(</span><span class="n">TestPlugin</span><span class="o">*</span><span class="w"> </span><span class="n">parent</span><span class="p">)</span>
+</span><span class="hll"><span class="w">            </span><span class="o">:</span><span class="w"> </span><span class="n">_parent</span><span class="p">(</span><span class="o">*</span><span class="n">parent</span><span class="p">)</span>
+</span><span class="hll"><span class="w">        </span><span class="p">{</span>
+</span><span class="hll"><span class="w">            </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">parent</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
+</span><span class="hll"><span class="w">        </span><span class="p">}</span>
+</span><span class="hll"><span class="w">        </span><span class="o">~</span><span class="n">Notification</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+</span><span class="hll">
+</span><span class="hll"><span class="w">        </span><span class="n">Notification</span><span class="p">(</span><span class="n">Notification</span><span class="o">&amp;&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+</span><span class="hll"><span class="w">        </span><span class="n">Notification</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Notification</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+</span><span class="hll"><span class="w">        </span><span class="n">Notification</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">Notification</span><span class="o">&amp;&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+</span><span class="hll"><span class="w">        </span><span class="n">Notification</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Notification</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+</span><span class="hll">
+</span><span class="hll"><span class="w">    </span><span class="k">public</span><span class="o">:</span>
+</span><span class="hll"><span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="n">Dangling</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="o">*</span><span class="w"> </span><span class="n">remote</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">interfaceId</span><span class="p">)</span><span class="w"> </span><span class="k">override</span>
+</span><span class="hll"><span class="w">        </span><span class="p">{</span>
+</span><span class="hll"><span class="w">            </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">remote</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
+</span><span class="hll"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">interfaceId</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">::</span><span class="n">INotification</span><span class="o">::</span><span class="n">ID</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span class="hll"><span class="w">                </span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">revokedInterface</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">remote</span><span class="o">-&gt;</span><span class="n">QueryInterface</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">::</span><span class="n">INotification</span><span class="o">&gt;</span><span class="p">();</span>
+</span><span class="hll"><span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">revokedInterface</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span class="hll"><span class="w">                    </span><span class="n">_parent</span><span class="p">.</span><span class="n">CallbackRevoked</span><span class="p">(</span><span class="n">revokedInterface</span><span class="p">);</span>
+</span><span class="hll"><span class="w">                    </span><span class="n">revokedInterface</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
+</span><span class="hll"><span class="w">                </span><span class="p">}</span>
+</span><span class="hll"><span class="w">            </span><span class="p">}</span>
+</span><span class="hll"><span class="w">        </span><span class="p">}</span>
+</span><span class="hll">
+</span><span class="hll"><span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="n">Revoked</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="o">*</span><span class="w"> </span><span class="n">remote</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">interfaceId</span><span class="p">)</span><span class="w"> </span><span class="k">override</span>
+</span><span class="hll"><span class="w">        </span><span class="p">{</span>
+</span><span class="hll"><span class="w">        </span><span class="p">}</span>
+</span><span class="hll">
+</span><span class="hll"><span class="w">        </span><span class="n">BEGIN_INTERFACE_MAP</span><span class="p">(</span><span class="n">Notification</span><span class="p">)</span>
+</span><span class="hll"><span class="w">        </span><span class="n">INTERFACE_ENTRY</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">::</span><span class="n">ICOMLink</span><span class="o">::</span><span class="n">INotification</span><span class="p">)</span>
+</span><span class="hll"><span class="w">        </span><span class="n">END_INTERFACE_MAP</span>
+</span><span class="hll">
+</span><span class="hll"><span class="w">    </span><span class="k">private</span><span class="o">:</span>
+</span><span class="hll"><span class="w">        </span><span class="n">TestPlugin</span><span class="o">&amp;</span><span class="w"> </span><span class="n">_parent</span><span class="p">;</span>
+</span><span class="hll"><span class="w">    </span><span class="p">};</span>
+</span>
+<span class="k">public</span><span class="o">:</span>
+<span class="w">    </span><span class="n">TestPlugin</span><span class="p">()</span>
+<span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">_connectionId</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">_service</span><span class="p">(</span><span class="k">nullptr</span><span class="p">)</span>
+<span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">_testPlugin</span><span class="p">(</span><span class="k">nullptr</span><span class="p">)</span>
+<span class="hll"><span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">_notification</span><span class="p">(</span><span class="k">this</span><span class="p">)</span>
+</span><span class="w">    </span><span class="p">{</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="o">~</span><span class="n">TestPlugin</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+
+<span class="w">    </span><span class="c1">// Do not allow copy constructors</span>
+<span class="w">    </span><span class="n">TestPlugin</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">TestPlugin</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+<span class="w">    </span><span class="n">TestPlugin</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">TestPlugin</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+
+<span class="w">    </span><span class="n">BEGIN_INTERFACE_MAP</span><span class="p">(</span><span class="n">TestPlugin</span><span class="p">)</span>
+<span class="w">    </span><span class="n">INTERFACE_ENTRY</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IPlugin</span><span class="p">)</span>
+<span class="w">    </span><span class="n">INTERFACE_ENTRY</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IDispatcher</span><span class="p">)</span>
+<span class="w">    </span><span class="n">INTERFACE_AGGREGATE</span><span class="p">(</span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="p">,</span><span class="w"> </span><span class="n">_testPlugin</span><span class="p">)</span>
+<span class="w">    </span><span class="n">END_INTERFACE_MAP</span>
+
+<span class="k">public</span><span class="o">:</span>
+<span class="w">    </span><span class="c1">// IPlugin methods</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="n">Initialize</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">*</span><span class="w"> </span><span class="n">service</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">Deinitialize</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">*</span><span class="w"> </span><span class="n">service</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="nf">Information</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+
+<span class="k">private</span><span class="o">:</span>
+<span class="hll"><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">CallbackRevoked</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">::</span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="n">remote</span><span class="p">);</span>
+</span>
+<span class="k">private</span><span class="o">:</span>
+<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">_connectionId</span><span class="p">;</span>
+<span class="w">    </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">*</span><span class="w"> </span><span class="n">_service</span><span class="p">;</span>
+<span class="w">    </span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">*</span><span class="w"> </span><span class="n">_testPlugin</span><span class="p">;</span>
+<span class="hll"><span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Sink</span><span class="o">&lt;</span><span class="n">Notification</span><span class="o">&gt;</span><span class="w"> </span><span class="n">_notification</span><span class="p">;</span>
+</span><span class="p">};</span>
+</code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">TestPlugin.cpp</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="nf">TestPlugin::Initialize</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">*</span><span class="w"> </span><span class="n">service</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">_service</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
+<span class="w">    </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">_connectionId</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{};</span>
+
+<span class="w">    </span><span class="n">_service</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">service</span><span class="p">;</span>
+<span class="w">    </span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">AddRef</span><span class="p">();</span>
+
+<span class="w">    </span><span class="c1">// Register for COM-RPC connection/disconnection notifications</span>
+<span class="hll"><span class="w">    </span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">Register</span><span class="p">(</span><span class="o">&amp;</span><span class="n">_notification</span><span class="p">);</span>
+</span>
+<span class="w">    </span><span class="c1">// Instantiate the ITestPlugin interface (which could spawn the OOP side if running in OOP mode)</span>
+<span class="w">    </span><span class="c1">// Store connection ID in _connectionId</span>
+<span class="w">    </span><span class="n">_testPlugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">Root</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_connectionId</span><span class="p">,</span><span class="w"> </span><span class="mi">2000</span><span class="p">,</span><span class="w"> </span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;TestPluginImplementation&quot;</span><span class="p">));</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">_testPlugin</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Error occurred, return non-empty string</span>
+<span class="w">        </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Failed to create ITestPlugin&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">result</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">TestPlugin::Deinitialize</span><span class="p">(</span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IShell</span><span class="o">*</span><span class="w"> </span><span class="n">service</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">service</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">_service</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">service</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Unsubscribe from connection notification first to prevent any false-positives</span>
+<span class="hll"><span class="w">        </span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">Unregister</span><span class="p">(</span><span class="o">&amp;</span><span class="n">_notification</span><span class="p">);</span>
+</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">_testPlugin</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">RPC</span><span class="o">::</span><span class="n">IRemoteConnection</span><span class="o">*</span><span class="w"> </span><span class="n">connection</span><span class="p">(</span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">RemoteConnection</span><span class="p">(</span><span class="n">_connectionId</span><span class="p">));</span>
+
+<span class="w">            </span><span class="c1">// This should release the last reference and destruct the object. If not,</span>
+<span class="w">            </span><span class="c1">// there&#39;s something else holding on to it and we have a leak</span>
+<span class="w">            </span><span class="n">VARIABLE_IS_NOT_USED</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_testPlugin</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
+<span class="w">            </span><span class="n">ASSERT</span><span class="p">(</span><span class="n">result</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_DESTRUCTION_SUCCEEDED</span><span class="p">);</span>
+<span class="w">            </span><span class="n">_testPlugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
+
+<span class="w">            </span><span class="c1">// Shut down the out-of-process connection if still running</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">connection</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">connection</span><span class="o">-&gt;</span><span class="n">Terminate</span><span class="p">();</span>
+<span class="w">                </span><span class="n">connection</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="n">_service</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
+<span class="w">        </span><span class="n">_service</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
+<span class="w">        </span><span class="n">_connectionId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">string</span><span class="w"> </span><span class="nf">TestPlugin::Information</span><span class="p">()</span><span class="w"> </span><span class="k">const</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="c1">// No additional info to report</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">string</span><span class="p">();</span>
+<span class="p">}</span>
+
+<span class="hll"><span class="kt">void</span><span class="w"> </span><span class="nf">TestPlugin::CallbackRevoked</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">::</span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="n">remote</span><span class="p">)</span>
+</span><span class="hll"><span class="p">{</span>
+</span><span class="hll"><span class="w">    </span><span class="c1">// Unregister the notification</span>
+</span><span class="hll"><span class="w">    </span><span class="n">_testPlugin</span><span class="o">-&gt;</span><span class="n">Unregister</span><span class="p">(</span><span class="n">remote</span><span class="p">);</span>
+</span><span class="hll"><span class="p">}</span>
+</span></code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">TestPluginImplementation.cpp</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TestPluginImplementation</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="w"> </span><span class="p">{</span>
+
+<span class="k">public</span><span class="o">:</span>
+<span class="w">    </span><span class="n">TestPluginImplementation</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+<span class="w">    </span><span class="o">~</span><span class="n">TestPluginImplementation</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+
+<span class="w">    </span><span class="c1">// Do not allow copy/move constructors</span>
+<span class="w">    </span><span class="n">TestPluginImplementation</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">TestPluginImplementation</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+<span class="w">    </span><span class="n">TestPluginImplementation</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">TestPluginImplementation</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+
+<span class="w">    </span><span class="n">BEGIN_INTERFACE_MAP</span><span class="p">(</span><span class="n">TestPluginImplementation</span><span class="p">)</span>
+<span class="w">    </span><span class="n">INTERFACE_ENTRY</span><span class="p">(</span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="p">)</span>
+<span class="w">    </span><span class="n">END_INTERFACE_MAP</span>
+
+<span class="k">public</span><span class="o">:</span>
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="n">Test</span><span class="p">(</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="cm">/* @out */</span><span class="p">)</span><span class="w"> </span><span class="k">override</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Hello World&quot;</span><span class="p">;</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="hll"><span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">Register</span><span class="p">(</span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">::</span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="n">notification</span><span class="p">)</span><span class="w"> </span><span class="k">override</span>
+</span><span class="hll"><span class="w">    </span><span class="p">{</span>
+</span><span class="hll"><span class="w">        </span><span class="n">_adminLock</span><span class="p">.</span><span class="n">Lock</span><span class="p">();</span>
+</span><span class="hll">
+</span><span class="hll"><span class="w">        </span><span class="c1">// Make sure we can&#39;t register the same notification callback multiple times</span>
+</span><span class="hll"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">find</span><span class="p">(</span><span class="n">_notificationCallbacks</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">_notificationCallbacks</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span><span class="w"> </span><span class="n">notification</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">_notificationCallbacks</span><span class="p">.</span><span class="n">end</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+</span><span class="hll"><span class="w">            </span><span class="n">_notificationCallbacks</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">notification</span><span class="p">);</span>
+</span><span class="hll"><span class="w">            </span><span class="n">notification</span><span class="o">-&gt;</span><span class="n">AddRef</span><span class="p">();</span>
+</span><span class="hll"><span class="w">        </span><span class="p">}</span>
+</span><span class="hll">
+</span><span class="hll"><span class="w">        </span><span class="n">_adminLock</span><span class="p">.</span><span class="n">Unlock</span><span class="p">();</span>
+</span><span class="hll">
+</span><span class="hll"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">;</span>
+</span><span class="hll"><span class="w">    </span><span class="p">}</span>
+</span><span class="hll">
+</span><span class="hll"><span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">Unregister</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">::</span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="n">notification</span><span class="p">)</span><span class="w"> </span><span class="k">override</span>
+</span><span class="hll"><span class="w">    </span><span class="p">{</span>
+</span><span class="hll"><span class="w">        </span><span class="n">_adminLock</span><span class="p">.</span><span class="n">Lock</span><span class="p">();</span>
+</span><span class="hll">
+</span><span class="hll"><span class="w">        </span><span class="k">auto</span><span class="w"> </span><span class="n">itr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">find</span><span class="p">(</span><span class="n">_notificationCallbacks</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">_notificationCallbacks</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span><span class="w"> </span><span class="n">notification</span><span class="p">);</span>
+</span><span class="hll"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">itr</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">_notificationCallbacks</span><span class="p">.</span><span class="n">end</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+</span><span class="hll"><span class="w">            </span><span class="p">(</span><span class="o">*</span><span class="n">itr</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
+</span><span class="hll"><span class="w">            </span><span class="n">_notificationCallbacks</span><span class="p">.</span><span class="n">erase</span><span class="p">(</span><span class="n">itr</span><span class="p">);</span>
+</span><span class="hll"><span class="w">        </span><span class="p">}</span>
+</span><span class="hll">
+</span><span class="hll"><span class="w">        </span><span class="n">_adminLock</span><span class="p">.</span><span class="n">Unlock</span><span class="p">();</span>
+</span><span class="hll">
+</span><span class="hll"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">;</span>
+</span><span class="hll"><span class="w">    </span><span class="p">}</span>
+</span>
+<span class="k">private</span><span class="o">:</span>
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">CriticalSection</span><span class="w"> </span><span class="n">_adminLock</span><span class="p">;</span>
+<span class="hll"><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">list</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">ITestPlugin</span><span class="o">::</span><span class="n">INotification</span><span class="o">*&gt;</span><span class="w"> </span><span class="n">_notificationCallbacks</span><span class="p">;</span>
+</span><span class="p">};</span>
+
+<span class="n">SERVICE_REGISTRATION</span><span class="p">(</span><span class="n">TestPluginImplementation</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</code></pre></div></td></tr></table></div>
 
 
 

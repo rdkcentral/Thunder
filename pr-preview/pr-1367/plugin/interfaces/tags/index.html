@@ -17,7 +17,7 @@
         <link rel="next" href="../../config/">
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
+      <meta name="generator" content="mkdocs-1.5.1, mkdocs-material-9.1.21">
     
     
       
@@ -2107,84 +2107,84 @@
 <tr>
 <th>Tag</th>
 <th>Short Description</th>
-<th align="center">Deprecated</th>
-<th align="center">StubGen</th>
-<th align="center">JsonGen</th>
-<th align="center">Scope</th>
+<th style="text-align: center;">Deprecated</th>
+<th style="text-align: center;">StubGen</th>
+<th style="text-align: center;">JsonGen</th>
+<th style="text-align: center;">Scope</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="#stubgenskip">@stubgen:skip</a></td>
-<td>Stop processing current file, now deprecated</td>
-<td align="center">Yes</td>
-<td align="center">Yes</td>
-<td align="center">Yes</td>
-<td align="center">File</td>
+<td>Stop processing current file. Prefer <code>@omit</code></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">File</td>
 </tr>
 <tr>
 <td><a href="#stop">@stop</a></td>
-<td>Same as @stubgen:skip, not deprecated, but also never advertised</td>
-<td align="center"></td>
-<td align="center">Yes</td>
-<td align="center">Yes</td>
-<td align="center">File</td>
+<td>Equivalent to <code>@stubgen:skip</code>. Prefer <code>@omit</code>.</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">File</td>
 </tr>
 <tr>
 <td><a href="#stubgenomit">@stubgen:omit</a></td>
 <td>Omit processing of the next class or method</td>
-<td align="center"></td>
-<td align="center">Yes</td>
-<td align="center">No (but has side-effects)</td>
-<td align="center">Class, Method</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">No (but has side-effects)</td>
+<td style="text-align: center;">Class, Method</td>
 </tr>
 <tr>
 <td><a href="#omit">@omit</a></td>
 <td>Same as <code>@stubgen:omit</code></td>
-<td align="center"></td>
-<td align="center">Yes</td>
-<td align="center">No (but has side-effects)</td>
-<td align="center">Class, Method</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">No (but has side-effects)</td>
+<td style="text-align: center;">Class, Method</td>
 </tr>
 <tr>
 <td><a href="#stubgen_include">@stubgen:include</a></td>
 <td>Insert another C++ file</td>
-<td align="center"></td>
-<td align="center">Yes</td>
-<td align="center">Yes</td>
-<td align="center">File</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">File</td>
 </tr>
 <tr>
 <td><a href="#stubgen_stub">@stubgen:stub</a></td>
 <td>Emit empty function stub instead of full proxy implementation</td>
-<td align="center"></td>
-<td align="center">Yes</td>
-<td align="center">No</td>
-<td align="center">Method</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Method</td>
 </tr>
 <tr>
 <td><a href="#stub">@stub</a></td>
 <td>Same as <code>@stubgen:stub</code></td>
-<td align="center"></td>
-<td align="center">Yes</td>
-<td align="center">No</td>
-<td align="center">Method</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Method</td>
 </tr>
 <tr>
 <td><a href="#insert">@insert</a></td>
 <td>Same as <code>@stubgen:include</code></td>
-<td align="center"></td>
-<td align="center">Yes</td>
-<td align="center">Yes</td>
-<td align="center">File</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">File</td>
 </tr>
 <tr>
 <td><a href="#define">@define</a></td>
 <td>Defines a literal as a known identifier</td>
-<td align="center"></td>
-<td align="center">Yes</td>
-<td align="center">Yes</td>
-<td align="center">File</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">File</td>
 </tr>
 </tbody>
 </table>
@@ -2201,7 +2201,8 @@
 <hr/>
 
 <h4 id="stop">@stop</h4>
-<p>This tag is same as <code>@stubgen:skip</code></p>
+<p>Prefer <code>@omit</code> to this tag.</p>
+<p>This tag is equivalent to <code>@stubgen:skip</code> but can be used as a last resort when the generator is technically unable to parse the file. However in such case it is recommended that the complicated part is moved to a separate header file instead.</p>
 <hr/>
 
 <h4 id="stubgenomit">@stubgen:omit</h4>
@@ -2255,68 +2256,68 @@
 <tr>
 <th>Tag</th>
 <th>Short Description</th>
-<th align="center">Deprecated</th>
-<th align="center">StubGen</th>
-<th align="center">JsonGen</th>
-<th align="center">Scope</th>
+<th style="text-align: center;">Deprecated</th>
+<th style="text-align: center;">StubGen</th>
+<th style="text-align: center;">JsonGen</th>
+<th style="text-align: center;">Scope</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="#in">@in</a></td>
 <td>Marks an input parameter</td>
-<td align="center"></td>
-<td align="center">Yes</td>
-<td align="center">Yes</td>
-<td align="center">Method Parameter</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method Parameter</td>
 </tr>
 <tr>
 <td><a href="#out">@out</a></td>
 <td>Marks an output parameter</td>
-<td align="center"></td>
-<td align="center">Yes</td>
-<td align="center">Yes</td>
-<td align="center">Method Parameter</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method Parameter</td>
 </tr>
 <tr>
 <td><a href="#inout">@inout</a></td>
 <td>Marks as input and output parameter (equivalent to <code>@in @out</code>)</td>
-<td align="center"></td>
-<td align="center">Yes</td>
-<td align="center">Yes</td>
-<td align="center">Method Parameter</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method Parameter</td>
 </tr>
 <tr>
 <td><a href="#restrict">@restrict</a></td>
 <td>Specifies valid range for a parameter</td>
-<td align="center"></td>
-<td align="center">Yes</td>
-<td align="center">Yes</td>
-<td align="center">Method Parameter</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method Parameter</td>
 </tr>
 <tr>
 <td><a href="#interface">@interface</a></td>
 <td>Specifies a parameter holding interface ID value for void* interface passing</td>
-<td align="center"></td>
-<td align="center">Yes</td>
-<td align="center">No</td>
-<td align="center">Method paramter</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Method paramter</td>
 </tr>
 <tr>
 <td><a href="#length">@length</a></td>
 <td>Specifies the expression to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Method Parameter</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method Parameter</td>
 </tr>
 <tr>
 <td><a href="#maxlength">@maxlength</a></td>
 <td>Specifies a maximum buffer length value</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Method parameter</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method parameter</td>
 </tr>
 </tbody>
 </table>
@@ -2344,7 +2345,7 @@ When the function returns, the parameter will have the modified length value. Th
 <hr/>
 
 <h4 id="restrict">@restrict</h4>
-<p>Specifies a valid range for a parameter (e.g. for buffers and strings it could specify a valid size).</p>
+<p>Specifies a valid range for a parameter (e.g. for buffers and strings it could specify a valid size). Ranges are inclusive.</p>
 <p>If a parameter is outside the valid range, then there are two possibilities:</p>
 <ul>
 <li>If running a debug build, an ASSERT will be triggered if the value is outside the allowed range</li>
@@ -2353,8 +2354,8 @@ When the function returns, the parameter will have the modified length value. Th
 <h5 id="example_8">Example</h5>
 <ul>
 <li><code>@restrict:1..32</code> - Value must be between 1 and 32</li>
-<li><code>@restrict:256..1K</code> - Value must be between 256B and 1K in side</li>
-<li><code>@restrict:1M</code> - Value must be less than 1M</li>
+<li><code>@restrict:256..1K</code> - Value must be between 256B and 1K in size</li>
+<li><code>@restrict:1M</code> - Value must be &lt;= 1M in size</li>
 </ul>
 <hr/>
 
@@ -2400,100 +2401,100 @@ When the function returns, the parameter will have the modified length value. Th
 <tr>
 <th>Tag</th>
 <th>Short Description</th>
-<th align="center">Deprecated</th>
-<th align="center">StubGen</th>
-<th align="center">JsonGen</th>
-<th align="center">Scope</th>
+<th style="text-align: center;">Deprecated</th>
+<th style="text-align: center;">StubGen</th>
+<th style="text-align: center;">JsonGen</th>
+<th style="text-align: center;">Scope</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="#json">@json</a></td>
 <td>Marks a class as JsonGenerator input</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Class</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Class</td>
 </tr>
 <tr>
 <td><a href="#json_omit">@json:omit</a></td>
 <td>Marks a method/property/notification to omit</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Method</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method</td>
 </tr>
 <tr>
 <td><a href="#extended">@uncompliant:extended</a></td>
 <td>Generates the extended format instead of the short one</td>
-<td align="center">Yes</td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Class</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Class</td>
 </tr>
 <tr>
 <td><a href="#event">@event</a></td>
 <td>Marks a class as JSON notification</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Class</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Class</td>
 </tr>
 <tr>
 <td><a href="#property">@property</a></td>
 <td>Marks a method as a property</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Method</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method</td>
 </tr>
 <tr>
 <td><a href="#iterator">@iterator</a></td>
 <td>Marks a class as an iterator</td>
-<td align="center"></td>
-<td align="center">Yes</td>
-<td align="center">Yes</td>
-<td align="center">Class</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Class</td>
 </tr>
 <tr>
 <td><a href="#bitmask">@bitmask</a></td>
 <td>Indicates that enumerator lists should be packed into into a bit mask</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Method parameter</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method parameter</td>
 </tr>
 <tr>
 <td><a href="#index">@index</a></td>
 <td>Marks an index parameter to a property or notification</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Method paramter</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method paramter</td>
 </tr>
 <tr>
 <td><a href="#opaque">@opaque</a></td>
 <td>Indicates that a string parameter is an opaque JSON object</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Method parameter</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method parameter</td>
 </tr>
 <tr>
 <td><a href="#alt">@alt</a></td>
 <td>Provides an alternative name a method can by called by</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Method</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method</td>
 </tr>
 <tr>
 <td><a href="#text">@text</a></td>
 <td>Renames identifier METHOD, PARAM, POD MEMBER, enum</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">enum, Method paramters, Method names, PoD member</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">enum, Method paramters, Method names, PoD member</td>
 </tr>
 </tbody>
 </table>
@@ -2630,68 +2631,68 @@ The helper functions are defined in IIteratorType.h. </p>
 <tr>
 <th>Tag</th>
 <th>Short Description</th>
-<th align="center">Deprecated</th>
-<th align="center">StubGen</th>
-<th align="center">JsonGen</th>
-<th align="center">Scope</th>
+<th style="text-align: center;">Deprecated</th>
+<th style="text-align: center;">StubGen</th>
+<th style="text-align: center;">JsonGen</th>
+<th style="text-align: center;">Scope</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="#sourcelocation">@sourcelocation</a></td>
 <td>Sets source location link to be used in the documentation</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Class</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Class</td>
 </tr>
 <tr>
 <td><a href="#deprecated">@deprecated</a></td>
 <td>Marks a method/property/notification deprecated (i.e. obsolete and candidate for removal)</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Method</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method</td>
 </tr>
 <tr>
 <td><a href="#obsolete">@obsolete</a></td>
 <td>Marks a method/property/notification as obsolete</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Method</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method</td>
 </tr>
 <tr>
 <td><a href="#brief">@brief</a></td>
 <td>Specifies brief description method/property/notification or parameter or POD structure member</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Method, Method parameter, POD member</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method, Method parameter, POD member</td>
 </tr>
 <tr>
 <td><a href="#details">@details</a></td>
 <td>Specifies detaild description of a method/property/notification</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Method</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method</td>
 </tr>
 <tr>
 <td><a href="#param">@param</a></td>
 <td>Provide description for method/notification parameter or property/notification index</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Method</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method</td>
 </tr>
 <tr>
 <td><a href="#retval">@retval</a></td>
 <td>Specifies possible return error codes for method/property (can be many)</td>
-<td align="center"></td>
-<td align="center">No</td>
-<td align="center">Yes</td>
-<td align="center">Method</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method</td>
 </tr>
 </tbody>
 </table>
