@@ -1024,7 +1024,6 @@ POP_WARNING()
         }
         uint32_t WaitForLink(const uint32_t time) const
         {
-            const int SLEEPSLOT_TIME = 100;
             // Make sure the state does not change in the mean time.
             Lock();
 
@@ -1032,7 +1031,7 @@ POP_WARNING()
 
             // Right, a wait till connection is closed is requested..
             while ((waiting > 0) && (IsWebSocket() == false)) {
-                uint32_t sleepSlot = (waiting > SLEEPSLOT_TIME ? SLEEPSLOT_TIME : waiting);
+                uint32_t sleepSlot = (waiting > SLEEPSLOT_POLLING_TIME ? SLEEPSLOT_POLLING_TIME : waiting);
 
                 Unlock();
                 // Right, lets sleep in slices of 100 ms
