@@ -69,7 +69,7 @@ namespace Tests {
                                    || compare(json, stream)
                                  )
                              )
-			  )
+                         )
                       ;
 #else
         bool result = object.FromString(json, status);
@@ -165,7 +165,7 @@ namespace Tests {
         return count == 2;
     }
 
-    template<typename S, typename T, typename std::enable_if<std::is_integral<T>::value || std::is_same<T, std::string>::value, T*>::type = nullptr>
+    template<typename S, typename T>
     bool TestJSONEqual(const T data, const std::string& reference)
     {
         std::string stream;
@@ -189,7 +189,7 @@ namespace Tests {
         count = 0;
 
         bool FromTo = false;
-    
+
         do {
             FromTo = !FromTo;
 
@@ -328,7 +328,7 @@ namespace Tests {
         count = 0;
 
         bool FromTo = false;
-    
+
         do {
             FromTo = !FromTo;
 
@@ -471,7 +471,7 @@ namespace Tests {
         count = 0;
 
         bool FromTo = false;
-    
+
         do {
             FromTo = !FromTo;
 
@@ -760,7 +760,7 @@ namespace Tests {
         count = 0;
 
         bool FromTo = false;
-    
+
         do {
             FromTo = !FromTo;
 
@@ -968,136 +968,16 @@ namespace Tests {
                ;
     }
 
+    template <typename T>
     bool TestInstanceIdFromString(bool malformed, uint8_t& count)
     {
-        using T = Core::JSON::InstanceId;
-
-        return TestHexUIntFromString<T>(malformed, count);
-    }
-
-    bool TestPointerFromString(bool malformed, uint8_t& count)
-    {
-        using T = Core::JSON::Pointer;
-
         return TestHexUIntFromString<T>(malformed, count);
     }
 
     template <typename T>
-    bool TestFPFromString(bool malformed, uint8_t& count)
+    bool TestPointerFromString(bool malformed, uint8_t& count)
     {
-        constexpr bool AllowChange = false;
-
-        count = 0;
-
-        bool FromTo = false;
-    
-        do {
-            FromTo = !FromTo;
-
-            if (!malformed) {
-                // Correctly formatted
-                // ===================
-
-                count += TestJSONFormat<T>("0.0", FromTo, AllowChange);
-                count += TestJSONFormat<T>("1.0", FromTo, AllowChange); // First digit any out of 1-9
-
-                count += TestJSONFormat<T>("0.1", FromTo, AllowChange); // Second digit any out of 0-9
-                count += TestJSONFormat<T>("1.1", FromTo, AllowChange); // Second digit any out of 0-9
-
-                // C(++) floating point convention instead of scientific notation
-                count += TestJSONFormat<T>("0e+0", FromTo, AllowChange);
-                count += TestJSONFormat<T>("0e-0", FromTo, AllowChange);
-                count += TestJSONFormat<T>("0E+0", FromTo, AllowChange);
-                count += TestJSONFormat<T>("0E-0", FromTo, AllowChange);
-                count += TestJSONFormat<T>("-0e+0", FromTo, AllowChange);
-                count += TestJSONFormat<T>("-0e-0", FromTo, AllowChange);
-                count += TestJSONFormat<T>("-0E+0", FromTo, AllowChange);
-                count += TestJSONFormat<T>("-0E-0", FromTo, AllowChange);
-
-                count += TestJSONFormat<T>("2e-1", FromTo, AllowChange); // First digit out of 2-9
-                count += TestJSONFormat<T>("2E-1", FromTo, AllowChange); // First digit out of 2-9
-
-                count += TestJSONFormat<T>("0.0e-1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digit out of 1-9
-                count += TestJSONFormat<T>("0.0E-1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digit out of 1-9
-                count += TestJSONFormat<T>("0.0e-1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digit out of 1-9
-                count += TestJSONFormat<T>("0.0E-1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digit out of 1-9
-
-                count += TestJSONFormat<T>("0.0e1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digits any out of 1-9;
-                count += TestJSONFormat<T>("0.0E1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digits any out of 1-9;
-
-                count += TestJSONFormat<T>("-0.0", FromTo, AllowChange);
-                count += TestJSONFormat<T>("-1.0", FromTo, AllowChange); // First digit any out of 1-9
-
-                count += TestJSONFormat<T>("-0.1", FromTo, AllowChange); // Second digit any out of 0-9
-                count += TestJSONFormat<T>("-1.1", FromTo, AllowChange); // Second digit any out of 0-9
-
-                count += TestJSONFormat<T>("-2e-1", FromTo, AllowChange); // First digit out of 2-9
-                count += TestJSONFormat<T>("-2E-1", FromTo, AllowChange); // First digit out of 2-9
-
-                count += TestJSONFormat<T>("-0.0e-1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digit out of 1-9
-                count += TestJSONFormat<T>("-0.0E-1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digit out of 1-9
-                count += TestJSONFormat<T>("-0.0e-1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digit out of 1-9
-                count += TestJSONFormat<T>("-0.0E-1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digit out of 1-9
-
-                count += TestJSONFormat<T>("-0.0e1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digits any out of 1-9;
-                count += TestJSONFormat<T>("-0.0E1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digits any out of 1-9;
-
-                count += TestJSONFormat<T>("1.1E-2", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digits any out of 1-9;
-
-                // Implementation constraint: all IElement objects can be nullified
-                count += TestJSONFormat<T>("null", FromTo, AllowChange);
-            } else {
-                // Malformed
-                // =========
-
-                count += !TestJSONFormat<T>("--0.0", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("+1.0", FromTo, AllowChange); // Digits any out of 0-9
-                count += !TestJSONFormat<T>("0.", FromTo, AllowChange); // Digit any out of 0-9
-
-                count += !TestJSONFormat<T>("0.0e+", FromTo, AllowChange);
-                count == !TestJSONFormat<T>("0.0e-", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("0.0e++", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("0.0e--", FromTo, AllowChange);
-
-                count += !TestJSONFormat<T>("-0.0e+", FromTo, AllowChange);
-                count == !TestJSONFormat<T>("-0.0e-", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("-0.0e++", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("-0.0e--", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("0.0e0.0", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("0.0E0.0", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("0.0e0", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("0.0E0", FromTo, AllowChange);
-
-                count += !TestJSONFormat<T>("-0.0e0.0", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("-0.0E0.0", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("-0.0e0", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("-0.0E0", FromTo, AllowChange);
-
-                count += !TestJSONFormat<T>("0.0e+0.0", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("0.0E+0.0", FromTo, AllowChange);
-
-                count += !TestJSONFormat<T>("0.0e-0.0", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("0.0E-0.0", FromTo, AllowChange);
-
-                count += !TestJSONFormat<T>("-0.0e-0.0", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("-0.0E-0.0", FromTo, AllowChange);
- 
-                // Values that cannot be used
-                count += !TestJSONFormat<T>("{}", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("[]", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("\"\"", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("true", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("false", FromTo, AllowChange);
-
-                // Non-numbers
-                count += !TestJSONFormat<T>("Infinity", FromTo, AllowChange);
-                count += !TestJSONFormat<T>("NaN", FromTo, AllowChange);
-            }
-        } while (FromTo, AllowChange);
-
-        return  !malformed ? count == 66
-                           : count == 84
-               ;
+        return TestHexUIntFromString<T>(malformed, count);
     }
 
     template <typename T, typename S>
@@ -1310,6 +1190,8 @@ namespace Tests {
         using json_type = Core::JSON::DecUInt8;
         using actual_type = uint8_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
 
@@ -1321,31 +1203,25 @@ namespace Tests {
         EXPECT_TRUE(TestDecUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 72);
 
-        // None of the other numerical types
-
-#ifdef _0
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
     }
-
 
     TEST(JSONParser, DecSInt8)
     {
         using json_type = Core::JSON::DecSInt8;
         using actual_type = int8_t;
+
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1358,27 +1234,20 @@ namespace Tests {
         EXPECT_TRUE(TestDecSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 70);
 
-        // Compensated for out-of-range
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 16);
 
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
         EXPECT_FALSE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
     }
 
     TEST(JSONParser, DecUInt16)
@@ -1386,6 +1255,8 @@ namespace Tests {
         using json_type = Core::JSON::DecUInt16;
         using actual_type = uint16_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
 
@@ -1397,24 +1268,17 @@ namespace Tests {
         EXPECT_TRUE(TestDecUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 72);
 
-        // None of the other numerical types
-
-#ifdef _0
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
     }
 
     TEST(JSONParser, DecSInt16)
@@ -1422,6 +1286,8 @@ namespace Tests {
         using json_type = Core::JSON::DecSInt16;
         using actual_type = int16_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
 
@@ -1433,27 +1299,20 @@ namespace Tests {
         EXPECT_TRUE(TestDecSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 70);
 
-        // Compensated for out-of-range
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 16);
 
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 1); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
         EXPECT_FALSE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
     }
 
     TEST(JSONParser, DecUInt32)
@@ -1461,6 +1320,8 @@ namespace Tests {
         using json_type = Core::JSON::DecUInt32;
         using actual_type = uint32_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
 
@@ -1472,23 +1333,17 @@ namespace Tests {
         EXPECT_TRUE(TestDecUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 72);
 
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
     }
 
     TEST(JSONParser, DecSInt32)
@@ -1496,6 +1351,8 @@ namespace Tests {
         using json_type = Core::JSON::DecSInt32;
         using actual_type = int32_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
 
@@ -1507,33 +1364,28 @@ namespace Tests {
         EXPECT_TRUE(TestDecSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 70);
 
-        // Compensated for out-of-range
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 16);
 
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
         EXPECT_FALSE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
     }
 
     TEST(JSONParser, DecUInt64)
     {
         using json_type = Core::JSON::DecUInt64;
         using actual_type = uint64_t;
+
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1546,29 +1398,25 @@ namespace Tests {
         EXPECT_TRUE(TestDecUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 72);
 
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
     }
 
     TEST(JSONParser, DecSInt64)
     {
         using json_type = Core::JSON::DecSInt64;
         using actual_type = int64_t;
+
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1581,27 +1429,20 @@ namespace Tests {
         EXPECT_TRUE(TestDecSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 70);
 
-        // Compensated for out-of-range
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 16);
 
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
         EXPECT_FALSE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
     }
 
     TEST(JSONParser, HexUInt8)
@@ -1609,6 +1450,8 @@ namespace Tests {
         using json_type = Core::JSON::HexUInt8;
         using actual_type = uint8_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
 
@@ -1620,24 +1463,17 @@ namespace Tests {
         EXPECT_TRUE(TestHexUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 68);
 
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-// FIXME: 4 matches but only 2 allowed
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_TRUE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 28);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_TRUE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 28);
     }
 
     TEST(JSONParser, HexSInt8)
@@ -1645,6 +1481,8 @@ namespace Tests {
         using json_type = Core::JSON::HexSInt8;
         using actual_type = int8_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
 
@@ -1656,26 +1494,20 @@ namespace Tests {
         EXPECT_TRUE(TestHexSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 86);
 
-        // Excluding out-of-range
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 20);
 
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
+        EXPECT_EQ(count, 6);
+
         EXPECT_FALSE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 20); 
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 20);
     }
 
     TEST(JSONParser, HexUInt16)
@@ -1683,6 +1515,8 @@ namespace Tests {
         using json_type = Core::JSON::HexUInt16;
         using actual_type = uint16_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
 
@@ -1694,23 +1528,17 @@ namespace Tests {
         EXPECT_TRUE(TestHexUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 68);
 
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_TRUE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 28);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_TRUE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 28);
     }
 
     TEST(JSONParser, HexSInt16)
@@ -1718,6 +1546,8 @@ namespace Tests {
         using json_type = Core::JSON::HexSInt16;
         using actual_type = int16_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
 
@@ -1729,27 +1559,20 @@ namespace Tests {
         EXPECT_TRUE(TestHexSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 86);
 
-        // Excluding out-of-range
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 26);
 
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 26);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 26);
     }
 
     TEST(JSONParser, HexUInt32)
@@ -1757,6 +1580,8 @@ namespace Tests {
         using json_type = Core::JSON::HexUInt32;
         using actual_type = uint32_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
 
@@ -1768,23 +1593,17 @@ namespace Tests {
         EXPECT_TRUE(TestHexUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 68);
 
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_TRUE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 28);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_TRUE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 28);
     }
 
     TEST(JSONParser, HexSInt32)
@@ -1792,6 +1611,8 @@ namespace Tests {
         using json_type = Core::JSON::HexSInt32;
         using actual_type = int32_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
 
@@ -1803,33 +1624,28 @@ namespace Tests {
         EXPECT_TRUE(TestHexSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 86);
 
-        // Excluding out-of-range
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 26);
 
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 26);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 26);
     }
 
     TEST(JSONParser, HexUInt64)
     {
         using json_type = Core::JSON::HexUInt64;
         using actual_type = uint64_t;
+
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1842,29 +1658,25 @@ namespace Tests {
         EXPECT_TRUE(TestHexUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 68);
 
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_TRUE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 28);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_TRUE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 28);
     }
 
     TEST(JSONParser, HexSInt64)
     {
         using json_type = Core::JSON::HexSInt64;
         using actual_type = int64_t;
+
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1877,27 +1689,20 @@ namespace Tests {
         EXPECT_TRUE(TestHexSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 86);
 
-        // Excluding out-of-range
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 26);
 
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 26);
+
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 26);
     }
 
     TEST(JSONParser, OctUInt8)
@@ -1905,8 +1710,12 @@ namespace Tests {
         using json_type = Core::JSON::OctUInt8;
         using actual_type = uint8_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
+
+        EXPECT_TRUE((TestOctUIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestOctUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 12);
@@ -1914,25 +1723,17 @@ namespace Tests {
         EXPECT_TRUE(TestOctUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 40);
 
-        EXPECT_TRUE((TestOctUIntFromValue<json_type, actual_type>()));
-
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
     }
 
     TEST(JSONParser, OctSInt8)
@@ -1940,8 +1741,12 @@ namespace Tests {
         using json_type = Core::JSON::OctSInt8;
         using actual_type = int8_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
+
+        EXPECT_TRUE((TestOctSIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestOctSIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 14);
@@ -1949,29 +1754,20 @@ namespace Tests {
         EXPECT_TRUE(TestOctSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 32);
 
-        // Excluding out-of-range
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 10);
 
-        EXPECT_TRUE((TestOctSIntFromValue<json_type, actual_type>()));
-
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
+
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
     }
 
     TEST(JSONParser, OctUInt16)
@@ -1979,8 +1775,12 @@ namespace Tests {
         using json_type = Core::JSON::OctUInt16;
         using actual_type = uint16_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
+
+        EXPECT_TRUE((TestOctUIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestOctUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 12);
@@ -1988,25 +1788,17 @@ namespace Tests {
         EXPECT_TRUE(TestOctUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 40);
 
-        EXPECT_TRUE((TestOctUIntFromValue<json_type, actual_type>()));
-
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
     }
 
     TEST(JSONParser, OctSInt16)
@@ -2014,8 +1806,12 @@ namespace Tests {
         using json_type = Core::JSON::OctSInt16;
         using actual_type = int16_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
+
+        EXPECT_TRUE((TestOctSIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestOctSIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 14);
@@ -2023,29 +1819,20 @@ namespace Tests {
         EXPECT_TRUE(TestOctSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 32);
 
-        // Excluding out-of-range
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 10);
 
-        EXPECT_TRUE((TestOctSIntFromValue<json_type, actual_type>()));
-
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
     }
 
     TEST(JSONParser, OctUInt32)
@@ -2053,8 +1840,12 @@ namespace Tests {
         using json_type = Core::JSON::OctUInt32;
         using actual_type = uint32_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
+
+        EXPECT_TRUE((TestOctUIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestOctUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 12);
@@ -2062,25 +1853,17 @@ namespace Tests {
         EXPECT_TRUE(TestOctUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 40);
 
-        EXPECT_TRUE((TestOctUIntFromValue<json_type, actual_type>()));
-
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
     }
 
     TEST(JSONParser, OctSInt32)
@@ -2088,8 +1871,12 @@ namespace Tests {
         using json_type = Core::JSON::OctSInt32;
         using actual_type = int32_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
+
+        EXPECT_TRUE((TestOctSIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestOctSIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 14);
@@ -2097,29 +1884,20 @@ namespace Tests {
         EXPECT_TRUE(TestOctSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 32);
 
-        // Excluding out-of-range
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 10);
 
-        EXPECT_TRUE((TestOctSIntFromValue<json_type, actual_type>()));
-
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
     }
 
     TEST(JSONParser, OctUInt64)
@@ -2127,8 +1905,12 @@ namespace Tests {
         using json_type = Core::JSON::OctUInt64;
         using actual_type = uint64_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
+
+        EXPECT_TRUE((TestOctUIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestOctUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 12);
@@ -2136,25 +1918,17 @@ namespace Tests {
         EXPECT_TRUE(TestOctUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 40);
 
-        EXPECT_TRUE((TestOctUIntFromValue<json_type, actual_type>()));
-
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
     }
 
     TEST(JSONParser, OctSInt64)
@@ -2162,8 +1936,12 @@ namespace Tests {
         using json_type = Core::JSON::OctSInt64;
         using actual_type = int64_t;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
+
+        EXPECT_TRUE((TestOctSIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestOctSIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 14);
@@ -2171,29 +1949,20 @@ namespace Tests {
         EXPECT_TRUE(TestOctSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 32);
 
-        // Excluding out-of-range
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 10);
 
-        EXPECT_TRUE((TestOctSIntFromValue<json_type, actual_type>()));
-
-        // None of the other numerical types
-#ifdef _0
         EXPECT_FALSE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
- 
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 2);
     }
 
     TEST(JSONParser, InstanceId)
@@ -2201,34 +1970,30 @@ namespace Tests {
         using json_type = Core::JSON::InstanceId;
         using actual_type = Core::instance_id;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
 
-        EXPECT_TRUE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 28);
-
-        EXPECT_TRUE(TestInstanceIdFromString(!malformed, count));
-        EXPECT_EQ(count, 68);
-
         EXPECT_TRUE((TestInstanceIdFromValue<json_type, actual_type>()));
 
-        // None of the other numerical types
-#ifdef _0
-        EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_TRUE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 28);
 
-        EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_TRUE(TestInstanceIdFromString<json_type>(!malformed, count));
+        EXPECT_EQ(count, 68);
+
+        EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_TRUE(TestHexUIntFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 28);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-
-//        EXPECT_FALSE(TestPointerFromString(malformed, count));
-//        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_TRUE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 28);
     }
 
     TEST(JSONParser, Pointer)
@@ -2236,34 +2001,30 @@ namespace Tests {
         using json_type = Core::JSON::Pointer;
         using actual_type = Core::instance_id;
 
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+
         constexpr const bool malformed = false;
         uint8_t count = 0;
 
-        EXPECT_TRUE(TestPointerFromString(malformed, count));
-        EXPECT_EQ(count, 28);
-
-        EXPECT_TRUE(TestPointerFromString(!malformed, count));
-        EXPECT_EQ(count, 68);
-
         EXPECT_TRUE((TestPointerFromValue<json_type, actual_type>()));
 
-        // None of the other numerical types
-#ifdef _0
-        EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_TRUE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 28);
 
-        EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_TRUE(TestPointerFromString<json_type>(!malformed, count));
+        EXPECT_EQ(count, 68);
+
+        EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_TRUE(TestHexUIntFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 28);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
+        EXPECT_EQ(count, 2);
 
-        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-
-        EXPECT_FALSE(TestInstanceIdFromString(malformed, count));
-        EXPECT_EQ(count, 2); // Implementation constraint on IElement
-#endif
+        EXPECT_TRUE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 28);
     }
 }
 }
