@@ -262,7 +262,6 @@ namespace WPEFramework {
         //////////////////////////////////////////////////////////////////////
 
         static constexpr uint32_t MAX_LISTEN_QUEUE = 64;
-        static constexpr uint32_t SLEEPSLOT_TIME = 100;
 
         inline void DestroySocket(SOCKET& socket)
         {
@@ -896,7 +895,7 @@ namespace WPEFramework {
                 // Make sure we aren't in the monitor thread waiting for close completion.
                 ASSERT(Core::Thread::ThreadId() != ResourceMonitor::Instance().Id());
 
-                uint32_t sleepSlot = (waiting > SLEEPSLOT_TIME ? SLEEPSLOT_TIME : waiting);
+                uint32_t sleepSlot = (waiting > SLEEPSLOT_POLLING_TIME ? SLEEPSLOT_POLLING_TIME : waiting);
 
                 m_syncAdmin.Unlock();
 
@@ -931,7 +930,7 @@ namespace WPEFramework {
                 // Make sure we aren't in the monitor thread waiting for close completion.
                 ASSERT(Core::Thread::ThreadId() != ResourceMonitor::Instance().Id());
 
-                uint32_t sleepSlot = (waiting > SLEEPSLOT_TIME ? SLEEPSLOT_TIME : waiting);
+                uint32_t sleepSlot = (waiting > SLEEPSLOT_POLLING_TIME ? SLEEPSLOT_POLLING_TIME : waiting);
 
                 // Right, lets sleep in slices of 100 ms
                 SleepMs(sleepSlot);
@@ -959,11 +958,11 @@ namespace WPEFramework {
                 // Make sure we aren't in the monitor thread waiting for close completion.
                 ASSERT(Core::Thread::ThreadId() != ResourceMonitor::Instance().Id());
 
-                uint32_t sleepSlot = (waiting > SLEEPSLOT_TIME ? SLEEPSLOT_TIME : waiting);
+                uint32_t sleepSlot = (waiting > SLEEPSLOT_POLLING_TIME ? SLEEPSLOT_POLLING_TIME : waiting);
 
                 m_syncAdmin.Unlock();
 
-                // Right, lets sleep in slices of <= SLEEPSLOT_TIME ms
+                // Right, lets sleep in slices of <= SLEEPSLOT_POLLING_TIME ms
                 SleepMs(sleepSlot);
 
                 m_syncAdmin.Lock();

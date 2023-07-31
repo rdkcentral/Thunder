@@ -484,6 +484,7 @@ int clock_gettime(int, struct timespec*);
 
 #define ALLOCA alloca
 
+#define SLEEPSLOT_POLLING_TIME 100
 extern void EXTERNAL SleepMs(const unsigned int a_Time);
 extern void EXTERNAL SleepUs(const unsigned int a_Time);
 inline void EXTERNAL SleepS(unsigned int a_Time)
