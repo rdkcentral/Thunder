@@ -78,6 +78,9 @@ namespace RPC {
             ~Input() = default;
 
         public:
+            inline bool IsValid() const {
+                return (_data.Size() >= (sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(uint8_t)));
+            }
             inline void Clear()
             {
                 _data.Clear();
@@ -276,6 +279,9 @@ namespace RPC {
             }
 
         public:
+            bool IsValid() const {
+                return (_data.Size() >= STRINGS_OFFSET + 2);
+            }
             bool IsOffer() const
             {
                 return (Type() == OFFER);
