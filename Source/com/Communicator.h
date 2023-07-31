@@ -1321,26 +1321,33 @@ namespace RPC {
 
             public:
                 void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override {
+
                     Core::ProxyType<AnnounceMessage> message(data);
 
                     ASSERT(message.IsValid() == true);
                     ASSERT(dynamic_cast<Client*>(&channel) != nullptr);
 
-                    Core::ProxyType<Client> proxyChannel(static_cast<Client&>(channel));
+                    // Validate if the frame coming in is properly formatted..
+                    if (message->Parameters().IsValid() == false) {
+                        SYSLOG(Logging::Error, (_T("COMRPC Announce message incorrectly formatted!")));
+                    }
+                    else {
+                        Core::ProxyType<Client> proxyChannel(static_cast<Client&>(channel));
 
-                    string jsonDefaultMessagingSettings;
-                    string jsonDefaultWarningReportingSettings;
+                        string jsonDefaultMessagingSettings;
+                        string jsonDefaultWarningReportingSettings;
 
-                    #if defined(WARNING_REPORTING_ENABLED)
-                    jsonDefaultWarningReportingSettings = WarningReporting::WarningReportingUnit::Instance().Defaults();
-                    #endif
+                        #if defined(WARNING_REPORTING_ENABLED)
+                        jsonDefaultWarningReportingSettings = WarningReporting::WarningReportingUnit::Instance().Defaults();
+                        #endif
 
-                    void* result = _parent.Announce(proxyChannel, message->Parameters(), message->Response());
+                        void* result = _parent.Announce(proxyChannel, message->Parameters(), message->Response());
 
-                    message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultMessagingSettings, jsonDefaultWarningReportingSettings);
+                        message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultMessagingSettings, jsonDefaultWarningReportingSettings);
 
-                    // We are done, report completion
-                    channel.ReportResponse(data);
+                        // We are done, report completion
+                        channel.ReportResponse(data);
+                    }
                 }
 
             private:
@@ -1409,7 +1416,7 @@ POP_WARNING()
             }
             else if (instance.Type() == Object::HostType::CONTAINER) {
 #ifdef PROCESSCONTAINERS_ENABLED
-                result = Core::Service<ContainerProcess>::Create<RemoteConnection>(config, instance, _reporter);
+                result = Core::Service<ContainerProcess>::Create<RemoteConnection>(config, instance, _connectionMap);
 #else
                 SYSLOG(Logging::Error, (_T("Cannot create Container process for %s, this version was not build with Container support"), instance.ClassName().c_str()));
 #endif

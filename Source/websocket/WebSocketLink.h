@@ -1022,9 +1022,34 @@ POP_WARNING()
         {
             return (_channel.AbortUpgrade(status, reason));
         }
+        uint32_t WaitForLink(const uint32_t time) const
+        {
+            // Make sure the state does not change in the mean time.
+            Lock();
+
+            uint32_t waiting = (time == Core::infinite ? Core::infinite : time); // Expect time in MS.
+
+            // Right, a wait till connection is closed is requested..
+            while ((waiting > 0) && (IsWebSocket() == false)) {
+                uint32_t sleepSlot = (waiting > SLEEPSLOT_POLLING_TIME ? SLEEPSLOT_POLLING_TIME : waiting);
+
+                Unlock();
+                // Right, lets sleep in slices of 100 ms
+                SleepMs(sleepSlot);
+                Lock();
+
+                waiting -= (waiting == Core::infinite ? 0 : sleepSlot);
+            }
+
+            uint32_t result = (((time == 0) || (IsWebSocket() == true)) ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
+            Unlock();
+            return (result);
+        }
         uint32_t Open(const uint32_t waitTime)
         {
-            return (_channel.Open(waitTime));
+            _channel.Open(0);
+
+            return WaitForLink(waitTime);
         }
         uint32_t Close(const uint32_t waitTime)
         {

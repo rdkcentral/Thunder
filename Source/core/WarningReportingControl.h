@@ -110,9 +110,9 @@
 
 #define REPORT_DURATION_WARNING(CODE, CATEGORY, ...)                                                                                                           \
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) { \
-        WPEFramework::Core::Time start = WPEFramework::Core::Time::Now();                                                                                      \
+        uint64_t start = WPEFramework::Core::SystemInfo::Instance().Ticks();                                                                                   \
         CODE                                                                                                                                                   \
-            uint32_t duration = static_cast<uint32_t>((Core::Time::Now().Ticks() - start.Ticks()) / Core::Time::TicksPerMillisecond);                          \
+        uint64_t duration = (WPEFramework::Core::SystemInfo::Instance().Ticks() - start) / WPEFramework::Core::Time::MicroSecondsPerMilliSecond;               \
         WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;            \
         if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME,                                                                                       \
                 WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),                                         \
@@ -132,6 +132,7 @@ namespace WPEFramework {
 namespace Core {
     template <typename THREADLOCALSTORAGE>
     class ThreadLocalStorageType;
+    class CriticalSection;
 }
 
 namespace WarningReporting {
@@ -174,7 +175,7 @@ namespace WarningReporting {
         WarningReportingUnitProxy(const WarningReportingUnitProxy&) = delete;
         WarningReportingUnitProxy& operator=(const WarningReportingUnitProxy&) = delete;
 
-        ~WarningReportingUnitProxy() = default;
+        ~WarningReportingUnitProxy();
 
         static WarningReportingUnitProxy& Instance();
 
@@ -188,17 +189,14 @@ namespace WarningReporting {
         void FillBoundsConfig(const string& boundsConfig, uint32_t& outReportingBound, uint32_t& outWarningBound, string& outSpecificConfig) const;
 
     protected:
-        WarningReportingUnitProxy()
-            : _handler(nullptr)
-            , _waitingAnnounces()
-        {
-        }
+        WarningReportingUnitProxy();
 
     private:
         using WaitingAnnounceContainer = std::vector<IWarningReportingUnit::IWarningReportingControl*>;
 
         IWarningReportingUnit* _handler;
         WaitingAnnounceContainer _waitingAnnounces;
+        Core::CriticalSection* _adminLock;
     };
 
     template <typename CONTROLCATEGORY>

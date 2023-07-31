@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         build_type: [Debug, Release, MinSizeRel]
-    
+
     name: Build type - ${{matrix.build_type}}
     steps:
 # ----- Thunder -----
@@ -24,7 +24,7 @@ jobs:
       with:
         path: Thunder
         repository: rdkcentral/Thunder
-        
+
     - name: Regex Thunder
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
       id: thunder
@@ -33,7 +33,7 @@ jobs:
         regex_pattern: '(?<=\[DependsOn=Thunder:).*(?=\])'
         regex_flags: 'gim'
         search_string: ${{github.event.pull_request.body}}
-        
+
     - name: Checkout Thunder - ${{steps.thunder.outputs.first_match}}
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
       uses: actions/checkout@v3
@@ -41,7 +41,7 @@ jobs:
         path: Thunder
         repository: rdkcentral/Thunder
         ref: ${{steps.thunder.outputs.first_match}}
-    
+
 # ----- ThunderTools -----
     - name: Checkout ThunderTools - default
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
@@ -49,7 +49,7 @@ jobs:
       with:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
- 
+
     - name: Regex ThunderTools
       if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
       id: tools
@@ -80,13 +80,22 @@ jobs:
           sudo apt install python3-pip
           pip install jsonref
           sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
-        
+
     - name: Install generators
       run: |
         cmake -G Ninja -S ThunderTools -B ${{matrix.build_type}}/build/ThunderTools \
         -DCMAKE_INSTALL_PREFIX=${{matrix.build_type}}/install/usr
         cmake --build ${{matrix.build_type}}/build/ThunderTools --target install
-        
+
+    - name: Regex Thunder
+      if: contains(github.event.pull_request.body, '[Options:')
+      id: regexthunder
+      uses: AsasInnab/regex-action@v1
+      with:
+        regex_pattern: '(?<=\[Options:).*(?=\])'
+        regex_flags: 'gim'
+        search_string: ${{github.event.pull_request.body}}
+
     - name: Build Thunder
       run: |
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
@@ -99,15 +108,17 @@ jobs:
         -DPORT="55555" \
         -DPROXYSTUB_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/proxystubs" \
         -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
-        -DVOLATILE_PATH="tmp"
+        -DVOLATILE_PATH="tmp" \
+        -DLOCALTRACER=ON \
+        -DWARNING_REPORTING=ON \
+        ${{steps.regexthunder.outputs.first_match}}
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
-    
+
     - name: Tar files
       run: tar -czvf ${{matrix.build_type}}.tar.gz ${{matrix.build_type}}
-    
+
     - name: Upload
       uses: actions/upload-artifact@v3
       with:
         name: Thunder-${{matrix.build_type}}-artifact
         path: ${{matrix.build_type}}.tar.gz
-        
