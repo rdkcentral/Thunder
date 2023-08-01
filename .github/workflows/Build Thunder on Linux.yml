@@ -99,7 +99,7 @@ jobs:
     - name: Build Thunder
       run: |
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
-        -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic" \
+        -DCMAKE_CXX_FLAGS="-Wall -Wextra" \
         -DBINDING="127.0.0.1" \
         -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
         -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
