@@ -2,7 +2,7 @@ name: Build Thunder on Windows
 
 on:
   push:
-    branches: ["master"]
+    branches: ["development/actions-warnings"] # CHANGE TO MASTER
   pull_request:
     branches: ["master"]
 
@@ -112,8 +112,8 @@ jobs:
       shell: cmd
       run: |
         cd ThunderOnWindows
-        "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
-        "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"  "%solution%"
+        "%devEnv%" /Wall /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
+        "%devEnv%" /Wall /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"  "%solution%"
 
     - name: Tar files
       run: tar -czvf ${{matrix.type}}${{matrix.version}}.tar.gz artifacts
