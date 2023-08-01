@@ -52,9 +52,13 @@ namespace Core {
                 STANDARD_ERROR = 5
             };
 
+// @stop
+
         public:
             Metadata(const Metadata&) = default;
             Metadata& operator=(const Metadata&) = default;
+            Metadata(Metadata&&) = default;
+            Metadata& operator=(Metadata&&) = default;
 
             Metadata()
                 : _type(INVALID)
