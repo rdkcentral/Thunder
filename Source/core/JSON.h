@@ -1501,9 +1501,11 @@ namespace Core {
 
                 const int capacity = std::snprintf(nullptr, 0, "%E", _value);
 
-                char strValue[capacity + 1];
+                std::vector<char>strValue(capacity + 1, '\0');
 
-                std::snprintf(&strValue[0], capacity, "%E", _value);
+                ASSERT(strValue.size() != 0);
+
+                std::snprintf(strValue.data(), capacity, "%E", _value);
 
                 while (loaded < capacity && capacity < maxLength) {
                     stream[loaded] = strValue[loaded];
