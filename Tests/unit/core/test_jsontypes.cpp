@@ -26,8 +26,44 @@
 #include <core/core.h>
 #include "JSON.h"
 
+//#define _INTERMEDIATE
+
 namespace WPEFramework {
 namespace Tests {
+
+    template<typename S, typename T, typename std::enable_if<!std::is_floating_point<T>::value, T*>::type = nullptr>
+    bool TestJSONEqual(const T data, const std::string& reference)
+    {
+        std::string stream;
+
+        return    std::is_same<decltype(std::declval<S>().Value()), T>::value
+               && data == S(data).Default()
+               && data == S(data).Value()
+               && data == (S() = data).Value()
+               && S(data).ToString(stream)
+               && reference == std::string(stream)
+               ;
+    }
+
+    template<typename S, typename T, typename std::enable_if<std::is_floating_point<T>::value, T*>::type = nullptr>
+    bool TestJSONEqual(const T data, const std::string& reference)
+    {
+        // Units in the last place (measure of accuracy)
+        constexpr const int ulp = 2;
+
+        return std::is_same<decltype(std::declval<S>().Value()), T>::value
+               && (    std::fabs(S(data).Default() - data) <= std::numeric_limits<T>::epsilon() * std::fabs(S(data).Default() + data) * ulp
+                    || std::fabs(S(data).Default() - data) < std::numeric_limits<T>::min()
+                  )
+               && (    std::fabs(S(data).Value() - data) <= std::numeric_limits<T>::epsilon() * std::fabs(S(data).Value() + data) * ulp
+                    || std::fabs(S(data).Value() - data) < std::numeric_limits<T>::min()
+                 )
+              && (     std::fabs((S() = data).Value() - data) <= std::numeric_limits<T>::epsilon() * std::fabs((S() = data).Value() + data) * ulp
+                    || std::fabs((S() = data).Value() - data) < std::numeric_limits<T>::min()
+                  )
+               ;
+    }
+
 
     template <typename T>
     bool TestJSONFormat(const std::string& json, bool FromTo, bool AllowChange)
@@ -49,6 +85,20 @@ namespace Tests {
                 }
             }
 
+            if (   std::is_same<T, Core::JSON::Float>::value
+                || std::is_same<T, Core::JSON::Double>::value
+               ) {
+                T object;
+
+                Core::OptionalType<Core::JSON::Error> status;
+
+                result = object.FromString(data, status)
+                && !(status.IsSet())
+                && TestJSONEqual<T, decltype(std::declval<T>().Value())>(object.Value(), reference)
+                ;
+
+            }
+
             return result;
         };
 
@@ -58,9 +108,7 @@ namespace Tests {
 
         std::string stream;
 
-//#define _INTERMEDIATE
 #ifndef _INTERMEDIATE
-
         bool result =    object.FromString(json, status)
                       && !(status.IsSet())
                       && (   !FromTo
@@ -90,7 +138,6 @@ namespace Tests {
             } else {
             }
 #endif
-
         return result;
     }
 
@@ -113,7 +160,6 @@ namespace Tests {
 
             std::string stream;
 
-//#define _INTERMEDIATE
 #ifndef _INTERMEDIATE
             count +=    object.FromString(json, status)
                      && !(status.IsSet())
@@ -127,7 +173,6 @@ namespace Tests {
                            )
                      ;
 #else
-
             bool result = object.FromString(json, status);
                  result =    !(status.IsSet())
                           && result
@@ -164,21 +209,6 @@ namespace Tests {
 
         return count == 2;
     }
-
-    template<typename S, typename T>
-    bool TestJSONEqual(const T data, const std::string& reference)
-    {
-        std::string stream;
-
-        return    std::is_same<decltype(std::declval<S>().Value()), T>::value
-               && data == S(data).Default()
-               && data == S(data).Value()
-               && data == (S() = data).Value()
-               && S(data).ToString(stream)
-               && reference == std::string(stream)
-               ;
-    }
-
     // Implementation specific types may have additional constraint
 
     template <typename T>
@@ -996,6 +1026,177 @@ namespace Tests {
         return TestHexUIntFromString<T>(malformed, count);
     }
 
+    template <typename T>
+    bool TestFPFromString(bool malformed, uint8_t& count)
+    {
+        constexpr bool AllowChange = false;
+
+        count = 0;
+
+        bool FromTo = false;
+
+        do {
+            FromTo = !FromTo;
+
+            if (!malformed) {
+                // Correctly formatted
+                // ===================
+
+                count += TestJSONFormat<T>("0.0", FromTo, AllowChange);
+                count += TestJSONFormat<T>("1.0", FromTo, AllowChange); // First digit any out of 1-9
+
+                count += TestJSONFormat<T>("0.1", FromTo, AllowChange); // Second digit any out of 0-9
+                count += TestJSONFormat<T>("1.1", FromTo, AllowChange); // Second digit any out of 0-9
+
+                // C(++) floating point convention instead of scientific notation
+                count += TestJSONFormat<T>("0e+0", FromTo, AllowChange);
+                count += TestJSONFormat<T>("0e-0", FromTo, AllowChange);
+                count += TestJSONFormat<T>("0E+0", FromTo, AllowChange);
+                count += TestJSONFormat<T>("0E-0", FromTo, AllowChange);
+                count += TestJSONFormat<T>("-0e+0", FromTo, AllowChange);
+                count += TestJSONFormat<T>("-0e-0", FromTo, AllowChange);
+                count += TestJSONFormat<T>("-0E+0", FromTo, AllowChange);
+                count += TestJSONFormat<T>("-0E-0", FromTo, AllowChange);
+
+                count += TestJSONFormat<T>("2e-1", FromTo, AllowChange); // First digit out of 2-9
+                count += TestJSONFormat<T>("2E-1", FromTo, AllowChange); // First digit out of 2-9
+
+                count += TestJSONFormat<T>("0.0e-1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digit out of 1-9
+                count += TestJSONFormat<T>("0.0E-1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digit out of 1-9
+                count += TestJSONFormat<T>("0.0e-1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digit out of 1-9
+                count += TestJSONFormat<T>("0.0E-1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digit out of 1-9
+
+                count += TestJSONFormat<T>("0.0e+1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digits any out of 1-9;
+                count += TestJSONFormat<T>("0.0E+1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digits any out of 1-9;
+
+                count += TestJSONFormat<T>("-0.0", FromTo, AllowChange);
+                count += TestJSONFormat<T>("-1.0", FromTo, AllowChange); // First digit any out of 1-9
+
+                count += TestJSONFormat<T>("-0.1", FromTo, AllowChange); // Second digit any out of 0-9
+                count += TestJSONFormat<T>("-1.1", FromTo, AllowChange); // Second digit any out of 0-9
+
+                count += TestJSONFormat<T>("-2e-1", FromTo, AllowChange); // First digit out of 2-9
+                count += TestJSONFormat<T>("-2E-1", FromTo, AllowChange); // First digit out of 2-9
+
+                count += TestJSONFormat<T>("-0.0e-1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digit out of 1-9
+                count += TestJSONFormat<T>("-0.0E-1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digit out of 1-9
+                count += TestJSONFormat<T>("-0.0e-1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digit out of 1-9
+                count += TestJSONFormat<T>("-0.0E-1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digit out of 1-9
+
+                count += TestJSONFormat<T>("-0.0e+1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digits any out of 1-9;
+                count += TestJSONFormat<T>("-0.0E+1", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digits any out of 1-9;
+
+                count += TestJSONFormat<T>("1.1E-2", FromTo, AllowChange); // Fractional digits any out of 0-9, exponent digits any out of 1-9;
+
+                // Implementation constraint: all IElement objects can be nullified
+                count += TestJSONFormat<T>("null", FromTo, AllowChange);
+
+                // Empty string, no distinction with 0
+                count += (TestJSONFormat<T>("", FromTo, AllowChange) || !AllowChange);
+                count += (TestJSONFormat<T>("\0", FromTo, AllowChange) || !AllowChange);
+
+                count += TestJSONFormat<T>("\"-0.0\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"-0.1\"", FromTo, AllowChange);
+
+                // Range
+                if (   std::is_same<decltype(std::declval<T>().Value()), float>::value
+                    || std::is_same<decltype(std::declval<T>().Value()), double>::value
+                   ) {
+                    switch (sizeof(std::declval<T>().Value())) {
+                    case sizeof(float)  : // float
+                                          count += TestJSONFormat<T>("-3.402823466e+38", FromTo, AllowChange);
+                                          count += TestJSONFormat<T>("3.402823466e+38", FromTo, AllowChange);
+                                          break;
+                    case sizeof(double) : // double
+                                          count += TestJSONFormat<T>("-1.7976931348623158e+308", FromTo, AllowChange);
+                                          count += TestJSONFormat<T>("1.7976931348623158e+308", FromTo, AllowChange);
+                                          break;
+                    default             : ASSERT(false);
+                    }
+                }
+            } else {
+                // Malformed
+                // =========
+
+                // Missing fractional part
+                count += !TestJSONFormat<T>("0", FromTo, AllowChange); // Digits any out of 0-9
+
+                count += !TestJSONFormat<T>("--0.0", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("+1.0", FromTo, AllowChange); // Digits any out of 0-9
+                count += !TestJSONFormat<T>("0.", FromTo, AllowChange); // Digit any out of 0-9
+
+                count += !TestJSONFormat<T>("0.e", FromTo, AllowChange);
+
+                count += !TestJSONFormat<T>("0.0e+", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("0.0e-", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("0.0e++", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("0.0e--", FromTo, AllowChange);
+
+                count += !TestJSONFormat<T>("-0.0e+", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("-0.0e-", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("-0.0e++", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("-0.0e--", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("0.0e0.0", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("0.0E0.0", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("0.0e0", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("0.0E0", FromTo, AllowChange);
+
+                count += !TestJSONFormat<T>("-0.0e0.0", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("-0.0E0.0", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("-0.0e0", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("-0.0E0", FromTo, AllowChange);
+
+                count += !TestJSONFormat<T>("0.0e+0.0", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("0.0E+0.0", FromTo, AllowChange);
+
+                count += !TestJSONFormat<T>("0.0e-0.0", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("0.0E-0.0", FromTo, AllowChange);
+
+                count += !TestJSONFormat<T>("-0.0e-0.0", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("-0.0E-0.0", FromTo, AllowChange);
+
+                // Values that cannot be used
+                count += !TestJSONFormat<T>("{}", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("[]", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("true", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("false", FromTo, AllowChange);
+
+                // Non-numbers
+                count += !TestJSONFormat<T>("Infinity", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("NaN", FromTo, AllowChange);
+
+                count += !TestJSONFormat<T>("\"-0.0\"1", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"-0.1\"2", FromTo, AllowChange);
+
+                count += !TestJSONFormat<T>("\"-00\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"-01\"", FromTo, AllowChange);
+
+                // Out-of-range
+                // The values might not be the smallest (absolute) out-of-range value
+                if (   std::is_same<decltype(std::declval<T>().Value()), float>::value
+                    || std::is_same<decltype(std::declval<T>().Value()), double>::value
+                   ) {
+                    switch (sizeof(std::declval<T>().Value())) {
+                    case sizeof(float)  : // float
+                                          count += !TestJSONFormat<T>("-3.403e+38", FromTo, AllowChange);
+                                          count += !TestJSONFormat<T>("3.403e+38", FromTo, AllowChange);
+                                          break;
+                    case sizeof(double) : // double
+                                          count += !TestJSONFormat<T>("-1.798e+308", FromTo, AllowChange);
+                                          count += !TestJSONFormat<T>("1.798e+308", FromTo, AllowChange);
+                                          break;
+                    default             : ASSERT(false);
+                    }
+                }
+            }
+        } while (FromTo);
+
+        return  !malformed ? count == 80
+                           : count == 80
+               ;
+    }
+
     template <typename T, typename S>
     bool TestDecUIntFromValue()
     {
@@ -1201,6 +1402,34 @@ namespace Tests {
         return TestHexUIntFromValue<T, S>();
     }
 
+    template <typename T, typename S>
+    bool TestFPFromValue()
+    {
+        static_assert(std::is_floating_point<S>::value);
+
+        uint8_t count = 0;
+
+        if (std::is_same<decltype(std::declval<T>().Value()), S>::value) {
+            switch (sizeof(S)) {
+            case sizeof(float)  : // floati
+                                  count += TestJSONEqual<T, float>(-FLT_MIN, "-1.175494351e-38");
+                                  count += TestJSONEqual<T, float>(FLT_MIN, "1.175494351e-38");
+                                  count += TestJSONEqual<T, float>(-FLT_MAX, "-3.402823466e+38");
+                                  count += TestJSONEqual<T, float>(FLT_MAX, "3.402823466e+38");
+                                  break;
+            case sizeof(double) : // double
+                                  count += TestJSONEqual<T, double>(-DBL_MIN, "-2.2250738585072014e-308");
+                                  count += TestJSONEqual<T, double>(DBL_MIN, "2.2250738585072014e-308");
+                                  count += TestJSONEqual<T, double>(-DBL_MAX, "-1.7976931348623158e+308");
+                                  count += TestJSONEqual<T, double>(DBL_MAX, "1.7976931348623158e+308");
+                                  break;
+            default             : ASSERT(false);
+            }
+        }
+
+        return count == 4;
+    }
+
     TEST(JSONParser, DecUInt8)
     {
         using json_type = Core::JSON::DecUInt8;
@@ -1229,6 +1458,9 @@ namespace Tests {
         EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
     }
 
@@ -1264,6 +1496,9 @@ namespace Tests {
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 
     TEST(JSONParser, DecUInt16)
@@ -1294,6 +1529,9 @@ namespace Tests {
         EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
     }
 
@@ -1329,6 +1567,9 @@ namespace Tests {
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 
     TEST(JSONParser, DecUInt32)
@@ -1359,6 +1600,9 @@ namespace Tests {
         EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
     }
 
@@ -1394,6 +1638,9 @@ namespace Tests {
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 
     TEST(JSONParser, DecUInt64)
@@ -1424,6 +1671,9 @@ namespace Tests {
         EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
     }
 
@@ -1459,6 +1709,9 @@ namespace Tests {
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 
     TEST(JSONParser, HexUInt8)
@@ -1490,6 +1743,9 @@ namespace Tests {
 
         EXPECT_TRUE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 32);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 
     TEST(JSONParser, HexSInt8)
@@ -1524,6 +1780,9 @@ namespace Tests {
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 24);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 
     TEST(JSONParser, HexUInt16)
@@ -1555,6 +1814,9 @@ namespace Tests {
 
         EXPECT_TRUE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 32);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 
     TEST(JSONParser, HexSInt16)
@@ -1589,6 +1851,9 @@ namespace Tests {
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 30);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 
     TEST(JSONParser, HexUInt32)
@@ -1620,6 +1885,9 @@ namespace Tests {
 
         EXPECT_TRUE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 32);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 
     TEST(JSONParser, HexSInt32)
@@ -1654,6 +1922,9 @@ namespace Tests {
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 30);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 
     TEST(JSONParser, HexUInt64)
@@ -1685,6 +1956,9 @@ namespace Tests {
 
         EXPECT_TRUE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 32);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 
     TEST(JSONParser, HexSInt64)
@@ -1719,6 +1993,9 @@ namespace Tests {
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 30);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 
     TEST(JSONParser, OctUInt8)
@@ -1749,6 +2026,9 @@ namespace Tests {
         EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
     }
 
@@ -1784,6 +2064,9 @@ namespace Tests {
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 
     TEST(JSONParser, OctUInt16)
@@ -1814,6 +2097,9 @@ namespace Tests {
         EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
     }
 
@@ -1849,6 +2135,9 @@ namespace Tests {
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 
     TEST(JSONParser, OctUInt32)
@@ -1879,6 +2168,9 @@ namespace Tests {
         EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
     }
 
@@ -1914,6 +2206,9 @@ namespace Tests {
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 
     TEST(JSONParser, OctUInt64)
@@ -1944,6 +2239,9 @@ namespace Tests {
         EXPECT_EQ(count, 6);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
     }
 
@@ -1979,6 +2277,9 @@ namespace Tests {
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 
     TEST(JSONParser, InstanceId)
@@ -2010,6 +2311,9 @@ namespace Tests {
 
         EXPECT_TRUE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 32);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 
     TEST(JSONParser, Pointer)
@@ -2041,6 +2345,73 @@ namespace Tests {
 
         EXPECT_TRUE(TestInstanceIdFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 32);
+
+        EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+    }
+
+    TEST(JSONParser, Float)
+    {
+        using json_type = Core::JSON::Float;
+        using actual_type = float;
+
+        constexpr const bool malformed = false;
+        uint8_t count = 0;
+
+        EXPECT_TRUE((TestFPFromValue<json_type, actual_type>()));
+
+        EXPECT_TRUE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 80);
+
+        EXPECT_TRUE(TestFPFromString<json_type>(!malformed, count));
+        EXPECT_EQ(count, 80);
+
+        EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+    }
+
+    TEST(JSONParser, Double)
+    {
+        using json_type = Core::JSON::Double;
+        using actual_type = double;
+
+        constexpr const bool malformed = false;
+        uint8_t count = 0;
+
+        EXPECT_TRUE((TestFPFromValue<json_type, actual_type>()));
+
+        EXPECT_TRUE(TestFPFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 80);
+
+        EXPECT_TRUE(TestFPFromString<json_type>(!malformed, count));
+        EXPECT_EQ(count, 80);
+
+        EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
+
+        EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 6);
     }
 }
 }

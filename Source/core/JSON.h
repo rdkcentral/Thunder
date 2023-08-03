@@ -714,7 +714,7 @@ namespace Core {
                                     _set |= NEGATIVE;
                                     break;
                     case '"'    :   // Quoted character sequence
-                                    if (!(_set & QUOTED) && offset > 0) {// && ((_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || (_set & UNDEFINED))) {
+                                    if (!(_set & QUOTED) && offset > 0) {
                                         _set = ERROR;
                                         error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<>"};
                                         continue;
@@ -741,7 +741,12 @@ namespace Core {
 
                                     _set = UNDEFINED;
                                     break;
-                    default     :
+                    default     :   if (_set & UNDEFINED) {
+                                        _set = ERROR;
+                                        error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<>"};
+                                        continue;
+                                    }
+
                                     // Define a set of rules without the sue of regular expressions
                                     switch(BASETYPE) {
                                     case BASE_DECIMAL           :   // Decimal format rules
@@ -1094,28 +1099,24 @@ namespace Core {
                 : _set(0)
                 , _value(0.0)
                 , _default(0.0)
-                , _strValue()
             {
             }
             FloatType(const TYPE Value, const bool set = false)
                 : _set(set ? SET : 0)
                 , _value(Value)
                 , _default(Value)
-                , _strValue()
             {
             }
             FloatType(FloatType<TYPE>&& move)
                 : _set(std::move(move._set))
                 , _value(std::move(move._value))
                 , _default(std::move(move._default))
-                , _strValue()
             {
             }
             FloatType(const FloatType<TYPE>& copy)
                 : _set(copy._set)
                 , _value(copy._value)
                 , _default(copy._default)
-                , _strValue()
             {
             }
             ~FloatType() override = default;
@@ -1192,17 +1193,12 @@ namespace Core {
 
                 ASSERT(maxLength > 0);
 
-                if ((_set & UNDEFINED) != 0 ||
-                    std::isinf(_value) ||
-                    std::isnan(_value))
-                {
+                if ((_set & UNDEFINED)) {
                     ASSERT(offset < (sizeof(IElement::NullTag) - 1));
                     loaded = std::min(static_cast<uint16_t>((sizeof(IElement::NullTag) - 1) - offset), maxLength);
                     ::memcpy(stream, &(IElement::NullTag[offset]), loaded);
                     offset = (((offset + loaded) == (sizeof(IElement::NullTag) - 1)) ? 0 : offset + loaded);
-                }
-                else
-                {
+                } else {
                     loaded += Convert(stream, maxLength, offset);
                 }
 
@@ -1213,60 +1209,213 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                if (offset == 0) {
-                    _value = 0;
-                    _set = 0;
-                    _strValue.clear();
-                }
-
-                if ((stream[loaded] == '\"') && ((_set & QUOTED) == 0)) {
-                    _set = QUOTED;
-                    offset++;
-                    loaded++;
-                }
-
                 bool completed = false;
 
-                while ((loaded < maxLength) && (completed == false)) {
+                _value = 0.0;
 
-                    if (((_set & QUOTED) != 0) && (stream[loaded] == '\"')) {
-                        completed = true;
-                        loaded++;
-                        offset++;
-                        _set &= ~QUOTED;
-                    } else if ( (((_set & QUOTED) == 0) && (::isspace(stream[loaded]))) || (stream[loaded] == '\0') ||
-                               (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']') ) {
-                        completed = true;
+                bool fraction = false, exponent = false, digit = false, esign = false;
+
+                std::string strValue;
+
+                strValue.reserve(maxLength + 1);
+
+                while(!completed && loaded < maxLength && !(error.IsSet())) {
+                    const char& c = stream[loaded++];
+
+                    if (c != '"') {
+                        strValue += c;
+                    }
+
+                    if (!exponent) {
+                        switch (c) {
+                        case '\0'   :   // End of character sequence
+                                        if (offset > 0 && !((digit && fraction) || (_set & UNDEFINED))) {
+                                            _set = ERROR;
+                                            error = Error{"Terminated character sequence without (sufficient) data for fractional part for FloatType<>"};
+                                        }
+                                        completed = true;
+                                        continue;
+                        case '-'    :   // Negative value
+                                        if (   !(   !((_set & QUOTED) && offset == 0)
+                                                 || ((_set & QUOTED) && offset == 1)
+                                                )
+                                                || (    (_set & NEGATIVE)
+                                                    && offset > 0
+                                                   )
+                                           ) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for fractional part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        _set |= NEGATIVE;
+                                        break;
+                        case '"'    :   // Quoted character sequence
+                                        if (!(_set & QUOTED) && offset > 0) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for fractional part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        if ((_set & QUOTED) && offset > 0 && !((digit && fraction) ||  (_set & UNDEFINED))) {
+                                            _set = ERROR;
+                                            error = Error{"Quote terminated character sequence without (sufficient) data for fractional part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        completed = (_set & QUOTED);
+
+                                        _set |= QUOTED;
+                                        break;
+                        case 'n'    :   FALLTHROUGH
+                        case 'u'    :   FALLTHROUGH
+                        case 'l'    :   // JSON value null
+                                        if (((offset > 3 || (offset > 4 && (_set & QUOTED))) || c != IElement::NullTag[offset])) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for FloatType<>"};
+                                            continue;
+                                        }
+                                        _set = UNDEFINED;
+                                        break;
+                        case '.'    :   if (   offset == 0
+                                            || (offset == 0 && !(_set & QUOTED) && !(_set & NEGATIVE))
+                                            || (offset == 1 && ((!(_set & QUOTED) && (_set & NEGATIVE)) || ((_set & QUOTED) & !(_set & NEGATIVE))))
+                                            || (offset == 2 && (_set & QUOTED) && (_set & NEGATIVE))
+                                            || (offset > 0 && fraction && !(_set & QUOTED) && !(_set & NEGATIVE))
+                                            || (offset > 1 && fraction && ((!(_set & QUOTED) && (_set & NEGATIVE)) || ((_set & QUOTED) & !(_set & NEGATIVE))))
+                                            || (offset > 2 && fraction && (_set & QUOTED) && (_set & NEGATIVE))
+                                           ) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for fractional for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        if (!digit) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for fractional part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        fraction = true;
+
+                                        // The next character should be a digit
+                                        digit = false;
+                                        break;
+                        case 'e'    :   FALLTHROUGH;
+                        case 'E'    :   if (!digit) {
+                                            _set = ERROR;
+                                            error = Error{"Character sequence without (sufficient) data to specify fractional part for FloatType<>"};
+                                            continue;
+                                        }
+                                        exponent = true;
+                                        digit = false;
+                                        offset = 0;
+                                        continue;
+                        default     :   if (_set & UNDEFINED) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for fractional part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        if (!(std::isdigit(c))) {
+                                            _set = ERROR;
+                                            error = Error{"Invalid character '" + std::string(1, c) + "' for fractional part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        if ((   (offset == 1 && stream[offset - 1] == '0' && !(_set & QUOTED) && !(_set & NEGATIVE))
+                                             || (offset == 2 && stream[offset - 1] == '0' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
+                                             || (offset == 3 && stream[offset - 1] == '0' && (_set & QUOTED) && (_set & NEGATIVE))
+                                            )
+                                           ) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for fractional part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        digit = true;
+                        }
                     } else {
-                        _strValue += stream[loaded++];
-                        offset++;
+                        switch (c) {
+                        case '\0'   :   // End of character sequence
+                                        if (offset > 0 && !(digit && esign)) {
+                                            _set = ERROR;
+                                            error = Error{"Terminated character sequence without (sufficient) data for exponential part for FloatType<>"};
+                                        }
+                                        completed = true;
+                                        continue;
+                        case '"'    :   if (!(_set & QUOTED)) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for exponential part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        if ((_set & QUOTED) && offset > 0 && !(digit && esign)) {
+                                            _set = ERROR;
+                                            error = Error{"Quote terminated character sequence without (sufficient) data for exponential part for FloatType<>"};
+                                            continue;
+                                        }
+                                        break;
+                        case '-'    :   FALLTHROUGH;
+                        case '+'    :   if (offset) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for exponential part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        esign = true;
+                                        break;
+                        default     :   if (!(std::isdigit(c))) {
+                                            _set = ERROR;
+                                            error = Error{"Invalid Character '" + std::string(1, c) + "' for exponential part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        digit = true;
+                        }
+                    }
+
+                    ++offset;
+                }
+
+                if (completed && loaded < maxLength) {
+                    if (!(error.IsSet()) && stream[loaded] != '\0') {
+                        error = Error{"Input data contains trailing characters for FloatType<>"};
                     }
                 }
 
-                if (completed == true) {
+                if (!((_set & UNDEFINED) || error.IsSet())) {
+                    static_assert(std::is_same<float, TYPE>::value || std::is_same<double, TYPE>::value);
 
-                    if (_strValue == IElement::NullTag) {
-                        _set |= (SET|UNDEFINED);
+                    char* c = nullptr;
 
-                    } else {
-                        TYPE val;
-                        char* end;
-                        if (std::is_same<float,TYPE>::value) {
-                            val = std::strtof(_strValue.c_str(), &end);
-                        } else {
-                            val = static_cast<TYPE>(std::strtod(_strValue.c_str(), &end));
-                        }
+                    // Add (an extra) termination character to make the returned *c well-defined
+                    strValue += '\0';
 
-                        if (end == _strValue.c_str()) {
-                            error = Error{ "Error converting \"" + _strValue + "\" to a float/double" };
-                            _set = ERROR;
-                        } else {
-                            _value = val;
-                            _set |= SET;
-                        }
+                    _value = static_cast<TYPE>
+                             (  std::is_same<float, TYPE>::value
+                              ? std::strtof(strValue.c_str(), &c)
+                              : std::strtod(strValue.c_str(), &c)
+                             );
 
-                        _strValue.clear();
+                    // Implementation may report out of range if input values are not siginificant accurately represented by the converted value
+                    // This might be considered not an error
+
+                    // Inputs should always result in the possibility to convert
+                    ASSERT(c != strValue.c_str());
+
+                    if (   errno == ERANGE
+                        && _value == static_cast<TYPE>(  std::is_same<float, TYPE>::value 
+                                                       ? ((_set & NEGATIVE) ? -HUGE_VALF : HUGE_VALF)
+                                                       : ((_set & NEGATIVE) ? -HUGE_VAL : HUGE_VAL)
+                                                      )
+                       ) {
+                        _set = ERROR;
+                        error = Error{ "Input data results in out-of-range for FloatType<>"};
                     }
+                }
+
+                if (!(error.IsSet())) {
                     offset = 0;
                 }
 
@@ -1350,20 +1499,19 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                if (_strValue.empty() == true) {
-                    char str[16];
-                    std::sprintf(str, "%g", _value);
-                    const_cast<FloatType*>(this)->_strValue = str;
+                const int capacity = std::snprintf(nullptr, 0, "%E", _value);
+
+                char strValue[capacity + 1];
+
+                std::snprintf(&strValue[0], capacity, "%E", _value);
+
+                while (loaded < capacity && capacity < maxLength) {
+                    stream[loaded] = strValue[loaded];
+                    loaded++;
                 }
 
-                while ((loaded < maxLength) && (offset < _strValue.size())) {
-                    stream[loaded] = _strValue[offset];
-                    loaded++;
-                    offset++;
-                }
-                if (offset == _strValue.size()) {
+                if (loaded == capacity) {
                     offset = 0;
-                    const_cast<FloatType*>(this)->_strValue.clear();
                 }
 
                 return loaded;
@@ -1374,7 +1522,6 @@ namespace Core {
             uint16_t _set;
             TYPE _value;
             TYPE _default;
-            std::string _strValue;
         };
 
         typedef FloatType<float> Float;
