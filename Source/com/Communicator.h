@@ -813,9 +813,8 @@ namespace RPC {
                     case 0: if (process.Id() != 0) {
                                 process.Kill(false);
                             }
-                            else if (_container->Stop(0)) {
-                                nextinterval = 0;
-                                break;
+                            else {
+                                _container->Stop(0);
                             }
                             nextinterval = Communicator::SoftKillCheckWaitTime();
                             break;
