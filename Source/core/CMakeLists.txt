@@ -18,7 +18,7 @@
 set(TARGET ${NAMESPACE}Core)
 include(CompileSettings)
 
-set(SOURCES
+add_library(${TARGET} ${THUNDER_LIBRARY_TYPE}
 	DoorBell.cpp
         CyclicBuffer.cpp
         DataElement.cpp
@@ -54,10 +54,8 @@ set(SOURCES
         )
 
 if (NOT BUILD_LIB_AS_STATIC)
-	list(APPEND SOURCES Module.cpp)
+	target_sources(${TARGET} PRIVATE Module.cpp)
 endif()
-
-add_library(${TARGET} ${THUNDER_LIBRARY_TYPE} ${SOURCES})
 
 #TODO: Remove all non public headers from this list,
 # All the interface headers are here, these will be installed to staging

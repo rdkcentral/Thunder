@@ -17,7 +17,7 @@
 
 set(TARGET ${NAMESPACE}WebSocket)
 
-set(SOURCES
+add_library(${TARGET} ${THUNDER_LIBRARY_TYPE}
         URL.cpp
         JSONWebToken.cpp
         WebSerializer.cpp
@@ -41,10 +41,8 @@ set(PUBLIC_HEADERS
         )
 
 if (NOT BUILD_LIB_AS_STATIC)
-	list(APPEND SOURCES Module.cpp)
+        target_sources(${TARGET} PRIVATE Module.cpp)
 endif()
-
-add_library(${TARGET} ${THUNDER_LIBRARY_TYPE} ${SOURCES})
 
 target_link_libraries(${TARGET}
         PRIVATE

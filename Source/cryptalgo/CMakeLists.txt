@@ -17,7 +17,7 @@
 
 set(TARGET  ${NAMESPACE}Cryptalgo)
 
-set(SOURCES
+add_library(${TARGET} ${THUNDER_LIBRARY_TYPE}
         AES.cpp
         AESImplementation.cpp
         Hash.cpp
@@ -26,11 +26,8 @@ set(SOURCES
         )
 
 if (NOT BUILD_LIB_AS_STATIC)
-	list(APPEND SOURCES Module.cpp)
+        target_sources(${TARGET} PRIVATE Module.cpp)
 endif()
-
-
-add_library(${TARGET} ${THUNDER_LIBRARY_TYPE} ${SOURCES})
 
 set(PUBLIC_HEADERS
         AES.h
