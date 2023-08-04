@@ -719,7 +719,7 @@ namespace Core {
     class IPNetworks {
     private:
         using Map = std::map<uint32_t, Core::ProxyType<Network> >;
-        using Element = std::pair<uint32_t, Core::ProxyType<Network> >;
+        using Element = std::pair<const uint32_t, Core::ProxyType<Network> >;
         using Iterator = IteratorMapType<Map, const Core::ProxyType<const Network>&, uint32_t>;
 
         class LinkSocket : public SocketNetlink {

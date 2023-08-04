@@ -837,7 +837,7 @@ namespace PluginHost {
             template<typename ACTION>
             void Visit(ACTION&& action) const {
                 _adminLock.Lock();
-                for (const std::pair<const string, const ShellProxy*>& entry : _plugins) {
+                for (const std::pair<const string, ShellProxy*>& entry : _plugins) {
                     action(entry.first, entry.second);
                 }
                 _adminLock.Unlock();
