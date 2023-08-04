@@ -48,7 +48,15 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
             Controls& operator=(const Controls&) = delete;
 
             Controls() = default;
-            ~Controls() = default;
+            ~Controls()
+            {
+                ControlList tempControlList = _controlList;
+                if (tempControlList.size() > 0) {
+                    for (auto& control : tempControlList) {
+                        control->Destroy();
+                    }
+                }
+            }
 
         public:
             void Announce(Core::Messaging::IControl* control)
