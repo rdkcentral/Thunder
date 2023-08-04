@@ -591,6 +591,8 @@ uint64_t ntohll(const uint64_t& value);
 #endif
 }
 
+#define SLEEPSLOT_POLLING_TIME 100
+
 // ---- Helper types and constants ----
 #define _TXT(THETEXT) \
     _T(THETEXT)       \

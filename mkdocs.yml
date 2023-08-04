@@ -27,6 +27,7 @@ nav:
     - Interfaces:
       - Interface-Driven Development: plugin/interfaces/interfaces.md
       - Documentation generation: plugin/interfaces/docs.md
+      - Tags: plugin/interfaces/tags.md
     - Configuration: plugin/config.md
     - Error Handling: plugin/errors.md
     - Versioning: plugin/versioning.md
@@ -74,6 +75,8 @@ markdown_extensions:
   - footnotes
   - attr_list
   - md_in_html
+  - toc:
+      toc_depth: 4
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg

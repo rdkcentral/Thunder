@@ -198,32 +198,35 @@ namespace Core {
                         }
                     }
 
-                    ASSERT((_offset - 8) <= _length);
+                    if (_offset >= 8) {
 
-                    if ((_offset - 8) < _length) {
+                        ASSERT((_offset - 8) <= _length);
 
-                        // There could be multiple packages in this frame, do not read/handle more than what fits in the frame.
-                        uint32_t tmp = _length - (_offset - 8);
-                        uint16_t handled(static_cast<uint32_t>(maxLength - result) > tmp ? static_cast<uint16_t>(tmp) : (maxLength - result));
+                        if ((_offset - 8) < _length) {
 
-                        if (_current != nullptr) {
-                            handled = _current->Deserialize(&stream[result], handled, _offset - 8);
+                            // There could be multiple packages in this frame, do not read/handle more than what fits in the frame.
+                            uint32_t tmp = _length - (_offset - 8);
+                            uint16_t handled(static_cast<uint32_t>(maxLength - result) > tmp ? static_cast<uint16_t>(tmp) : (maxLength - result));
+
+                            if (_current != nullptr) {
+                                handled = _current->Deserialize(&stream[result], handled, _offset - 8);
+                            }
+
+                            _offset += handled;
+                            result += handled;
                         }
 
-                        _offset += handled;
-                        result += handled;
-                    }
+                        ASSERT((_offset - 8) <= _length);
 
-                    ASSERT((_offset - 8) <= _length);
-
-                    if ((_offset - 8) == _length) {
-                        if (_current != nullptr) {
-                            IMessage* ready = _current;
-                            _current = nullptr;
-                            Deserialized(*ready);
+                        if ((_offset - 8) == _length) {
+                            if (_current != nullptr) {
+                                IMessage* ready = _current;
+                                _current = nullptr;
+                                Deserialized(*ready);
+                            }
+                            _offset = 0;
+                            _length = 0;
                         }
-                        _offset = 0;
-                        _length = 0;
                     }
                 }
                 return (result);

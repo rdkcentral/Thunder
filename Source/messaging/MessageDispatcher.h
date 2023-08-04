@@ -262,7 +262,7 @@ namespace Messaging {
                 _dataBuffer.Flush();
             }
 
-            _dataLock.Lock();
+            _dataLock.Unlock();
         }
 
         bool IsValid() const {
