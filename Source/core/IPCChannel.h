@@ -272,7 +272,7 @@ namespace Core {
         template<typename ACTION>
         void Visit(ACTION&& action) const {
             _adminLock.Lock();
-            for (const std::pair<const EXTENSION*, ProxyType<Client>>& entry : _clients) {
+            for (const std::pair<EXTENSION* const, ProxyType<Client>>& entry : _clients) {
                 action(*(entry.second));
             }
             _adminLock.Unlock();
