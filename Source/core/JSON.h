@@ -686,8 +686,11 @@ namespace Core {
 
                     switch (c) {
                     case 0x09     : // Tabulation
+                                    FALLTHROUGH
                     case 0x0A     : // Line feed
+                                    FALLTHROUGH
                     case 0x0D     : // Carriage return
+                                    FALLTHROUGH
                     case 0x20     : // Space
                                     // Insignificant white space
                                     suffix = suffix || (_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || (_set & UNDEFINED);
@@ -765,9 +768,9 @@ namespace Core {
                                                                         continue;
                                                                     }
 
-                                                                    if ((   (offset == 1 && stream[offset - 1] == '0' && !(_set & QUOTED) && !(_set & NEGATIVE))
-                                                                         || (offset == 2 && stream[offset - 1] == '0' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
-                                                                         || (offset == 3 && stream[offset - 1] == '0' && (_set & QUOTED) && (_set & NEGATIVE))
+                                                                    if ((   (offset == 1 && stream[loaded - 2] == '0' && !(_set & QUOTED) && !(_set & NEGATIVE))
+                                                                         || (offset == 2 && stream[loaded - 2] == '0' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
+                                                                         || (offset == 3 && stream[loaded - 2] == '0' && (_set & QUOTED) && (_set & NEGATIVE))
                                                                         )
                                                                        ) {
                                                                         _set = ERROR;
@@ -785,12 +788,12 @@ namespace Core {
                                                                     _set |= DECIMAL;
                                                                     break;
                                     case BASE_HEXADECIMAL       :   // Hexadecimal format rules
-                                                                    if (   (offset == 0 && stream[offset] != '0' && !(_set & QUOTED) && !(_set & NEGATIVE))
-                                                                        || (offset == 1 && stream[offset] != '0' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
-                                                                        || (offset == 2 && stream[offset] != '0' && (_set & QUOTED) && (_set & NEGATIVE))
+                                                                    if (   (offset == 0 && stream[loaded - 1] != '0' && !(_set & QUOTED) && !(_set & NEGATIVE))
+                                                                        || (offset == 1 && stream[loaded - 1] != '0' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
+                                                                        || (offset == 2 && stream[loaded - 1] != '0' && (_set & QUOTED) && (_set & NEGATIVE))
                                                                         || (offset == 1 && std::toupper(c) != 'X' && !(_set & QUOTED) && !(_set & NEGATIVE))
-                                                                        || (offset == 2 && std::toupper(stream[offset]) != 'X' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
-                                                                        || (offset == 3 && std::toupper(stream[offset]) != 'X' && (_set & QUOTED) && (_set & NEGATIVE))
+                                                                        || (offset == 2 && std::toupper(stream[loaded - 1]) != 'X' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
+                                                                        || (offset == 3 && std::toupper(stream[loaded - 1]) != 'X' && (_set & QUOTED) && (_set & NEGATIVE))
                                                                        ) {
                                                                         _set = ERROR;
                                                                         error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<> with base hexadecimal"};
@@ -825,12 +828,12 @@ namespace Core {
                                                                         continue;
                                                                     }
 
-                                                                    if ((   (offset == 0 && stream[offset] != '0') && !(_set & QUOTED) && !(_set & NEGATIVE)
-                                                                         || (offset == 1 && stream[offset] != '0' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
-                                                                         || (offset == 2 && stream[offset] != '0' && (_set & QUOTED) && (_set & NEGATIVE))
-                                                                         || (offset == 2 && stream[offset] == '0' && stream[offset - 1] == '0') && !(_set & QUOTED) && !(_set & NEGATIVE)
-                                                                         || (offset == 3 && stream[offset] == '0' && stream[offset - 1] == '0' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
-                                                                         || (offset == 4 && stream[offset] == '0' && stream[offset - 1] == '0' && (_set & QUOTED) && (_set & NEGATIVE))
+                                                                    if ((   (offset == 0 && stream[loaded - 1] != '0') && !(_set & QUOTED) && !(_set & NEGATIVE)
+                                                                         || (offset == 1 && stream[loaded - 1] != '0' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
+                                                                         || (offset == 2 && stream[loaded - 1] != '0' && (_set & QUOTED) && (_set & NEGATIVE))
+                                                                         || (offset == 2 && stream[loaded - 1] == '0' && stream[loaded - 2] == '0') && !(_set & QUOTED) && !(_set & NEGATIVE)
+                                                                         || (offset == 3 && stream[loaded - 1] == '0' && stream[loaded - 2] == '0' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
+                                                                         || (offset == 4 && stream[loaded - 1] == '0' && stream[loaded - 2] == '0' && (_set & QUOTED) && (_set & NEGATIVE))
                                                                         )
                                                                        ) {
                                                                         _set = ERROR;
