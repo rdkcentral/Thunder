@@ -640,7 +640,7 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                bool completed = false;
+                bool completed = false, suffix = false;
 
                 _value = 0;
                 _set = 0;
@@ -685,11 +685,19 @@ namespace Core {
                     const char& c = stream[loaded++];
 
                     switch (c) {
+                    case 0x09     : // Tabulation
+                    case 0x0A     : // Line feed
+                    case 0x0D     : // Carriage return
+                    case 0x20     : // Space
+                                    // Insignificant white space
+                                    suffix = suffix || (_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || (_set & UNDEFINED);
+                                    continue;
                     case '\0'   :   // End of character sequence
                                     if (offset > 0 && !((_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || (_set & UNDEFINED))) {
                                         _set = ERROR;
                                         error = Error{"Terminated character sequence without (sufficient) data for NumberType<>"};
                                     }
+
                                     completed = true;
                                     continue;
                     case '-'    :   // Signed value
@@ -705,6 +713,7 @@ namespace Core {
                                         || (    (_set & NEGATIVE)
                                              && offset > 0
                                            )
+                                        || suffix
                                        ) {
                                         _set = ERROR;
                                         error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<>"};
@@ -714,7 +723,7 @@ namespace Core {
                                     _set |= NEGATIVE;
                                     break;
                     case '"'    :   // Quoted character sequence
-                                    if (!(_set & QUOTED) && offset > 0) {
+                                    if (!(_set & QUOTED) && offset > 0) {// || suffix) {
                                         _set = ERROR;
                                         error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<>"};
                                         continue;
@@ -726,14 +735,14 @@ namespace Core {
                                         continue;
                                     }
 
-                                    completed = (_set & QUOTED);
+                                    suffix = suffix || (_set & QUOTED);
 
                                     _set |= QUOTED;
                                     break;
                     case 'n'    :   FALLTHROUGH
                     case 'u'    :   FALLTHROUGH
                     case 'l'    :   // JSON value null
-                                    if (((offset > 3 || (offset > 4 && (_set & QUOTED))) || c != IElement::NullTag[offset])) {
+                                    if (((offset > 3 || (offset > 4 && (_set & QUOTED))) || c != IElement::NullTag[offset]) || suffix) {
                                         _set = ERROR;
                                         error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<>"};
                                         continue;
@@ -741,9 +750,9 @@ namespace Core {
 
                                     _set = UNDEFINED;
                                     break;
-                    default     :   if (_set & UNDEFINED) {
+                    default     :   if (suffix) {
                                         _set = ERROR;
-                                        error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<>"};
+                                         error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<>"};
                                         continue;
                                     }
 
