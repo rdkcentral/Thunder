@@ -686,8 +686,11 @@ namespace Core {
 
                     switch (c) {
                     case 0x09     : // Tabulation
+                                    FALLTHROUGH
                     case 0x0A     : // Line feed
+                                    FALLTHROUGH
                     case 0x0D     : // Carriage return
+                                    FALLTHROUGH
                     case 0x20     : // Space
                                     // Insignificant white space
                                     suffix = suffix || (_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || (_set & UNDEFINED);
