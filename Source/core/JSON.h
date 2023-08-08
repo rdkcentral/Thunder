@@ -696,7 +696,7 @@ namespace Core {
                                     suffix = suffix || (_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || (_set & UNDEFINED);
                                     continue;
                     case '\0'   :   // End of character sequence
-                                    if (offset > 0 && !((_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || (_set & UNDEFINED))) {
+                                    if (offset > 0 && !((_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || ((_set & UNDEFINED) && suffix) || ((_set & QUOTED) && suffix))) {
                                         _set = ERROR;
                                         error = Error{"Terminated character sequence without (sufficient) data for NumberType<>"};
                                     }
@@ -732,7 +732,7 @@ namespace Core {
                                         continue;
                                     }
 
-                                    if ((_set & QUOTED) && offset > 0 && !((_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || (_set & UNDEFINED))) {
+                                    if ((_set & QUOTED) && offset > 0 && !((_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || ((_set & UNDEFINED) && suffix))) {
                                         _set = ERROR;
                                         error = Error{"Quote terminated character sequence without (sufficient) data for NumberType<>"};
                                         continue;
@@ -745,15 +745,19 @@ namespace Core {
                     case 'n'    :   FALLTHROUGH
                     case 'u'    :   FALLTHROUGH
                     case 'l'    :   // JSON value null
+				    ASSERT(offset < sizeof(NullTag));
+
                                     if (((offset > 3 || (offset > 4 && (_set & QUOTED))) || c != IElement::NullTag[offset]) || suffix) {
                                         _set = ERROR;
                                         error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<>"};
                                         continue;
                                     }
 
+                                    suffix = suffix || offset == 3 || (offset == 4 && (_set & QUOTED));
+
                                     _set = UNDEFINED;
                                     break;
-                    default     :   if (suffix) {
+                    default     :   if (suffix || (_set & UNDEFINED)) {
                                         _set = ERROR;
                                          error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<>"};
                                         continue;
