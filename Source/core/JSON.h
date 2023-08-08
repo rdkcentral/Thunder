@@ -881,6 +881,7 @@ namespace Core {
 
                 if (!(error.IsSet())) {
                     offset = 0;
+                    _set |= (_set & UNDEFINED) ? 0 : SET;
                 }
 
                 return (loaded);
