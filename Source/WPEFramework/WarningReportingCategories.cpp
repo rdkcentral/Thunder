@@ -26,10 +26,14 @@ namespace WPEFramework {
 
 namespace WarningReporting {
 
-    void InitializeControlsWPEFramework() {
-        ANNOUNCE_WARNING(TooLongPluginState);
-        ANNOUNCE_WARNING(TooLongInvokeMessage);
-    }
+    static class ControlsAnnouncement {
+    public:
+        ControlsAnnouncement()
+        {
+            ANNOUNCE_WARNING(TooLongPluginState);
+            ANNOUNCE_WARNING(TooLongInvokeMessage);
+        }
+    } announce;
 
 }
 }
