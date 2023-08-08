@@ -205,7 +205,7 @@ namespace WPEFramework {
         }
 
 #else
-
+extern "C" {
         static uint32_t ReceiveFrom(SOCKET handle, char* buffer, int bufferSize, struct sockaddr* remote, socklen_t* remoteLength, uint32_t& interfaceId) {
             uint32_t result;
 
@@ -250,7 +250,7 @@ namespace WPEFramework {
 
             return (result);
         }
-
+}
 #endif
 
         //////////////////////////////////////////////////////////////////////
