@@ -50,12 +50,13 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
             Controls() = default;
             ~Controls()
             {
-                ControlList tempControlList = _controlList;
-                if (tempControlList.size() > 0) {
-                    for (auto& control : tempControlList) {
-                        control->Destroy();
-                    }
+                _adminLock.Lock();
+
+                while (_controlList.size() > 0) {
+                    _controlList.front()->Destroy();
                 }
+
+                _adminLock.Unlock();
             }
 
         public:
