@@ -35,7 +35,14 @@ option(LEGACY_CONFIG_GENERATOR
     "Use the legacy config generator and all its needed CMake sub-components. 
      If switched OFF, plugins need to use the new python-based templates. (*.conf.in)" ON) 
 option(BUILD_PLUGIN_ACTIVATOR
-     "Build the standalone plugin activator utility to activate plugins using systemd" OFF) 
+     "Build the standalone plugin activator utility to activate plugins using systemd" OFF)
+option(BUILD_LIB_AS_STATIC "Create thunder libraries Core, WebSocket and Cryptalgo as static library" OFF)
+
+if (BUILD_LIB_AS_STATIC)
+    set(THUNDER_LIBRARY_TYPE STATIC)
+else ()
+    set(THUNDER_LIBRARY_TYPE SHARED)
+endif()
 
 if (BUILD_REFERENCE)
     add_definitions (-DBUILD_REFERENCE=${BUILD_REFERENCE})
@@ -114,6 +121,12 @@ install(DIRECTORY
             "${CMAKE_SOURCE_DIR}/cmake/common"
             "${CMAKE_SOURCE_DIR}/cmake/templates"
         DESTINATION lib/cmake/${NAMESPACE})
+
+if (BUILD_LIB_AS_STATIC)
+    install(DIRECTORY
+            "${CMAKE_SOURCE_DIR}/cmake/modules"
+        DESTINATION lib/cmake/${NAMESPACE})
+endif ()
 
 if(APPLE)
     # Mac needed variables
