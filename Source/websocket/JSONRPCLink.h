@@ -1331,7 +1331,7 @@ namespace WPEFramework {
 				, _callsign(remoteCallsign)
 			{
 			}
-			POP_WARNING();
+			POP_WARNING()
 			virtual ~SmartLinkType() = default;
 
 		public:

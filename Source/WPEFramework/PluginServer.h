@@ -2895,7 +2895,7 @@ POP_WARNING()
                     SYSLOG(Logging::Startup, (_T("Dynamic configs failed. Can not observe: [%s]"), server._config.PluginConfigPath().c_str()));
                 }
             }
-            POP_WARNING();
+            POP_WARNING()
             ~ServiceMap()
             {
                 // Make sure all services are deactivated before we are killed (call Destroy on this object);
@@ -4418,7 +4418,7 @@ POP_WARNING()
                     }
                 }
             }
-            POP_WARNING();
+            POP_WARNING()
             ~ChannelMap()
             {
                 Core::ProxyType<Core::IDispatch> job(_job.Revoke());

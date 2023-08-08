@@ -218,7 +218,7 @@ namespace Plugin {
             , _observers()
         {
         }
-        POP_WARNING();
+        POP_WARNING()
 
     public:
         virtual ~Controller()

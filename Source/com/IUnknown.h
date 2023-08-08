@@ -427,7 +427,7 @@ namespace ProxyStub {
             : _unknown(channel, implementation, INTERFACE::ID, outbound, *this)
         {
         }
-        POP_WARNING();
+        POP_WARNING()
         ~UnknownProxyType() override = default;
 
     public:

@@ -371,7 +371,7 @@ namespace RPC {
         _ipcServer.CreateFactory<AnnounceMessage>(1);
         _ipcServer.CreateFactory<InvokeMessage>(3);
     }
-    POP_WARNING();
+    POP_WARNING()
 
     /* virtual */ Communicator::~Communicator()
     {
@@ -430,7 +430,7 @@ namespace RPC {
         BaseClass::Register(RPC::InvokeMessage::Id(), handler);
         BaseClass::Register(RPC::AnnounceMessage::Id(), Core::ProxyType<Core::IIPCServer>(Core::ProxyType<AnnounceHandler>::Create(*this)));
     }
-    POP_WARNING();
+    POP_WARNING()
 
     CommunicatorClient::~CommunicatorClient()
     {
