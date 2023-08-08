@@ -745,7 +745,7 @@ namespace Core {
                     case 'n'    :   FALLTHROUGH
                     case 'u'    :   FALLTHROUGH
                     case 'l'    :   // JSON value null
-				    ASSERT(offset < sizeof(NullTag));
+                                    ASSERT(offset < sizeof(NullTag));
 
                                     if (((offset > 3 || (offset > 4 && (_set & QUOTED))) || c != IElement::NullTag[offset]) || suffix) {
                                         _set = ERROR;
@@ -1257,7 +1257,7 @@ namespace Core {
                                         suffix = suffix || fraction || exponent || digit || (_set & UNDEFINED);
                                         continue;
                         case '\0'   :   // End of character sequence
-                                        if (offset > 0 && !((digit && fraction) || (_set & UNDEFINED))) {
+                                        if (offset > 0 && !((digit && fraction) || ((_set & UNDEFINED) && suffix) || ((_set & QUOTED) && suffix))) {
                                             _set = ERROR;
                                             error = Error{"Terminated character sequence without (sufficient) data for fractional part for FloatType<>"};
                                         }
@@ -1270,6 +1270,7 @@ namespace Core {
                                                 || (    (_set & NEGATIVE)
                                                     && offset > 0
                                                    )
+                                                || (_set & UNDEFINED)
                                                 || suffix
                                            ) {
                                             _set = ERROR;
@@ -1286,7 +1287,7 @@ namespace Core {
                                             continue;
                                         }
 
-                                        if ((_set & QUOTED) && offset > 0 && !((digit && fraction) ||  (_set & UNDEFINED))) {
+                                        if ((_set & QUOTED) && offset > 0 && !((digit && fraction) || (_set & UNDEFINED))) {
                                             _set = ERROR;
                                             error = Error{"Quote terminated character sequence without (sufficient) data for fractional part for FloatType<>"};
                                             continue;
@@ -1299,11 +1300,16 @@ namespace Core {
                         case 'n'    :   FALLTHROUGH
                         case 'u'    :   FALLTHROUGH
                         case 'l'    :   // JSON value null
+                                        ASSERT(offset < sizeof(NullTag));
+
                                         if (((offset > 3 || (offset > 4 && (_set & QUOTED))) || c != IElement::NullTag[offset]) || suffix) {
                                             _set = ERROR;
                                             error = Error{"Character '" + std::string(1, c) + "' at unsupported position for FloatType<>"};
                                             continue;
                                         }
+
+                                        suffix = suffix || offset == 3 || (offset == 4 && (_set & QUOTED));
+
                                         _set = UNDEFINED;
                                         break;
                         case '.'    :   if (   offset == 0
@@ -1314,6 +1320,7 @@ namespace Core {
                                             || (offset > 1 && fraction && ((!(_set & QUOTED) && (_set & NEGATIVE)) || ((_set & QUOTED) & !(_set & NEGATIVE))))
                                             || (offset > 2 && fraction && (_set & QUOTED) && (_set & NEGATIVE))
                                             || !digit
+                                            || (_set & UNDEFINED)
                                             || suffix
                                            ) {
                                             _set = ERROR;
@@ -1327,7 +1334,7 @@ namespace Core {
                                         digit = false;
                                         break;
                         case 'e'    :   FALLTHROUGH;
-                        case 'E'    :   if (suffix) {
+                        case 'E'    :   if (suffix || (_set & UNDEFINED)) {
                                             _set = ERROR;
                                             error = Error{"Character '" + std::string(1, c) + "' at unsupported position for fractional for FloatType<>"};
                                             continue;
@@ -1382,7 +1389,7 @@ namespace Core {
                                         suffix = suffix || digit || offset || esign;
                                         continue;
                         case '\0'   :   // End of character sequence
-                                        if (offset > 0 && !(digit && esign)) {
+                                        if (offset > 0 && !(digit && esign) || ((_set & QUOTED) && suffix)) {
                                             _set = ERROR;
                                             error = Error{"Terminated character sequence without (sufficient) data for exponential part for FloatType<>"};
                                         }

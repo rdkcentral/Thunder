@@ -1265,6 +1265,11 @@ namespace Tests {
                 count += !TestJSONFormat<T>("\"-00\"", FromTo, AllowChange);
                 count += !TestJSONFormat<T>("\"-01\"", FromTo, AllowChange);
 
+                // Incomplete null
+                count += !TestJSONFormat<T>("nul", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("nul0", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("null0", FromTo, AllowChange);
+
                 // Out-of-range
                 // The values might not be the smallest (absolute) out-of-range value
                 if (   std::is_same<decltype(std::declval<T>().Value()), float>::value
@@ -1290,7 +1295,7 @@ namespace Tests {
         } while (FromTo);
 
         return  !malformed ? count == 86
-                           : count == 86
+                           : count == 92
                ;
     }
 
@@ -2461,7 +2466,7 @@ namespace Tests {
         EXPECT_EQ(count, 86);
 
         EXPECT_TRUE(TestFPFromString<json_type>(!malformed, count));
-        EXPECT_EQ(count, 86);
+        EXPECT_EQ(count, 92);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
@@ -2493,7 +2498,7 @@ namespace Tests {
         EXPECT_EQ(count, 86);
 
         EXPECT_TRUE(TestFPFromString<json_type>(!malformed, count));
-        EXPECT_EQ(count, 86);
+        EXPECT_EQ(count, 92);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
