@@ -1172,6 +1172,11 @@ namespace Tests {
                     default             : ASSERT(false);
                     }
                 }
+
+                // Insignificant white space
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020-1.0\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1.0\"\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1.0\u0009\u000A\u000D\u0020\"", FromTo, AllowChange || !AllowChange);
             } else {
                 // Malformed
                 // =========
@@ -1247,11 +1252,15 @@ namespace Tests {
                     default             : ASSERT(false);
                     }
                 }
+                // Insignificant white space
+                count += !TestJSONFormat<T>("-1.\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u0020-1.\u0009\u000A\u000D\u00200", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1.\"0\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
             }
         } while (FromTo);
 
-        return  !malformed ? count == 80
-                           : count == 80
+        return  !malformed ? count == 86
+                           : count == 86
                ;
     }
 
@@ -2419,10 +2428,10 @@ namespace Tests {
         EXPECT_TRUE((TestFPFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 80);
+        EXPECT_EQ(count, 86);
 
         EXPECT_TRUE(TestFPFromString<json_type>(!malformed, count));
-        EXPECT_EQ(count, 80);
+        EXPECT_EQ(count, 86);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
@@ -2451,10 +2460,10 @@ namespace Tests {
         EXPECT_TRUE((TestFPFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 80);
+        EXPECT_EQ(count, 86);
 
         EXPECT_TRUE(TestFPFromString<json_type>(!malformed, count));
-        EXPECT_EQ(count, 80);
+        EXPECT_EQ(count, 86);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
