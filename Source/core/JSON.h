@@ -745,7 +745,7 @@ namespace Core {
                     case 'n'    :   FALLTHROUGH
                     case 'u'    :   FALLTHROUGH
                     case 'l'    :   // JSON value null
-				    ASSERT(offset < sizeof(NullTag));
+                                    ASSERT(offset < sizeof(NullTag));
 
                                     if (((offset > 3 || (offset > 4 && (_set & QUOTED))) || c != IElement::NullTag[offset]) || suffix) {
                                         _set = ERROR;
@@ -881,6 +881,7 @@ namespace Core {
 
                 if (!(error.IsSet())) {
                     offset = 0;
+                    _set |= (_set & UNDEFINED) ? 0 : SET;
                 }
 
                 return (loaded);
