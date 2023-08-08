@@ -18,11 +18,7 @@
 set(TARGET ${NAMESPACE}Core)
 include(CompileSettings)
 
-find_package(Threads REQUIRED)
-find_package(ExecInfo)
-find_package(LIBRT)
-
-add_library(${TARGET} SHARED
+add_library(${TARGET} ${THUNDER_LIBRARY_TYPE}
 	DoorBell.cpp
         CyclicBuffer.cpp
         DataElement.cpp
@@ -57,6 +53,9 @@ add_library(${TARGET} SHARED
         ResourceMonitor.cpp
         )
 
+if (NOT BUILD_LIB_AS_STATIC)
+	target_sources(${TARGET} PRIVATE Module.cpp)
+endif()
 
 #TODO: Remove all non public headers from this list,
 # All the interface headers are here, these will be installed to staging
@@ -228,6 +227,13 @@ set_target_properties(${TARGET} PROPERTIES
           VERSION ${VERSION}
           SOVERSION ${VERSION_MAJOR}
         )
+
+if (BUILD_LIB_AS_STATIC)
+    set_property(TARGET  ${TARGET}
+            APPEND PROPERTY INTERFACE_POSITION_INDEPENDENT_CODE ON
+            )
+endif()
+
 
 target_include_directories( ${TARGET}
         PUBLIC
