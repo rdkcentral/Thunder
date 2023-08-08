@@ -763,7 +763,7 @@ namespace Core {
                                         continue;
                                     }
 
-                                    // Define a set of rules without the sue of regular expressions
+                                    // Define a set of rules without the use of regular expressions
                                     switch(BASETYPE) {
                                     case BASE_DECIMAL           :   // Decimal format rules
                                                                     if (!(std::isdigit(c))) {

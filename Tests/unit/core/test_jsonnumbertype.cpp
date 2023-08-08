@@ -26,8 +26,50 @@
 #include <core/core.h>
 #include "JSON.h"
 
+//#define _INTERMEDIATE
+
 namespace WPEFramework {
 namespace Tests {
+
+    template<typename S, typename T>
+    bool TestJSONEqual(const T data, const std::string& reference)
+    {
+        std::string stream;
+
+#ifndef _INTERMEDIATE
+        bool result =    std::is_same<decltype(std::declval<S>().Value()), T>::value
+                      && data == S(data).Default()
+                      && data == S(data).Value()
+                      && data == (S() = data).Value()
+                      && S(data).ToString(stream)
+                      && reference == std::string(stream)
+                     ;
+#else
+        bool result = std::is_same<decltype(std::declval<S>().Value()), T>::value;
+
+             result =    data == S(data).Default()
+                      && result
+                      ;
+
+             result =    data == S(data).Value()
+                      && result
+                      ;
+
+             result =    data == (S() = data).Value()
+                      && result
+                      ;
+
+             result =    S(data).ToString(stream)
+                      && result
+                      ;
+
+             result =     reference == std::string(stream)
+                      && result
+                      ;
+#endif
+        return result;
+
+    }
 
     template <typename T>
     bool TestJSONFormat(const std::string& json, bool FromTo, bool AllowChange)
@@ -58,7 +100,6 @@ namespace Tests {
 
         std::string stream;
 
-//#define _INTERMEDIATE
 #ifndef _INTERMEDIATE
 
         bool result =    object.FromString(json, status)
@@ -113,7 +154,6 @@ namespace Tests {
 
             std::string stream;
 
-//#define _INTERMEDIATE
 #ifndef _INTERMEDIATE
             count +=    object.FromString(json, status)
                      && !(status.IsSet())
@@ -163,20 +203,6 @@ namespace Tests {
         } while (quoted);
 
         return count == 2;
-    }
-
-    template<typename S, typename T>
-    bool TestJSONEqual(const T data, const std::string& reference)
-    {
-        std::string stream;
-
-        return    std::is_same<decltype(std::declval<S>().Value()), T>::value
-               && data == S(data).Default()
-               && data == S(data).Value()
-               && data == (S() = data).Value()
-               && S(data).ToString(stream)
-               && reference == std::string(stream)
-               ;
     }
 
     // Implementation specific types may have additional constraint
