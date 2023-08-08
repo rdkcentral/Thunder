@@ -1325,7 +1325,7 @@ namespace WPEFramework {
 			};
 
 		public:
-			PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST);
+			PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 			SmartLinkType(const string& remoteCallsign, const TCHAR* localCallsign, const string& query = "")
 				: _connection(*this, remoteCallsign, localCallsign, query)
 				, _callsign(remoteCallsign)

@@ -346,7 +346,7 @@ namespace RPC {
     uint8_t Communicator::_softKillCheckWaitTime = 10;
     uint8_t Communicator::_hardKillCheckWaitTime = 4;;
 
-    PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST);
+    PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
     Communicator::Communicator(const Core::NodeId& node, const string& proxyStubPath)
         : _connectionMap(*this)
         , _ipcServer(node, _connectionMap, proxyStubPath) {
@@ -398,7 +398,7 @@ namespace RPC {
         return _LoaderPaths.Paths();
     }
 
-    PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST);
+    PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
     CommunicatorClient::CommunicatorClient(
         const Core::NodeId& remoteNode)
         : Core::IPCChannelClientType<Core::Void, false, true>(remoteNode, CommunicationBufferSize)
