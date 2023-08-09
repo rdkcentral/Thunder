@@ -22,6 +22,8 @@
 
 namespace WPEFramework {
 
+namespace WarningReporting {
+
     // -----------------------------------------------------------------
     // REGISTRATION
     // -----------------------------------------------------------------
@@ -32,10 +34,11 @@ namespace WPEFramework {
         public:
             Instantiation()
             {
-                ANNOUNCE_WARNING(WarningReporting::TooLongPluginState);
-                ANNOUNCE_WARNING(WarningReporting::TooLongInvokeMessage);
+                ANNOUNCE_WARNING(TooLongPluginState);
+                ANNOUNCE_WARNING(TooLongInvokeMessage);
             }
         } ControlsRegistration;
 
     }
+}
 }

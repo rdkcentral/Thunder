@@ -23,6 +23,8 @@
 
 namespace WPEFramework {
 
+namespace WarningReporting {
+
     // -----------------------------------------------------------------
     // REGISTRATION
     // -----------------------------------------------------------------
@@ -33,15 +35,16 @@ namespace WPEFramework {
         public:
             Instantiation()
             {
-                ANNOUNCE_WARNING(WarningReporting::TooLongWaitingForLock);
-                ANNOUNCE_WARNING(WarningReporting::SinkStillHasReference);
-                ANNOUNCE_WARNING(WarningReporting::TooLongInvokeRPC);
-                ANNOUNCE_WARNING(WarningReporting::JobTooLongToFinish);
-                ANNOUNCE_WARNING(WarningReporting::JobTooLongWaitingInQueue);
-                ANNOUNCE_WARNING(WarningReporting::TooLongDecrypt);
-                ANNOUNCE_WARNING(WarningReporting::JobActiveForTooLong);
+                ANNOUNCE_WARNING(TooLongWaitingForLock);
+                ANNOUNCE_WARNING(SinkStillHasReference);
+                ANNOUNCE_WARNING(TooLongInvokeRPC);
+                ANNOUNCE_WARNING(JobTooLongToFinish);
+                ANNOUNCE_WARNING(JobTooLongWaitingInQueue);
+                ANNOUNCE_WARNING(TooLongDecrypt);
+                ANNOUNCE_WARNING(JobActiveForTooLong);
             }
         } ControlsRegistration;
 
     }
+}
 }
