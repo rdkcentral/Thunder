@@ -18,7 +18,6 @@
 include (CMakePackageConfigHelpers)
 
 macro(add_element list element)
-    # message(SEND_ERROR "Adding '${element}' to list '${list}'")
     list(APPEND ${list} ${element})
 endmacro()
 
@@ -64,7 +63,7 @@ function(get_if_link_libraries libs dirs target)
     if("${_type}" MATCHES "SHARED_LIBRARY" OR "${_type}" MATCHES "STATIC_LIBRARY")
         if(_is_imported)
             get_target_property(_configurations ${target} IMPORTED_CONFIGURATIONS)
-            
+
             if (_configurations)
                 list(LENGTH _configurations _configurations_count)
 
@@ -106,7 +105,7 @@ function(get_if_link_libraries libs dirs target)
         # this lib is via a findmodule imported, grab the imported location  asuming it's fins script is accourdng guidelines
         # we remove the absolute systroot to make it relative. Later we can decide to use the path in a -L argument <;-)
         get_target_property(_configurations ${target} IMPORTED_CONFIGURATIONS)
-        
+
         if (_configurations)
             list(LENGTH _configurations _configurations_count)
 
@@ -144,7 +143,6 @@ function(get_if_link_libraries libs dirs target)
             endif()
 
             if(TARGET ${_library})
-                # message(SEND_ERROR "Checking target ${_library}")
                 get_if_link_libraries(_link_libraries _link_dirs ${_library})
             else()
                 if ("${_library}" MATCHES "^.*\\:\\:.*$")
@@ -185,7 +183,6 @@ function(get_if_compile_defines _result _target)
             if(TARGET ${_define})
                 get_if_compile_defines(_compile_defines ${_define})
             else()
-                #set(_compile_defines ${_compile_defines} ${_define})
                 add_element(_compile_defines ${_define})
             endif()
         endforeach()
@@ -403,7 +400,7 @@ function(InstallCMakeConfig)
                         if(_type_is_ok)
                             if(_is_imported)
                                 get_target_property(_configurations ${_dependency} IMPORTED_CONFIGURATIONS)
-                            
+
                                 if (_configurations)
                                     list(LENGTH _configurations _configurations_count)
 
@@ -414,13 +411,18 @@ function(InstallCMakeConfig)
                                         message(AUTHOR_WARNING "Multiple configs not yet supported, got ${_configurations} and picked the first one")
                                     endif()
                                 endif()
-                            
-                                    get_target_property(_dep_loc ${_dependency} IMPORTED_LOCATION${config})
 
+                                if("${_type}" STREQUAL "STATIC_LIBRARY")
+                                    get_target_property(_dep_loc ${_dependency} IMPORTED_LOCATION${config})
                                     _get_default_link_name(${_dep_loc} _dep_name _dep_dir)
+                                else()
+                                    get_target_property( _dep_name ${_dependency} NAME)
+                                    string(REPLACE "::" ";" vars ${_dep_name})
+                                    list(GET vars 0 _dep_name)
+                                endif()
+
                             else()
                                 get_target_property(_dep_name ${_dependency} OUTPUT_NAME)
-
                                 if(NOT _dep_name)
                                     get_target_property( _dep_name ${_dependency} NAME)
                                 endif()
@@ -665,7 +667,6 @@ function(print_target_properties tgt)
     if(prop STREQUAL "LOCATION" OR prop MATCHES "^LOCATION_" OR prop MATCHES "_LOCATION$")
         continue()
     endif()
-        # message ("Checking ${prop}")
         get_property(propval TARGET ${tgt} PROPERTY ${prop} SET)
         if (propval)
             get_target_property(propval ${tgt} ${prop})
