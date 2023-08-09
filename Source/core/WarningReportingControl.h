@@ -33,6 +33,9 @@
 #include <unordered_set>
 #include <vector>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+
 #ifndef __CORE_WARNING_REPORTING__
 
 #define REPORT_WARNING(CATEGORY, ...)
@@ -126,6 +129,8 @@
     } else {                                                                                                                                                   \
         CODE                                                                                                                                                   \
     }
+
+#pragma GCC diagnostic pop
 
 namespace WPEFramework {
 
