@@ -20,22 +20,22 @@
 #include "Module.h"
 #include "WarningReportingCategories.h"
 
-#ifdef __CORE_WARNING_REPORTING__
-
 namespace WPEFramework {
 
-namespace WarningReporting {
+    // -----------------------------------------------------------------
+    // REGISTRATION
+    // -----------------------------------------------------------------
 
-    static class ControlsAnnouncement {
-    public:
-        ControlsAnnouncement()
-        {
-            ANNOUNCE_WARNING(TooLongPluginState);
-            ANNOUNCE_WARNING(TooLongInvokeMessage);
-        }
-    } announce;
+    namespace {
 
+        static class Instantiation {
+        public:
+            Instantiation()
+            {
+                ANNOUNCE_WARNING(WarningReporting::TooLongPluginState);
+                ANNOUNCE_WARNING(WarningReporting::TooLongInvokeMessage);
+            }
+        } ControlsRegistration;
+
+    }
 }
-}
-
-#endif
