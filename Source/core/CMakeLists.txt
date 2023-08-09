@@ -169,7 +169,7 @@ if(MESSAGING)
 endif()
 
 if(WARNING_REPORTING)
-    target_sources(${TARGET} PRIVATE WarningReportingControl.cpp)
+    target_sources(${TARGET} PRIVATE WarningReportingControl.cpp WarningReportingCategories.cpp)
     target_compile_definitions(${TARGET} PUBLIC __CORE_WARNING_REPORTING__)
     message(STATUS "Warning reporting enabled")
 endif()

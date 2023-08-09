@@ -68,6 +68,9 @@
 // OutOfBounds warning category:
 //  - BoundsType to indicate type for boubnds values
 
+#define ANNOUNCE_WARNING(CATEGORY)  \
+    WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()
+
 #define REPORT_WARNING(CATEGORY, ...)                                                                                  \
     if (WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled()) {                                 \
         WPEFramework::WarningReporting::WarningReportingType<CATEGORY> __message__;                                    \
