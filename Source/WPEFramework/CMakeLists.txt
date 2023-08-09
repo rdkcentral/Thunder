@@ -72,7 +72,6 @@ target_link_libraries(${TARGET}
 
 if(WARNING_REPORTING)
     target_sources(${TARGET} PRIVATE WarningReportingCategories.cpp)
-    target_compile_definitions(${TARGET} PUBLIC __CORE_WARNING_REPORTING__)
 endif()
 
 if (PROCESSCONTAINERS)
