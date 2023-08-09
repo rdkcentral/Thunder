@@ -64,7 +64,11 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
           Threads::Threads
         )
-        
+
+if(WARNING_REPORTING)
+    target_sources(${TARGET} PRIVATE WarningReportingCategories.cpp)
+endif()
+
 if (PROCESSCONTAINERS)
     target_link_libraries(${TARGET}
         PRIVATE

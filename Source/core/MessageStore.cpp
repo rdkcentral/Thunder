@@ -35,7 +35,16 @@ namespace WPEFramework {
             Controls& operator=(const Controls&) = delete;
 
             Controls() = default;
-            ~Controls() = default;
+            ~Controls()
+            {
+                _adminLock.Lock();
+
+                while (_controlList.size() > 0) {
+                    _controlList.front()->Destroy();
+                }
+
+                _adminLock.Unlock();
+            }
 
         public:
             void Announce(Core::Messaging::IControl* control)
