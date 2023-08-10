@@ -25,12 +25,14 @@ extern "C" {
 
 // ProxyStubs library API
 
+#define PROXYSTUBS_OPTIONS_NAME "proxystubs_options"
+
 enum proxystubs_options_t {
     PROXYSTUBS_OPTIONS_SECURE = 1,      // --secure
-    PROXYSTUBS_OPTIONS_COHERENT = 2,    // --coherent
+    PROXYSTUBS_OPTIONS_COHERENT = 2     // --coherent
 };
 
-typedef proxystubs_options_t (*proxystubs_options_func_t)(void);    // "proxystubs_options"
+typedef proxystubs_options_t (*proxystubs_options_func_t)(void);
 
 #ifdef __cplusplus
 } // extern "C"

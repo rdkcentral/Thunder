@@ -41,7 +41,7 @@ set(PUBLIC_HEADERS
     ICOM.h
     IUnknown.h
     Messages.h
-    proxystubs.h
+    ProxyStubs.h
     Module.h
 )
 
