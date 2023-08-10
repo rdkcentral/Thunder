@@ -91,6 +91,8 @@
   #endif
 #endif
 
+#pragma GCC system_header
+
 #ifdef __WINDOWS__
     #define DO_PRAGMA(x) __pragma(x)
 
@@ -132,8 +134,6 @@
 #define PUSH_RETURN_ARG_COUNT(_1_, _2_, _3_, _4_, _5_, _6_, _7_, _8_, count, ...) count
 #define PUSH_EXPAND_ARGS(args) PUSH_RETURN_ARG_COUNT args
 #define PUSH_COUNT_ARGS(...) PUSH_EXPAND_ARGS((__VA_ARGS__, 8, 7, 6, 5, 4, 3, 2, 1, 0))
-
-#pragma GCC system_header
 
 #define PUSH_WARNING_ARG(N, ...) CONCAT_STRINGS(PUSH_WARNING_ROLL_, N)(__VA_ARGS__)
 
