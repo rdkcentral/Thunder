@@ -138,7 +138,7 @@
 #if defined(__clang__) || (__GNUC__ >= 4)
 #define PUSH_WARNING(...)                   \
     PUSH_WARNING_                           \
-    PUSH_WARNING_ARG_("-Wpedantic")         \
+    PUSH_WARNING_ARG_("-Wvariadic-macros")  \
         PUSH_WARNING_PEDANTIC(__VA_ARGS__)  \
     POP_WARNING_
 #define PUSH_WARNING_PEDANTIC(...) \
@@ -215,7 +215,7 @@
 #define DISABLE_WARNING_NON_VIRTUAL_DESTRUCTOR PUSH_WARNING_ARG_("-Wnon-virtual-dtor")
 #define DISABLE_WARNING_TYPE_LIMITS PUSH_WARNING_ARG_("-Wtype-limits")
 #define DISABLE_WARNING_STRING_OPERATION_OVERREAD PUSH_WARNING_ARG_("-Wstringop-overread")
-#define DISABLE_WARNING_PEDANTIC PUSH_WARNING_ARG_("-Wpedantic")
+#define DISABLE_WARNING_PEDANTIC PUSH_WARNING_ARG_("-Wvariadic-macros")
 #endif
 #endif
 
