@@ -35,45 +35,17 @@
 
 #pragma GCC system_header
 
-#define REPORT_WARNING(...)                         \
-    PUSH_WARNING(DISABLE_WARNING_PEDANTIC)          \
-    REPORT_WARNING_(__VA_ARGS__);                   \
-    POP_WARNING()
-
-#define REPORT_WARNING_GLOBAL(...)                  \
-    PUSH_WARNING(DISABLE_WARNING_PEDANTIC)          \
-    REPORT_WARNING_GLOBAL_(__VA_ARGS__);            \
-    POP_WARNING()
-
-#define REPORT_OUTOFBOUNDS_WARNING(...)             \
-    PUSH_WARNING(DISABLE_WARNING_PEDANTIC)          \
-    REPORT_OUTOFBOUNDS_WARNING_(__VA_ARGS__);       \
-    POP_WARNING()
-
-#define REPORT_OUTOFBOUNDS_WARNING_EX(...)          \
-    PUSH_WARNING(DISABLE_WARNING_PEDANTIC)          \
-    REPORT_OUTOFBOUNDS_WARNING_EX_(__VA_ARGS__);    \
-    POP_WARNING()
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-
-#define REPORT_DURATION_WARNING(...)                \
-    REPORT_DURATION_WARNING_(__VA_ARGS__);
-
-#pragma GCC diagnostic pop
-
 #ifndef __CORE_WARNING_REPORTING__
 
-#define REPORT_WARNING_(CATEGORY, ...)
+#define REPORT_WARNING(CATEGORY, ...)
 
-#define REPORT_WARNING_GLOBAL_(CATEGORY, ...)
+#define REPORT_WARNING_GLOBAL(CATEGORY, ...)
 
-#define REPORT_OUTOFBOUNDS_WARNING_(CATEGORY, ACTUALVALUE, ...)
+#define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...)
 
-#define REPORT_OUTOFBOUNDS_WARNING_EX_(CATEGORY, CALLSIGN, ACTUALVALUE, ...)
+#define REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...)
 
-#define REPORT_DURATION_WARNING_(CODE, CATEGORY, ...) \
+#define REPORT_DURATION_WARNING(CODE, CATEGORY, ...) \
     CODE
 
 #else
@@ -98,7 +70,7 @@
 // OutOfBounds warning category:
 //  - BoundsType to indicate type for boubnds values
 
-#define REPORT_WARNING_(CATEGORY, ...)                                                                                  \
+#define REPORT_WARNING(CATEGORY, ...)                                                                                  \
     if (WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled()) {                                 \
         WPEFramework::WarningReporting::WarningReportingType<CATEGORY> __message__;                                    \
         if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME,                                               \
@@ -111,7 +83,7 @@
         }                                                                                                              \
     }
 
-#define REPORT_OUTOFBOUNDS_WARNING_(CATEGORY, ACTUALVALUE, ...)                                                                                                                  \
+#define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...)                                                                                                                  \
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) {                  \
         WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;                             \
         if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
@@ -124,7 +96,7 @@
         }                                                                                                                                                                       \
     }
 
-#define REPORT_OUTOFBOUNDS_WARNING_EX_(CATEGORY, CALLSIGN, ACTUALVALUE, ...)                                                                                                     \
+#define REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...)                                                                                                     \
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) {                  \
         WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;                             \
         if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, CALLSIGN,                                                                                              \
@@ -138,7 +110,7 @@
     }
 
 
-#define REPORT_DURATION_WARNING_(CODE, CATEGORY, ...)                                                                                                           \
+#define REPORT_DURATION_WARNING(CODE, CATEGORY, ...)                                                                                                           \
     if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) { \
         uint64_t start = WPEFramework::Core::SystemInfo::Instance().Ticks();                                                                                   \
         CODE                                                                                                                                                   \

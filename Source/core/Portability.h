@@ -137,18 +137,8 @@
 
 #pragma GCC system_header
 
-#if defined(__clang__) || (__GNUC__ >= 4)
-#define PUSH_WARNING(...)                   \
-    PUSH_WARNING_                           \
-    PUSH_WARNING_ARG_("-Wpedantic")         \
-        PUSH_WARNING_PEDANTIC(__VA_ARGS__)  \
-    POP_WARNING_
-#define PUSH_WARNING_PEDANTIC(...) \
-    PUSH_WARNING_ PUSH_WARNING_ARG(PUSH_COUNT_ARGS(__VA_ARGS__), __VA_ARGS__)
-#else
 #define PUSH_WARNING(...) \
     PUSH_WARNING_ PUSH_WARNING_ARG(PUSH_COUNT_ARGS(__VA_ARGS__), __VA_ARGS__)
-#endif
 
 #define POP_WARNING() POP_WARNING_
 
