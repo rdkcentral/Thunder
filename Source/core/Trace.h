@@ -61,6 +61,8 @@ namespace WPEFramework {
 #endif
 #endif
 
+#pragma GCC system_header
+
 #ifdef __WINDOWS__
 #define TRACE_FORMATTING_IMPL(fmt, ...)                                                                                                     \
     do {                                                                                                                                    \
@@ -108,8 +110,6 @@ namespace WPEFramework {
 #define _TRACE_LEVEL 0
 #endif
 #endif
-
-#pragma GCC system_header
 
 #if _TRACE_LEVEL > 4
 #define TRACE_L5(x, ...) TRACE_FORMATTING("<5>: " x, ##__VA_ARGS__)
