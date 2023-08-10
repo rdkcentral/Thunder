@@ -1,11 +1,11 @@
 Thunder provides "Subsystems" which are abstract categories of functionality (Network, Graphics, Internet) that can be marked as active/inactive by plugins. This mechanism allows plugins to delay activation until certain conditions are met, or ensure that plugins are deactivated in a suitable order.
 
-For example, a web-browser plugin could be prevented from starting until the Internet and Graphics subsystems are ready. The Graphics subsystem could be marked as active by a network management plugin, and the graphics by a window manager/compositor plugin.
+For example, a web-browser plugin could be prevented from starting until the Internet and Graphics subsystems are ready. The Network subsystem could be marked as active by a network control plugin, and the graphics by a window manager/compositor plugin.
 
 The state of each subsystem is tracked by the framework and can be queried or modified by individual plugins.
 
 
-## Supported SubSystems
+## Supported Subsystems
 
 Thunder supports the following subsystems (enumerated in `Source/plugins/ISubSystem.h`)
 
@@ -34,7 +34,7 @@ If the subsystem is not provided by a plugin, then Controller will mark the subs
 ### Subsystem Metadata
 
 !!! warning
-	Subsystem metadata is currently only accessible over COM-RPC, there are no corresponding JSON-RPC interfaces or datatypes generated for the subsystem COM-RPC interfaces
+	Subsystem metadata is currently only accessible over COM-RPC, there are no corresponding JSON-RPC interfaces or datatypes generated for the subsystem COM-RPC interfaces. Only subsystem status can be retrieved over JSON-RPC
 
 
 Since each subsystem has a corresponding COM-RPC interface, all subsystems can have metadata associated with them that describes the state of the subsystem in more detail.
