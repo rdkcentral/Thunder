@@ -763,7 +763,7 @@ namespace Core {
                                         continue;
                                     }
 
-                                    // Define a set of rules without the sue of regular expressions
+                                    // Define a set of rules without the use of regular expressions
                                     switch(BASETYPE) {
                                     case BASE_DECIMAL           :   // Decimal format rules
                                                                     if (!(std::isdigit(c))) {
@@ -1596,7 +1596,6 @@ namespace Core {
             static constexpr uint8_t ValueBit = 0x01;
             static constexpr uint8_t DefaultBit = 0x02;
             static constexpr uint8_t SetBit = 0x04;
-            static constexpr uint8_t DeserializeBit = 0x08;
             static constexpr uint8_t ErrorBit = 0x10;
             static constexpr uint8_t NullBit = 0x20;
 
@@ -1715,55 +1714,105 @@ namespace Core {
                 return (loaded);
             }
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>&) override
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
-                static constexpr char trueBuffer[] = "true";
-                static constexpr char falseBuffer[] = "false";
 
-                if (offset == 0) {
-                    if (stream[0] == trueBuffer[0]) {
-                        _value = DeserializeBit | (_value & DefaultBit);
-                        offset = 1;
-                        loaded = 1;
-                    } else if (stream[0] == falseBuffer[0]) {
-                        _value = (_value & DefaultBit);
-                        offset = 1;
-                        loaded = 1;
-                    } else if (stream[0] == IElement::NullTag[0]) {
-                        offset = 1;
-                        _value = NullBit | (_value & DefaultBit);
-                        loaded = 1;
-                    } else if (stream[0] == '0') {
-                        _value = SetBit | (_value & DefaultBit);
-                        loaded = 1;
-                    } else if (stream[0] == '1') {
-                        _value = SetBit | ValueBit | (_value & DefaultBit);
-                        loaded = 1;
-                    } else {
-                        _value = ErrorBit | (_value & DefaultBit);
-                        offset = 0;
+                bool completed = false, suffix = false, quoted = false;
+
+                _value = None;
+
+                while(!completed && loaded < maxLength && !(error.IsSet())) {
+                    const char& c = stream[loaded++];
+
+                    switch (c) {
+                    case 0x09     : // Tabulation
+                                    FALLTHROUGH
+                    case 0x0A     : // Line feed
+                                    FALLTHROUGH
+                    case 0x0D     : // Carriage return
+                                    FALLTHROUGH
+                    case 0x20     : // Space
+                                    // Insignificant white space
+                                    suffix = suffix || (_value & SetBit) || (_value & NullBit);
+                                    continue;
+                    case '\0'   :   // End of character sequence
+                                    if (offset > 0 && !(((_value & SetBit) && suffix) || (quoted && suffix) || ((_value & NullBit)) && suffix)) {
+                                        _value = ErrorBit;
+                                        error = Error{"Terminated character sequence without (sufficient) data for Boolean"};
+                                    }
+
+                                    completed = true;
+                                    continue;
+                    case '"'    :   // Quoted character sequence
+                                    if (!quoted && offset > 0) {// || suffix) {
+                                        _value = ErrorBit;
+                                        error = Error{"Character '" + std::string(1, c) + "' at unsupported position for Boolean"};
+                                        continue;
+                                    }
+
+                                    if (quoted && offset > 0 && !(((_value & SetBit) || ((_value & NullBit) && suffix)))) {
+                                        _value = ErrorBit;
+                                        error = Error{"Quote terminated character sequence without (sufficient) data for Boolean"};
+                                        continue;
+                                    }
+
+                                    suffix = suffix || quoted;
+
+                                    quoted = true;
+                                    break;
+                    case '1'    :   _value |= ValueBit;
+                    case '0'    :   if (!(offset == 0 || (offset == 1 && quoted)) || suffix || (_value & NullBit)) {
+                                        _value = ErrorBit;
+                                         error = Error{"Character '" + std::string(1, c) + "' at unsupported position for Boolean"};
+                                        continue;
+                                    }
+                                    _value |= SetBit;
+                                    suffix = true;
+                                    break;
+                    default     :   const uint32_t index = quoted ? offset - 1 : offset; // index = offset - quoted
+
+                                    if (std::string("aeflnrstu").find(c) == std::string::npos) {
+                                        _value = ErrorBit;
+                                         error = Error{"Invalid character '" + std::string(1, c) + "' for Boolean"};
+                                         continue;
+                                    }
+
+                                    if (  !(    (index <= (sizeof(IElement::NullTag)  - 1) && stream[loaded - 1] == IElement::NullTag[index]  && !(_value & ValueBit))
+                                            ||  (index <= (sizeof(IElement::TrueTag)  - 1) && stream[loaded - 1] == IElement::TrueTag[index]  && !(_value & NullBit))
+                                            ||  (index <= (sizeof(IElement::FalseTag) - 1) && stream[loaded - 1] == IElement::FalseTag[index] && !((_value & ValueBit) || (_value & NullBit)))
+                                           )
+                                        || suffix
+                                       ) {
+                                        _value = ErrorBit;
+                                         error = Error{"Character '" + std::string(1, c) + "' at unsupported position for Boolean"};
+                                         continue;
+                                    }
+
+                                    _value |= ((!(_value & ValueBit) &&  (_value & NullBit) ) || (_value == None && stream[loaded - 1] == IElement::NullTag[index]))  ? SetBit | NullBit  : None;
+                                    _value |= (( (_value & ValueBit) && !(_value & NullBit) ) || (_value == None && stream[loaded - 1] == IElement::TrueTag[index]))  ? SetBit | ValueBit : None;
+                                    _value |= ((!(_value & NullBit)  && !(_value & ValueBit)) || (_value == None && stream[loaded - 1] == IElement::FalseTag[index])) ? SetBit            : None;
+
+                                    suffix =    ((_value & SetBit) && (_value & NullBit)  && index == (sizeof(IElement::NullTag)  - (IElement::NullTag[sizeof(IElement::NullTag)   - 1] == '\0' ? 2 : 1)))
+                                             || ((_value & SetBit) && (_value & ValueBit) && index == (sizeof(IElement::TrueTag)  - (IElement::TrueTag[sizeof(IElement::TrueTag)   - 1] == '\0' ? 2 : 1)))
+                                             || ((_value & SetBit)                        && index == (sizeof(IElement::FalseTag) - (IElement::FalseTag[sizeof(IElement::FalseTag) - 1] == '\0' ? 2 : 1)))
+                                             ;
+                    }
+
+                    ++offset;
+                }
+
+                if (completed && loaded < maxLength) {
+                    if (!(error.IsSet()) && !(quoted && stream[loaded] == '\0')) {
+                        error = Error{"Input data contains trailing characters for Boolean"};
                     }
                 }
 
-                if (offset > 0) {
-                    uint8_t length = (_value & NullBit ? sizeof(IElement::NullTag) : _value & DeserializeBit ? sizeof(IElement::TrueTag) : sizeof(IElement::FalseTag)) - 1;
-                    const char* buffer = (_value & NullBit ? IElement::NullTag : _value & DeserializeBit ? IElement::TrueTag : IElement::FalseTag);
-
-                    while ((loaded < maxLength) && (offset < length) && ((_value & ErrorBit) == 0)) {
-                        if (stream[loaded] != buffer[offset]) {
-                            _value = ErrorBit | (_value & DefaultBit);
-                        } else {
-                            offset++;
-                            loaded++;
-                        }
-                    }
-
-                    if ((offset == length) || ((_value & ErrorBit) != 0)) {
-                        offset = 0;
-                        _value |= SetBit | ((_value & (ErrorBit | DeserializeBit | NullBit)) == DeserializeBit ? ValueBit : 0);
-                    }
+                if (!(error.IsSet())) {
+                    offset = 0;
+//                    _value != (_value & NullBit) ? None : SetBit;
                 }
+
                 return (loaded);
             }
 

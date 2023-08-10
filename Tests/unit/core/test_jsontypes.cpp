@@ -36,13 +36,38 @@ namespace Tests {
     {
         std::string stream;
 
-        return    std::is_same<decltype(std::declval<S>().Value()), T>::value
-               && data == S(data).Default()
-               && data == S(data).Value()
-               && data == (S() = data).Value()
-               && S(data).ToString(stream)
-               && reference == std::string(stream)
-               ;
+#ifndef _INTERMEDIATE
+        bool result =    std::is_same<decltype(std::declval<S>().Value()), T>::value
+                      && data == S(data).Default()
+                      && data == S(data).Value()
+                      && data == (S() = data).Value()
+                      && S(data).ToString(stream)
+                      && reference == std::string(stream)
+                     ;
+#else
+        bool result = std::is_same<decltype(std::declval<S>().Value()), T>::value;
+
+             result =    data == S(data).Default()
+                      && result
+                      ;
+
+             result =    data == S(data).Value()
+                      && result
+                      ;
+
+             result =    data == (S() = data).Value()
+                      && result
+                      ;
+
+             result =    S(data).ToString(stream)
+                      && result
+                      ;
+
+             result =     reference == std::string(stream)
+                      && result
+                      ;
+#endif
+        return result;
     }
 
     template<typename S, typename T, typename std::enable_if<std::is_floating_point<T>::value, T*>::type = nullptr>
@@ -57,8 +82,8 @@ namespace Tests {
                   )
                && (    std::fabs(S(data).Value() - data) <= std::numeric_limits<T>::epsilon() * std::fabs(S(data).Value() + data) * ulp
                     || std::fabs(S(data).Value() - data) < std::numeric_limits<T>::min()
-                 )
-              && (     std::fabs((S() = data).Value() - data) <= std::numeric_limits<T>::epsilon() * std::fabs((S() = data).Value() + data) * ulp
+                  )
+               && (    std::fabs((S() = data).Value() - data) <= std::numeric_limits<T>::epsilon() * std::fabs((S() = data).Value() + data) * ulp
                     || std::fabs((S() = data).Value() - data) < std::numeric_limits<T>::min()
                   )
                ;
@@ -1296,6 +1321,97 @@ namespace Tests {
 
         return  !malformed ? count == 86
                            : count == 92
+                           ;
+    }
+
+    template <typename T>
+    bool TestBoolFromString(bool malformed, uint8_t& count)
+    {
+        constexpr bool AllowChange = false;
+
+        count = 0;
+
+        bool FromTo = false;
+
+        do {
+            FromTo = !FromTo;
+
+            if (!malformed) {
+                // Correctly formatted
+                // ===================
+
+                count += TestJSONFormat<T>("true", FromTo, AllowChange);
+                count += TestJSONFormat<T>("false", FromTo, AllowChange);
+                // 16-bit as UTF-8
+                count += TestJSONFormat<T>(u8"\u0074\u0072\u0075\u0065", FromTo, AllowChange);
+                count += TestJSONFormat<T>(u8"\u0066\u0061\u006C\u0073\u0065", FromTo, AllowChange);
+                // 32-bit as UTF-8
+                count += TestJSONFormat<T>(u8"\U00000074\U00000072\U00000075\U00000065", FromTo, AllowChange);
+                count += TestJSONFormat<T>(u8"\U00000066\U00000061\U0000006C\U00000073\U00000065", FromTo, AllowChange);
+
+                // Implementation constraint
+                count += TestJSONFormat<T>("0", FromTo, AllowChange) || !AllowChange; // false
+                count += TestJSONFormat<T>("1", FromTo, AllowChange) || !AllowChange; // true
+
+                // Implementation constraint: all IElement objects can be nullified
+                count += TestJSONFormat<T>("null", FromTo, AllowChange);
+
+                // Empty string, no distinction with
+                count += (TestJSONFormat<T>("", FromTo, AllowChange) || !AllowChange);
+                count += (TestJSONFormat<T>("\0", FromTo, AllowChange) || !AllowChange);
+
+                count += TestJSONFormat<T>("\"true\"", FromTo, AllowChange) || !AllowChange; // true
+                count += TestJSONFormat<T>("\"false\"", FromTo, AllowChange) || !AllowChange; // false
+
+                // Insignificant white space
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020true\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020true\"\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020true\u0009\u000A\u000D\u0020\"", FromTo, AllowChange || !AllowChange);
+            } else {
+                // Malformed
+                // =========
+
+                count += !TestJSONFormat<T>("1true", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("0false", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("true1", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("false0", FromTo, AllowChange);
+
+                count += !TestJSONFormat<T>("TRUE", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("FALSE", FromTo, AllowChange);
+
+                count += !TestJSONFormat<T>(u8"\u0054\u0052\u0055\u0045", FromTo, AllowChange);
+                count += !TestJSONFormat<T>(u8"\U00000054\U00000052\U00000055\U00000045", FromTo, AllowChange);
+                count += !TestJSONFormat<T>(u8"\u0046\u0041\u004C\u0053\u0045", FromTo, AllowChange);
+                count += !TestJSONFormat<T>(u8"\U00000046\U00000041\U0000004C\U00000053\U00000045", FromTo, AllowChange);
+
+                count += !TestJSONFormat<T>("00", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("01", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("10", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("11", FromTo, AllowChange);
+
+                // Values that cannot be used
+                count += !TestJSONFormat<T>("{}", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("[]", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\"", FromTo, AllowChange);
+
+                count += !TestJSONFormat<T>("\"true\"true", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"false\"false", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"true\"1", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"false\"0", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("1\"true\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("0\"false\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("true\"true\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("false\"false\"", FromTo, AllowChange);
+
+                // Insignificant white space
+                count += !TestJSONFormat<T>("tru\u0009\u000A\u000D\u0020e\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u0020tru\u0009\u000A\u000D\u0020e", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020true\"e\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+            }
+        } while (FromTo);
+
+        return  !malformed ? count == 32
+                           : count == 56
                ;
     }
 
@@ -1513,7 +1629,7 @@ namespace Tests {
 
         if (std::is_same<decltype(std::declval<T>().Value()), S>::value) {
             switch (sizeof(S)) {
-            case sizeof(float)  : // floati
+            case sizeof(float)  : // float
                                   count += TestJSONEqual<T, float>(-FLT_MIN, "-1.175494351e-38");
                                   count += TestJSONEqual<T, float>(FLT_MIN, "1.175494351e-38");
                                   count += TestJSONEqual<T, float>(-FLT_MAX, "-3.402823466e+38");
@@ -1530,6 +1646,22 @@ namespace Tests {
         }
 
         return count == 4;
+    }
+
+    template <typename T, typename S>
+    bool TestBoolFromValue()
+    {
+        static_assert(   std::is_integral<S>::value
+                      && std::is_unsigned<S>::value
+                      && std::is_same<decltype(std::declval<T>().Value()), S>::value
+                     );
+
+        uint8_t count = 0;
+
+        count += TestJSONEqual<T, S>(true, "true");
+        count += TestJSONEqual<T, S>(false, "false");
+
+        return count == 2;
     }
 
     TEST(JSONParser, DecUInt8)
@@ -2514,6 +2646,23 @@ namespace Tests {
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
+    }
+
+    TEST(JSONParser, Boolean)
+    {
+        using json_type = Core::JSON::Boolean;
+        using actual_type = bool;
+
+        constexpr const bool malformed = false;
+        uint8_t count = 0;
+
+        EXPECT_TRUE((TestBoolFromValue<json_type, actual_type>()));
+
+        EXPECT_TRUE(TestBoolFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 32);
+
+        EXPECT_TRUE(TestBoolFromString<json_type>(!malformed, count));
+        EXPECT_EQ(count, 56);
     }
 }
 }
