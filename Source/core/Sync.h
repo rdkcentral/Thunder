@@ -55,8 +55,10 @@ namespace Core {
 #else
 
             int result  = 0;
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
             REPORT_DURATION_WARNING( { result = pthread_mutex_lock(&m_syncMutex); }, WarningReporting::TooLongWaitingForLock);
+#pragma GCC diagnostic pop
             if (result != 0) {
                 TRACE_L1("Probably creating a deadlock situation or lock on already destroyed mutex. <%d>", result);
             }
