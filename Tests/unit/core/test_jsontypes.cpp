@@ -36,13 +36,39 @@ namespace Tests {
     {
         std::string stream;
 
-        return    std::is_same<decltype(std::declval<S>().Value()), T>::value
-               && data == S(data).Default()
-               && data == S(data).Value()
-               && data == (S() = data).Value()
-               && S(data).ToString(stream)
-               && reference == std::string(stream)
-               ;
+#ifndef _INTERMEDIATE
+        bool result =    std::is_same<decltype(std::declval<S>().Value()), T>::value
+                      && data == S(data).Default()
+                      && data == S(data).Value()
+                      && data == (S() = data).Value()
+                      && S(data).ToString(stream)
+                      && reference == std::string(stream)
+                     ;
+#else
+        bool result = std::is_same<decltype(std::declval<S>().Value()), T>::value;
+
+             result =    data == S(data).Default()
+                      && result
+                      ;
+
+             result =    data == S(data).Value()
+                      && result
+                      ;
+
+             result =    data == (S() = data).Value()
+                      && result
+                      ;
+
+             result =    S(data).ToString(stream)
+                      && result
+                      ;
+
+             result =     reference == std::string(stream)
+                      && result
+                      ;
+#endif
+        return result;
+
     }
 
     template<typename S, typename T, typename std::enable_if<std::is_floating_point<T>::value, T*>::type = nullptr>
@@ -57,8 +83,8 @@ namespace Tests {
                   )
                && (    std::fabs(S(data).Value() - data) <= std::numeric_limits<T>::epsilon() * std::fabs(S(data).Value() + data) * ulp
                     || std::fabs(S(data).Value() - data) < std::numeric_limits<T>::min()
-                 )
-              && (     std::fabs((S() = data).Value() - data) <= std::numeric_limits<T>::epsilon() * std::fabs((S() = data).Value() + data) * ulp
+                  )
+               && (    std::fabs((S() = data).Value() - data) <= std::numeric_limits<T>::epsilon() * std::fabs((S() = data).Value() + data) * ulp
                     || std::fabs((S() = data).Value() - data) < std::numeric_limits<T>::min()
                   )
                ;
@@ -1513,7 +1539,7 @@ namespace Tests {
 
         if (std::is_same<decltype(std::declval<T>().Value()), S>::value) {
             switch (sizeof(S)) {
-            case sizeof(float)  : // floati
+            case sizeof(float)  : // float
                                   count += TestJSONEqual<T, float>(-FLT_MIN, "-1.175494351e-38");
                                   count += TestJSONEqual<T, float>(FLT_MIN, "1.175494351e-38");
                                   count += TestJSONEqual<T, float>(-FLT_MAX, "-3.402823466e+38");

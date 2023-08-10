@@ -763,7 +763,7 @@ namespace Core {
                                         continue;
                                     }
 
-                                    // Define a set of rules without the sue of regular expressions
+                                    // Define a set of rules without the use of regular expressions
                                     switch(BASETYPE) {
                                     case BASE_DECIMAL           :   // Decimal format rules
                                                                     if (!(std::isdigit(c))) {
@@ -1465,7 +1465,7 @@ namespace Core {
                     ASSERT(c != strValue.c_str());
 
                     if (   errno == ERANGE
-                        && _value == static_cast<TYPE>(  std::is_same<float, TYPE>::value 
+                        && _value == static_cast<TYPE>(  std::is_same<float, TYPE>::value
                                                        ? ((_set & NEGATIVE) ? -HUGE_VALF : HUGE_VALF)
                                                        : ((_set & NEGATIVE) ? -HUGE_VAL : HUGE_VAL)
                                                       )
