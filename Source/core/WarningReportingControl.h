@@ -53,10 +53,13 @@
     REPORT_OUTOFBOUNDS_WARNING_EX_(__VA_ARGS__);    \
     POP_WARNING()
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+
 #define REPORT_DURATION_WARNING(...)                \
-    PUSH_WARNING(DISABLE_WARNING_PEDANTIC)          \
-    REPORT_DURATION_WARNING_(__VA_ARGS__);          \
-    POP_WARNING()
+    REPORT_DURATION_WARNING_(__VA_ARGS__);
+
+#pragma GCC diagnostic pop
 
 #ifndef __CORE_WARNING_REPORTING__
 
