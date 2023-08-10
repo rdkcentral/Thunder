@@ -776,10 +776,10 @@
       
         <li class="md-nav__item">
   <a href="#supported-subsystems" class="md-nav__link">
-    Supported SubSystems
+    Supported Subsystems
   </a>
   
-    <nav class="md-nav" aria-label="Supported SubSystems">
+    <nav class="md-nav" aria-label="Supported Subsystems">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1580,10 +1580,10 @@
       
         <li class="md-nav__item">
   <a href="#supported-subsystems" class="md-nav__link">
-    Supported SubSystems
+    Supported Subsystems
   </a>
   
-    <nav class="md-nav" aria-label="Supported SubSystems">
+    <nav class="md-nav" aria-label="Supported Subsystems">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1707,9 +1707,9 @@
   <h1>Subsystems</h1>
 
 <p>Thunder provides "Subsystems" which are abstract categories of functionality (Network, Graphics, Internet) that can be marked as active/inactive by plugins. This mechanism allows plugins to delay activation until certain conditions are met, or ensure that plugins are deactivated in a suitable order.</p>
-<p>For example, a web-browser plugin could be prevented from starting until the Internet and Graphics subsystems are ready. The Graphics subsystem could be marked as active by a network management plugin, and the graphics by a window manager/compositor plugin.</p>
+<p>For example, a web-browser plugin could be prevented from starting until the Internet and Graphics subsystems are ready. The Network subsystem could be marked as active by a network control plugin, and the graphics by a window manager/compositor plugin.</p>
 <p>The state of each subsystem is tracked by the framework and can be queried or modified by individual plugins.</p>
-<h2 id="supported-subsystems">Supported SubSystems</h2>
+<h2 id="supported-subsystems">Supported Subsystems</h2>
 <p>Thunder supports the following subsystems (enumerated in <code>Source/plugins/ISubSystem.h</code>)</p>
 <table>
 <thead>
@@ -1779,7 +1779,7 @@
 <h3 id="subsystem-metadata">Subsystem Metadata</h3>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>Subsystem metadata is currently only accessible over COM-RPC, there are no corresponding JSON-RPC interfaces or datatypes generated for the subsystem COM-RPC interfaces</p>
+<p>Subsystem metadata is currently only accessible over COM-RPC, there are no corresponding JSON-RPC interfaces or datatypes generated for the subsystem COM-RPC interfaces. Only subsystem status can be retrieved over JSON-RPC</p>
 </div>
 <p>Since each subsystem has a corresponding COM-RPC interface, all subsystems can have metadata associated with them that describes the state of the subsystem in more detail.</p>
 <p>For example, the <code>INTERNET</code> subsystem has fields to hold the public IP address of the device and the network type. When marking the subsystem as active, this can be populated by a plugin so other plugins can obtain this information easily.</p>

@@ -74,6 +74,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#process-information" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -1048,9 +1053,105 @@
       
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Processes
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         Processes
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#process-information" class="md-nav__link">
+    Process Information
+  </a>
+  
+    <nav class="md-nav" aria-label="Process Information">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#find-process-by-name" class="md-nav__link">
+    Find Process By Name
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-child-processes" class="md-nav__link">
+    Finding Child Processes
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spawning-child-processes" class="md-nav__link">
+    Spawning Child Processes
+  </a>
+  
+    <nav class="md-nav" aria-label="Spawning Child Processes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#launch-a-process" class="md-nav__link">
+    Launch a process
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capturing-stdouterror" class="md-nav__link">
+    Capturing stdout/error
+  </a>
+  
+    <nav class="md-nav" aria-label="Capturing stdout/error">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#simple-approach" class="md-nav__link">
+    Simple Approach
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resource-monitor-approach" class="md-nav__link">
+    Resource Monitor Approach
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1437,6 +1538,88 @@
   
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#process-information" class="md-nav__link">
+    Process Information
+  </a>
+  
+    <nav class="md-nav" aria-label="Process Information">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#find-process-by-name" class="md-nav__link">
+    Find Process By Name
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-child-processes" class="md-nav__link">
+    Finding Child Processes
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spawning-child-processes" class="md-nav__link">
+    Spawning Child Processes
+  </a>
+  
+    <nav class="md-nav" aria-label="Spawning Child Processes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#launch-a-process" class="md-nav__link">
+    Launch a process
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capturing-stdouterror" class="md-nav__link">
+    Capturing stdout/error
+  </a>
+  
+    <nav class="md-nav" aria-label="Capturing stdout/error">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#simple-approach" class="md-nav__link">
+    Simple Approach
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resource-monitor-approach" class="md-nav__link">
+    Resource Monitor Approach
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1455,7 +1638,264 @@
 
   <h1>Processes</h1>
 
+<p>Occasionally plugins might need to spawn other processes or get information about other processes running on the device. </p>
+<h2 id="process-information">Process Information</h2>
+<p>The <code>Core::ProcessInfo</code> class can be used to retrieve information about a currently running process. </p>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="k">const</span><span class="o">*</span><span class="w"> </span><span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">ProcessInfo</span><span class="w"> </span><span class="n">currentProcess</span><span class="p">;</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Our PID is %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">currentProcess</span><span class="p">.</span><span class="n">Id</span><span class="p">());</span>
 
+<span class="w">    </span><span class="c1">// Take a snapshot of the memory usage</span>
+<span class="w">    </span><span class="n">currentProcess</span><span class="p">.</span><span class="n">MemoryStats</span><span class="p">();</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Currently using %ld KB (PSS) memory</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">currentProcess</span><span class="p">.</span><span class="n">PSS</span><span class="p">());</span>
+
+<span class="w">    </span><span class="c1">// Get stats about another process by PID</span>
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">ProcessInfo</span><span class="w"> </span><span class="n">anotherProcess</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Other process name: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">anotherProcess</span><span class="p">.</span><span class="n">Name</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
+
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Singleton</span><span class="o">::</span><span class="n">Dispose</span><span class="p">();</span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="cm">/* Output:</span>
+<span class="cm">Our PID is 51247</span>
+<span class="cm">Currently using 1333 KB (PSS) memory</span>
+<span class="cm">Other process name: systemd</span>
+<span class="cm">*/</span>
+</code></pre></div>
+<h3 id="find-process-by-name">Find Process By Name</h3>
+<p>The <code>FindByName</code> method will search for all currently running processes that match the given name and return them in a list. This can be thought of as an equivalent to the <code>pgrep</code> command in Linux</p>
+<div class="highlight"><pre><span></span><code><span class="n">std</span><span class="o">::</span><span class="n">list</span><span class="o">&lt;</span><span class="n">Core</span><span class="o">::</span><span class="n">ProcessInfo</span><span class="o">&gt;</span><span class="w"> </span><span class="n">processes</span><span class="p">;</span>
+
+<span class="c1">// Second argument specifies if we should match exactly</span>
+<span class="n">Core</span><span class="o">::</span><span class="n">ProcessInfo</span><span class="o">::</span><span class="n">FindByName</span><span class="p">(</span><span class="s">&quot;WPEFramework&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">,</span><span class="w"> </span><span class="n">processes</span><span class="p">);</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;There are currently %d WPEFramework processes</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">processes</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+
+<span class="cm">/* Output:</span>
+<span class="cm">There are currently 1 WPEFramework processes</span>
+<span class="cm">*/</span>
+</code></pre></div>
+<h3 id="finding-child-processes">Finding Child Processes</h3>
+<p>The <code>Children()</code> method returns an iterator containing all the child processes</p>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">ProcessInfo</span><span class="w"> </span><span class="nf">sampleProcess</span><span class="p">(</span><span class="mi">29614</span><span class="p">);</span>
+
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;Process %d (%s) has %d children</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">sampleProcess</span><span class="p">.</span><span class="n">Id</span><span class="p">(),</span><span class="w"> </span><span class="n">sampleProcess</span><span class="p">.</span><span class="n">Name</span><span class="p">().</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="n">sampleProcess</span><span class="p">.</span><span class="n">Children</span><span class="p">().</span><span class="n">Count</span><span class="p">());</span>
+
+<span class="n">Core</span><span class="o">::</span><span class="n">ProcessInfo</span><span class="o">::</span><span class="n">Iterator</span><span class="w"> </span><span class="n">children</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sampleProcess</span><span class="p">.</span><span class="n">Children</span><span class="p">();</span>
+<span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">children</span><span class="p">.</span><span class="n">Next</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">ProcessInfo</span><span class="w"> </span><span class="n">child</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">children</span><span class="p">.</span><span class="n">Current</span><span class="p">();</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;* [PID: %d] %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">child</span><span class="p">.</span><span class="n">Id</span><span class="p">(),</span><span class="w"> </span><span class="n">child</span><span class="p">.</span><span class="n">Name</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="cm">/* Output:</span>
+<span class="cm">Process 29614 (firefox) has 6 children</span>
+<span class="cm">    * [PID: 29851] firefox</span>
+<span class="cm">    * [PID: 29879] firefox</span>
+<span class="cm">    * [PID: 29987] firefox</span>
+<span class="cm">    * [PID: 30158] firefox</span>
+<span class="cm">    * [PID: 30161] firefox</span>
+<span class="cm">    * [PID: 30165] firefox</span>
+<span class="cm">*/</span>
+</code></pre></div>
+<h2 id="spawning-child-processes">Spawning Child Processes</h2>
+<p>The <code>Core::Process</code> class provides a way to spawn a child process in a cross-platform way. It can also handle capturing stdout/error, signals and setting command line options.</p>
+<h3 id="launch-a-process">Launch a process</h3>
+<p>This example shows launching a process, then blocking indefinitely until that process has completed. Once completed, it reads the exit code of the process to determine whether it ran successfully.</p>
+<p>The <code>Core::Process::Options</code> class can be used to pass command-line options to a process. The first option should always be the name of the process to execute. Additional options can be passed by repeatedly calling <code>.Add()</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">Process</span><span class="w"> </span><span class="nf">childProcess</span><span class="p">(</span><span class="nb">false</span><span class="p">);</span>
+
+<span class="c1">// Run the command &quot;/usr/bin/sleep 5&quot;</span>
+<span class="n">Core</span><span class="o">::</span><span class="n">Process</span><span class="o">::</span><span class="n">Options</span><span class="w"> </span><span class="n">options</span><span class="p">(</span><span class="s">&quot;/usr/bin/sleep&quot;</span><span class="p">);</span>
+<span class="n">options</span><span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="s">&quot;5&quot;</span><span class="p">);</span>
+
+<span class="kt">uint32_t</span><span class="w"> </span><span class="n">pid</span><span class="p">;</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">childProcess</span><span class="p">.</span><span class="n">Launch</span><span class="p">(</span><span class="n">options</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">pid</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Failed to launch process</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Successfully launched process</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+
+<span class="w">    </span><span class="c1">// Process is now running, block forever until it exits</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">childProcess</span><span class="p">.</span><span class="n">WaitProcessCompleted</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">infinite</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Process exited with error code %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">childProcess</span><span class="p">.</span><span class="n">ExitCode</span><span class="p">());</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Timed out waiting for process to complete</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="capturing-stdouterror">Capturing stdout/error</h3>
+<p>It is often useful to capture the output of a process. If Core::Process is started with capture set to <code>true</code>, Thunder will duplicate the stdout/err file descriptors and make the available for reading/writing.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Thunder does not do any kind of automatic buffering of stdout/err data if capture is enabled. This means if the process produces any output, the output will be stored in the default stdout buffer until it is read back out by your code. On most Linux systems this buffer size is 8K. So you must either:</p>
+<ul>
+<li>Guarantee the process will not fill the stdout buffer before exiting, then read data from the stdout file descriptor once it quits</li>
+<li>Continuously drain the stdout buffer whilst the process is running. </li>
+</ul>
+</div>
+<h4 id="simple-approach">Simple Approach</h4>
+<p>This example shows launching the process, waiting for it to exit, then draining the stdout file descriptor to get the output from the process. This is only suitable since the output from the command is a known size and will not exceed the stdout buffer.</p>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">Process</span><span class="w"> </span><span class="nf">childProcess</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+
+<span class="c1">// Run the command &quot;/usr/bin/echo hello&quot;</span>
+<span class="n">Core</span><span class="o">::</span><span class="n">Process</span><span class="o">::</span><span class="n">Options</span><span class="w"> </span><span class="n">options</span><span class="p">(</span><span class="s">&quot;/usr/bin/echo&quot;</span><span class="p">);</span>
+<span class="n">options</span><span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">);</span>
+
+<span class="kt">uint32_t</span><span class="w"> </span><span class="n">pid</span><span class="p">;</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">childProcess</span><span class="p">.</span><span class="n">Launch</span><span class="p">(</span><span class="n">options</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">pid</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Failed to launch process</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Successfully launched process</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+
+<span class="w">    </span><span class="c1">// Process is now running, block forever until it exits</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">childProcess</span><span class="p">.</span><span class="n">WaitProcessCompleted</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">infinite</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Process exited with error code %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">childProcess</span><span class="p">.</span><span class="n">ExitCode</span><span class="p">());</span>
+
+<span class="w">        </span><span class="c1">// Get the output from stdout</span>
+<span class="hll"><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">output</span><span class="p">;</span>
+</span><span class="hll"><span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">buffer</span><span class="p">[</span><span class="mi">2048</span><span class="p">];</span>
+</span><span class="hll"><span class="w">        </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">childProcess</span><span class="p">.</span><span class="n">Output</span><span class="p">(</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">buffer</span><span class="p">),</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">buffer</span><span class="p">))</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span class="hll"><span class="w">            </span><span class="n">output</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">buffer</span><span class="p">;</span>
+</span><span class="hll"><span class="w">        </span><span class="p">}</span>
+</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Stdout from process: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Timed out waiting for process to complete</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="cm">/* Output:</span>
+<span class="cm">Successfully launched process</span>
+<span class="cm">Process exited with error code 0</span>
+<span class="cm">Stdout from process: hello</span>
+<span class="cm">*/</span>
+</code></pre></div>
+<h4 id="resource-monitor-approach">Resource Monitor Approach</h4>
+<p>This example registers the application stdout file descriptor with the Thunder resource monitor. The resource monitor will observe the file descriptor and invoke a callback when there is data on the fd for processing. This is strongly recommended instead of creating your own thread for monitoring the output (this applies to any file descriptor/socket, not just this example).</p>
+<p>For simplicity, the example will print the data sent to stdout along with the timestamp and PID that produced the message. The sample process executed simply prints a message to stdout and stderr at regular intervals until it's killed.</p>
+<div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;core/ResourceMonitor.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;core/core.h&gt;</span>
+
+<span class="k">using</span><span class="w"> </span><span class="k">namespace</span><span class="w"> </span><span class="nn">WPEFramework</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * @brief A simple class that will monitor the stdout/err from a long-running process</span>
+<span class="cm"> * and log it</span>
+<span class="cm"> */</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProcessOutputMonitor</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IResource</span><span class="w"> </span><span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+<span class="w">    </span><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">OutputType</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">stdout</span><span class="p">,</span>
+<span class="w">        </span><span class="n">stderr</span>
+<span class="w">    </span><span class="p">};</span>
+
+<span class="w">    </span><span class="n">ProcessOutputMonitor</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">pid</span><span class="p">,</span><span class="w"> </span><span class="n">OutputType</span><span class="w"> </span><span class="n">outputType</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="p">)</span>
+<span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+<span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">_fd</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">outputType</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="no">OutputType</span><span class="o">::</span><span class="no">stdout</span><span class="p">:</span>
+<span class="w">            </span><span class="n">_outputType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;STDOUT&quot;</span><span class="p">;</span>
+<span class="w">            </span><span class="k">break</span><span class="p">;</span>
+<span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="no">OutputType</span><span class="o">::</span><span class="no">stderr</span><span class="p">:</span>
+<span class="w">            </span><span class="n">_outputType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;STDERR&quot;</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="o">~</span><span class="n">ProcessOutputMonitor</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+
+<span class="w">    </span><span class="n">ProcessOutputMonitor</span><span class="p">(</span><span class="n">ProcessOutputMonitor</span><span class="o">&amp;&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+<span class="w">    </span><span class="n">ProcessOutputMonitor</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">ProcessOutputMonitor</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+<span class="w">    </span><span class="n">ProcessOutputMonitor</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">ProcessOutputMonitor</span><span class="o">&amp;&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+<span class="w">    </span><span class="n">ProcessOutputMonitor</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">ProcessOutputMonitor</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">IResource</span><span class="o">::</span><span class="n">handle</span><span class="w"> </span><span class="nf">Descriptor</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">_fd</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kt">uint16_t</span><span class="w"> </span><span class="nf">Events</span><span class="p">()</span><span class="w"> </span><span class="k">override</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// We are interested in receiving data from the process</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">POLLIN</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">Handle</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">events</span><span class="p">)</span><span class="w"> </span><span class="k">override</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Got some data from the process</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">events</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">POLLIN</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="c1">// Read data from the fd</span>
+<span class="w">            </span><span class="kt">ssize_t</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span>
+<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">output</span><span class="p">;</span>
+<span class="w">            </span><span class="kt">char</span><span class="w"> </span><span class="n">buffer</span><span class="p">[</span><span class="mi">1024</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{};</span>
+
+<span class="w">            </span><span class="k">do</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">read</span><span class="p">(</span><span class="n">_fd</span><span class="p">,</span><span class="w"> </span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">buffer</span><span class="p">));</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">errno</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">EWOULDBLOCK</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Error %d reading from process output</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">errno</span><span class="p">);</span>
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                    </span><span class="n">output</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">buffer</span><span class="p">;</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+
+<span class="w">            </span><span class="c1">// For the example, just print the received data</span>
+<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;[PID: %d][%s][%s]: %s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">_pid</span><span class="p">,</span><span class="w"> </span><span class="n">_outputType</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">Now</span><span class="p">().</span><span class="n">ToRFC1123</span><span class="p">().</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="k">private</span><span class="o">:</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">_pid</span><span class="p">;</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">_fd</span><span class="p">;</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">_outputType</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="k">const</span><span class="o">*</span><span class="w"> </span><span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Process</span><span class="w"> </span><span class="n">childProcess</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+
+<span class="w">    </span><span class="c1">// This sample app will print to stdout and error on regular intervals</span>
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Process</span><span class="o">::</span><span class="n">Options</span><span class="w"> </span><span class="n">options</span><span class="p">(</span><span class="s">&quot;./sampleProcess&quot;</span><span class="p">);</span>
+
+<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">pid</span><span class="p">;</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">childProcess</span><span class="p">.</span><span class="n">Launch</span><span class="p">(</span><span class="n">options</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">pid</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Failed to launch process</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Successfully launched process</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Process is now running, monitor its stdout and stderr</span>
+<span class="w">        </span><span class="n">ProcessOutputMonitor</span><span class="w"> </span><span class="n">stdoutMonitor</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span><span class="w"> </span><span class="n">ProcessOutputMonitor</span><span class="o">::</span><span class="n">OutputType</span><span class="o">::</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="n">childProcess</span><span class="p">.</span><span class="n">Output</span><span class="p">());</span>
+<span class="w">        </span><span class="n">ProcessOutputMonitor</span><span class="w"> </span><span class="n">stderrMonitor</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span><span class="w"> </span><span class="n">ProcessOutputMonitor</span><span class="o">::</span><span class="n">OutputType</span><span class="o">::</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="n">childProcess</span><span class="p">.</span><span class="n">Error</span><span class="p">());</span>
+
+<span class="w">        </span><span class="n">Core</span><span class="o">::</span><span class="n">ResourceMonitor</span><span class="o">::</span><span class="n">Instance</span><span class="p">().</span><span class="n">Register</span><span class="p">(</span><span class="n">stdoutMonitor</span><span class="p">);</span>
+<span class="w">        </span><span class="n">Core</span><span class="o">::</span><span class="n">ResourceMonitor</span><span class="o">::</span><span class="n">Instance</span><span class="p">().</span><span class="n">Register</span><span class="p">(</span><span class="n">stderrMonitor</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Sleep for 10 seconds</span>
+<span class="w">        </span><span class="n">SleepS</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Kill the process</span>
+<span class="w">        </span><span class="n">childProcess</span><span class="p">.</span><span class="n">Kill</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Unregister the resource monitor</span>
+<span class="w">        </span><span class="n">Core</span><span class="o">::</span><span class="n">ResourceMonitor</span><span class="o">::</span><span class="n">Instance</span><span class="p">().</span><span class="n">Unregister</span><span class="p">(</span><span class="n">stdoutMonitor</span><span class="p">);</span>
+<span class="w">        </span><span class="n">Core</span><span class="o">::</span><span class="n">ResourceMonitor</span><span class="o">::</span><span class="n">Instance</span><span class="p">().</span><span class="n">Unregister</span><span class="p">(</span><span class="n">stderrMonitor</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Singleton</span><span class="o">::</span><span class="n">Dispose</span><span class="p">();</span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="cm">/* Output:</span>
+<span class="cm">Successfully launched process</span>
+<span class="cm">[PID: 85574][STDOUT][Thu, 03 Aug 2023 11:49:08 GMT]: Hello from stdout</span>
+<span class="cm">[PID: 85574][STDERR][Thu, 03 Aug 2023 11:49:08 GMT]: Hello from stderr</span>
+<span class="cm">[PID: 85574][STDOUT][Thu, 03 Aug 2023 11:49:09 GMT]: Hello from stdout</span>
+<span class="cm">[PID: 85574][STDERR][Thu, 03 Aug 2023 11:49:09 GMT]: Hello from stderr</span>
+<span class="cm">[PID: 85574][STDOUT][Thu, 03 Aug 2023 11:49:10 GMT]: Hello from stdout</span>
+<span class="cm">[PID: 85574][STDERR][Thu, 03 Aug 2023 11:49:10 GMT]: Hello from stderr</span>
+<span class="cm">*/</span>
+</code></pre></div>
 
 
 
