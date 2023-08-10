@@ -57,7 +57,6 @@ namespace Core {
             int result  = 0;
 
             REPORT_DURATION_WARNING( { result = pthread_mutex_lock(&m_syncMutex); }, WarningReporting::TooLongWaitingForLock);
-
             if (result != 0) {
                 TRACE_L1("Probably creating a deadlock situation or lock on already destroyed mutex. <%d>", result);
             }
