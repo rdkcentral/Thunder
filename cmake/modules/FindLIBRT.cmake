@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+include(CheckSymbolExists)
 ## clock-monotonic, just see if we need to link with rt
 set(CMAKE_REQUIRED_LIBRARIES_SAVE ${CMAKE_REQUIRED_LIBRARIES})
 set(CMAKE_REQUIRED_LIBRARIES rt)
@@ -30,7 +31,8 @@ if(LIBRT_FOUND AND NOT TARGET LIBRT::LIBRT)
     add_library(LIBRT::LIBRT UNKNOWN IMPORTED)
     if(EXISTS "${LIBRT_LIBRARY}")
         set_target_properties(LIBRT::LIBRT PROPERTIES
+                IMPORTED_CONFIGURATIONS RELEASE
                 IMPORTED_LINK_INTERFACE_LANGUAGES "C"
-                IMPORTED_LOCATION "${LIBRT_LIBRARY}")
+                IMPORTED_LOCATION_RELEASE "${LIBRT_LIBRARY}")
     endif()
 endif()
