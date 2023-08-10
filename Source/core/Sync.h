@@ -47,8 +47,6 @@ namespace Core {
         CriticalSection();
         ~CriticalSection();
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
         inline void Lock()
         {
 #ifdef __LINUX__
@@ -71,7 +69,6 @@ namespace Core {
             ::EnterCriticalSection(&m_syncMutex);
 #endif
         }
-#pragma GCC diagnostic pop
 
         inline void Unlock()
         {

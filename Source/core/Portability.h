@@ -135,6 +135,8 @@
 
 #define PUSH_WARNING_ARG(N, ...) CONCAT_STRINGS(PUSH_WARNING_ROLL_, N)(__VA_ARGS__)
 
+#pragma GCC system_header
+
 #if defined(__clang__) || (__GNUC__ >= 4)
 #define PUSH_WARNING(...)                   \
     PUSH_WARNING_                           \

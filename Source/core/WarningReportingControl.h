@@ -33,6 +33,8 @@
 #include <unordered_set>
 #include <vector>
 
+#pragma GCC system_header
+
 #define REPORT_WARNING(...)                         \
     PUSH_WARNING(DISABLE_WARNING_PEDANTIC)          \
     REPORT_WARNING_(__VA_ARGS__);                   \
