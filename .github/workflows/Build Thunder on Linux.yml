@@ -2,7 +2,7 @@ name: Build Thunder on Linux
 
 on:
   push:
-    branches: ["development/actions-warnings"] # CHANGE TO MASTER
+    branches: ["master"]
   pull_request:
     branches: ["master"]
   workflow_call:
@@ -23,8 +23,7 @@ jobs:
       uses: actions/checkout@v3
       with:
         path: Thunder
-        repository: VeithMetro/Thunder # CHANGE TO RDKCENTRAL
-        ref: development/actions-warnings # REMOVE BRANCH SPECIFICATION
+        repository: rdkcentral/Thunder
 
     - name: Regex Thunder
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
