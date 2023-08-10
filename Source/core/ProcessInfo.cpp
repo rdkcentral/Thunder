@@ -602,7 +602,7 @@ namespace Core {
             // Collect number of groups in which this user added
             getgrouplist(pwd->pw_name, pwd->pw_gid, nullptr, &numberOfGroups);
             gid_t* groups = static_cast<gid_t*>(ALLOCA(sizeof(gid_t) * numberOfGroups));
-            memset(groups, 0, sizeof(*groups));
+            memset(groups, 0, (sizeof(gid_t) * numberOfGroups));
 
             // Collect actual groups details
             getgrouplist(pwd->pw_name, pwd->pw_gid, groups, &numberOfGroups);
