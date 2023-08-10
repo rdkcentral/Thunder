@@ -235,6 +235,7 @@ namespace Tests {
 
         return count == 2;
     }
+
     // Implementation specific types may have additional constraint
 
     template <typename T>
@@ -283,8 +284,8 @@ namespace Tests {
                 count += TestJSONFormat<T>("null", FromTo, AllowChange);
 
                 // Empty character sequence, no distinction with 0
-                count += (TestJSONFormat<T>("", FromTo, AllowChange) || !AllowChange);
-                count += (TestJSONFormat<T>("\0", FromTo, AllowChange) || !AllowChange);
+                count += TestJSONFormat<T>("", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\0", FromTo, !AllowChange);
 
                 count += TestJSONFormat<T>("1\0", FromTo, AllowChange);
 
@@ -293,9 +294,9 @@ namespace Tests {
                 count += TestJSONFormat<T>("\"1\"", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += TestJSONFormat<T>("\u0009\u000A\u000D\u00201\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u00201\"\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u00201\u0009\u000A\u000D\u0020\"", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u00201\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u00201\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u00201\u0009\u000A\u000D\u0020\"", FromTo, !AllowChange);
             } else {
                 // Malformed
                 // =========
@@ -380,9 +381,9 @@ namespace Tests {
                 count += !TestJSONFormat<T>("1a", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += !TestJSONFormat<T>("1\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u00201\u0009\u000A\u000D\u00200", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u00201\"0\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("1\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u00201\u0009\u000A\u000D\u00200", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u00201\"0\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
             }
         } while (FromTo);
 
@@ -441,8 +442,8 @@ namespace Tests {
                 count += TestJSONFormat<T>("null", FromTo, AllowChange);
 
                 // Empty string, no distinction with 0
-                count += (TestJSONFormat<T>("", FromTo, AllowChange) || !AllowChange);
-                count += (TestJSONFormat<T>("\0", FromTo, AllowChange) || !AllowChange);
+                count += TestJSONFormat<T>("", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\0", FromTo, !AllowChange);
 
                 count += TestJSONFormat<T>("-1\0", FromTo, AllowChange);
 
@@ -450,9 +451,9 @@ namespace Tests {
                 count += TestJSONFormat<T>("\"-1\"", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020-1\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1\"\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1\u0009\u000A\u000D\u0020\"", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020-1\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1\u0009\u000A\u000D\u0020\"", FromTo, !AllowChange);
             } else {
                 // Malformed
                 // =========
@@ -537,9 +538,9 @@ namespace Tests {
                 count += !TestJSONFormat<T>("-1a", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += !TestJSONFormat<T>("-1\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u0020-1\u0009\u000A\u000D\u00200", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1\"0\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("-1\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u0020-1\u0009\u000A\u000D\u00200", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1\"0\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
             }
         } while (FromTo);
 
@@ -578,8 +579,8 @@ namespace Tests {
                 count += TestJSONFormat<T>("null", FromTo, AllowChange);
 
                 // Empty string, no distinction with 0
-                count += (TestJSONFormat<T>("", FromTo, AllowChange) || !AllowChange);
-                count += (TestJSONFormat<T>("\0", FromTo, AllowChange) || !AllowChange);
+                count += TestJSONFormat<T>("", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\0", FromTo, !AllowChange);
 
                 count += TestJSONFormat<T>("\"0x0\"", FromTo, AllowChange); // Second digit any out of 0-9, A-F
                 count += TestJSONFormat<T>("\"0xA\"", FromTo, AllowChange);
@@ -610,9 +611,9 @@ namespace Tests {
                 }
 
                 // Insignificant white space
-                count += TestJSONFormat<T>("\u0009\u000A\u000D\u00200x1\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u00200x1\"\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u00200x1\u0009\u000A\u000D\u0020\"", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u00200x1\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u00200x1\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u00200x1\u0009\u000A\u000D\u0020\"", FromTo, !AllowChange);
             } else {
                 // Malformed
                 // =========
@@ -692,9 +693,9 @@ namespace Tests {
                 count += !TestJSONFormat<T>("-1a", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += !TestJSONFormat<T>("0x1\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u00200x1\u0009\u000A\u000D\u00200", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u00200x1\"0\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("0x1\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u00200x1\u0009\u000A\u000D\u00200", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u00200x1\"0\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
             }
         } while (FromTo);
 
@@ -732,8 +733,8 @@ namespace Tests {
                 count += TestJSONFormat<T>("null", FromTo, AllowChange);
 
                 // Empty string, no distinction with 0
-                count += (TestJSONFormat<T>("", FromTo, AllowChange) || !AllowChange);
-                count += (TestJSONFormat<T>("\0", FromTo, AllowChange) || !AllowChange);
+                count += TestJSONFormat<T>("", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\0", FromTo, !AllowChange);
 
                 count += TestJSONFormat<T>("\"-0x0\"", FromTo, AllowChange); // Second digit any out of 0-9, A-F
                 count += TestJSONFormat<T>("\"-0xA\"", FromTo, AllowChange);
@@ -766,9 +767,9 @@ namespace Tests {
                     }
                 }
 
-                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020-0x1\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-0x1\"\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-0x1\u0009\u000A\u000D\u0020\"", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020-0x1\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-0x1\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-0x1\u0009\u000A\u000D\u0020\"", FromTo, !AllowChange);
             } else {
                 // Malformed
                 // =========
@@ -863,9 +864,9 @@ namespace Tests {
                 count += !TestJSONFormat<T>("-1a", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += !TestJSONFormat<T>("-0x1\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u0020-0x1\u0009\u000A\u000D\u00200", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-0x1\"0\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("-0x1\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u0020-0x1\u0009\u000A\u000D\u00200", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-0x1\"0\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
             }
         } while (FromTo);
 
@@ -895,10 +896,10 @@ namespace Tests {
 
                 // Implementation constraint: all IElement objects can be nullified
                 count += TestJSONFormat<T>("null", FromTo, AllowChange);
-                // Empty string, no distinction with 0
 
-                count += (TestJSONFormat<T>("", FromTo, AllowChange) || !AllowChange);
-                count += (TestJSONFormat<T>("\0", FromTo, AllowChange) || !AllowChange);
+                // Empty string, no distinction with 0
+                count += TestJSONFormat<T>("", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\0", FromTo, !AllowChange);
 
                 count += TestJSONFormat<T>("\"00\"", FromTo, AllowChange); // JSON value {'0','0'}
                 count += TestJSONFormat<T>("\"00\"", FromTo, AllowChange); // JSON value {'0','0'}
@@ -927,9 +928,9 @@ namespace Tests {
                 }
 
                 // Insignificant white space
-                count += TestJSONFormat<T>("\u0009\u000A\u000D\u002001\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u002001\"\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u002001\u0009\u000A\u000D\u0020\"", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u002001\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u002001\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u002001\u0009\u000A\u000D\u0020\"", FromTo, !AllowChange);
             } else {
                 // Malformed
                 // =========
@@ -990,9 +991,9 @@ namespace Tests {
                 count += !TestJSONFormat<T>("101", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += !TestJSONFormat<T>("01\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u002001\u0009\u000A\u000D\u00200", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u002001\"0\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("01\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u002001\u0009\u000A\u000D\u00200", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u002001\"0\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
             }
         } while (FromTo);
 
@@ -1024,8 +1025,8 @@ namespace Tests {
                 count += TestJSONFormat<T>("null", FromTo, AllowChange);
 
                 // Empty string, no distinction with 0
-                count += (TestJSONFormat<T>("", FromTo, AllowChange) || !AllowChange);
-                count += (TestJSONFormat<T>("\0", FromTo, AllowChange) || !AllowChange);
+                count += TestJSONFormat<T>("", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\0", FromTo, !AllowChange);
 
                 count += TestJSONFormat<T>("\"-00\"", FromTo, AllowChange);
                 count += TestJSONFormat<T>("\"-01\"", FromTo, AllowChange);
@@ -1058,9 +1059,9 @@ namespace Tests {
                 }
 
                 // Insignificant white space
-                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020-01\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-01\"\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-01\u0009\u000A\u000D\u0020\"", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020-01\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-01\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-01\u0009\u000A\u000D\u0020\"", FromTo, !AllowChange);
             } else {
                 // Malformed
                 // =========
@@ -1117,9 +1118,9 @@ namespace Tests {
                 count += !TestJSONFormat<T>("-101", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += !TestJSONFormat<T>("-01\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u00200-1\u0009\u000A\u000D\u00200", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-01\"0\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("-01\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u00200-1\u0009\u000A\u000D\u00200", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-01\"0\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
             }
         } while (FromTo);
 
