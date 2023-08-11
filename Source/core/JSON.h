@@ -589,48 +589,63 @@ namespace Core {
 
                 ASSERT(maxLength > 0);
 
-                while ((offset < 4) && (loaded < maxLength)) {
-                    if (_set & UNDEFINED) {
-                        stream[loaded++] = IElement::NullTag[offset];
+                uint16_t surplus =    ((_set & QUOTED) == QUOTED) * 2
+                                    + (((_set & NEGATIVE) == NEGATIVE) * 1)
+                                    + ((BASETYPE == BASE_DECIMAL) * 0)
+                                    + ((BASETYPE == BASE_HEXADECIMAL) * 2)
+                                    + ((BASETYPE == BASE_OCTAL) * 1)
+                                    ;
+
+                if (surplus < maxLength) {
+                    if (_set & QUOTED) {
+                        stream[loaded++] = '"';
+                        --surplus;
+                    }
+
+                    if ((_set & UNDEFINED) && (maxLength - surplus) > sizeof(IElement::NullTag)) {
+                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char));
+
+                        size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
+
+                        memcpy(&stream[loaded], &IElement::NullTag[0], count);
+
+                        loaded += count;
                     } else {
-                        if (offset == 0 && (_set & QUOTED)) {
-                            stream[loaded++] = '"';
-                            ++offset;
-                        }
-
-                        if (   (offset == 0 && (_set & NEGATIVE))
-                            || (offset == 1 && (_set & NEGATIVE) && (_set & QUOTED))
-                           ) {
+                        if ((_set & NEGATIVE))
+                        {
                             stream[loaded++] = '-';
+                            --surplus;
                         }
-                    }
 
-                    ++offset;
-                }
+                        switch(BASETYPE) {
+                            case BASE_DECIMAL     : break;
+                            case BASE_HEXADECIMAL : stream[loaded++] = '0';
+                                                    stream[loaded++] = 'X';
+                                                    surplus -= 2;
+                                                    break;
+                            case BASE_OCTAL       : stream[loaded++] = '0';
+                                                    --surplus;
+                                                    break;
+                            default               : ASSERT(false);
+                        }
 
-                if (!(_set & UNDEFINED)) {
-                    switch(BASETYPE) {
-                        case BASE_DECIMAL     : break;
-                        case BASE_HEXADECIMAL : stream[loaded++] = '0';
-                                                stream[loaded++] = 'X';
-                                                break;
-                        case BASE_OCTAL       : stream[loaded++] = '0';
-                                                break;
-                        default               : ASSERT(false);
-                    }
-
-                    if (loaded < maxLength) {
-                        loaded += Convert(&(stream[loaded]), (maxLength - loaded), offset, _value/*, TemplateIntToType<SIGNED>()*/);
+                        if (loaded < (maxLength - surplus)) {
+                            loaded += Convert(&(stream[loaded]), (maxLength - loaded), offset, _value);
+                        }
                     }
 
                     if (_set & QUOTED) {
                         stream[loaded++] = '"';
+                        --surplus;
                     }
-                }
 
-                if ((_set & UNDEFINED) || (loaded < maxLength)) {
-                    stream[loaded] = '\0';
-                    offset = 0;
+                    if (!offset && (loaded < maxLength)) {
+                        stream[loaded] = '\0';
+                        offset = 0;
+                    }
+                } else {
+                    // Invalidate
+                    ++offset;
                 }
 
                 return (loaded);
@@ -745,17 +760,17 @@ namespace Core {
                     case 'n'    :   FALLTHROUGH
                     case 'u'    :   FALLTHROUGH
                     case 'l'    :   // JSON value null
-                                    ASSERT(offset < sizeof(NullTag));
+                                    ASSERT((offset - ((_set & QUOTED) ? 1 : 0)) < sizeof(NullTag));
 
-                                    if (((offset > 3 || (offset > 4 && (_set & QUOTED))) || c != IElement::NullTag[offset]) || suffix) {
+                                    if ((offset > 3 && !(_set & QUOTED)) || (offset > 4 && (_set & QUOTED)) || c != IElement::NullTag[offset - ((_set & QUOTED) ? 1 : 0)] || suffix) {
                                         _set = ERROR;
                                         error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<>"};
                                         continue;
                                     }
 
-                                    suffix = suffix || offset == 3 || (offset == 4 && (_set & QUOTED));
+                                    suffix = suffix || (offset == 3 && !(_set & QUOTED)) || (offset == 4 && (_set & QUOTED));
 
-                                    _set = UNDEFINED;
+                                    _set |= UNDEFINED;
                                     break;
                     default     :   if (suffix || (_set & UNDEFINED)) {
                                         _set = ERROR;
