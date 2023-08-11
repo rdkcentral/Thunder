@@ -1714,14 +1714,14 @@
 <p>In Thunder, plugins can expose their interfaces over two communication channels:</p>
 <ul>
 <li>JSON-RPC (<a href="https://www.jsonrpc.org/specification">https://www.jsonrpc.org/specification</a>)</li>
-<li>COM-RPC</li>
+<li>COM-RPC (Custom Thunder RPC protocol)</li>
 </ul>
-<p>In older Thunder versions (&lt;R4), it was common for plugins to define two interface files, one for each RPC format. In R4 and later versions, it is strongly recommended to use the code-generation tools included in Thunder and only write a single interface file. This makes it much easier to maintain and reduces the amount of boilerplate code that must be written in a plugin. This is the approach documented in this page. </p>
+<p>In older Thunder versions (&lt;R4), it was common for plugins to define two interface files, one for each RPC format. In Thunder R4 and later, it is strongly recommended to use the code-generation tools and only write a single interface file. This makes it much easier to maintain and reduces the amount of boilerplate code that must be written to create a plugin. This is the approach documented in this page.</p>
 <p>Examples of existing Thunder interfaces can be found in the ThunderInterfaces repository: <a href="https://github.com/rdkcentral/ThunderInterfaces/">https://github.com/rdkcentral/ThunderInterfaces/</a>.</p>
 <h2 id="designing-a-good-interface">Designing a good Interface</h2>
-<p>A good interface defines a set of methods that a plugin can support, without dictating anything about the actual code that will implement the interface. It is possible many plugins could implement that same interface if they provide overlapping functionality (for example an <code>IBrowser</code> interface could be implemented by different web browser engines).</p>
+<p>Before writing any plugin code, it is essential to define the interface that plugin will implement. A good interface defines a set of methods that a plugin can support, without dictating anything about the actual code that will implement the interface. It is possible that many plugins could implement that same interface if they provide overlapping or equivalent functionality (for example an <code>IBrowser</code> interface could be implemented by different web browser engines such as WebKit or Chromium).</p>
 <p>The interface provides a clear boundary between the code that invokes methods on the plugin and the plugin code that implements the functionality. Typically, interface definitions are stored in a separate repository to the plugin implementations to reflect this boundary.</p>
-<p>Well designed interfaces should also be easy to read and self explanatory. Methods names should be descriptive and have doxygen-style comments that describe their inputs and outputs. All methods should return an error code to indicate whether they completed successfully, and any data that should be returned by the method should be stored in an output parameter.</p>
+<p>Well-designed interfaces should also be easy to read and self explanatory. Methods names should be descriptive and have doxygen-style comments that describe their functionality, inputs and outputs. All methods should return a standardised error code to indicate whether they completed successfully, and any data that should be returned by the method should be stored in an output parameter.</p>
 <p>It is possible to build an interface from smaller sub-interfaces using composition. This is preferred to having a large monolithic interface, as is encourages reuse and modularity.</p>
 <h2 id="interface-definitions">Interface Definitions</h2>
 <h3 id="com-rpc-interfaces">COM-RPC Interfaces</h3>
@@ -1746,13 +1746,14 @@
 <li>Each COM-RPC interface must inherit <strong>virtually</strong> from <code>Core::IUnknown</code> and have a unique ID</li>
 <li>Ensure API compatibility is maintained when updating interfaces to avoid breaking consumers</li>
 <li>Methods should be pure virtual methods that can be overridden by the plugin that implements the interface</li>
-<li>Methods should return <code>Core::hresult</code> which will store the error code from the method<ul>
-<li>If the method succeeds, it should return <code>Core::ERROR_NONE</code></li>
-<li>If an error occurs over the COM-RPC transport, the <code>COM_ERROR</code> bit will be set</li>
+<li>Methods should return <strong><code>Core::hresult</code></strong> which will store the error code from the method<ul>
+<li>If a method succeeds, it should return <code>Core::ERROR_NONE</code></li>
+<li>If a method fails, it should return a suitable error code that reflects the failure (e.g <code>Core::ERROR_READ_ERROR</code>)</li>
+<li>If an error occurs over the COM-RPC transport the <code>COM_ERROR</code> bit will be set. This allows consumers to determine where the failure occurred</li>
 </ul>
 </li>
 <li>Ensure all enums have explicit data types set (e.g. <code>uint8_t</code>)</li>
-<li>C++ types such as <code>std::vector</code> and <code>std::map</code> are not compatible with COM-RPC<ul>
+<li>C++ types such as <code>std::vector</code> and <code>std::map</code> are <strong>not</strong> compatible with COM-RPC<ul>
 <li>Only "plain-old data" (POD) types can be used (e.g. scalar values, interface pointers)</li>
 <li>COM-RPC can auto-generate iterators for returning multiple results</li>
 </ul>
@@ -1765,10 +1766,10 @@
 <p>As with Microsoft COM, this is done by allowing clients to create implementations of notification interfaces as sinks, and register that sink with the plugin. When a notification occurs, the plugin will call the methods on the provided sink.</p>
 <h3 id="json-rpc-interfaces">JSON-RPC Interfaces</h3>
 <p>Once a COM-RPC interface is defined, if a JSON-RPC interface is also required then the interface should have the <strong><code>@json</code></strong> tag added. This signals to the code-generator that a corresponding JSON-RPC interface should be generated alongside the COM-RPC one. </p>
-<p>By default, when the <code>@json</code> tag is added, all methods in the COM-RPC interface will have corresponding JSON-RPC interfaces. It is possible to ignore/skip specific methods.</p>
-<p>In older Thunder versions (&lt;R4), JSON-RPC interfaces were defined using JSON schema files instead. These would then need to be manually wired up in the plugin. By using the code-generators, we can eliminate this step, making it much faster and easier to write plugins.</p>
+<p>By default, when the <code>@json</code> tag is added, all methods in the COM-RPC interface will have corresponding JSON-RPC methods. It is possible to ignore/skip specific methods from the JSON-RPC generation by adding tags in the interface definition.</p>
+<p>In older Thunder versions (&lt;R4), JSON-RPC interfaces were defined using separate JSON schema files. These would then need to be manually wired up in the plugin. By using the code-generators, we can eliminate this step, making it much faster and easier to write plugins. It is no longer recommended to create JSON schema files for JSON-RPC interfaces.</p>
 <h3 id="code-generation">Code Generation</h3>
-<p>The code generation tooling for Thunder lives in the <a href="https://github.com/rdkcentral/ThunderTools">ThunderTools</a> repository. These tools are responsible for the generation of ProxyStub implementations for COM-RPC, JSON-RPC interfaces and data types, and documentation.</p>
+<p>The code generation tooling for Thunder lives in the <a href="https://github.com/rdkcentral/ThunderTools">ThunderTools</a> repository. These tools are responsible for the generation of ProxyStub implementations for COM-RPC, JSON-RPC interfaces, JSON data types, and documentation.</p>
 <p>When building the interfaces from the ThunderInterfaces repository, the code generation is automatically triggered as part of the CMake configuration.</p>
 <div class="highlight"><pre><span></span><code>[cmake] -- ProxyStubGenerator ready /home/stephen.foulds/Thunder/host-tools/sbin/ProxyStubGenerator/StubGenerator.py
 [cmake] ProxyStubGenerator: IAVNClient.h: created file ProxyStubs_AVNClient.cpp
@@ -1801,16 +1802,16 @@
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>There will also be a library called libWPEFrameworkProxyStubs.so installed in the proxystubs directory as part of the main Thunder build - this is the generated ProxyStubs for the internal WPEFramework interfaces (such as Controller and Dispatcher).</p>
+<p>There will also be a library called <code>libWPEFrameworkProxyStubs.so</code> installed in the <code>proxystubs</code> directory as part of the main Thunder build - this contains the generated ProxyStubs for the internal WPEFramework interfaces (such as Controller and Dispatcher).</p>
 </div>
 <p>The installation path can be changed providing the <code>proxystubpath</code> option in the WPEFramework config.json file is updated accordingly so Thunder can find the libraries. When Thunder starts, it will load all available libraries in the <code>proxystubpath</code> directory. If an observable proxystubpath is set in the config, then Thunder will monitor that directory and automatically load any new libraries in that directory. This makes it possible to load new interfaces at runtime.</p>
-<p>If you are building the interface as part of a standalone repository, it is possible to manually invoke the code generation tools from that repository's CMake file. The CMake commands drive the following Python scripts:</p>
+<p>If you are building the interface as part of a standalone repository instead of ThunderInterfaces, it is possible to manually invoke the code generation tools from that repository's CMake file. The CMake commands drive the following Python scripts:</p>
 <ul>
 <li>ThunderTools/ProxyStubGenerator/StubGenerator.py</li>
 <li>ThunderTools/JsonGenerator/JsonGenerator.py</li>
 </ul>
 <p>The below CMakeLists.txt file is an example of how to invoke the code generators, you may need to tweak the build/install steps according to your specific project requirements</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<div class="highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">CMakeLists.txt</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
 <span class="normal"> 3</span>
 <span class="normal"> 4</span>
@@ -1891,7 +1892,7 @@
 <span class="normal">79</span>
 <span class="normal">80</span>
 <span class="normal">81</span>
-<span class="normal">82</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nb">project</span><span class="p">(</span><span class="s">WiFiInterface</span><span class="p">)</span>
+<span class="normal">82</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nb">project</span><span class="p">(</span><span class="s">SampleInterface</span><span class="p">)</span>
 
 <span class="nb">find_package</span><span class="p">(</span><span class="s">WPEFramework</span><span class="p">)</span>
 <span class="nb">find_package</span><span class="p">(</span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">Core</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
@@ -2002,14 +2003,14 @@
 </li>
 </ul>
 <p>It should also define one notification/event that will be fired when the scan is completed. This notification will contain the list of APs discovered during the scan.</p>
-<p>As with C++, COM-RPC interfaces are prefixed with the letter "I". As such, the name of this example interface will be <code>IWiFi</code>.</p>
+<p>As with C++, COM-RPC interfaces are prefixed with the letter "I". Therefore the name of this example interface will be <code>IWiFi</code>.</p>
 <h3 id="define-interface-id">Define Interface ID</h3>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>Ensure your interface has a unique ID! If the ID is in use by another interface it will be impossible for Thunder to distinguish between them!</p>
+<p>Ensure your interface has a unique ID! If the ID is in use by another interface it will be impossible for Thunder to distinguish between them.</p>
 </div>
 <p>All interfaces must have a unique ID number that must never change for the life of the interface. From this ID, Thunder can identify which ProxyStub is needed to communicate over a process boundary.</p>
-<p>Each ID is a <code>uint32_t</code> value. This was chosen to reduce the complexity and minimise the size of the packets on the wire when compared to a GUID. </p>
+<p>Each ID is a <code>uint32_t</code> value. This was chosen to reduce the complexity and minimise the size of the data on the wire when compared to a GUID. </p>
 <p>Interface IDs for the core Thunder interfaces (such as Controller) are defined in the Thunder source code at <code>Source/com/Ids.h</code>.  For existing Thunder interfaces in the <em>ThunderInterfaces</em> repository, IDs are defined in the <a href="https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/Ids.h"><code>interfaces/Ids.h</code></a> file.</p>
 <p>For this example we will define 3 unique IDs for our interface represented by the following enum values:</p>
 <ul>
@@ -2135,12 +2136,12 @@
 <span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Disconnect</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
 
 <span class="w">        </span><span class="cm">/**</span>
-<span class="cm">         *  @brief Register for notifications</span>
+<span class="cm">         *  @brief Register for COM-RPC notifications</span>
 <span class="cm">         */</span>
 <span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">Register</span><span class="p">(</span><span class="n">IWiFi</span><span class="o">::</span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="n">notification</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="c1">// (6)</span>
 
 <span class="w">        </span><span class="cm">/**</span>
-<span class="cm">         * @brief Unregister for notifications</span>
+<span class="cm">         * @brief Unregister for COM-RPC notifications</span>
 <span class="cm">         */</span>
 <span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">Unregister</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">IWiFi</span><span class="o">::</span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="n">notification</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
 <span class="w">    </span><span class="p">};</span>
@@ -2152,7 +2153,7 @@
 <li>Each interface must have a unique ID value</li>
 <li>We need to return a list of detected access points. Since we can't use a standard container such as <code>std::vector</code>, use the supported COM-RPC iterators. This iterator must have a unique ID</li>
 <li>All interfaces must have a unique ID, so the <code>INotification</code> interface must also have an ID</li>
-<li>This method will be invoked when the AP scan completes, and the <code>accessPoints</code> variable will hold a list of all the discovered APs</li>
+<li>This method will be invoked when the AP scan completes, and the <code>accessPoints</code> variable will hold a list of all the discovered APs.</li>
 <li>Provide register/unregister methods for COM-RPC clients to subscribe to notifications</li>
 </ol>
 <h3 id="enable-json-rpc-generation">Enable JSON-RPC Generation</h3>
@@ -2182,7 +2183,7 @@
 <span class="w">        </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="n">ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ID_WIFI</span>
 <span class="w">        </span><span class="p">};</span>
-<span class="w">        </span><span class="p">...</span>
+<span class="w">        </span><span class="c1">//...</span>
 </code></pre></div></td></tr></table></div>
 <p>When JSON-RPC support is enabled, the code generator will create code to for the plugin to register the JSON-RPC methods, and code to convert between JSON and C++ classes.</p>
 <div class="admonition danger">
