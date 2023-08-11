@@ -3,18 +3,18 @@ Thunder plugins are built around the concept of interfaces. An interface acts as
 In Thunder, plugins can expose their interfaces over two communication channels:
 
 * JSON-RPC ([https://www.jsonrpc.org/specification](https://www.jsonrpc.org/specification))
-* COM-RPC
+* COM-RPC (Custom Thunder RPC protocol)
 
-In older Thunder versions (<R4), it was common for plugins to define two interface files, one for each RPC format. In R4 and later versions, it is strongly recommended to use the code-generation tools included in Thunder and only write a single interface file. This makes it much easier to maintain and reduces the amount of boilerplate code that must be written in a plugin. This is the approach documented in this page. 
+In older Thunder versions (<R4), it was common for plugins to define two interface files, one for each RPC format. In Thunder R4 and later, it is strongly recommended to use the code-generation tools and only write a single interface file. This makes it much easier to maintain and reduces the amount of boilerplate code that must be written to create a plugin. This is the approach documented in this page.
 
 Examples of existing Thunder interfaces can be found in the ThunderInterfaces repository: [https://github.com/rdkcentral/ThunderInterfaces/](https://github.com/rdkcentral/ThunderInterfaces/).
 
 ## Designing a good Interface
-A good interface defines a set of methods that a plugin can support, without dictating anything about the actual code that will implement the interface. It is possible many plugins could implement that same interface if they provide overlapping functionality (for example an `IBrowser` interface could be implemented by different web browser engines).
+Before writing any plugin code, it is essential to define the interface that plugin will implement. A good interface defines a set of methods that a plugin can support, without dictating anything about the actual code that will implement the interface. It is possible that many plugins could implement that same interface if they provide overlapping or equivalent functionality (for example an `IBrowser` interface could be implemented by different web browser engines such as WebKit or Chromium).
 
 The interface provides a clear boundary between the code that invokes methods on the plugin and the plugin code that implements the functionality. Typically, interface definitions are stored in a separate repository to the plugin implementations to reflect this boundary.
 
-Well designed interfaces should also be easy to read and self explanatory. Methods names should be descriptive and have doxygen-style comments that describe their inputs and outputs. All methods should return an error code to indicate whether they completed successfully, and any data that should be returned by the method should be stored in an output parameter.
+Well-designed interfaces should also be easy to read and self explanatory. Methods names should be descriptive and have doxygen-style comments that describe their functionality, inputs and outputs. All methods should return a standardised error code to indicate whether they completed successfully, and any data that should be returned by the method should be stored in an output parameter.
 
 It is possible to build an interface from smaller sub-interfaces using composition. This is preferred to having a large monolithic interface, as is encourages reuse and modularity.
 
@@ -46,11 +46,12 @@ All COM-RPC interfaces inherit virtually from `IUnknown`. As with Microsoft COM,
 * Each COM-RPC interface must inherit **virtually** from `Core::IUnknown` and have a unique ID
 * Ensure API compatibility is maintained when updating interfaces to avoid breaking consumers
 * Methods should be pure virtual methods that can be overridden by the plugin that implements the interface
-* Methods should return `Core::hresult` which will store the error code from the method
-    * If the method succeeds, it should return `Core::ERROR_NONE`
-    * If an error occurs over the COM-RPC transport, the `COM_ERROR` bit will be set
+* Methods should return **`Core::hresult`** which will store the error code from the method
+    * If a method succeeds, it should return `Core::ERROR_NONE`
+    * If a method fails, it should return a suitable error code that reflects the failure (e.g `Core::ERROR_READ_ERROR`)
+    * If an error occurs over the COM-RPC transport the `COM_ERROR` bit will be set. This allows consumers to determine where the failure occurred
 * Ensure all enums have explicit data types set (e.g. `uint8_t`)
-* C++ types such as `std::vector` and `std::map` are not compatible with COM-RPC
+* C++ types such as `std::vector` and `std::map` are **not** compatible with COM-RPC
     * Only "plain-old data" (POD) types can be used (e.g. scalar values, interface pointers)
     * COM-RPC can auto-generate iterators for returning multiple results
 * Ensure integer widths are explicitly set (e.g. use `uint16_t` or `uint8_t` instead of just `int`) to prevent issues if crossing architecture boundaries
@@ -63,19 +64,17 @@ A COM-RPC interface not only allows for defining the methods exposed by a plugin
 As with Microsoft COM, this is done by allowing clients to create implementations of notification interfaces as sinks, and register that sink with the plugin. When a notification occurs, the plugin will call the methods on the provided sink.
 
 
-
-
 ### JSON-RPC Interfaces
 
 Once a COM-RPC interface is defined, if a JSON-RPC interface is also required then the interface should have the **`@json`** tag added. This signals to the code-generator that a corresponding JSON-RPC interface should be generated alongside the COM-RPC one. 
 
-By default, when the `@json` tag is added, all methods in the COM-RPC interface will have corresponding JSON-RPC interfaces. It is possible to ignore/skip specific methods.
+By default, when the `@json` tag is added, all methods in the COM-RPC interface will have corresponding JSON-RPC methods. It is possible to ignore/skip specific methods from the JSON-RPC generation by adding tags in the interface definition.
 
-In older Thunder versions (<R4), JSON-RPC interfaces were defined using JSON schema files instead. These would then need to be manually wired up in the plugin. By using the code-generators, we can eliminate this step, making it much faster and easier to write plugins.
+In older Thunder versions (<R4), JSON-RPC interfaces were defined using separate JSON schema files. These would then need to be manually wired up in the plugin. By using the code-generators, we can eliminate this step, making it much faster and easier to write plugins. It is no longer recommended to create JSON schema files for JSON-RPC interfaces.
 
 ### Code Generation
 
-The code generation tooling for Thunder lives in the [ThunderTools](https://github.com/rdkcentral/ThunderTools) repository. These tools are responsible for the generation of ProxyStub implementations for COM-RPC, JSON-RPC interfaces and data types, and documentation.
+The code generation tooling for Thunder lives in the [ThunderTools](https://github.com/rdkcentral/ThunderTools) repository. These tools are responsible for the generation of ProxyStub implementations for COM-RPC, JSON-RPC interfaces, JSON data types, and documentation.
 
 When building the interfaces from the ThunderInterfaces repository, the code generation is automatically triggered as part of the CMake configuration.
 
@@ -104,20 +103,20 @@ The resulting generated code is then compiled into 2 libraries:
     * This contains all generated data types (e.g. json enums and conversions) that can be used by plugins
 
 !!! note
-	There will also be a library called libWPEFrameworkProxyStubs.so installed in the proxystubs directory as part of the main Thunder build - this is the generated ProxyStubs for the internal WPEFramework interfaces (such as Controller and Dispatcher).
+	There will also be a library called `libWPEFrameworkProxyStubs.so` installed in the `proxystubs` directory as part of the main Thunder build - this contains the generated ProxyStubs for the internal WPEFramework interfaces (such as Controller and Dispatcher).
 
 
 The installation path can be changed providing the `proxystubpath` option in the WPEFramework config.json file is updated accordingly so Thunder can find the libraries. When Thunder starts, it will load all available libraries in the `proxystubpath` directory. If an observable proxystubpath is set in the config, then Thunder will monitor that directory and automatically load any new libraries in that directory. This makes it possible to load new interfaces at runtime.
 
-If you are building the interface as part of a standalone repository, it is possible to manually invoke the code generation tools from that repository's CMake file. The CMake commands drive the following Python scripts:
+If you are building the interface as part of a standalone repository instead of ThunderInterfaces, it is possible to manually invoke the code generation tools from that repository's CMake file. The CMake commands drive the following Python scripts:
 
 * ThunderTools/ProxyStubGenerator/StubGenerator.py
 * ThunderTools/JsonGenerator/JsonGenerator.py
 
 The below CMakeLists.txt file is an example of how to invoke the code generators, you may need to tweak the build/install steps according to your specific project requirements
 
-```cmake linenums="1"
-project(WiFiInterface)
+```cmake title="CMakeLists.txt" linenums="1"
+project(SampleInterface)
 
 find_package(WPEFramework)
 find_package(${NAMESPACE}Core REQUIRED)
@@ -224,17 +223,17 @@ Our WiFi interface should define 3 methods:
 
 It should also define one notification/event that will be fired when the scan is completed. This notification will contain the list of APs discovered during the scan.
 
-As with C++, COM-RPC interfaces are prefixed with the letter "I". As such, the name of this example interface will be `IWiFi`.
+As with C++, COM-RPC interfaces are prefixed with the letter "I". Therefore the name of this example interface will be `IWiFi`.
 
 ### Define Interface ID
 
 !!! warning
-	Ensure your interface has a unique ID! If the ID is in use by another interface it will be impossible for Thunder to distinguish between them!
+	Ensure your interface has a unique ID! If the ID is in use by another interface it will be impossible for Thunder to distinguish between them.
 
 
 All interfaces must have a unique ID number that must never change for the life of the interface. From this ID, Thunder can identify which ProxyStub is needed to communicate over a process boundary.
 
-Each ID is a `uint32_t` value. This was chosen to reduce the complexity and minimise the size of the packets on the wire when compared to a GUID. 
+Each ID is a `uint32_t` value. This was chosen to reduce the complexity and minimise the size of the data on the wire when compared to a GUID. 
 
 Interface IDs for the core Thunder interfaces (such as Controller) are defined in the Thunder source code at `Source/com/Ids.h`.  For existing Thunder interfaces in the *ThunderInterfaces* repository, IDs are defined in the [`interfaces/Ids.h`](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/Ids.h) file.
 
@@ -302,12 +301,12 @@ namespace Exchange {
         virtual Core::hresult Disconnect() = 0;
 
         /**
-         *  @brief Register for notifications
+         *  @brief Register for COM-RPC notifications
          */
         virtual uint32_t Register(IWiFi::INotification* notification) = 0; // (6)
 
         /**
-         * @brief Unregister for notifications
+         * @brief Unregister for COM-RPC notifications
          */
         virtual uint32_t Unregister(const IWiFi::INotification* notification) = 0;
     };
@@ -319,7 +318,7 @@ namespace Exchange {
 2. Each interface must have a unique ID value
 3. We need to return a list of detected access points. Since we can't use a standard container such as `std::vector`, use the supported COM-RPC iterators. This iterator must have a unique ID
 4. All interfaces must have a unique ID, so the `INotification` interface must also have an ID
-5. This method will be invoked when the AP scan completes, and the `accessPoints` variable will hold a list of all the discovered APs
+5. This method will be invoked when the AP scan completes, and the `accessPoints` variable will hold a list of all the discovered APs.
 6. Provide register/unregister methods for COM-RPC clients to subscribe to notifications
 
 ### Enable JSON-RPC Generation
@@ -341,7 +340,7 @@ namespace Exchange {
         enum {
             ID = ID_WIFI
         };
-        ...
+        //...
 ```
 
 When JSON-RPC support is enabled, the code generator will create code to for the plugin to register the JSON-RPC methods, and code to convert between JSON and C++ classes.
