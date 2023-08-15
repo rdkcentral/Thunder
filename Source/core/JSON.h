@@ -585,67 +585,65 @@ namespace Core {
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                uint16_t loaded = 0;
-
                 ASSERT(maxLength > 0);
 
-                uint16_t surplus =    ((_set & QUOTED) == QUOTED) * 2
-                                    + (((_set & NEGATIVE) == NEGATIVE) * 1)
-                                    + ((BASETYPE == BASE_DECIMAL) * 0)
-                                    + ((BASETYPE == BASE_HEXADECIMAL) * 2)
-                                    + ((BASETYPE == BASE_OCTAL) * 1)
-                                    ;
+                const int32_t available =   maxLength
+                                          - (_set & QUOTED ? 2 : 0)
+                                          - (_set & NEGATIVE ? 1 : 0)
+                                          - (BASETYPE == BASE_DECIMAL ? 0 : 0)
+                                          - (BASETYPE == BASE_HEXADECIMAL ? 2 : 0)
+                                          - (BASETYPE == BASE_OCTAL ? 1 : 0)
+                                          ;
 
-                if (surplus < maxLength) {
+                int32_t loaded = 0;
+
+                if (0 < available) {
                     if (_set & QUOTED) {
                         stream[loaded++] = '"';
-                        --surplus;
                     }
 
-                    if ((_set & UNDEFINED) && (maxLength - surplus) > sizeof(IElement::NullTag)) {
+                    if (_set & UNDEFINED) {
                         static_assert(sizeof(IElement::NullTag[0]) == sizeof(char));
 
-                        size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
+                        const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
 
-                        memcpy(&stream[loaded], &IElement::NullTag[0], count);
+                        if (count < available) {
+                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
+                        }
 
                         loaded += count;
                     } else {
                         if ((_set & NEGATIVE))
                         {
                             stream[loaded++] = '-';
-                            --surplus;
                         }
 
                         switch(BASETYPE) {
                             case BASE_DECIMAL     : break;
                             case BASE_HEXADECIMAL : stream[loaded++] = '0';
                                                     stream[loaded++] = 'X';
-                                                    surplus -= 2;
                                                     break;
                             case BASE_OCTAL       : stream[loaded++] = '0';
-                                                    --surplus;
                                                     break;
                             default               : ASSERT(false);
                         }
 
-                        if (loaded < (maxLength - surplus)) {
-                            loaded += Convert(&(stream[loaded]), (maxLength - loaded), offset, _value);
-                        }
+                        loaded += Convert(&(stream[loaded]), available, offset, _value);
                     }
 
                     if (_set & QUOTED) {
                         stream[loaded++] = '"';
-                        --surplus;
                     }
+                }
 
-                    if (!offset && (loaded < maxLength)) {
-                        stream[loaded] = '\0';
-                        offset = 0;
-                    }
+                offset = !(offset || loaded < available);
+
+                if (!offset) {
+                    stream[loaded] = '\0';
                 } else {
                     // Invalidate
-                    ++offset;
+                    loaded = 0;
+                    offset = 1;
                 }
 
                 return (loaded);
