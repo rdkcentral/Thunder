@@ -234,6 +234,7 @@ namespace Tests {
 
         return count == 2;
     }
+
     // Implementation specific types may have additional constraint
 
     template <typename T>
@@ -282,19 +283,20 @@ namespace Tests {
                 count += TestJSONFormat<T>("null", FromTo, AllowChange);
 
                 // Empty character sequence, no distinction with 0
-                count += (TestJSONFormat<T>("", FromTo, AllowChange) || !AllowChange);
-                count += (TestJSONFormat<T>("\0", FromTo, AllowChange) || !AllowChange);
+                count += TestJSONFormat<T>("", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\0", FromTo, !AllowChange);
 
                 count += TestJSONFormat<T>("1\0", FromTo, AllowChange);
 
                 // Quoted character sequence
                 count += TestJSONFormat<T>("\"0\"", FromTo, AllowChange);
                 count += TestJSONFormat<T>("\"1\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"null\"", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += TestJSONFormat<T>("\u0009\u000A\u000D\u00201\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u00201\"\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u00201\u0009\u000A\u000D\u0020\"", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u00201\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u00201\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u00201\u0009\u000A\u000D\u0020\"", FromTo, !AllowChange);
             } else {
                 // Malformed
                 // =========
@@ -379,13 +381,13 @@ namespace Tests {
                 count += !TestJSONFormat<T>("1a", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += !TestJSONFormat<T>("1\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u00201\u0009\u000A\u000D\u00200", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u00201\"0\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("1\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u00201\u0009\u000A\u000D\u00200", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u00201\"0\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
             }
         } while (FromTo);
 
-        return  !malformed ? count == 24
+        return  !malformed ? count == 26
                            : count == 84
                ;
     }
@@ -440,18 +442,19 @@ namespace Tests {
                 count += TestJSONFormat<T>("null", FromTo, AllowChange);
 
                 // Empty string, no distinction with 0
-                count += (TestJSONFormat<T>("", FromTo, AllowChange) || !AllowChange);
-                count += (TestJSONFormat<T>("\0", FromTo, AllowChange) || !AllowChange);
+                count += TestJSONFormat<T>("", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\0", FromTo, !AllowChange);
 
                 count += TestJSONFormat<T>("-1\0", FromTo, AllowChange);
 
                 count += TestJSONFormat<T>("\"-0\"", FromTo, AllowChange);
                 count += TestJSONFormat<T>("\"-1\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"null\"", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020-1\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1\"\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1\u0009\u000A\u000D\u0020\"", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020-1\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1\u0009\u000A\u000D\u0020\"", FromTo, !AllowChange);
             } else {
                 // Malformed
                 // =========
@@ -536,13 +539,13 @@ namespace Tests {
                 count += !TestJSONFormat<T>("-1a", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += !TestJSONFormat<T>("-1\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u0020-1\u0009\u000A\u000D\u00200", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1\"0\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("-1\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u0020-1\u0009\u000A\u000D\u00200", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1\"0\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
             }
         } while (FromTo);
 
-        return  !malformed ? count == 26
+        return  !malformed ? count == 28
                            : count == 82
                ;
     }
@@ -577,13 +580,15 @@ namespace Tests {
                 count += TestJSONFormat<T>("null", FromTo, AllowChange);
 
                 // Empty string, no distinction with 0
-                count += (TestJSONFormat<T>("", FromTo, AllowChange) || !AllowChange);
-                count += (TestJSONFormat<T>("\0", FromTo, AllowChange) || !AllowChange);
+                count += TestJSONFormat<T>("", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\0", FromTo, !AllowChange);
 
                 count += TestJSONFormat<T>("\"0x0\"", FromTo, AllowChange); // Second digit any out of 0-9, A-F
                 count += TestJSONFormat<T>("\"0xA\"", FromTo, AllowChange);
                 count += TestJSONFormat<T>("\"0xa\"", FromTo, AllowChange); // Lower case
                 count += TestJSONFormat<T>("\"0xaF\"", FromTo, AllowChange); // Mix of Lower and upper case
+
+                count += TestJSONFormat<T>("\"null\"", FromTo, AllowChange);
 
                 // Range
                 if (   std::is_same<decltype(std::declval<T>().Value()), uint8_t>::value
@@ -609,9 +614,9 @@ namespace Tests {
                 }
 
                 // Insignificant white space
-                count += TestJSONFormat<T>("\u0009\u000A\u000D\u00200x1\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u00200x1\"\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u00200x1\u0009\u000A\u000D\u0020\"", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u00200x1\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u00200x1\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u00200x1\u0009\u000A\u000D\u0020\"", FromTo, !AllowChange);
             } else {
                 // Malformed
                 // =========
@@ -691,13 +696,13 @@ namespace Tests {
                 count += !TestJSONFormat<T>("-1a", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += !TestJSONFormat<T>("0x1\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u00200x1\u0009\u000A\u000D\u00200", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u00200x1\"0\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("0x1\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u00200x1\u0009\u000A\u000D\u00200", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u00200x1\"0\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
             }
         } while (FromTo);
 
-        return  !malformed ? count == 38
+        return  !malformed ? count == 40
                            : count == 80
                ;
     }
@@ -731,12 +736,14 @@ namespace Tests {
                 count += TestJSONFormat<T>("null", FromTo, AllowChange);
 
                 // Empty string, no distinction with 0
-                count += (TestJSONFormat<T>("", FromTo, AllowChange) || !AllowChange);
-                count += (TestJSONFormat<T>("\0", FromTo, AllowChange) || !AllowChange);
+                count += TestJSONFormat<T>("", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\0", FromTo, !AllowChange);
 
                 count += TestJSONFormat<T>("\"-0x0\"", FromTo, AllowChange); // Second digit any out of 0-9, A-F
                 count += TestJSONFormat<T>("\"-0xA\"", FromTo, AllowChange);
                 count += TestJSONFormat<T>("\"-0xa\"", FromTo, AllowChange); // Lower case
+
+                count += TestJSONFormat<T>("\"null\"", FromTo, AllowChange);
 
                 // Range
                 if (   std::is_same<decltype(std::declval<T>().Value()), int8_t>::value
@@ -765,9 +772,9 @@ namespace Tests {
                     }
                 }
 
-                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020-0x1\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-0x1\"\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-0x1\u0009\u000A\u000D\u0020\"", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020-0x1\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-0x1\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-0x1\u0009\u000A\u000D\u0020\"", FromTo, !AllowChange);
             } else {
                 // Malformed
                 // =========
@@ -862,13 +869,13 @@ namespace Tests {
                 count += !TestJSONFormat<T>("-1a", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += !TestJSONFormat<T>("-0x1\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u0020-0x1\u0009\u000A\u000D\u00200", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-0x1\"0\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("-0x1\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u0020-0x1\u0009\u000A\u000D\u00200", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-0x1\"0\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
             }
         } while (FromTo);
 
-        return  !malformed ? count == 36
+        return  !malformed ? count == 38
                            : count == 98
                ;
     }
@@ -894,13 +901,15 @@ namespace Tests {
 
                 // Implementation constraint: all IElement objects can be nullified
                 count += TestJSONFormat<T>("null", FromTo, AllowChange);
+
                 // Empty string, no distinction with 0
-
-                count += (TestJSONFormat<T>("", FromTo, AllowChange) || !AllowChange);
-                count += (TestJSONFormat<T>("\0", FromTo, AllowChange) || !AllowChange);
+                count += TestJSONFormat<T>("", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\0", FromTo, !AllowChange);
 
                 count += TestJSONFormat<T>("\"00\"", FromTo, AllowChange); // JSON value {'0','0'}
                 count += TestJSONFormat<T>("\"00\"", FromTo, AllowChange); // JSON value {'0','0'}
+
+                count += TestJSONFormat<T>("\"null\"", FromTo, AllowChange);
 
                 // Range
                 if (   std::is_same<decltype(std::declval<T>().Value()), uint8_t>::value
@@ -926,9 +935,9 @@ namespace Tests {
                 }
 
                 // Insignificant white space
-                count += TestJSONFormat<T>("\u0009\u000A\u000D\u002001\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u002001\"\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u002001\u0009\u000A\u000D\u0020\"", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u002001\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u002001\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u002001\u0009\u000A\u000D\u0020\"", FromTo, !AllowChange);
             } else {
                 // Malformed
                 // =========
@@ -989,13 +998,13 @@ namespace Tests {
                 count += !TestJSONFormat<T>("101", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += !TestJSONFormat<T>("01\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u002001\u0009\u000A\u000D\u00200", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u002001\"0\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("01\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u002001\u0009\u000A\u000D\u00200", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u002001\"0\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
             }
         } while (FromTo);
 
-        return  !malformed ? count == 22
+        return  !malformed ? count == 24
                            : count == 52
                ;
     }
@@ -1023,11 +1032,13 @@ namespace Tests {
                 count += TestJSONFormat<T>("null", FromTo, AllowChange);
 
                 // Empty string, no distinction with 0
-                count += (TestJSONFormat<T>("", FromTo, AllowChange) || !AllowChange);
-                count += (TestJSONFormat<T>("\0", FromTo, AllowChange) || !AllowChange);
+                count += TestJSONFormat<T>("", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\0", FromTo, !AllowChange);
 
                 count += TestJSONFormat<T>("\"-00\"", FromTo, AllowChange);
                 count += TestJSONFormat<T>("\"-01\"", FromTo, AllowChange);
+
+                count += TestJSONFormat<T>("\"null\"", FromTo, AllowChange);
 
                 // Range
                 if (   std::is_same<decltype(std::declval<T>().Value()), int8_t>::value
@@ -1057,9 +1068,9 @@ namespace Tests {
                 }
 
                 // Insignificant white space
-                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020-01\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-01\"\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-01\u0009\u000A\u000D\u0020\"", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020-01\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-01\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-01\u0009\u000A\u000D\u0020\"", FromTo, !AllowChange);
             } else {
                 // Malformed
                 // =========
@@ -1116,13 +1127,13 @@ namespace Tests {
                 count += !TestJSONFormat<T>("-101", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += !TestJSONFormat<T>("-01\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u00200-1\u0009\u000A\u000D\u00200", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-01\"0\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("-01\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u00200-1\u0009\u000A\u000D\u00200", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-01\"0\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
             }
         } while (FromTo);
 
-        return  !malformed ? count == 24
+        return  !malformed ? count == 26
                            : count == 44
                ;
     }
@@ -1156,6 +1167,7 @@ namespace Tests {
                 // ===================
 
                 count += TestJSONFormat<T>("0.0", FromTo, AllowChange);
+                count += TestJSONFormat<T>("0.00", FromTo, AllowChange);
                 count += TestJSONFormat<T>("1.0", FromTo, AllowChange); // First digit any out of 1-9
 
                 count += TestJSONFormat<T>("0.1", FromTo, AllowChange); // Second digit any out of 0-9
@@ -1170,6 +1182,8 @@ namespace Tests {
                 count += TestJSONFormat<T>("-0e-0", FromTo, AllowChange);
                 count += TestJSONFormat<T>("-0E+0", FromTo, AllowChange);
                 count += TestJSONFormat<T>("-0E-0", FromTo, AllowChange);
+
+                count += TestJSONFormat<T>("0e+00", FromTo, AllowChange);
 
                 count += TestJSONFormat<T>("2e-1", FromTo, AllowChange); // First digit out of 2-9
                 count += TestJSONFormat<T>("2E-1", FromTo, AllowChange); // First digit out of 2-9
@@ -1205,11 +1219,12 @@ namespace Tests {
                 count += TestJSONFormat<T>("null", FromTo, AllowChange);
 
                 // Empty string, no distinction with 0
-                count += (TestJSONFormat<T>("", FromTo, AllowChange) || !AllowChange);
-                count += (TestJSONFormat<T>("\0", FromTo, AllowChange) || !AllowChange);
+                count += TestJSONFormat<T>("", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\0", FromTo, !AllowChange);
 
                 count += TestJSONFormat<T>("\"-0.0\"", FromTo, AllowChange);
                 count += TestJSONFormat<T>("\"-0.1\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"null\"", FromTo, AllowChange);
 
                 // Range
                 if (   std::is_same<decltype(std::declval<T>().Value()), float>::value
@@ -1229,15 +1244,17 @@ namespace Tests {
                 }
 
                 // Insignificant white space
-                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020-1.0\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1.0\"\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1.0\u0009\u000A\u000D\u0020\"", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020-1.0\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1.0\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1.0\u0009\u000A\u000D\u0020\"", FromTo, !AllowChange);
             } else {
                 // Malformed
                 // =========
 
                 // Missing fractional part
                 count += !TestJSONFormat<T>("0", FromTo, AllowChange); // Digits any out of 0-9
+
+                count += !TestJSONFormat<T>("00.0", FromTo, AllowChange); // Digits any out of 0-9
 
                 count += !TestJSONFormat<T>("--0.0", FromTo, AllowChange);
                 count += !TestJSONFormat<T>("+1.0", FromTo, AllowChange); // Digits any out of 0-9
@@ -1313,14 +1330,14 @@ namespace Tests {
                     }
                 }
                 // Insignificant white space
-                count += !TestJSONFormat<T>("-1.\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u0020-1.\u0009\u000A\u000D\u00200", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1.\"0\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("-1.\u0009\u000A\u000D\u00200\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u0020-1.\u0009\u000A\u000D\u00200", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020-1.\"0\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
             }
         } while (FromTo);
 
-        return  !malformed ? count == 86
-                           : count == 92
+        return  !malformed ? count == 90
+                           : count == 94
                            ;
     }
 
@@ -1410,8 +1427,8 @@ namespace Tests {
             }
         } while (FromTo);
 
-        return  !malformed ? count == 32
-                           : count == 56
+        return !malformed ? count == 32
+                          : count == 56
                ;
     }
 
@@ -1677,25 +1694,25 @@ namespace Tests {
         EXPECT_TRUE((TestDecUIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 24);
+        EXPECT_EQ(count, 26);
 
         EXPECT_TRUE(TestDecUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 84);
 
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, DecSInt8)
@@ -1711,28 +1728,28 @@ namespace Tests {
         EXPECT_TRUE((TestDecSIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 26);
+        EXPECT_EQ(count, 28);
 
         EXPECT_TRUE(TestDecSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 82);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 22);
+        EXPECT_EQ(count, 24);
 
         EXPECT_FALSE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, DecUInt16)
@@ -1748,25 +1765,25 @@ namespace Tests {
         EXPECT_TRUE((TestDecUIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 24);
+        EXPECT_EQ(count, 26);
 
         EXPECT_TRUE(TestDecUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 84);
 
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, DecSInt16)
@@ -1782,28 +1799,28 @@ namespace Tests {
         EXPECT_TRUE((TestDecSIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 26);
+        EXPECT_EQ(count, 28);
 
         EXPECT_TRUE(TestDecSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 82);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 22);
+        EXPECT_EQ(count, 24);
 
         EXPECT_FALSE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, DecUInt32)
@@ -1819,25 +1836,25 @@ namespace Tests {
         EXPECT_TRUE((TestDecUIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 24);
+        EXPECT_EQ(count, 26);
 
         EXPECT_TRUE(TestDecUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 84);
 
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, DecSInt32)
@@ -1853,28 +1870,28 @@ namespace Tests {
         EXPECT_TRUE((TestDecSIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 26);
+        EXPECT_EQ(count, 28);
 
         EXPECT_TRUE(TestDecSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 82);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 22);
+        EXPECT_EQ(count, 24);
 
         EXPECT_FALSE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, DecUInt64)
@@ -1890,25 +1907,25 @@ namespace Tests {
         EXPECT_TRUE((TestDecUIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 24);
+        EXPECT_EQ(count, 26);
 
         EXPECT_TRUE(TestDecUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 84);
 
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, DecSInt64)
@@ -1924,28 +1941,28 @@ namespace Tests {
         EXPECT_TRUE((TestDecSIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 26);
+        EXPECT_EQ(count, 28);
 
         EXPECT_TRUE(TestDecSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 82);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 22);
+        EXPECT_EQ(count, 24);
 
         EXPECT_FALSE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, HexUInt8)
@@ -1961,25 +1978,25 @@ namespace Tests {
         EXPECT_TRUE((TestHexUIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_TRUE(TestHexUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 80);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_TRUE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_TRUE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, HexSInt8)
@@ -1995,28 +2012,28 @@ namespace Tests {
         EXPECT_TRUE((TestHexSIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 36);
+        EXPECT_EQ(count, 38);
 
         EXPECT_TRUE(TestHexSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 98);
 
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 30);
+        EXPECT_EQ(count, 32);
 
         EXPECT_FALSE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 30);
+        EXPECT_EQ(count, 32);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 30);
+        EXPECT_EQ(count, 32);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, HexUInt16)
@@ -2032,25 +2049,25 @@ namespace Tests {
         EXPECT_TRUE((TestHexUIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_TRUE(TestHexUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 80);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_TRUE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_TRUE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, HexSInt16)
@@ -2066,28 +2083,28 @@ namespace Tests {
         EXPECT_TRUE((TestHexSIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 36);
+        EXPECT_EQ(count, 38);
 
         EXPECT_TRUE(TestHexSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 98);
 
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 36);
+        EXPECT_EQ(count, 38);
 
         EXPECT_FALSE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 36);
+        EXPECT_EQ(count, 38);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 36);
+        EXPECT_EQ(count, 38);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, HexUInt32)
@@ -2103,25 +2120,25 @@ namespace Tests {
         EXPECT_TRUE((TestHexUIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_TRUE(TestHexUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 80);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_TRUE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_TRUE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, HexSInt32)
@@ -2137,28 +2154,27 @@ namespace Tests {
         EXPECT_TRUE((TestHexSIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 36);
-
+        EXPECT_EQ(count, 38);
         EXPECT_TRUE(TestHexSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 98);
 
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 36);
+        EXPECT_EQ(count, 38);
 
         EXPECT_FALSE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 36);
+        EXPECT_EQ(count, 38);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 36);
+        EXPECT_EQ(count, 38);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, HexUInt64)
@@ -2174,25 +2190,25 @@ namespace Tests {
         EXPECT_TRUE((TestHexUIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_TRUE(TestHexUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 80);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_TRUE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_TRUE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, HexSInt64)
@@ -2208,28 +2224,28 @@ namespace Tests {
         EXPECT_TRUE((TestHexSIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 36);
+        EXPECT_EQ(count, 38);
 
         EXPECT_TRUE(TestHexSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 98);
 
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 36);
+        EXPECT_EQ(count, 38);
 
         EXPECT_FALSE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 36);
+        EXPECT_EQ(count, 38);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 36);
+        EXPECT_EQ(count, 38);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, OctUInt8)
@@ -2245,25 +2261,25 @@ namespace Tests {
         EXPECT_TRUE((TestOctUIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 22);
+        EXPECT_EQ(count, 24);
 
         EXPECT_TRUE(TestOctUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 52);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, OctSInt8)
@@ -2279,28 +2295,28 @@ namespace Tests {
         EXPECT_TRUE((TestOctSIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 24);
+        EXPECT_EQ(count, 26);
 
         EXPECT_TRUE(TestOctSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 44);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 20);
+        EXPECT_EQ(count, 22);
 
         EXPECT_FALSE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, OctUInt16)
@@ -2316,25 +2332,25 @@ namespace Tests {
         EXPECT_TRUE((TestOctUIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 22);
+        EXPECT_EQ(count, 24);
 
         EXPECT_TRUE(TestOctUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 52);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, OctSInt16)
@@ -2350,28 +2366,27 @@ namespace Tests {
         EXPECT_TRUE((TestOctSIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 24);
-
+        EXPECT_EQ(count, 26);
         EXPECT_TRUE(TestOctSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 44);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 20);
+        EXPECT_EQ(count, 22);
 
         EXPECT_FALSE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, OctUInt32)
@@ -2387,25 +2402,25 @@ namespace Tests {
         EXPECT_TRUE((TestOctUIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 22);
+        EXPECT_EQ(count, 24);
 
         EXPECT_TRUE(TestOctUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 52);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, OctSInt32)
@@ -2421,28 +2436,28 @@ namespace Tests {
         EXPECT_TRUE((TestOctSIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 24);
+        EXPECT_EQ(count, 26);
 
         EXPECT_TRUE(TestOctSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 44);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 20);
+        EXPECT_EQ(count, 22);
 
         EXPECT_FALSE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, OctUInt64)
@@ -2458,25 +2473,25 @@ namespace Tests {
         EXPECT_TRUE((TestOctUIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 22);
+        EXPECT_EQ(count, 24);
 
         EXPECT_TRUE(TestOctUIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 52);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, OctSInt64)
@@ -2492,28 +2507,28 @@ namespace Tests {
         EXPECT_TRUE((TestOctSIntFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestOctSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 24);
+        EXPECT_EQ(count, 26);
 
         EXPECT_TRUE(TestOctSIntFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 44);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 20);
+        EXPECT_EQ(count, 22);
 
         EXPECT_FALSE(TestDecSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestHexSIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, InstanceId)
@@ -2529,25 +2544,25 @@ namespace Tests {
         EXPECT_TRUE((TestInstanceIdFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_TRUE(TestInstanceIdFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 80);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_TRUE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_TRUE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, Pointer)
@@ -2563,25 +2578,25 @@ namespace Tests {
         EXPECT_TRUE((TestPointerFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestPointerFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_TRUE(TestPointerFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 80);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_TRUE(TestHexUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_FALSE(TestOctUIntFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
 
         EXPECT_TRUE(TestInstanceIdFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 38);
+        EXPECT_EQ(count, 40);
 
         EXPECT_FALSE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 6);
+        EXPECT_EQ(count, 8);
     }
 
     TEST(JSONParser, Float)
@@ -2595,10 +2610,10 @@ namespace Tests {
         EXPECT_TRUE((TestFPFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 86);
+        EXPECT_EQ(count, 90);
 
         EXPECT_TRUE(TestFPFromString<json_type>(!malformed, count));
-        EXPECT_EQ(count, 92);
+        EXPECT_EQ(count, 94);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
@@ -2627,10 +2642,10 @@ namespace Tests {
         EXPECT_TRUE((TestFPFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestFPFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 86);
+        EXPECT_EQ(count, 90);
 
         EXPECT_TRUE(TestFPFromString<json_type>(!malformed, count));
-        EXPECT_EQ(count, 92);
+        EXPECT_EQ(count, 94);
 
         EXPECT_FALSE(TestDecUIntFromString<json_type>(malformed, count));
         EXPECT_EQ(count, 6);
