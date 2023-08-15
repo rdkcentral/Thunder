@@ -1219,17 +1219,44 @@ namespace Core {
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                uint16_t loaded = 0;
-
                 ASSERT(maxLength > 0);
 
-                if ((_set & UNDEFINED)) {
-                    ASSERT(offset < (sizeof(IElement::NullTag) - 1));
-                    loaded = std::min(static_cast<uint16_t>((sizeof(IElement::NullTag) - 1) - offset), maxLength);
-                    ::memcpy(stream, &(IElement::NullTag[offset]), loaded);
-                    offset = (((offset + loaded) == (sizeof(IElement::NullTag) - 1)) ? 0 : offset + loaded);
+                const int32_t available = maxLength - (_set & QUOTED ? 2 : 0);
+
+                uint16_t loaded = 0;
+
+                if (0 < available) {
+                    if (_set & QUOTED) {
+                        stream[loaded++] = '"';
+                    }
+
+                    if (_set & UNDEFINED) {
+                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char));
+
+                        const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
+
+                        if (count < available) {
+                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
+                        }
+
+                        loaded += count;
+                    } else {
+                        loaded += Convert(&(stream[loaded]), available, offset);
+                    }
+
+                    if (_set & QUOTED) {
+                        stream[loaded++] = '"';
+                    }
+                }
+
+                offset = !(offset || loaded < available);
+
+                if (!offset) {
+                    stream[loaded] = '\0';
                 } else {
-                    loaded += Convert(stream, maxLength, offset);
+                    // Invalidate
+                    loaded = 0;
+                    offset = 1;
                 }
 
                 return loaded;
@@ -1403,7 +1430,7 @@ namespace Core {
                                         suffix = suffix || digit || offset || esign;
                                         continue;
                         case '\0'   :   // End of character sequence
-                                        if (offset > 0 && !(digit && esign) || ((_set & QUOTED) && suffix)) {
+                                        if (offset > 0 && !((digit && esign) || ((_set & QUOTED) && suffix))) {
                                             _set = ERROR;
                                             error = Error{"Terminated character sequence without (sufficient) data for exponential part for FloatType<>"};
                                         }
@@ -1573,26 +1600,17 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                const int capacity = std::snprintf(nullptr, 0, "%E", _value);
+                const uint32_t capacity = std::snprintf(nullptr, 0, "%E", _value) + 1;
 
-                std::vector<char>strValue(capacity + 1, '\0');
-
-                ASSERT(strValue.size() != 0);
-
-                std::snprintf(strValue.data(), capacity, "%E", _value);
-
-                while (loaded < capacity && capacity < maxLength) {
-                    stream[loaded] = strValue[loaded];
-                    loaded++;
+                if (capacity <= maxLength) {
+                    std::snprintf(&stream[0], capacity, "%E", _value);
+                    loaded += capacity - 1;
                 }
 
-                if (loaded == capacity) {
-                    offset = 0;
-                }
+                offset = !(capacity <= maxLength);
 
                 return loaded;
             }
-
 
         private:
             uint16_t _set;
