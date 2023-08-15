@@ -1367,23 +1367,26 @@ namespace Tests {
                 count += TestJSONFormat<T>(u8"\U00000066\U00000061\U0000006C\U00000073\U00000065", FromTo, AllowChange);
 
                 // Implementation constraint
-                count += TestJSONFormat<T>("0", FromTo, AllowChange) || !AllowChange; // false
-                count += TestJSONFormat<T>("1", FromTo, AllowChange) || !AllowChange; // true
+                count += TestJSONFormat<T>("0", FromTo, !AllowChange); // false
+                count += TestJSONFormat<T>("1", FromTo, !AllowChange); // true
 
                 // Implementation constraint: all IElement objects can be nullified
                 count += TestJSONFormat<T>("null", FromTo, AllowChange);
 
                 // Empty string, no distinction with
-                count += (TestJSONFormat<T>("", FromTo, AllowChange) || !AllowChange);
-                count += (TestJSONFormat<T>("\0", FromTo, AllowChange) || !AllowChange);
+                count += TestJSONFormat<T>("", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\0", FromTo, !AllowChange);
 
-                count += TestJSONFormat<T>("\"true\"", FromTo, AllowChange) || !AllowChange; // true
-                count += TestJSONFormat<T>("\"false\"", FromTo, AllowChange) || !AllowChange; // false
+                count += TestJSONFormat<T>("\"true\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"false\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"1\"", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"0\"", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"null\"", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020true\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020true\"\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020true\u0009\u000A\u000D\u0020\"", FromTo, AllowChange || !AllowChange);
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020true\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020true\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020true\u0009\u000A\u000D\u0020\"", FromTo, !AllowChange);
             } else {
                 // Malformed
                 // =========
@@ -1391,7 +1394,9 @@ namespace Tests {
                 count += !TestJSONFormat<T>("1true", FromTo, AllowChange);
                 count += !TestJSONFormat<T>("0false", FromTo, AllowChange);
                 count += !TestJSONFormat<T>("true1", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("truet", FromTo, AllowChange);
                 count += !TestJSONFormat<T>("false0", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("falsef", FromTo, AllowChange);
 
                 count += !TestJSONFormat<T>("TRUE", FromTo, AllowChange);
                 count += !TestJSONFormat<T>("FALSE", FromTo, AllowChange);
@@ -1421,14 +1426,14 @@ namespace Tests {
                 count += !TestJSONFormat<T>("false\"false\"", FromTo, AllowChange);
 
                 // Insignificant white space
-                count += !TestJSONFormat<T>("tru\u0009\u000A\u000D\u0020e\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u0020tru\u0009\u000A\u000D\u0020e", FromTo, AllowChange || !AllowChange);
-                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020true\"e\u0009\u000A\u000D\u0020", FromTo, AllowChange || !AllowChange);
+                count += !TestJSONFormat<T>("tru\u0009\u000A\u000D\u0020e\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\u0009\u000A\u000D\u0020tru\u0009\u000A\u000D\u0020e", FromTo, !AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020true\"e\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
             }
         } while (FromTo);
 
-        return !malformed ? count == 32
-                          : count == 56
+        return !malformed ? count == 38
+                          : count == 60
                ;
     }
 
@@ -2674,10 +2679,10 @@ namespace Tests {
         EXPECT_TRUE((TestBoolFromValue<json_type, actual_type>()));
 
         EXPECT_TRUE(TestBoolFromString<json_type>(malformed, count));
-        EXPECT_EQ(count, 32);
+        EXPECT_EQ(count, 38);
 
         EXPECT_TRUE(TestBoolFromString<json_type>(!malformed, count));
-        EXPECT_EQ(count, 56);
+        EXPECT_EQ(count, 60);
     }
 }
 }

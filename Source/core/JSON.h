@@ -1629,6 +1629,7 @@ namespace Core {
             static constexpr uint8_t SetBit = 0x04;
             static constexpr uint8_t ErrorBit = 0x10;
             static constexpr uint8_t NullBit = 0x20;
+            static constexpr uint8_t QuotedBit = 0x40;
 
         public:
             Boolean()
@@ -1719,29 +1720,64 @@ namespace Core {
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
+                ASSERT(maxLength > 0);
+
+                const int32_t available =  maxLength - (_value & QuotedBit ? 2 : 0);
+
                 uint16_t loaded = 0;
-                if ((_value & NullBit) != 0) {
-                    while ((loaded < maxLength) && (offset < 4)) {
-                        stream[loaded++] = NullTag[offset++];
+
+                if (0 < available) {
+                    if (_value & QuotedBit) {
+                        stream[loaded++] = '"';
                     }
-                    if (offset == 4) {
-                        offset = 0;
+
+                    if (_value & NullBit) {
+                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char));
+
+                        const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
+
+                        if (count < available) {
+                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
+                        }
+
+                        loaded += count;
+                    } else if (Value()) {
+                        static_assert(sizeof(IElement::TrueTag[0]) == sizeof(char));
+
+                        const size_t count = sizeof(IElement::TrueTag) - (IElement::TrueTag[sizeof(IElement::TrueTag) - 1] == '\0' ?  1 :  0);
+
+                        if (count < available) {
+                            memcpy(&stream[loaded], &IElement::TrueTag[0], count);
+                        }
+
+                        loaded += count;
+                    } else {
+                        static_assert(sizeof(IElement::FalseTag[0]) == sizeof(char));
+
+                        const size_t count = sizeof(IElement::FalseTag) - (IElement::FalseTag[sizeof(IElement::FalseTag) - 1] == '\0' ?  1 :  0);
+
+                        if (count < available) {
+                            memcpy(&stream[loaded], &IElement::FalseTag[0], count);
+                        }
+
+                        loaded += count;
                     }
-                } else if (Value() == true) {
-                    while ((loaded < maxLength) && (offset < (sizeof(IElement::TrueTag) - 1))) {
-                        stream[loaded++] = IElement::TrueTag[offset++];
-                    }
-                    if (offset == (sizeof(IElement::TrueTag) - 1)) {
-                        offset = 0;
-                    }
-                } else {
-                    while ((loaded < maxLength) && (offset < (sizeof(IElement::FalseTag) - 1))) {
-                        stream[loaded++] = IElement::FalseTag[offset++];
-                    }
-                    if (offset == (sizeof(IElement::FalseTag) - 1)) {
-                        offset = 0;
+
+                    if (_value & QuotedBit) {
+                        stream[loaded++] = '"';
                     }
                 }
+
+                offset = !(loaded < available);
+
+                if (!offset) {
+                    stream[loaded] = '\0';
+                } else {
+                    // Invalidate
+                    loaded = 0;
+                    offset = 1;
+                }
+
                 return (loaded);
             }
 
@@ -1749,7 +1785,7 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                bool completed = false, suffix = false, quoted = false;
+                bool completed = false, suffix = false;
 
                 _value = None;
 
@@ -1768,7 +1804,7 @@ namespace Core {
                                     suffix = suffix || (_value & SetBit) || (_value & NullBit);
                                     continue;
                     case '\0'   :   // End of character sequence
-                                    if (offset > 0 && !(((_value & SetBit) && suffix) || (quoted && suffix) || ((_value & NullBit)) && suffix)) {
+                                    if (offset > 0 && !(((_value & SetBit) && suffix) || ((_value & QuotedBit) && suffix) || ((_value & NullBit)) && suffix)) {
                                         _value = ErrorBit;
                                         error = Error{"Terminated character sequence without (sufficient) data for Boolean"};
                                     }
@@ -1776,24 +1812,24 @@ namespace Core {
                                     completed = true;
                                     continue;
                     case '"'    :   // Quoted character sequence
-                                    if (!quoted && offset > 0) {// || suffix) {
+                                    if (!(_value & QuotedBit) && offset > 0) {// || suffix) {
                                         _value = ErrorBit;
                                         error = Error{"Character '" + std::string(1, c) + "' at unsupported position for Boolean"};
                                         continue;
                                     }
 
-                                    if (quoted && offset > 0 && !(((_value & SetBit) || ((_value & NullBit) && suffix)))) {
+                                    if ((_value & QuotedBit) && offset > 0 && !(((_value & SetBit) || ((_value & NullBit) && suffix)))) {
                                         _value = ErrorBit;
                                         error = Error{"Quote terminated character sequence without (sufficient) data for Boolean"};
                                         continue;
                                     }
 
-                                    suffix = suffix || quoted;
+                                    suffix = suffix || (_value & QuotedBit);
 
-                                    quoted = true;
+                                    _value |= QuotedBit;
                                     break;
                     case '1'    :   _value |= ValueBit;
-                    case '0'    :   if (!(offset == 0 || (offset == 1 && quoted)) || suffix || (_value & NullBit)) {
+                    case '0'    :   if (!(offset == 0 || (offset == 1 && (_value & QuotedBit))) || suffix || (_value & NullBit)) {
                                         _value = ErrorBit;
                                          error = Error{"Character '" + std::string(1, c) + "' at unsupported position for Boolean"};
                                         continue;
@@ -1801,7 +1837,7 @@ namespace Core {
                                     _value |= SetBit;
                                     suffix = true;
                                     break;
-                    default     :   const uint32_t index = quoted ? offset - 1 : offset; // index = offset - quoted
+                    default     :   const uint32_t index = _value & QuotedBit ? offset - 1 : offset; // index = offset - quoted
 
                                     if (std::string("aeflnrstu").find(c) == std::string::npos) {
                                         _value = ErrorBit;
@@ -1820,9 +1856,9 @@ namespace Core {
                                          continue;
                                     }
 
-                                    _value |= ((!(_value & ValueBit) &&  (_value & NullBit) ) || (_value == None && stream[loaded - 1] == IElement::NullTag[index]))  ? SetBit | NullBit  : None;
-                                    _value |= (( (_value & ValueBit) && !(_value & NullBit) ) || (_value == None && stream[loaded - 1] == IElement::TrueTag[index]))  ? SetBit | ValueBit : None;
-                                    _value |= ((!(_value & NullBit)  && !(_value & ValueBit)) || (_value == None && stream[loaded - 1] == IElement::FalseTag[index])) ? SetBit            : None;
+                                    _value |= !(_value & SetBit) && stream[loaded - 1] == IElement::NullTag[index]  ? SetBit | NullBit  : None;
+                                    _value |= !(_value & SetBit) && stream[loaded - 1] == IElement::TrueTag[index]  ? SetBit | ValueBit : None;
+                                    _value |= !(_value & SetBit) && stream[loaded - 1] == IElement::FalseTag[index] ? SetBit            : None;
 
                                     suffix =    ((_value & SetBit) && (_value & NullBit)  && index == (sizeof(IElement::NullTag)  - (IElement::NullTag[sizeof(IElement::NullTag)   - 1] == '\0' ? 2 : 1)))
                                              || ((_value & SetBit) && (_value & ValueBit) && index == (sizeof(IElement::TrueTag)  - (IElement::TrueTag[sizeof(IElement::TrueTag)   - 1] == '\0' ? 2 : 1)))
@@ -1834,7 +1870,7 @@ namespace Core {
                 }
 
                 if (completed && loaded < maxLength) {
-                    if (!(error.IsSet()) && !(quoted && stream[loaded] == '\0')) {
+                    if (!(error.IsSet()) && !((_value & QuotedBit) && stream[loaded] == '\0')) {
                         error = Error{"Input data contains trailing characters for Boolean"};
                     }
                 }
