@@ -82,7 +82,7 @@ POP_WARNING()
             _notificationClients.erase(index);
             notification->Release();
         } else {
-            TRACE_L1("Notification(%p) not found.", notification);
+            TRACE_L1("Notification(%p) not found.", static_cast<void*>(notification));
         }
 
         _adminLock.Unlock();

@@ -343,11 +343,11 @@ POP_WARNING()
         static_assert(sizeof(TCHAR) != sizeof(char), "UTF16 to code point needs an implementation")
         #else
         uint32_t header = static_cast<uint16_t>(*data & 0xFF);
-        uint8_t following = (header < 0b11000000 ? 0 :
-            header < 0b11100000 ? 1 :
-            header < 0b11110000 ? 2 :
-            header < 0b11111000 ? 3 :
-            header < 0b11111100 ? 4 : 5);
+        uint8_t following = (header < 0xC0 ? 0 :
+            header < 0xE0 ? 1 :
+            header < 0xF0 ? 2 :
+            header < 0xF8 ? 3 :
+            header < 0xFC ? 4 : 5);
 
         // Get the bits of the indicator (ranges from 7 bits to 1)
         if (following == 0) {
@@ -359,7 +359,7 @@ POP_WARNING()
             // all right shit in the other bits..
             for (uint8_t index = 1; (index <= following) && (index <= length); index++) {
                 codePoint = (codePoint << 6) | (data[index] & 0x3F);
-                invalid = invalid | ((data[index] & 0b11000000) != 0b10000000);
+                invalid = invalid | ((data[index] & 0xC0) != 0x80);
             }
         }
         #endif

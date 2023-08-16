@@ -644,7 +644,7 @@ namespace Core {
             uint8_t index = 0;
             TYPENAME value = number;
 
-            static_assert(Frame::RealSize<TYPENAME>() <= ((sizeof(bytes) * 7) / 8));
+            static_assert(Frame::RealSize<TYPENAME>() <= ((sizeof(bytes) * 7) / 8), "Make sure the size is not too large (not much bigger than uint64_t)");
 
             do {
                 bytes[index++] = ( static_cast<uint8_t>(value % 128) | 0x80 );

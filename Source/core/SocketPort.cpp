@@ -212,21 +212,19 @@ namespace WPEFramework {
             // the control data is dumped here
             char cmbuf[256];
 
-            struct iovec msgbuf = {
-                .iov_base = buffer,
-                .iov_len = static_cast<size_t>(bufferSize),
-            };
+            struct iovec msgbuf;
+            msgbuf.iov_base = buffer;
+            msgbuf.iov_len = static_cast<size_t>(bufferSize);
 
             // if you want access to the data you need to init the msg_iovec fields
-            struct msghdr mh = {
-                .msg_name = remote,
-                .msg_namelen = *remoteLength,
-                .msg_iov = &msgbuf,
-                .msg_iovlen = 1,
-                .msg_control = cmbuf,
-                .msg_controllen = sizeof(cmbuf),
-                .msg_flags = 0
-            };
+            struct msghdr mh;
+            mh.msg_name = remote;
+            mh.msg_namelen = *remoteLength;
+            mh.msg_iov = &msgbuf;
+            mh.msg_iovlen = 1;
+            mh.msg_control = cmbuf;
+            mh.msg_controllen = sizeof(cmbuf);
+            mh.msg_flags = 0;
 
             result = recvmsg(handle, &mh, 0);
             if ((static_cast<signed int>(result) != SOCKET_ERROR) && ((mh.msg_flags & MSG_CTRUNC) == 0)) {
