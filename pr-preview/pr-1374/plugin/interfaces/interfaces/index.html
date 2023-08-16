@@ -1730,9 +1730,9 @@
 <h4 id="iunknown">IUnknown</h4>
 <p>All COM-RPC interfaces inherit virtually from <code>IUnknown</code>. As with Microsoft COM, this contains 3 vital methods:</p>
 <ul>
-<li><strong>QueryInterface</strong> - allows clients to dynamically discover (at run time) whether or not an interface is supported. Given an interface ID, if the plugin supports that interface than a pointer to that interface will be returned, otherwise will return nullptr.</li>
-<li><strong>AddRef</strong> - increase the reference count on the object</li>
-<li><strong>Release</strong> - decrement the reference count on the object. When 0, it is safe to destroy the object</li>
+<li><strong>QueryInterface()</strong> - provides interface navigation. Allows clients to dynamically discover (at run time) whether or not an interface is supported. Given an interface ID, if the plugin supports that interface than a pointer to that interface will be returned, otherwise will return nullptr.</li>
+<li><strong>AddRef()</strong> - lifetime management. Increase the reference count on the object</li>
+<li><strong>Release()</strong> -  lifetime management. Decrement the reference count on the object. When 0, it is safe to destroy the object</li>
 </ul>
 <h4 id="interface-characteristics">Interface Characteristics</h4>
 <ul>
@@ -1743,8 +1743,15 @@
 </ul>
 <h4 id="guidelines">Guidelines</h4>
 <ul>
-<li>Each COM-RPC interface must inherit <strong>virtually</strong> from <code>Core::IUnknown</code> and have a unique ID</li>
-<li>Ensure API compatibility is maintained when updating interfaces to avoid breaking consumers</li>
+<li>
+<p>Each COM-RPC interface must inherit <strong>virtually</strong> from <code>Core::IUnknown</code> and have a unique ID</p>
+<ul>
+<li>Virtual inheritance is important to prevent the <a href="https://isocpp.org/wiki/faq/multiple-inheritance#mi-diamond">diamond problem</a> and ensure multiple interfaces are implemented on a single, reference counted object. Without this, each interface might have its own reference count and not be destroyed correctly.</li>
+</ul>
+</li>
+<li>
+<p>Ensure API compatibility is maintained when updating interfaces to avoid breaking consumers</p>
+</li>
 <li>Methods should be pure virtual methods that can be overridden by the plugin that implements the interface</li>
 <li>Methods should return <strong><code>Core::hresult</code></strong> which will store the error code from the method<ul>
 <li>If a method succeeds, it should return <code>Core::ERROR_NONE</code></li>
@@ -1752,8 +1759,15 @@
 <li>If an error occurs over the COM-RPC transport the <code>COM_ERROR</code> bit will be set. This allows consumers to determine where the failure occurred</li>
 </ul>
 </li>
-<li>Ensure all enums have explicit data types set (e.g. <code>uint8_t</code>)</li>
-<li>C++ types such as <code>std::vector</code> and <code>std::map</code> are <strong>not</strong> compatible with COM-RPC<ul>
+<li>
+<p>Ensure all enums have explicit data types set (if not set, the code generators will fall back to <code>uint32_t</code> as a safe default)</p>
+<ul>
+<li>If you know you will be communicating over different architectures, then you can define <code>INSTANCE_ID_BITS</code>  to specify a specific default integer width</li>
+</ul>
+</li>
+<li>
+<p>C++ types such as <code>std::vector</code> and <code>std::map</code> are <strong>not</strong> compatible with COM-RPC</p>
+<ul>
 <li>Only "plain-old data" (POD) types can be used (e.g. scalar values, interface pointers)</li>
 <li>COM-RPC can auto-generate iterators for returning multiple results</li>
 </ul>
@@ -1762,7 +1776,7 @@
 <li>Prefer asynchronous APIs for long running tasks (and use notifications to signal completion)</li>
 </ul>
 <h4 id="notifications-sinks">Notifications &amp; Sinks</h4>
-<p>A COM-RPC interface not only allows for defining the methods exposed by a plugin, but can also be used to define notifications that plugins can rause and clients can subscribe to.</p>
+<p>A COM-RPC interface not only allows for defining the methods exposed by a plugin, but can also be used to define notifications that plugins can raise and clients can subscribe to.</p>
 <p>As with Microsoft COM, this is done by allowing clients to create implementations of notification interfaces as sinks, and register that sink with the plugin. When a notification occurs, the plugin will call the methods on the provided sink.</p>
 <h3 id="json-rpc-interfaces">JSON-RPC Interfaces</h3>
 <p>Once a COM-RPC interface is defined, if a JSON-RPC interface is also required then the interface should have the <strong><code>@json</code></strong> tag added. This signals to the code-generator that a corresponding JSON-RPC interface should be generated alongside the COM-RPC one. </p>
