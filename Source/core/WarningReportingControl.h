@@ -33,6 +33,8 @@
 #include <unordered_set>
 #include <vector>
 
+#pragma GCC system_header
+
 #ifndef __CORE_WARNING_REPORTING__
 
 #define REPORT_WARNING(CATEGORY, ...)
@@ -67,6 +69,9 @@
 // Types:
 // OutOfBounds warning category:
 //  - BoundsType to indicate type for boubnds values
+
+#define ANNOUNCE_WARNING(CATEGORY)  \
+    WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()
 
 #define REPORT_WARNING(CATEGORY, ...)                                                                                  \
     if (WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled()) {                                 \
@@ -132,6 +137,7 @@ namespace WPEFramework {
 namespace Core {
     template <typename THREADLOCALSTORAGE>
     class ThreadLocalStorageType;
+    class CriticalSection;
 }
 
 namespace WarningReporting {
@@ -174,7 +180,7 @@ namespace WarningReporting {
         WarningReportingUnitProxy(const WarningReportingUnitProxy&) = delete;
         WarningReportingUnitProxy& operator=(const WarningReportingUnitProxy&) = delete;
 
-        ~WarningReportingUnitProxy() = default;
+        ~WarningReportingUnitProxy();
 
         static WarningReportingUnitProxy& Instance();
 
@@ -188,17 +194,14 @@ namespace WarningReporting {
         void FillBoundsConfig(const string& boundsConfig, uint32_t& outReportingBound, uint32_t& outWarningBound, string& outSpecificConfig) const;
 
     protected:
-        WarningReportingUnitProxy()
-            : _handler(nullptr)
-            , _waitingAnnounces()
-        {
-        }
+        WarningReportingUnitProxy();
 
     private:
         using WaitingAnnounceContainer = std::vector<IWarningReportingUnit::IWarningReportingControl*>;
 
         IWarningReportingUnit* _handler;
         WaitingAnnounceContainer _waitingAnnounces;
+        Core::CriticalSection* _adminLock;
     };
 
     template <typename CONTROLCATEGORY>

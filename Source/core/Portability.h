@@ -91,6 +91,8 @@
   #endif
 #endif
 
+#pragma GCC system_header
+
 #ifdef __WINDOWS__
     #define DO_PRAGMA(x) __pragma(x)
 
@@ -590,6 +592,8 @@ uint64_t htonll(const uint64_t& value);
 uint64_t ntohll(const uint64_t& value);
 #endif
 }
+
+#define SLEEPSLOT_POLLING_TIME 100
 
 // ---- Helper types and constants ----
 #define _TXT(THETEXT) \

@@ -21,8 +21,18 @@
 #include "Proxy.h"
 #include "Sync.h"
 #include "Frame.h"
+#include "Enumerate.h"
+#include "Singleton.h"
 
 namespace WPEFramework {
+
+ENUM_CONVERSION_BEGIN(Core::Messaging::Metadata::type)
+    { Core::Messaging::Metadata::type::TRACING, _TXT("Tracing") },
+    { Core::Messaging::Metadata::type::LOGGING, _TXT("Logging") },
+    { Core::Messaging::Metadata::type::REPORTING, _TXT("Reporting") },
+    { Core::Messaging::Metadata::type::STANDARD_OUT, _TXT("StandardOut") },
+    { Core::Messaging::Metadata::type::STANDARD_ERROR, _TXT("StandardError") },
+ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
 
     namespace {
         /**
@@ -38,7 +48,16 @@ namespace WPEFramework {
             Controls& operator=(const Controls&) = delete;
 
             Controls() = default;
-            ~Controls() = default;
+            ~Controls()
+            {
+                _adminLock.Lock();
+
+                while (_controlList.size() > 0) {
+                    _controlList.front()->Destroy();
+                }
+
+                _adminLock.Unlock();
+            }
 
         public:
             void Announce(Core::Messaging::IControl* control)
@@ -86,7 +105,11 @@ namespace WPEFramework {
             ControlList _controlList;
         };
 
-        static Controls _registeredControls;
+        Controls& ControlsInstance()
+        {
+            return (Core::SingletonType<Controls>::Instance());
+        }
+
         static Core::Messaging::IStore* _storage;
     }
 
@@ -362,7 +385,7 @@ namespace Core {
 
         /* static */ void IControl::Announce(IControl* control)
         {
-            _registeredControls.Announce(control);
+            ControlsInstance().Announce(control);
 
             if (_storage != nullptr) {
                 control->Enable(_storage->Default(control->Metadata()));
@@ -370,11 +393,11 @@ namespace Core {
         }
 
         /* static */ void IControl::Revoke(IControl* control) {
-            _registeredControls.Revoke(control);
+            ControlsInstance().Revoke(control);
         }
 
         /* static */ void IControl::Iterate(IControl::IHandler& handler) {
-            _registeredControls.Iterate(handler);
+            ControlsInstance().Iterate(handler);
         }
 
         /* static */ IStore* IStore::Instance() {

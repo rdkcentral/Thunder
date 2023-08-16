@@ -54,7 +54,6 @@ namespace Crypto {
         Core::Time result;
 
         if (input != nullptr) {
-            uint8_t index = 0;
             uint16_t year = 0;
             const char* textVersion = reinterpret_cast<const char*>(input->data);
 
