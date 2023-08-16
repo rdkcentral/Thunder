@@ -17,16 +17,13 @@
 
 set(TARGET ${NAMESPACE}WebSocket)
 
-add_library(${TARGET} SHARED
-        Module.cpp
+add_library(${TARGET} ${THUNDER_LIBRARY_TYPE}
         URL.cpp
         JSONWebToken.cpp
         WebSerializer.cpp
         WebSocketLink.cpp
         JSONRPCLink.cpp
         )
-
-find_package(ZLIB REQUIRED)
 
 set(PUBLIC_HEADERS
         URL.h
@@ -42,6 +39,10 @@ set(PUBLIC_HEADERS
         WebTransform.h
         Module.h
         )
+
+if (NOT BUILD_LIB_AS_STATIC)
+        target_sources(${TARGET} PRIVATE Module.cpp)
+endif()
 
 target_link_libraries(${TARGET}
         PRIVATE

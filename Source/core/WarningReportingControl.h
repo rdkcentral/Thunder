@@ -33,6 +33,8 @@
 #include <unordered_set>
 #include <vector>
 
+#pragma GCC system_header
+
 #ifndef __CORE_WARNING_REPORTING__
 
 #define REPORT_WARNING(CATEGORY, ...)
@@ -67,6 +69,9 @@
 // Types:
 // OutOfBounds warning category:
 //  - BoundsType to indicate type for boubnds values
+
+#define ANNOUNCE_WARNING(CATEGORY)  \
+    WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()
 
 #define REPORT_WARNING(CATEGORY, ...)                                                                                  \
     if (WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled()) {                                 \
