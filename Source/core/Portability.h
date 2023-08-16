@@ -957,6 +957,16 @@ namespace std {
 #endif
 #endif
 
+#ifndef __has_cpp_attribute
+# define __has_cpp_attribute(x) 0
+#endif
+
+#if __has_cpp_attribute(fallthrough)
+# define FALLTHROUGH [[fallthrough]];
+#else
+# define FALLTHROUGH do{} while(0);
+#endif
+
 #define THUNDER_VERSION 4
 
 #endif // __PORTABILITY_H
