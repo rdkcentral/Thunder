@@ -33,6 +33,8 @@
 #include <unordered_set>
 #include <vector>
 
+#pragma GCC system_header
+
 #ifndef __CORE_WARNING_REPORTING__
 
 #define REPORT_WARNING(CATEGORY, ...)

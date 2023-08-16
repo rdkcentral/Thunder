@@ -203,7 +203,7 @@ namespace Plugin {
         Controller& operator=(const Controller&);
 
     protected:
-        PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST);
+        PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             Controller()
             : _adminLock()
             , _skipURL(0)
@@ -218,7 +218,7 @@ namespace Plugin {
             , _observers()
         {
         }
-        POP_WARNING();
+        POP_WARNING()
 
     public:
         virtual ~Controller()

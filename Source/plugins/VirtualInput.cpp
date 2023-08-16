@@ -683,7 +683,7 @@ POP_WARNING()
                 // We are ready! Create that device!
                 PUSH_WARNING(DISABLE_WARNING_UNUSED_RESULT);
                 write(_eventDescriptor, &_uidev, sizeof(_uidev));
-                POP_WARNING();
+                POP_WARNING()
 
                 ioctl(_eventDescriptor, UI_DEV_CREATE);
             }
@@ -709,7 +709,7 @@ POP_WARNING()
 
             PUSH_WARNING(DISABLE_WARNING_UNUSED_RESULT);
             write(_eventDescriptor, &ev, sizeof(ev));
-            POP_WARNING();
+            POP_WARNING()
         }
     }
 
