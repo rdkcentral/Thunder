@@ -16,7 +16,7 @@ The interface provides a clear boundary between the code that invokes methods on
 
 Well-designed interfaces should also be easy to read and self explanatory. Methods names should be descriptive and have doxygen-style comments that describe their functionality, inputs and outputs. All methods should return a standardised error code to indicate whether they completed successfully, and any data that should be returned by the method should be stored in an output parameter.
 
-It is possible to build an interface from smaller sub-interfaces using composition. This is preferred to having a large monolithic interface, as is encourages reuse and modularity.
+It is possible to build an interface from smaller sub-interfaces using composition. This is preferred to having a large monolithic interface, as it encourages reuse and modularity.
 
 ## Interface Definitions
 
@@ -24,7 +24,7 @@ It is possible to build an interface from smaller sub-interfaces using compositi
 
 When designing a plugin interface, it is always best to start from the COM-RPC interface definition. A COM-RPC interface is defined in a C++ header file, and is a struct that inherits virtually from `Core::IUnknown`. This is very similar to interfaces in Microsoft COM. The plugin code will then provide an implementation of one or more COM-RPC interfaces.
 
-During the build, code-generation tools automatically convert these interfaces into ProxyStub classes that are used to resolve the interface at runtime and handle the serialisation/deserialisation of data over the wire. 
+During the build, code-generation tools automatically generate ProxyStub classes for each interface. These ProxyStubs handle the serialisation/deserialisation of messages when crossing process boundaries (this code is not necessary for in-process COM-RPC communication, since that just resolves down to local function calls and no data marshalling occurs).
 
 #### IUnknown
 
