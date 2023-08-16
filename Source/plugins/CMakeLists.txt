@@ -44,13 +44,9 @@ add_library(${TARGET} SHARED
         System.cpp
         )
 
+file(GLOB PROXY_STUB_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs*.cpp")
 add_library(${TARGET_PROXYSTUBS} SHARED
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Plugin.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Shell.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Controller.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_StateControl.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_SubSystem.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Dispatcher.cpp
+        ${PROXY_STUB_SOURCES}
         Module.cpp
         )
 
