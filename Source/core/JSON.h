@@ -32,17 +32,7 @@
 #include "TextFragment.h"
 #include "TypeTraits.h"
 
-#ifndef __has_cpp_attribute
-# define __has_cpp_attribute(x) 0
-#endif
-
-#if __has_cpp_attribute(fallthrough)
-#       define FALLTHROUGH [[fallthrough]];
-#else
-#       define FALLTHROUGH do{} while(0);
-#endif
-
- namespace WPEFramework {
+namespace WPEFramework {
 
 namespace Core {
 
