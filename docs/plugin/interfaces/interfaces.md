@@ -30,9 +30,9 @@ During the build, code-generation tools automatically convert these interfaces i
 
 All COM-RPC interfaces inherit virtually from `IUnknown`. As with Microsoft COM, this contains 3 vital methods:
 
-* **QueryInterface** - allows clients to dynamically discover (at run time) whether or not an interface is supported. Given an interface ID, if the plugin supports that interface than a pointer to that interface will be returned, otherwise will return nullptr.
-* **AddRef** - increase the reference count on the object
-* **Release** - decrement the reference count on the object. When 0, it is safe to destroy the object
+* **QueryInterface()** - provides interface navigation. Allows clients to dynamically discover (at run time) whether or not an interface is supported. Given an interface ID, if the plugin supports that interface than a pointer to that interface will be returned, otherwise will return nullptr.
+* **AddRef()** - lifetime management. Increase the reference count on the object
+* **Release()** -  lifetime management. Decrement the reference count on the object. When 0, it is safe to destroy the object
 
 #### Interface Characteristics
 
@@ -44,13 +44,17 @@ All COM-RPC interfaces inherit virtually from `IUnknown`. As with Microsoft COM,
 #### Guidelines
 
 * Each COM-RPC interface must inherit **virtually** from `Core::IUnknown` and have a unique ID
+    * Virtual inheritance is important to prevent the [diamond problem](https://isocpp.org/wiki/faq/multiple-inheritance#mi-diamond) and ensure multiple interfaces are implemented on a single, reference counted object. Without this, each interface might have its own reference count and not be destroyed correctly.
+
 * Ensure API compatibility is maintained when updating interfaces to avoid breaking consumers
 * Methods should be pure virtual methods that can be overridden by the plugin that implements the interface
 * Methods should return **`Core::hresult`** which will store the error code from the method
     * If a method succeeds, it should return `Core::ERROR_NONE`
     * If a method fails, it should return a suitable error code that reflects the failure (e.g `Core::ERROR_READ_ERROR`)
     * If an error occurs over the COM-RPC transport the `COM_ERROR` bit will be set. This allows consumers to determine where the failure occurred
-* Ensure all enums have explicit data types set (e.g. `uint8_t`)
+* Ensure all enums have explicit data types set (if not set, the code generators will fall back to `uint32_t` as a safe default)
+    * If you know you will be communicating over different architectures, then you can define `INSTANCE_ID_BITS`  to specify a specific default integer width
+
 * C++ types such as `std::vector` and `std::map` are **not** compatible with COM-RPC
     * Only "plain-old data" (POD) types can be used (e.g. scalar values, interface pointers)
     * COM-RPC can auto-generate iterators for returning multiple results
@@ -59,7 +63,7 @@ All COM-RPC interfaces inherit virtually from `IUnknown`. As with Microsoft COM,
 
 #### Notifications & Sinks
 
-A COM-RPC interface not only allows for defining the methods exposed by a plugin, but can also be used to define notifications that plugins can rause and clients can subscribe to.
+A COM-RPC interface not only allows for defining the methods exposed by a plugin, but can also be used to define notifications that plugins can raise and clients can subscribe to.
 
 As with Microsoft COM, this is done by allowing clients to create implementations of notification interfaces as sinks, and register that sink with the plugin. When a notification occurs, the plugin will call the methods on the provided sink.
 
