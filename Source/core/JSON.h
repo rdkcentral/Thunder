@@ -649,42 +649,6 @@ namespace Core {
                 _set = 0;
 
                 while(!completed && loaded < maxLength && !(error.IsSet())) {
-
-                    auto AddDigitToValue = [](char digit, bool negative, TYPE& value) -> bool {
-                        bool result = false;
-
-                        using uTYPE = typename std::make_unsigned<TYPE>::type;
-                        using sTYPE = typename std::make_signed<TYPE>::type;
-
-                        uTYPE base = 0, offset = 0, number = 0;
-
-                        switch (BASETYPE) {
-                        case BASE_DECIMAL       : base = 10;
-                                                  offset = (digit -'0');
-                                                  break;
-                        case BASE_HEXADECIMAL   : base = 16;
-                                                  offset = std::isdigit(digit) ? digit - '0' : (std::toupper(digit) -'A' + 10);
-                                                  break;
-                        case BASE_OCTAL         : base = 8;
-                                                  offset = (digit - '0');
-                                                  break;
-                        default                 : ASSERT(false);
-                        }
-
-                        const uTYPE max = negative ? static_cast<uTYPE>(-(1 + std::numeric_limits<sTYPE>::min())) + 1 : static_cast<uTYPE>(std::numeric_limits<TYPE>::max());
-
-                        number = static_cast<uTYPE>(value);
-
-                        result = number <= ((max - offset) / base);
-
-                        number *= base;
-                        number += offset;
-
-                        value = static_cast<TYPE>(number);
-
-                        return result;
-                    };
-
                     const char& c = stream[loaded++];
 
                     switch (c) {
@@ -786,7 +750,7 @@ namespace Core {
                                                                     }
 
                                                                     // Convert
-                                                                    if (!AddDigitToValue(c, _set & NEGATIVE, _value)) {
+                                                                    if (!AddDigitToValue(c)) {
                                                                         _set = ERROR;
                                                                         error = Error{"Data for NumberType<> with base decimal results in out-of-range"};
                                                                         continue;
@@ -821,7 +785,7 @@ namespace Core {
                                                                     }
 
                                                                     // Convert
-                                                                    if (!AddDigitToValue(c, _set & NEGATIVE, _value)) {
+                                                                    if (!AddDigitToValue(c)) {
                                                                         _set = ERROR;
                                                                         error = Error{"Data for NumberType<> with base hexadecimal results in out-of-range"};
                                                                         continue;
@@ -856,7 +820,7 @@ namespace Core {
                                                                     }
 
                                                                     // Convert
-                                                                    if (!AddDigitToValue(c, _set & NEGATIVE, _value)) {
+                                                                    if (!AddDigitToValue(c)) {
                                                                         _set = ERROR;
                                                                         error = Error{"Data for NumberType<> with base octal results in out-of-range"};
                                                                         continue;
@@ -870,10 +834,6 @@ namespace Core {
                     }
 
                     ++offset;
-                }
-
-                if (_set & NEGATIVE) {
-                    _value *= -1;
                 }
 
                 if (completed && loaded < maxLength) {
@@ -1067,6 +1027,42 @@ namespace Core {
                 }
 
                 return (loaded);
+            }
+
+            bool AddDigitToValue(char digit)
+            {
+                bool result = false;
+
+                using uTYPE = typename std::make_unsigned<TYPE>::type;
+                using sTYPE = typename std::make_signed<TYPE>::type;
+
+                uTYPE base = 0, offset = 0, number = 0;
+
+                switch (BASETYPE) {
+                case BASE_DECIMAL       : base = 10;
+                                          offset = (digit -'0');
+                                          break;
+                case BASE_HEXADECIMAL   : base = 16;
+                                          offset = std::isdigit(digit) ? digit - '0' : (std::toupper(digit) -'A' + 10);
+                                          break;
+                case BASE_OCTAL         : base = 8;
+                                          offset = (digit - '0');
+                                          break;
+                default                 : ASSERT(false);
+                }
+
+                const uTYPE max = _set & NEGATIVE ? static_cast<uTYPE>(-(1 + std::numeric_limits<sTYPE>::min())) + 1 : static_cast<uTYPE>(std::numeric_limits<TYPE>::max());
+
+                number = _set & NEGATIVE ? static_cast<uTYPE>(-(1 + _value)) + 1 : static_cast<uTYPE>(_value);
+
+                result = number <= ((max - offset) / base);
+
+                number *= base;
+                number += offset;
+
+                _value = _set & NEGATIVE ? static_cast<TYPE>(-number) : static_cast<TYPE>(number);
+
+                return result;
             }
 
         private:
