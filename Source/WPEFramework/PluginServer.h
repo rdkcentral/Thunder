@@ -837,7 +837,7 @@ namespace PluginHost {
             template<typename ACTION>
             void Visit(ACTION&& action) const {
                 _adminLock.Lock();
-                for (const std::pair<const string, const ShellProxy*>& entry : _plugins) {
+                for (const std::pair<const string, ShellProxy*>& entry : _plugins) {
                     action(entry.first, entry.second);
                 }
                 _adminLock.Unlock();
@@ -2862,7 +2862,7 @@ POP_WARNING()
             ServiceMap(const ServiceMap&) = delete;
             ServiceMap& operator=(const ServiceMap&) = delete;
 
-            PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST);
+            PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             ServiceMap(Server& server)
                 : _server(server)
                 , _adminLock()
@@ -2895,7 +2895,7 @@ POP_WARNING()
                     SYSLOG(Logging::Startup, (_T("Dynamic configs failed. Can not observe: [%s]"), server._config.PluginConfigPath().c_str()));
                 }
             }
-            POP_WARNING();
+            POP_WARNING()
             ~ServiceMap()
             {
                 // Make sure all services are deactivated before we are killed (call Destroy on this object);
@@ -4400,7 +4400,7 @@ POP_WARNING()
             ChannelMap(const ChannelMap&) = delete;
             ChannelMap& operator=(const ChannelMap&) = delete;
 
-            PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST);
+            PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             ChannelMap(Server& parent, const Core::NodeId& listeningNode, const uint16_t connectionCheckTimer)
                 : Core::SocketServerType<Channel>(listeningNode)
                 , _parent(parent)
@@ -4418,7 +4418,7 @@ POP_WARNING()
                     }
                 }
             }
-            POP_WARNING();
+            POP_WARNING()
             ~ChannelMap()
             {
                 Core::ProxyType<Core::IDispatch> job(_job.Revoke());

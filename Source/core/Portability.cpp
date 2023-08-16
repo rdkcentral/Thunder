@@ -34,8 +34,6 @@
 
 using namespace WPEFramework;
 
-MODULE_NAME_DECLARATION(BUILD_REFERENCE)
-
 #ifdef __WINDOWS__
 
 #include <ws2tcpip.h>

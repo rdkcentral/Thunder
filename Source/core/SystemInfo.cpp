@@ -77,12 +77,7 @@ namespace Core {
         const uint8_t SystemPrefixLength,
         const uint8_t KeyLength)
     {
-#ifdef __WINDOWS__
-        TCHAR* buffer = reinterpret_cast<TCHAR*>(ALLOCA(KeyLength + 1));
-#else
-        TCHAR buffer[KeyLength + 1];
-        buffer[0] = '\0';
-#endif
+        TCHAR* buffer = static_cast<TCHAR*>(ALLOCA(sizeof(TCHAR) * (KeyLength + 1)));
 
         if (KeyLength == UINT8_MAX) {
             ::memcpy(buffer, SystemPrefix, SystemPrefixLength);
