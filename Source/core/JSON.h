@@ -575,7 +575,9 @@ namespace Core {
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                ASSERT(maxLength > 0);
+                ASSERT(   maxLength > 0
+                       && maxLength < std::numeric_limits<uint16_t>::max()
+                      );
 
                 const int32_t available =   maxLength
                                           - (_set & QUOTED ? 2 : 0)
@@ -585,7 +587,7 @@ namespace Core {
                                           - (BASETYPE == BASE_OCTAL ? 1 : 0)
                                           ;
 
-                int32_t loaded = 0;
+                uint16_t loaded = 0;
 
                 if (0 < available) {
                     if (_set & QUOTED) {
@@ -597,11 +599,12 @@ namespace Core {
 
                         const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
 
-                        if (count < static_cast<size_t>(available)) {
-                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
-                        }
+                        offset = !(count < static_cast<size_t>(available));
 
-                        loaded += count;
+                        if (!offset) {
+                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
+                            loaded += static_cast<uint16_t>(count);
+                        }
                     } else {
                         if ((_set & NEGATIVE))
                         {
@@ -626,7 +629,7 @@ namespace Core {
                     }
                 }
 
-                offset = !(offset || loaded < available);
+                offset = !(!offset && loaded < available);
 
                 if (!offset) {
                     stream[loaded] = '\0';
@@ -1053,7 +1056,7 @@ namespace Core {
 
                 const uTYPE max = _set & NEGATIVE ? static_cast<uTYPE>(-(1 + std::numeric_limits<sTYPE>::min())) + 1 : static_cast<uTYPE>(std::numeric_limits<TYPE>::max());
 
-                number = _set & NEGATIVE ? static_cast<uTYPE>(-(1 + _value)) + 1 : static_cast<uTYPE>(_value);
+                number = _set & NEGATIVE ? static_cast<uTYPE>(-(1 + static_cast<sTYPE>(_value))) + 1 : static_cast<uTYPE>(_value);
 
                 result = number <= ((max - offset) / base);
 
