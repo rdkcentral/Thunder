@@ -1205,7 +1205,9 @@ namespace Core {
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                ASSERT(maxLength > 0);
+                ASSERT(   maxLength > 0
+                       && maxLength < std::numeric_limits<uint16_t>::max()
+                      );
 
                 const int32_t available = maxLength - (_set & QUOTED ? 2 : 0);
 
@@ -1217,15 +1219,16 @@ namespace Core {
                     }
 
                     if (_set & UNDEFINED) {
-                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char));
+                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
 
                         const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
 
-                        if (count < available) {
-                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
-                        }
+                        offset = !(count < static_cast<size_t>(available));
 
-                        loaded += count;
+                        if (!offset) {
+                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
+                            loaded += static_cast<uint16_t>(count);
+                        }
                     } else {
                         loaded += Convert(&(stream[loaded]), available, offset);
                     }
@@ -1235,7 +1238,7 @@ namespace Core {
                     }
                 }
 
-                offset = !(offset || loaded < available);
+                offset = !(!offset && loaded < available);
 
                 if (!offset) {
                     stream[loaded] = '\0';
@@ -1471,7 +1474,7 @@ namespace Core {
                 }
 
                 if (!((_set & UNDEFINED) || error.IsSet())) {
-                    static_assert(std::is_same<float, TYPE>::value || std::is_same<double, TYPE>::value);
+                    static_assert(std::is_same<float, TYPE>::value || std::is_same<double, TYPE>::value, "Unsupported type detected");
 
                     char* c = nullptr;
 
