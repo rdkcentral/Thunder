@@ -1063,7 +1063,7 @@ namespace Core {
                 number *= base;
                 number += offset;
 
-                _value = _set & NEGATIVE ? static_cast<TYPE>(-number) : static_cast<TYPE>(number);
+                _value = _set & NEGATIVE ? static_cast<TYPE>(-static_cast<sTYPE>(number)) : static_cast<TYPE>(number);
 
                 return result;
             }
