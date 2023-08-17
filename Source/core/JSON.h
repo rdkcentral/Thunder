@@ -1722,31 +1722,46 @@ namespace Core {
 
                         const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
 
+<<<<<<< HEAD
                         if (count < static_cast<size_t>(available)) {
-                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
-                        }
+=======
+                        offset = !(count < static_cast<size_t>(available));
 
-                        loaded += count;
+                        if (!offset) {
+>>>>>>> 12b291fa ([Core] : Fix warnings treated as errors)
+                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
+                            loaded += static_cast<uint16_t>(count);
+                        }
                     } else if (Value()) {
                         static_assert(sizeof(IElement::TrueTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
 
                         const size_t count = sizeof(IElement::TrueTag) - (IElement::TrueTag[sizeof(IElement::TrueTag) - 1] == '\0' ?  1 :  0);
 
+<<<<<<< HEAD
                         if (count < static_cast<size_t>(available)) {
-                            memcpy(&stream[loaded], &IElement::TrueTag[0], count);
-                        }
+=======
+                        offset = !(count < static_cast<size_t>(available));
 
-                        loaded += count;
+                        if (!offset) {
+>>>>>>> 12b291fa ([Core] : Fix warnings treated as errors)
+                            memcpy(&stream[loaded], &IElement::TrueTag[0], count);
+                            loaded += static_cast<uint16_t>(count);
+                        }
                     } else {
                         static_assert(sizeof(IElement::FalseTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
 
                         const size_t count = sizeof(IElement::FalseTag) - (IElement::FalseTag[sizeof(IElement::FalseTag) - 1] == '\0' ?  1 :  0);
 
+<<<<<<< HEAD
                         if (count < static_cast<size_t>(available)) {
-                            memcpy(&stream[loaded], &IElement::FalseTag[0], count);
-                        }
+=======
+                        offset = !(count < static_cast<size_t>(available));
 
-                        loaded += count;
+                        if (!offset) {
+>>>>>>> 12b291fa ([Core] : Fix warnings treated as errors)
+                            memcpy(&stream[loaded], &IElement::FalseTag[0], count);
+                            loaded += static_cast<uint16_t>(count);
+                        }
                     }
 
                     if (_value & QuotedBit) {
@@ -1754,7 +1769,7 @@ namespace Core {
                     }
                 }
 
-                offset = !(loaded < available);
+                offset = !(!offset && loaded < available);
 
                 if (!offset) {
                     stream[loaded] = '\0';
@@ -1815,7 +1830,11 @@ namespace Core {
                                     _value |= QuotedBit;
                                     break;
                     case '1'    :   _value |= ValueBit;
+<<<<<<< HEAD
                                     FALLTHROUGH;
+=======
+				    FALLTHROUGH;
+>>>>>>> 12b291fa ([Core] : Fix warnings treated as errors)
                     case '0'    :   if (!(offset == 0 || (offset == 1 && (_value & QuotedBit))) || suffix || (_value & NullBit)) {
                                         _value = ErrorBit;
                                          error = Error{"Character '" + std::string(1, c) + "' at unsupported position for Boolean"};
