@@ -1205,7 +1205,9 @@ namespace Core {
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                ASSERT(maxLength > 0);
+                ASSERT(   maxLength > 0
+                       && maxLength < std::numeric_limits<uint16_t>::max()
+                      );
 
                 const int32_t available = maxLength - (_set & QUOTED ? 2 : 0);
 
@@ -1221,11 +1223,12 @@ namespace Core {
 
                         const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
 
-                        if (count < static_cast<size_t>(available)) {
-                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
-                        }
+                        offset = !(count < static_cast<size_t>(available));
 
-                        loaded += count;
+                        if (!offset) {
+                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
+                            loaded += static_cast<uint16_t>(count);
+                        }
                     } else {
                         loaded += Convert(&(stream[loaded]), available, offset);
                     }
@@ -1235,7 +1238,7 @@ namespace Core {
                     }
                 }
 
-                offset = !(offset || loaded < available);
+                offset = !(!offset && loaded < available);
 
                 if (!offset) {
                     stream[loaded] = '\0';
@@ -1722,13 +1725,9 @@ namespace Core {
 
                         const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
 
-<<<<<<< HEAD
-                        if (count < static_cast<size_t>(available)) {
-=======
                         offset = !(count < static_cast<size_t>(available));
 
                         if (!offset) {
->>>>>>> 12b291fa ([Core] : Fix warnings treated as errors)
                             memcpy(&stream[loaded], &IElement::NullTag[0], count);
                             loaded += static_cast<uint16_t>(count);
                         }
@@ -1737,13 +1736,9 @@ namespace Core {
 
                         const size_t count = sizeof(IElement::TrueTag) - (IElement::TrueTag[sizeof(IElement::TrueTag) - 1] == '\0' ?  1 :  0);
 
-<<<<<<< HEAD
-                        if (count < static_cast<size_t>(available)) {
-=======
                         offset = !(count < static_cast<size_t>(available));
 
                         if (!offset) {
->>>>>>> 12b291fa ([Core] : Fix warnings treated as errors)
                             memcpy(&stream[loaded], &IElement::TrueTag[0], count);
                             loaded += static_cast<uint16_t>(count);
                         }
@@ -1752,13 +1747,9 @@ namespace Core {
 
                         const size_t count = sizeof(IElement::FalseTag) - (IElement::FalseTag[sizeof(IElement::FalseTag) - 1] == '\0' ?  1 :  0);
 
-<<<<<<< HEAD
-                        if (count < static_cast<size_t>(available)) {
-=======
                         offset = !(count < static_cast<size_t>(available));
 
                         if (!offset) {
->>>>>>> 12b291fa ([Core] : Fix warnings treated as errors)
                             memcpy(&stream[loaded], &IElement::FalseTag[0], count);
                             loaded += static_cast<uint16_t>(count);
                         }
@@ -1830,11 +1821,7 @@ namespace Core {
                                     _value |= QuotedBit;
                                     break;
                     case '1'    :   _value |= ValueBit;
-<<<<<<< HEAD
                                     FALLTHROUGH;
-=======
-				    FALLTHROUGH;
->>>>>>> 12b291fa ([Core] : Fix warnings treated as errors)
                     case '0'    :   if (!(offset == 0 || (offset == 1 && (_value & QuotedBit))) || suffix || (_value & NullBit)) {
                                         _value = ErrorBit;
                                          error = Error{"Character '" + std::string(1, c) + "' at unsupported position for Boolean"};
