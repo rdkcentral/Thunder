@@ -575,7 +575,9 @@ namespace Core {
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                ASSERT(maxLength > 0);
+                ASSERT(   maxLength > 0
+                       && maxLength < std::numeric_limits<uint16_t>::max()
+                      );
 
                 const int32_t available =   maxLength
                                           - (_set & QUOTED ? 2 : 0)
@@ -585,7 +587,7 @@ namespace Core {
                                           - (BASETYPE == BASE_OCTAL ? 1 : 0)
                                           ;
 
-                int32_t loaded = 0;
+                uint16_t loaded = 0;
 
                 if (0 < available) {
                     if (_set & QUOTED) {
@@ -593,15 +595,16 @@ namespace Core {
                     }
 
                     if (_set & UNDEFINED) {
-                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char));
+                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
 
                         const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
 
-                        if (count < available) {
-                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
-                        }
+                        offset = !(count < static_cast<size_t>(available));
 
-                        loaded += count;
+                        if (!offset) {
+                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
+                            loaded += static_cast<uint16_t>(count);
+                        }
                     } else {
                         if ((_set & NEGATIVE))
                         {
@@ -626,7 +629,7 @@ namespace Core {
                     }
                 }
 
-                offset = !(offset || loaded < available);
+                offset = !(!offset && loaded < available);
 
                 if (!offset) {
                     stream[loaded] = '\0';
@@ -649,9 +652,9 @@ namespace Core {
                 _set = 0;
 
                 while(!completed && loaded < maxLength && !(error.IsSet())) {
-                    const char& c = stream[loaded++];
+                    const char& ch = stream[loaded++];
 
-                    switch (c) {
+                    switch (ch) {
                     case 0x09     : // Tabulation
                                     FALLTHROUGH
                     case 0x0A     : // Line feed
@@ -672,7 +675,7 @@ namespace Core {
                                     continue;
                     case '-'    :   // Signed value
                                     if (!SIGNED) {
-                                        error = Error{"Character '" + std::string(1, c) + "' unsupported for UNSIGNED NumberType<>"};
+                                        error = Error{"Character '" + std::string(1, ch) + "' unsupported for UNSIGNED NumberType<>"};
                                         _set = ERROR;
                                         continue;
                                     }
@@ -686,7 +689,7 @@ namespace Core {
                                         || suffix
                                        ) {
                                         _set = ERROR;
-                                        error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<>"};
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<>"};
                                         continue;
                                     }
 
@@ -695,7 +698,7 @@ namespace Core {
                     case '"'    :   // Quoted character sequence
                                     if (!(_set & QUOTED) && offset > 0) {// || suffix) {
                                         _set = ERROR;
-                                        error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<>"};
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<>"};
                                         continue;
                                     }
 
@@ -714,9 +717,9 @@ namespace Core {
                     case 'l'    :   // JSON value null
                                     ASSERT((offset - ((_set & QUOTED) ? 1 : 0)) < sizeof(NullTag));
 
-                                    if ((offset > 3 && !(_set & QUOTED)) || (offset > 4 && (_set & QUOTED)) || c != IElement::NullTag[offset - ((_set & QUOTED) ? 1 : 0)] || suffix) {
+                                    if ((offset > 3 && !(_set & QUOTED)) || (offset > 4 && (_set & QUOTED)) || ch != IElement::NullTag[offset - ((_set & QUOTED) ? 1 : 0)] || suffix) {
                                         _set = ERROR;
-                                        error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<>"};
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<>"};
                                         continue;
                                     }
 
@@ -726,16 +729,16 @@ namespace Core {
                                     break;
                     default     :   if (suffix || (_set & UNDEFINED)) {
                                         _set = ERROR;
-                                         error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<>"};
+                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<>"};
                                         continue;
                                     }
 
                                     // Define a set of rules without the use of regular expressions
                                     switch(BASETYPE) {
                                     case BASE_DECIMAL           :   // Decimal format rules
-                                                                    if (!(std::isdigit(c))) {
+                                                                    if (!(std::isdigit(ch))) {
                                                                         _set = ERROR;
-                                                                        error = Error{"Invalid Character '" + std::string(1, c) + "' for NumberType<> with base decimal"};
+                                                                        error = Error{"Invalid Character '" + std::string(1, ch) + "' for NumberType<> with base decimal"};
                                                                         continue;
                                                                     }
 
@@ -745,12 +748,12 @@ namespace Core {
                                                                         )
                                                                        ) {
                                                                         _set = ERROR;
-                                                                        error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<> with base decimal"};
+                                                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<> with base decimal"};
                                                                         continue;
                                                                     }
 
                                                                     // Convert
-                                                                    if (!AddDigitToValue(c)) {
+                                                                    if (!AddDigitToValue(ch)) {
                                                                         _set = ERROR;
                                                                         error = Error{"Data for NumberType<> with base decimal results in out-of-range"};
                                                                         continue;
@@ -762,12 +765,12 @@ namespace Core {
                                                                     if (   (offset == 0 && stream[loaded - 1] != '0' && !(_set & QUOTED) && !(_set & NEGATIVE))
                                                                         || (offset == 1 && stream[loaded - 1] != '0' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
                                                                         || (offset == 2 && stream[loaded - 1] != '0' && (_set & QUOTED) && (_set & NEGATIVE))
-                                                                        || (offset == 1 && std::toupper(c) != 'X' && !(_set & QUOTED) && !(_set & NEGATIVE))
+                                                                        || (offset == 1 && std::toupper(ch) != 'X' && !(_set & QUOTED) && !(_set & NEGATIVE))
                                                                         || (offset == 2 && std::toupper(stream[loaded - 1]) != 'X' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
                                                                         || (offset == 3 && std::toupper(stream[loaded - 1]) != 'X' && (_set & QUOTED) && (_set & NEGATIVE))
                                                                        ) {
                                                                         _set = ERROR;
-                                                                        error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<> with base hexadecimal"};
+                                                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<> with base hexadecimal"};
                                                                         continue;
                                                                     }
 
@@ -778,14 +781,14 @@ namespace Core {
                                                                         break;
                                                                     }
 
-                                                                    if (!(std::isxdigit(c))) {
+                                                                    if (!(std::isxdigit(ch))) {
                                                                         _set = ERROR;
-                                                                        error = Error{"Invalid Character '" + std::string(1, c) + "' for NumberType<> with base hexadecimal"};
+                                                                        error = Error{"Invalid Character '" + std::string(1, ch) + "' for NumberType<> with base hexadecimal"};
                                                                         continue;
                                                                     }
 
                                                                     // Convert
-                                                                    if (!AddDigitToValue(c)) {
+                                                                    if (!AddDigitToValue(ch)) {
                                                                         _set = ERROR;
                                                                         error = Error{"Data for NumberType<> with base hexadecimal results in out-of-range"};
                                                                         continue;
@@ -794,21 +797,21 @@ namespace Core {
                                                                     _set |= HEXADECIMAL;
                                                                     break;
                                     case BASE_OCTAL             :   // Octal format rules
-                                                                    if (!(std::isdigit(c) && c <= '7')) {
-                                                                        error = Error{"Invalid Character '" + std::string(1, c) + "' for NumberType<> with base octal"};
+                                                                    if (!(std::isdigit(ch) && ch <= '7')) {
+                                                                        error = Error{"Invalid Character '" + std::string(1, ch) + "' for NumberType<> with base octal"};
                                                                         continue;
                                                                     }
 
-                                                                    if ((   (offset == 0 && stream[loaded - 1] != '0') && !(_set & QUOTED) && !(_set & NEGATIVE)
+                                                                    if ((   (offset == 0 && stream[loaded - 1] != '0' && !(_set & QUOTED) && !(_set & NEGATIVE))
                                                                          || (offset == 1 && stream[loaded - 1] != '0' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
                                                                          || (offset == 2 && stream[loaded - 1] != '0' && (_set & QUOTED) && (_set & NEGATIVE))
-                                                                         || (offset == 2 && stream[loaded - 1] == '0' && stream[loaded - 2] == '0') && !(_set & QUOTED) && !(_set & NEGATIVE)
+                                                                         || (offset == 2 && stream[loaded - 1] == '0' && stream[loaded - 2] == '0' && !(_set & QUOTED) && !(_set & NEGATIVE))
                                                                          || (offset == 3 && stream[loaded - 1] == '0' && stream[loaded - 2] == '0' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
                                                                          || (offset == 4 && stream[loaded - 1] == '0' && stream[loaded - 2] == '0' && (_set & QUOTED) && (_set & NEGATIVE))
                                                                         )
                                                                        ) {
                                                                         _set = ERROR;
-                                                                        error = Error{"Character '" + std::string(1, c) + "' at unsupported position for NumberType<> with base octal"};
+                                                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<> with base octal"};
                                                                         continue;
                                                                     }
 
@@ -820,7 +823,7 @@ namespace Core {
                                                                     }
 
                                                                     // Convert
-                                                                    if (!AddDigitToValue(c)) {
+                                                                    if (!AddDigitToValue(ch)) {
                                                                         _set = ERROR;
                                                                         error = Error{"Data for NumberType<> with base octal results in out-of-range"};
                                                                         continue;
@@ -1053,7 +1056,7 @@ namespace Core {
 
                 const uTYPE max = _set & NEGATIVE ? static_cast<uTYPE>(-(1 + std::numeric_limits<sTYPE>::min())) + 1 : static_cast<uTYPE>(std::numeric_limits<TYPE>::max());
 
-                number = _set & NEGATIVE ? static_cast<uTYPE>(-(1 + _value)) + 1 : static_cast<uTYPE>(_value);
+                number = _set & NEGATIVE ? static_cast<uTYPE>(-(1 + static_cast<sTYPE>(_value))) + 1 : static_cast<uTYPE>(_value);
 
                 result = number <= ((max - offset) / base);
 

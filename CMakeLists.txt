@@ -102,6 +102,8 @@ string(REGEX REPLACE "\\-\\g$" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 string(REGEX REPLACE "-D_FORTIFY_SOURCE=[0-3]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 string(REGEX REPLACE "-D_FORTIFY_SOURCE=[0-3]" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror")
+
 # make sure others can make use of the JSON creation tools as well!!!
 configure_file( "${CMAKE_SOURCE_DIR}/cmake/project.cmake.in"
                 "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
