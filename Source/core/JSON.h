@@ -1718,31 +1718,31 @@ namespace Core {
                     }
 
                     if (_value & NullBit) {
-                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char));
+                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
 
                         const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
 
-                        if (count < available) {
+                        if (count < static_cast<size_t>(available)) {
                             memcpy(&stream[loaded], &IElement::NullTag[0], count);
                         }
 
                         loaded += count;
                     } else if (Value()) {
-                        static_assert(sizeof(IElement::TrueTag[0]) == sizeof(char));
+                        static_assert(sizeof(IElement::TrueTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
 
                         const size_t count = sizeof(IElement::TrueTag) - (IElement::TrueTag[sizeof(IElement::TrueTag) - 1] == '\0' ?  1 :  0);
 
-                        if (count < available) {
+                        if (count < static_cast<size_t>(available)) {
                             memcpy(&stream[loaded], &IElement::TrueTag[0], count);
                         }
 
                         loaded += count;
                     } else {
-                        static_assert(sizeof(IElement::FalseTag[0]) == sizeof(char));
+                        static_assert(sizeof(IElement::FalseTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
 
                         const size_t count = sizeof(IElement::FalseTag) - (IElement::FalseTag[sizeof(IElement::FalseTag) - 1] == '\0' ?  1 :  0);
 
-                        if (count < available) {
+                        if (count < static_cast<size_t>(available)) {
                             memcpy(&stream[loaded], &IElement::FalseTag[0], count);
                         }
 
@@ -1790,7 +1790,7 @@ namespace Core {
                                     suffix = suffix || (_value & SetBit) || (_value & NullBit);
                                     continue;
                     case '\0'   :   // End of character sequence
-                                    if (offset > 0 && !(((_value & SetBit) && suffix) || ((_value & QuotedBit) && suffix) || ((_value & NullBit)) && suffix)) {
+                                    if (offset > 0 && !(((_value & SetBit) && suffix) || ((_value & QuotedBit) && suffix) || ((_value & NullBit) && suffix))) {
                                         _value = ErrorBit;
                                         error = Error{"Terminated character sequence without (sufficient) data for Boolean"};
                                     }
@@ -1815,6 +1815,7 @@ namespace Core {
                                     _value |= QuotedBit;
                                     break;
                     case '1'    :   _value |= ValueBit;
+				    FALLTHROUGH;
                     case '0'    :   if (!(offset == 0 || (offset == 1 && (_value & QuotedBit))) || suffix || (_value & NullBit)) {
                                         _value = ErrorBit;
                                          error = Error{"Character '" + std::string(1, c) + "' at unsupported position for Boolean"};
