@@ -1217,11 +1217,11 @@ namespace Core {
                     }
 
                     if (_set & UNDEFINED) {
-                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char));
+                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
 
                         const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
 
-                        if (count < available) {
+                        if (count < static_cast<size_t>(available)) {
                             memcpy(&stream[loaded], &IElement::NullTag[0], count);
                         }
 
@@ -1471,7 +1471,7 @@ namespace Core {
                 }
 
                 if (!((_set & UNDEFINED) || error.IsSet())) {
-                    static_assert(std::is_same<float, TYPE>::value || std::is_same<double, TYPE>::value);
+                    static_assert(std::is_same<float, TYPE>::value || std::is_same<double, TYPE>::value, "Unsupported type detected");
 
                     char* c = nullptr;
 
