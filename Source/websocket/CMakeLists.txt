@@ -17,13 +17,17 @@
 
 set(TARGET ${NAMESPACE}WebSocket)
 
-add_library(${TARGET} ${THUNDER_LIBRARY_TYPE}
+add_library(${TARGET}
         URL.cpp
         JSONWebToken.cpp
         WebSerializer.cpp
         WebSocketLink.cpp
         JSONRPCLink.cpp
         )
+
+if (BUILD_SHARED_LIBS)
+        target_sources(${TARGET} PRIVATE Module.cpp)
+endif()
 
 set(PUBLIC_HEADERS
         URL.h
@@ -39,10 +43,6 @@ set(PUBLIC_HEADERS
         WebTransform.h
         Module.h
         )
-
-if (NOT BUILD_LIB_AS_STATIC)
-        target_sources(${TARGET} PRIVATE Module.cpp)
-endif()
 
 target_link_libraries(${TARGET}
         PRIVATE

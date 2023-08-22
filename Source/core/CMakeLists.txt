@@ -18,8 +18,8 @@
 set(TARGET ${NAMESPACE}Core)
 include(CompileSettings)
 
-add_library(${TARGET} ${THUNDER_LIBRARY_TYPE}
-	DoorBell.cpp
+add_library(${TARGET}
+	    DoorBell.cpp
         CyclicBuffer.cpp
         DataElement.cpp
         DataElementFile.cpp
@@ -53,7 +53,7 @@ add_library(${TARGET} ${THUNDER_LIBRARY_TYPE}
         ResourceMonitor.cpp
         )
 
-if (NOT BUILD_LIB_AS_STATIC)
+if (BUILD_SHARED_LIBS)
 	target_sources(${TARGET} PRIVATE Module.cpp)
 endif()
 
@@ -228,10 +228,10 @@ set_target_properties(${TARGET} PROPERTIES
           SOVERSION ${VERSION_MAJOR}
         )
 
-if (BUILD_LIB_AS_STATIC)
+if (NOT BUILD_SHARED_LIBS)
     set_property(TARGET  ${TARGET}
             APPEND PROPERTY INTERFACE_POSITION_INDEPENDENT_CODE ON
-            )
+    )
 endif()
 
 
