@@ -131,6 +131,6 @@ ENUM_CONVERSION_BEGIN(Plugin::Config::RootConfig::ModeType)
     { Plugin::Config::RootConfig::ModeType::CONTAINER, _TXT("Container") },
     { Plugin::Config::RootConfig::ModeType::DISTRIBUTED, _TXT("Distributed") },
 
-ENUM_CONVERSION_END(Plugin::Config::RootConfig::ModeType);
+ENUM_CONVERSION_END(Plugin::Config::RootConfig::ModeType)
 
 } // namespace 

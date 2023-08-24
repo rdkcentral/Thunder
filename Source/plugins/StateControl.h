@@ -24,7 +24,7 @@
 
 namespace WPEFramework {
 
-ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::command);
-ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::state);
+ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::command)
+ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::state)
 
 }
