@@ -39,12 +39,12 @@ Core::ProxyType<RPC::IIPCServer> DefaultInvokeServer()
     };
     static Core::ProxyType<Engine> engine = Core::ProxyType<Engine>::Create();
     return Core::ProxyType<RPC::IIPCServer>(engine);
-};
+}
 
 Core::ProxyType<RPC::IIPCServer> WorkerPoolInvokeServer()
 {
     return (Core::ProxyType<RPC::IIPCServer>(Core::ProxyType<RPC::InvokeServer>::Create(&Core::IWorkerPool::Instance())));
-};
+}
 
 ConnectorController::ConnectorController() : _controller(nullptr) {
 }
